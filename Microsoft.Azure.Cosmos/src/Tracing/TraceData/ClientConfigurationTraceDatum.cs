@@ -8,6 +8,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
     using System.Globalization;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Telemetry;
+    using System.Text.Json;
+    using System.Buffers;
 
     internal sealed class ClientConfigurationTraceDatum : TraceDatum
     {
@@ -96,51 +98,40 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
         private ReadOnlyMemory<byte> GetSerializedDatum()
         {
-            IJsonWriter jsonTextWriter = JsonWriter.Create(JsonSerializationFormat.Text);
-            jsonTextWriter.WriteObjectStart();
-
-            jsonTextWriter.WriteFieldName("Client Created Time Utc");
-            jsonTextWriter.WriteStringValue(this.ClientCreatedDateTimeUtc.ToString("o", CultureInfo.InvariantCulture));
-            jsonTextWriter.WriteFieldName("MachineId");
-            jsonTextWriter.WriteStringValue(this.cachedMachineId);
-            if (this.cachedVMRegion != null)
+            var buffer = new ArrayBufferWriter<byte>();
+            using (var writer = new Utf8JsonWriter(buffer))
             {
-                jsonTextWriter.WriteFieldName("VM Region");
-                jsonTextWriter.WriteStringValue(this.cachedVMRegion);
-            }
-            jsonTextWriter.WriteFieldName("NumberOfClientsCreated");
-            jsonTextWriter.WriteNumberValue(this.cachedNumberOfClientCreated);
-            jsonTextWriter.WriteFieldName("NumberOfActiveClients");
-            jsonTextWriter.WriteNumberValue(this.cachedNumberOfActiveClient);
-            jsonTextWriter.WriteFieldName("ConnectionMode");
-            jsonTextWriter.WriteStringValue(this.ConnectionMode.ToString());
-            jsonTextWriter.WriteFieldName("User Agent");
-            jsonTextWriter.WriteStringValue(this.cachedUserAgentString);
+                writer.WriteStartObject();
 
-            jsonTextWriter.WriteFieldName("ConnectionConfig");
-            jsonTextWriter.WriteObjectStart();
+                writer.WriteString("Client Created Time Utc", this.ClientCreatedDateTimeUtc.ToString("o", CultureInfo.InvariantCulture));
+                writer.WriteString("MachineId", this.cachedMachineId);
+                if (this.cachedVMRegion != null)
+                {
+                    writer.WriteString("VM Region", this.cachedVMRegion);
+                }
+                writer.WriteNumber("NumberOfClientsCreated", this.cachedNumberOfClientCreated);
+                writer.WriteNumber("NumberOfActiveClients", this.cachedNumberOfActiveClient);
+                writer.WriteString("ConnectionMode", this.ConnectionMode.ToString());
+                writer.WriteString("User Agent", this.cachedUserAgentString);
 
-            jsonTextWriter.WriteFieldName("gw");
-            jsonTextWriter.WriteStringValue(this.GatewayConnectionConfig.ToString());
+                writer.WritePropertyName("ConnectionConfig");
+                writer.WriteStartObject();
 
+                writer.WriteString("gw", this.GatewayConnectionConfig.ToString());
 #if !COSMOS_GW_AOT
-            jsonTextWriter.WriteFieldName("rntbd");
-            jsonTextWriter.WriteStringValue(this.RntbdConnectionConfig.ToString());
+                writer.WriteString("rntbd", this.RntbdConnectionConfig.ToString());
 #endif
+                writer.WriteString("other", this.OtherConnectionConfig.ToString());
 
-            jsonTextWriter.WriteFieldName("other");
-            jsonTextWriter.WriteStringValue(this.OtherConnectionConfig.ToString());
+                writer.WriteEndObject();
 
-            jsonTextWriter.WriteObjectEnd();
+                writer.WriteString("ConsistencyConfig", this.ConsistencyConfig.ToString());
+                writer.WriteNumber("ProcessorCount", this.ProcessorCount);
 
-            jsonTextWriter.WriteFieldName("ConsistencyConfig");
-            jsonTextWriter.WriteStringValue(this.ConsistencyConfig.ToString());
-            jsonTextWriter.WriteFieldName("ProcessorCount");
-            jsonTextWriter.WriteNumberValue(this.ProcessorCount);
+                writer.WriteEndObject();
+            }
 
-            jsonTextWriter.WriteObjectEnd();
-
-            return jsonTextWriter.GetResult();
+            return buffer.WrittenMemory;
         }
     }
 }

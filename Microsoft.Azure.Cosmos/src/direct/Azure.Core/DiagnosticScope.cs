@@ -175,7 +175,9 @@ namespace Azure.Core
         private class ActivityAdapter : IDisposable
         {
             private readonly ActivitySource? _activitySource;
+#if !COSMOS_GW_AOT
             private readonly DiagnosticSource _diagnosticSource;
+#endif
             private readonly string _activityName;
             private readonly System.Diagnostics.ActivityKind _kind;
             private readonly object? _diagnosticSourceArgs;
@@ -193,7 +195,9 @@ namespace Azure.Core
             public ActivityAdapter(ActivitySource? activitySource, DiagnosticSource diagnosticSource, string activityName, System.Diagnostics.ActivityKind kind, object? diagnosticSourceArgs)
             {
                 _activitySource = activitySource;
+#if !COSMOS_GW_AOT
                 _diagnosticSource = diagnosticSource;
+#endif
                 _activityName = activityName;
                 _kind = kind;
                 _diagnosticSourceArgs = diagnosticSourceArgs;
@@ -283,6 +287,9 @@ namespace Azure.Core
                 }
                 else
                 {
+                    return null;
+
+#if !COSMOS_GW_AOT
                     if (!_diagnosticSource.IsEnabled(_activityName, _diagnosticSourceArgs))
                     {
                         return null;
@@ -337,6 +344,7 @@ namespace Azure.Core
                     }
 
                     _currentActivity.Start();
+#endif
                 }
 
                 WriteStartEvent();
@@ -352,7 +360,9 @@ namespace Azure.Core
             // [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026", Justification = "The values being passed into Write have the commonly used properties being preserved with DynamicDependency on the ActivityAdapter.Start() method, or the responsibility is on the user of this struct since the struct constructor is marked with RequiresUnreferencedCode.")]
             private void WriteStartEvent()
             {
+#if !COSMOS_GW_AOT
                 _diagnosticSource.Write(_activityName + ".Start", _diagnosticSourceArgs ?? _currentActivity);
+#endif
             }
 
             public void SetDisplayName(string displayName)
@@ -386,7 +396,9 @@ namespace Azure.Core
             {
                 if (exception != null)
                 {
+#if !COSMOS_GW_AOT
                     _diagnosticSource?.Write(_activityName + ".Exception", exception);
+#endif
                 }
 
                 if (errorCode == null && exception != null)
@@ -435,7 +447,9 @@ namespace Azure.Core
                 if (activity.Duration == TimeSpan.Zero)
                     activity.SetEndTime(DateTime.UtcNow);
 
+#if !COSMOS_GW_AOT
                 _diagnosticSource.Write(_activityName + ".Stop", _diagnosticSourceArgs);
+#endif
 
                 activity.Dispose();
 
