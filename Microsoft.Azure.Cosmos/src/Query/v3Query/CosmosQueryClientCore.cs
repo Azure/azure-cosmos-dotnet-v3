@@ -288,7 +288,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override bool BypassQueryParsing()
         {
-            return CustomTypeExtensions.ByPassQueryParsing();
+            return QueryPlanRetriever.BypassQueryParsing();
         }
 
         public override void ClearSessionTokenCache(string collectionFullName)

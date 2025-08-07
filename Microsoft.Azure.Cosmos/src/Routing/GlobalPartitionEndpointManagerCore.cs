@@ -54,6 +54,11 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly bool isPartitionLevelFailoverEnabled;
 
         /// <summary>
+        /// A readonly boolean flag used to determine if thinclient is enabled.
+        /// </summary>
+        private readonly bool isThinClientEnabled;
+
+        /// <summary>
         /// A readonly boolean flag used to determine if partition level circuit breaker is enabled.
         /// </summary>
         private readonly bool isPartitionLevelCircuitBreakerEnabled;
@@ -93,13 +98,16 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <param name="globalEndpointManager">An instance of <see cref="GlobalEndpointManager"/>.</param>
         /// <param name="isPartitionLevelFailoverEnabled">A boolean flag indicating if partition level failover is enabled.</param>
         /// <param name="isPartitionLevelCircuitBreakerEnabled">A boolean flag indicating if partition level circuit breaker is enabled.</param>
+        /// <param name="isThinClientEnabled">A boolean flag indicating if thinclient is enabled.</param>
         public GlobalPartitionEndpointManagerCore(
             IGlobalEndpointManager globalEndpointManager,
             bool isPartitionLevelFailoverEnabled = false,
-            bool isPartitionLevelCircuitBreakerEnabled = false)
+            bool isPartitionLevelCircuitBreakerEnabled = false,
+            bool isThinClientEnabled = false)
         {
             this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
             this.isPartitionLevelCircuitBreakerEnabled = isPartitionLevelCircuitBreakerEnabled;
+            this.isThinClientEnabled = isThinClientEnabled;
             this.globalEndpointManager = globalEndpointManager ?? throw new ArgumentNullException(nameof(globalEndpointManager));
             this.InitializeAndStartCircuitBreakerFailbackBackgroundRefresh();
         }
@@ -169,7 +177,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 // For multi master write accounts, since all the regions are treated as write regions, the next locations to fail over
                 // will be the preferred read regions that are configured in the application preferred regions in the CosmosClientOptions.
-                ReadOnlyCollection<Uri> nextLocations = ConfigurationManager.IsThinClientEnabled(defaultValue: false) && ThinClientStoreModel.IsOperationSupportedByThinClient(request)
+                ReadOnlyCollection<Uri> nextLocations = this.isThinClientEnabled && GatewayStoreModel.IsOperationSupportedByThinClient(request)
                     ? this.globalEndpointManager.ThinClientReadEndpoints
                     : this.globalEndpointManager.ReadEndpoints;
 
@@ -183,7 +191,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             else if (this.IsRequestEligibleForPerPartitionAutomaticFailover(request))
             {
                 // For any single master write accounts, the next locations to fail over will be the read regions configured at the account level.
-                ReadOnlyCollection<Uri> nextLocations = ConfigurationManager.IsThinClientEnabled(defaultValue: false) && ThinClientStoreModel.IsOperationSupportedByThinClient(request)
+                ReadOnlyCollection<Uri> nextLocations = this.isThinClientEnabled && GatewayStoreModel.IsOperationSupportedByThinClient(request)
                     ? this.globalEndpointManager.ThinClientReadEndpoints
                     : this.globalEndpointManager.AccountReadEndpoints;
 

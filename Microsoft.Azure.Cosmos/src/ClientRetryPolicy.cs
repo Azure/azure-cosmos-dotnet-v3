@@ -29,6 +29,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly GlobalPartitionEndpointManager partitionKeyRangeLocationCache;
         private readonly bool enableEndpointDiscovery;
         private readonly bool isPartitionLevelFailoverEnabled;
+        private readonly bool isThinClientEnabled;
         private int failoverRetryCount;
 
         private int sessionTokenRetryCount;
@@ -45,7 +46,8 @@ namespace Microsoft.Azure.Cosmos
             GlobalPartitionEndpointManager partitionKeyRangeLocationCache,
             RetryOptions retryOptions,
             bool enableEndpointDiscovery,
-            bool isPartitionLevelFailoverEnabled)
+            bool isPartitionLevelFailoverEnabled,
+            bool isThinClientEnabled)
         {
             this.throttlingRetry = new ResourceThrottleRetryPolicy(
                 retryOptions.MaxRetryAttemptsOnThrottledRequests,
@@ -60,6 +62,7 @@ namespace Microsoft.Azure.Cosmos
             this.canUseMultipleWriteLocations = false;
             this.isMultiMasterWriteRequest = false;
             this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
+            this.isThinClientEnabled = isThinClientEnabled;
         }
 
         /// <summary> 
@@ -226,8 +229,8 @@ namespace Microsoft.Azure.Cosmos
 
             // Resolve the endpoint for the request and pin the resolution to the resolved endpoint
             // This enables marking the endpoint unavailability on endpoint failover/unreachability
-            this.locationEndpoint = ConfigurationManager.IsThinClientEnabled(defaultValue: false)
-                && ThinClientStoreModel.IsOperationSupportedByThinClient(request)
+            this.locationEndpoint = this.isThinClientEnabled
+                && GatewayStoreModel.IsOperationSupportedByThinClient(request)
                 ? this.globalEndpointManager.ResolveThinClientEndpoint(request)
                 : this.globalEndpointManager.ResolveServiceEndpoint(request);
 

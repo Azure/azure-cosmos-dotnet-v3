@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Concurrent;
+    using System.Diagnostics;
     using System.IO;
     using System.Net.Http;
     using System.Threading;
@@ -24,12 +25,14 @@ namespace Microsoft.Azure.Cosmos
     {
         private readonly bool isPartitionLevelFailoverEnabled;
         private readonly ObjectPool<BufferProviderWrapper> bufferProviderWrapperPool;
+        private readonly UserAgentContainer userAgentContainer;
 
         public ThinClientStoreClient(
             CosmosHttpClient httpClient,
+            UserAgentContainer userAgentContainer,
             ICommunicationEventSource eventSource,
-            JsonSerializerSettings serializerSettings = null,
-            bool isPartitionLevelFailoverEnabled = false)
+            bool isPartitionLevelFailoverEnabled = false,
+            JsonSerializerSettings serializerSettings = null)
             : base(httpClient,
                   eventSource,
                   serializerSettings,
@@ -37,6 +40,9 @@ namespace Microsoft.Azure.Cosmos
         {
             this.bufferProviderWrapperPool = new ObjectPool<BufferProviderWrapper>(() => new BufferProviderWrapper());
             this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
+            this.userAgentContainer = userAgentContainer
+                ?? throw new ArgumentNullException(nameof(userAgentContainer),
+                "UserAgentContainer cannot be null when initializing ThinClientStoreClient.");
         }
 
         public override async Task<DocumentServiceResponse> InvokeAsync(
@@ -129,7 +135,17 @@ namespace Microsoft.Azure.Cosmos
 
                 requestMessage.Content = new StreamContent(contentStream);
                 requestMessage.Content.Headers.ContentLength = contentStream.Length;
-               
+
+                requestMessage.Headers.Clear();
+                requestMessage.Headers.TryAddWithoutValidation(
+                    ThinClientConstants.UserAgent,
+                    this.userAgentContainer.UserAgent);
+
+                Guid activityId = Trace.CorrelationManager.ActivityId;
+                Debug.Assert(activityId != Guid.Empty);
+                requestMessage.Headers.TryAddWithoutValidation(
+                    HttpConstants.HttpHeaders.ActivityId, activityId.ToString());
+
                 requestMessage.RequestUri = thinClientEndpoint;
                 requestMessage.Method = HttpMethod.Post;
 
