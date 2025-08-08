@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     using Microsoft.Azure.Cosmos.Encryption.Custom;
 #if NET8_0_OR_GREATER
     using Microsoft.Azure.Cosmos.Encryption.Custom.Transformation;
+    using Microsoft.Azure.Cosmos.Linq;
 #endif
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -324,16 +325,35 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.IsNull(encryptionProperties.EncryptedData);
             Assert.IsNotNull(encryptionProperties.EncryptedPaths);
 
+            int expectedEncryptedPaths = 5;
+            if (testDoc.SensitiveStr == null)
+            {
+                expectedEncryptedPaths--;
+            }
+            if (testDoc.SensitiveUtf8Escapedřňěščřžýáíé == null)
+            {
+                expectedEncryptedPaths--;
+            }
+            Assert.AreEqual(expectedEncryptedPaths, encryptionProperties.EncryptedPaths.Count());
+
             if (testDoc.SensitiveStr == null)
             {
                 Assert.IsNull(encryptedDoc.Property(nameof(TestDoc.SensitiveStr)).Value.Value<string>()); // since null value is not encrypted
-                Assert.AreEqual(TestDoc.PathsToEncrypt.Count - 1, encryptionProperties.EncryptedPaths.Count());
             }
             else
             {
                 Assert.IsNotNull(encryptedDoc.Property(nameof(TestDoc.SensitiveStr)).Value.Value<string>());
                 Assert.AreNotEqual(testDoc.SensitiveStr, encryptedDoc.Property(nameof(TestDoc.SensitiveStr)).Value.Value<string>()); // not equal since value is encrypted
-                Assert.AreEqual(TestDoc.PathsToEncrypt.Count, encryptionProperties.EncryptedPaths.Count());
+            }
+
+            if (testDoc.SensitiveUtf8Escapedřňěščřžýáíé == null)
+            {
+                Assert.IsNull(encryptedDoc.Property(nameof(TestDoc.SensitiveUtf8Escapedřňěščřžýáíé)).Value.Value<string>()); // since null value is not encrypted
+            }
+            else
+            {
+                Assert.IsNotNull(encryptedDoc.Property(nameof(TestDoc.SensitiveUtf8Escapedřňěščřžýáíé)).Value.Value<string>());
+                Assert.AreNotEqual(testDoc.SensitiveUtf8Escapedřňěščřžýáíé, encryptedDoc.Property(nameof(TestDoc.SensitiveUtf8Escapedřňěščřžýáíé)).Value.Value<string>()); // not equal since value is encrypted
             }
 
             return encryptedDoc;
@@ -347,6 +367,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             bool invalidPathsConfigured = false)
         {
             Assert.AreEqual(expectedDoc.SensitiveStr, decryptedDoc.Property(nameof(TestDoc.SensitiveStr)).Value.Value<string>());
+            Assert.AreEqual(expectedDoc.SensitiveUtf8Escapedřňěščřžýáíé, decryptedDoc.Property(nameof(TestDoc.SensitiveUtf8Escapedřňěščřžýáíé)).Value.Value<string>());
             Assert.AreEqual(expectedDoc.SensitiveInt, decryptedDoc.Property(nameof(TestDoc.SensitiveInt)).Value.Value<int>());
             Assert.IsNull(decryptedDoc.Property(Constants.EncryptedInfo));
 
@@ -383,6 +404,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             bool invalidPathsConfigured = false)
         {
             AssertNullableValueKind(expectedDoc.SensitiveStr, decryptedDoc, nameof(TestDoc.SensitiveStr));
+            AssertNullableValueKind(expectedDoc.SensitiveUtf8Escapedřňěščřžýáíé, decryptedDoc, nameof(TestDoc.SensitiveUtf8Escapedřňěščřžýáíé));
             Assert.AreEqual(expectedDoc.SensitiveInt, decryptedDoc[nameof(TestDoc.SensitiveInt)].GetValue<long>());
             Assert.IsNull(decryptedDoc[Constants.EncryptedInfo]);
 
