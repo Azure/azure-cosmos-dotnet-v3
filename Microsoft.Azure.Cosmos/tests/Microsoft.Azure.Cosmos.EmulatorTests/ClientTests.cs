@@ -17,12 +17,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Runtime.Serialization.Json;
     using System.Security.Cryptography.X509Certificates;
     using System.Text;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using global::Azure;
     using Microsoft.Azure.Cosmos.FaultInjection;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests;
+    using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.Azure.Documents;
@@ -31,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Moq;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
-
+    
     [TestClass]
     public class ClientTests
     {
@@ -1136,6 +1138,96 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 if (db != null) await db.DeleteAsync();
             }
         }
+
+        [TestMethod]
+        public async Task ValidateSpatialPointSTJSerialization()
+        {
+            string authKey = ConfigurationManager.AppSettings["MasterKey"];
+            string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
+
+            using (CosmosClient cosmosClient = new CosmosClient(endpoint, authKey,
+               new CosmosClientOptions()
+               {
+                   // this makes it use STJ library for serialization/de-serialization
+                   UseSystemTextJsonSerializerWithOptions = new JsonSerializerOptions()
+                   {
+                       PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                   }
+               }
+               ))
+            {
+
+                string GUID = Guid.NewGuid().ToString();
+                Cosmos.Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync("AzureCosmosSpatialSerialization");
+                Container container = await database.CreateContainerIfNotExistsAsync("spatial-items", "/id");
+
+                Point point = new Point(
+                    new Position(20, 30),
+                    new GeometryParams
+                    {
+                        AdditionalProperties = new Dictionary<string, object>
+                        {
+                            ["one"] = "a large one",
+                            ["two"] = "a new two"
+                        },
+                        Crs = Crs.Linked("http://foo.com", "link")
+                    });
+
+                SpatialItem inputItem = new SpatialItem()
+                {
+                    Id = GUID,
+                    Name = "Spatial Point",
+                    Location = point
+                };
+
+                SpatialItem result = await container.CreateItemAsync<SpatialItem>(inputItem);
+                SpatialItem readItem = await container.ReadItemAsync<SpatialItem>(GUID, new Cosmos.PartitionKey(GUID));
+
+                Assert.AreEqual<SpatialItem>(readItem, inputItem);
+                Assert.AreEqual<SpatialItem>(result, inputItem);
+            }
+
+        }
+        [TestMethod]
+        public async Task ValidateSpatialPointNewtonSoftSerialization()
+        {
+            string authKey = ConfigurationManager.AppSettings["MasterKey"];
+            string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
+            // default serialization uses NewtonSoft
+            using (CosmosClient cosmosClient = new CosmosClient(endpoint, authKey))
+            {
+
+                string GUID = Guid.NewGuid().ToString();
+                Cosmos.Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync("AzureCosmosSpatialSerialization");
+                Container container = await database.CreateContainerIfNotExistsAsync("spatial-items", "/id");
+
+                Point point = new Point(
+                    new Position(20, 30),
+                    new GeometryParams
+                    {
+                        AdditionalProperties = new Dictionary<string, object>
+                        {
+                            ["one"] = "a large one",
+                            ["two"] = "a new two"
+                        },
+                        Crs = Crs.Linked("http://foo.com", "link")
+                    });
+
+                SpatialItem inputItem = new SpatialItem()
+                {
+                    Id = GUID,
+                    Name = "Spatial Point",
+                    Location = point
+                };
+
+                SpatialItem result = await container.CreateItemAsync<SpatialItem>(inputItem);
+                SpatialItem readItem = await container.ReadItemAsync<SpatialItem>(GUID, new Cosmos.PartitionKey(GUID));
+
+                Assert.AreEqual<SpatialItem>(readItem, inputItem);
+                Assert.AreEqual<SpatialItem>(result, inputItem);
+            }
+
+        }
         public static IReadOnlyList<string> GetActiveConnections()
         {
             string testPid = Process.GetCurrentProcess().Id.ToString();
@@ -1207,6 +1299,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return input.Replace("'", "\\'").Replace("\"", "\\\"");
         }
     }
+    internal record SpatialItem
+    {
+        [JsonProperty("id")]
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public Point Location { get; set; }
+
+
+    }
 
     internal class TestWebProxy : IWebProxy
     {
@@ -1221,5 +1322,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             return false;
         }
+      
     }
 }
