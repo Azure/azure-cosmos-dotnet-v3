@@ -45,6 +45,7 @@ namespace Microsoft.Azure.Cosmos
         public bool EnableMultiWriteRegionHedge { get; private set; }
 
         private readonly string HedgeConfigText;
+        private bool ppafEnabled = false;
 
         /// <summary>
         /// Constructor for hedging availability strategy
@@ -98,7 +99,8 @@ namespace Microsoft.Azure.Cosmos
             //check to see if it is a not a read-only request/ if multimaster writes are enabled
             if (!OperationTypeExtensions.IsReadOperation(request.OperationType))
             {
-                if (this.EnableMultiWriteRegionHedge
+                if ((this.EnableMultiWriteRegionHedge
+                    || this.ppafEnabled)
                     && client.DocumentClient.GlobalEndpointManager.CanSupportMultipleWriteLocations(request.ResourceType, request.OperationType))
                 {
                     return true;
@@ -123,6 +125,7 @@ namespace Microsoft.Azure.Cosmos
             RequestMessage request,
             CancellationToken cancellationToken)
         {
+            this.ppafEnabled = client.DocumentClient.ConnectionPolicy.EnablePartitionLevelFailover;
             if (!this.ShouldHedge(request, client)
                 || client.DocumentClient.GlobalEndpointManager.ReadEndpoints.Count == 1)
             {
