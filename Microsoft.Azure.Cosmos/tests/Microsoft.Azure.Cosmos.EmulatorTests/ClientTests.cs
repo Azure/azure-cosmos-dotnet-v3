@@ -17,12 +17,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Runtime.Serialization.Json;
     using System.Security.Cryptography.X509Certificates;
     using System.Text;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using global::Azure;
     using Microsoft.Azure.Cosmos.FaultInjection;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests;
+    using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.Azure.Documents;
@@ -31,8 +33,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Moq;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
-    using Microsoft.Azure.Cosmos.Spatial;
-    using System.Text.Json;
+    
 
     [TestClass]
     public class ClientTests
@@ -102,15 +103,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 RequestCallBack = async (request, cancellToken) =>
                 {
-                    if(request.RequestUri.AbsoluteUri ==  VmMetadataApiHandler.vmMetadataEndpointUrl.AbsoluteUri)
+                    if (request.RequestUri.AbsoluteUri == VmMetadataApiHandler.vmMetadataEndpointUrl.AbsoluteUri)
                     {
                         Interlocked.Increment(ref metadataCallCount);
-                    } 
+                    }
                     else
                     {
                         Interlocked.Increment(ref httpCallCount);
                     }
-                    
+
                     while (delayCallBack)
                     {
                         await Task.Delay(TimeSpan.FromMilliseconds(100));
@@ -140,7 +141,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
 
                 ValueStopwatch sw = ValueStopwatch.StartNew();
-                while(this.TaskStartedCount < 10 && sw.Elapsed.TotalSeconds < 2)
+                while (this.TaskStartedCount < 10 && sw.Elapsed.TotalSeconds < 2)
                 {
                     await Task.Delay(TimeSpan.FromMilliseconds(50));
                 }
@@ -470,7 +471,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             }
         }
-        
+
         [TestMethod]
         public async Task Verify_CertificateCallBackGetsCalled_ForTCP_HTTP()
         {
@@ -485,7 +486,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         ConnectionMode = ConnectionMode.Direct,
                         ConnectionProtocol = Protocol.Tcp,
-                        ServerCertificateCustomValidationCallback = (X509Certificate2 cerf, X509Chain chain, SslPolicyErrors error) => { counter ++; return true; }
+                        ServerCertificateCustomValidationCallback = (X509Certificate2 cerf, X509Chain chain, SslPolicyErrors error) => { counter++; return true; }
                     });
 
             Cosmos.Database database = null;
@@ -493,7 +494,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 string databaseName = Guid.NewGuid().ToString();
                 string databaseId = Guid.NewGuid().ToString();
-                
+
                 //HTTP callback
                 database = await cosmosClient.CreateDatabaseAsync(databaseId);
 
@@ -1119,7 +1120,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         if (!channelState.DeepHealthy)
                         {
                             unHealthyChannelFound = true;
-                        } else
+                        }
+                        else
                         {
                             healthyChannelFound = true;
                         }
@@ -1164,9 +1166,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     new Position(20, 30),
                     new GeometryParams
                     {
-                        AdditionalProperties = new Dictionary<string, object> {
-                           ["one"] = "a large one",
-                           ["two"] = "a new two"
+                        AdditionalProperties = new Dictionary<string, object>
+                        {
+                            ["one"] = "a large one",
+                            ["two"] = "a new two"
                         },
                         Crs = Crs.Linked("http://foo.com", "link")
                     });
@@ -1226,7 +1229,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
         }
-
         public static IReadOnlyList<string> GetActiveConnections()
         {
             string testPid = Process.GetCurrentProcess().Id.ToString();
@@ -1298,7 +1300,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return input.Replace("'", "\\'").Replace("\"", "\\\"");
         }
     }
+    internal record SpatialItem
+    {
+        [JsonProperty("id")]
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public Point Location { get; set; }
 
+
+    }
     internal class TestWebProxy : IWebProxy
     {
         public ICredentials Credentials { get; set; }
@@ -1313,15 +1323,4 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return false;
         }
     }
-
-    internal record SpatialItem
-    {
-        [JsonProperty("id")]
-        public string Id { get; set; }
-        public string Name { get; set; }
-        public Point Location { get; set; }
-
-
-    }
-
 }
