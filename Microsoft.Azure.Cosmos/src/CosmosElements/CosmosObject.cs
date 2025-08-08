@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
+    using UInt128 = Cosmos.UInt128;
 
 #if INTERNAL
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
@@ -90,13 +91,18 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         IEnumerator<KeyValuePair<string, CosmosElement>> IEnumerable<KeyValuePair<string, CosmosElement>>.GetEnumerator() => this.GetEnumerator();
 
-        public override bool Equals(CosmosElement cosmosElement)
+        public override bool Equals(CosmosElement? cosmosElement)
         {
             return cosmosElement is CosmosObject cosmosObject && this.Equals(cosmosObject);
         }
 
-        public bool Equals(CosmosObject cosmosObject)
+        public bool Equals(CosmosObject? cosmosObject)
         {
+            if (cosmosObject is null)
+            {
+                return false;
+            }
+
             if (this.Count != cosmosObject.Count)
             {
                 return false;
@@ -143,8 +149,13 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return (int)hash;
         }
 
-        public int CompareTo(CosmosObject cosmosObject)
+        public int CompareTo(CosmosObject? cosmosObject)
         {
+            if (cosmosObject is null)
+            {
+                return 1;
+            }
+
             UInt128 hash1 = DistinctHash.GetHash(this);
             UInt128 hash2 = DistinctHash.GetHash(cosmosObject);
             return UInt128BinaryComparer.Singleton.Compare(hash1, hash2);

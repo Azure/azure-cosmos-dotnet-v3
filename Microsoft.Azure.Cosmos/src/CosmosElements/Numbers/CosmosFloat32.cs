@@ -45,13 +45,18 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
             return cosmosNumberVisitor.Visit(this, input);
         }
 
-        public override bool Equals(CosmosNumber cosmosNumber)
+        public override bool Equals(CosmosNumber? cosmosNumber)
         {
             return cosmosNumber is CosmosFloat32 cosmosFloat32 && this.Equals(cosmosFloat32);
         }
 
-        public bool Equals(CosmosFloat32 cosmosFloat32)
+        public bool Equals(CosmosFloat32? cosmosFloat32)
         {
+            if (cosmosFloat32 is null)
+            {
+                return false;
+            }
+
             return this.GetValue() == cosmosFloat32.GetValue();
         }
 
@@ -60,8 +65,13 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
             return (int)MurmurHash3.Hash32(this.GetValue(), 495253708);
         }
 
-        public int CompareTo(CosmosFloat32 cosmosFloat32)
+        public int CompareTo(CosmosFloat32? cosmosFloat32)
         {
+            if (cosmosFloat32 is null)
+            {
+                return 1;
+            }
+
             return this.GetValue().CompareTo(cosmosFloat32.GetValue());
         }
 
