@@ -1305,8 +1305,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public string Id { get; set; }
         public string Name { get; set; }
         public Point Location { get; set; }
-
-
     }
 
     internal class TestWebProxy : IWebProxy
@@ -1322,6 +1320,5 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             return false;
         }
-      
     }
 }
