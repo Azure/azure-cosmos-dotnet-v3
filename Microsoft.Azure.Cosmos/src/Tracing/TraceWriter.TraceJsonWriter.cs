@@ -53,12 +53,23 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 writer.WriteFieldName("duration in milliseconds");
                 writer.WriteNumberValue(trace.Duration.TotalMilliseconds);
 
-                if (trace.Data.Any())
+                // Create a snapshot of the data to avoid concurrency issues
+                KeyValuePair<string, object>[] dataSnapshot = null;
+                if (trace is Trace concreteTrace)
+                {
+                    dataSnapshot = concreteTrace.GetDataSnapshot();
+                }
+                else if (trace.Data.Any())
+                {
+                    dataSnapshot = trace.Data.ToArray();
+                }
+
+                if (dataSnapshot != null && dataSnapshot.Any())
                 {
                     writer.WriteFieldName("data");
                     writer.WriteObjectStart();
 
-                    foreach (KeyValuePair<string, object> kvp in trace.Data)
+                    foreach (KeyValuePair<string, object> kvp in dataSnapshot)
                     {
                         string key = kvp.Key;
                         object value = kvp.Value;
@@ -70,12 +81,23 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     writer.WriteObjectEnd();
                 }
 
-                if (trace.Children.Any())
+                // Create a snapshot of the children to avoid concurrency issues
+                ITrace[] childrenSnapshot = null;
+                if (trace is Trace concreteTraceForChildren)
+                {
+                    childrenSnapshot = concreteTraceForChildren.GetChildrenSnapshot();
+                }
+                else if (trace.Children.Any())
+                {
+                    childrenSnapshot = trace.Children.ToArray();
+                }
+
+                if (childrenSnapshot != null && childrenSnapshot.Any())
                 {
                     writer.WriteFieldName("children");
                     writer.WriteArrayStart();
 
-                    foreach (ITrace child in trace.Children)
+                    foreach (ITrace child in childrenSnapshot)
                     {
                         WriteTrace(writer, 
                             child, 
