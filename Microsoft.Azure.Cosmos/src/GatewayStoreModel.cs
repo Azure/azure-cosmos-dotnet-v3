@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Net;
     using System.Net.Http;
-    using System.Net.Http.Headers;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
@@ -26,30 +25,30 @@ namespace Microsoft.Azure.Cosmos
     {
         private static readonly string sessionConsistencyAsString = ConsistencyLevel.Session.ToString();
         private readonly GlobalPartitionEndpointManager globalPartitionEndpointManager;
+        private readonly ISessionContainer sessionContainer;
+        private readonly DocumentClientEventSource eventSource;
 
         internal readonly GlobalEndpointManager endpointManager;
-        private readonly DocumentClientEventSource eventSource;
         internal readonly ConsistencyLevel defaultConsistencyLevel;
 
+        // Store Clients to send requests to the gateway and/ or thin client endpoints.
         private ThinClientStoreClient thinClientStoreClient;
-
         private GatewayStoreClient gatewayStoreClient;
 
         // Caches to resolve the PartitionKeyRange from request. For Session Token Optimization.
-        protected PartitionKeyRangeCache partitionKeyRangeCache;
-        protected ClientCollectionCache clientCollectionCache;
-        protected ISessionContainer sessionContainer;
+        private PartitionKeyRangeCache partitionKeyRangeCache;
+        private ClientCollectionCache clientCollectionCache;
 
         public GatewayStoreModel(
-            GlobalEndpointManager endpointManager,
-            ISessionContainer sessionContainer,
-            ConsistencyLevel defaultConsistencyLevel,
-            DocumentClientEventSource eventSource,
-            JsonSerializerSettings serializerSettings,
-            CosmosHttpClient httpClient,
-            GlobalPartitionEndpointManager globalPartitionEndpointManager,
-            bool isThinClientEnabled,
-            UserAgentContainer userAgentContainer = null)
+             GlobalEndpointManager endpointManager,
+             ISessionContainer sessionContainer,
+             ConsistencyLevel defaultConsistencyLevel,
+             DocumentClientEventSource eventSource,
+             JsonSerializerSettings serializerSettings,
+             CosmosHttpClient httpClient,
+             GlobalPartitionEndpointManager globalPartitionEndpointManager,
+             bool isThinClientEnabled,
+             UserAgentContainer userAgentContainer = null)
         {
             this.endpointManager = endpointManager;
             this.sessionContainer = sessionContainer;
@@ -122,6 +121,7 @@ namespace Microsoft.Azure.Cosmos
                 if (canUseThinClient)
                 {
                     Uri thinClientEndpoint = this.endpointManager.ResolveThinClientEndpoint(request);
+
                     AccountProperties account = await this.GetDatabaseAccountPropertiesAsync();
 
                     response = await this.thinClientStoreClient.InvokeAsync(
