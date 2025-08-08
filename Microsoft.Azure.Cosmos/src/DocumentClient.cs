@@ -1092,7 +1092,8 @@ namespace Microsoft.Azure.Cosmos
                 globalPartitionEndpointManager: this.PartitionKeyRangeLocation,
                 isThinClientEnabled: this.isThinClientEnabled,
                 isPartitionLevelFailoverEnabled: this.ConnectionPolicy.EnablePartitionLevelFailover || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker,
-                userAgentContainer: this.ConnectionPolicy.UserAgentContainer);
+                userAgentContainer: this.ConnectionPolicy.UserAgentContainer,
+                this.chaosInterceptor);
 
             this.GatewayStoreModel = gatewayStoreModel;
 
@@ -1110,7 +1111,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway)
             {
-                this.StoreModel = this.GatewayStoreModel;
+                    this.StoreModel = this.GatewayStoreModel;
             }
             else
             {

@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
+    using Microsoft.Azure.Documents.FaultInjection;
     using Newtonsoft.Json;
 
     // Marking it as non-sealed in order to unit test it using Moq framework
@@ -31,6 +32,8 @@ namespace Microsoft.Azure.Cosmos
         internal readonly GlobalEndpointManager endpointManager;
         private readonly DocumentClientEventSource eventSource;
         internal readonly ConsistencyLevel defaultConsistencyLevel;
+
+        private readonly IChaosInterceptor chaosInterceptor;
 
         private ThinClientStoreClient thinClientStoreClient;
 
@@ -51,7 +54,8 @@ namespace Microsoft.Azure.Cosmos
              GlobalPartitionEndpointManager globalPartitionEndpointManager,
              bool isThinClientEnabled,
              bool isPartitionLevelFailoverEnabled = false,
-             UserAgentContainer userAgentContainer = null)
+             UserAgentContainer userAgentContainer = null,
+             IChaosInterceptor chaosInterceptor = null)
         {
             this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
             this.endpointManager = endpointManager;
@@ -64,6 +68,7 @@ namespace Microsoft.Azure.Cosmos
                 this.eventSource,
                 serializerSettings,
                 isPartitionLevelFailoverEnabled);
+            this.chaosInterceptor = chaosInterceptor;
 
             if (isThinClientEnabled)
             {
@@ -72,7 +77,8 @@ namespace Microsoft.Azure.Cosmos
                     userAgentContainer,
                     this.eventSource,
                     isPartitionLevelFailoverEnabled,
-                    serializerSettings);
+                    serializerSettings,
+                    this.chaosInterceptor);
             }
 
             this.globalPartitionEndpointManager.SetBackgroundConnectionPeriodicRefreshTask(
