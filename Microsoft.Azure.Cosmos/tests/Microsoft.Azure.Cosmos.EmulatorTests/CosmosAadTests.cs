@@ -264,5 +264,60 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             }
         }
+
+        [TestMethod]
+        public async Task AadScopeOverrideFallbackToDefaultScope_E2E()
+        {
+            string overrideScope = "https://override/.default";
+            string defaultScope = "https://127.0.0.1/.default";
+            int overrideScopeCount = 0;
+            int defaultScopeCount = 0;
+
+            Environment.SetEnvironmentVariable("AZURE_COSMOS_AAD_SCOPE_OVERRIDE", overrideScope);
+
+            (string endpoint, string authKey) = TestCommon.GetAccountInfo();
+
+            void GetAadTokenCallBack(TokenRequestContext context, CancellationToken token)
+            {
+                if (context.Scopes[0] == overrideScope)
+                {
+                    overrideScopeCount++;
+                    throw new RequestFailedException(408, "Simulated override scope failure");
+                }
+                if (context.Scopes[0] == defaultScope)
+                {
+                    defaultScopeCount++;
+                }
+            }
+
+            LocalEmulatorTokenCredential simpleEmulatorTokenCredential = new LocalEmulatorTokenCredential(
+                expectedScopes: new[] { overrideScope, defaultScope },
+                masterKey: authKey,
+                getTokenCallback: GetAadTokenCallBack);
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                TokenCredentialBackgroundRefreshInterval = TimeSpan.FromSeconds(60)
+            };
+
+            try
+            {
+                using (CosmosClient aadClient = new CosmosClient(
+                    endpoint,
+                    simpleEmulatorTokenCredential,
+                    clientOptions))
+                {
+                    ResponseMessage responseMessage = await aadClient.GetDatabase(Guid.NewGuid().ToString()).ReadStreamAsync();
+                    Assert.IsNotNull(responseMessage);
+
+                    Assert.IsTrue(overrideScopeCount > 0, "Override scope should have been attempted");
+                    Assert.IsTrue(defaultScopeCount > 0, "Default scope should have been attempted after override failed");
+                }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AZURE_COSMOS_AAD_SCOPE_OVERRIDE", null);
+            }
+        }
     }
 }
