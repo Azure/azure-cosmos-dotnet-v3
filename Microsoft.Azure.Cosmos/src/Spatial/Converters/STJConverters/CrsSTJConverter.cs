@@ -11,41 +11,56 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
     /// <summary>
     /// Converter used to support System.Text.Json de/serialization of type Crs/>.
     /// </summary>
-    internal class CrsSTJConverter : JsonConverter<Crs>
+    internal sealed class CrsSTJConverter : JsonConverter<Crs>
     {
+        public override bool HandleNull => true;
         public override Crs Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
+            if (reader.TokenType == JsonTokenType.Null)
+            {
+                return Crs.Unspecified;
+            }
+
             if (reader.TokenType != JsonTokenType.StartObject)
             {
                 throw new JsonException(RMResources.JsonUnexpectedToken);
             }
 
             JsonElement rootElement = JsonDocument.ParseValue(ref reader).RootElement;
-            JsonElement properties = rootElement.GetProperty(STJMetaDataFields.Properties);
-            if (properties.ValueKind == JsonValueKind.Null || properties.ValueKind != JsonValueKind.Object)
+            if (!rootElement.TryGetProperty(STJMetaDataFields.Properties, out JsonElement properties) || (properties.ValueKind != JsonValueKind.Object))
             {
                 throw new JsonException(RMResources.SpatialFailedToDeserializeCrs);
             }
 
-            JsonElement crsType = rootElement.GetProperty(STJMetaDataFields.Type);
-            if (crsType.ValueKind == JsonValueKind.Null || crsType.ValueKind != JsonValueKind.String)
+            if (!rootElement.TryGetProperty(STJMetaDataFields.Type, out JsonElement crsType) || crsType.ValueKind != JsonValueKind.String)
             {
                 throw new JsonException(RMResources.SpatialFailedToDeserializeCrs);
             }
 
             switch (crsType.GetString())
             {
-                case STJMetaDataFields.Name:
-                    string crsName = properties.GetProperty(STJMetaDataFields.Name).GetString();
-                    return new NamedCrs(crsName);
+                case "name":
+                    if (!properties.TryGetProperty(STJMetaDataFields.Name, out JsonElement crsName) || crsName.ValueKind != JsonValueKind.String)
+                    {
+                        throw new JsonException(RMResources.SpatialFailedToDeserializeCrs);
+                    }
+                    return new NamedCrs(crsName.GetString());
 
-                case STJMetaDataFields.Link:
-                    string crsHref = properties.GetProperty(STJMetaDataFields.Href).GetString();
+                case "link":
+                    if (!properties.TryGetProperty(STJMetaDataFields.Href, out JsonElement crsHref) || crsHref.ValueKind != JsonValueKind.String)
+                    {
+                        throw new JsonException(RMResources.SpatialFailedToDeserializeCrs);
+                    }
+
                     if (properties.TryGetProperty(STJMetaDataFields.Type, out JsonElement crsHrefType))
                     {
-                        return new LinkedCrs(crsHref, crsHrefType.GetString());
+                        if (crsHrefType.ValueKind != JsonValueKind.String)
+                        {
+                            throw new JsonException(RMResources.SpatialFailedToDeserializeCrs);
+                        }
+                        return new LinkedCrs(crsHref.GetString(), crsHrefType.GetString());
                     }
-                    return new LinkedCrs(crsHref);
+                    return new LinkedCrs(crsHref.GetString());
 
                 default:
                     throw new JsonException(RMResources.SpatialFailedToDeserializeCrs);
@@ -54,38 +69,45 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
         }
         public override void Write(Utf8JsonWriter writer, Crs crs, JsonSerializerOptions options)
         {
+            if (crs == null)
+            {
+                writer.WriteNullValue();
+                return;
+            }
+
             switch (crs.Type)
             {
                 case CrsType.Linked:
-                    writer.WriteStartObject(STJMetaDataFields.Crs);
-                    LinkedCrs linkedCrs = (LinkedCrs)crs;
-                    writer.WriteString(STJMetaDataFields.Type, STJMetaDataFields.Link);
-                    writer.WritePropertyName(STJMetaDataFields.Properties);
-                    writer.WriteStartObject();
-                    writer.WriteString(STJMetaDataFields.Href, linkedCrs.Href);
-                    if (linkedCrs.HrefType != null)
                     {
-                        writer.WriteString(STJMetaDataFields.Type, linkedCrs.HrefType);
+                        writer.WriteStartObject();
+                        LinkedCrs linkedCrs = (LinkedCrs)crs;
+                        writer.WriteString(STJMetaDataFields.Type, "link");
+                        writer.WritePropertyName(STJMetaDataFields.Properties);
+                        writer.WriteStartObject();
+                        writer.WriteString(STJMetaDataFields.Href, linkedCrs.Href);
+                        if (linkedCrs.HrefType != null)
+                        {
+                            writer.WriteString(STJMetaDataFields.Type, linkedCrs.HrefType);
+                        }
+
+                        writer.WriteEndObject();
+                        writer.WriteEndObject();
+                        break;
                     }
-
-                    writer.WriteEndObject();
-                    writer.WriteEndObject();
-                    break;
-
                 case CrsType.Named:
-                    writer.WriteStartObject(STJMetaDataFields.Crs);
-                    NamedCrs namedCrs = (NamedCrs)crs;
-                    writer.WriteString(STJMetaDataFields.Type, STJMetaDataFields.Name);
-                    writer.WritePropertyName(STJMetaDataFields.Properties);
-                    writer.WriteStartObject();
-                    writer.WriteString(STJMetaDataFields.Name, namedCrs.Name);
-                    writer.WriteEndObject();
-
-                    writer.WriteEndObject();
-                    break;
-
+                    {
+                        writer.WriteStartObject();
+                        NamedCrs namedCrs = (NamedCrs)crs;
+                        writer.WriteString(STJMetaDataFields.Type, "name");
+                        writer.WritePropertyName(STJMetaDataFields.Properties);
+                        writer.WriteStartObject();
+                        writer.WriteString(STJMetaDataFields.Name, namedCrs.Name);
+                        writer.WriteEndObject();
+                        writer.WriteEndObject();
+                        break;
+                    }
                 case CrsType.Unspecified:
-                    writer.WriteNull(STJMetaDataFields.Crs);
+                    writer.WriteNullValue();
                     break;
             }
 

@@ -13,44 +13,27 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
     /// <summary>
     /// Converter used to support System.Text.Json de/serialization of type PolygonCoordinates/>.
     /// </summary>
-    internal class PolygonCoordinatesSTJConverter : JsonConverter<PolygonCoordinates>
+    internal sealed class PolygonCoordinatesSTJConverter : JsonConverter<PolygonCoordinates>
     {
-        public override PolygonCoordinates Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        /// <inheritdoc />
+        public override PolygonCoordinates Read(
+            ref Utf8JsonReader reader,
+            Type typeToConvert,
+            JsonSerializerOptions options)
         {
-            if (reader.TokenType != JsonTokenType.StartObject)
-            {
-                throw new JsonException(RMResources.JsonUnexpectedToken);
-            }
-            IList<LinearRing> linearRings = null;
-            JsonElement rootElement = JsonDocument.ParseValue(ref reader).RootElement;
-            foreach (JsonProperty property in rootElement.EnumerateObject())
-            {
-                if (property.NameEquals(STJMetaDataFields.Rings))
-                {
-                    linearRings = new List<LinearRing>();
-                    foreach (JsonElement arrayElement in property.Value.EnumerateArray())
-                    {
-                        LinearRing ring = JsonSerializer.Deserialize<LinearRing>(arrayElement.GetRawText(), options);
-                        linearRings.Add(ring);
-                    }
-                }
-
-            }
-            return new PolygonCoordinates(linearRings);
-
+            // A PolygonCoordinate is just an array of LinearRings.
+            // System.Text.Json cannot deserialize into a ReadOnlyCollection, so we deserialize into a List first.
+            List<LinearRing> rings = JsonSerializer.Deserialize<List<LinearRing>>(ref reader, options);
+            return new PolygonCoordinates(rings);
         }
-        public override void Write(Utf8JsonWriter writer, PolygonCoordinates polygonCoordinates, JsonSerializerOptions options)
+
+        /// <inheritdoc />
+        public override void Write(
+            Utf8JsonWriter writer,
+            PolygonCoordinates value,
+            JsonSerializerOptions options)
         {
-            writer.WriteStartArray(STJMetaDataFields.Rings);
-            foreach (LinearRing ring in polygonCoordinates.Rings)
-            {
-                writer.WriteStartObject();
-                JsonSerializer.Serialize(writer, ring, options);
-                writer.WriteEndObject();
-            }
-
-            writer.WriteEndArray();
-
+            JsonSerializer.Serialize(writer, value.Rings, options);
         }
 
     }

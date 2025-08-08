@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     /// </summary>
     /// <seealso cref="Polygon"/>
     [DataContract]
-    [System.Text.Json.Serialization.JsonConverter(typeof(MultiPolygonSTJConverter))]
+    [System.Text.Json.Serialization.JsonConverter(typeof(GeometrySTJConverter))]
     public sealed class MultiPolygon : Geometry, IEquatable<MultiPolygon>
     {
         /// <summary>

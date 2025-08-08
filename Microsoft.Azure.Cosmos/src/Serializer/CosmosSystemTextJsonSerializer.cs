@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters;
 
-
     /// <summary>
     /// This class provides a default implementation of System.Text.Json Cosmos Linq Serializer.
     /// </summary>
@@ -35,8 +34,6 @@ namespace Microsoft.Azure.Cosmos
             JsonSerializerOptions jsonSerializerOptions)
         {
             this.jsonSerializerOptions = jsonSerializerOptions;
-            //somehow adding a .NET native type converter as an attribute on properties doesnt take effect. In this case I tried adding it to AdditionalProperties of Geometry class.
-            this.jsonSerializerOptions.Converters.Add(new DictionarySTJConverter());
         }
 
         /// <inheritdoc/>

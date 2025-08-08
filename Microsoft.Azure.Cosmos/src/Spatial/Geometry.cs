@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     [DataContract]
     [JsonObject(MemberSerialization.OptIn)]
     [JsonConverter(typeof(GeometryJsonConverter))]
+    [System.Text.Json.Serialization.JsonConverter(typeof(GeometrySTJConverter))]
     public abstract class Geometry
     {
         /// <summary>

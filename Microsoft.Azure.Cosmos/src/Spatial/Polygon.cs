@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     /// </code>
     /// </example>
     [DataContract]
-    [System.Text.Json.Serialization.JsonConverter(typeof(PolygonSTJConverter))]
+    [System.Text.Json.Serialization.JsonConverter(typeof(GeometrySTJConverter))]
     public sealed class Polygon : Geometry, IEquatable<Polygon>
     {
         /// <summary>

@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     /// Represents a geometry consisting of connected line segments.
     /// </summary>
     [DataContract]
-    [System.Text.Json.Serialization.JsonConverter(typeof(LineStringSTJConverter))]
+    [System.Text.Json.Serialization.JsonConverter(typeof(GeometrySTJConverter))]
     public sealed class LineString : Geometry, IEquatable<LineString>
     {
         /// <summary>

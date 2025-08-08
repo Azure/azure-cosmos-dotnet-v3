@@ -13,44 +13,27 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
     /// <summary>
     /// Converter used to support System.Text.Json de/serialization of type LineStringCoordinates/>.
     /// </summary>
-    internal class LineStringCoordinatesSTJConverter : JsonConverter<LineStringCoordinates>
+    internal sealed class LineStringCoordinatesSTJConverter : JsonConverter<LineStringCoordinates>
     {
-        public override LineStringCoordinates Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        /// <inheritdoc />
+        public override LineStringCoordinates Read(
+            ref Utf8JsonReader reader,
+            Type typeToConvert,
+            JsonSerializerOptions options)
         {
-            if (reader.TokenType != JsonTokenType.StartObject)
-            {
-                throw new JsonException(RMResources.JsonUnexpectedToken);
-            }
-            IList<Position> positions = null;
-            JsonElement rootElement = JsonDocument.ParseValue(ref reader).RootElement;
-            foreach (JsonProperty property in rootElement.EnumerateObject())
-            {
-                if (property.NameEquals(STJMetaDataFields.Positions))
-                {
-                    positions = new List<Position>();
-                    foreach (JsonElement arrayElement in property.Value.EnumerateArray())
-                    {
-                        Position pos = JsonSerializer.Deserialize<Position>(arrayElement.GetRawText(), options);
-                        positions.Add(pos);
-                    }
-                }
-
-            }
+            // A LineStringCoordinate is just an array of positions.
+            // System.Text.Json cannot deserialize into a ReadOnlyCollection, so we deserialize into a List first.
+            List<Position> positions = JsonSerializer.Deserialize<List<Position>>(ref reader, options);
             return new LineStringCoordinates(positions);
-
         }
-        public override void Write(Utf8JsonWriter writer, LineStringCoordinates lineStringCorodinates, JsonSerializerOptions options)
+
+        /// <inheritdoc />
+        public override void Write(
+            Utf8JsonWriter writer,
+            LineStringCoordinates value,
+            JsonSerializerOptions options)
         {
-            writer.WriteStartArray(STJMetaDataFields.Positions);
-            foreach (Position position in lineStringCorodinates.Positions)
-            {
-                writer.WriteStartObject();
-                JsonSerializer.Serialize(writer, position, options);
-                writer.WriteEndObject();
-            }
-
-            writer.WriteEndArray();
-
+            JsonSerializer.Serialize(writer, value.Positions, options);
         }
 
     }

@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     /// </summary>
     /// <seealso cref="Point"/>.
     [DataContract]
-    [System.Text.Json.Serialization.JsonConverter(typeof(MultiPointSTJConverter))]
+    [System.Text.Json.Serialization.JsonConverter(typeof(GeometrySTJConverter))]
     internal sealed class MultiPoint : Geometry, IEquatable<MultiPoint>
     {
         /// <summary>

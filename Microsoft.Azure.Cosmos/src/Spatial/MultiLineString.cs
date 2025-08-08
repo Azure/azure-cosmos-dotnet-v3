@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     /// </summary>
     /// <seealso cref="LineString"/>.
     [DataContract]
-    [System.Text.Json.Serialization.JsonConverter(typeof(MultiLineStringSTJConverter))]
+    [System.Text.Json.Serialization.JsonConverter(typeof(GeometrySTJConverter))]
     internal sealed class MultiLineString : Geometry, IEquatable<MultiLineString>
     {
         /// <summary>

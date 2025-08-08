@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     /// Represents a geometry consisting of other geometries.
     /// </summary>
     [DataContract]
-    [System.Text.Json.Serialization.JsonConverter(typeof(GeometryCollectionSTJConverter))]
+    [System.Text.Json.Serialization.JsonConverter(typeof(GeometrySTJConverter))]
     internal sealed class GeometryCollection : Geometry, IEquatable<GeometryCollection>
     {
         /// <summary>
