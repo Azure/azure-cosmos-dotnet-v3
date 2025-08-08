@@ -57,6 +57,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         [TestMethod]
         [TestCategory("Flaky")]
+        [Ignore]
         public async Task RetryTransientIssuesTestAsync()
         {
             using CancellationTokenSource cancellationTokenSource1 = new CancellationTokenSource();

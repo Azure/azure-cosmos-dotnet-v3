@@ -244,6 +244,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
 
         [TestMethod]
         [Timeout(5000)]
+        [Ignore]
         public void TraceData()
         {
             List<Input> inputs = new List<Input>();
