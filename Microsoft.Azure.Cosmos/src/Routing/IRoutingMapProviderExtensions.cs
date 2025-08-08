@@ -25,13 +25,15 @@ namespace Microsoft.Azure.Cosmos
             this IRoutingMapProvider routingMapProvider,
             string collectionResourceId,
             string effectivePartitionKey,
-            ITrace trace)
+            ITrace trace,
+            PartitionKeyDefinition partitionKeyDefinition = null)
         {
             IReadOnlyList<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(
                 collectionResourceId,
                 Range<string>.GetPointRange(effectivePartitionKey),
                 trace: trace,
-                forceRefresh: false);
+                forceRefresh: false,
+                partitionKeyDefinition);
 
             if (ranges == null)
             {
@@ -74,7 +76,8 @@ namespace Microsoft.Azure.Cosmos
             string collectionResourceId,
             IEnumerable<Range<string>> sortedRanges,
             ITrace trace,
-            bool forceRefresh = false)
+            bool forceRefresh = false,
+            PartitionKeyDefinition partitionKeyDefinition = null)
         {
             if (sortedRanges == null)
             {
@@ -136,7 +139,8 @@ namespace Microsoft.Azure.Cosmos
                     collectionResourceId,
                     queryRange,
                     trace,
-                    forceRefresh);
+                    forceRefresh,
+                    partitionKeyDefinition);
 
                 if (overlappingRanges == null)
                 {

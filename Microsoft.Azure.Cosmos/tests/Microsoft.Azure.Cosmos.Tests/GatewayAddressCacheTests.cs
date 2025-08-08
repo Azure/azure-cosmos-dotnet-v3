@@ -66,7 +66,8 @@ namespace Microsoft.Azure.Cosmos
                     It.IsAny<string>(),
                     It.IsAny<Documents.Routing.Range<string>>(),
                     It.IsAny<ITrace>(),
-                    It.IsAny<bool>()))
+                    It.IsAny<bool>(), 
+                    It.IsAny<PartitionKeyDefinition>()))
                 .Returns(Task.FromResult((IReadOnlyList<PartitionKeyRange>)partitionKeyRanges));
         }
 
@@ -812,7 +813,8 @@ namespace Microsoft.Azure.Cosmos
                     It.IsAny<string>(),
                     It.IsAny<Documents.Routing.Range<string>>(),
                     It.IsAny<ITrace>(),
-                    It.IsAny<bool>()))
+                    It.IsAny<bool>(),
+                    It.IsAny<PartitionKeyDefinition>()))
                 .ThrowsAsync(
                     new Exception(exceptionMessage));
 

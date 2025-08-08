@@ -110,11 +110,16 @@ namespace Microsoft.Azure.Cosmos
                         forceRefresh: false, 
                         NoOpTrace.Singleton, 
                         cancellationToken: cancellationToken);
+
+                    PartitionKeyDefinition partitionKeyDefinition = await this.container.GetPartitionKeyDefinitionAsync(cancellationToken);
+
                     await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
                         containerRid,
                         FeedRangeEpk.FullRange.Range,
-                        NoOpTrace.Singleton, 
-                        forceRefresh: true);
+                        NoOpTrace.Singleton,
+                        forceRefresh: true,
+                        partitionKeyDefinition);
+
                     return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
                 }
 
