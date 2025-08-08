@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-
     [TestClass]
     public class AsyncCacheTest
     {
@@ -306,6 +305,45 @@ namespace Microsoft.Azure.Cosmos.Tests
             TaskCreationOptions.None,
             new SingleTaskScheduler()
             );
+        }
+
+        [DataTestMethod]
+        [DataRow(true)]
+        [DataRow(false)]
+        public async Task GetAsync_Assert_OnExceptionPostProcessing(bool enabled)
+        {
+            AsyncCache<string, string> cacheDefault = new AsyncCache<string, string>(enableAsyncCacheExceptionNoSharing: enabled);
+
+            // Arrange
+            Exception testException = new TimeoutException("Simulated timeout exception");
+            CancellationToken cancellationToken = CancellationToken.None;
+
+            // Simulate a failing lambda function
+            Func<Task<string>> failingLambda = () => Task.FromException<string>(testException);
+
+            // Act
+            try
+            {
+                await cacheDefault.GetAsync(
+                    "testKey",
+                    obsoleteValue: null,
+                    singleValueInitFunc: failingLambda,
+                    cancellationToken,
+                    forceRefresh: false);
+            }
+            catch (TimeoutException ex)
+            {
+                if (enabled)
+                {
+                    // Assert that the expected exception was rethrown
+                    Assert.IsFalse(Object.ReferenceEquals(testException, ex));
+                } else
+                {
+                    // Assert that no cloning and rethrowing was done on the exceptions,
+                    Assert.IsTrue(Object.ReferenceEquals(testException, ex));
+                }
+
+            }
         }
 
         private int GenerateIntFuncThatThrows()

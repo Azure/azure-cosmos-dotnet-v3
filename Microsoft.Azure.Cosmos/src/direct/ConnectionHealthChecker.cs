@@ -23,9 +23,10 @@ namespace Microsoft.Azure.Documents
         private const int MinNumberOfSendsSinceLastReceiveForUnhealthyConnection = 3;
 
         /// <summary>
-        /// A boolean field indicating if the aggressive timeout detection is enabled.
+        /// A boolean field indicating if the aggressive timeout detection is enabled. The default value for this flag
+        /// is `True`.
         /// </summary>
-        private const bool AggressiveTimeoutDetectionEnabledDefaultValue = false;
+        private const bool AggressiveTimeoutDetectionEnabledDefaultValue = true;
 
         /// <summary>
         /// A constant integer defining the default value for aggressive timeout detection time limit in seconds.

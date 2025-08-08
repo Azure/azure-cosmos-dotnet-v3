@@ -49,7 +49,9 @@ namespace Microsoft.Azure.Cosmos.ServiceFramework.Core
                     }
                     catch (AbandonedMutexException amEx)
                     {
+#pragma warning disable CDX1001
                         DefaultTrace.TraceWarning($"{this.TraceId}: {nameof(AbandonedMutexException)} waiting for mutex '{this.MutexName}': {amEx}");
+#pragma warning restore CDX1001
                         this.isOwned = true;
                     }
                 }
@@ -144,11 +146,15 @@ namespace Microsoft.Azure.Cosmos.ServiceFramework.Core
                 }
                 catch (AbandonedMutexException amEx)
                 {
+#pragma warning disable CDX1001
                     DefaultTrace.TraceWarning($"{this.TraceId}: {nameof(AbandonedMutexException)} waiting for mutex '{this.MutexName}': {amEx}");
+#pragma warning restore CDX1001
                 }
                 catch (ApplicationException appEx)
                 {
+#pragma warning disable CDX1001
                     DefaultTrace.TraceWarning($"{this.TraceId}: Exception releasing system mutex '{this.MutexName}': {appEx}");
+#pragma warning restore CDX1001
                 }
 
                 mutex.Dispose();

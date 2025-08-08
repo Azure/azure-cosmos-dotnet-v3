@@ -138,6 +138,7 @@ namespace Microsoft.Azure.Documents
         private readonly IAuthorizationTokenProvider authorizationTokenProvider;
         private readonly StoreReader storeReader;
         private readonly QuorumReader quorumReader;
+        private readonly ISessionRetryOptions sessionRetryOptions;
 
         public ConsistencyReader(
             AddressSelector addressSelector,
@@ -145,11 +146,13 @@ namespace Microsoft.Azure.Documents
             TransportClient transportClient,
             IServiceConfigurationReader serviceConfigReader,
             IAuthorizationTokenProvider authorizationTokenProvider,
-            bool enableReplicaValidation)
+            bool enableReplicaValidation,
+            ISessionRetryOptions sessionRetryOptions = null)
         {
             this.addressSelector = addressSelector;
             this.serviceConfigReader = serviceConfigReader;
             this.authorizationTokenProvider = authorizationTokenProvider;
+            this.sessionRetryOptions = sessionRetryOptions;
             this.storeReader = new StoreReader(transportClient, addressSelector, new AddressEnumerator(), sessionContainer, enableReplicaValidation);
             this.quorumReader = new QuorumReader(transportClient, addressSelector, this.storeReader, serviceConfigReader, authorizationTokenProvider);
         }
@@ -231,9 +234,25 @@ namespace Microsoft.Azure.Documents
                 case ReadMode.Any:
                     if (targetConsistencyLevel == ConsistencyLevel.Session)
                     {
+                        // RequestRetryUtility vs BackoffRetryUtility: is purely for safe flighting purpose only
+                        // Post flighting can be fully pivoted to RequestRetryUtility and remove BackoffRetryUtility below
+#pragma warning disable SA1008 // Opening parenthesis should be spaced correctly
+                        if (entity.UseStatusCodeFor4041002
+                            && entity.IsValidRequestFor4041002 ())
+                        {
+                            return RequestRetryUtility.ProcessRequestAsync<DocumentServiceRequest, StoreResponse>(
+                                executeAsync: () => this.ReadSessionAsync(entity, desiredReadMode),
+                                prepareRequest: () => entity,
+                                policy: new SessionTokenMismatchRetryPolicy(
+                                    sessionRetryOptions: this.sessionRetryOptions),
+                                cancellationToken: cancellationToken);
+                        }
+#pragma warning restore SA1008 // Opening parenthesis should be spaced correctly
+
                         return BackoffRetryUtility<StoreResponse>.ExecuteAsync(
                             callbackMethod: () => this.ReadSessionAsync(entity, desiredReadMode),
-                            retryPolicy: new SessionTokenMismatchRetryPolicy(),
+                            retryPolicy: new SessionTokenMismatchRetryPolicy(
+                                sessionRetryOptions: this.sessionRetryOptions),
                             cancellationToken: cancellationToken);
                     }
                     else
@@ -299,7 +318,12 @@ namespace Microsoft.Azure.Documents
                 try
                 {
                     StoreResponse storeResponse = responses[0].Target.ToResponse(entity.RequestContext.RequestChargeTracker);
-                    if (storeResponse.Status == (int)HttpStatusCode.NotFound && entity.IsValidStatusCodeForExceptionlessRetry(storeResponse.Status))
+
+                    // UseStatusCodeFor4041002: Check is for exceptionless optimization not a functional change
+                    // Purely for flighiting the exception less for 404-1002 only
+                    // Post flighting below exception throwing might not be necessary
+                    if (!entity.IsValidRequestFor4041002()
+                        && (storeResponse.Status == (int)HttpStatusCode.NotFound && entity.IsValidStatusCodeForExceptionlessRetry(storeResponse.Status)))
                     {
                         if (entity.RequestContext.SessionToken != null && responses[0].Target.SessionToken != null && !entity.RequestContext.SessionToken.IsValid(responses[0].Target.SessionToken))
                         {

@@ -59,19 +59,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         [TestMethod]
         public async Task SanityTests()
         {
-            CosmosArray documentsArray = await LoadDocuments();
-            IEnumerable<string> documents = documentsArray.Select(document => document.ToString());
-
-            await this.CreateIngestQueryDeleteAsync(
-                connectionModes: ConnectionModes.Direct, // | ConnectionModes.Gateway,
-                collectionTypes: CollectionTypes.MultiPartition, // | CollectionTypes.SinglePartition,
-                documents: documents,
-                query: RunSanityTests,
-                indexingPolicy: CompositeIndexPolicy);
-        }
-
-        private static async Task RunSanityTests(Container container, IReadOnlyList<CosmosObject> _)
-        {
             List<SanityTestCase> testCases = new List<SanityTestCase>
             {
                 MakeSanityTest(@"
@@ -99,15 +86,15 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')
                     ORDER BY RANK RRF(FullTextScore(c.title, ['John']), FullTextScore(c.text, ['United States']))",
                     new List<List<int>>{
-                        new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 25, 22, 2, 66, 57, 85 },
-                        new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 25, 22, 2, 66, 85, 57 },
+                        new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2, 22, 57, 85 },
+                        new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2, 22, 85, 57 },
                     }),
                 MakeSanityTest(@"
                     SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')
                     ORDER BY RANK RRF(FullTextScore(c.title, ['John']), FullTextScore(c.text, ['United States']))",
-                    new List<List<int>>{ new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 25 } }),
+                    new List<List<int>>{ new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2 } }),
                 MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
@@ -115,37 +102,99 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     ORDER BY RANK RRF(FullTextScore(c.title, ['John']), FullTextScore(c.text, ['United States']))
                     OFFSET 5 LIMIT 10",
                     new List<List<int>>{
-                        new List<int>{ 24, 77, 76, 80, 25, 22, 2, 66, 57, 85 },
-                        new List<int>{ 24, 77, 76, 80, 25, 22, 2, 66, 85, 57 },
+                        new List<int>{ 24, 77, 76, 80, 2, 22, 57, 85 },
+                        new List<int>{ 24, 77, 76, 80, 2, 22, 85, 57 },
                     }),
                 MakeSanityTest(@"
                     SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     ORDER BY RANK RRF(FullTextScore(c.title, ['John']), FullTextScore(c.text, ['United States']))",
-                    new List<List<int>>{new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 25 } }),
+                    new List<List<int>>{new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2 } }),
                 MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     ORDER BY RANK RRF(FullTextScore(c.title, ['John']), FullTextScore(c.text, ['United States']))
-                    OFFSET 0 LIMIT 13",
-                    new List<List<int>>{ new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 25, 22, 2, 66 } }),
+                    OFFSET 0 LIMIT 11",
+                    new List<List<int>>{ new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2, 22 } }),
                 MakeSanityTest($@"
                     SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     ORDER BY RANK RRF(FullTextScore(c.title, ['John']), FullTextScore(c.text, ['United States']), VectorDistance(c.vector, {SampleVector}))",
-                    new List<List<int>>{new List<int>{ 21, 75, 37, 24, 26, 35, 49, 87, 55, 9 } }),
+                    new List<List<int>>{new List<int>{ 21, 37, 75, 26, 35, 24, 87, 55, 49, 9 } }),
                 MakeSanityTest($@"
                     SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     ORDER BY RANK RRF(VectorDistance(c.vector, {SampleVector}), FullTextScore(c.title, ['John']), FullTextScore(c.text, ['United States']))",
-                    new List<List<int>>{new List<int>{ 21, 75, 37, 24, 26, 35, 49, 87, 55, 9 } }),
+                    new List<List<int>>{new List<int>{ 21, 37, 75, 26, 35, 24, 87, 55, 49, 9 } }),
                 MakeSanityTest($@"
                     SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     ORDER BY RANK RRF(VectorDistance(c.vector, {SampleVector}), FullTextScore(c.title, ['John']), VectorDistance(c.image, {SampleVector}), VectorDistance(c.backup_image, {SampleVector}), FullTextScore(c.text, ['United States']))",
-                    new List<List<int>>{new List<int>{ 21, 75, 37, 24, 26, 35, 49, 87, 55, 9 } }),
+                    new List<List<int>>{new List<int>{ 21, 37, 75, 26, 35, 24, 87, 55, 49, 9 } }),
             };
 
+            await this.RunTests(testCases);
+        }
+
+        [TestMethod]
+        [Ignore("This test is disabled because it needs an emulator refresh.")]
+        public async Task WeightedRankFusionTests()
+        {
+            List<SanityTestCase> testCases = new List<SanityTestCase>
+            {
+                MakeSanityTest(@"
+                    SELECT c.index AS Index, c.title AS Title, c.text AS Text
+                    FROM c
+                    WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')
+                    ORDER BY RANK RRF(FullTextScore(c.title, ['John']), FullTextScore(c.text, ['United States']), [1, 1])",
+                    new List<List<int>>{
+                        new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 25, 22, 2, 66, 57, 85 },
+                        new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 25, 22, 2, 66, 85, 57 },
+                    }),
+                MakeSanityTest(@"
+                    SELECT c.index AS Index, c.title AS Title, c.text AS Text
+                    FROM c
+                    WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')
+                    ORDER BY RANK RRF(FullTextScore(c.title, ['John']), FullTextScore(c.text, ['United States']), [10, 10])",
+                    new List<List<int>>{
+                        new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 25, 22, 2, 66, 57, 85 },
+                        new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 25, 22, 2, 66, 85, 57 },
+                    }),
+                MakeSanityTest(@"
+                    SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text
+                    FROM c
+                    WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')
+                    ORDER BY RANK RRF(FullTextScore(c.title, ['John']), FullTextScore(c.text, ['United States']), [0.1, 0.1])",
+                    new List<List<int>>{ new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 25 } }),
+                MakeSanityTest(@"
+                    SELECT c.index AS Index, c.title AS Title, c.text AS Text
+                    FROM c
+                    WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')
+                    ORDER BY RANK RRF(FullTextScore(c.title, ['John']), FullTextScore(c.text, ['United States']), [-1, -1])",
+                    new List<List<int>>{
+                        new List<int>{ 85, 57, 66, 2, 22, 25, 77, 76, 80, 75, 24, 49, 54, 51, 81 },
+                        new List<int>{ 57, 85, 2, 66, 22, 25, 80, 76, 77, 24, 75, 54, 49, 51, 61 },
+                    }),
+            };
+
+            await this.RunTests(testCases);
+        }
+
+        private async Task RunTests(IEnumerable<SanityTestCase> testCases)
+        {
+            CosmosArray documentsArray = await LoadDocuments();
+            IEnumerable<string> documents = documentsArray.Select(document => document.ToString());
+
+            await this.CreateIngestQueryDeleteAsync(
+                connectionModes: ConnectionModes.Direct, // | ConnectionModes.Gateway,
+                collectionTypes: CollectionTypes.MultiPartition, // | CollectionTypes.SinglePartition,
+                documents: documents,
+                query: (container, _) => RunTests(container, testCases),
+                indexingPolicy: CompositeIndexPolicy);
+        }
+
+        private static async Task RunTests(Container container, IEnumerable<SanityTestCase> testCases)
+        {
             foreach (SanityTestCase testCase in testCases)
             {
                 List<TextDocument> result = await RunQueryCombinationsAsync<TextDocument>(

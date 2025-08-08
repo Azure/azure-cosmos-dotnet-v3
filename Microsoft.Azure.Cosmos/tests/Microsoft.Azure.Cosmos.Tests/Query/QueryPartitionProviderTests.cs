@@ -40,6 +40,7 @@
                     allowNonValueAggregateQuery: true,
                     hasLogicalPartitionKey: false,
                     allowDCount: true,
+                    hybridSearchSkipOrderByRewrite: false,
                     useSystemPrefix: false,
                     geospatialType: Cosmos.GeospatialType.Geography);
 
@@ -57,6 +58,7 @@
                             allowNonValueAggregateQuery: true,
                             hasLogicalPartitionKey: false,
                             allowDCount: true,
+                            hybridSearchSkipOrderByRewrite: false,
                             useSystemPrefix: false,
                             geospatialType: Cosmos.GeospatialType.Geography);
 

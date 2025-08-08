@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             using (ITrace trace = Trace.GetRootTrace(this.TestContext.TestName, TraceComponent.Unknown, TraceLevel.Info))
             {
                 Mock<IStoreModel> mockStoreModel = new();
-                Mock<CollectionCache> mockCollectioNCache = new();
+                Mock<CollectionCache> mockCollectioNCache = new(false);
                 Mock<ICosmosAuthorizationTokenProvider> mockTokenProvider = new();
                 NameValueCollectionWrapper headers = new()
                 {
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     .Returns(new ValueTask<string>(authToken));
 
                 // Act.
-                PartitionKeyRangeCache partitionKeyRangeCache = new(mockTokenProvider.Object, mockStoreModel.Object, mockCollectioNCache.Object, endpointManager);
+                PartitionKeyRangeCache partitionKeyRangeCache = new(mockTokenProvider.Object, mockStoreModel.Object, mockCollectioNCache.Object, endpointManager, enableAsyncCacheExceptionNoSharing: false);
                 IReadOnlyList<PartitionKeyRange> partitionKeyRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
                     containerRId,
                     FeedRangeEpk.FullRange.Range,
@@ -147,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             using (ITrace trace = Trace.GetRootTrace(this.TestContext.TestName, TraceComponent.Unknown, TraceLevel.Info))
             {
                 Mock<IStoreModel> mockStoreModel = new();
-                Mock<CollectionCache> mockCollectioNCache = new();
+                Mock<CollectionCache> mockCollectioNCache = new(false);
                 Mock<ICosmosAuthorizationTokenProvider> mockTokenProvider = new();
                 NameValueCollectionWrapper headers = new()
                 {
@@ -207,7 +207,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 mockTokenProvider.Setup(x => x.GetUserAuthorizationTokenAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<INameValueCollection>(), It.IsAny<AuthorizationTokenType>(), It.IsAny<ITrace>()))
                     .Returns(new ValueTask<string>(authToken));
 
-                PartitionKeyRangeCache partitionKeyRangeCache = new(mockTokenProvider.Object, mockStoreModel.Object, mockCollectioNCache.Object, mockedEndpointManager.Object);
+                PartitionKeyRangeCache partitionKeyRangeCache = new(mockTokenProvider.Object, mockStoreModel.Object, mockCollectioNCache.Object, mockedEndpointManager.Object, enableAsyncCacheExceptionNoSharing: false);
 
                 if (shouldSucceed)
                 {

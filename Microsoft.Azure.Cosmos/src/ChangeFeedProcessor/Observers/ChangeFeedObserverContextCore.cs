@@ -49,6 +49,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             catch (LeaseLostException leaseLostException)
             {
                 // LeaseLost means another instance stole the lease due to load balancing, so the right status is 412
+#pragma warning disable CDX1002 // DontUseExceptionStackTrace
                 CosmosException cosmosException = CosmosExceptionFactory.Create(
                     statusCode: HttpStatusCode.PreconditionFailed,
                     message: "Lease was lost due to load balancing and will be processed by another instance",
@@ -57,6 +58,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     trace: NoOpTrace.Singleton,
                     error: null,
                     innerException: leaseLostException);
+#pragma warning restore CDX1002 // DontUseExceptionStackTrace
                 throw cosmosException;
             }
         }

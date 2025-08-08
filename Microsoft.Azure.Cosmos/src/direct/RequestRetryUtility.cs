@@ -139,7 +139,7 @@ namespace Microsoft.Azure.Documents
                         catch (Exception ex)
                         {
                             stopwatch.Stop();
-                            DefaultTrace.TraceInformation("Failed inBackoffAlternateCallback with {0}, proceeding with retry. Time taken: {1}ms", ex.ToString(), stopwatch.ElapsedMilliseconds);
+                            DefaultTrace.TraceInformation("Failed inBackoffAlternateCallback with {0}, proceeding with retry. Time taken: {1}ms", ex.Message, stopwatch.ElapsedMilliseconds);
                         }
 
                         backoffTime = shouldRetry.BackoffTime > stopwatch.Elapsed ? shouldRetry.BackoffTime - stopwatch.Elapsed : TimeSpan.Zero;

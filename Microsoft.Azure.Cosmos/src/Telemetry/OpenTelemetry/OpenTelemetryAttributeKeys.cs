@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System.Net;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
+    using Microsoft.Azure.Cosmos.Util;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -225,7 +226,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         public void PopulateAttributes(DiagnosticScope scope, Exception exception)
         {
+#pragma warning disable CDX1002 // DontUseExceptionStackTrace
             scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionStacktrace, exception.StackTrace);
+#pragma warning restore CDX1002 // DontUseExceptionStackTrace
             scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionType, exception.GetType().Name);
 
             // If Exception is not registered with open Telemetry
@@ -489,10 +492,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 return null;
             }
 
-            HttpStatusCode? code = statusCode.HasValue ? (HttpStatusCode)statusCode.Value : null;
-            SubStatusCodes? subCode = subStatusCode.HasValue ? (SubStatusCodes)subStatusCode.Value : null;
+            string codeString = statusCode.HasValue ? ((StatusCodes)statusCode.Value).ToString() : string.Empty;
+            string mappedSubStatusCode = (statusCode.HasValue && subStatusCode.HasValue)
+                ? SubStatusMappingUtil.GetSubStatusCodeString((StatusCodes)statusCode.Value, (SubStatusCodes)subStatusCode.Value)
+                : string.Empty;
 
-            return $"{exception.GetType().Name}_{code?.ToString()}_{subCode?.ToString()}";
+            return $"{exception.GetType().Name}_{codeString}_{mappedSubStatusCode}";
         }
 
         private static int GetSubStatusCode(ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats, ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats)

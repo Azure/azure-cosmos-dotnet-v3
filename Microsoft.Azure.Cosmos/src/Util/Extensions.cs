@@ -138,7 +138,7 @@ namespace Microsoft.Azure.Cosmos
                     subStatusCode: cosmosException.Headers.SubStatusCode,
                     responseTimeUtc: DateTime.UtcNow,
                     requestCharge: cosmosException.Headers.RequestCharge,
-                    errorMessage: documentClientException.ToString(),
+                    errorMessage: documentClientException?.Message,
                     method: requestMessage?.Method,
                     requestUri: requestMessage?.RequestUriString,
                     requestSessionToken: requestMessage?.Headers?.Session,
@@ -160,7 +160,9 @@ namespace Microsoft.Azure.Cosmos
             if (requestMessage != null)
             {
                 requestMessage.Properties.Remove(nameof(DocumentClientException));
+#pragma warning disable CDX1000 // DontConvertExceptionToObject
                 requestMessage.Properties.Add(nameof(DocumentClientException), documentClientException);
+#pragma warning restore CDX1000 // DontConvertExceptionToObject
             }
 
             return responseMessage;
@@ -202,21 +204,19 @@ namespace Microsoft.Azure.Cosmos
                 if (exception is SocketException socketException)
                 {
                     DefaultTrace.TraceWarning(
-                        "Exception {0}: RequesteUri: {1}, SocketErrorCode: {2}, {3}, {4}",
+                        "Exception {0}: RequesteUri: {1}, SocketErrorCode: {2}, {3}",
                         exception.GetType(),
                         requestUri,
                         socketException.SocketErrorCode,
-                        exception.Message,
-                        exception.StackTrace);
+                        exception.Message);
                 }
                 else
                 {
                     DefaultTrace.TraceWarning(
-                        "Exception {0}: RequestUri: {1}, {2}, {3}",
+                        "Exception {0}: RequestUri: {1}, {2}",
                         exception.GetType(),
                         requestUri,
-                        exception.Message,
-                        exception.StackTrace);
+                        exception.Message);
                 }
 
                 exception = exception.InnerException;

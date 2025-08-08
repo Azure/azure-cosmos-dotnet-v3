@@ -189,7 +189,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                     "{0} failed: RID: {1}, Resource Type: {2}, Op: {3}, Address: {4}, " +
                     "Exception: {5}",
                     operation, request.ResourceAddress, request.ResourceType,
-                    resourceOperation, physicalAddress, ex);
+                    resourceOperation, physicalAddress, ex.Message);
                 if (request.IsReadOnlyRequest)
                 {
                     DefaultTrace.TraceInformation("Converting to Gone (read-only request)");
@@ -234,7 +234,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 transportResponseStatusCode = (int)TransportResponseStatusCode.DocumentClientException;
                 DefaultTrace.TraceInformation("{0} failed: RID: {1}, Resource Type: {2}, Op: {3}, Address: {4}, " +
                                               "Exception: {5}", operation, request.ResourceAddress, request.ResourceType, resourceOperation,
-                    physicalAddress, ex);
+                    physicalAddress, ex.Message);
                 transportRequestStats.RecordState(TransportRequestStats.RequestStage.Failed);
                 ex.TransportRequestStats = transportRequestStats;
 #if NETSTANDARD2_0_OR_GREATER
@@ -247,7 +247,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 transportResponseStatusCode = (int)TransportResponseStatusCode.UnknownException;
                 DefaultTrace.TraceInformation("{0} failed: RID: {1}, Resource Type: {2}, Op: {3}, Address: {4}, " +
                     "Exception: {5}", operation, request.ResourceAddress, request.ResourceType, resourceOperation,
-                    physicalAddress, ex);
+                    physicalAddress, ex.Message);
 #if NETSTANDARD2_0_OR_GREATER
                 recorder?.Record(physicalAddress.Uri, exception: ex);
 #endif
@@ -401,7 +401,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 {
                     DefaultTrace.TraceError(
                         "RNTBD channel callback failed: {0}",
-                        failedTask.Exception);
+                        failedTask.Exception?.Message);
                 },
                 default(CancellationToken),
                 TaskContinuationOptions.OnlyOnFaulted,

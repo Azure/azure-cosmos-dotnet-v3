@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Documents
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Net;
     using Microsoft.Azure.Documents.Routing;
@@ -119,11 +120,11 @@ namespace Microsoft.Azure.Documents
         /// <summary>
         /// Set of all failed enpoints for a DSR. Used for prioritizing replica selection
         /// </summary>
-        public Lazy<HashSet<TransportAddressUri>> FailedEndpoints { get; private set; }
+        public Lazy<ConcurrentDictionary<TransportAddressUri, bool>> FailedEndpoints { get; private set; }
 
         public DocumentServiceRequestContext()
         {
-            this.FailedEndpoints = new Lazy<HashSet<TransportAddressUri>>();
+            this.FailedEndpoints = new Lazy<ConcurrentDictionary<TransportAddressUri, bool>>();
         }
 
         /// <summary>
@@ -156,7 +157,7 @@ namespace Microsoft.Azure.Documents
                     dce.StatusCode == HttpStatusCode.RequestTimeout ||
                     (int)dce.StatusCode >= 500)
                 {
-                    this.FailedEndpoints.Value.Add(targetUri);
+                    this.FailedEndpoints.Value.TryAdd(targetUri, true);
                 }
             }
         }

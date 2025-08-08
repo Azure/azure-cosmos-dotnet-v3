@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 #pragma warning disable CS1570 // XML comment has badly formed XML
     internal class MemoryTextReader : TextReader
 #pragma warning restore CS1570 // XML comment has badly formed XML
-#pragma warning restore CS1570 // XML comment has badly formed XML
     {
         private Memory<char> chars;
         private int length;

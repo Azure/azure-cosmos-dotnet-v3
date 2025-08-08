@@ -286,7 +286,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                     element) is not CosmosUndefined);
             }
 
-            IOrderedEnumerable<CosmosElement> orderedDataSource = firstItem.IsDescending
+            IOrderedEnumerable<CosmosElement> orderedDataSource = firstItem.IsDescending.GetValueOrDefault()
                 ? dataSource.OrderByDescending(
                     element => firstItem.Expression.Accept(
                         ScalarExpressionEvaluator.Singleton,
@@ -297,7 +297,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                         element));
             foreach (SqlOrderByItem sqlOrderByItem in sqlOrderByClause.OrderByItems.Skip(1))
             {
-                orderedDataSource = sqlOrderByItem.IsDescending
+                orderedDataSource = sqlOrderByItem.IsDescending.GetValueOrDefault()
                     ? orderedDataSource.ThenByDescending(
                         element => sqlOrderByItem.Expression.Accept(
                             ScalarExpressionEvaluator.Singleton,
@@ -319,7 +319,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                 StringComparer.Ordinal);
 
             // Break all final ties within partition by document id
-            orderedDataSource = firstItem.IsDescending
+            orderedDataSource = firstItem.IsDescending.GetValueOrDefault()
                 ? orderedDataSource
                     .ThenByDescending(element => ResourceId.Parse(((CosmosString)((CosmosObject)element)["_rid"]).Value).Document)
                 : orderedDataSource

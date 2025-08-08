@@ -72,3 +72,13 @@ jobs:
     BuildConfiguration: Release
     Arguments: $(ReleaseArguments)
     VmImage:  $(VmImage)
+    
+- template:  templates/build-thinclient.yml
+  parameters:
+    BuildConfiguration: Release
+    Arguments: $(ReleaseArguments)
+    VmImage: $(VmImage)
+    ThinClientConnectionString: $(COSMOSDB_THINCLIENT)
+    MultiRegionConnectionString: $(COSMOSDB_MULTI_REGION)
+    IncludePerformance: true
+    IncludeCoverage: true

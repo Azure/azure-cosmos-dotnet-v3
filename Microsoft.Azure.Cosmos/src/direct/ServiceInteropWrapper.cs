@@ -112,7 +112,7 @@ namespace Microsoft.Azure.Documents
             {
                 // There has been certain environments where attempting to find the ServiceInterop has resulted in an exception.
                 // Instead of failing the SDK trace the exception and fall back to gateway mode.
-                DefaultTrace.TraceWarning($"ServiceInteropWrapper: Falling back to gateway. Finding ServiceInterop dll threw an exception {e}");
+                DefaultTrace.TraceWarning($"ServiceInteropWrapper: Falling back to gateway. Finding ServiceInterop dll threw an exception {e.Message}");
             }
 
             if (string.IsNullOrEmpty(validationMessage))
@@ -192,8 +192,10 @@ namespace Microsoft.Azure.Documents
 
             public Int32 eGeospatialType;
 
-            // Reserve additional 32 bytes to match size with native PartitionKeyRangesApiOptions.
-            public Int64 unusedReserved1;
+            public Int32 bHybridSearchSkipOrderByRewrite;
+
+            // Reserve additional 28 bytes to match size with native PartitionKeyRangesApiOptions.
+            public Int32 unusedReserved1;
             public Int64 unusedReserved2;
             public Int64 unusedReserved3;
             public Int64 unusedReserved4;

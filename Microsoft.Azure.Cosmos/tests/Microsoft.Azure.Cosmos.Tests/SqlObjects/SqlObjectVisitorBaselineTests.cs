@@ -12,6 +12,9 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
     using System.Text.RegularExpressions;
     using System.Xml;
     using BaselineTest;
+    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
+    using Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan.Cql;
     using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -401,6 +404,14 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Array,
                     SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                 new SqlObjectVisitorInput(
+                SqlFunctionCallScalarExpression.Names.ArrayAvg,
+                SqlFunctionCallScalarExpression.CreateBuiltin(
+                    SqlFunctionCallScalarExpression.Identifiers.ArrayAvg,
+                    SqlArrayCreateScalarExpression.Create(
+                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1)),
+                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(2)),
+                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(3))))),
                 new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.ArrayConcat,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
@@ -628,13 +639,25 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
                 SqlFunctionCallScalarExpression.Names.DateTimeAdd,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.DateTimeAdd,
-                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("Year")),
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(2020)),
-                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("YYYY")))),
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("yyyy")),
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1)),
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("2020-08-06T20:45:22.1234567Z")))),
+                new SqlObjectVisitorInput(
+                SqlFunctionCallScalarExpression.Names.DateTimeBin,
+                SqlFunctionCallScalarExpression.CreateBuiltin(
+                    SqlFunctionCallScalarExpression.Identifiers.DateTimeBin,
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("2020-08-06T20:45:22.1234567Z")),
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("yyyy")))),
+                new SqlObjectVisitorInput(
+                SqlFunctionCallScalarExpression.Names.DateTimeFormat,
+                SqlFunctionCallScalarExpression.CreateBuiltin(
+                    SqlFunctionCallScalarExpression.Identifiers.DateTimeFormat,
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("2020-08-06T20:45:22.1234567Z")),
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("(h-hh-hhh)")))),
                 new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.DateTimeDiff,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
-                    SqlFunctionCallScalarExpression.Identifiers.DateTimeAdd,
+                    SqlFunctionCallScalarExpression.Identifiers.DateTimeDiff,
                     SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("Year")),
                     SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("2020-08-06T20:45:22.1234567Z")),
                     SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("2020-08-06T20:45:22.1234567Z")))),
@@ -660,6 +683,11 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
                 SqlFunctionCallScalarExpression.Names.DateTimeToTimestamp,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.DateTimeToTimestamp,
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("2020-08-06T20:45:22.1234567Z")))),
+                new SqlObjectVisitorInput(
+                SqlFunctionCallScalarExpression.Names.Day,
+                SqlFunctionCallScalarExpression.CreateBuiltin(
+                    SqlFunctionCallScalarExpression.Identifiers.Day,
                     SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("2020-08-06T20:45:22.1234567Z")))),
                 new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Degrees,
@@ -700,6 +728,13 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
                SqlFunctionCallScalarExpression.CreateBuiltin(
                    SqlFunctionCallScalarExpression.Identifiers.GetCurrentTimestamp)),
                 new SqlObjectVisitorInput(
+                SqlFunctionCallScalarExpression.Names.Iif,
+                SqlFunctionCallScalarExpression.CreateBuiltin(
+                    SqlFunctionCallScalarExpression.Identifiers.Iif,
+                    SqlLiteralScalarExpression.Create(SqlBooleanLiteral.Create(true)),
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("YES")),
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("NO")))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.IndexOf,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.IndexOf,
@@ -715,6 +750,11 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.IsBool,
                     SqlLiteralScalarExpression.Create(SqlBooleanLiteral.Create(true)))),
+                new SqlObjectVisitorInput(
+                SqlFunctionCallScalarExpression.Names.IsDateTime,
+                SqlFunctionCallScalarExpression.CreateBuiltin(
+                    SqlFunctionCallScalarExpression.Identifiers.IsDateTime,
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
                 new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.IsDefined,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
@@ -750,6 +790,12 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.IsString,
                     SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("hello")))),
+                new SqlObjectVisitorInput(
+                SqlFunctionCallScalarExpression.Names.LastIndexOf,
+                SqlFunctionCallScalarExpression.CreateBuiltin(
+                    SqlFunctionCallScalarExpression.Identifiers.LastIndexOf,
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("ABCDABCDABC")),
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("ABC")))),
                 new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Left,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
@@ -798,6 +844,11 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Min,
                     SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
+                SqlFunctionCallScalarExpression.Names.Month,
+                SqlFunctionCallScalarExpression.CreateBuiltin(
+                    SqlFunctionCallScalarExpression.Identifiers.Month,
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("2020-08-06T20:45:22.1234567Z")))),
                 new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.ObjectToArray,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
@@ -856,6 +907,54 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Rtrim,
                     SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
+                SqlFunctionCallScalarExpression.Names.SetDifference,
+                SqlFunctionCallScalarExpression.CreateBuiltin(
+                    SqlFunctionCallScalarExpression.Identifiers.SetDifference,
+                    SqlArrayCreateScalarExpression.Create(
+                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1)),
+                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(2)),
+                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(3))),
+                    SqlArrayCreateScalarExpression.Create(
+                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1)),
+                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(2)),
+                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(3))))),
+                new SqlObjectVisitorInput(
+                SqlFunctionCallScalarExpression.Names.SetEqual,
+                SqlFunctionCallScalarExpression.CreateBuiltin(
+                    SqlFunctionCallScalarExpression.Identifiers.SetEqual,
+                    SqlArrayCreateScalarExpression.Create(
+                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1)),
+                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(2)),
+                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(3))),
+                    SqlArrayCreateScalarExpression.Create(
+                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1)),
+                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(2)),
+                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(3))))),
+                new SqlObjectVisitorInput(
+                SqlFunctionCallScalarExpression.Names.SetIntersect,
+                SqlFunctionCallScalarExpression.CreateBuiltin(
+                    SqlFunctionCallScalarExpression.Identifiers.SetIntersect,
+                    SqlArrayCreateScalarExpression.Create(
+                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1)),
+                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(2)),
+                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(3))),
+                    SqlArrayCreateScalarExpression.Create(
+                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1)),
+                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(2)),
+                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(3))))),
+                new SqlObjectVisitorInput(
+                SqlFunctionCallScalarExpression.Names.SetUnion,
+                SqlFunctionCallScalarExpression.CreateBuiltin(
+                    SqlFunctionCallScalarExpression.Identifiers.SetUnion,
+                    SqlArrayCreateScalarExpression.Create(
+                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1)),
+                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(2)),
+                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(3))),
+                    SqlArrayCreateScalarExpression.Create(
+                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1)),
+                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(2)),
+                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(3))))),
                 new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Sign,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
@@ -916,6 +1015,21 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
                     SqlFunctionCallScalarExpression.Identifiers.StringEquals,
                     SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("hi")),
                     SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("hello")))),
+                new SqlObjectVisitorInput(
+                SqlFunctionCallScalarExpression.Names.StringJoin,
+                SqlFunctionCallScalarExpression.CreateBuiltin(
+                    SqlFunctionCallScalarExpression.Identifiers.StringJoin,
+                    SqlArrayCreateScalarExpression.Create(
+                        SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("a")),
+                        SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("b")),
+                        SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("c"))),
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("hello")))),
+                new SqlObjectVisitorInput(
+                SqlFunctionCallScalarExpression.Names.StringSplit,
+                SqlFunctionCallScalarExpression.CreateBuiltin(
+                    SqlFunctionCallScalarExpression.Identifiers.StringSplit,
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("hello")),
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("e")))),
                 new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.StringToArray,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
@@ -987,7 +1101,24 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
                 SqlFunctionCallScalarExpression.Names.Upper,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Upper,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42))))
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
+                SqlFunctionCallScalarExpression.Names.VectorDistance,
+                SqlFunctionCallScalarExpression.CreateBuiltin(
+                    SqlFunctionCallScalarExpression.Identifiers.VectorDistance,
+                    SqlArrayCreateScalarExpression.Create(
+                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1)),
+                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(2)),
+                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(3))),
+                    SqlArrayCreateScalarExpression.Create(
+                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1)),
+                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(2)),
+                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(3))))),
+                new SqlObjectVisitorInput(
+                SqlFunctionCallScalarExpression.Names.Year,
+                SqlFunctionCallScalarExpression.CreateBuiltin(
+                    SqlFunctionCallScalarExpression.Identifiers.Year,
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("2020-08-06T20:45:22.1234567Z")))),
             };
 
             this.ExecuteTestSuite(inputs);
