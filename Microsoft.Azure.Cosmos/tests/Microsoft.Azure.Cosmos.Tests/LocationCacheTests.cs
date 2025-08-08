@@ -143,7 +143,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 useMultipleWriteLocations: useMultipleWriteLocations,
                 enableEndpointDiscovery: enableEndpointDiscovery,
                 isPreferredLocationsListEmpty: isPreferredLocationsListEmpty);
-            ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(enableEndpointDiscovery, partitionLevelFailoverEnabled: false, endpointManager);
+            ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(enableEndpointDiscovery, endpointManager);
 
             using (DocumentServiceRequest request = this.CreateRequest(isReadRequest: isReadRequest, isMasterResourceType: false))
             {
@@ -189,7 +189,6 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
         private ClientRetryPolicy CreateClientRetryPolicy(
             bool enableEndpointDiscovery,
-            bool partitionLevelFailoverEnabled,
             GlobalEndpointManager endpointManager)
         {
             return new ClientRetryPolicy(
@@ -197,7 +196,6 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 this.partitionKeyRangeLocationCache,
                 new RetryOptions(),
                 enableEndpointDiscovery,
-                isPartitionLevelFailoverEnabled: partitionLevelFailoverEnabled,
                 false);
         }
 
@@ -220,7 +218,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 isPreferredLocationsListEmpty: isPreferredLocationsListEmpty);
 
             endpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(this.databaseAccount);
-            ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(enableEndpointDiscovery, partitionLevelFailoverEnabled: false, endpointManager);
+            ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(enableEndpointDiscovery, endpointManager);
 
             using (DocumentServiceRequest request = this.CreateRequest(isReadRequest: true, isMasterResourceType: false))
             {
@@ -304,7 +302,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 isDefaultEndpointARegionalEndpoint: isDefaultEndpointARegionalEndpoint);
 
             endpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(this.databaseAccount);
-            ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(enableEndpointDiscovery, partitionLevelFailoverEnabled: false, endpointManager);
+            ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(enableEndpointDiscovery, endpointManager);
 
             if (!isPreferredLocationsEmpty)
             {
@@ -533,7 +531,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 isDefaultEndpointARegionalEndpoint: isDefaultEndpointARegionalEndpoint);
 
             endpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(this.databaseAccount);
-            ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(enableEndpointDiscovery, partitionLevelFailoverEnabled: false, endpointManager);
+            ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(enableEndpointDiscovery, endpointManager);
 
             if (!isPreferredLocationsEmpty)
             {
@@ -750,7 +748,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 isDefaultEndpointARegionalEndpoint: isDefaultEndpointARegionalEndpoint);
 
             endpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(this.databaseAccount);
-            ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(enableEndpointDiscovery: true, partitionLevelFailoverEnabled: false, endpointManager: endpointManager);
+            ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(enableEndpointDiscovery: true, endpointManager: endpointManager);
 
             if (isPreferredLocationsEmpty)
             {
@@ -894,7 +892,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             }
 
             endpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(this.databaseAccount);
-            ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(enableEndpointDiscovery: true, partitionLevelFailoverEnabled: false, endpointManager: endpointManager);
+            ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(enableEndpointDiscovery: true, endpointManager: endpointManager);
 
             int expectedRetryCount = isReadRequest || enableMultipleWriteLocations ? 2 : 1;
 
@@ -1047,7 +1045,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 isDefaultEndpointARegionalEndpoint: isDefaultEndpointARegionalEndpoint);
 
             endpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(this.databaseAccount);
-            ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(enableEndpointDiscovery: true, partitionLevelFailoverEnabled: false, endpointManager: endpointManager);
+            ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(enableEndpointDiscovery: true, endpointManager: endpointManager);
 
             if (isPreferredLocationsEmpty)
             {
@@ -1219,7 +1217,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
             endpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(this.databaseAccount);
 
-            ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(enableEndpointDiscovery, partitionLevelFailoverEnabled: enablePartitionLevelFailover, endpointManager);
+            ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(enableEndpointDiscovery, endpointManager);
 
             if (!usesPreferredLocations)
             {
@@ -1398,7 +1396,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 isDefaultEndpointARegionalEndpoint: isDefaultEndpointAlsoRegionEndpoint);
 
                 endpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(this.databaseAccount);
-                ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(enableEndpointDiscovery: true, partitionLevelFailoverEnabled: false, endpointManager: endpointManager);
+                ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(enableEndpointDiscovery: true, endpointManager: endpointManager);
 
                 using (DocumentServiceRequest request = this.CreateRequest(isReadRequest: isReadRequest, isMasterResourceType: false))
                 {
@@ -1728,7 +1726,10 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             GlobalEndpointManager endpointManager = new GlobalEndpointManager(this.mockedClient.Object, connectionPolicy);
 
             this.partitionKeyRangeLocationCache = enablePartitionLevelFailover
-                ? new GlobalPartitionEndpointManagerCore(endpointManager)
+                ? new GlobalPartitionEndpointManagerCore(
+                    endpointManager,
+                    isPartitionLevelFailoverEnabled: true,
+                    isPartitionLevelCircuitBreakerEnabled: true)
                 : GlobalPartitionEndpointManagerNoOp.Instance;
 
             return endpointManager;

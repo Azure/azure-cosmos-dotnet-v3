@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     {
         private const int MaxOperatingSystemString = 30;
         private const int MaxClientId = 10;
+        private const string PipeDelimiter = "|";
         private readonly string cosmosBaseUserAgent;
         private readonly string clientId;
 
@@ -34,9 +35,27 @@ namespace Microsoft.Azure.Cosmos
         {
             if (!string.IsNullOrEmpty(features))
             {
+                // Here we have 3 scenarios: 
+                // 1. Suffix is empty, we just set it to the features.
+                // 2. Suffix is not empty, we append the features to the existing suffix.
+                // 3. Suffix already contains features, we the new features in the existing suffix.
                 this.Suffix = string.IsNullOrEmpty(this.Suffix)
                     ? features
-                    : $"{features}|{this.Suffix}";
+                    : this.Suffix.Contains(UserAgentContainer.PipeDelimiter)
+                        ? $"{features}{this.Suffix.Substring(this.Suffix.IndexOf(UserAgentContainer.PipeDelimiter))}"
+                        : $"{features}{UserAgentContainer.PipeDelimiter}{this.Suffix}";
+            }
+            else
+            {
+                // Here we have 3 scenarios: 
+                // 1. Suffix is empty, we just set it to empty.
+                // 2. Suffix is not empty, we remove the features from the existing suffix.
+                // 3. Suffix already contains features, we remove the features from the existing suffix.
+                this.Suffix = string.IsNullOrEmpty(this.Suffix)
+                    ? string.Empty
+                    : this.Suffix.Contains(UserAgentContainer.PipeDelimiter)
+                        ? this.Suffix.Substring(this.Suffix.IndexOf(UserAgentContainer.PipeDelimiter) + 1)
+                        : this.Suffix;
             }
         }
 

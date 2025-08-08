@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class ThinClientStoreClient : GatewayStoreClient
     {
-        private readonly bool isPartitionLevelFailoverEnabled;
+        private readonly GlobalPartitionEndpointManager globalPartitionEndpointManager;
         private readonly ObjectPool<BufferProviderWrapper> bufferProviderWrapperPool;
         private readonly UserAgentContainer userAgentContainer;
 
@@ -31,15 +31,15 @@ namespace Microsoft.Azure.Cosmos
             CosmosHttpClient httpClient,
             UserAgentContainer userAgentContainer,
             ICommunicationEventSource eventSource,
-            bool isPartitionLevelFailoverEnabled = false,
+            GlobalPartitionEndpointManager globalPartitionEndpointManager,
             JsonSerializerSettings serializerSettings = null)
             : base(httpClient,
                   eventSource,
-                  serializerSettings,
-                  isPartitionLevelFailoverEnabled)
+                  globalPartitionEndpointManager,
+                  serializerSettings)
         {
             this.bufferProviderWrapperPool = new ObjectPool<BufferProviderWrapper>(() => new BufferProviderWrapper());
-            this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
+            this.globalPartitionEndpointManager = globalPartitionEndpointManager;
             this.userAgentContainer = userAgentContainer
                 ?? throw new ArgumentNullException(nameof(userAgentContainer),
                 "UserAgentContainer cannot be null when initializing ThinClientStoreClient.");

@@ -61,7 +61,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 httpClient: cosmosHttpClient,
                 eventSource: null,
                 userAgentContainer: userAgentContainer,
-                serializerSettings: null);
+                serializerSettings: null,
+                globalPartitionEndpointManager: GlobalPartitionEndpointManagerNoOp.Instance);
 
             DocumentServiceRequest request = DocumentServiceRequest.Create(
                 operationType: OperationType.Read,
@@ -125,7 +126,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 httpClient: cosmosHttpClient,
                 eventSource: null,
                 userAgentContainer: userAgentContainer,
-                serializerSettings: null);
+                serializerSettings: null,
+                globalPartitionEndpointManager: GlobalPartitionEndpointManagerNoOp.Instance);
 
             DocumentServiceRequest request = DocumentServiceRequest.Create(
                 operationType: OperationType.Read,
@@ -203,7 +205,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 httpClient: mockCosmosHttpClient.Object,
                 eventSource: null,
                 userAgentContainer: userAgentContainer,
-                serializerSettings: null);
+                serializerSettings: null,
+                globalPartitionEndpointManager: GlobalPartitionEndpointManagerNoOp.Instance);
 
             DocumentServiceRequest request = DocumentServiceRequest.Create(
                 operationType: OperationType.Read,
@@ -306,7 +309,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 httpClient: mockCosmosHttpClient.Object,
                 eventSource: null,
                 userAgentContainer: userAgentContainer,
-                serializerSettings: null);
+                serializerSettings: null,
+                globalPartitionEndpointManager: GlobalPartitionEndpointManagerNoOp.Instance);
 
             DocumentServiceRequest request = DocumentServiceRequest.Create(
                 operationType: OperationType.Read,
@@ -379,6 +383,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     httpClient: mockHttpClient.Object,
                     userAgentContainer: null,
                     eventSource: mockEventSource,
+                    globalPartitionEndpointManager: GlobalPartitionEndpointManagerNoOp.Instance,
                     serializerSettings: null)
             );
 
