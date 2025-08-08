@@ -159,6 +159,30 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [TestMethod]
+        public async Task ValidateCredentialTypeChangeTest()
+        {
+            string authKey = ConfigurationManager.AppSettings["MasterKey"];
+            string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
+
+            LocalEmulatorTokenCredential miTokenCredential = new LocalEmulatorTokenCredential(authKey);
+            CosmosAuthorizationTokenProvider authorizationTokenProvider = CosmosAuthorizationTokenProvider.FromTokenCredential(endpoint, miTokenCredential);
+
+            using (CosmosClient client = new CosmosClient(
+                    endpoint,
+                    miTokenCredential))
+            {
+                // do some work 
+                await Task.Yield();
+
+                // Change 
+                AzureKeyCredential masterKeyCredential = new AzureKeyCredential(authKey);
+                authorizationTokenProvider.Update(CosmosAuthorizationTokenProvider.FromAzureKeyCredential(masterKeyCredential));
+
+                // do some work 
+                await Task.Yield();
+            }
+        }
 
         [TestMethod]
         public async Task ValidateAzureKeyCredentialDirectModeUpdateAsync()
