@@ -25,6 +25,7 @@ namespace Microsoft.Azure.Cosmos
     internal class GatewayStoreModel : IStoreModelExtension, IDisposable
     {
         private readonly bool isPartitionLevelFailoverEnabled;
+        private readonly bool isThinClientEnabled;
         private static readonly string sessionConsistencyAsString = ConsistencyLevel.Session.ToString();
         private readonly GlobalPartitionEndpointManager globalPartitionEndpointManager;
 
@@ -64,6 +65,7 @@ namespace Microsoft.Azure.Cosmos
                 this.eventSource,
                 serializerSettings,
                 isPartitionLevelFailoverEnabled);
+            this.isThinClientEnabled = isThinClientEnabled;
 
             if (isThinClientEnabled)
             {
@@ -99,7 +101,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 // This is applicable for both per partition automatic failover and per partition circuit breaker.
-                if (this.isPartitionLevelFailoverEnabled
+                if ((this.isPartitionLevelFailoverEnabled || this.isThinClientEnabled)
                     && !ReplicatedResourceClient.IsMasterResource(request.ResourceType)
                     && request.ResourceType.IsPartitioned())
                 {
@@ -111,7 +113,11 @@ namespace Microsoft.Azure.Cosmos
                         refreshCache: false);
 
                     request.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
-                    this.globalPartitionEndpointManager.TryAddPartitionLevelLocationOverride(request);
+
+                    if (this.isPartitionLevelFailoverEnabled)
+                    {
+                        this.globalPartitionEndpointManager.TryAddPartitionLevelLocationOverride(request);
+                    }
                 }
 
                 bool canUseThinClient =

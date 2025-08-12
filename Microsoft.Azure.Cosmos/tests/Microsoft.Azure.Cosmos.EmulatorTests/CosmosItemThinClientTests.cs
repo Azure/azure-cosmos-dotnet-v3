@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Text.Json;
     using System.Text.Json.Serialization;
     using System.Threading.Tasks;
+    using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.MultiRegionSetupHelpers;
@@ -494,6 +495,83 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestCategory("ThinClient")]
         public async Task QueryItemsTest()
         {
+            string pk = "pk_query";
+            List<TestObject> items = this.GenerateItems(pk).ToList();
+
+            List<TestObject> createdItems = await this.CreateItemsSafeAsync(items);
+
+            string query = $"SELECT * FROM c WHERE c.pk = '{pk}'";
+            FeedIterator<TestObject> iterator = this.container.GetItemQueryIterator<TestObject>(query);
+
+            int count = 0;
+            while (iterator.HasMoreResults)
+            {
+                FeedResponse<TestObject> response = await iterator.ReadNextAsync();
+                count += response.Count;
+            }
+
+            Assert.AreEqual(createdItems.Count, count);
+        }
+
+        [TestMethod]
+        [TestCategory("ThinClient")]
+        public async Task QueryItemsTestWithStrongConsistency()
+        {
+            string connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_TC_STRONG", string.Empty);
+            if (string.IsNullOrEmpty(connectionString))
+            {
+                Assert.Fail("Set environment variable COSMOSDB_TC_STRONG to run the tests");
+            }
+            this.client = new CosmosClient(
+                 connectionString,
+                 new CosmosClientOptions()
+                 {
+                     ConnectionMode = ConnectionMode.Gateway,
+                     RequestTimeout = TimeSpan.FromSeconds(60),
+                     ConsistencyLevel = Microsoft.Azure.Cosmos.ConsistencyLevel.Strong
+                 });
+
+            string uniqueDbName = "TestDbTC_" + Guid.NewGuid().ToString();
+            this.database = await this.client.CreateDatabaseIfNotExistsAsync(uniqueDbName);
+            string uniqueContainerName = "TestContainerTC_" + Guid.NewGuid().ToString();
+            this.container = await this.database.CreateContainerIfNotExistsAsync(uniqueContainerName, "/pk");
+
+            string pk = "pk_query";
+            List<TestObject> items = this.GenerateItems(pk).ToList();
+
+            List<TestObject> createdItems = await this.CreateItemsSafeAsync(items);
+
+            string query = $"SELECT * FROM c WHERE c.pk = '{pk}'";
+            FeedIterator<TestObject> iterator = this.container.GetItemQueryIterator<TestObject>(query);
+
+            int count = 0;
+            while (iterator.HasMoreResults)
+            {
+                FeedResponse<TestObject> response = await iterator.ReadNextAsync();
+                count += response.Count;
+            }
+
+            Assert.AreEqual(createdItems.Count, count);
+        }
+
+        [TestMethod]
+        [TestCategory("ThinClient")]
+        public async Task QueryItemsTestWithSessionConsistency()
+        {
+            this.client = new CosmosClient(
+                 this.connectionString,
+                 new CosmosClientOptions()
+                 {
+                     ConnectionMode = ConnectionMode.Gateway,
+                     RequestTimeout = TimeSpan.FromSeconds(60),
+                     ConsistencyLevel = Microsoft.Azure.Cosmos.ConsistencyLevel.Session
+                 });
+
+            string uniqueDbName = "TestDbTC_" + Guid.NewGuid().ToString();
+            this.database = await this.client.CreateDatabaseIfNotExistsAsync(uniqueDbName);
+            string uniqueContainerName = "TestContainerTC_" + Guid.NewGuid().ToString();
+            this.container = await this.database.CreateContainerIfNotExistsAsync(uniqueContainerName, "/pk");
+
             string pk = "pk_query";
             List<TestObject> items = this.GenerateItems(pk).ToList();
 
