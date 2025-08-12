@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // Matches 'F' followed by one or more digits, then a pipe '|'
-            return this.regex.IsMatch(this.Suffix);
+            return regex.IsMatch(this.Suffix);
         }
 
         internal override string BaseUserAgent => this.cosmosBaseUserAgent ?? string.Empty;
