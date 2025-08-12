@@ -15,6 +15,17 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.53.0-preview.2"/> [3.53.0-preview.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.53.0-preview.2) - 2025-8-12
+
+### <a name="3.52.2"/> [3.52.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.52.2) - 2025-8-12
+
+#### Fixed
+- [5317](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5317) QueryPlan: Fixes HybridSearchQueryTests to account for backend changes in phrase search
+
+#### Added
+- [5308](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5308) Query: Adds Weighted RRF capability to LINQ
+- [5313](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5313) Query: Adds GetIndexMetrics LINQ extension method
+
 ### <a name="3.53.0-preview.1"/> [3.53.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.53.0-preview.1) - 2025-7-10
 
 ### <a name="3.52.1"/> [3.52.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.52.1) - 2025-7-10
