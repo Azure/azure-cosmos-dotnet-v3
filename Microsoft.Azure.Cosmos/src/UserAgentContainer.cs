@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly string cosmosBaseUserAgent;
         private readonly string clientId;
-        private readonly Regex regex = new Regex(@"F\d+\|", RegexOptions.Compiled);
+        private static readonly Regex regex = new Regex(@"F\d+\|", RegexOptions.Compiled);
 
         public UserAgentContainer(
             int clientId,
