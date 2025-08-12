@@ -63,12 +63,12 @@ namespace Microsoft.Azure.Cosmos
             this.defaultConsistencyLevel = defaultConsistencyLevel;
             this.eventSource = eventSource;
             this.globalPartitionEndpointManager = globalPartitionEndpointManager;
+            this.chaosInterceptor = chaosInterceptor;
             this.gatewayStoreClient = new GatewayStoreClient(
                 httpClient,
                 this.eventSource,
                 serializerSettings,
                 isPartitionLevelFailoverEnabled);
-            this.chaosInterceptor = chaosInterceptor;
 
             if (isThinClientEnabled)
             {
