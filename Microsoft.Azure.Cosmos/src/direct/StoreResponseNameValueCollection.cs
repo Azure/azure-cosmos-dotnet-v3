@@ -86,6 +86,7 @@ namespace Microsoft.Azure.Documents.Collections
         public string MaxContentLength { get; set; }
         public string MaxResourceQuota { get; set; }
         public string MergeProgressBlocked { get; set; }
+        public string MergeProgressBlockedReason { get; set; }
         public string MinGLSNForDocumentOperations { get; set; }
         public string MinGLSNForTombstoneOperations { get; set; }
         public string MinimumRUsForOffer { get; set; }
@@ -113,7 +114,6 @@ namespace Microsoft.Azure.Documents.Collections
         public string RequestValidationFailure { get; set; }
         public string RequiresDistribution { get; set; }
         public string ResourceId { get; set; }
-        public string ResourceIdentityPrincipalId { get; set; }
         public string RestoreState { get; set; }
         public string RetryAfterInMilliseconds { get; set; }
         public string SchemaVersion { get; set; }
@@ -123,6 +123,7 @@ namespace Microsoft.Azure.Documents.Collections
         public string SoftMaxAllowedThroughput { get; set; }
         public string SubStatus { get; set; }
         public string TentativeStoreChecksum { get; set; }
+        public string ThroughputBucketApplied { get; set; }
         public string ThroughputpoolDedicatedRUs { get; set; }
         public string ThroughputpoolMaxConsumableRUs { get; set; }
         public string TimeToLiveInSeconds { get; set; }
@@ -223,6 +224,7 @@ namespace Microsoft.Azure.Documents.Collections
             this.MaxContentLength = null;
             this.MaxResourceQuota = null;
             this.MergeProgressBlocked = null;
+            this.MergeProgressBlockedReason = null;
             this.MinGLSNForDocumentOperations = null;
             this.MinGLSNForTombstoneOperations = null;
             this.MinimumRUsForOffer = null;
@@ -250,7 +252,6 @@ namespace Microsoft.Azure.Documents.Collections
             this.RequestValidationFailure = null;
             this.RequiresDistribution = null;
             this.ResourceId = null;
-            this.ResourceIdentityPrincipalId = null;
             this.RestoreState = null;
             this.RetryAfterInMilliseconds = null;
             this.SchemaVersion = null;
@@ -260,6 +261,7 @@ namespace Microsoft.Azure.Documents.Collections
             this.SoftMaxAllowedThroughput = null;
             this.SubStatus = null;
             this.TentativeStoreChecksum = null;
+            this.ThroughputBucketApplied = null;
             this.ThroughputpoolDedicatedRUs = null;
             this.ThroughputpoolMaxConsumableRUs = null;
             this.TimeToLiveInSeconds = null;
@@ -332,6 +334,7 @@ namespace Microsoft.Azure.Documents.Collections
                 MaxContentLength = this.MaxContentLength,
                 MaxResourceQuota = this.MaxResourceQuota,
                 MergeProgressBlocked = this.MergeProgressBlocked,
+                MergeProgressBlockedReason = this.MergeProgressBlockedReason,
                 MinGLSNForDocumentOperations = this.MinGLSNForDocumentOperations,
                 MinGLSNForTombstoneOperations = this.MinGLSNForTombstoneOperations,
                 MinimumRUsForOffer = this.MinimumRUsForOffer,
@@ -359,7 +362,6 @@ namespace Microsoft.Azure.Documents.Collections
                 RequestValidationFailure = this.RequestValidationFailure,
                 RequiresDistribution = this.RequiresDistribution,
                 ResourceId = this.ResourceId,
-                ResourceIdentityPrincipalId = this.ResourceIdentityPrincipalId,
                 RestoreState = this.RestoreState,
                 RetryAfterInMilliseconds = this.RetryAfterInMilliseconds,
                 SchemaVersion = this.SchemaVersion,
@@ -369,6 +371,7 @@ namespace Microsoft.Azure.Documents.Collections
                 SoftMaxAllowedThroughput = this.SoftMaxAllowedThroughput,
                 SubStatus = this.SubStatus,
                 TentativeStoreChecksum = this.TentativeStoreChecksum,
+                ThroughputBucketApplied = this.ThroughputBucketApplied,
                 ThroughputpoolDedicatedRUs = this.ThroughputpoolDedicatedRUs,
                 ThroughputpoolMaxConsumableRUs = this.ThroughputpoolMaxConsumableRUs,
                 TimeToLiveInSeconds = this.TimeToLiveInSeconds,
@@ -778,9 +781,13 @@ namespace Microsoft.Azure.Documents.Collections
             {
                 yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.VectorIndexAggregateProgress, this.VectorIndexAggregateProgress);
             }
-            if (this.ResourceIdentityPrincipalId != null)
+            if (this.MergeProgressBlockedReason != null)
             {
-                yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.ResourceIdentityPrincipalId, this.ResourceIdentityPrincipalId);
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.MergeProgressBlockedReason, this.MergeProgressBlockedReason);
+            }
+            if (this.ThroughputBucketApplied != null)
+            {
+                yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.ThroughputBucketApplied, this.ThroughputBucketApplied);
             }
 
             if (this.lazyNotCommonHeaders != null)
@@ -1185,9 +1192,13 @@ namespace Microsoft.Azure.Documents.Collections
             {
                 yield return WFConstants.BackendHeaders.VectorIndexAggregateProgress;
             }
-            if (this.ResourceIdentityPrincipalId != null)
+            if (this.MergeProgressBlockedReason != null)
             {
-                yield return HttpConstants.HttpHeaders.ResourceIdentityPrincipalId;
+                yield return WFConstants.BackendHeaders.MergeProgressBlockedReason;
+            }
+            if (this.ThroughputBucketApplied != null)
+            {
+                yield return HttpConstants.HttpHeaders.ThroughputBucketApplied;
             }
 
             if (this.lazyNotCommonHeaders != null)
@@ -1591,9 +1602,13 @@ namespace Microsoft.Azure.Documents.Collections
                         {
                             this.nameValueCollection.Add(WFConstants.BackendHeaders.VectorIndexAggregateProgress, this.VectorIndexAggregateProgress);
                         }
-                        if (this.ResourceIdentityPrincipalId != null)
+                        if (this.MergeProgressBlockedReason != null)
                         {
-                            this.nameValueCollection.Add(HttpConstants.HttpHeaders.ResourceIdentityPrincipalId, this.ResourceIdentityPrincipalId);
+                            this.nameValueCollection.Add(WFConstants.BackendHeaders.MergeProgressBlockedReason, this.MergeProgressBlockedReason);
+                        }
+                        if (this.ThroughputBucketApplied != null)
+                        {
+                            this.nameValueCollection.Add(HttpConstants.HttpHeaders.ThroughputBucketApplied, this.ThroughputBucketApplied);
                         }
                         if(this.lazyNotCommonHeaders != null)
                         {
@@ -1960,10 +1975,6 @@ namespace Microsoft.Azure.Documents.Collections
                     {
                         return this.IsOfferRestorePending;
                     }
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.ResourceIdentityPrincipalId, key))
-                    {
-                        return this.ResourceIdentityPrincipalId;
-                    }
                     if (string.Equals(HttpConstants.HttpHeaders.LastStateChangeUtc, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.LastStateChangeUtc;
@@ -1992,11 +2003,6 @@ namespace Microsoft.Azure.Documents.Collections
                     if (string.Equals(HttpConstants.HttpHeaders.IsOfferRestorePending, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.IsOfferRestorePending;
-                    }
-
-                    if (string.Equals(HttpConstants.HttpHeaders.ResourceIdentityPrincipalId, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.ResourceIdentityPrincipalId;
                     }
 
                     break;
@@ -2275,6 +2281,10 @@ namespace Microsoft.Azure.Documents.Collections
                     {
                         return this.OfferReplacePendingForMerge;
                     }
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.ThroughputBucketApplied, key))
+                    {
+                        return this.ThroughputBucketApplied;
+                    }
                     if (string.Equals(HttpConstants.HttpHeaders.TotalAccountThroughput, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.TotalAccountThroughput;
@@ -2288,6 +2298,11 @@ namespace Microsoft.Azure.Documents.Collections
                     if (string.Equals(WFConstants.BackendHeaders.OfferReplacePendingForMerge, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.OfferReplacePendingForMerge;
+                    }
+
+                    if (string.Equals(HttpConstants.HttpHeaders.ThroughputBucketApplied, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.ThroughputBucketApplied;
                     }
 
                     break;
@@ -2414,6 +2429,10 @@ namespace Microsoft.Azure.Documents.Collections
                     {
                         return this.GlobalNRegionCommittedGLSN;
                     }
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.MergeProgressBlockedReason, key))
+                    {
+                        return this.MergeProgressBlockedReason;
+                    }
                     if (string.Equals(WFConstants.BackendHeaders.AnalyticalMigrationProgress, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.AnalyticalMigrationProgress;
@@ -2422,6 +2441,11 @@ namespace Microsoft.Azure.Documents.Collections
                     if (string.Equals(WFConstants.BackendHeaders.GlobalNRegionCommittedGLSN, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.GlobalNRegionCommittedGLSN;
+                    }
+
+                    if (string.Equals(WFConstants.BackendHeaders.MergeProgressBlockedReason, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.MergeProgressBlockedReason;
                     }
 
                     break;
@@ -3258,16 +3282,6 @@ namespace Microsoft.Azure.Documents.Collections
                         this.IsOfferRestorePending = value;
                         return;
                     }
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.ResourceIdentityPrincipalId, key))
-                    {
-                        if (throwIfAlreadyExists && this.ResourceIdentityPrincipalId != null)
-                        {
-                            throw new ArgumentException($"The {key} already exists in the collection");
-                        }
-
-                        this.ResourceIdentityPrincipalId = value;
-                        return;
-                    }
                     if (string.Equals(HttpConstants.HttpHeaders.LastStateChangeUtc, key, StringComparison.OrdinalIgnoreCase))
                     {
                         if (throwIfAlreadyExists && this.LastStateChangeUtc != null)
@@ -3326,16 +3340,6 @@ namespace Microsoft.Azure.Documents.Collections
                         }
 
                         this.IsOfferRestorePending = value;
-                        return;
-                    }
-                    if (string.Equals(HttpConstants.HttpHeaders.ResourceIdentityPrincipalId, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        if (throwIfAlreadyExists && this.ResourceIdentityPrincipalId != null)
-                        {
-                            throw new ArgumentException($"The {key} already exists in the collection");
-                        }
-
-                        this.ResourceIdentityPrincipalId = value;
                         return;
                     }
                     break;
@@ -3928,6 +3932,16 @@ namespace Microsoft.Azure.Documents.Collections
                         this.OfferReplacePendingForMerge = value;
                         return;
                     }
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.ThroughputBucketApplied, key))
+                    {
+                        if (throwIfAlreadyExists && this.ThroughputBucketApplied != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.ThroughputBucketApplied = value;
+                        return;
+                    }
                     if (string.Equals(HttpConstants.HttpHeaders.TotalAccountThroughput, key, StringComparison.OrdinalIgnoreCase))
                     {
                         if (throwIfAlreadyExists && this.TotalAccountThroughput != null)
@@ -3956,6 +3970,16 @@ namespace Microsoft.Azure.Documents.Collections
                         }
 
                         this.OfferReplacePendingForMerge = value;
+                        return;
+                    }
+                    if (string.Equals(HttpConstants.HttpHeaders.ThroughputBucketApplied, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.ThroughputBucketApplied != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.ThroughputBucketApplied = value;
                         return;
                     }
                     break;
@@ -4226,6 +4250,16 @@ namespace Microsoft.Azure.Documents.Collections
                         this.GlobalNRegionCommittedGLSN = value;
                         return;
                     }
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.MergeProgressBlockedReason, key))
+                    {
+                        if (throwIfAlreadyExists && this.MergeProgressBlockedReason != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.MergeProgressBlockedReason = value;
+                        return;
+                    }
                     if (string.Equals(WFConstants.BackendHeaders.AnalyticalMigrationProgress, key, StringComparison.OrdinalIgnoreCase))
                     {
                         if (throwIfAlreadyExists && this.AnalyticalMigrationProgress != null)
@@ -4244,6 +4278,16 @@ namespace Microsoft.Azure.Documents.Collections
                         }
 
                         this.GlobalNRegionCommittedGLSN = value;
+                        return;
+                    }
+                    if (string.Equals(WFConstants.BackendHeaders.MergeProgressBlockedReason, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.MergeProgressBlockedReason != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.MergeProgressBlockedReason = value;
                         return;
                     }
                     break;

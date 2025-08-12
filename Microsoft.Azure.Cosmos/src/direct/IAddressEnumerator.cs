@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Documents
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
 
     /// <summary>
@@ -12,7 +13,7 @@ namespace Microsoft.Azure.Documents
     internal interface IAddressEnumerator
     {
         IEnumerable<TransportAddressUri> GetTransportAddresses(IReadOnlyList<TransportAddressUri> transportAddressUris,
-                                                               Lazy<HashSet<TransportAddressUri>> failedEndpoints,
+                                                               Lazy<ConcurrentDictionary<TransportAddressUri, bool>> failedEndpoints,
                                                                bool replicaAddressValidationEnabled);
     }
 }

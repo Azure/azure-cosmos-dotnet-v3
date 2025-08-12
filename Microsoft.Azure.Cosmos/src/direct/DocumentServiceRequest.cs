@@ -19,6 +19,8 @@ namespace Microsoft.Azure.Documents
     //we can open this up to public.
     internal sealed class DocumentServiceRequest : IDisposable
     {
+        internal static bool DefaultUseStatusCodeFor4041002 = false;
+
         private bool isDisposed = false;
 
         // The lock is used for locking request body operations like sending request or changing stream position.
@@ -244,6 +246,13 @@ namespace Microsoft.Azure.Documents
 
         /// <summary>
         /// This is a flag that indicates whether the DocumentClient internally
+        /// throws exceptions for 404-1002(SessionNotFound) status code
+        /// the status codes as part of the result for failures.
+        /// </summary>
+        public bool UseStatusCodeFor4041002 { get; set; } = DefaultUseStatusCodeFor4041002;
+
+        /// <summary>
+        /// This is a flag that indicates whether the DocumentClient internally
         /// throws exceptions for 429 status codes
         /// the status codes as part of the result for failures.
         /// </summary>
@@ -405,6 +414,14 @@ namespace Microsoft.Azure.Documents
             {
                 return this.Headers[HttpConstants.HttpHeaders.Version];
             }
+        }
+
+        internal bool IsAnyExceptionLessEnabled()
+        {
+            return this.UseStatusCodeFor403 
+                || this.UseStatusCodeFor4041002 
+                || this.UseStatusCodeFor429 
+                || this.UseStatusCodeForFailures;
         }
 
         /// <summary>
@@ -1176,6 +1193,8 @@ namespace Microsoft.Azure.Documents
                DatabaseName = this.DatabaseName,
                CollectionName = this.CollectionName,
                DisableArchivalPartitionNotFoundRetry = this.DisableArchivalPartitionNotFoundRetry,
+               UseStatusCodeFor403 = this.UseStatusCodeFor403,
+               UseStatusCodeFor4041002 = this.UseStatusCodeFor4041002,
             };
         }
 

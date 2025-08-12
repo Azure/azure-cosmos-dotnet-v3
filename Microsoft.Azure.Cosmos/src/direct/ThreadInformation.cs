@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                     // If task is faulted, stop the watch manually. otherwise keep it running
                     if(ThreadInformation.task.IsFaulted && ThreadInformation.watch.IsRunning)
                     {
-                        DefaultTrace.TraceError("Thread Starvation detection task failed. Exception: {0}", ThreadInformation.task.Exception);
+                        DefaultTrace.TraceError("Thread Starvation detection task failed. Exception: {0}", ThreadInformation.task.Exception?.Message);
                         ThreadInformation.watch.Stop();
                     }
                 }

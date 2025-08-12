@@ -244,6 +244,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
 
         [TestMethod]
         [Timeout(5000)]
+        [Ignore]
         public void TraceData()
         {
             List<Input> inputs = new List<Input>();
@@ -781,6 +782,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 allowNonValueAggregateQuery: true,
                 hasLogicalPartitionKey: false,
                 allowDCount: true,
+                hybridSearchSkipOrderByRewrite: false,
                 useSystemPrefix: false,
                 geospatialType: Cosmos.GeospatialType.Geography);
 

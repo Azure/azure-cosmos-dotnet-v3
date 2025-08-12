@@ -28,7 +28,8 @@ namespace Microsoft.Azure.Documents
             DocumentServiceRequest request,
             IAuthorizationTokenProvider authorizationTokenProvider,
             long? targetLsn,
-            long? targetGlobalCommittedLsn)
+            long? targetGlobalCommittedLsn,
+            bool includeRegionContext = false)
         {
             bool isCollectionHeadRequest = BarrierRequestHelper.IsCollectionHeadBarrierRequest(request.ResourceType, request.OperationType);
 
@@ -61,7 +62,9 @@ namespace Microsoft.Azure.Documents
                         headers: null,
                         authorizationTokenType: originalRequestTokenType);
             }
+#pragma warning disable SA1108
             else if (request.IsNameBased) // Name based server request
+#pragma warning restore SA1108
             {
                 // get the collection full name
                 // dbs/{id}/colls/{collid}/
@@ -73,7 +76,9 @@ namespace Microsoft.Azure.Documents
                     originalRequestTokenType,
                     null);
             }
+#pragma warning disable SA1108
             else // RID based Server request
+#pragma warning restore SA1108
             {
                 barrierLsnRequest = DocumentServiceRequest.Create(
                     OperationType.Head,
@@ -154,6 +159,18 @@ namespace Microsoft.Azure.Documents
                 barrierLsnRequest.Headers[WFConstants.BackendHeaders.CollectionRid] = request.Headers[WFConstants.BackendHeaders.CollectionRid];
             }
 
+            if (includeRegionContext)
+            {
+                if (request.RequestContext.LocationEndpointToRoute != null)
+                {
+                    barrierLsnRequest.RequestContext.RouteToLocation(request.RequestContext.LocationEndpointToRoute);
+                }
+                else if (request.RequestContext.LocationIndexToRoute.HasValue)
+                {
+                    barrierLsnRequest.RequestContext.RouteToLocation(request.RequestContext.LocationIndexToRoute.Value, false);
+                }
+            }
+
             if (request.Properties != null && request.Properties.ContainsKey(WFConstants.BackendHeaders.EffectivePartitionKeyString))
             {
                 if (barrierLsnRequest.Properties == null)
@@ -209,8 +226,9 @@ namespace Microsoft.Azure.Documents
                     return false;
             }
         }
+#pragma warning disable SA1507 // Code should not contain multiple blank lines in a row
 
-#pragma warning disable CS1570 // XML comment has badly formed XML
+        
 #pragma warning disable CS1570 // XML comment has badly formed XML
 /// <summary>
         /// Used to determine the appropriate back-off time between barrier requests based
@@ -238,7 +256,7 @@ namespace Microsoft.Azure.Documents
         /// A flag indicating whether a delay before the next barrier request should be injected.
         /// </returns>
         internal static bool ShouldDelayBetweenHeadRequests(
-#pragma warning restore CS1570 // XML comment has badly formed XML
+#pragma warning restore SA1507 // Code should not contain multiple blank lines in a row
 #pragma warning restore CS1570 // XML comment has badly formed XML
             TimeSpan previousHeadRequestLatency,
             IList<ReferenceCountedDisposable<StoreResult>> responses,

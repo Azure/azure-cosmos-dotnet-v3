@@ -679,13 +679,16 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         // Ignore Ordering for AnonymousType object
         internal bool ignoreOrder;
 
+        internal bool serializeOutput;
+
         internal LinqTestInput(
             string description, 
             Expression<Func<bool, IQueryable>> expr, 
             bool skipVerification = false, 
             bool ignoreOrder = false,
             string expressionStr = null, 
-            string inputData = null)
+            string inputData = null,
+            bool serializeOutput = false)
             : base(description)
         {
             this.Expression = expr ?? throw new ArgumentNullException($"{nameof(expr)} must not be null.");
@@ -693,6 +696,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             this.ignoreOrder = ignoreOrder;
             this.expressionStr = expressionStr;
             this.inputData = inputData;
+            this.serializeOutput = serializeOutput;
         }
 
         public static string FilterInputExpression(string input)

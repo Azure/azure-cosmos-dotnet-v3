@@ -41,21 +41,19 @@ namespace Microsoft.Azure.Documents.Common
                 if (socketException != null)
                 {
                     DefaultTrace.TraceWarning(
-                        "Exception {0}: RequesteUri: {1}, SocketErrorCode: {2}, {3}, {4}",
-                        e.GetType(),
+                        "Exception {0}: RequesteUri: {1}, SocketErrorCode: {2}, {3}",
+                        e?.GetType(),
                         requestUri,
                         socketException.SocketErrorCode,
-                        e.Message,
-                        e.StackTrace);
+                        e?.Message);
                 }
                 else
                 {
                     DefaultTrace.TraceWarning(
-                        "Exception {0}: RequestUri: {1}, {2}, {3}",
-                        e.GetType(),
+                        "Exception {0}: RequestUri: {1}, {2}",
+                        e?.GetType(),
                         requestUri,
-                        e.Message,
-                        e.StackTrace);
+                        e?.Message);
                 }
 
                 e = e.InnerException;

@@ -528,6 +528,8 @@ namespace Microsoft.Azure.Documents
             PopulateThroughputPoolInfo = 0x00E1,
             RetrieveUserStrings = 0x00E2,
             PopulateVectorIndexAggregateProgress = 0x00E3,
+            AllowTopologyUpsertWithoutIntent = 0x00E4,
+            ReadGlobalCommittedData = 0x00E5,
         }
 
         public sealed class Request : RntbdTokenStream<RequestIdentifiers>
@@ -745,6 +747,8 @@ namespace Microsoft.Azure.Documents
             public RntbdToken populateThroughputPoolInfo;
             public RntbdToken retrieveUserStrings;
             public RntbdToken populateVectorIndexAggregateProgress;
+            public RntbdToken allowTopologyUpsertWithoutIntent;
+            public RntbdToken readGlobalCommittedData;
 
             public Request()
             {
@@ -959,6 +963,8 @@ namespace Microsoft.Azure.Documents
                 this.populateThroughputPoolInfo = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.PopulateThroughputPoolInfo);
                 this.retrieveUserStrings = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.RetrieveUserStrings);
                 this.populateVectorIndexAggregateProgress = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.PopulateVectorIndexAggregateProgress);
+                this.allowTopologyUpsertWithoutIntent = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.AllowTopologyUpsertWithoutIntent);
+                this.readGlobalCommittedData = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.ReadGlobalCommittedData);
 
                 this.tokens = new RntbdToken[]
                 {
@@ -1190,6 +1196,8 @@ namespace Microsoft.Azure.Documents
                     this.populateThroughputPoolInfo,
                     this.retrieveUserStrings,
                     this.populateVectorIndexAggregateProgress,
+                    this.allowTopologyUpsertWithoutIntent,
+                    this.readGlobalCommittedData,
                 };
             }
         }
@@ -1291,8 +1299,9 @@ namespace Microsoft.Azure.Documents
             CollectionVectorIndexProgress = 0x0079,
             ThroughputpoolMaxConsumableRUs = 0x0080,
             ThroughputpoolDedicatedRUs = 0x0081,
-            ResourceIdentityPrincipalId = 0x0082,
             VectorIndexAggregateProgress = 0x0083,
+            MergeProgressBlockedReason = 0x0084,
+            ThroughputBucketApplied = 0x0085,
         }
 
         //

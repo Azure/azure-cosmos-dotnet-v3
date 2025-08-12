@@ -36,6 +36,11 @@ namespace Microsoft.Azure.Cosmos
         public const string EastUS2 = "East US 2";
 
         /// <summary>
+        /// Name of the Azure East US 3 region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string EastUS3 = "East US 3";
+
+        /// <summary>
         /// Name of the Azure Central US region in the Azure Cosmos DB service.
         /// </summary>
         public const string CentralUS = "Central US";

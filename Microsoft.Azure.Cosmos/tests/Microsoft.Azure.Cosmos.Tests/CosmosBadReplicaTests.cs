@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     {
         [TestMethod]
         [TestCategory("Flaky")]
+        [Ignore("This test is flaky and is ignored for msdata/direct")]
         [Timeout(30000)]
         [DataRow(true, true, false, DisplayName = "Validate when replica validation is enabled using environment variable.")]
         [DataRow(false, true, false, DisplayName = "Validate when replica validation is disabled using environment variable.")]

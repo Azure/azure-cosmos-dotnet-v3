@@ -10,13 +10,11 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     using System.Collections.ObjectModel;
     using System.Linq;
     using System.Net;
-    using System.Runtime.CompilerServices;
     using System.Runtime.ExceptionServices;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -102,15 +100,17 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         }
 
         private async Task<Container> CreateMultiPartitionContainer(
-            string partitionKey = "/id",
-            Microsoft.Azure.Cosmos.IndexingPolicy indexingPolicy = null,
-            Cosmos.GeospatialType geospatialType = Cosmos.GeospatialType.Geography)
+            string partitionKey,
+            Microsoft.Azure.Cosmos.IndexingPolicy indexingPolicy,
+            Cosmos.GeospatialType geospatialType,
+            Cosmos.VectorEmbeddingPolicy vectorEmbeddingPolicy)
         {
             ContainerResponse containerResponse = await this.CreatePartitionedContainer(
                 throughput: 25000,
                 partitionKey: partitionKey,
                 indexingPolicy: indexingPolicy,
-                geospatialType);
+                geospatialType,
+                vectorEmbeddingPolicy);
 
             IReadOnlyList<PartitionKeyRange> ranges = await this.GetPartitionKeyRanges(containerResponse);
             Assert.IsTrue(
@@ -121,15 +121,17 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         }
 
         private async Task<Container> CreateSinglePartitionContainer(
-            string partitionKey = "/id",
-            Microsoft.Azure.Cosmos.IndexingPolicy indexingPolicy = null,
-            Cosmos.GeospatialType geospatialType = Cosmos.GeospatialType.Geography)
+            string partitionKey,
+            Microsoft.Azure.Cosmos.IndexingPolicy indexingPolicy,
+            Cosmos.GeospatialType geospatialType,
+            Cosmos.VectorEmbeddingPolicy vectorEmbeddingPolicy)
         {
             ContainerResponse containerResponse = await this.CreatePartitionedContainer(
                 throughput: 4000,
                 partitionKey: partitionKey,
                 indexingPolicy: indexingPolicy,
-                geospatialType: geospatialType);
+                geospatialType: geospatialType,
+                vectorEmbeddingPolicy: vectorEmbeddingPolicy);
 
             Assert.IsNotNull(containerResponse);
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
@@ -158,9 +160,10 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
         private async Task<ContainerResponse> CreatePartitionedContainer(
             int throughput,
-            string partitionKey = "/id",
-            Microsoft.Azure.Cosmos.IndexingPolicy indexingPolicy = null,
-            Cosmos.GeospatialType geospatialType = Cosmos.GeospatialType.Geography)
+            string partitionKey,
+            Microsoft.Azure.Cosmos.IndexingPolicy indexingPolicy,
+            Cosmos.GeospatialType geospatialType,
+            Cosmos.VectorEmbeddingPolicy vectorEmbeddingPolicy)
         {
             // Assert that database exists (race deletes are possible when used concurrently)
             ResponseMessage responseMessage = await this.database.ReadStreamAsync();
@@ -190,7 +193,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         Paths = new Collection<string> { partitionKey },
                         Kind = PartitionKind.Hash
                     },
-                    GeospatialConfig = new Cosmos.GeospatialConfig(geospatialType)
+                    GeospatialConfig = new Cosmos.GeospatialConfig(geospatialType),
+                    VectorEmbeddingPolicy = vectorEmbeddingPolicy
                 },
                 // This throughput needs to be about half the max with multi master
                 // otherwise it will create about twice as many partitions.
@@ -206,57 +210,63 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
         private Task<(Container, IReadOnlyList<CosmosObject>)> CreateNonPartitionedContainerAndIngestDocumentsAsync(
             IEnumerable<string> documents,
-            Cosmos.IndexingPolicy indexingPolicy = null,
-            Cosmos.GeospatialType geospatialType = Cosmos.GeospatialType.Geography)
+            Cosmos.IndexingPolicy indexingPolicy,
+            Cosmos.GeospatialType geospatialType)
         {
             return this.CreateContainerAndIngestDocumentsAsync(
                 CollectionTypes.NonPartitioned,
                 documents,
                 partitionKey: null,
                 indexingPolicy: indexingPolicy,
-                geospatialType: geospatialType);
+                geospatialType: geospatialType,
+                vectorEmbeddingPolicy: null);
         }
 
         private Task<(Container, IReadOnlyList<CosmosObject>)> CreateSinglePartitionContainerAndIngestDocumentsAsync(
             IEnumerable<string> documents,
-            string partitionKey = "/id",
-            Cosmos.IndexingPolicy indexingPolicy = null,
-            Cosmos.GeospatialType geospatialType = Cosmos.GeospatialType.Geography)
+            string partitionKey,
+            Cosmos.IndexingPolicy indexingPolicy,
+            Cosmos.GeospatialType geospatialType,
+            Cosmos.VectorEmbeddingPolicy vectorEmbeddingPolicy)
         {
             return this.CreateContainerAndIngestDocumentsAsync(
                 CollectionTypes.SinglePartition,
                 documents,
                 partitionKey,
                 indexingPolicy,
-                geospatialType);
+                geospatialType,
+                vectorEmbeddingPolicy);
         }
 
         private Task<(Container, IReadOnlyList<CosmosObject>)> CreateMultiPartitionContainerAndIngestDocumentsAsync(
             IEnumerable<string> documents,
-            string partitionKey = "/id",
-            Cosmos.IndexingPolicy indexingPolicy = null,
-            Cosmos.GeospatialType geospatialType = Cosmos.GeospatialType.Geography)
+            string partitionKey,
+            Cosmos.IndexingPolicy indexingPolicy,
+            Cosmos.GeospatialType geospatialType,
+            Cosmos.VectorEmbeddingPolicy vectorEmbeddingPolicy)
         {
             return this.CreateContainerAndIngestDocumentsAsync(
                 CollectionTypes.MultiPartition,
                 documents,
                 partitionKey,
                 indexingPolicy,
-                geospatialType);
+                geospatialType,
+                vectorEmbeddingPolicy);
         }
 
         private async Task<(Container, IReadOnlyList<CosmosObject>)> CreateContainerAndIngestDocumentsAsync(
             CollectionTypes collectionType,
             IEnumerable<string> documents,
-            string partitionKey = "/id",
-            Cosmos.IndexingPolicy indexingPolicy = null,
-            Cosmos.GeospatialType geospatialType = Cosmos.GeospatialType.Geography)
+            string partitionKey,
+            Cosmos.IndexingPolicy indexingPolicy,
+            Cosmos.GeospatialType geospatialType,
+            Cosmos.VectorEmbeddingPolicy vectorEmbeddingPolicy)
         {
             Container container = collectionType switch
             {
                 CollectionTypes.NonPartitioned => await this.CreateNonPartitionedContainerAsync(indexingPolicy, geospatialType),
-                CollectionTypes.SinglePartition => await this.CreateSinglePartitionContainer(partitionKey, indexingPolicy, geospatialType),
-                CollectionTypes.MultiPartition => await this.CreateMultiPartitionContainer(partitionKey, indexingPolicy, geospatialType),
+                CollectionTypes.SinglePartition => await this.CreateSinglePartitionContainer(partitionKey, indexingPolicy, geospatialType, vectorEmbeddingPolicy),
+                CollectionTypes.MultiPartition => await this.CreateMultiPartitionContainer(partitionKey, indexingPolicy, geospatialType, vectorEmbeddingPolicy),
                 _ => throw new ArgumentException($"Unknown {nameof(CollectionTypes)} : {collectionType}"),
             };
             List<CosmosObject> insertedDocuments = new List<CosmosObject>();
@@ -369,6 +379,16 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
         internal delegate CosmosClient CosmosClientFactory(ConnectionMode connectionMode);
 
+        internal static ConnectionModes ToTestConnectionMode(ConnectionMode connectionMode)
+        {
+            return connectionMode switch
+            {
+                ConnectionMode.Direct => ConnectionModes.Direct,
+                ConnectionMode.Gateway => ConnectionModes.Gateway,
+                _ => throw new ArgumentOutOfRangeException(nameof(connectionMode), connectionMode, null)
+            };
+        }
+
         internal Task CreateIngestQueryDeleteAsync(
             ConnectionModes connectionModes,
             CollectionTypes collectionTypes,
@@ -377,7 +397,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             string partitionKey = "/id",
             Cosmos.IndexingPolicy indexingPolicy = null,
             CosmosClientFactory cosmosClientFactory = null,
-            Cosmos.GeospatialType geospatialType = Cosmos.GeospatialType.Geography)
+            Cosmos.GeospatialType geospatialType = Cosmos.GeospatialType.Geography,
+            Cosmos.VectorEmbeddingPolicy vectorEmbeddingPolicy = null)
         {
             Task queryWrapper(Container container, IReadOnlyList<CosmosObject> inputDocuments, object throwaway)
             {
@@ -393,7 +414,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 partitionKey,
                 indexingPolicy,
                 cosmosClientFactory,
-                geospatialType);
+                geospatialType,
+                vectorEmbeddingPolicy);
         }
 
         internal Task CreateIngestQueryDeleteAsync<T>(
@@ -405,7 +427,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             string partitionKey = "/id",
             Cosmos.IndexingPolicy indexingPolicy = null,
             CosmosClientFactory cosmosClientFactory = null,
-            Cosmos.GeospatialType geospatialType = Cosmos.GeospatialType.Geography)
+            Cosmos.GeospatialType geospatialType = Cosmos.GeospatialType.Geography,
+            Cosmos.VectorEmbeddingPolicy vectorEmbeddingPolicy = null)
         {
             return this.CreateIngestQueryDeleteAsync(
                 connectionModes,
@@ -416,7 +439,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 testArgs,
                 partitionKey,
                 indexingPolicy,
-                geospatialType);
+                geospatialType,
+                vectorEmbeddingPolicy);
         }
 
         /// <summary>
@@ -446,7 +470,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             T testArgs,
             string partitionKey = "/id",
             Cosmos.IndexingPolicy indexingPolicy = null,
-            Cosmos.GeospatialType geospatialType = Cosmos.GeospatialType.Geography)
+            Cosmos.GeospatialType geospatialType = Cosmos.GeospatialType.Geography,
+            Cosmos.VectorEmbeddingPolicy vectorEmbeddingPolicy = null)
         {
             try
             {
@@ -468,12 +493,14 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                             documents,
                             partitionKey,
                             indexingPolicy,
-                            geospatialType),
+                            geospatialType,
+                            vectorEmbeddingPolicy),
                         CollectionTypes.MultiPartition => this.CreateMultiPartitionContainerAndIngestDocumentsAsync(
                             documents,
                             partitionKey,
                             indexingPolicy,
-                            geospatialType),
+                            geospatialType,
+                            vectorEmbeddingPolicy),
                         _ => throw new ArgumentException($"Unknown {nameof(CollectionTypes)} : {collectionType}"),
                     };
                     collectionsAndDocuments.Add(await createContainerTask);

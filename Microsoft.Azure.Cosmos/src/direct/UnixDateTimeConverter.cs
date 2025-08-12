@@ -21,7 +21,9 @@ namespace Microsoft.Azure.Documents
 #endif
     sealed class UnixDateTimeConverter : DateTimeConverterBase
     {
+#pragma warning disable IDE0044 // Add readonly modifier
         private static DateTime UnixStartTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+#pragma warning restore IDE0044 // Add readonly modifier
 
         /// <summary>
         /// Writes the JSON representation of the DateTime object.

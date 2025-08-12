@@ -53,6 +53,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                 throw;
             }
+            catch (OperationCanceledException ex)
+            {
+                throw new CosmosOperationCanceledException(ex, request.Trace);
+            }
             finally
             {
                 request.OnBeforeSendRequestActions -= retryPolicyInstance.OnBeforeSendRequest;
@@ -67,11 +71,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
         {
             while (true)
             {
-                cancellationToken.ThrowIfCancellationRequested();
                 ShouldRetryResult result;
-
                 try
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     ResponseMessage cosmosResponseMessage = await callbackMethod();
                     if (cosmosResponseMessage.IsSuccessStatusCode)
                     {
@@ -91,6 +94,14 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     {
                         // Today we don't translate request exceptions into status codes since this was an error before
                         // making the request. TODO: Figure out how to pipe this as a response instead of throwing?
+                        throw;
+                    }
+                }
+                catch (OperationCanceledException oce)
+                {
+                    result = await callShouldRetryException(oce, cancellationToken);
+                    if (!result.ShouldRetry)
+                    {
                         throw;
                     }
                 }

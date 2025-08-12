@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryAdvisor
                 return null;
             }
 
-            return rule.Element("Message")?.Value.Replace("[CDATA[\"", String.Empty).Replace("\"]]", String.Empty); // removing the CDATA tags
+            return rule.Element("Description")?.Value.Replace("[CDATA[\"", String.Empty).Replace("\"]]", String.Empty); // removing the CDATA tags
         }
     }
 }

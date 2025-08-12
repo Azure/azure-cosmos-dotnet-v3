@@ -28,7 +28,9 @@ namespace Microsoft.Azure.Documents
 
         private const int minFailedReplicaCountToConsiderConnectivityIssue = 3;
 
+#pragma warning disable IDE0044 // Add readonly modifier
         private Stopwatch durationTimer = new Stopwatch();
+#pragma warning restore IDE0044 // Add readonly modifier
         private int attemptCount = 1;
         private int attemptCountInvalidPartition = 1;
         private int regionRerouteAttemptCount = 0;
@@ -44,7 +46,9 @@ namespace Microsoft.Azure.Documents
         // Don't penalise first retry with delay.
         private int currentBackoffSeconds = GoneAndRetryWithRetryPolicy.initialBackoffSeconds;
 
+#pragma warning disable IDE0044 // Add readonly modifier
         private DocumentServiceRequest request;
+#pragma warning restore IDE0044 // Add readonly modifier
 
         public GoneAndRetryWithRetryPolicy(
             DocumentServiceRequest request = null,
@@ -189,6 +193,8 @@ namespace Microsoft.Azure.Documents
                         {
                             DefaultTrace.TraceError("{0}. Will fail the request. {1}", message, exception.ToStringWithData());
                             SubStatusCodes exceptionSubStatus = DocumentClientException.GetExceptionSubStatusForGoneRetryPolicy(exception);
+#pragma warning disable SA1507 // Code should not contain multiple blank lines in a row
+
 
                             if (this.detectConnectivityIssues &&
                                 this.request.RequestContext.ClientRequestStatistics != null &&
@@ -202,6 +208,7 @@ namespace Microsoft.Azure.Documents
                                             1 : this.request.RequestContext.ClientRequestStatistics.RegionsContacted.Count),
                                     SubStatusCodes.Client_CPUOverload);
                             }
+#pragma warning restore SA1507 // Code should not contain multiple blank lines in a row
                             if (this.detectConnectivityIssues &&
                                this.request.RequestContext.ClientRequestStatistics != null &&
                                this.request.RequestContext.ClientRequestStatistics.IsCpuThreadStarvation.GetValueOrDefault(false))
@@ -217,7 +224,9 @@ namespace Microsoft.Azure.Documents
                             else if (this.detectConnectivityIssues &&
                                 this.request.RequestContext.ClientRequestStatistics != null &&
                                 this.request.RequestContext.ClientRequestStatistics.FailedReplicas.Count >= GoneAndRetryWithRetryPolicy.minFailedReplicaCountToConsiderConnectivityIssue)
+#pragma warning disable SA1505 // Opening braces should not be followed by blank line
                             {
+
                                 exceptionToThrow = new ServiceUnavailableException(
                                     string.Format(
                                         RMResources.ClientUnavailable,
@@ -227,6 +236,7 @@ namespace Microsoft.Azure.Documents
                                     exception,
                                     exceptionSubStatus);
                             }
+#pragma warning restore SA1505 // Opening braces should not be followed by blank line
                             else
                             {
                                 exceptionToThrow = ServiceUnavailableException.Create(exceptionSubStatus, innerException: exception);

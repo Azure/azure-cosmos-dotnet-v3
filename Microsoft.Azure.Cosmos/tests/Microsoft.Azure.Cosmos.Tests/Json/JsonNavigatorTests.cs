@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
-    using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
 
@@ -518,8 +517,22 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                     byte[] binaryInput = JsonTestUtils.ConvertTextToBinary(input);
                     IJsonNavigator binaryNavigator = JsonNavigator.Create(binaryInput);
 
+                    // Test binary + empty user string dictionary
+                    IJsonStringDictionary jsonStringDictionary = new JsonStringDictionary(new List<string>());
+                    byte[] binaryWithEmptyUserStringEncodingInput = JsonTestUtils.ConvertTextToBinary(input, jsonStringDictionary);
+                    Assert.IsTrue(binaryWithEmptyUserStringEncodingInput.SequenceEqual(binaryInput), "Binary data should be the same with empty readonly JSON dictionary.");
+
+                    // Test binary + user string encoding
+                    byte[] binaryWithUserStringEncodingInput = JsonTestUtils.ConvertTextToBinary(input, out jsonStringDictionary);
+                    if (jsonStringDictionary.TryGetString(stringId: 0, value: out _))
+                    {
+                        Assert.IsFalse(binaryWithUserStringEncodingInput.SequenceEqual(binaryInput), "Binary data should be different with user string encoding.");
+                    }
+
+                    IJsonNavigator binaryNavigatorWithUserStringEncoding = JsonNavigator.Create(binaryInput, jsonStringDictionary);
+
                     // Test
-                    foreach (IJsonNavigator jsonNavigator in new IJsonNavigator[] { textNavigator, binaryNavigator })
+                    foreach (IJsonNavigator jsonNavigator in new IJsonNavigator[] { textNavigator, binaryNavigator, binaryNavigatorWithUserStringEncoding })
                     {
                         IJsonNavigatorNode rootNode = jsonNavigator.GetRootNode();
                         JsonToken[] tokensFromNavigator = JsonNavigatorTests.GetTokensFromNode(rootNode, jsonNavigator, performExtraChecks);

@@ -1,4 +1,4 @@
-$baseDir    = "C:\src\CosmosDB"
+$baseDir    = "Q:\src\CosmosDB"
 $sourceDir = 
     @(
         "\Product\SDK\.net\Microsoft.Azure.Cosmos.Direct\src\",

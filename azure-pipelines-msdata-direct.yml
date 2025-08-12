@@ -1,0 +1,69 @@
+# A pipeline with no CI trigger
+trigger: none
+
+pr:
+  branches:
+    include:
+    - msdata/direct*
+  paths:
+    include:
+    - '*'
+    exclude:
+    - '*.md'
+    - 'docs/**/*'
+    - 'Microsoft.Azure.Cosmos/contracts/**/*'
+
+variables:
+  DebugArguments: ' --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional" --verbosity normal '
+  ReleaseArguments: ' --filter "TestCategory!=Quarantine" --verbosity normal '
+  VmImage: windows-latest # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
+
+
+jobs:
+- template:  templates/static-tools.yml
+  parameters:
+    BuildConfiguration: Release
+    VmImage: $(VmImage)
+
+- template:  templates/build-ctl.yml
+  parameters:
+    BuildConfiguration: Release
+    Arguments: $(ReleaseArguments)
+    VmImage: $(VmImage)
+
+- template:  templates/build-samples.yml
+  parameters:
+    BuildConfiguration: Release
+    Arguments: $(ReleaseArguments)
+    VmImage: $(VmImage)
+
+- template:  templates/build-test-msdata.yml
+  parameters:
+    BuildConfiguration: Release
+    Arguments: $(ReleaseArguments)
+    VmImage: $(VmImage)
+    MultiRegionConnectionString: $(COSMOSDB_MULTI_REGION)
+    MultiRegionMultiMasterConnectionString: $(COSMOSDB_MULTIMASTER)
+    IncludePerformance: true
+    IncludeCoverage: true
+
+- template:  templates/build-internal.yml
+  parameters:
+    BuildConfiguration: Release
+    Arguments: $(ReleaseArguments)
+    VmImage:  $(VmImage)
+
+- template:  templates/build-preview-msdata.yml
+  parameters:
+    BuildConfiguration: Release
+    Arguments: $(ReleaseArguments)
+    VmImage:  $(VmImage)
+    
+- template:  templates/build-thinclient.yml
+  parameters:
+    BuildConfiguration: Release
+    Arguments: $(ReleaseArguments)
+    VmImage: $(VmImage)
+    ThinClientConnectionString: $(COSMOSDB_THINCLIENT)
+    IncludePerformance: true
+    IncludeCoverage: true

@@ -502,8 +502,9 @@ namespace Microsoft.Azure.Documents
             int readBarrierRetryCountMultiRegion = QuorumReader.maxBarrierRetriesForMultiRegion;
 
             long maxGlobalCommittedLsn = 0;
-
-            while (readBarrierRetryCount-- > 0)
+#pragma warning disable SA1108
+            while (readBarrierRetryCount-- > 0) // Retry loop
+#pragma warning restore SA1108
             {
                 barrierRequest.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
                 using StoreResultList disposableResponses = new(await this.storeReader.ReadMultipleReplicaAsync(
@@ -606,8 +607,10 @@ namespace Microsoft.Azure.Documents
             long maxGlobalCommittedLsn = 0;
             bool hasConvergedOnLSN = false;
             int readBarrierRetryCount = 0;
-            while(readBarrierRetryCount < defaultBarrierRequestDelays.Length && remainingDelay >= TimeSpan.Zero)
+#pragma warning disable SA1108
+            while (readBarrierRetryCount < defaultBarrierRequestDelays.Length && remainingDelay >= TimeSpan.Zero) // Retry loop
             {
+#pragma warning restore SA1108
                 barrierRequest.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
                 ValueStopwatch barrierRequestStopWatch = ValueStopwatch.StartNew();
                 using StoreResultList disposableResponses = new(await this.storeReader.ReadMultipleReplicaAsync(

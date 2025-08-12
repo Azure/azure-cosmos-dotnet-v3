@@ -8,7 +8,6 @@
     using System.Text;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json.Linq;
     using static Microsoft.Azure.Cosmos.Tests.Json.JsonTestUtils;
 
     [TestClass]
@@ -35,6 +34,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, new JsonStringDictionary());
         }
 
         [TestMethod]
@@ -55,6 +55,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, new JsonStringDictionary());
         }
 
         [TestMethod]
@@ -75,6 +76,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, new JsonStringDictionary());
         }
         #endregion
 
@@ -99,6 +101,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, new JsonStringDictionary());
         }
 
         [TestMethod]
@@ -121,6 +124,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, new JsonStringDictionary());
         }
 
         [TestMethod]
@@ -143,6 +147,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, new JsonStringDictionary());
         }
 
         [TestMethod]
@@ -165,6 +170,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, new JsonStringDictionary());
         }
 
         [TestMethod]
@@ -187,6 +193,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, new JsonStringDictionary());
         }
 
         [TestMethod]
@@ -209,6 +216,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, new JsonStringDictionary());
         }
 
         [TestMethod]
@@ -231,6 +239,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, new JsonStringDictionary());
         }
 
         [TestMethod]
@@ -256,6 +265,7 @@
 
             this.VerifyWriter(tokensToWrite, numberValueString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, new JsonStringDictionary());
         }
 
         [TestMethod]
@@ -291,6 +301,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, new JsonStringDictionary());
         }
 
         [TestMethod]
@@ -558,6 +569,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, new JsonStringDictionary());
         }
 
         [TestMethod]
@@ -580,6 +592,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, new JsonStringDictionary());
         }
 
         [TestMethod]
@@ -608,7 +621,58 @@
 
                 this.VerifyWriter(tokensToWrite, expectedString);
                 this.VerifyWriter(tokensToWrite, binaryOutput);
+                this.VerifyWriter(tokensToWrite, binaryOutput, new JsonStringDictionary());
                 systemStringId++;
+            }
+        }
+
+        [TestMethod]
+        [Owner("mayapainter")]
+        public void UserStringTest()
+        {
+            IJsonStringDictionary jsonStringDictionary = 
+                new JsonStringDictionary(new List<string> { "double", "string", "boolean", "null", "datetime", "spatialPoint", "text" });
+
+            int userStringId = 0;
+            while (jsonStringDictionary.TryGetString(userStringId, out UtfAllString userString))
+            {
+                string expectedString = "{\"" + userString.Utf16String + "\":\"\"}";
+                // remove formatting on the json and also replace "/" with "\/".
+                expectedString = Newtonsoft.Json.Linq.JToken
+                    .Parse(expectedString)
+                    .ToString(Newtonsoft.Json.Formatting.None);
+
+                int utf8Length = userString.Utf8String.Span.Length;
+                byte typeMarker = (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + utf8Length);
+
+                byte[] binaryOutput = new byte[4 + utf8Length];
+
+                binaryOutput[0] = BinaryFormat;
+                binaryOutput[1] = JsonBinaryEncoding.TypeMarker.Obj1;
+                binaryOutput[2] = typeMarker;
+                userString.Utf8String.Span.Span.CopyTo(binaryOutput.AsSpan(3));
+                binaryOutput[3 + utf8Length] = BinaryFormat;
+
+                byte[] binaryOutputUserStrings =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.Obj1,
+                    (byte)(JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin + ((int)userStringId)),
+                    BinaryFormat
+                };
+
+                JsonToken[] tokensToWrite =
+                {
+                    JsonToken.ObjectStart(),
+                        JsonToken.FieldName(userString.Utf16String),
+                        JsonToken.String(""),
+                    JsonToken.ObjectEnd()
+                };
+
+                this.VerifyWriter(tokensToWrite, expectedString);
+                this.VerifyWriter(tokensToWrite, binaryOutput);
+                this.VerifyWriter(tokensToWrite, binaryOutputUserStrings, jsonStringDictionary);
+                userStringId++;
             }
         }
 
@@ -8008,6 +8072,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, new JsonStringDictionary());
         }
 
         [TestMethod]
@@ -8075,6 +8140,9 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+
+            IJsonStringDictionary jsonStringDictionary = JsonTestUtils.PopulateStringDictionary(expectedString);
+            this.VerifyWriter(tokensToWrite, binaryOutputWithEncoding, jsonStringDictionary);
         }
 
         [TestMethod]
@@ -8277,6 +8345,9 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+
+            IJsonStringDictionary jsonStringDictionary = JsonTestUtils.PopulateStringDictionary(expectedString);
+            this.VerifyWriter(tokensToWrite, binaryOutputWithEncoding, jsonStringDictionary);
         }
         #endregion
 
@@ -8696,6 +8767,15 @@
             foreach (bool writeAsUtf8String in new bool[] { false, true })
             {
                 IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Binary, JsonWriteOptions.None, 256);
+                this.VerifyWriter(jsonWriter, tokensToWrite, binaryOutput, JsonSerializationFormat.Binary, writeAsUtf8String, expectedException);
+            }
+        }
+
+        private void VerifyWriter(JsonToken[] tokensToWrite, byte[] binaryOutput, IJsonStringDictionary jsonStringDictionary, Exception expectedException = null)
+        {
+            foreach (bool writeAsUtf8String in new bool[] { false, true })
+            {
+                IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Binary, jsonStringDictionary: jsonStringDictionary);
                 this.VerifyWriter(jsonWriter, tokensToWrite, binaryOutput, JsonSerializationFormat.Binary, writeAsUtf8String, expectedException);
             }
         }

@@ -88,6 +88,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
             if (innerException is not CosmosException && innerException is not Documents.DocumentClientException)
             {
+#pragma warning disable CDX1002 // DontUseExceptionStackTrace
                 cosmosException = CosmosExceptionFactory.Create(
                     cosmosException.StatusCode,
                     cosmosException.Message,
@@ -96,6 +97,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                     cosmosException.Trace,
                     cosmosException.Error,
                     cosmosException.InnerException);
+#pragma warning restore CDX1002 // DontUseExceptionStackTrace
             }
 
             return true;
@@ -114,13 +116,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                 Headers headers = new Headers()
                 {
                     SubStatusCode = Documents.SubStatusCodes.MalformedContinuationToken
-                }; 
+                };
+#pragma warning disable CDX1002 // DontUseExceptionStackTrace
                 return CosmosExceptionFactory.CreateBadRequestException(
                     message: malformedContinuationTokenException.Message,
                     headers: headers,
                     stackTrace: malformedContinuationTokenException.StackTrace,
                     innerException: malformedContinuationTokenException,
                     trace: trace);
+#pragma warning restore CDX1002 // DontUseExceptionStackTrace
             }
 
             public override CosmosException Visit(UnexpectedQueryPartitionProviderException unexpectedQueryPartitionProviderException, ITrace trace)
@@ -134,12 +138,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
             public override CosmosException Visit(ExpectedQueryPartitionProviderException expectedQueryPartitionProviderException, ITrace trace)
             {
+#pragma warning disable CDX1002 // DontUseExceptionStackTrace
                 return CosmosExceptionFactory.CreateBadRequestException(
                     message: expectedQueryPartitionProviderException.Message,
                     headers: new Headers(),
                     stackTrace: expectedQueryPartitionProviderException.StackTrace,
                     innerException: expectedQueryPartitionProviderException,
                     trace: trace);
+#pragma warning restore CDX1002 // DontUseExceptionStackTrace
             }
         }
 
@@ -155,6 +161,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                 MalformedChangeFeedContinuationTokenException malformedChangeFeedContinuationTokenException,
                 ITrace trace)
             {
+#pragma warning disable CDX1002 // DontUseExceptionStackTrace
                 return CosmosExceptionFactory.CreateBadRequestException(
                     message: malformedChangeFeedContinuationTokenException.Message,
                     headers: new Headers()
@@ -164,6 +171,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                     stackTrace: malformedChangeFeedContinuationTokenException.StackTrace,
                     innerException: malformedChangeFeedContinuationTokenException,
                     trace: trace);
+#pragma warning restore CDX1002 // DontUseExceptionStackTrace
             }
         }
     }

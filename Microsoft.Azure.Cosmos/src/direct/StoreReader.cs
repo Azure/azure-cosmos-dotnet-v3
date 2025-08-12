@@ -171,6 +171,7 @@ namespace Microsoft.Azure.Documents
             entity.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
 
             using StoreResultList storeResultList = new(new List<ReferenceCountedDisposable<StoreResult>>(replicaCountToRead));
+            ReferenceCountedDisposable<StoreResult> sessionNotFoundStoreResult = null; // For 404/1002 exceptionless scenario
 
             string requestedCollectionRid = entity.RequestContext.ResolvedCollectionRid;
 
@@ -268,8 +269,7 @@ namespace Microsoft.Azure.Documents
                     }
                     else
                     {
-                        // Include the full exception for other scenarios for troubleshooting
-                        DefaultTrace.TraceInformation("StoreReader.ReadMultipleReplicasInternalAsync exception thrown: Exception: {0}", exception);
+                        DefaultTrace.TraceInformation("StoreReader.ReadMultipleReplicasInternalAsync exception thrown: Exception: {0}", exception.Message);
                     }
                 }
 
@@ -331,10 +331,20 @@ namespace Microsoft.Azure.Documents
                             && (!entity.IsValidStatusCodeForExceptionlessRetry((int)storeResult.StatusCode, storeResult.SubStatusCode) || !requiresValidLsn || storeResult.LSN > 0))
                         {
                             if (requestSessionToken == null
-                                || (storeResult.SessionToken != null && requestSessionToken.IsValid(storeResult.SessionToken))
-                                || (!enforceSessionCheck && storeResult.StatusCode != StatusCodes.NotFound))
+                                 || (storeResult.SessionToken != null && requestSessionToken.IsValid(storeResult.SessionToken))
+                                 || (!enforceSessionCheck && storeResult.StatusCode != StatusCodes.NotFound))
                             {
                                 storeResultList.Add(disposableStoreResult.TryAddReference());
+                            }
+
+                            // Exceptionless: Capture the 404/1002 
+                            // Will be used later once all the replicas enumration is complete
+                            if (storeResultList.Count == 0
+                                && sessionNotFoundStoreResult == null
+                                && entity.IsValidRequestFor4041002() 
+                                && storeResult.StatusCode == StatusCodes.NotFound && storeResult.SubStatusCode == SubStatusCodes.ReadSessionNotAvailable)
+                            {
+                                sessionNotFoundStoreResult = disposableStoreResult.TryAddReference();
                             }
                         }
 
@@ -384,6 +394,13 @@ namespace Microsoft.Azure.Documents
                     // We propagate the first cancellation exception we've found, or a new OperationCanceledException if none.
                     // The latter case can happen when Task.IsCanceled = true.
                     throw cancellationException ?? new OperationCanceledException();
+                }
+                else if (sessionNotFoundStoreResult != null)
+                {
+                    using (sessionNotFoundStoreResult)
+                    {
+                        storeResultList.Add(sessionNotFoundStoreResult.TryAddReference());
+                    }
                 }
             }
 
@@ -475,7 +492,7 @@ namespace Microsoft.Azure.Documents
             }
             catch (Exception exception)
             {
-                DefaultTrace.TraceInformation("Exception {0} is thrown while doing Read Primary", exception);
+                DefaultTrace.TraceInformation("Exception {0} is thrown while doing Read Primary", exception.Message);
                 storeResult = StoreResult.CreateStoreResult(
                     null,
                     exception,

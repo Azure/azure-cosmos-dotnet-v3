@@ -25,8 +25,12 @@ namespace Microsoft.Azure.Documents
         // System.Text.Encoding and Write/Read for stream don't take Memory<> in NetStandard
         // so we have to use ArrayPool instead.
 #if COSMOSCLIENT
+#pragma warning disable IDE0044 // Add readonly modifier
         private ArrayPool<byte> arrayPool = ArrayPool<byte>.Create();
+#pragma warning restore IDE0044 // Add readonly modifier
+#pragma warning disable IDE0044 // Add readonly modifier
         private List<byte[]> borrowedBytes = new List<byte[]>();
+#pragma warning restore IDE0044 // Add readonly modifier
 #endif
 
         public abstract int RequiredTokenCount { get; }

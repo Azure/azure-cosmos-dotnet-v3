@@ -21,7 +21,9 @@ namespace Microsoft.Azure.Documents
     {
         private readonly JContainer jObject;
         private readonly string ownerFullName;
+#pragma warning disable IDE0044 // Add readonly modifier
         private JsonSerializer jsonSerializer;
+#pragma warning restore IDE0044 // Add readonly modifier
 
         public QueryResult(JContainer jObject, string ownerFullName, JsonSerializer jsonSerializer)
         {

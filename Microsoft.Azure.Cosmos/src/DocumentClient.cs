@@ -113,11 +113,18 @@ namespace Microsoft.Azure.Cosmos
         private const bool DefaultEnableCpuMonitor = true;
         private const string DefaultInitTaskKey = "InitTaskKey";
 
+        /// <summary>
+        /// Default thresholds for PPAF request hedging.
+        /// </summary>
+        private const int DefaultHedgingThresholdInMilliseconds = 1000;
+        private const int DefaultHedgingThresholdStepInMilliseconds = 500;
+
         private static readonly char[] resourceIdOrFullNameSeparators = new char[] { '/' };
         private static readonly char[] resourceIdSeparators = new char[] { '/', '\\', '?', '#' };
 
         private readonly bool IsLocalQuorumConsistency = false;
         private readonly bool isReplicaAddressValidationEnabled;
+        private readonly bool enableAsyncCacheExceptionNoSharing;
 
         //Fault Injection
         private readonly IChaosInterceptorFactory chaosInterceptorFactory;
@@ -127,6 +134,8 @@ namespace Microsoft.Azure.Cosmos
 
         //Auth
         internal readonly AuthorizationTokenProvider cosmosAuthorization;
+
+        private bool isThinClientEnabled = ConfigurationManager.IsThinClientEnabled(defaultValue: false);
 
         // Gateway has backoff/retry logic to hide transient errors.
         private RetryPolicy retryPolicy;
@@ -243,7 +252,9 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.Initialize(serviceEndpoint, connectionPolicy, desiredConsistencyLevel);
-            this.initTaskCache = new AsyncCacheNonBlocking<string, bool>(cancellationToken: this.cancellationTokenSource.Token);
+            this.initTaskCache = new AsyncCacheNonBlocking<string, bool>(
+                cancellationToken: this.cancellationTokenSource.Token,
+                enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
             this.isReplicaAddressValidationEnabled = ConfigurationManager.IsReplicaAddressValidationEnabled(connectionPolicy);
         }
 
@@ -444,6 +455,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="remoteCertificateValidationCallback">This delegate responsible for validating the third party certificate. </param>
         /// <param name="cosmosClientTelemetryOptions">This is distributed tracing flag</param>
         /// <param name="chaosInterceptorFactory">This is the chaos interceptor used for fault injection</param>
+        /// <param name="enableAsyncCacheExceptionNoSharing">A boolean flag indicating if stack trace optimization is enabled.</param>
         /// <remarks>
         /// The service endpoint can be obtained from the Azure Management Portal.
         /// If you are connecting using one of the Master Keys, these can be obtained along with the endpoint from the Azure Management Portal
@@ -472,7 +484,8 @@ namespace Microsoft.Azure.Cosmos
                               string cosmosClientId = null,
                               RemoteCertificateValidationCallback remoteCertificateValidationCallback = null,
                               CosmosClientTelemetryOptions cosmosClientTelemetryOptions = null,
-                              IChaosInterceptorFactory chaosInterceptorFactory = null)
+                              IChaosInterceptorFactory chaosInterceptorFactory = null,
+                              bool enableAsyncCacheExceptionNoSharing = true)
         {
             if (sendingRequestEventArgs != null)
             {
@@ -491,10 +504,13 @@ namespace Microsoft.Azure.Cosmos
                 this.receivedResponse += receivedResponseEventArgs;
             }
 
+            this.enableAsyncCacheExceptionNoSharing = enableAsyncCacheExceptionNoSharing;
             this.cosmosAuthorization = cosmosAuthorization ?? throw new ArgumentNullException(nameof(cosmosAuthorization));
             this.transportClientHandlerFactory = transportClientHandlerFactory;
             this.IsLocalQuorumConsistency = isLocalQuorumConsistency;
-            this.initTaskCache = new AsyncCacheNonBlocking<string, bool>(cancellationToken: this.cancellationTokenSource.Token);
+            this.initTaskCache = new AsyncCacheNonBlocking<string, bool>(
+                cancellationToken: this.cancellationTokenSource.Token,
+                enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
             this.chaosInterceptorFactory = chaosInterceptorFactory;
             this.chaosInterceptor = chaosInterceptorFactory?.CreateInterceptor(this);
 
@@ -675,10 +691,11 @@ namespace Microsoft.Azure.Cosmos
                     storeModel: this.GatewayStoreModel, 
                     tokenProvider: this, 
                     retryPolicy: this.retryPolicy,
-                    telemetryToServiceHelper: this.telemetryToServiceHelper);
-                this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache, this.GlobalEndpointManager);
+                    telemetryToServiceHelper: this.telemetryToServiceHelper,
+                    enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
+                this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache, this.GlobalEndpointManager, this.enableAsyncCacheExceptionNoSharing);
 
-                DefaultTrace.TraceWarning("{0} occurred while OpenAsync. Exception Message: {1}", ex.ToString(), ex.Message);
+                DefaultTrace.TraceWarning("Exception occurred while OpenAsync. Exception Message: {0}", ex.Message);
             }
         }
 
@@ -934,14 +951,13 @@ namespace Microsoft.Azure.Cosmos
             this.ConnectionPolicy = connectionPolicy ?? ConnectionPolicy.Default;
 
 #if !NETSTANDARD16
-            ServicePointAccessor servicePoint = ServicePointAccessor.FindServicePoint(this.ServiceEndpoint);
-            servicePoint.ConnectionLimit = this.ConnectionPolicy.MaxConnectionLimit;
+            if (ServicePointAccessor.IsSupported)
+            {
+                ServicePointAccessor servicePoint = ServicePointAccessor.FindServicePoint(this.ServiceEndpoint);
+                servicePoint.ConnectionLimit = this.ConnectionPolicy.MaxConnectionLimit;
+            }
 #endif
-
-            this.GlobalEndpointManager = new GlobalEndpointManager(this, this.ConnectionPolicy);
-            this.PartitionKeyRangeLocation = this.ConnectionPolicy.EnablePartitionLevelFailover
-                ? new GlobalPartitionEndpointManagerCore(this.GlobalEndpointManager)
-                : GlobalPartitionEndpointManagerNoOp.Instance;
+            this.GlobalEndpointManager = new GlobalEndpointManager(this, this.ConnectionPolicy, this.enableAsyncCacheExceptionNoSharing);
 
             this.httpClient = CosmosHttpClientCore.CreateWithConnectionPolicy(
                 this.ApiType,
@@ -982,13 +998,6 @@ namespace Microsoft.Azure.Cosmos
                 this.sessionContainer = new SessionContainer(this.ServiceEndpoint.Host);
             }
 
-            this.retryPolicy = new RetryPolicy(
-                globalEndpointManager: this.GlobalEndpointManager,
-                connectionPolicy: this.ConnectionPolicy,
-                partitionKeyRangeLocationCache: this.PartitionKeyRangeLocation);
-
-            this.ResetSessionTokenRetryPolicy = this.retryPolicy;
-
             this.desiredConsistencyLevel = desiredConsistencyLevel;
             // Setup the proxy to be  used based on connection mode.
             // For gateway: GatewayProxy.
@@ -1015,7 +1024,9 @@ namespace Microsoft.Azure.Cosmos
             // UnobservedTaskException by using ContinueWith method w/ TaskContinuationOptions.OnlyOnFaulted
             // and accessing the Exception property on the target task.
 #pragma warning disable VSTHRD110 // Observe result of async calls
+#pragma warning disable CDX1000 // DontConvertExceptionToObject
             initTask.ContinueWith(t => DefaultTrace.TraceWarning("initializeTask failed {0}", t.Exception), TaskContinuationOptions.OnlyOnFaulted);
+#pragma warning restore CDX1000 // DontConvertExceptionToObject
 #pragma warning restore VSTHRD110 // Observe result of async calls
 
             this.traceId = Interlocked.Increment(ref DocumentClient.idCounter);
@@ -1041,13 +1052,45 @@ namespace Microsoft.Azure.Cosmos
                 this.EnsureValidOverwrite(this.desiredConsistencyLevel.Value);
             }
 
+            if (!this.ConnectionPolicy.DisablePartitionLevelFailoverClientLevelOverride
+                && this.accountServiceConfiguration != null && this.accountServiceConfiguration.AccountProperties.EnablePartitionLevelFailover.HasValue)
+            {
+                this.ConnectionPolicy.EnablePartitionLevelFailover = this.accountServiceConfiguration.AccountProperties.EnablePartitionLevelFailover.Value;
+            }
+
+            this.isThinClientEnabled = (this.accountServiceConfiguration.AccountProperties?.ThinClientWritableLocationsInternal?.Count ?? 0) > 0;
+
+            this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker |= this.ConnectionPolicy.EnablePartitionLevelFailover;
+            this.ConnectionPolicy.UserAgentContainer.AppendFeatures(this.GetUserAgentFeatures());
+            this.InitializePartitionLevelFailoverWithDefaultHedging();
+
+            this.PartitionKeyRangeLocation = 
+                this.ConnectionPolicy.EnablePartitionLevelFailover 
+                || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker
+                    ? new GlobalPartitionEndpointManagerCore(
+                        this.GlobalEndpointManager,
+                        this.ConnectionPolicy.EnablePartitionLevelFailover,
+                        this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker,
+                        this.isThinClientEnabled)
+                    : GlobalPartitionEndpointManagerNoOp.Instance;
+
+            this.retryPolicy = new RetryPolicy(
+                globalEndpointManager: this.GlobalEndpointManager,
+                connectionPolicy: this.ConnectionPolicy,
+                partitionKeyRangeLocationCache: this.PartitionKeyRangeLocation,
+                isThinClientEnabled: this.isThinClientEnabled);
+
+            this.ResetSessionTokenRetryPolicy = this.retryPolicy;
+
             GatewayStoreModel gatewayStoreModel = new GatewayStoreModel(
                     this.GlobalEndpointManager,
                     this.sessionContainer,
                     (Cosmos.ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel,
                     this.eventSource,
                     this.serializerSettings,
-                    this.httpClient);
+                    this.httpClient,
+                    this.PartitionKeyRangeLocation,
+                    isPartitionLevelFailoverEnabled: this.ConnectionPolicy.EnablePartitionLevelFailover || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker);
 
             this.GatewayStoreModel = gatewayStoreModel;
 
@@ -1056,15 +1099,36 @@ namespace Microsoft.Azure.Cosmos
                     storeModel: this.GatewayStoreModel, 
                     tokenProvider: this, 
                     retryPolicy: this.retryPolicy,
-                    telemetryToServiceHelper: this.telemetryToServiceHelper);
-            this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache, this.GlobalEndpointManager);
+                    telemetryToServiceHelper: this.telemetryToServiceHelper,
+                    enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
+            this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache, this.GlobalEndpointManager, this.enableAsyncCacheExceptionNoSharing);
             this.ResetSessionTokenRetryPolicy = new ResetSessionTokenRetryPolicyFactory(this.sessionContainer, this.collectionCache, this.retryPolicy);
 
             gatewayStoreModel.SetCaches(this.partitionKeyRangeCache, this.collectionCache);
 
             if (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway)
             {
-                this.StoreModel = this.GatewayStoreModel;
+                if (this.isThinClientEnabled)
+                {
+                    ThinClientStoreModel thinClientStoreModel = new (
+                        endpointManager: this.GlobalEndpointManager,
+                        this.PartitionKeyRangeLocation,
+                        this.sessionContainer,
+                        (Cosmos.ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel,
+                        this.eventSource,
+                        this.serializerSettings,
+                        this.httpClient,
+                        this.ConnectionPolicy.UserAgentContainer,
+                        isPartitionLevelFailoverEnabled: this.ConnectionPolicy.EnablePartitionLevelFailover || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker);
+
+                    thinClientStoreModel.SetCaches(this.partitionKeyRangeCache, this.collectionCache);
+
+                    this.StoreModel = thinClientStoreModel;
+                }
+                else
+                {
+                    this.StoreModel = this.GatewayStoreModel;
+                }
             }
             else
             {
@@ -1339,7 +1403,7 @@ namespace Microsoft.Azure.Cosmos
                 catch (Exception exception)
                 {
                     DefaultTrace.TraceWarning("Exception {0} thrown during dispose of HttpClient, this could happen if there are inflight request during the dispose of client",
-                        exception);
+                        exception.Message);
                 }
 
                 this.httpClient = null;
@@ -1607,8 +1671,8 @@ namespace Microsoft.Azure.Cosmos
                 }
                 catch (Exception e)
                 {
-                    DefaultTrace.TraceWarning("EnsureValidClientAsync initializeTask failed {0}", e);
-                    childTrace.AddDatum("initializeTask failed", e);
+                    DefaultTrace.TraceWarning("EnsureValidClientAsync initializeTask failed {0}", e.Message);
+                    childTrace.AddDatum("initializeTask failed", e.Message);
                     throw;
                 }
 
@@ -6547,6 +6611,13 @@ namespace Microsoft.Azure.Cosmos
                 return this.GatewayStoreModel;
             }
 
+            if (this.isThinClientEnabled
+              && operationType == OperationType.Read
+              && resourceType == ResourceType.Database)
+            {
+                return this.GatewayStoreModel;
+            }
+
             if (operationType == OperationType.Create
                 || operationType == OperationType.Upsert)
             {
@@ -6697,6 +6768,7 @@ namespace Microsoft.Azure.Cosmos
                     rntbdMaxConcurrentOpeningConnectionCount: this.rntbdMaxConcurrentOpeningConnectionCount,
                     remoteCertificateValidationCallback: this.remoteCertificateValidationCallback,
                     distributedTracingOptions: distributedTracingOptions,
+                    enableChannelMultiplexing: ConfigurationManager.IsTcpChannelMultiplexingEnabled(),
                     chaosInterceptor: this.chaosInterceptor);
 
                 if (this.transportClientHandlerFactory != null)
@@ -6718,7 +6790,8 @@ namespace Microsoft.Azure.Cosmos
                 this.accountServiceConfiguration,
                 this.ConnectionPolicy,
                 this.httpClient,
-                this.storeClientFactory.GetConnectionStateListener());
+                this.storeClientFactory.GetConnectionStateListener(),
+                this.enableAsyncCacheExceptionNoSharing);
 
             this.CreateStoreModel(subscribeRntbdStatus: true);
         }
@@ -6738,7 +6811,8 @@ namespace Microsoft.Azure.Cosmos
                 !this.enableRntbdChannel,
                 this.UseMultipleWriteLocations && (this.accountServiceConfiguration.DefaultConsistencyLevel != Documents.ConsistencyLevel.Strong),
                 true,
-                enableReplicaValidation: this.isReplicaAddressValidationEnabled);
+                enableReplicaValidation: this.isReplicaAddressValidationEnabled,
+                sessionRetryOptions: this.ConnectionPolicy.SessionRetryOptions);
 
             if (subscribeRntbdStatus)
             {
@@ -6764,15 +6838,58 @@ namespace Microsoft.Azure.Cosmos
                     cosmosAuthorization: this.cosmosAuthorization,
                     connectionPolicy: this.ConnectionPolicy,
                     httpClient: this.httpClient,
-                    cancellationToken: this.cancellationTokenSource.Token);
+                    cancellationToken: this.cancellationTokenSource.Token,
+                    isThinClientEnabled: this.isThinClientEnabled);
 
             this.accountServiceConfiguration = new CosmosAccountServiceConfiguration(accountReader.InitializeReaderAsync);
 
             await this.accountServiceConfiguration.InitializeAsync();
             AccountProperties accountProperties = this.accountServiceConfiguration.AccountProperties;
             this.UseMultipleWriteLocations = this.ConnectionPolicy.UseMultipleWriteLocations && accountProperties.EnableMultipleWriteLocations;
-
             this.GlobalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);
+        }
+
+        internal string GetUserAgentFeatures()
+        {
+            int featureFlag = 0;
+            if (this.ConnectionPolicy.EnablePartitionLevelFailover)
+            {
+                featureFlag += (int)UserAgentFeatureFlags.PerPartitionAutomaticFailover;
+            }
+
+            if (this.ConnectionPolicy.EnablePartitionLevelFailover || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker)
+            {
+                featureFlag += (int)UserAgentFeatureFlags.PerPartitionCircuitBreaker;
+            }
+
+            if (this.isThinClientEnabled)
+            {
+                featureFlag += (int)UserAgentFeatureFlags.ThinClient;
+            }
+
+            if (ConfigurationManager.IsBinaryEncodingEnabled())
+            {
+                featureFlag += (int)UserAgentFeatureFlags.BinaryEncoding;
+            }
+
+            return featureFlag == 0 ? string.Empty : $"F{featureFlag:X}";
+        }
+
+        internal void InitializePartitionLevelFailoverWithDefaultHedging()
+        {
+            if (this.ConnectionPolicy.EnablePartitionLevelFailover
+                && this.ConnectionPolicy.AvailabilityStrategy == null)
+            {
+                // The default threshold is the minimum value of 1 second and a fraction (currently it's half) of
+                // the request timeout value provided by the end customer.
+                double defaultThresholdInMillis = Math.Min(
+                    DocumentClient.DefaultHedgingThresholdInMilliseconds,
+                    this.ConnectionPolicy.RequestTimeout.TotalMilliseconds / 2);
+
+                this.ConnectionPolicy.AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
+                    threshold: TimeSpan.FromMilliseconds(defaultThresholdInMillis),
+                    thresholdStep: TimeSpan.FromMilliseconds(DocumentClient.DefaultHedgingThresholdStepInMilliseconds));
+            }
         }
 
         internal void CaptureSessionToken(DocumentServiceRequest request, DocumentServiceResponse response)

@@ -72,13 +72,8 @@ namespace Microsoft.Azure.Documents.Client
         /// <see cref="Microsoft.Azure.Documents.Trigger"/>
         public IList<string> PostTriggerInclude { get; set; }
 
-        
 #pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
-/// <summary>
+        /// <summary>
         /// Gets or sets the condition (ETag) associated with the request in the Azure Cosmos DB service.
         /// </summary>
         /// <value>
@@ -111,11 +106,6 @@ namespace Microsoft.Azure.Documents.Client
         /// </example>
         /// <see cref="Microsoft.Azure.Documents.Client.AccessCondition"/>
         public AccessCondition AccessCondition { get; set; }
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
 
         /// <summary>
         /// Gets or sets the indexing directive (Include or Exclude) for the request in the Azure Cosmos DB service.
@@ -138,9 +128,7 @@ namespace Microsoft.Azure.Documents.Client
         /// <seealso cref="IndexingDirective"/>
         public IndexingDirective? IndexingDirective { get; set; }
 
-        
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
-/// <summary>
+        /// <summary>
         /// Gets or sets the consistency level required for the request in the Azure Cosmos DB service.
         /// </summary>
         /// <value>
@@ -165,10 +153,8 @@ namespace Microsoft.Azure.Documents.Client
         public ConsistencyLevel? ConsistencyLevel { get; set; }
 #pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
 
-        
 #pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
-/// <summary>
+        /// <summary>
         /// Gets or sets the token for use with session consistency in the Azure Cosmos DB service.
         /// </summary>
         /// <value>
@@ -225,13 +211,9 @@ namespace Microsoft.Azure.Documents.Client
         /// <seealso cref="ConsistencyLevel"/>
         public string SessionToken { get; set; }
 #pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
 
-        
 #pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
-/// <summary>
+        /// <summary>
         /// Gets or sets the expiry time for resource token. Used when creating/updating/reading permissions in the Azure Cosmos DB service.
         /// </summary>
         /// <value>
@@ -251,8 +233,6 @@ namespace Microsoft.Azure.Documents.Client
         /// <seealso cref="Microsoft.Azure.Documents.Permission"/>
         /// <seealso cref="Microsoft.Azure.Documents.User"/>
         public int? ResourceTokenExpirySeconds { get; set; }
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
 #pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
 
         /// <summary>
@@ -543,9 +523,16 @@ namespace Microsoft.Azure.Documents.Client
         /// </summary>
         internal bool AllowUpdatingIsPhysicalMigrationInProgress { get; set; }
 
-        
+        /// <summary>
+        /// Gets or sets the <see cref="AllowUpdatingIsPhysicalMigrationInProgress"/> flag for a topology resource upsert to bypass the use
+        /// of intent on an account with per-partition automatic failover (PPAF) enabled.
+        /// </summary>
+        internal bool AllowTopologyUpsertWithoutIntent { get; set; }
+
+#pragma warning disable CS1570
 #pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
-/// <summary>
+#pragma warning disable SA1004 // Documentation lines should begin with single space
+        /// <summary>
         ///  Gets or sets the <see cref="PopulateBYOKEncryptionProgress"/> for document collection read requests.
         /// </summary>
         /// <remarks>
@@ -556,8 +543,12 @@ namespace Microsoft.Azure.Documents.Client
         /// <example>
         /// For usage, please refer to the example in <see cref="Microsoft.Azure.Documents.DocumentCollection.PopulateBYOKEncryptionProgress"/>.
         /// </example>
+#pragma warning disable SA1606 // Element documentation should have summary text
         internal bool PopulateBYOKEncryptionProgress { get; set; }
+#pragma warning restore SA1004 // Documentation lines should begin with single space
+#pragma warning restore SA1606 // Element documentation should have summary text
 #pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
+#pragma warning restore CS1570
 
         /// <summary>
         /// Gets or sets the Remote storage enablement

@@ -1,5 +1,4 @@
 //------------------------------------------------------------
-
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 namespace Microsoft.Azure.Documents
@@ -54,4 +53,8 @@ namespace Microsoft.Azure.Documents
                                 ResourceType resourceType,
                                 DateTime requestStartTimeUtc);
     }
+#pragma warning disable SA1518 // Use line endings correctly at end of file
 }
+
+
+#pragma warning restore SA1518 // Use line endings correctly at end of file

@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     internal class ServicePointAccessor
     {
         // WebAssembly detection
-        private static readonly bool IsBrowser = RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER")) || RuntimeInformation.IsOSPlatform(OSPlatform.Create("WEBASSEMBLY"));
+        public static readonly bool IsSupported = !(RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER")) || RuntimeInformation.IsOSPlatform(OSPlatform.Create("WEBASSEMBLY")));
 
         private readonly ServicePoint servicePoint;
 
@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos
 
         private void TrySetConnectionLimit(int connectionLimit)
         {
-            if (ServicePointAccessor.IsBrowser)
+            if (!ServicePointAccessor.IsSupported)
             {
                 // Workaround for WebAssembly.
                 // WebAssembly currently throws a SynchronizationLockException and not a PlatformNotSupportedException.

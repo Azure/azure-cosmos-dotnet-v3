@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The query advice.
         /// </value>
-        internal virtual string QueryAdvice => null;
+        public virtual string QueryAdvice => null;
 
         /// <summary>
         /// Request Message for this feed response

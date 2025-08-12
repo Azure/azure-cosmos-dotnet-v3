@@ -32,11 +32,14 @@ namespace Microsoft.Azure.Documents
                 this.SetValue(Constants.SoftDeletionMetadataProperties.IsSoftDeleted, value);
             }
         }
+#pragma warning disable SA1507 // Code should not contain multiple blank lines in a row
+
 
         /// <summary>
         /// Property to indicate Database Account Soft Deletion Start Timestamp.
         /// </summary>
         [JsonConverter(typeof(IsoDateTimeConverter))]
+#pragma warning restore SA1507 // Code should not contain multiple blank lines in a row
         [JsonProperty(PropertyName = Constants.SoftDeletionMetadataProperties.SoftDeletionStartTimestampUtc)]
         public DateTime SoftDeletionStartTimestampUtc
         {

@@ -58,6 +58,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         private const int SqlPropertyNameHashCode = 1262661966;
         private const int SqlPropertyRefScalarExpressionHashCode = -1586896865;
         private const int SqlQueryHashCode = 1968642960;
+        private const int SqlRankHashCode = 46457293;
         private const int SqlSelectClauseHashCode = 19731870;
         private const int SqlSelectClauseDistinctHashCode = 1467616881;
         private const int SqlSelectItemHashCode = -611151157;
@@ -420,6 +421,11 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         public override int Visit(SqlOrderByClause sqlOrderByClause)
         {
             int hashCode = SqlOrderbyClauseHashCode;
+            if (sqlOrderByClause.Rank)
+            {
+                hashCode = CombineHashes(hashCode, SqlRankHashCode);
+            }
+
             for (int i = 0; i < sqlOrderByClause.OrderByItems.Length; i++)
             {
                 hashCode = CombineHashes(hashCode, sqlOrderByClause.OrderByItems[i].Accept(this));
@@ -432,14 +438,9 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         {
             int hashCode = SqlOrderbyItemHashCode;
             hashCode = CombineHashes(hashCode, sqlOrderByItem.Expression.Accept(this));
-            if (sqlOrderByItem.IsDescending)
-            {
-                hashCode = CombineHashes(hashCode, SqlOrderbyItemDescendingHashCode);
-            }
-            else
-            {
-                hashCode = CombineHashes(hashCode, SqlOrderbyItemAscendingHashCode);
-            }
+            hashCode = sqlOrderByItem.IsDescending.HasValue && sqlOrderByItem.IsDescending.Value
+                ? CombineHashes(hashCode, SqlOrderbyItemDescendingHashCode)
+                : CombineHashes(hashCode, SqlOrderbyItemAscendingHashCode);
 
             return hashCode;
         }

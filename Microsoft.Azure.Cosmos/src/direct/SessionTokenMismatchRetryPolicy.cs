@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Documents
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
 
-    internal sealed class SessionTokenMismatchRetryPolicy : IRetryPolicy
+    internal sealed class SessionTokenMismatchRetryPolicy : IRetryPolicy, IRequestRetryPolicy<DocumentServiceRequest, StoreResponse>
     {
         private const string sessionRetryInitialBackoff = "AZURE_COSMOS_SESSION_RETRY_INITIAL_BACKOFF";
         private const string sessionRetryMaximumBackoff = "AZURE_COSMOS_SESSION_RETRY_MAXIMUM_BACKOFF";
@@ -18,14 +18,20 @@ namespace Microsoft.Azure.Documents
         private const int defaultWaitTimeInMilliSeconds = 5000;
         private const int defaultInitialBackoffTimeInMilliseconds = 5;
         private const int defaultMaximumBackoffTimeInMilliseconds = 500;
-        private const int backoffMultiplier = 2;
+        private const int backoffMultiplier = 5; // before it was very aggressive
 
+        private readonly ISessionRetryOptions sessionRetryOptions;
+        private readonly DateTimeOffset startTime = DateTime.UtcNow;
         private static readonly Lazy<int> sessionRetryInitialBackoffConfig;
         private static readonly Lazy<int> sessionRetryMaximumBackoffConfig;
 
         private int retryCount;
+#pragma warning disable IDE0044 // Add readonly modifier
         private Stopwatch durationTimer = new Stopwatch();
+#pragma warning restore IDE0044 // Add readonly modifier
+#pragma warning disable IDE0044 // Add readonly modifier
         private int waitTimeInMilliSeconds;
+#pragma warning restore IDE0044 // Add readonly modifier
 
         private int? currentBackoffInMilliSeconds;
 
@@ -69,12 +75,14 @@ namespace Microsoft.Azure.Documents
             });
         }
 
-        public SessionTokenMismatchRetryPolicy(int waitTimeInMilliSeconds = defaultWaitTimeInMilliSeconds)
+        public SessionTokenMismatchRetryPolicy(int waitTimeInMilliSeconds = defaultWaitTimeInMilliSeconds,
+            ISessionRetryOptions sessionRetryOptions = null)
         {
             this.durationTimer.Start();
             this.retryCount = 0;
             this.waitTimeInMilliSeconds = waitTimeInMilliSeconds;
             this.currentBackoffInMilliSeconds = null;
+            this.sessionRetryOptions = sessionRetryOptions;
         }
 
         public Task<ShouldRetryResult> ShouldRetryAsync(Exception exception, CancellationToken cancellationToken)
@@ -84,27 +92,76 @@ namespace Microsoft.Azure.Documents
             if (exception is DocumentClientException dce)
             {
                 result = this.ShouldRetryInternalAsync(
+                    null,
                     dce?.StatusCode,
-                    dce?.GetSubStatus());
+                    dce?.GetSubStatus(),
+                    dce?.LSN);
             }
 
             return Task.FromResult(result);
         }
 
-        private ShouldRetryResult ShouldRetryInternalAsync(
-            HttpStatusCode? statusCode,
-            SubStatusCodes? subStatusCode)
+        // IRequestRetryPolicy<DocumentServiceRequest, StoreResponse>
+        public void OnBeforeSendRequest(DocumentServiceRequest request)
         {
+        }
+
+        // IRequestRetryPolicy<DocumentServiceRequest, StoreResponse>
+        public Task<ShouldRetryResult> ShouldRetryAsync(DocumentServiceRequest request,
+            StoreResponse response,
+            Exception exception,
+            CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        // IRequestRetryPolicy<DocumentServiceRequest, StoreResponse>
+        public bool TryHandleResponseSynchronously(DocumentServiceRequest request,
+            StoreResponse response,
+            Exception exception,
+            out ShouldRetryResult shouldRetryResult)
+        {
+            HttpStatusCode? httpStatusCode = response?.StatusCode ?? (exception as DocumentClientException)?.StatusCode;
+            SubStatusCodes? httpSubStatusCode = response?.SubStatusCode ?? (exception as DocumentClientException)?.GetSubStatus();
+
+            shouldRetryResult = this.ShouldRetryInternalAsync(request, httpStatusCode, httpSubStatusCode, response?.LSN);
+            return true;
+        }
+
+#pragma warning disable VSTHRD200 // Use "Async" suffix for async methods
+        private ShouldRetryResult ShouldRetryInternalAsync(DocumentServiceRequest request,
+#pragma warning restore VSTHRD200 // Use "Async" suffix for async methods
+            HttpStatusCode? statusCode,
+            SubStatusCodes? subStatusCode,
+            long? responseLSN)
+        {
+            ISessionToken requestSessionToken = request?.RequestContext?.SessionToken;
+
             if (statusCode.HasValue && statusCode.Value == HttpStatusCode.NotFound
                 && subStatusCode.HasValue && subStatusCode.Value == SubStatusCodes.ReadSessionNotAvailable)
+#pragma warning disable SA1505 // Opening braces should not be followed by blank line
             {
+
                 int remainingTimeInMilliSeconds = this.waitTimeInMilliSeconds - Convert.ToInt32(this.durationTimer.Elapsed.TotalMilliseconds);
 
                 if (remainingTimeInMilliSeconds <= 0)
                 {
                     this.durationTimer.Stop();
-                    DefaultTrace.TraceInformation("SessionTokenMismatchRetryPolicy not retrying because it has exceeded the time limit. Retry count = {0}", this.retryCount);
 
+#pragma warning disable SA1003 // Symbols should be spaced correctly
+                    DefaultTrace.TraceInformation("SessionTokenMismatchRetryPolicy not retrying because it has exceeded the time limit. Retry count = {0} request-session-token = {1} response-session-token = {2}", 
+                        this.retryCount,
+                        requestSessionToken == null ? "<empty>" : requestSessionToken.ConvertToString(),
+                        responseLSN.HasValue? responseLSN : "<empty>");
+#pragma warning restore SA1003 // Symbols should be spaced correctly
+
+                    return ShouldRetryResult.NoRetry();
+                }
+
+                if (!this.shouldRetryLocally())
+                {
+                    DefaultTrace.TraceInformation("SessionTokenMismatchRetryPolicy not retrying because it a retry attempt for the current region and " +
+                                                                    "fallback to a different region is preferred ");
                     return ShouldRetryResult.NoRetry();
                 }
 
@@ -130,14 +187,48 @@ namespace Microsoft.Azure.Documents
                 }
 
                 this.retryCount++;
-                DefaultTrace.TraceInformation("SessionTokenMismatchRetryPolicy will retry. Retry count = {0}. Backoff time = {1} ms", this.retryCount, backoffTime.TotalMilliseconds);
+                // For remote region preference ensure that the last retry is long enough (even when exceeding max backoff time)
+                // to consume the entire minRetryTimeInLocalRegion
+                if (this.sessionRetryOptions != null && this.sessionRetryOptions.RemoteRegionPreferred &&
+                    this.retryCount >= (this.sessionRetryOptions.MaxInRegionRetryCount - 1))
+                {
+                    TimeSpan elapsed = DateTimeOffset.Now - this.startTime;
+                    TimeSpan remainingMinRetryTimeInLocalRegion = TimeSpan.FromMilliseconds(this.sessionRetryOptions.MinInRegionRetryTime.TotalMilliseconds - elapsed.TotalMilliseconds);
+
+                    if (remainingMinRetryTimeInLocalRegion.CompareTo(backoffTime) > 0)
+                    {
+                        backoffTime = remainingMinRetryTimeInLocalRegion;
+                    }
+                }
+
+                DefaultTrace.TraceInformation("SessionTokenMismatchRetryPolicy will retry. Retry count = {0}. Backoff time = {1} ms request-session-token = {2} response-session-token = {3}", 
+                    this.retryCount, 
+                    backoffTime.TotalMilliseconds,
+                    requestSessionToken == null ? "<empty>" : requestSessionToken.ConvertToString(),
+                    responseLSN.HasValue ? responseLSN : "<empty>");
 
                 return ShouldRetryResult.RetryAfter(backoffTime);
             }
+#pragma warning restore SA1505 // Opening braces should not be followed by blank line
 
             this.durationTimer.Stop();
 
             return ShouldRetryResult.NoRetry();
+        }
+
+        private bool shouldRetryLocally()
+        {
+            if (this.sessionRetryOptions == null || !this.sessionRetryOptions.RemoteRegionPreferred)
+            {
+                return true;
+            }
+
+            // SessionTokenMismatchRetryPolicy is invoked after 1 attempt on a region
+            // sessionTokenMismatchRetryAttempts increments only after shouldRetry triggers
+            // another attempt on the same region
+            // hence to curb the retry attempts on a region,
+            // compare sessionTokenMismatchRetryAttempts with max retry attempts allowed on the region - 1
+            return this.retryCount <= (this.sessionRetryOptions.MaxInRegionRetryCount - 1);
         }
     }
 }

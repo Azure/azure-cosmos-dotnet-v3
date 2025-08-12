@@ -584,6 +584,26 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Provides SessionTokenMismatchRetryPolicy optimization through customer supplied region switch hints,
+        /// which guide SDK-internal retry policies on how early to fallback to the next applicable region.
+        /// With a single-write-region account the next applicable region is the write-region, with a 
+        /// multi-write-region account the next applicable region is the next region in the order of effective 
+        /// preferred regions (same order also used for read/query operations).
+        /// </summary>
+        /// <param name="enableRemoteRegionPreferredForSessionRetry"></param>
+        /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        CosmosClientBuilder WithEnableRemoteRegionPreferredForSessionRetry(bool enableRemoteRegionPreferredForSessionRetry)
+        {
+            this.clientOptions.EnableRemoteRegionPreferredForSessionRetry = enableRemoteRegionPreferredForSessionRetry;
+            return this;
+        }
+
+        /// <summary>
         /// Set a custom JSON serializer. 
         /// </summary>
         /// <param name="cosmosJsonSerializer">The custom class that implements <see cref="CosmosSerializer"/> </param>
@@ -706,12 +726,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </summary>
         /// <param name="strategy"></param>
         /// <returns>The CosmosClientBuilder</returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        CosmosClientBuilder WithAvailabilityStrategy(AvailabilityStrategy strategy)
+        public CosmosClientBuilder WithAvailabilityStrategy(AvailabilityStrategy strategy)
         {
             this.clientOptions.AvailabilityStrategy = strategy;
             return this;
@@ -736,15 +751,6 @@ namespace Microsoft.Azure.Cosmos.Fluent
         internal CosmosClientBuilder WithCpuMonitorDisabled()
         {
             this.clientOptions.EnableCpuMonitor = false;
-            return this;
-        }
-
-        /// <summary>
-        /// Enabled partition level failover in the SDK
-        /// </summary>
-        internal CosmosClientBuilder WithPartitionLevelFailoverEnabled()
-        {
-            this.clientOptions.EnablePartitionLevelFailover = true;
             return this;
         }
 
@@ -813,7 +819,12 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <param name="throughputBucket">The desired throughput bucket for the client.</param>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso href="https://aka.ms/cosmsodb-bucketing"/>
-        internal CosmosClientBuilder WithThroughputBucket(int throughputBucket)
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        CosmosClientBuilder WithThroughputBucket(int throughputBucket)
         {
             this.clientOptions.ThroughputBucket = throughputBucket;
             return this;

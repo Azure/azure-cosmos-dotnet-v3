@@ -208,7 +208,7 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceError("Exception during BatchAsyncBatcher: {0}", ex);
+                DefaultTrace.TraceError("Exception during BatchAsyncBatcher: {0}", ex.Message);
             }
             finally
             {

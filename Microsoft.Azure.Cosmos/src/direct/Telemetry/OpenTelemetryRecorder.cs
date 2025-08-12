@@ -32,6 +32,7 @@ namespace Microsoft.Azure.Documents.Telemetry
                            Exception exception = null,
                            StoreResponse storeResponse = null)
         {
+#pragma warning disable CDX1003 // Experimental - DontCatchGenericExceptions
             try
             {
                 this.scope.AddAttribute("rntbd.url", addressUri.OriginalString);
@@ -70,6 +71,7 @@ namespace Microsoft.Azure.Documents.Telemetry
             catch (Exception ex)
             {
                 DefaultTrace.TraceWarning("Error with diagnostic scope dispose {0}", ex.ToString());
+#pragma warning restore CDX1003
             }
         }
     }

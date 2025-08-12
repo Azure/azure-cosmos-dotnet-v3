@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
         private static readonly Dictionary<string, MetricType> expectedOperationMetrics = new()
         {
             { "db.client.operation.duration", MetricType.Histogram },
-            { "db.client.response.row_count", MetricType.Histogram},
+            { "db.client.response.returned_rows", MetricType.Histogram},
             { "azure.cosmosdb.client.operation.request_charge", MetricType.Histogram },
             { "azure.cosmosdb.client.active_instance.count", MetricType.LongSumNonMonotonic }
         };

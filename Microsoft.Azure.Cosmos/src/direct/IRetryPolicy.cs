@@ -19,6 +19,8 @@ namespace Microsoft.Azure.Documents
 
         public bool ShouldRetry { get; protected set; }
 
+        public bool? ShouldIgnoreException { get; protected set; } 
+
         /// <summary>
         /// How long to wait before next retry. 0 indicates retry immediately.
         /// </summary>
@@ -39,6 +41,7 @@ namespace Microsoft.Azure.Documents
             {
                 capturedException.Throw();
             }
+#pragma warning disable CDX1000 // DontConvertExceptionToObject
             if (capturedException != null && object.ReferenceEquals(
                 this.ExceptionToThrow, capturedException.SourceException))
             {
@@ -48,6 +51,7 @@ namespace Microsoft.Azure.Documents
             {
                 throw this.ExceptionToThrow;
             }
+#pragma warning restore CDX1000 // DontConvertExceptionToObject
         }
 
         public static ShouldRetryResult NoRetry(Exception exception = null)
@@ -63,6 +67,11 @@ namespace Microsoft.Azure.Documents
         public static ShouldRetryResult RetryAfter(TimeSpan backoffTime)
         {
             return new ShouldRetryResult { ShouldRetry = true, BackoffTime = backoffTime };
+        }
+
+        public static ShouldRetryResult NoRetryIgnoreException()
+        {
+            return new ShouldRetryResult { ShouldRetry = false, ShouldIgnoreException = true };
         }
     }
 

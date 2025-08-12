@@ -173,6 +173,11 @@ namespace Microsoft.Azure.Cosmos.Json
             private readonly JsonBinaryMemoryReader jsonBinaryBuffer;
 
             /// <summary>
+            /// Dictionary used for user string encoding.
+            /// </summary>
+            private readonly IJsonStringDictionary jsonStringDictionary;
+
+            /// <summary>
             /// For binary there is no end of token marker in the actual binary, but the JsonReader interface still needs to surface ObjectEndToken and ArrayEndToken.
             /// To accommodate for this we have a progress stack to let us know how many bytes there are left to read for all levels of nesting. 
             /// With this information we know that we are at the end of a context and can now surface an end object / array token.
@@ -185,14 +190,16 @@ namespace Microsoft.Azure.Cosmos.Json
             private int currentTokenPosition;
 
             public JsonBinaryReader(
-                ReadOnlyMemory<byte> buffer)
-                : this(buffer, indexToStartFrom: null)
+                ReadOnlyMemory<byte> buffer,
+                IJsonStringDictionary jsonStringDictionary = null)
+                : this(buffer, indexToStartFrom: null, jsonStringDictionary: jsonStringDictionary)
             {
             }
 
             internal JsonBinaryReader(
                 ReadOnlyMemory<byte> rootBuffer,
-                int? indexToStartFrom = null)
+                int? indexToStartFrom = null,
+                IJsonStringDictionary jsonStringDictionary = null)
             {
                 if (rootBuffer.IsEmpty)
                 {
@@ -225,6 +232,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 // offset for the 0x80 binary type marker
                 this.jsonBinaryBuffer = new JsonBinaryMemoryReader(readerBuffer);
                 this.arrayAndObjectEndStack = new ArrayAndObjectEndStack();
+                this.jsonStringDictionary = jsonStringDictionary;
             }
 
             #region IJsonReader
@@ -361,7 +369,8 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 return JsonBinaryEncoding.GetUtf8StringValue(
                     this.rootBuffer,
-                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition));
+                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition),
+                    this.jsonStringDictionary);
             }
 
             /// <inheritdoc />
@@ -377,6 +386,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 return JsonBinaryEncoding.TryGetBufferedStringValue(
                     this.rootBuffer,
                     this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition),
+                    this.jsonStringDictionary,
                     out bufferedUtf8StringValue);
             }
 
@@ -539,7 +549,8 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 return JsonBinaryEncoding.GetUtf8SpanValue(
                     this.rootBuffer,
-                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition));
+                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition),
+                    this.jsonStringDictionary);
             }
             #endregion
 

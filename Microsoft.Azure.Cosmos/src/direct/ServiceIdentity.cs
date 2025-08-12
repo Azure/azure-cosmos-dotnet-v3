@@ -17,10 +17,15 @@ namespace Microsoft.Azure.Documents
 
     internal sealed class ServiceIdentity : IServiceIdentity 
     {
+#pragma warning disable CS1587
         [JsonConstructor]
+        /// <summary>
+        /// Needed for TestForWhiteListedPersistedTypes to succeed 
+        /// </summary>
         private ServiceIdentity()
         {
         }
+#pragma warning restore CS1587
 
         public ServiceIdentity(string federationId, Uri serviceName, bool isMasterService)
         {
