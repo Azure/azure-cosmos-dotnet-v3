@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos
                 // 3. Suffix already contains features, we the new features in the existing suffix.
                 this.Suffix = string.IsNullOrEmpty(this.Suffix)
                     ? features
-                    : this.Suffix.Contains(UserAgentContainer.PipeDelimiter)
+                    : this.HasFeatureFlag()
                         ? $"{features}{this.Suffix.Substring(this.Suffix.IndexOf(UserAgentContainer.PipeDelimiter))}"
                         : $"{features}{UserAgentContainer.PipeDelimiter}{this.Suffix}";
             }
@@ -53,10 +53,22 @@ namespace Microsoft.Azure.Cosmos
                 // 3. Suffix already contains features, we remove the features from the existing suffix.
                 this.Suffix = string.IsNullOrEmpty(this.Suffix)
                     ? string.Empty
-                    : this.Suffix.Contains(UserAgentContainer.PipeDelimiter)
+                    : this.HasFeatureFlag()
+                        //if the suffix contains a feature flag we can assume that the first pipe delimiter marks the end of it
                         ? this.Suffix.Substring(this.Suffix.IndexOf(UserAgentContainer.PipeDelimiter) + 1)
                         : this.Suffix;
             }
+        }
+
+        private bool HasFeatureFlag()
+        {
+            if (string.IsNullOrEmpty(this.Suffix))
+            {
+                return false;
+            }
+
+            // Matches 'F' followed by one or more digits, then a pipe '|'
+            return Regex.IsMatch(this.Suffix, @"F\d+\|");
         }
 
         internal override string BaseUserAgent => this.cosmosBaseUserAgent ?? string.Empty;
