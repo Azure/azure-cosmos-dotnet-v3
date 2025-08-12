@@ -13,8 +13,10 @@ namespace Microsoft.Azure.Cosmos
         private const int MaxOperatingSystemString = 30;
         private const int MaxClientId = 10;
         private const string PipeDelimiter = "|";
+
         private readonly string cosmosBaseUserAgent;
         private readonly string clientId;
+        private readonly Regex regex = new Regex(@"F\d+\|", RegexOptions.Compiled);
 
         public UserAgentContainer(
             int clientId,
@@ -68,7 +70,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // Matches 'F' followed by one or more digits, then a pipe '|'
-            return Regex.IsMatch(this.Suffix, @"F\d+\|");
+            return this.regex.IsMatch(this.Suffix);
         }
 
         internal override string BaseUserAgent => this.cosmosBaseUserAgent ?? string.Empty;
