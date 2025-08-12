@@ -44,10 +44,39 @@ namespace Microsoft.Azure.Cosmos
         public ChangeFeedEstimatorRequestOptions();
         public Nullable<int> MaxItemCount { get; set; }
     }
+    public class ChangeFeedItem<T>
+    {
+        public ChangeFeedItem();
+        public T Current { get; set; }
+        public ChangeFeedMetadata Metadata { get; set; }
+        public T Previous { get; set; }
+    }
+    public class ChangeFeedMetadata
+    {
+        public ChangeFeedMetadata();
+        public DateTime ConflictResolutionTimestamp { get; }
+        public bool IsTimeToLiveExpired { get; }
+        public long Lsn { get; }
+        public ChangeFeedOperationType OperationType { get; }
+        public long PreviousLsn { get; }
+    }
     public abstract class ChangeFeedMode
     {
+        public static ChangeFeedMode AllVersionsAndDeletes { get; }
         public static ChangeFeedMode Incremental { get; }
         public static ChangeFeedMode LatestVersion { get; }
+    }
+    public enum ChangeFeedOperationType
+    {
+        Create = 0,
+        Delete = 2,
+        Replace = 1,
+    }
+    public sealed class ChangeFeedPolicy
+    {
+        public ChangeFeedPolicy();
+        public static TimeSpan FullFidelityNoRetention { get; }
+        public TimeSpan FullFidelityRetention { get; set; }
     }
     public abstract class ChangeFeedProcessor
     {
@@ -238,6 +267,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract ChangeFeedProcessorBuilder GetChangeFeedEstimatorBuilder(string processorName, Container.ChangesEstimationHandler estimationDelegate, Nullable<TimeSpan> estimationPeriod=default(Nullable<TimeSpan>));
         public abstract FeedIterator<T> GetChangeFeedIterator<T>(ChangeFeedStartFrom changeFeedStartFrom, ChangeFeedMode changeFeedMode, ChangeFeedRequestOptions changeFeedRequestOptions=null);
         public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder(string processorName, Container.ChangeFeedStreamHandler onChangesDelegate);
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(string processorName, Container.ChangeFeedHandler<ChangeFeedItem<T>> onChangesDelegate);
         public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint(string processorName, Container.ChangeFeedStreamHandlerWithManualCheckpoint onChangesDelegate);
         public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint<T>(string processorName, Container.ChangeFeedHandlerWithManualCheckpoint<T> onChangesDelegate);
         public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(string processorName, Container.ChangeFeedHandler<T> onChangesDelegate);
@@ -251,6 +281,8 @@ namespace Microsoft.Azure.Cosmos
         public abstract FeedIterator GetItemQueryStreamIterator(FeedRange feedRange, QueryDefinition queryDefinition, string continuationToken, QueryRequestOptions requestOptions=null);
         public abstract FeedIterator GetItemQueryStreamIterator(QueryDefinition queryDefinition, string continuationToken=null, QueryRequestOptions requestOptions=null);
         public abstract FeedIterator GetItemQueryStreamIterator(string queryText=null, string continuationToken=null, QueryRequestOptions requestOptions=null);
+        public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(FeedRange feedRange, CancellationToken cancellationToken=default(CancellationToken));
+        public virtual Task<bool> IsFeedRangePartOfAsync(FeedRange x, FeedRange y, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<ItemResponse<T>> PatchItemAsync<T>(string id, PartitionKey partitionKey, IReadOnlyList<PatchOperation> patchOperations, PatchItemRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<ResponseMessage> PatchItemStreamAsync(string id, PartitionKey partitionKey, IReadOnlyList<PatchOperation> patchOperations, PatchItemRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<ContainerResponse> ReadContainerAsync(ContainerRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
@@ -285,6 +317,7 @@ namespace Microsoft.Azure.Cosmos
         public ContainerProperties(string id, IReadOnlyList<string> partitionKeyPaths);
         public ContainerProperties(string id, string partitionKeyPath);
         public Nullable<int> AnalyticalStoreTimeToLiveInSeconds { get; set; }
+        public ChangeFeedPolicy ChangeFeedPolicy { get; set; }
         public ClientEncryptionPolicy ClientEncryptionPolicy { get; set; }
         public Collection<ComputedProperty> ComputedProperties { get; set; }
         public ConflictResolutionPolicy ConflictResolutionPolicy { get; set; }
@@ -364,6 +397,7 @@ namespace Microsoft.Azure.Cosmos
         public CosmosClientTelemetryOptions CosmosClientTelemetryOptions { get; set; }
         public Collection<RequestHandler> CustomHandlers { get; }
         public Nullable<bool> EnableContentResponseOnWrite { get; set; }
+        public bool EnableRemoteRegionPreferredForSessionRetry { get; set; }
         public bool EnableTcpConnectionEndpointRediscovery { get; set; }
         public IFaultInjector FaultInjector { get; set; }
         public int GatewayModeMaxConnectionLimit { get; set; }
@@ -381,6 +415,7 @@ namespace Microsoft.Azure.Cosmos
         public CosmosSerializer Serializer { get; set; }
         public CosmosSerializationOptions SerializerOptions { get; set; }
         public Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateCustomValidationCallback { get; set; }
+        public Nullable<int> ThroughputBucket { get; set; }
         public Nullable<TimeSpan> TokenCredentialBackgroundRefreshInterval { get; set; }
         public JsonSerializerOptions UseSystemTextJsonSerializerWithOptions { get; set; }
         public IWebProxy WebProxy { get; set; }
@@ -391,7 +426,76 @@ namespace Microsoft.Azure.Cosmos
         public CosmosThresholdOptions CosmosThresholdOptions { get; set; }
         public bool DisableDistributedTracing { get; set; }
         public bool DisableSendingMetricsToService { get; set; }
+        public bool IsClientMetricsEnabled { get; set; }
+        public NetworkMetricsOptions NetworkMetricsOptions { get; set; }
+        public OperationMetricsOptions OperationMetricsOptions { get; set; }
         public QueryTextMode QueryTextMode { get; set; }
+    }
+    public sealed class CosmosDbClientMetrics
+    {
+        public CosmosDbClientMetrics();
+        public static class HistogramBuckets
+        {
+            public static readonly double[] RequestLatencyBuckets;
+            public static readonly double[] RequestUnitBuckets;
+            public static readonly double[] RowCountBuckets;
+        }
+        public static class NetworkMetrics
+        {
+            public const string MeterName = "Azure.Cosmos.Client.Request";
+            public const string Version = "1.0.0";
+            public static class Description
+            {
+                public const string BackendLatency = "Backend Latency (for direct mode).";
+                public const string ChannelAquisitionLatency = "The duration of the successfully established outbound TCP connections. i.e. Channel Aquisition Time (for direct mode).";
+                public const string Latency = "Duration of client requests.";
+                public const string ReceivedTimeLatency = "Time spent on 'Received' stage (for direct mode).";
+                public const string RequestBodySize = "Size of client request body.";
+                public const string ResponseBodySize = "Size of client response body.";
+                public const string TransitTimeLatency = "Time spent on the wire (for direct mode).";
+            }
+            public static class Name
+            {
+                public const string BackendLatency = "azure.cosmosdb.client.request.service_duration";
+                public const string ChannelAquisitionLatency = "azure.cosmosdb.client.request.channel_aquisition.duration";
+                public const string Latency = "azure.cosmosdb.client.request.duration";
+                public const string ReceivedTimeLatency = "azure.cosmosdb.client.request.received.duration";
+                public const string RequestBodySize = "azure.cosmosdb.client.request.body.size";
+                public const string ResponseBodySize = "azure.cosmosdb.client.response.body.size";
+                public const string TransitTimeLatency = "azure.cosmosdb.client.request.transit.duration";
+            }
+            public static class Unit
+            {
+                public const string Bytes = "bytes";
+                public const string Sec = "s";
+            }
+        }
+        public static class OperationMetrics
+        {
+            public const string MeterName = "Azure.Cosmos.Client.Operation";
+            public const string Version = "1.0.0";
+            public static class Description
+            {
+                public const string ActiveInstances = "Number of active SDK client instances.";
+                public const string Latency = "Total end-to-end duration of the operation";
+                public const string RequestCharge = "Total request units per operation (sum of RUs for all requested needed when processing an operation)";
+                public const string RowCount = "For feed operations (query, readAll, readMany, change feed) batch operations this meter capture the actual item count in responses from the service";
+            }
+            public static class Name
+            {
+                public const string ActiveInstances = "azure.cosmosdb.client.active_instance.count";
+                public const string Latency = "db.client.operation.duration";
+                public const string RequestCharge = "azure.cosmosdb.client.operation.request_charge";
+                public const string RowCount = "db.client.response.returned_rows";
+            }
+            public static class Unit
+            {
+                public const string Instance = "{instance}";
+                public const string Item = "{item}";
+                public const string RequestUnit = "{request_unit}";
+                public const string Sec = "s";
+            }
+        }
     }
     public abstract class CosmosDiagnostics
     {
@@ -731,6 +835,12 @@ namespace Microsoft.Azure.Cosmos
         public override T Resource { get; }
         public override HttpStatusCode StatusCode { get; }
     }
+    public class NetworkMetricsOptions
+    {
+        public NetworkMetricsOptions();
+        public IDictionary<string, string> CustomDimensions { get; set; }
+        public Nullable<bool> IncludeRoutingId { get; set; }
+    }
     public enum OperationKind
     {
         Create = 1,
@@ -738,6 +848,12 @@ namespace Microsoft.Azure.Cosmos
         Invalid = 0,
         Read = 4,
         Replace = 2,
+    }
+    public class OperationMetricsOptions
+    {
+        public OperationMetricsOptions();
+        public IDictionary<string, string> CustomDimensions { get; set; }
+        public Nullable<bool> IncludeRegion { get; set; }
     }
     public struct PartitionKey : IEquatable<PartitionKey>
     {
@@ -1008,12 +1124,16 @@ namespace Microsoft.Azure.Cosmos
     {
         public RequestOptions();
         public Action<Headers> AddRequestHeaders { get; set; }
+        public AvailabilityStrategy AvailabilityStrategy { get; set; }
         public CosmosThresholdOptions CosmosThresholdOptions { get; set; }
         public List<string> ExcludeRegions { get; set; }
         public string IfMatchEtag { get; set; }
         public string IfNoneMatchEtag { get; set; }
+        public NetworkMetricsOptions NetworkMetricsOptions { get; set; }
+        public OperationMetricsOptions OperationMetricsOptions { get; set; }
         public Nullable<PriorityLevel> PriorityLevel { get; set; }
         public IReadOnlyDictionary<string, object> Properties { get; set; }
+        public Nullable<int> ThroughputBucket { get; set; }
         public RequestOptions ShallowCopy();
     }
     public class ResponseMessage : IDisposable
@@ -1238,8 +1358,11 @@ namespace Microsoft.Azure.Cosmos
     public sealed class VectorIndexPath
     {
         public VectorIndexPath();
+        public int IndexingSearchListSize { get; set; }
         public string Path { get; set; }
+        public int QuantizationByteSize { get; set; }
         public VectorIndexType Type { get; set; }
+        public string[] VectorIndexShardKey { get; set; }
     }
     public enum VectorIndexType
     {
@@ -1256,6 +1379,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 }
 namespace Microsoft.Azure.Cosmos.Fluent
 {
+    public class ChangeFeedPolicyDefinition
+    {
+        public ContainerBuilder Attach();
+    }
     public sealed class ClientEncryptionPolicyDefinition
     {
         public ContainerBuilder Attach();
@@ -1287,6 +1414,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         public Task<ContainerResponse> CreateAsync(Nullable<int> throughput=default(Nullable<int>), CancellationToken cancellationToken=default(CancellationToken));
         public Task<ContainerResponse> CreateIfNotExistsAsync(ThroughputProperties throughputProperties, CancellationToken cancellationToken=default(CancellationToken));
         public Task<ContainerResponse> CreateIfNotExistsAsync(Nullable<int> throughput=default(Nullable<int>), CancellationToken cancellationToken=default(CancellationToken));
+        public ChangeFeedPolicyDefinition WithChangeFeedPolicy(TimeSpan retention);
         public ClientEncryptionPolicyDefinition WithClientEncryptionPolicy();
         public ClientEncryptionPolicyDefinition WithClientEncryptionPolicy(int policyFormatVersion);
         public ConflictResolutionDefinition WithConflictResolution();
@@ -1327,6 +1455,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         public CosmosClientBuilder WithContentResponseOnWrite(bool contentResponseOnWrite);
         public CosmosClientBuilder WithCustomAccountEndpoints(IEnumerable<Uri> customAccountEndpoints);
         public CosmosClientBuilder WithCustomSerializer(CosmosSerializer cosmosJsonSerializer);
+        public CosmosClientBuilder WithEnableRemoteRegionPreferredForSessionRetry(bool enableRemoteRegionPreferredForSessionRetry);
         public CosmosClientBuilder WithFaultInjection(IFaultInjector faultInjector);
         public CosmosClientBuilder WithHttpClientFactory(Func<HttpClient> httpClientFactory);
         public CosmosClientBuilder WithLimitToEndpoint(bool limitToEndpoint);
@@ -1335,6 +1464,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         public CosmosClientBuilder WithSerializerOptions(CosmosSerializationOptions cosmosSerializerOptions);
         public CosmosClientBuilder WithSystemTextJsonSerializerOptions(JsonSerializerOptions serializerOptions);
         public CosmosClientBuilder WithThrottlingRetryOptions(TimeSpan maxRetryWaitTimeOnThrottledRequests, int maxRetryAttemptsOnThrottledRequests);
+        public CosmosClientBuilder WithThroughputBucket(int throughputBucket);
     }
     public class FullTextIndexDefinition<T>
     {
@@ -1386,6 +1516,9 @@ namespace Microsoft.Azure.Cosmos.Fluent
         public VectorIndexDefinition(T parent, Action<VectorIndexPath> attachCallback);
         public T Attach();
         public VectorIndexDefinition<T> Path(string path, VectorIndexType indexType);
+        public VectorIndexDefinition<T> WithIndexingSearchListSize(int indexingSearchListSize);
+        public VectorIndexDefinition<T> WithQuantizationByteSize(int quantizationByteSize);
+        public VectorIndexDefinition<T> WithVectorIndexShardKey(string[] vectorIndexShardKey);
     }
 }
 namespace Microsoft.Azure.Cosmos.Linq
@@ -1440,6 +1573,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         public static Task<Response<float>> SumAsync(this IQueryable<float> source, CancellationToken cancellationToken=default(CancellationToken));
         public static FeedIterator<T> ToFeedIterator<T>(this IQueryable<T> query);
         public static QueryDefinition ToQueryDefinition<T>(this IQueryable<T> query);
+        public static QueryDefinition ToQueryDefinition<T>(this IQueryable<T> query, IDictionary<object, string> namedParameters);
         public static FeedIterator ToStreamIterator<T>(this IQueryable<T> query);
         public static double VectorDistance(this byte[] vector1, byte[] vector2, bool isBruteForce, CosmosLinqExtensions.VectorDistanceOptions options);
         public static double VectorDistance(this sbyte[] vector1, sbyte[] vector2, bool isBruteForce, CosmosLinqExtensions.VectorDistanceOptions options);
