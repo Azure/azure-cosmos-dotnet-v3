@@ -44,6 +44,12 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public bool EnableMultiWriteRegionHedge { get; private set; }
 
+        /// <summary>
+        /// Internal flag to indicate if this is the default strategy used by the SDK when enabling
+        /// PPAF for clients without customer defined availability strategy.
+        /// </summary>
+        public bool IsSDKDefaultStrategyForPPAF { get; private set; }
+
         private readonly string HedgeConfigText;
         private bool ppafEnabled = false;
 
@@ -53,10 +59,12 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="threshold"></param>
         /// <param name="thresholdStep"></param>
         /// <param name="enableMultiWriteRegionHedge"></param>
+        /// <param name="isSDKDefaultStrategy"></param>
         public CrossRegionHedgingAvailabilityStrategy(
             TimeSpan threshold,
             TimeSpan? thresholdStep,
-            bool enableMultiWriteRegionHedge = false)
+            bool enableMultiWriteRegionHedge = false,
+            bool isSDKDefaultStrategy = false)
         {
             if (threshold <= TimeSpan.Zero)
             {
@@ -71,6 +79,7 @@ namespace Microsoft.Azure.Cosmos
             this.Threshold = threshold;
             this.ThresholdStep = thresholdStep ?? TimeSpan.FromMilliseconds(-1);
             this.EnableMultiWriteRegionHedge = enableMultiWriteRegionHedge;
+            this.IsSDKDefaultStrategyForPPAF = isSDKDefaultStrategy;
 
             this.HedgeConfigText = $"t:{this.Threshold.TotalMilliseconds}ms, s:{this.ThresholdStep.TotalMilliseconds}ms, w:{this.EnableMultiWriteRegionHedge}";
         }
