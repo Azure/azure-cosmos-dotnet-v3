@@ -517,10 +517,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestCategory("ThinClient")]
         public async Task QueryItemsTestWithStrongConsistency()
         {
-            string connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_TC_STRONG", string.Empty);
+            string connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_THINCLIENTSTRONG", string.Empty);
             if (string.IsNullOrEmpty(connectionString))
             {
-                Assert.Fail("Set environment variable COSMOSDB_TC_STRONG to run the tests");
+                Assert.Fail("Set environment variable COSMOSDB_THINCLIENTSTRONG to run the tests");
             }
             this.client = new CosmosClient(
                  connectionString,
