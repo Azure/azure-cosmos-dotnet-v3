@@ -508,7 +508,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                                 isProxyCall
                                     ? FaultInjectionResponseEncoding.GetBytes(
                                         GetProxyResponseMessageString((int)StatusCodes.Forbidden, (int)SubStatusCodes.DatabaseAccountNotFound, "DatabaseAccountNotFound", ruleId))
-                                    :  FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: DatabaseAccountNotFound, rule: {ruleId}"))),
+                                    : FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: DatabaseAccountNotFound, rule: {ruleId}"))),
                     };
 
                     this.SetHttpHeaders(httpResponse, headers, isProxyCall);
