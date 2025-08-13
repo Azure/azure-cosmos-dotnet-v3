@@ -24,10 +24,11 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class ThinClientStoreClient : GatewayStoreClient
     {
-        private readonly bool isPartitionLevelFailoverEnabled;
+        private readonly GlobalPartitionEndpointManager globalPartitionEndpointManager;
         private readonly ObjectPool<BufferProviderWrapper> bufferProviderWrapperPool;
         private readonly UserAgentContainer userAgentContainer;
         private readonly IChaosInterceptor chaosInterceptor;
+
 
         public ThinClientStoreClient(
             CosmosHttpClient httpClient,
