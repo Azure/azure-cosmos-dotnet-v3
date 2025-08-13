@@ -33,12 +33,13 @@ namespace Microsoft.Azure.Cosmos
         internal readonly GlobalEndpointManager endpointManager;
         internal readonly ConsistencyLevel defaultConsistencyLevel;
 
+        // Store Clients to send requests to the gateway and/ or thin client endpoints.
         private ThinClientStoreClient thinClientStoreClient;
         private GatewayStoreClient gatewayStoreClient;
 
         // Caches to resolve the PartitionKeyRange from request. For Session Token Optimization.
-        protected PartitionKeyRangeCache partitionKeyRangeCache;
-        protected ClientCollectionCache clientCollectionCache;
+        private PartitionKeyRangeCache partitionKeyRangeCache;
+        private ClientCollectionCache clientCollectionCache;
 
         public GatewayStoreModel(
              GlobalEndpointManager endpointManager,

@@ -618,6 +618,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             public static byte[] GetBytesFromHexString(string hexString)
             {
                 return Convert.FromHexString(hexString);
+            }
         }
     }
 }
