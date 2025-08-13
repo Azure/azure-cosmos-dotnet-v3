@@ -39,7 +39,6 @@ namespace Microsoft.Azure.Cosmos
         // Caches to resolve the PartitionKeyRange from request. For Session Token Optimization.
         protected PartitionKeyRangeCache partitionKeyRangeCache;
         protected ClientCollectionCache clientCollectionCache;
-        protected ISessionContainer sessionContainer;
 
         public GatewayStoreModel(
              GlobalEndpointManager endpointManager,
@@ -62,6 +61,7 @@ namespace Microsoft.Azure.Cosmos
             this.gatewayStoreClient = new GatewayStoreClient(
                 httpClient,
                 this.eventSource,
+                globalPartitionEndpointManager,
                 serializerSettings);
 
             if (isThinClientEnabled)

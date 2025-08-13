@@ -29,21 +29,20 @@ namespace Microsoft.Azure.Cosmos
         private readonly UserAgentContainer userAgentContainer;
         private readonly IChaosInterceptor chaosInterceptor;
 
-
         public ThinClientStoreClient(
             CosmosHttpClient httpClient,
             UserAgentContainer userAgentContainer,
             ICommunicationEventSource eventSource,
-            bool isPartitionLevelFailoverEnabled = false,
+            GlobalPartitionEndpointManager globalPartitionEndpointManager,
             JsonSerializerSettings serializerSettings = null,
             IChaosInterceptor chaosInterceptor = null)
             : base(httpClient,
                   eventSource,
-                  serializerSettings,
-                  isPartitionLevelFailoverEnabled)
+                  globalPartitionEndpointManager,
+                  serializerSettings)
         {
             this.bufferProviderWrapperPool = new ObjectPool<BufferProviderWrapper>(() => new BufferProviderWrapper());
-            this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
+            this.globalPartitionEndpointManager = globalPartitionEndpointManager;
             this.userAgentContainer = userAgentContainer
                 ?? throw new ArgumentNullException(nameof(userAgentContainer),
                 "UserAgentContainer cannot be null when initializing ThinClientStoreClient.");
