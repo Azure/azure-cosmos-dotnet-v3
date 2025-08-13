@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
+    using Microsoft.Azure.Documents.FaultInjection;
     using Newtonsoft.Json;
 
     // Marking it as non-sealed in order to unit test it using Moq framework
@@ -27,6 +28,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly GlobalPartitionEndpointManager globalPartitionEndpointManager;
         private readonly ISessionContainer sessionContainer;
         private readonly DocumentClientEventSource eventSource;
+        private readonly IChaosInterceptor chaosInterceptor;
 
         internal readonly GlobalEndpointManager endpointManager;
         internal readonly ConsistencyLevel defaultConsistencyLevel;
@@ -48,13 +50,15 @@ namespace Microsoft.Azure.Cosmos
              CosmosHttpClient httpClient,
              GlobalPartitionEndpointManager globalPartitionEndpointManager,
              bool isThinClientEnabled,
-             UserAgentContainer userAgentContainer = null)
+             UserAgentContainer userAgentContainer = null,
+             IChaosInterceptor chaosInterceptor = null)
         {
             this.endpointManager = endpointManager;
             this.sessionContainer = sessionContainer;
             this.defaultConsistencyLevel = defaultConsistencyLevel;
             this.eventSource = eventSource;
             this.globalPartitionEndpointManager = globalPartitionEndpointManager;
+            this.chaosInterceptor = chaosInterceptor;
             this.gatewayStoreClient = new GatewayStoreClient(
                 httpClient,
                 this.eventSource,
@@ -68,7 +72,8 @@ namespace Microsoft.Azure.Cosmos
                     userAgentContainer,
                     this.eventSource,
                     globalPartitionEndpointManager,
-                    serializerSettings);
+                    serializerSettings,
+                    this.chaosInterceptor);
             }
 
             this.globalPartitionEndpointManager.SetBackgroundConnectionPeriodicRefreshTask(
