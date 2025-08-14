@@ -15,7 +15,7 @@ jobs:
     BuildConfiguration: Release
     VmImage: $(VmImage)
 
-- template:  templates/build-internal.yml
+- template:  templates/build-internal-aot.yml
   parameters:
     BuildConfiguration: Release
     Arguments: $(ReleaseArguments)
