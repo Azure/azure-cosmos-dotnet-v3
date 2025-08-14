@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     using Mde = Microsoft.Data.Encryption.Cryptography;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
+    using TrackingStream = Microsoft.Azure.Cosmos.Encryption.Tests.TestHelpers.StreamTestHelpers.TrackingStream;
 
     /// <summary>
     /// Core functionality tests for EncryptionProcessor including end-to-end encryption/decryption,
@@ -111,7 +112,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         public async Task StreamHandling_EncryptAsync_Disposes_Input_And_Returns_New_Stream()
         {
             // Arrange
-            var input = ToStream("{\"id\":\"abc\",\"p\":1}");
+            var input = new TrackingStream(ToStream("{\"id\":\"abc\",\"p\":1}"));
             var settings = CreateSettingsWithNoProperties();
 
             // Act
@@ -120,11 +121,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             // Assert
             Assert.IsNotNull(result);
             Assert.AreNotSame(input, result); // Should be a different stream
-            Assert.IsFalse(input.CanRead); // Original should be disposed
+            Assert.IsTrue(input.Disposed, "Input stream should be disposed");
             Assert.IsTrue(result.CanRead);
 
             // Verify content
-            result.Position = 0; // Reset to beginning
             string content = ReadToEnd(result);
             Assert.AreEqual("{\"id\":\"abc\",\"p\":1}", content);
         }
@@ -133,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         public async Task StreamHandling_DecryptAsync_Disposes_Input_And_Returns_New_Stream()
         {
             // Arrange
-            var input = ToStream("{\"id\":\"abc\",\"p\":1}");
+            var input = new TrackingStream(ToStream("{\"id\":\"abc\",\"p\":1}"));
             var settings = CreateSettingsWithNoProperties();
 
             // Act
@@ -142,11 +142,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             // Assert
             Assert.IsNotNull(result);
             Assert.AreNotSame(input, result); // Should be a different stream
-            Assert.IsFalse(input.CanRead); // Original should be disposed
+            Assert.IsTrue(input.Disposed, "Input stream should be disposed");
             Assert.IsTrue(result.CanRead);
 
             // Verify content
-            result.Position = 0; // Reset to beginning
             string content = ReadToEnd(result);
             Assert.AreEqual("{\"id\":\"abc\",\"p\":1}", content);
         }
@@ -160,13 +159,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             using var input = ToStream(originalJson);
             Stream encrypted = await EncryptionProcessor.EncryptAsync(input, settings, operationDiagnostics: null, cancellationToken: CancellationToken.None);
 
-            encrypted.Position = 0;
             string encryptedJson = ReadToEnd(encrypted);
 
             using var encryptedInput = ToStream(encryptedJson);
             Stream decrypted = await EncryptionProcessor.DecryptAsync(encryptedInput, settings, operationDiagnostics: null, cancellationToken: CancellationToken.None);
 
-            decrypted.Position = 0;
             string decryptedJson = ReadToEnd(decrypted);
 
             Assert.AreEqual(originalJson, decryptedJson);

@@ -25,13 +25,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     {
         #region Shared Test Utilities
 
-        protected static MemoryStream ToStream(string json) => new MemoryStream(Encoding.UTF8.GetBytes(json), writable: false);
-
-        protected static string ReadToEnd(Stream s)
-        {
-            using var sr = new StreamReader(s, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
-            return sr.ReadToEnd();
-        }
+    // Thin wrappers so existing partial classes can call these helpers.
+    protected static MemoryStream ToStream(string json) => StreamTestHelpers.ToStream(json);
+    protected static string ReadToEnd(Stream s) => StreamTestHelpers.ReadToEnd(s);
 
         private static EncryptionSettings CreateSettingsWithNoProperties()
         {
@@ -60,18 +56,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         private static Mde.AeadAes256CbcHmac256EncryptionAlgorithm CreateDeterministicAlgorithm()
-        {
-            // Create a stable DataEncryptionKey via a fixed root key so results are deterministic.
-            // We cannot access constructor directly, so use ProtectedDataEncryptionKey with a synthetic KEK that round-trips the DEK.
-            // Build a simple KeyEncryptionKey that returns the plaintext for encrypt/decrypt; leverage test-only helper.
-            var fakeKek = new TestKeyEncryptionKey();
-
-            // Create a ProtectedDataEncryptionKey using a random generated DEK under the fake KEK.
-            var pdek = new Mde.ProtectedDataEncryptionKey("testPdek", fakeKek);
-
-            // Create algorithm (deterministic) from the protected key
-            return new Mde.AeadAes256CbcHmac256EncryptionAlgorithm(pdek, Mde.EncryptionType.Deterministic);
-        }
+            => TestCryptoHelpers.CreateAlgorithm(Mde.EncryptionType.Deterministic);
 
         private static EncryptionSettings CreateSettingsWithInjected(string propertyName, Mde.AeadAes256CbcHmac256EncryptionAlgorithm algorithm)
         {
@@ -81,7 +66,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 clientEncryptionKeyId: "cek1",
                 encryptionType: Mde.EncryptionType.Deterministic,
                 encryptionContainer: container,
-                databaseRid: "dbRid");
+                databaseRid: "dbRid",
+                injectedAlgorithm: algorithm);
             settings.SetEncryptionSettingForProperty(propertyName, forProperty);
             return settings;
         }
@@ -96,24 +82,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         private static Mde.AeadAes256CbcHmac256EncryptionAlgorithm Algo() => TestCryptoHelpers.CreateAlgorithm(Mde.EncryptionType.Deterministic);
 
-        // Minimal test-only KEK that returns plaintext keys (identity wrap/unwrap)
-        private class TestKeyEncryptionKey : Mde.KeyEncryptionKey
-        {
-            public TestKeyEncryptionKey() : base(name: "testKek", path: "test://kek", keyStoreProvider: new TestStoreProvider()) { }
-
-            private class TestStoreProvider : Mde.EncryptionKeyStoreProvider
-            {
-                public override string ProviderName => "testProvider";
-
-                public override byte[] UnwrapKey(string encryptionKeyId, Mde.KeyEncryptionKeyAlgorithm algorithm, byte[] encryptedKey) => encryptedKey;
-
-                public override byte[] WrapKey(string encryptionKeyId, Mde.KeyEncryptionKeyAlgorithm algorithm, byte[] key) => key;
-
-                public override byte[] Sign(string encryptionKeyId, bool allowEnclaveComputations) => new byte[] { 1, 2, 3 };
-
-                public override bool Verify(string encryptionKeyId, bool allowEnclaveComputations, byte[] signature) => true;
-            }
-        }
+    // (Removed local KEK shim; rely on TestHelpers.TestCryptoHelpers instead.)
 
         #endregion
 
