@@ -168,27 +168,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
             }
         }
 
-        internal ITrace[] GetChildrenSnapshot()
-        {
-            lock (this.children)
-            {
-                return this.children.ToArray();
-            }
-        }
-
-        internal KeyValuePair<string, object>[] GetDataSnapshot()
-        {
-            if (!this.data.IsValueCreated)
-            {
-                return new KeyValuePair<string, object>[0];
-            }
-
-            lock (this.children)
-            {
-                return this.data.Value.ToArray();
-            }
-        }
-
         internal void SetWalkingState(bool isWalking)
         {
             this.isBeingWalked = isWalking;
