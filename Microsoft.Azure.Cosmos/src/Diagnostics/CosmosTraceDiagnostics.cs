@@ -40,6 +40,19 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
         public override string ToString()
         {
+            if (this.Value is Tracing.Trace rootConcreteTrace)
+            {
+                rootConcreteTrace.SetWalkingStateRecursively(true);
+                try
+                {
+                    return this.ToJsonString();
+                }
+                finally
+                {
+                    rootConcreteTrace.SetWalkingStateRecursively(false);
+                }
+            }
+            
             return this.ToJsonString();
         }
 
@@ -129,7 +142,23 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         private static ServerSideCumulativeMetrics PopulateServerSideCumulativeMetrics(ITrace trace)
         {
             ServerSideMetricsInternalAccumulator accumulator = new ServerSideMetricsInternalAccumulator();
-            ServerSideMetricsTraceExtractor.WalkTraceTreeForQueryMetrics(trace, accumulator);
+            
+            if (trace is Tracing.Trace rootConcreteTrace)
+            {
+                rootConcreteTrace.SetWalkingStateRecursively(true);
+                try
+                {
+                    ServerSideMetricsTraceExtractor.WalkTraceTreeForQueryMetrics(trace, accumulator);
+                }
+                finally
+                {
+                    rootConcreteTrace.SetWalkingStateRecursively(false);
+                }
+            }
+            else
+            {
+                ServerSideMetricsTraceExtractor.WalkTraceTreeForQueryMetrics(trace, accumulator);
+            }
 
             IReadOnlyList<ServerSidePartitionedMetricsInternal> serverSideMetricsList = accumulator.GetPartitionedServerSideMetrics().Select(metrics => new ServerSidePartitionedMetricsInternal(metrics)).ToList();
 

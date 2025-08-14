@@ -18,37 +18,26 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 return;
             }
 
-            // Set walking state to prevent modifications during the walk
+            // Assert that walking state is set
             if (currentTrace is Tracing.Trace concreteTrace)
             {
-                concreteTrace.SetWalkingStateRecursively(true);
+                System.Diagnostics.Debug.Assert(concreteTrace.IsBeingWalked, "SetWalkingStateRecursively should be set to true");
             }
 
-            try
+            foreach (object datum in currentTrace.Data.Values)
             {
-                foreach (object datum in currentTrace.Data.Values)
+                if (datum is QueryMetricsTraceDatum queryMetricsTraceDatum)
                 {
-                    if (datum is QueryMetricsTraceDatum queryMetricsTraceDatum)
-                    {
-                        ServerSideMetricsInternal serverSideMetrics = queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics;
-                        serverSideMetrics.FeedRange = currentTrace.Name;
-                        ServerSideMetricsTraceExtractor.WalkTraceTreeForPartitionInfo(currentTrace, serverSideMetrics);
-                        accumulator.Accumulate(serverSideMetrics);
-                    }
-                }
-
-                foreach (ITrace childTrace in currentTrace.Children)
-                {
-                    ServerSideMetricsTraceExtractor.WalkTraceTreeForQueryMetrics(childTrace, accumulator);
+                    ServerSideMetricsInternal serverSideMetrics = queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics;
+                    serverSideMetrics.FeedRange = currentTrace.Name;
+                    ServerSideMetricsTraceExtractor.WalkTraceTreeForPartitionInfo(currentTrace, serverSideMetrics);
+                    accumulator.Accumulate(serverSideMetrics);
                 }
             }
-            finally
+
+            foreach (ITrace childTrace in currentTrace.Children)
             {
-                // Clear walking state when done
-                if (currentTrace is Tracing.Trace concreteTraceFinally)
-                {
-                    concreteTraceFinally.SetWalkingStateRecursively(false);
-                }
+                ServerSideMetricsTraceExtractor.WalkTraceTreeForQueryMetrics(childTrace, accumulator);
             }
         }
 
@@ -57,6 +46,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             if (currentTrace == null)
             {
                 return;
+            }
+
+            // Assert that walking state is set
+            if (currentTrace is Tracing.Trace concreteTrace)
+            {
+                System.Diagnostics.Debug.Assert(concreteTrace.IsBeingWalked, "SetWalkingStateRecursively should be set to true");
             }
 
             foreach (Object datum in currentTrace.Data.Values)

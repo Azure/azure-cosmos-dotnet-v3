@@ -38,36 +38,25 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
         private void CollectSummaryFromTraceTree(ITrace currentTrace)
         {
-            // Set walking state to prevent modifications during the walk
+            // Assert that walking state is set
             if (currentTrace is Trace concreteTrace)
             {
-                concreteTrace.SetWalkingStateRecursively(true);
+                System.Diagnostics.Debug.Assert(concreteTrace.IsBeingWalked, "SetWalkingStateRecursively should be set to true");
             }
 
-            try
+            foreach (var datum in currentTrace.Data)
             {
-                foreach (var datum in currentTrace.Data)
+                if (datum.Value is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
                 {
-                    if (datum.Value is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
-                    {
-                        this.AggregateStatsFromStoreResults(clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList);
-                        this.AggregateGatewayStatistics(clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList);
-                        this.AggregateRegionsContacted(clientSideRequestStatisticsTraceDatum.RegionsContacted);
-                    }
-                }
-
-                foreach (ITrace childTrace in currentTrace.Children)
-                {
-                    this.CollectSummaryFromTraceTree(childTrace);
+                    this.AggregateStatsFromStoreResults(clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList);
+                    this.AggregateGatewayStatistics(clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList);
+                    this.AggregateRegionsContacted(clientSideRequestStatisticsTraceDatum.RegionsContacted);
                 }
             }
-            finally
+
+            foreach (ITrace childTrace in currentTrace.Children)
             {
-                // Clear walking state when done
-                if (currentTrace is Trace concreteTraceFinally)
-                {
-                    concreteTraceFinally.SetWalkingStateRecursively(false);
-                }
+                this.CollectSummaryFromTraceTree(childTrace);
             }
         }
 

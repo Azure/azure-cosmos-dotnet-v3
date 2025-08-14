@@ -59,6 +59,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public IReadOnlyDictionary<string, object> Data => this.data.IsValueCreated ? this.data.Value : Trace.EmptyDictionary;
 
+        internal bool IsBeingWalked => this.isBeingWalked;
+
         public void Dispose()
         {
             this.stopwatch.Stop();
@@ -67,6 +69,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
         public ITrace StartChild(
             string name)
         {
+            if (this.isBeingWalked)
+            {
+                return this; // Return self when being walked to avoid modifications
+            }
+
             return this.StartChild(
                 name,
                 level: TraceLevel.Verbose,
@@ -78,6 +85,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
             TraceComponent component,
             TraceLevel level)
         {
+            if (this.isBeingWalked)
+            {
+                return this; // Return self when being walked to avoid modifications
+            }
+
             if (this.Parent != null && !this.stopwatch.IsRunning)
             {
                 return this.Parent.StartChild(name, component, level);
@@ -168,14 +180,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
             }
         }
 
-        internal void SetWalkingState(bool isWalking)
-        {
-            this.isBeingWalked = isWalking;
-        }
-
         internal void SetWalkingStateRecursively(bool isWalking)
         {
-            this.SetWalkingState(isWalking);
+            this.isBeingWalked = isWalking;
             
             lock (this.children)
             {
