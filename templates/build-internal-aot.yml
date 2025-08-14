@@ -1,0 +1,47 @@
+# File: templates/build-internal-aot.yml
+
+parameters:
+  BuildConfiguration: ''
+  Arguments: ''
+  VmImage: ''
+  OS: 'Windows'
+
+jobs:
+
+- job:
+  displayName: InternalFlag ${{ parameters.BuildConfiguration }}
+  pool:
+    name: 'OneES'
+
+  steps:
+  - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
+    clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
+
+  # Add this Command to Include the .NET SDK and runtimes
+  - task: UseDotNet@2
+    displayName: Use .NET 9.0
+    inputs:
+      packageType: 'runtime'
+      version: '9.x'
+
+  - task: UseDotNet@2
+    displayName: Use .NET 8.0
+    inputs:
+      packageType: 'sdk'
+      version: '8.x'
+
+  - task: UseDotNet@2
+    displayName: Use .NET 9.0
+    inputs:
+      packageType: 'sdk'
+      version: '9.x'
+
+  - task: DotNetCoreCLI@2
+    displayName: Build Microsoft.Azure.Cosmos Internal
+    inputs:
+      command: build
+      configuration: $(parameters.BuildConfiguration)
+      nugetConfigPath: NuGet.config
+      projects: Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.csproj
+      arguments: -p:Optimize=true -p:DefineConstants="DOCDBCLIENT COSMOSCLIENT NETSTANDARD20 INTERNAL"
+      versioningScheme: OFF
