@@ -70,52 +70,47 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
                 return false;
             }
 
-            // Use thread-safe enumeration to avoid concurrency issues  
-            object[] dataSnapshot = null;
-            if (currentTrace is Tracing.Trace concreteTrace)
+            // Set walking state to prevent modifications during the walk
+            bool isRootTrace = currentTrace == this.Value;
+            if (isRootTrace && currentTrace is Tracing.Trace rootConcreteTrace)
             {
-                var dataSnapshotPairs = concreteTrace.GetDataSnapshot();
-                dataSnapshot = dataSnapshotPairs.Select(kvp => kvp.Value).ToArray();
-            }
-            else
-            {
-                dataSnapshot = currentTrace.Data.Values.ToArray();
+                rootConcreteTrace.SetWalkingStateRecursively(true);
             }
 
-            foreach (object datum in dataSnapshot)
+            try
             {
-                if (datum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
+                foreach (object datum in currentTrace.Data.Values)
                 {
-                    foreach (StoreResponseStatistics responseStatistics in clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList)
+                    if (datum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
                     {
-                        if (responseStatistics.StoreResult != null && responseStatistics.StoreResult.StatusCode == Documents.StatusCodes.Gone)
+                        foreach (StoreResponseStatistics responseStatistics in clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList)
                         {
-                            return true;
+                            if (responseStatistics.StoreResult != null && responseStatistics.StoreResult.StatusCode == Documents.StatusCodes.Gone)
+                            {
+                                return true;
+                            }
                         }
                     }
                 }
-            }
 
-            // Use thread-safe enumeration to avoid concurrency issues
-            ITrace[] childrenSnapshot = null;
-            if (currentTrace is Tracing.Trace concreteTraceForChildren)
-            {
-                childrenSnapshot = concreteTraceForChildren.GetChildrenSnapshot();
-            }
-            else
-            {
-                childrenSnapshot = currentTrace.Children.ToArray();
-            }
-
-            foreach (ITrace childTrace in childrenSnapshot)
-            {
-                if (this.WalkTraceTreeForGoneException(childTrace))
+                foreach (ITrace childTrace in currentTrace.Children)
                 {
-                    return true;
+                    if (this.WalkTraceTreeForGoneException(childTrace))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+            finally
+            {
+                // Clear walking state when done
+                if (isRootTrace && currentTrace is Tracing.Trace rootConcreteTraceFinally)
+                {
+                    rootConcreteTraceFinally.SetWalkingStateRecursively(false);
                 }
             }
-
-            return false;
         }
 
         private string ToJsonString()

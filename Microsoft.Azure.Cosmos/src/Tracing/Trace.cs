@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
         private readonly List<ITrace> children;
         private readonly Lazy<Dictionary<string, object>> data;
         private ValueStopwatch stopwatch;
+        private volatile bool isBeingWalked;
 
         private Trace(
             string name,
@@ -95,6 +96,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public void AddChild(ITrace child)
         {
+            if (this.isBeingWalked)
+            {
+                return; // Ignore modifications while being walked
+            }
+
             lock (this.children)
             {
                 this.children.Add(child);
@@ -124,6 +130,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public void AddDatum(string key, TraceDatum traceDatum)
         {
+            if (this.isBeingWalked)
+            {
+                return; // Ignore modifications while being walked
+            }
+
             lock (this.children)
             {
                 this.data.Value.Add(key, traceDatum);
@@ -133,6 +144,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public void AddDatum(string key, object value)
         {
+            if (this.isBeingWalked)
+            {
+                return; // Ignore modifications while being walked
+            }
+
             lock (this.children)
             {
                 this.data.Value.Add(key, value);
@@ -141,6 +157,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public void AddOrUpdateDatum(string key, object value)
         {
+            if (this.isBeingWalked)
+            {
+                return; // Ignore modifications while being walked
+            }
+
             lock (this.children)
             {
                 this.data.Value[key] = value;
@@ -165,6 +186,27 @@ namespace Microsoft.Azure.Cosmos.Tracing
             lock (this.children)
             {
                 return this.data.Value.ToArray();
+            }
+        }
+
+        internal void SetWalkingState(bool isWalking)
+        {
+            this.isBeingWalked = isWalking;
+        }
+
+        internal void SetWalkingStateRecursively(bool isWalking)
+        {
+            this.SetWalkingState(isWalking);
+            
+            lock (this.children)
+            {
+                foreach (ITrace child in this.children)
+                {
+                    if (child is Trace concreteChild)
+                    {
+                        concreteChild.SetWalkingStateRecursively(isWalking);
+                    }
+                }
             }
         }
     }

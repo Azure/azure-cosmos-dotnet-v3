@@ -38,34 +38,36 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
         private void CollectSummaryFromTraceTree(ITrace currentTrace)
         {
-            // Create snapshots to avoid concurrency issues
-            KeyValuePair<string, object>[] dataSnapshot = null;
-            ITrace[] childrenSnapshot = null;
-
+            // Set walking state to prevent modifications during the walk
             if (currentTrace is Trace concreteTrace)
             {
-                dataSnapshot = concreteTrace.GetDataSnapshot();
-                childrenSnapshot = concreteTrace.GetChildrenSnapshot();
-            }
-            else
-            {
-                dataSnapshot = currentTrace.Data.ToArray();
-                childrenSnapshot = currentTrace.Children.ToArray();
+                concreteTrace.SetWalkingStateRecursively(true);
             }
 
-            foreach (KeyValuePair<string, object> datum in dataSnapshot)
+            try
             {
-                if (datum.Value is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
+                foreach (var datum in currentTrace.Data)
                 {
-                    this.AggregateStatsFromStoreResults(clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList);
-                    this.AggregateGatewayStatistics(clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList);
-                    this.AggregateRegionsContacted(clientSideRequestStatisticsTraceDatum.RegionsContacted);
+                    if (datum.Value is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
+                    {
+                        this.AggregateStatsFromStoreResults(clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList);
+                        this.AggregateGatewayStatistics(clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList);
+                        this.AggregateRegionsContacted(clientSideRequestStatisticsTraceDatum.RegionsContacted);
+                    }
+                }
+
+                foreach (ITrace childTrace in currentTrace.Children)
+                {
+                    this.CollectSummaryFromTraceTree(childTrace);
                 }
             }
-
-            foreach (ITrace childTrace in childrenSnapshot)
+            finally
             {
-                this.CollectSummaryFromTraceTree(childTrace);
+                // Clear walking state when done
+                if (currentTrace is Trace concreteTraceFinally)
+                {
+                    concreteTraceFinally.SetWalkingStateRecursively(false);
+                }
             }
         }
 

@@ -18,43 +18,37 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 return;
             }
 
-            // Use thread-safe enumeration to avoid concurrency issues  
-            object[] dataSnapshot = null;
+            // Set walking state to prevent modifications during the walk
             if (currentTrace is Tracing.Trace concreteTrace)
             {
-                var dataSnapshotPairs = concreteTrace.GetDataSnapshot();
-                dataSnapshot = dataSnapshotPairs.Select(kvp => kvp.Value).ToArray();
-            }
-            else
-            {
-                dataSnapshot = currentTrace.Data.Values.ToArray();
+                concreteTrace.SetWalkingStateRecursively(true);
             }
 
-            foreach (object datum in dataSnapshot)
+            try
             {
-                if (datum is QueryMetricsTraceDatum queryMetricsTraceDatum)
+                foreach (object datum in currentTrace.Data.Values)
                 {
-                    ServerSideMetricsInternal serverSideMetrics = queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics;
-                    serverSideMetrics.FeedRange = currentTrace.Name;
-                    ServerSideMetricsTraceExtractor.WalkTraceTreeForPartitionInfo(currentTrace, serverSideMetrics);
-                    accumulator.Accumulate(serverSideMetrics);
+                    if (datum is QueryMetricsTraceDatum queryMetricsTraceDatum)
+                    {
+                        ServerSideMetricsInternal serverSideMetrics = queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics;
+                        serverSideMetrics.FeedRange = currentTrace.Name;
+                        ServerSideMetricsTraceExtractor.WalkTraceTreeForPartitionInfo(currentTrace, serverSideMetrics);
+                        accumulator.Accumulate(serverSideMetrics);
+                    }
+                }
+
+                foreach (ITrace childTrace in currentTrace.Children)
+                {
+                    ServerSideMetricsTraceExtractor.WalkTraceTreeForQueryMetrics(childTrace, accumulator);
                 }
             }
-
-            // Use thread-safe enumeration to avoid concurrency issues
-            ITrace[] childrenSnapshot = null;
-            if (currentTrace is Tracing.Trace concreteTraceForChildren)
+            finally
             {
-                childrenSnapshot = concreteTraceForChildren.GetChildrenSnapshot();
-            }
-            else
-            {
-                childrenSnapshot = currentTrace.Children.ToArray();
-            }
-
-            foreach (ITrace childTrace in childrenSnapshot)
-            {
-                ServerSideMetricsTraceExtractor.WalkTraceTreeForQueryMetrics(childTrace, accumulator);
+                // Clear walking state when done
+                if (currentTrace is Tracing.Trace concreteTraceFinally)
+                {
+                    concreteTraceFinally.SetWalkingStateRecursively(false);
+                }
             }
         }
 
@@ -65,19 +59,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 return;
             }
 
-            // Use thread-safe enumeration to avoid concurrency issues  
-            object[] dataSnapshot = null;
-            if (currentTrace is Tracing.Trace concreteTrace)
-            {
-                var dataSnapshotPairs = concreteTrace.GetDataSnapshot();
-                dataSnapshot = dataSnapshotPairs.Select(kvp => kvp.Value).ToArray();
-            }
-            else
-            {
-                dataSnapshot = currentTrace.Data.Values.ToArray();
-            }
-
-            foreach (Object datum in dataSnapshot)
+            foreach (Object datum in currentTrace.Data.Values)
             {
                 if (datum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
                 {
@@ -97,18 +79,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 }
             }
 
-            // Use thread-safe enumeration to avoid concurrency issues
-            ITrace[] childrenSnapshot2 = null;
-            if (currentTrace is Tracing.Trace concreteTraceForChildren2)
-            {
-                childrenSnapshot2 = concreteTraceForChildren2.GetChildrenSnapshot();
-            }
-            else
-            {
-                childrenSnapshot2 = currentTrace.Children.ToArray();
-            }
-
-            foreach (ITrace childTrace in childrenSnapshot2)
+            foreach (ITrace childTrace in currentTrace.Children)
             {
                 ServerSideMetricsTraceExtractor.WalkTraceTreeForPartitionInfo(childTrace, serverSideMetrics);
             }

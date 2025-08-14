@@ -34,79 +34,74 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     throw new ArgumentNullException(nameof(trace));
                 }
 
-                writer.WriteObjectStart();
-
-                if (isRootTrace)
+                // Set walking state to prevent modifications during the walk
+                if (isRootTrace && trace is Trace concreteTrace)
                 {
-                    writer.WriteFieldName("Summary");
-                    SummaryDiagnostics summaryDiagnostics = new SummaryDiagnostics(trace);
-                    summaryDiagnostics.WriteSummaryDiagnostics(writer);
-                }
-                writer.WriteFieldName("name");
-                writer.WriteStringValue(trace.Name);
-
-                if (isRootTrace)
-                {
-                    writer.WriteFieldName("start datetime");
-                    writer.WriteStringValue(trace.StartTime.ToString(TraceWriter.DateTimeFormatString));
-                }
-                writer.WriteFieldName("duration in milliseconds");
-                writer.WriteNumberValue(trace.Duration.TotalMilliseconds);
-
-                // Create a snapshot of the data to avoid concurrency issues
-                KeyValuePair<string, object>[] dataSnapshot = null;
-                if (trace is Trace concreteTrace)
-                {
-                    dataSnapshot = concreteTrace.GetDataSnapshot();
-                }
-                else if (trace.Data.Any())
-                {
-                    dataSnapshot = trace.Data.ToArray();
+                    concreteTrace.SetWalkingStateRecursively(true);
                 }
 
-                if (dataSnapshot != null && dataSnapshot.Any())
+                try
                 {
-                    writer.WriteFieldName("data");
                     writer.WriteObjectStart();
 
-                    foreach (KeyValuePair<string, object> kvp in dataSnapshot)
+                    if (isRootTrace)
                     {
-                        string key = kvp.Key;
-                        object value = kvp.Value;
+                        writer.WriteFieldName("Summary");
+                        SummaryDiagnostics summaryDiagnostics = new SummaryDiagnostics(trace);
+                        summaryDiagnostics.WriteSummaryDiagnostics(writer);
+                    }
+                    writer.WriteFieldName("name");
+                    writer.WriteStringValue(trace.Name);
 
-                        writer.WriteFieldName(key);
-                        WriteTraceDatum(writer, value);
+                    if (isRootTrace)
+                    {
+                        writer.WriteFieldName("start datetime");
+                        writer.WriteStringValue(trace.StartTime.ToString(TraceWriter.DateTimeFormatString));
+                    }
+                    writer.WriteFieldName("duration in milliseconds");
+                    writer.WriteNumberValue(trace.Duration.TotalMilliseconds);
+
+                    if (trace.Data.Any())
+                    {
+                        writer.WriteFieldName("data");
+                        writer.WriteObjectStart();
+
+                        foreach (KeyValuePair<string, object> kvp in trace.Data)
+                        {
+                            string key = kvp.Key;
+                            object value = kvp.Value;
+
+                            writer.WriteFieldName(key);
+                            WriteTraceDatum(writer, value);
+                        }
+
+                        writer.WriteObjectEnd();
                     }
 
+                    if (trace.Children.Any())
+                    {
+                        writer.WriteFieldName("children");
+                        writer.WriteArrayStart();
+
+                        foreach (ITrace child in trace.Children)
+                        {
+                            WriteTrace(writer, 
+                                child, 
+                                isRootTrace: false);
+                        }
+
+                        writer.WriteArrayEnd();
+                    }
                     writer.WriteObjectEnd();
                 }
-
-                // Create a snapshot of the children to avoid concurrency issues
-                ITrace[] childrenSnapshot = null;
-                if (trace is Trace concreteTraceForChildren)
+                finally
                 {
-                    childrenSnapshot = concreteTraceForChildren.GetChildrenSnapshot();
-                }
-                else if (trace.Children.Any())
-                {
-                    childrenSnapshot = trace.Children.ToArray();
-                }
-
-                if (childrenSnapshot != null && childrenSnapshot.Any())
-                {
-                    writer.WriteFieldName("children");
-                    writer.WriteArrayStart();
-
-                    foreach (ITrace child in childrenSnapshot)
+                    // Clear walking state when done
+                    if (isRootTrace && trace is Trace concreteTraceFinally)
                     {
-                        WriteTrace(writer, 
-                            child, 
-                            isRootTrace: false);
+                        concreteTraceFinally.SetWalkingStateRecursively(false);
                     }
-
-                    writer.WriteArrayEnd();
                 }
-                writer.WriteObjectEnd();
             }
         }
 
