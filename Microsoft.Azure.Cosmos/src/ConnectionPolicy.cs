@@ -338,6 +338,12 @@ namespace Microsoft.Azure.Cosmos
             set;
         }
 
+        internal bool DisablePartitionLevelFailoverClientLevelOverride
+        {
+            get;
+            set;
+        }
+
         /// <summary>
         /// Gets or sets the certificate validation callback.
         /// </summary>

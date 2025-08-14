@@ -43,6 +43,11 @@ namespace Microsoft.Azure.Cosmos.Routing
         private bool isBackgroundAccountRefreshActive = false;
         private DateTime LastBackgroundRefreshUtc = DateTime.MinValue;
 
+        /// <summary>
+        /// Event that is raised when PPAF (Per Partition Automatic Failover) enablement status changes
+        /// </summary>
+        internal event Action<bool>? OnEnablePartitionLevelFailoverConfigChanged;
+
         public GlobalEndpointManager(
             IDocumentClientInternal owner,
             ConnectionPolicy connectionPolicy,
@@ -99,6 +104,10 @@ namespace Microsoft.Azure.Cosmos.Routing
         public ReadOnlyCollection<Uri> AccountReadEndpoints => this.locationCache.AccountReadEndpoints;
 
         public ReadOnlyCollection<Uri> WriteEndpoints => this.locationCache.WriteEndpoints;
+
+        public ReadOnlyCollection<Uri> ThinClientReadEndpoints => this.locationCache.ThinClientReadEndpoints;
+
+        public ReadOnlyCollection<Uri> ThinClientWriteEndpoints => this.locationCache.ThinClientWriteEndpoints;
 
         public int PreferredLocationCount
         {
@@ -598,13 +607,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return;
             }
 
-            bool isPPafEnabled = ConfigurationManager.IsPartitionLevelFailoverEnabled(defaultValue: false);
-            if (databaseAccount.EnablePartitionLevelFailover.HasValue)
+            if (!this.connectionPolicy.DisablePartitionLevelFailoverClientLevelOverride && databaseAccount.EnablePartitionLevelFailover.HasValue)
             {
-                isPPafEnabled = databaseAccount.EnablePartitionLevelFailover.Value;
+                this.connectionPolicy.EnablePartitionLevelFailover = databaseAccount.EnablePartitionLevelFailover.Value;
             }
 
-            this.connectionPolicy.EnablePartitionLevelFailover = isPPafEnabled;
             GlobalEndpointManager.ParseThinClientLocationsFromAdditionalProperties(databaseAccount);
 
             this.locationCache.OnDatabaseAccountRead(databaseAccount);
@@ -762,6 +769,13 @@ namespace Microsoft.Azure.Cosmos.Routing
                 this.LastBackgroundRefreshUtc = DateTime.UtcNow;
                 AccountProperties accountProperties = await this.GetDatabaseAccountAsync(true);
 
+                if (!this.connectionPolicy.DisablePartitionLevelFailoverClientLevelOverride 
+                    && accountProperties.EnablePartitionLevelFailover.HasValue
+                    && (this.connectionPolicy.EnablePartitionLevelFailover != accountProperties.EnablePartitionLevelFailover.Value))
+                {
+                    this.OnEnablePartitionLevelFailoverConfigChanged?.Invoke(accountProperties.EnablePartitionLevelFailover.Value);
+                }
+
                 GlobalEndpointManager.ParseThinClientLocationsFromAdditionalProperties(accountProperties);
 
                 this.locationCache.OnDatabaseAccountRead(accountProperties);
@@ -781,6 +795,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
             }
         }
+
         internal async Task<AccountProperties> GetDatabaseAccountAsync(bool forceRefresh = false)
         {
 #nullable disable  // Needed because AsyncCache does not have nullable enabled

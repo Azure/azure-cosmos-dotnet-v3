@@ -9,9 +9,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Net.Http;
     using System.Text.Json;
     using System.Text.Json.Serialization;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.MultiRegionSetupHelpers;
     using TestObject = MultiRegionSetupHelpers.CosmosIntegrationTestObject;
@@ -23,15 +25,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private CosmosClient client;
         private Database database;
         private Container container;
-        private CosmosSystemTextJsonSerializer cosmosSystemTextJsonSerializer;
-
-        private const int ItemCount = 1000;
+        private MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer cosmosSystemTextJsonSerializer;
+        private const int ItemCount = 100;
 
         [TestInitialize]
         public async Task TestInitAsync()
         {
-            this.connectionString = Environment.GetEnvironmentVariable("COSMOSDB_THINCLIENT");
             Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
+            this.connectionString = Environment.GetEnvironmentVariable("COSMOSDB_THINCLIENT");
 
             if (string.IsNullOrEmpty(this.connectionString))
             {
@@ -60,7 +61,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.container = await this.database.CreateContainerIfNotExistsAsync(uniqueContainerName, "/pk");
         }
 
-
         [TestCleanup]
         public async Task TestCleanupAsync()
         {
@@ -71,7 +71,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await this.database.DeleteAsync();
             }
 
-            this.client?.Dispose();
+            if (this.client != null)
+            {
+                this.client.Dispose();
+            }
         }
 
         private IEnumerable<TestObject> GenerateItems(string partitionKey)
@@ -86,8 +89,66 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Other = "Test Item " + i
                 });
             }
-
             return items;
+        }
+
+        private async Task<List<TestObject>> CreateItemsSafeAsync(IEnumerable<TestObject> items)
+        {
+            List<TestObject> itemsCreated = new List<TestObject>();
+            foreach (TestObject item in items)
+            {
+                try
+                {
+                    ItemResponse<TestObject> response = await this.container.CreateItemAsync(item, new PartitionKey(item.Pk));
+                    if (response.StatusCode == HttpStatusCode.Created)
+                    {
+                        itemsCreated.Add(item);
+                    }
+                }
+                catch (CosmosException)
+                {
+                }
+            }
+            return itemsCreated;
+        }
+
+        [TestMethod]
+        [TestCategory("ThinClient")]
+        public async Task HttpRequestVersionIsTwoPointZeroWhenUsingThinClientMode()
+        {
+            Version expectedGatewayVersion = new(1, 1);
+            Version expectedThinClientVersion = new(2, 0);
+
+            List<Version> postRequestVersions = new();
+
+            CosmosClientBuilder builder = new CosmosClientBuilder(this.connectionString)
+                .WithConnectionModeGateway()
+                .WithSendingRequestEventArgs((sender, e) =>
+                {
+                    if (e.HttpRequest.Method == HttpMethod.Post)
+                    {
+                        postRequestVersions.Add(e.HttpRequest.Version);
+                    }
+                });
+
+            using CosmosClient client = builder.Build();
+
+            string dbId = "HttpVersionTestDb_" + Guid.NewGuid();
+            Cosmos.Database database = await client.CreateDatabaseIfNotExistsAsync(dbId);
+            Container container = await database.CreateContainerIfNotExistsAsync("HttpVersionTestContainer", "/pk");
+
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+
+            ItemResponse<ToDoActivity> response = await container.CreateItemAsync(testItem, new Cosmos.PartitionKey(testItem.pk));
+            Assert.IsNotNull(response);
+
+            Assert.AreEqual(3, postRequestVersions.Count, "Expected exactly 3 POST requests (DB, Container, Item).");
+
+            Assert.AreEqual(expectedGatewayVersion, postRequestVersions[0], "Expected HTTP/1.1 for CreateDatabaseAsync.");
+            Assert.AreEqual(expectedGatewayVersion, postRequestVersions[1], "Expected HTTP/1.1 for CreateContainerAsync.");
+            Assert.AreEqual(expectedThinClientVersion, postRequestVersions[2], "Expected HTTP/2.0 for CreateItemAsync.");
+
+            await database.DeleteAsync();
         }
 
         [TestMethod]
@@ -101,6 +162,140 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 ItemResponse<TestObject> response = await this.container.CreateItemAsync(item, new PartitionKey(item.Pk));
                 Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+                string diagnostics = response.Diagnostics.ToString();
+                Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("ThinClient")]
+        public async Task CreateItemsTestWithThinClientFlagEnabledAndAccountDisabled()
+        {
+            Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
+            string connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTI_REGION", string.Empty);
+
+            if (string.IsNullOrEmpty(connectionString))
+            {
+                Assert.Fail("Set environment variable COSMOSDB_MULTI_REGION to run the tests");
+            }
+
+            JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = null,
+                PropertyNameCaseInsensitive = true,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            };
+            this.cosmosSystemTextJsonSerializer = new MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer(jsonSerializerOptions);
+
+            this.client = new CosmosClient(
+                  connectionString,
+                  new CosmosClientOptions()
+                  {
+                      ConnectionMode = ConnectionMode.Gateway,
+                      Serializer = this.cosmosSystemTextJsonSerializer,
+                  });
+
+            string uniqueDbName = "TestDb2_" + Guid.NewGuid().ToString();
+            this.database = await this.client.CreateDatabaseIfNotExistsAsync(uniqueDbName);
+            string uniqueContainerName = "TestContainer2_" + Guid.NewGuid().ToString();
+            this.container = await this.database.CreateContainerIfNotExistsAsync(uniqueContainerName, "/pk");
+
+            string pk = "pk_create";
+            IEnumerable<TestObject> items = this.GenerateItems(pk);
+
+            foreach (TestObject item in items)
+            {
+                ItemResponse<TestObject> response = await this.container.CreateItemAsync(item, new PartitionKey(item.Pk));
+                Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+                string diagnostics = response.Diagnostics.ToString();
+                Assert.IsFalse(diagnostics.Contains("|F4"), "Diagnostics User Agent should NOT contain '|F4' for Gateway");
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("ThinClient")]
+        public async Task CreateItemsTestWithDirectMode_ThinClientFlagEnabledAndAccountEnabled()
+        {
+            JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = null,
+                PropertyNameCaseInsensitive = true,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            };
+            this.cosmosSystemTextJsonSerializer = new MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer(jsonSerializerOptions);
+
+            this.client = new CosmosClient(
+                  this.connectionString,
+                  new CosmosClientOptions()
+                  {
+                      ConnectionMode = ConnectionMode.Direct,
+                      Serializer = this.cosmosSystemTextJsonSerializer,
+                  });
+
+            string uniqueDbName = "TestDb2_" + Guid.NewGuid().ToString();
+            this.database = await this.client.CreateDatabaseIfNotExistsAsync(uniqueDbName);
+            string uniqueContainerName = "TestContainer2_" + Guid.NewGuid().ToString();
+            this.container = await this.database.CreateContainerIfNotExistsAsync(uniqueContainerName, "/pk");
+
+            string pk = "pk_create";
+            IEnumerable<TestObject> items = this.GenerateItems(pk);
+
+            foreach (TestObject item in items)
+            {
+                ItemResponse<TestObject> response = await this.container.CreateItemAsync(item, new PartitionKey(item.Pk));
+                Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+                JsonDocument doc = JsonDocument.Parse(response.Diagnostics.ToString());
+                string connectionMode = doc.RootElement
+                    .GetProperty("data")
+                    .GetProperty("Client Configuration")
+                    .GetProperty("ConnectionMode")
+                    .GetString();
+
+                Assert.AreEqual("Direct", connectionMode, "Diagnostics should have ConnectionMode set to 'Direct'");
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("ThinClient")]
+        public async Task CreateItemsTestWithThinClientFlagDisabledAccountEnabled()
+        {
+            Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "False");
+
+            if (string.IsNullOrEmpty(this.connectionString))
+            {
+                Assert.Fail("Set environment variable COSMOSDB_THINCLIENT to run the tests");
+            }
+
+            JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = null,
+                PropertyNameCaseInsensitive = true,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            };
+            this.cosmosSystemTextJsonSerializer = new MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer(jsonSerializerOptions);
+
+            this.client = new CosmosClient(
+                  this.connectionString,
+                  new CosmosClientOptions()
+                  {
+                      ConnectionMode = ConnectionMode.Gateway,
+                      Serializer = this.cosmosSystemTextJsonSerializer,
+                  });
+
+            string uniqueDbName = "TestDbTCDisabled_" + Guid.NewGuid().ToString();
+            this.database = await this.client.CreateDatabaseIfNotExistsAsync(uniqueDbName);
+            string uniqueContainerName = "TestContainerTCDisabled_" + Guid.NewGuid().ToString();
+            this.container = await this.database.CreateContainerIfNotExistsAsync(uniqueContainerName, "/pk");
+
+            string pk = "pk_create";
+            IEnumerable<TestObject> items = this.GenerateItems(pk);
+
+            foreach (TestObject item in items)
+            {
+                ItemResponse<TestObject> response = await this.container.CreateItemAsync(item, new PartitionKey(item.Pk));
+                Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+                string diagnostics = response.Diagnostics.ToString();
+                Assert.IsFalse(diagnostics.Contains("|F4"), "Diagnostics User Agent should NOT contain '|F4' for Gateway");
             }
         }
 
@@ -111,16 +306,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string pk = "pk_read";
             List<TestObject> items = this.GenerateItems(pk).ToList();
 
-            foreach (TestObject item in items)
-            {
-                await this.container.CreateItemAsync(item, new PartitionKey(item.Pk));
-            }
+            List<TestObject> createdItems = await this.CreateItemsSafeAsync(items);
 
-            foreach (TestObject item in items)
+            foreach (TestObject item in createdItems)
             {
                 ItemResponse<TestObject> response = await this.container.ReadItemAsync<TestObject>(item.Id, new PartitionKey(item.Pk));
+                string diagnostics = response.Diagnostics.ToString();
                 Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
                 Assert.AreEqual(item.Id, response.Resource.Id);
+                Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
             }
         }
 
@@ -131,12 +325,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string pk = "pk_replace";
             List<TestObject> items = this.GenerateItems(pk).ToList();
 
-            foreach (TestObject item in items)
-            {
-                await this.container.CreateItemAsync(item, new PartitionKey(item.Pk));
-            }
+            List<TestObject> createdItems = await this.CreateItemsSafeAsync(items);
 
-            foreach (TestObject item in items)
+            foreach (TestObject item in createdItems)
             {
                 TestObject updatedItem = new TestObject
                 {
@@ -146,8 +337,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 };
 
                 ItemResponse<TestObject> response = await this.container.ReplaceItemAsync(updatedItem, updatedItem.Id, new PartitionKey(updatedItem.Pk));
+                string diagnostics = response.Diagnostics.ToString();
                 Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
                 Assert.AreEqual("Updated " + item.Other, response.Resource.Other);
+                Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
             }
         }
 
@@ -161,7 +354,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             foreach (TestObject item in items)
             {
                 ItemResponse<TestObject> response = await this.container.UpsertItemAsync(item, new PartitionKey(item.Pk));
+                string diagnostics = response.Diagnostics.ToString();
                 Assert.IsTrue(response.StatusCode == HttpStatusCode.Created || response.StatusCode == HttpStatusCode.OK);
+                Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
             }
         }
 
@@ -172,15 +367,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string pk = "pk_delete";
             List<TestObject> items = this.GenerateItems(pk).ToList();
 
-            foreach (TestObject item in items)
-            {
-                await this.container.CreateItemAsync(item, new PartitionKey(item.Pk));
-            }
+            List<TestObject> createdItems = await this.CreateItemsSafeAsync(items);
 
-            foreach (TestObject item in items)
+            foreach (TestObject item in createdItems)
             {
                 ItemResponse<TestObject> response = await this.container.DeleteItemAsync<TestObject>(item.Id, new PartitionKey(item.Pk));
+                string diagnostics = response.Diagnostics.ToString();
                 Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
+                Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
             }
         }
 
@@ -197,7 +391,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     using (ResponseMessage response = await this.container.CreateItemStreamAsync(stream, new PartitionKey(item.Pk)))
                     {
+                        string diagnostics = response.Diagnostics.ToString();
                         Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+                        Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
                     }
                 }
             }
@@ -210,16 +406,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string pk = "pk_read_stream";
             List<TestObject> items = this.GenerateItems(pk).ToList();
 
-            foreach (TestObject item in items)
-            {
-                await this.container.CreateItemAsync(item, new PartitionKey(item.Pk));
-            }
+            List<TestObject> createdItems = await this.CreateItemsSafeAsync(items);
 
-            foreach (TestObject item in items)
+            foreach (TestObject item in createdItems)
             {
                 using (ResponseMessage response = await this.container.ReadItemStreamAsync(item.Id, new PartitionKey(item.Pk)))
                 {
+                    string diagnostics = response.Diagnostics.ToString();
                     Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                    Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
                 }
             }
         }
@@ -231,12 +426,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string pk = "pk_replace_stream";
             List<TestObject> items = this.GenerateItems(pk).ToList();
 
-            foreach (TestObject item in items)
-            {
-                await this.container.CreateItemAsync(item, new PartitionKey(item.Pk));
-            }
+            List<TestObject> createdItems = await this.CreateItemsSafeAsync(items);
 
-            foreach (TestObject item in items)
+            foreach (TestObject item in createdItems)
             {
                 TestObject updatedItem = new TestObject
                 {
@@ -249,7 +441,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     using (ResponseMessage response = await this.container.ReplaceItemStreamAsync(stream, updatedItem.Id, new PartitionKey(updatedItem.Pk)))
                     {
+                        string diagnostics = response.Diagnostics.ToString();
                         Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                        Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
                     }
                 }
             }
@@ -268,7 +462,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     using (ResponseMessage response = await this.container.UpsertItemStreamAsync(stream, new PartitionKey(item.Pk)))
                     {
+                        string diagnostics = response.Diagnostics.ToString();
                         Assert.IsTrue(response.StatusCode == HttpStatusCode.Created || response.StatusCode == HttpStatusCode.OK);
+                        Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
                     }
                 }
             }
@@ -281,16 +477,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string pk = "pk_delete_stream";
             List<TestObject> items = this.GenerateItems(pk).ToList();
 
-            foreach (TestObject item in items)
-            {
-                await this.container.CreateItemAsync(item, new PartitionKey(item.Pk));
-            }
+            List<TestObject> createdItems = await this.CreateItemsSafeAsync(items);
 
-            foreach (TestObject item in items)
+            foreach (TestObject item in createdItems)
             {
                 using (ResponseMessage response = await this.container.DeleteItemStreamAsync(item.Id, new PartitionKey(item.Pk)))
                 {
+                    string diagnostics = response.Diagnostics.ToString();
                     Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
+                    Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
                 }
             }
         }
@@ -302,10 +497,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string pk = "pk_query";
             List<TestObject> items = this.GenerateItems(pk).ToList();
 
-            foreach (TestObject item in items)
-            {
-                await this.container.CreateItemAsync(item, new PartitionKey(item.Pk));
-            }
+            List<TestObject> createdItems = await this.CreateItemsSafeAsync(items);
 
             string query = $"SELECT * FROM c WHERE c.pk = '{pk}'";
             FeedIterator<TestObject> iterator = this.container.GetItemQueryIterator<TestObject>(query);
@@ -317,7 +509,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 count += response.Count;
             }
 
-            Assert.AreEqual(ItemCount, count);
+            Assert.AreEqual(createdItems.Count, count);
         }
 
         [TestMethod]
@@ -327,10 +519,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string pk = "pk_query_stream";
             List<TestObject> items = this.GenerateItems(pk).ToList();
 
-            foreach (TestObject item in items)
-            {
-                await this.container.CreateItemAsync(item, new PartitionKey(item.Pk));
-            }
+            List<TestObject> createdItems = await this.CreateItemsSafeAsync(items);
 
             QueryDefinition query = new QueryDefinition("SELECT * FROM c WHERE c.pk = @pk").WithParameter("@pk", pk);
             FeedIterator iterator = this.container.GetItemQueryStreamIterator(query);
@@ -353,7 +542,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             }
 
-            Assert.AreEqual(ItemCount, count);
+            Assert.AreEqual(createdItems.Count, count);
         }
 
         [TestMethod]

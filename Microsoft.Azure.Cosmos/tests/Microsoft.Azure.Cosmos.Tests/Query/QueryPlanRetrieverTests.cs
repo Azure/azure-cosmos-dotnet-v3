@@ -180,6 +180,74 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         }
 
         [TestMethod]
+        public void TestBypassQueryParsing()
+        {
+            Assert.IsFalse(QueryPlanRetriever.BypassQueryParsing());
+
+            foreach ((string name, string value, bool expectedValue) in new[]
+                {
+                    // Environment variables are case insensitive in windows
+                    ("AZURE_COSMOS_BYPASS_QUERY_PARSING", "true", true),
+                    ("AZURE_COSMOS_bypass_query_parsing", "True", true),
+                    ("azure_cosmos_bypass_query_parsing", "TRUE", true),
+                    ("Azure_Cosmos_Bypass_Query_Parsing", "truE", true),
+
+                    ("AZURE_COSMOS_BYPASS_QUERY_PARSING", "false", false),
+                    ("AZURE_COSMOS_bypass_query_parsing", "False", false),
+                    ("azure_cosmos_bypass_query_parsing", "FALSE", false),
+                    ("Azure_Cosmos_Bypass_Query_Parsing", "falsE", false),
+
+                    ("AZURE_COSMOS_BYPASS_QUERY_PARSING", string.Empty, false)
+                })
+            {
+                try
+                {
+                    // Test new value
+                    Environment.SetEnvironmentVariable(name, value);
+                    Assert.AreEqual(
+                        expectedValue,
+                        QueryPlanRetriever.BypassQueryParsing(),
+                        $"EnvironmentVariable:'{name}', value:'{value}', expected:'{expectedValue}', actual:'{QueryPlanRetriever.BypassQueryParsing()}'");
+                }
+                finally
+                {
+                    // Remove side effects.
+                    Environment.SetEnvironmentVariable(name, null);
+                }
+            }
+
+            foreach (string value in new[]
+                {
+                    "'",
+                    "-",
+                    "asdf",
+                    "'true'",
+                    "'false'"
+                })
+            {
+                bool receivedException = false;
+                try
+                {
+                    // Test new value
+                    Environment.SetEnvironmentVariable("AZURE_COSMOS_BYPASS_QUERY_PARSING", value);
+                    bool _ = QueryPlanRetriever.BypassQueryParsing();
+                }
+                catch (FormatException fe)
+                {
+                    Assert.IsTrue(fe.ToString().Contains($@"String '{value}' was not recognized as a valid Boolean."));
+                    receivedException = true;
+                }
+                finally
+                {
+                    // Remove side effects.
+                    Environment.SetEnvironmentVariable("AZURE_COSMOS_BYPASS_QUERY_PARSING", null);
+                }
+
+                Assert.IsTrue(receivedException, $"Expected exception was not received for value '{value}'");
+            }
+        }
+
+        [TestMethod]
         public async Task SanityTests()
         {
             TestCase[] testCases = new TestCase[]
