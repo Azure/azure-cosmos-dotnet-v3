@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
         {
             if (this.isBeingWalked)
             {
-                return this; // Return self when being walked to avoid modifications
+                return NoOpTrace.Singleton;
             }
 
             return this.StartChild(
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
         {
             if (this.isBeingWalked)
             {
-                return this; // Return self when being walked to avoid modifications
+                return NoOpTrace.Singleton;
             }
 
             if (this.Parent != null && !this.stopwatch.IsRunning)
@@ -108,13 +108,13 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public void AddChild(ITrace child)
         {
-            if (this.isBeingWalked)
-            {
-                return; // Ignore modifications while being walked
-            }
-
             lock (this.children)
             {
+                if (this.isBeingWalked)
+                {
+                    return; // Ignore modifications while being walked
+                }
+
                 this.children.Add(child);
             }
         }
@@ -142,13 +142,13 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public void AddDatum(string key, TraceDatum traceDatum)
         {
-            if (this.isBeingWalked)
-            {
-                return; // Ignore modifications while being walked
-            }
-
             lock (this.children)
             {
+                if (this.isBeingWalked)
+                {
+                    return; // Ignore modifications while being walked
+                }
+
                 this.data.Value.Add(key, traceDatum);
             }
             this.Summary.UpdateRegionContacted(traceDatum);
@@ -156,26 +156,26 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public void AddDatum(string key, object value)
         {
-            if (this.isBeingWalked)
-            {
-                return; // Ignore modifications while being walked
-            }
-
             lock (this.children)
             {
+                if (this.isBeingWalked)
+                {
+                    return; // Ignore modifications while being walked
+                }
+
                 this.data.Value.Add(key, value);
             }
         }
 
         public void AddOrUpdateDatum(string key, object value)
         {
-            if (this.isBeingWalked)
-            {
-                return; // Ignore modifications while being walked
-            }
-
             lock (this.children)
             {
+                if (this.isBeingWalked)
+                {
+                    return; // Ignore modifications while being walked
+                }
+
                 this.data.Value[key] = value;
             }
         }
