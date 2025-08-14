@@ -185,8 +185,8 @@
 		<PackageReference Include="System.ValueTuple" Version="4.5.0" />
 		<PackageReference Include="Microsoft.Bcl.HashCode" Version="1.1.0" />
 	</ItemGroup>
-	
 
+	<!--
 	<ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
 		<None Include="$(OutputPath)\Cosmos.CRTCompat.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" />
 		<None Include="$(OutputPath)\Microsoft.Azure.Cosmos.ServiceInterop.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" />
@@ -202,7 +202,7 @@
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 	</ItemGroup>
-
+	-->
 	<ItemGroup>
 		<None Update="CosmosElements\Numbers\CosmosNumberCodeGenerator.tt">
 			<Generator>TextTemplatingFileGenerator</Generator>
@@ -218,11 +218,13 @@
 		<Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
 	</ItemGroup>
 
+	<!--
 	<PropertyGroup Condition=" '$(ProjectRef)' != 'True' ">
 		<SignAssembly>true</SignAssembly>
 		<DelaySign>true</DelaySign>
 		<AssemblyOriginatorKeyFile>..\..\35MSSharedLib1024.snk</AssemblyOriginatorKeyFile>
 	</PropertyGroup>
+	-->
 
 	<PropertyGroup>
 		<DefineConstants Condition=" '$(SignAssembly)' == 'true' ">$(DefineConstants);SignAssembly</DefineConstants>
