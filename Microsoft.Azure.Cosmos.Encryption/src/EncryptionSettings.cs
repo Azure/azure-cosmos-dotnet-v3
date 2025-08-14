@@ -16,14 +16,25 @@ namespace Microsoft.Azure.Cosmos.Encryption
     {
         private readonly Dictionary<string, EncryptionSettingForProperty> encryptionSettingsDictByPropertyName;
 
-        private EncryptionSettings(string containerRidValue, IReadOnlyList<string> partitionKeyPath)
+        internal EncryptionSettings(string containerRidValue, IReadOnlyList<string> partitionKeyPath)
         {
+            if (string.IsNullOrEmpty(containerRidValue))
+            {
+                throw new ArgumentNullException(nameof(containerRidValue));
+            }
+
+            if (partitionKeyPath == null)
+            {
+                throw new ArgumentNullException(nameof(partitionKeyPath));
+            }
+
             this.ContainerRidValue = containerRidValue;
             this.PartitionKeyPaths = partitionKeyPath;
             this.encryptionSettingsDictByPropertyName = new Dictionary<string, EncryptionSettingForProperty>();
             this.PropertiesToEncrypt = this.encryptionSettingsDictByPropertyName.Keys;
         }
 
+        // Public members first
         public string ContainerRidValue { get; }
 
         public IReadOnlyList<string> PartitionKeyPaths { get; }
@@ -38,7 +49,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public EncryptionSettingForProperty GetEncryptionSettingForProperty(string propertyName)
         {
             this.encryptionSettingsDictByPropertyName.TryGetValue(propertyName, out EncryptionSettingForProperty encryptionSettingsForProperty);
-
             return encryptionSettingsForProperty;
         }
 
@@ -51,6 +61,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
             };
         }
 
+    // Internal members next
+        internal void SetEncryptionSettingForProperty(
+            string propertyName,
+            EncryptionSettingForProperty encryptionSettingsForProperty)
+        {
+            this.encryptionSettingsDictByPropertyName[propertyName] = encryptionSettingsForProperty;
+        }
+
+        // Private helpers last
         private static Data.Encryption.Cryptography.EncryptionType GetEncryptionTypeForProperty(ClientEncryptionIncludedPath clientEncryptionIncludedPath)
         {
             return clientEncryptionIncludedPath.EncryptionType switch
@@ -134,13 +153,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             return encryptionSettings;
-        }
-
-        private void SetEncryptionSettingForProperty(
-            string propertyName,
-            EncryptionSettingForProperty encryptionSettingsForProperty)
-        {
-            this.encryptionSettingsDictByPropertyName[propertyName] = encryptionSettingsForProperty;
         }
     }
 }
