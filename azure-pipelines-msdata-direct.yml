@@ -65,5 +65,6 @@ jobs:
     Arguments: $(ReleaseArguments)
     VmImage: $(VmImage)
     ThinClientConnectionString: $(COSMOSDB_THINCLIENT)
+    ThinClientStrongConsistencyString: $(COSMOSDB_THINCLIENTSTRONG)
     IncludePerformance: true
     IncludeCoverage: true
