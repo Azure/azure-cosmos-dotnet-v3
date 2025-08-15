@@ -202,16 +202,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         #region Type Marker Tests
 
-        [TestMethod]
-        public void Validation_TypeMarker_BasicFunctionality()
-        {
-            // Test that type markers are properly handled
-            // This is a placeholder test - would need to see TypeMarkerTests content for specific tests
-            JValue value = new JValue("test");
-            (EncryptionProcessor.TypeMarker, byte[]) serialized = EncryptionProcessor.Serialize(value);
-            Assert.IsNotNull(serialized);
-            Assert.IsTrue(serialized.Item2.Length > 0);
-        }
+        
 
         [TestMethod]
         public void TypeMarker_RoundTrips_For_All_Supported_Types()
