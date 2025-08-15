@@ -201,7 +201,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.IsTrue(JToken.DeepEquals(token, MakeNestedNullGraph()));
         }
 
-        [TestMethod]
+    [TestMethod]
         public async Task Traversal_EncryptJTokenAsync_ShouldEscapeTrue_SubtreeTraversal_NoCrypto_WithStringIdPresent()
         {
             // Document has a string id, but we traverse only the 'sub' subtree which has null leaves.
@@ -214,6 +214,91 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             // The subtree should remain unchanged, and the id property should remain unchanged too.
             Assert.AreEqual("abc", doc.Value<string>("id"));
             Assert.IsTrue(JToken.DeepEquals(subtree, JToken.Parse("{ \"a\": null, \"b\": [ null, { \"c\": null } ] }")));
+        }
+
+    #endregion
+
+    #region Numeric Round-Trip Tests
+
+        [TestMethod]
+        public async Task Primitives_RoundTrip_Long_Min_Max_Negative_Zero()
+        {
+            Mde.AeadAes256CbcHmac256EncryptionAlgorithm algorithm = CreateDeterministicAlgorithm();
+            EncryptionSettings settings = CreateSettingsWithInjected("n", algorithm);
+
+            long[] values = new long[] { long.MinValue, -1L, 0L, 1L, long.MaxValue };
+
+            foreach (long v in values)
+            {
+                JObject doc = new JObject { ["id"] = "1", ["n"] = v };
+                using System.IO.Stream enc = await EncryptionProcessor.EncryptAsync(EncryptionProcessor.BaseSerializer.ToStream(doc), settings, operationDiagnostics: null, cancellationToken: CancellationToken.None);
+                using System.IO.Stream dec = await EncryptionProcessor.DecryptAsync(enc, settings, operationDiagnostics: null, cancellationToken: CancellationToken.None);
+                JObject round = EncryptionProcessor.BaseSerializer.FromStream<JObject>(dec);
+                Assert.AreEqual(v, round.Value<long>("n"));
+            }
+        }
+
+        [TestMethod]
+        public async Task Primitives_RoundTrip_Double_Extremes_Or_Disallow_NaN_Infinity()
+        {
+            Mde.AeadAes256CbcHmac256EncryptionAlgorithm algorithm = CreateDeterministicAlgorithm();
+            EncryptionSettings settings = CreateSettingsWithInjected("d", algorithm);
+
+            double[] values = new double[] { double.MinValue, -1.23e308, -1.0, 0.0, 1.0, 1.79e308, double.MaxValue };
+
+            foreach (double v in values)
+            {
+                JObject doc = new JObject { ["id"] = "1", ["d"] = v };
+                using System.IO.Stream enc = await EncryptionProcessor.EncryptAsync(EncryptionProcessor.BaseSerializer.ToStream(doc), settings, operationDiagnostics: null, cancellationToken: CancellationToken.None);
+                using System.IO.Stream dec = await EncryptionProcessor.DecryptAsync(enc, settings, operationDiagnostics: null, cancellationToken: CancellationToken.None);
+                JObject round = EncryptionProcessor.BaseSerializer.FromStream<JObject>(dec);
+                Assert.AreEqual(v, round.Value<double>("d"), 0.0);
+            }
+
+            // Disallow NaN / Infinity
+            Exception ex;
+            ex = null;
+            try { EncryptionProcessor.Serialize(new JValue(double.NaN)); }
+            catch (Exception e) { ex = e; }
+            Assert.IsNotNull(ex);
+
+            ex = null;
+            try { EncryptionProcessor.Serialize(new JValue(double.PositiveInfinity)); }
+            catch (Exception e) { ex = e; }
+            Assert.IsNotNull(ex);
+
+            ex = null;
+            try { EncryptionProcessor.Serialize(new JValue(double.NegativeInfinity)); }
+            catch (Exception e) { ex = e; }
+            Assert.IsNotNull(ex);
+        }
+
+        #endregion
+
+        #region Diagnostics Tests
+
+        [TestMethod]
+        public async Task Diagnostics_EncryptDecrypt_MultipleProperties_Increments_Counts()
+        {
+            Mde.AeadAes256CbcHmac256EncryptionAlgorithm algorithm = CreateDeterministicAlgorithm();
+            EncryptionSettings settings = new EncryptionSettings("rid", new List<string> { "/id" });
+            EncryptionContainer container = (EncryptionContainer)System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(EncryptionContainer));
+            settings.SetEncryptionSettingForProperty("A", new EncryptionSettingForProperty("cekA", Mde.EncryptionType.Deterministic, container, "dbRid", algorithm));
+            settings.SetEncryptionSettingForProperty("B", new EncryptionSettingForProperty("cekB", Mde.EncryptionType.Deterministic, container, "dbRid", algorithm));
+            settings.SetEncryptionSettingForProperty("C", new EncryptionSettingForProperty("cekC", Mde.EncryptionType.Deterministic, container, "dbRid", algorithm));
+
+            JObject doc = new JObject { ["id"] = "1", ["A"] = 1, ["B"] = "x", ["C"] = true };
+
+            EncryptionDiagnosticsContext diagEnc = new EncryptionDiagnosticsContext();
+            using System.IO.Stream enc = await EncryptionProcessor.EncryptAsync(EncryptionProcessor.BaseSerializer.ToStream(doc), settings, diagEnc, CancellationToken.None);
+            Assert.AreEqual(3, diagEnc.EncryptContent[Constants.DiagnosticsPropertiesEncryptedCount].Value<int>());
+
+            EncryptionDiagnosticsContext diagDec = new EncryptionDiagnosticsContext();
+            using System.IO.Stream dec = await EncryptionProcessor.DecryptAsync(enc, settings, diagDec, CancellationToken.None);
+            Assert.AreEqual(3, diagDec.DecryptContent[Constants.DiagnosticsPropertiesDecryptedCount].Value<int>());
+
+            JObject round = EncryptionProcessor.BaseSerializer.FromStream<JObject>(dec);
+            Assert.IsTrue(JToken.DeepEquals(doc, round));
         }
 
         #endregion

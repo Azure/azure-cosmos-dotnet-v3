@@ -24,16 +24,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [TestMethod]
         public async Task Validation_EncryptAsync_NullInput_ThrowsArgumentNullException()
         {
-            await Assert.ThrowsExceptionAsync<ArgumentNullException>(async () =>
-            {
-                await EncryptionProcessor.EncryptAsync(input: null, encryptionSettings: CreateSettingsForId(), operationDiagnostics: null, cancellationToken: CancellationToken.None);
-            }, "input");
+            await Assert.ThrowsExceptionAsync<ArgumentNullException>(
+                () => EncryptionProcessor.EncryptAsync(input: null, encryptionSettings: CreateSettingsForId(), operationDiagnostics: null, cancellationToken: CancellationToken.None), "input");
         }
 
         [TestMethod]
         public async Task Validation_EncryptAsync_NullSettings_ThrowsOrFailsPredictably()
         {
-            using var input = ToStream("{\"id\":\"1\"}");
+            using System.IO.MemoryStream input = ToStream("{\"id\":\"1\"}");
             try
             {
                 await EncryptionProcessor.EncryptAsync(input: input, encryptionSettings: null, operationDiagnostics: null, cancellationToken: CancellationToken.None);
@@ -53,14 +51,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         public async Task Validation_EncryptAsync_IdNonStringWithShouldEscape_ThrowsArgumentException()
         {
             // Arrange: id is an integer, settings configured to encrypt 'id' which triggers shouldEscape
-            var settings = CreateSettingsForId();
-            using var input = ToStream("{\"id\": 42, \"p\": 1}");
+            EncryptionSettings settings = CreateSettingsForId();
+            using System.IO.MemoryStream input = ToStream("{\"id\": 42, \"p\": 1}");
 
             // Act & Assert
-            var ex = await Assert.ThrowsExceptionAsync<ArgumentException>(async () =>
-            {
-                await EncryptionProcessor.EncryptAsync(input, settings, operationDiagnostics: null, cancellationToken: CancellationToken.None);
-            });
+            ArgumentException ex = await Assert.ThrowsExceptionAsync<ArgumentException>(
+                () => EncryptionProcessor.EncryptAsync(input, settings, operationDiagnostics: null, cancellationToken: CancellationToken.None));
             StringAssert.Contains(ex.Message, "value to escape has to be string type");
         }
 
@@ -72,11 +68,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         {
             // Create settings and only declare PropertiesToEncrypt via real mappings, then remove them
             // to simulate missing mapping when traversing documents.
-            var settings = new EncryptionSettings("rid", new System.Collections.Generic.List<string> { "/id" });
-            var container = (EncryptionContainer)System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(EncryptionContainer));
+            EncryptionSettings settings = new EncryptionSettings("rid", new System.Collections.Generic.List<string> { "/id" });
+            EncryptionContainer container = (EncryptionContainer)System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(EncryptionContainer));
             foreach (string p in properties)
             {
-                var forProperty = new EncryptionSettingForProperty(
+                EncryptionSettingForProperty forProperty = new EncryptionSettingForProperty(
                     clientEncryptionKeyId: "cek1",
                     encryptionType: Mde.EncryptionType.Randomized,
                     encryptionContainer: container,
@@ -85,8 +81,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             }
 
             // Now clear the mapping dictionary via reflection to simulate Keys present but value missing.
-            var dictField = typeof(EncryptionSettings).GetField("encryptionSettingsDictByPropertyName", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
-            var dict = (System.Collections.Generic.Dictionary<string, EncryptionSettingForProperty>)dictField.GetValue(settings);
+            System.Reflection.FieldInfo dictField = typeof(EncryptionSettings).GetField("encryptionSettingsDictByPropertyName", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
+            System.Collections.Generic.Dictionary<string, EncryptionSettingForProperty> dict = (System.Collections.Generic.Dictionary<string, EncryptionSettingForProperty>)dictField.GetValue(settings);
             foreach (string p in properties)
             {
                 dict[p] = null;
@@ -99,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         public async Task Validation_EncryptAsync_PropertyWithoutSetting_Throws_And_DoesNotDisposeInput()
         {
             // Arrange: The item contains property 'foo', settings list 'foo' for encryption, but no mapping is configured.
-            using var input = ToStream("{\"id\":\"1\",\"foo\":123}");
+            using System.IO.MemoryStream input = ToStream("{\"id\":\"1\",\"foo\":123}");
             EncryptionSettings settings = CreateSettingsWithMissingMapping("foo");
 
             // Act
@@ -128,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         public async Task Validation_DecryptAsync_PropertyWithoutSetting_Throws_And_DoesNotDisposeInput()
         {
             // Arrange: The document contains property 'bar', settings list 'bar' for encryption, but no mapping is configured.
-            using var input = ToStream("{\"id\":\"1\",\"bar\":\"someValue\"}");
+            using System.IO.MemoryStream input = ToStream("{\"id\":\"1\",\"bar\":\"someValue\"}");
             EncryptionSettings settings = CreateSettingsWithMissingMapping("bar");
 
             // Act
@@ -187,20 +183,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         public void Validation_Serialize_ShouldEscape_NonString_ShouldThrow_ArgumentException()
         {
             // shouldEscape path is enforced in SerializeAndEncryptValueAsync; use the public EncryptAsync with 'id' configured and non-string id.
-            var settings = new EncryptionSettings("rid", new System.Collections.Generic.List<string> { "/id" });
-            var container = (EncryptionContainer)System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(EncryptionContainer));
-            var forProperty = new EncryptionSettingForProperty(
+            EncryptionSettings settings = new EncryptionSettings("rid", new System.Collections.Generic.List<string> { "/id" });
+            EncryptionContainer container = (EncryptionContainer)System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(EncryptionContainer));
+            EncryptionSettingForProperty forProperty = new EncryptionSettingForProperty(
                 clientEncryptionKeyId: "cek1",
                 encryptionType: Mde.EncryptionType.Deterministic,
                 encryptionContainer: container,
                 databaseRid: "dbRid");
             settings.SetEncryptionSettingForProperty("id", forProperty);
 
-            using var s = new MemoryStream(Encoding.UTF8.GetBytes("{\"id\":42}"));
-            var ex = Assert.ThrowsExceptionAsync<ArgumentException>(async () =>
-            {
-                await EncryptionProcessor.EncryptAsync(s, settings, operationDiagnostics: null, cancellationToken: default);
-            }).GetAwaiter().GetResult();
+            using System.IO.MemoryStream s = new System.IO.MemoryStream(Encoding.UTF8.GetBytes("{\"id\":42}"));
+            ArgumentException ex = Assert.ThrowsExceptionAsync<ArgumentException>(
+                () => EncryptionProcessor.EncryptAsync(s, settings, operationDiagnostics: null, cancellationToken: default)).GetAwaiter().GetResult();
             StringAssert.Contains(ex.Message, "value to escape has to be string type");
         }
 
@@ -213,10 +207,59 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         {
             // Test that type markers are properly handled
             // This is a placeholder test - would need to see TypeMarkerTests content for specific tests
-            var value = new JValue("test");
-            var serialized = EncryptionProcessor.Serialize(value);
+            JValue value = new JValue("test");
+            (EncryptionProcessor.TypeMarker, byte[]) serialized = EncryptionProcessor.Serialize(value);
             Assert.IsNotNull(serialized);
             Assert.IsTrue(serialized.Item2.Length > 0);
+        }
+
+        [TestMethod]
+        public void TypeMarker_RoundTrips_For_All_Supported_Types()
+        {
+            // Boolean
+            (EncryptionProcessor.TypeMarker mBool, byte[] bBool) = EncryptionProcessor.Serialize(new JValue(true));
+            Assert.AreEqual(EncryptionProcessor.TypeMarker.Boolean, mBool);
+            Assert.AreEqual(true, EncryptionProcessor.DeserializeAndAddProperty(bBool, mBool).Value<bool>());
+
+            // Double
+            (EncryptionProcessor.TypeMarker mDouble, byte[] bDouble) = EncryptionProcessor.Serialize(new JValue(3.14159));
+            Assert.AreEqual(EncryptionProcessor.TypeMarker.Double, mDouble);
+            Assert.AreEqual(3.14159, EncryptionProcessor.DeserializeAndAddProperty(bDouble, mDouble).Value<double>(), 0.0);
+
+            // Long
+            (EncryptionProcessor.TypeMarker mLong, byte[] bLong) = EncryptionProcessor.Serialize(new JValue(42L));
+            Assert.AreEqual(EncryptionProcessor.TypeMarker.Long, mLong);
+            Assert.AreEqual(42L, EncryptionProcessor.DeserializeAndAddProperty(bLong, mLong).Value<long>());
+
+            // String
+            (EncryptionProcessor.TypeMarker mString, byte[] bString) = EncryptionProcessor.Serialize(new JValue("hello"));
+            Assert.AreEqual(EncryptionProcessor.TypeMarker.String, mString);
+            Assert.AreEqual("hello", EncryptionProcessor.DeserializeAndAddProperty(bString, mString).Value<string>());
+        }
+
+        [TestMethod]
+        public async Task TypeMarker_Invalid_Or_Malformed_Cipher_Throws()
+        {
+            // Build real ciphertext first
+            Mde.AeadAes256CbcHmac256EncryptionAlgorithm algorithm = CreateDeterministicAlgorithm();
+            EncryptionSettings settings = CreateSettingsWithInjected("p", algorithm);
+            EncryptionSettingForProperty propSetting = settings.GetEncryptionSettingForProperty("p");
+
+            // Encrypt a simple string with shouldEscape=false so we get byte[] token
+            using System.IO.Stream enc = await EncryptionProcessor.EncryptValueStreamAsync(ToStream("\"abc\""), propSetting, shouldEscape: false, cancellationToken: CancellationToken.None);
+            JToken token = EncryptionProcessor.BaseSerializer.FromStream<JToken>(enc);
+            byte[] cipherWithMarker = token.ToObject<byte[]>();
+            Assert.IsNotNull(cipherWithMarker);
+            Assert.IsTrue(cipherWithMarker.Length > 1);
+
+            // Tamper the type marker to an invalid value (e.g., 0 which is not defined)
+            byte[] tampered = (byte[])cipherWithMarker.Clone();
+            tampered[0] = 0; // invalid TypeMarker
+
+            // Decrypt path should throw when DeserializeAndAddProperty sees invalid marker
+            JObject wrapper = new JObject { ["p"] = tampered };
+            await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => EncryptionProcessor.DecryptJTokenAsync(wrapper["p"], propSetting, isEscaped: false, cancellationToken: CancellationToken.None));
         }
 
         #endregion

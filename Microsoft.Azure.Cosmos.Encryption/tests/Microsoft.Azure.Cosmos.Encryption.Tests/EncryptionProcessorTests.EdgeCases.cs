@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         {
             // Base serializer uses MaxDepth = 64; we generate a depth somewhat below that to avoid parser issues
             string json = $"{{\"id\":\"d\",\"Secret\":{DeepJson(30)} }}"; // 30 nested levels
-            var settings = CreateSettings("Secret", Algo());
+            EncryptionSettings settings = CreateSettings("Secret", Algo());
 
             using System.IO.Stream enc = await EncryptionProcessor.EncryptAsync(EncryptionProcessor.BaseSerializer.ToStream(JObject.Parse(json)), settings, operationDiagnostics: null, cancellationToken: CancellationToken.None);
             using System.IO.Stream dec = await EncryptionProcessor.DecryptAsync(enc, settings, operationDiagnostics: null, cancellationToken: CancellationToken.None);
@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             // Push close to MaxDepth (64). Using ~60 nested objects keeps us under the cap considering root and wrappers.
             JObject deep = JObject.Parse(DeepJson(60));
             JObject doc = new JObject { ["id"] = "deep", ["Secret"] = deep };
-            var settings = CreateSettings("Secret", Algo());
+            EncryptionSettings settings = CreateSettings("Secret", Algo());
 
             using System.IO.Stream enc = await EncryptionProcessor.EncryptAsync(EncryptionProcessor.BaseSerializer.ToStream(doc), settings, operationDiagnostics: null, cancellationToken: CancellationToken.None);
             using System.IO.Stream dec = await EncryptionProcessor.DecryptAsync(enc, settings, operationDiagnostics: null, cancellationToken: CancellationToken.None);
@@ -180,6 +180,49 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
                 // Current implementation increments the count when the property exists, even if value is null.
                 Assert.AreEqual(1, diagEnc.EncryptContent[Constants.DiagnosticsPropertiesEncryptedCount].Value<int>());
+            }
+        }
+
+        #endregion
+
+    #region Stream Edge Case Tests
+
+        [TestMethod]
+        public async Task Streams_DecryptAsync_NullInput_ReturnsNull()
+        {
+            // Arrange
+            System.IO.Stream input = null;
+            EncryptionSettings settings = CreateSettingsWithNoProperties();
+
+            // Act
+            System.IO.Stream result = await EncryptionProcessor.DecryptAsync(input, settings, operationDiagnostics: null, cancellationToken: CancellationToken.None);
+
+            // Assert
+            Assert.IsNull(result);
+        }
+
+        [TestMethod]
+        public void Streams_BaseSerializer_ToStream_IsSeekable()
+        {
+            JObject obj = JObject.Parse("{ \"id\": \"1\" }");
+            using (System.IO.Stream s = EncryptionProcessor.BaseSerializer.ToStream(obj))
+            {
+                Assert.IsTrue(s.CanSeek, "BaseSerializer.ToStream should return a seekable stream.");
+            }
+        }
+
+        [TestMethod]
+        public async Task Streams_EncryptAsync_ReturnsSeekableStream()
+        {
+            string json = "{\"id\":\"1\",\"p\":123}";
+            EncryptionSettings settings = CreateSettingsWithNoProperties();
+            using (System.IO.Stream input = ToStream(json))
+            {
+                System.IO.Stream encrypted = await EncryptionProcessor.EncryptAsync(input, settings, operationDiagnostics: null, cancellationToken: CancellationToken.None);
+                using (encrypted)
+                {
+                    Assert.IsTrue(encrypted.CanSeek, "EncryptAsync should return a seekable stream to satisfy downstream Debug.Assert invariants.");
+                }
             }
         }
 
