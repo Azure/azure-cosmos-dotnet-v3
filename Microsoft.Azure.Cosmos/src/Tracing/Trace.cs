@@ -189,8 +189,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     return; // Already set, return early
                 }
 
-                this.isBeingWalked = true;
-                
                 foreach (ITrace child in this.children)
                 {
                     if (child is Trace concreteChild)
@@ -198,6 +196,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
                         concreteChild.SetWalkingStateRecursively();
                     }
                 }
+
+                // Set the walking state for this trace
+                this.isBeingWalked = true;
             }
         }
     }

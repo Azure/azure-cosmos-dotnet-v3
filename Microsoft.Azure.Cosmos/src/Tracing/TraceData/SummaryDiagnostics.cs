@@ -44,9 +44,9 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 System.Diagnostics.Debug.Assert(concreteTrace.IsBeingWalked, "SetWalkingStateRecursively should be set to true");
             }
 
-            foreach (var datum in currentTrace.Data)
+            foreach (object datums in currentTrace.Data.Values)
             {
-                if (datum.Value is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
+                if (datums is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
                 {
                     this.AggregateStatsFromStoreResults(clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList);
                     this.AggregateGatewayStatistics(clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList);

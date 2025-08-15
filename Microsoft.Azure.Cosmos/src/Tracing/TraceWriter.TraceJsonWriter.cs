@@ -53,7 +53,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 writer.WriteFieldName("duration in milliseconds");
                 writer.WriteNumberValue(trace.Duration.TotalMilliseconds);
 
-                // Use direct enumeration protected by walking state
                 if (trace.Data.Any())
                 {
                     writer.WriteFieldName("data");
@@ -71,7 +70,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     writer.WriteObjectEnd();
                 }
 
-                // Use direct enumeration protected by walking state
                 if (trace.Children.Any())
                 {
                     writer.WriteFieldName("children");
