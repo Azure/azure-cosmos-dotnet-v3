@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Net;
     using System.Net.Http;
-    using System.Net.Http.Headers;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
@@ -19,27 +18,28 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
+    using Microsoft.Azure.Documents.FaultInjection;
     using Newtonsoft.Json;
 
     // Marking it as non-sealed in order to unit test it using Moq framework
     internal class GatewayStoreModel : IStoreModelExtension, IDisposable
     {
-        private readonly bool isPartitionLevelFailoverEnabled;
         private static readonly string sessionConsistencyAsString = ConsistencyLevel.Session.ToString();
         private readonly GlobalPartitionEndpointManager globalPartitionEndpointManager;
+        private readonly ISessionContainer sessionContainer;
+        private readonly DocumentClientEventSource eventSource;
+        private readonly IChaosInterceptor chaosInterceptor;
 
         internal readonly GlobalEndpointManager endpointManager;
-        private readonly DocumentClientEventSource eventSource;
         internal readonly ConsistencyLevel defaultConsistencyLevel;
 
+        // Store Clients to send requests to the gateway and/ or thin client endpoints.
         private ThinClientStoreClient thinClientStoreClient;
-
         private GatewayStoreClient gatewayStoreClient;
 
         // Caches to resolve the PartitionKeyRange from request. For Session Token Optimization.
-        protected PartitionKeyRangeCache partitionKeyRangeCache;
-        protected ClientCollectionCache clientCollectionCache;
-        protected ISessionContainer sessionContainer;
+        private PartitionKeyRangeCache partitionKeyRangeCache;
+        private ClientCollectionCache clientCollectionCache;
 
         public GatewayStoreModel(
              GlobalEndpointManager endpointManager,
@@ -50,20 +50,20 @@ namespace Microsoft.Azure.Cosmos
              CosmosHttpClient httpClient,
              GlobalPartitionEndpointManager globalPartitionEndpointManager,
              bool isThinClientEnabled,
-             bool isPartitionLevelFailoverEnabled = false,
-             UserAgentContainer userAgentContainer = null)
+             UserAgentContainer userAgentContainer = null,
+             IChaosInterceptor chaosInterceptor = null)
         {
-            this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
             this.endpointManager = endpointManager;
             this.sessionContainer = sessionContainer;
             this.defaultConsistencyLevel = defaultConsistencyLevel;
             this.eventSource = eventSource;
             this.globalPartitionEndpointManager = globalPartitionEndpointManager;
+            this.chaosInterceptor = chaosInterceptor;
             this.gatewayStoreClient = new GatewayStoreClient(
                 httpClient,
                 this.eventSource,
-                serializerSettings,
-                isPartitionLevelFailoverEnabled);
+                globalPartitionEndpointManager,
+                serializerSettings);
 
             if (isThinClientEnabled)
             {
@@ -71,8 +71,9 @@ namespace Microsoft.Azure.Cosmos
                     httpClient,
                     userAgentContainer,
                     this.eventSource,
-                    isPartitionLevelFailoverEnabled,
-                    serializerSettings);
+                    globalPartitionEndpointManager,
+                    serializerSettings,
+                    this.chaosInterceptor);
             }
 
             this.globalPartitionEndpointManager.SetBackgroundConnectionPeriodicRefreshTask(
@@ -99,7 +100,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 // This is applicable for both per partition automatic failover and per partition circuit breaker.
-                if (this.isPartitionLevelFailoverEnabled
+                if (this.IsPartitionLevelFailoverEnabled()
                     && !ReplicatedResourceClient.IsMasterResource(request.ResourceType)
                     && request.ResourceType.IsPartitioned())
                 {
@@ -411,7 +412,13 @@ namespace Microsoft.Azure.Cosmos
             return new Tuple<bool, string>(false, null);
         }
 
-        protected static async Task<Tuple<bool, PartitionKeyRange>> TryResolvePartitionKeyRangeAsync(
+        private bool IsPartitionLevelFailoverEnabled()
+        {
+            return this.globalPartitionEndpointManager.IsPartitionLevelCircuitBreakerEnabled()
+                || this.globalPartitionEndpointManager.IsPartitionLevelAutomaticFailoverEnabled();
+        }
+
+        private static async Task<Tuple<bool, PartitionKeyRange>> TryResolvePartitionKeyRangeAsync(
             DocumentServiceRequest request,
             ISessionContainer sessionContainer,
             PartitionKeyRangeCache partitionKeyRangeCache,
