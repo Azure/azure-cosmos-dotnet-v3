@@ -21,7 +21,7 @@
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<AssemblyName>Microsoft.Azure.Cosmos.Client</AssemblyName>
 		<Title>Microsoft Azure Cosmos DB Client library</Title>
-		<PackageId>Microsoft.Azure.Cosmos</PackageId>
+		<PackageId>Microsoft.Azure.Cosmos.Aot</PackageId>
 		<PackageTags>microsoft;azure;cosmos;cosmosdb;documentdb;docdb;nosql;azureofficial;dotnetcore;netcore;netstandard</PackageTags>
 		<PackageReleaseNotes>The change log for this SDK is made available at https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/changelog.md at the time of release.</PackageReleaseNotes>
 		<PackageProjectUrl>https://github.com/Azure/azure-cosmos-dotnet-v3</PackageProjectUrl>
