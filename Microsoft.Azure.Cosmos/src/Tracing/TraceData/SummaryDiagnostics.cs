@@ -39,10 +39,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         private void CollectSummaryFromTraceTree(ITrace currentTrace)
         {
             // Assert that walking state is set
-            if (currentTrace is Trace concreteTrace)
-            {
-                System.Diagnostics.Debug.Assert(concreteTrace.IsBeingWalked, "SetWalkingStateRecursively should be set to true");
-            }
+            System.Diagnostics.Debug.Assert(currentTrace.IsBeingWalked, "SetWalkingStateRecursively should be set to true");
 
             foreach (object datums in currentTrace.Data.Values)
             {

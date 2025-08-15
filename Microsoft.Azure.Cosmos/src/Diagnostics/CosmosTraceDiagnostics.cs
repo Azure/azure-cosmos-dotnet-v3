@@ -43,7 +43,6 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             if (this.Value is Tracing.Trace rootConcreteTrace)
             {
                 rootConcreteTrace.SetWalkingStateRecursively();
-                return this.ToJsonString();
             }
             
             return this.ToJsonString();

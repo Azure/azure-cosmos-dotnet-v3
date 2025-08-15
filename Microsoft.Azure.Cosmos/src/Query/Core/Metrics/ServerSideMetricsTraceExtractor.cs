@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 {
     using System;
-    using System.Linq;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
@@ -19,10 +18,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             }
 
             // Assert that walking state is set
-            if (currentTrace is Tracing.Trace concreteTrace)
-            {
-                System.Diagnostics.Debug.Assert(concreteTrace.IsBeingWalked, "SetWalkingStateRecursively should be set to true");
-            }
+            System.Diagnostics.Debug.Assert(currentTrace.IsBeingWalked, "SetWalkingStateRecursively should be set to true");
 
             foreach (object datum in currentTrace.Data.Values)
             {
@@ -49,10 +45,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             }
 
             // Assert that walking state is set
-            if (currentTrace is Tracing.Trace concreteTrace)
-            {
-                System.Diagnostics.Debug.Assert(concreteTrace.IsBeingWalked, "SetWalkingStateRecursively should be set to true");
-            }
+            System.Diagnostics.Debug.Assert(currentTrace.IsBeingWalked, "SetWalkingStateRecursively should be set to true");
 
             foreach (Object datum in currentTrace.Data.Values)
             {
