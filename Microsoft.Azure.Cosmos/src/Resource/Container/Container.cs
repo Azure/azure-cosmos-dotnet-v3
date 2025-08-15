@@ -1714,6 +1714,39 @@ namespace Microsoft.Azure.Cosmos
 
 #if PREVIEW
         /// <summary>
+        /// Determines whether the given y feed range is a part of the specified x feed range.
+        /// </summary>
+        /// <param name="x">The feed range representing the x range.</param>
+        /// <param name="y">The feed range representing the y range.</param>
+        /// <param name="cancellationToken">A token to cancel the operation if needed.</param>
+        /// <example>
+        /// <code language="csharp">
+        /// <![CDATA[
+        /// CancellationToken cancellationToken = ...;
+        /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("your-connection-string");
+        /// CosmosClient cosmosClient = cosmosClientBuilder.Build();
+        /// Database cosmosDatabase = cosmosClient.GetDatabase("your-database-id");
+        /// Container container = cosmosDatabase.GetContainer("your-container-id");
+        /// FeedRange x = ...; // Define the feed range for x
+        /// FeedRange y = ...;  // Define the feed range for y
+        ///
+        /// bool isFeedRangePartOfAsync = await container.IsFeedRangePartOfAsync(
+        ///    x,
+        ///    y,
+        ///    cancellationToken);
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <returns>Returns a boolean indicating whether the y feed range is fully contained within the x feed range.</returns>
+        public virtual Task<bool> IsFeedRangePartOfAsync(
+            Cosmos.FeedRange x,
+            Cosmos.FeedRange y,
+            CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
         /// Gets the list of Partition Key Range identifiers for a <see cref="FeedRange"/>.
         /// </summary>
         /// <param name="feedRange">A <see cref="FeedRange"/></param>
@@ -1725,6 +1758,7 @@ namespace Microsoft.Azure.Cosmos
             FeedRange feedRange,
             CancellationToken cancellationToken = default);
 
+#if !COSMOS_GW_AOT
         /// <summary>
         /// Initializes a <see cref="GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes"/> for change feed processing with all versions and deletes.
         /// </summary>
@@ -1799,39 +1833,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
             string processorName,
             ChangeFeedHandler<ChangeFeedItem<T>> onChangesDelegate);
-
-        /// <summary>
-        /// Determines whether the given y feed range is a part of the specified x feed range.
-        /// </summary>
-        /// <param name="x">The feed range representing the x range.</param>
-        /// <param name="y">The feed range representing the y range.</param>
-        /// <param name="cancellationToken">A token to cancel the operation if needed.</param>
-        /// <example>
-        /// <code language="csharp">
-        /// <![CDATA[
-        /// CancellationToken cancellationToken = ...;
-        /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("your-connection-string");
-        /// CosmosClient cosmosClient = cosmosClientBuilder.Build();
-        /// Database cosmosDatabase = cosmosClient.GetDatabase("your-database-id");
-        /// Container container = cosmosDatabase.GetContainer("your-container-id");
-        /// FeedRange x = ...; // Define the feed range for x
-        /// FeedRange y = ...;  // Define the feed range for y
-        ///
-        /// bool isFeedRangePartOfAsync = await container.IsFeedRangePartOfAsync(
-        ///    x,
-        ///    y,
-        ///    cancellationToken);
-        /// ]]>
-        /// </code>
-        /// </example>
-        /// <returns>Returns a boolean indicating whether the y feed range is fully contained within the x feed range.</returns>
-        public virtual Task<bool> IsFeedRangePartOfAsync(
-            Cosmos.FeedRange x,
-            Cosmos.FeedRange y,
-            CancellationToken cancellationToken = default)
-        {
-            throw new NotImplementedException();
-        }
+#endif
 #endif
     }
 }
