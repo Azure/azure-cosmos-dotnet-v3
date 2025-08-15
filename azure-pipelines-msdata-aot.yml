@@ -4,7 +4,7 @@ trigger: none
 pr: none
 
 variables:
-  BuildConfiguration: Release
+  BuildConfiguration: Preview
   Packaging.EnableSBOMSigning: true
   DebugArguments: ' --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional" --verbosity normal '
   ReleaseArguments: ' --filter "TestCategory!=Quarantine" --verbosity normal '
@@ -16,16 +16,16 @@ stages:
   jobs:
     - template: templates/static-tools-aot.yml
       parameters:
-        BuildConfiguration: Release
+        BuildConfiguration: $(BuildConfiguration)
         VmImage: $(VmImage)
 - stage:
   displayName: NugetPack 
   jobs:
     - template: templates/nuget-pack.yml
       parameters:
-        BuildConfiguration: Release
+        BuildConfiguration: $(BuildConfiguration)
         VmImage: $(VmImage)
         ReleasePackage: true
-        OutputPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/Release/Microsoft.Azure.Cosmos'
+        OutputPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos'
         BlobVersion: 'aot/$(BlobPath)'
 

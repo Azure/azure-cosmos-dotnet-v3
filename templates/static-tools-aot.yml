@@ -46,7 +46,7 @@ jobs:
       configuration: $(BuildConfiguration)
       nugetConfigPath: NuGet.config
       projects: Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj
-      arguments: --configuration Release -p:Optimize=true  ${{ parameters.Arguments }}
+      arguments: --configuration $(BuildConfiguration) -p:Optimize=true  ${{ parameters.Arguments }}
       versioningScheme: OFF
 
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@4
