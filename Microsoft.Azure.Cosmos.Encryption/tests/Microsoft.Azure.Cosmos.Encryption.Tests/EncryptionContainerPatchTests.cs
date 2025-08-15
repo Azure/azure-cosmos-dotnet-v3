@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         {
             // Arrange: No encrypted settings for this path
             EncryptionContainer container = CreateUninitialized<EncryptionContainer>();
-            EncryptionSettings settings = CreateEncryptionSettingsWithEncryptedProperty("Other", container); // different property than used below
+            EncryptionSettings settings = CreateEncryptionSettingsWithEncryptedProperty("Sensitive", container); // different property than used below
 
             PatchOperation op = PatchOperation.Increment("/Plain", 2);
             List<PatchOperation> ops = new List<PatchOperation> { op };

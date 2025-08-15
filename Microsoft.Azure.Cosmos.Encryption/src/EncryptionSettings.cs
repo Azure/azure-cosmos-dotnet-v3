@@ -18,23 +18,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         internal EncryptionSettings(string containerRidValue, IReadOnlyList<string> partitionKeyPath)
         {
-            if (string.IsNullOrEmpty(containerRidValue))
-            {
-                throw new ArgumentNullException(nameof(containerRidValue));
-            }
-
-            if (partitionKeyPath == null)
-            {
-                throw new ArgumentNullException(nameof(partitionKeyPath));
-            }
-
             this.ContainerRidValue = containerRidValue;
             this.PartitionKeyPaths = partitionKeyPath;
             this.encryptionSettingsDictByPropertyName = new Dictionary<string, EncryptionSettingForProperty>();
             this.PropertiesToEncrypt = this.encryptionSettingsDictByPropertyName.Keys;
         }
 
-        // Public members first
         public string ContainerRidValue { get; }
 
         public IReadOnlyList<string> PartitionKeyPaths { get; }
@@ -61,7 +50,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             };
         }
 
-    // Internal members next
         internal void SetEncryptionSettingForProperty(
             string propertyName,
             EncryptionSettingForProperty encryptionSettingsForProperty)
@@ -69,7 +57,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.encryptionSettingsDictByPropertyName[propertyName] = encryptionSettingsForProperty;
         }
 
-        // Private helpers last
         private static Data.Encryption.Cryptography.EncryptionType GetEncryptionTypeForProperty(ClientEncryptionIncludedPath clientEncryptionIncludedPath)
         {
             return clientEncryptionIncludedPath.EncryptionType switch

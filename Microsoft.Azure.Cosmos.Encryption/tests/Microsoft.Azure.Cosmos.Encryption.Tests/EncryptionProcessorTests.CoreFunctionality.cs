@@ -23,25 +23,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     {
         #region End-to-End Tests
 
-        [TestMethod]
-        public void CoreFunctionality_Placeholder_To_Keep_Class_NonEmpty()
-        {
-            // No-op; real tests below. Keeping a trivial non-noop method is not required,
-            // but this preserves structure if additional setup is added later.
-            Assert.IsTrue(true);
-        }
+    // Removed no-op placeholder test.
 
         [TestMethod]
         public async Task EndToEnd_EncryptDecrypt_RoundTrip_Primitives_And_Arrays_And_Objects()
         {
-            var algorithm = CreateDeterministicAlgorithm();
+            Mde.AeadAes256CbcHmac256EncryptionAlgorithm algorithm = CreateDeterministicAlgorithm();
 
             // Configure two properties for encryption: one primitive/array mix, one nested object
-            var settings = new EncryptionSettings("rid", new List<string> { "/id" });
-            var container = (EncryptionContainer)System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(EncryptionContainer));
+            EncryptionSettings settings = new EncryptionSettings("rid", new List<string> { "/id" });
+            EncryptionContainer container = (EncryptionContainer)System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(EncryptionContainer));
 
-            var cfg1 = new EncryptionSettingForProperty("cek1", Mde.EncryptionType.Deterministic, container, "dbRid", algorithm);
-            var cfg2 = new EncryptionSettingForProperty("cek2", Mde.EncryptionType.Deterministic, container, "dbRid", algorithm);
+            EncryptionSettingForProperty cfg1 = new EncryptionSettingForProperty("cek1", Mde.EncryptionType.Deterministic, container, "dbRid", algorithm);
+            EncryptionSettingForProperty cfg2 = new EncryptionSettingForProperty("cek2", Mde.EncryptionType.Deterministic, container, "dbRid", algorithm);
 
             settings.SetEncryptionSettingForProperty("Secret", cfg1);
             settings.SetEncryptionSettingForProperty("Nested", cfg2);
@@ -53,29 +47,31 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 ""Plain"": 123
             }";
 
-            using var input = ToStream(json);
-            var diagEnc = new EncryptionDiagnosticsContext();
-            Stream encrypted = await EncryptionProcessor.EncryptAsync(input, settings, diagEnc, CancellationToken.None);
+            using (Stream input = ToStream(json))
+            {
+                EncryptionDiagnosticsContext diagEnc = new EncryptionDiagnosticsContext();
+                Stream encrypted = await EncryptionProcessor.EncryptAsync(input, settings, diagEnc, CancellationToken.None);
 
-            // Ensure diagnostics counted both properties
-            Assert.AreEqual(2, diagEnc.EncryptContent[Constants.DiagnosticsPropertiesEncryptedCount].Value<int>());
+                // Ensure diagnostics counted both properties
+                Assert.AreEqual(2, diagEnc.EncryptContent[Constants.DiagnosticsPropertiesEncryptedCount].Value<int>());
 
-            // Decrypt
-            var diagDec = new EncryptionDiagnosticsContext();
-            Stream decrypted = await EncryptionProcessor.DecryptAsync(encrypted, settings, diagDec, CancellationToken.None);
-            Assert.AreEqual(2, diagDec.DecryptContent[Constants.DiagnosticsPropertiesDecryptedCount].Value<int>());
+                // Decrypt
+                EncryptionDiagnosticsContext diagDec = new EncryptionDiagnosticsContext();
+                Stream decrypted = await EncryptionProcessor.DecryptAsync(encrypted, settings, diagDec, CancellationToken.None);
+                Assert.AreEqual(2, diagDec.DecryptContent[Constants.DiagnosticsPropertiesDecryptedCount].Value<int>());
 
-            // Validate round-trip equality
-            JObject original = JObject.Parse(json);
-            JObject roundtripped = EncryptionProcessor.BaseSerializer.FromStream<JObject>(decrypted);
-            Assert.IsTrue(JToken.DeepEquals(original, roundtripped), "Document should round-trip after encrypt/decrypt.");
+                // Validate round-trip equality
+                JObject original = JObject.Parse(json);
+                JObject roundtripped = EncryptionProcessor.BaseSerializer.FromStream<JObject>(decrypted);
+                Assert.IsTrue(JToken.DeepEquals(original, roundtripped), "Document should round-trip after encrypt/decrypt.");
+            }
         }
 
         [TestMethod]
         public async Task EndToEnd_EncryptDecrypt_Id_ShouldEscape_And_RoundTrip()
         {
-            var algorithm = CreateDeterministicAlgorithm();
-            var settings = CreateSettingsWithInjected("id", algorithm);
+            Mde.AeadAes256CbcHmac256EncryptionAlgorithm algorithm = CreateDeterministicAlgorithm();
+            EncryptionSettings settings = CreateSettingsWithInjected("id", algorithm);
 
             string id = "id/with+special?chars#and\\slashes";
             // Build the JSON via JObject to ensure proper escaping.
@@ -85,23 +81,25 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 ["p"] = 1
             };
 
-            using var input = EncryptionProcessor.BaseSerializer.ToStream(doc);
-            Stream encrypted = await EncryptionProcessor.EncryptAsync(input, settings, operationDiagnostics: null, cancellationToken: CancellationToken.None);
+            using (Stream input = EncryptionProcessor.BaseSerializer.ToStream(doc))
+            {
+                Stream encrypted = await EncryptionProcessor.EncryptAsync(input, settings, operationDiagnostics: null, cancellationToken: CancellationToken.None);
 
             // Inspect encrypted form to ensure id does not contain forbidden characters
-            JObject encryptedDoc = EncryptionProcessor.BaseSerializer.FromStream<JObject>(encrypted);
-            string encId = encryptedDoc.Value<string>("id");
-            Assert.IsNotNull(encId);
-            Assert.IsFalse(encId.Contains('/'));
-            Assert.IsFalse(encId.Contains('+'));
-            Assert.IsFalse(encId.Contains('?'));
-            Assert.IsFalse(encId.Contains('#'));
-            Assert.IsFalse(encId.Contains('\\'));
+                JObject encryptedDoc = EncryptionProcessor.BaseSerializer.FromStream<JObject>(encrypted);
+                string encId = encryptedDoc.Value<string>("id");
+                Assert.IsNotNull(encId);
+                Assert.IsFalse(encId.Contains('/'));
+                Assert.IsFalse(encId.Contains('+'));
+                Assert.IsFalse(encId.Contains('?'));
+                Assert.IsFalse(encId.Contains('#'));
+                Assert.IsFalse(encId.Contains('\\'));
 
-            // Decrypt and verify original id restored
-            Stream decrypted = await EncryptionProcessor.DecryptAsync(EncryptionProcessor.BaseSerializer.ToStream(encryptedDoc), settings, operationDiagnostics: null, cancellationToken: CancellationToken.None);
-            JObject roundtripped = EncryptionProcessor.BaseSerializer.FromStream<JObject>(decrypted);
-            Assert.AreEqual(id, roundtripped.Value<string>("id"));
+                // Decrypt and verify original id restored
+                Stream decrypted = await EncryptionProcessor.DecryptAsync(EncryptionProcessor.BaseSerializer.ToStream(encryptedDoc), settings, operationDiagnostics: null, CancellationToken.None);
+                JObject roundtripped = EncryptionProcessor.BaseSerializer.FromStream<JObject>(decrypted);
+                Assert.AreEqual(id, roundtripped.Value<string>("id"));
+            }
         }
 
         #endregion
@@ -112,8 +110,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         public async Task StreamHandling_EncryptAsync_Disposes_Input_And_Returns_New_Stream()
         {
             // Arrange
-            var input = new TrackingStream(ToStream("{\"id\":\"abc\",\"p\":1}"));
-            var settings = CreateSettingsWithNoProperties();
+            TrackingStream input = new TrackingStream(ToStream("{\"id\":\"abc\",\"p\":1}"));
+            EncryptionSettings settings = CreateSettingsWithNoProperties();
 
             // Act
             Stream result = await EncryptionProcessor.EncryptAsync(input, settings, operationDiagnostics: null, cancellationToken: CancellationToken.None);
@@ -133,8 +131,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         public async Task StreamHandling_DecryptAsync_Disposes_Input_And_Returns_New_Stream()
         {
             // Arrange
-            var input = new TrackingStream(ToStream("{\"id\":\"abc\",\"p\":1}"));
-            var settings = CreateSettingsWithNoProperties();
+            TrackingStream input = new TrackingStream(ToStream("{\"id\":\"abc\",\"p\":1}"));
+            EncryptionSettings settings = CreateSettingsWithNoProperties();
 
             // Act
             Stream result = await EncryptionProcessor.DecryptAsync(input, settings, operationDiagnostics: null, cancellationToken: CancellationToken.None);
@@ -153,20 +151,24 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [TestMethod]
         public async Task StreamHandling_EncryptDecrypt_NoPropertiesToEncrypt_ReturnsPassthrough()
         {
-            var settings = CreateSettingsWithNoProperties();
+            EncryptionSettings settings = CreateSettingsWithNoProperties();
             string originalJson = "{\"id\":\"test\",\"data\":\"value\",\"array\":[1,2,3]}";
 
-            using var input = ToStream(originalJson);
-            Stream encrypted = await EncryptionProcessor.EncryptAsync(input, settings, operationDiagnostics: null, cancellationToken: CancellationToken.None);
+            using (Stream input = ToStream(originalJson))
+            {
+                Stream encrypted = await EncryptionProcessor.EncryptAsync(input, settings, operationDiagnostics: null, cancellationToken: CancellationToken.None);
 
-            string encryptedJson = ReadToEnd(encrypted);
+                string encryptedJson = ReadToEnd(encrypted);
 
-            using var encryptedInput = ToStream(encryptedJson);
-            Stream decrypted = await EncryptionProcessor.DecryptAsync(encryptedInput, settings, operationDiagnostics: null, cancellationToken: CancellationToken.None);
+                using (Stream encryptedInput = ToStream(encryptedJson))
+                {
+                    Stream decrypted = await EncryptionProcessor.DecryptAsync(encryptedInput, settings, operationDiagnostics: null, cancellationToken: CancellationToken.None);
 
-            string decryptedJson = ReadToEnd(decrypted);
+                    string decryptedJson = ReadToEnd(decrypted);
 
-            Assert.AreEqual(originalJson, decryptedJson);
+                    Assert.AreEqual(originalJson, decryptedJson);
+                }
+            }
         }
 
         #endregion

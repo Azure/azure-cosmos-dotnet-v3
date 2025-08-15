@@ -86,25 +86,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         #endregion
 
-        /// <summary>
-        /// This class serves as the main entry point for all EncryptionProcessor tests.
-        /// The tests have been consolidated from 19+ separate test classes into 5 logical groupings
-        /// organized as partial classes for better maintainability and reduced fragmentation.
-        /// 
-        /// Test Organization:
-        /// • CoreFunctionality.cs - End-to-end encryption/decryption, stream handling, JSON traversal
-        /// • Validation.cs - Argument validation, settings validation, unsupported types, type markers  
-        /// • EdgeCases.cs - Depth handling, overflow scenarios, no-op operations, diagnostics edge cases
-        /// • DataFormatEncoding.cs - ID escaping, Unicode handling, feed responses, value stream encryption
-        /// • Cryptography.cs - Randomized algorithms, different encryption modes, key management
-        /// </summary>
-        [TestMethod]
-        public void MainTestClass_OrganizationDocumentation()
-        {
-            // This test documents the reorganization from fragmented classes to meaningful groupings
-            // Previously: 19+ separate classes (EncryptionProcessorEndToEndTests, EncryptionProcessorArgumentValidationTests, etc.)
-            // Now: 5 logical partial classes with shared utilities and better maintainability
-            Assert.IsTrue(true, "Test organization documented successfully");
-        }
+    // Documentation moved to XML comments and README. Removed no-op test.
     }
 }
