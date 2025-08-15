@@ -14,10 +14,19 @@ stages:
 - stage:
   displayName: Pre-publish
   jobs:
-    - template: templates/static-tools.yml
+    - template: templates/static-tools-aot.yml
       parameters:
         BuildConfiguration: Release
-        VmImage:  $(VmImage)
+        VmImage: $(VmImage)
+        ReleasePackage: true
+        OutputPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/Release/Microsoft.Azure.Cosmos'
+        BlobVersion: 'aot/$(BlobVersion)'
+    - template: templates/nuget-pack.yml
+      parameters:
+        BuildConfiguration: Release
+        VmImage: $(VmImage)
+        ReleasePackage: false
+        OutputPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/Release/Microsoft.Azure.Cosmos'
 - stage:
   displayName: NugetPack 
   jobs:
