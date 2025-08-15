@@ -4,41 +4,28 @@ trigger: none
 pr: none
 
 variables:
-- name: BlobVersion
-  value: ${{ variables.BlobVersion }}
-- name: IsPreview
-  value: ${{ variables.isPreview }}
-- name: Packaging.EnableSBOMSigning
-  value: true
-- name: DebugArguments
-  value: ' --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional" --verbosity normal '
-- name: ReleaseArguments
-  value: ' --filter "TestCategory!=Quarantine" --verbosity normal '
-- name: VmImage
-  value: windows-latest
-- name: BuildConfiguration
-  ${{ if eq(variables['IsPreview'], 'true') }}:
-    value: Preview
-  ${{ else }}:
-    value: Release
+  BuildConfiguration: Release
+  Packaging.EnableSBOMSigning: true
+  DebugArguments: ' --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional" --verbosity normal '
+  ReleaseArguments: ' --filter "TestCategory!=Quarantine" --verbosity normal '
+  VmImage: windows-latest # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
 
-jobs:
-- template:  templates/static-tools.yml
-  parameters:
-     BuildConfiguration: '${{ variables.BuildConfiguration }}'
-     Arguments: $(ReleaseArguments)
-     VmImage:  $(VmImage)
+stages:
+- stage:
+  displayName: Pre-publish
+  jobs:
+    - template: templates/static-tools.yml
+      parameters:
+        BuildConfiguration: Release
+        VmImage:  $(VmImage)
+- stage:
+  displayName: NugetPack 
+  jobs:
+    - template: templates/nuget-pack.yml
+      parameters:
+        BuildConfiguration: Release
+        VmImage: $(VmImage)
+        ReleasePackage: true
+        OutputPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/Release/Microsoft.Azure.Cosmos'
+        BlobVersion: 'aot/$(BlobVersion)'
 
-- template:  templates/build-internal-aot.yml
-  parameters:
-    BuildConfiguration: '${{ variables.BuildConfiguration }}'
-    Arguments: $(ReleaseArguments)
-    VmImage:  $(VmImage)
-
-- template:  templates/nuget-pack.yml
-  parameters:
-    BuildConfiguration: '${{ variables.BuildConfiguration }}'
-    VmImage: $(VmImage)
-    ReleasePackage: true
-    OutputPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/Release/Microsoft.Azure.Cosmos'
-    BlobVersion: 'aot/$(BlobVersion)'
