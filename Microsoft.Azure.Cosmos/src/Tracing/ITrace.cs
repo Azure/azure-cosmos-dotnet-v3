@@ -69,6 +69,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
         IReadOnlyDictionary<string, object> Data { get; }
 
         /// <summary>
+        /// Gets a value indicating whether this trace is currently being walked.
+        /// </summary>
+        bool IsBeingWalked { get; }
+
+        /// <summary>
         /// Starts a Trace and adds it as a child to this instance.
         /// </summary>
         /// <param name="name">The name of the child.</param>

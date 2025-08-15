@@ -459,6 +459,8 @@
 
             public IReadOnlyDictionary<string, object> Data { get; } = new Dictionary<string, object>();
 
+            public bool IsBeingWalked => false;
+
             internal SimpleTrace(ITrace parent, string name, TraceComponent component, Cosmos.Tracing.TraceLevel level)
             {
                 this.Parent = parent;

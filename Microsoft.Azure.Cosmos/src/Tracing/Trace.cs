@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public IReadOnlyDictionary<string, object> Data => this.data.IsValueCreated ? this.data.Value : Trace.EmptyDictionary;
 
-        internal bool IsBeingWalked => this.isBeingWalked;
+        public bool IsBeingWalked => this.isBeingWalked;
 
         public void Dispose()
         {
@@ -196,10 +196,10 @@ namespace Microsoft.Azure.Cosmos.Tracing
                         concreteChild.SetWalkingStateRecursively();
                     }
                 }
-
-                // Set the walking state for this trace
-                this.isBeingWalked = true;
             }
+
+            // Set the walking state for this trace after processing children
+            this.isBeingWalked = true;
         }
     }
 }

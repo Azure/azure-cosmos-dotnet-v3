@@ -57,6 +57,8 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
             IReadOnlyDictionary<string, object> ITrace.Data => this.innerTrace.Data;
 
+            bool ITrace.IsBeingWalked => this.innerTrace.IsBeingWalked;
+
             public ParallelPrefetchTestConfig(
                 ArrayPool<IPrefetcher> prefetcherPool,
                 ArrayPool<Task> taskPool,
