@@ -42,15 +42,8 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         {
             if (this.Value is Tracing.Trace rootConcreteTrace)
             {
-                rootConcreteTrace.SetWalkingStateRecursively(true);
-                try
-                {
-                    return this.ToJsonString();
-                }
-                finally
-                {
-                    rootConcreteTrace.SetWalkingStateRecursively(false);
-                }
+                rootConcreteTrace.SetWalkingStateRecursively();
+                return this.ToJsonString();
             }
             
             return this.ToJsonString();
@@ -63,16 +56,31 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
         public override IReadOnlyList<(string regionName, Uri uri)> GetContactedRegions()
         {
+            if (this.Value is Tracing.Trace rootConcreteTrace)
+            {
+                rootConcreteTrace.SetWalkingStateRecursively();
+            }
+            
             return this.Value?.Summary?.RegionsContacted;
         }
 
         public override ServerSideCumulativeMetrics GetQueryMetrics()
         {
+            if (this.Value is Tracing.Trace rootConcreteTrace)
+            {
+                rootConcreteTrace.SetWalkingStateRecursively();
+            }
+            
             return this.accumulatedMetrics.Value;
         }
 
         internal bool IsGoneExceptionHit()
         {
+            if (this.Value is Tracing.Trace rootConcreteTrace)
+            {
+                rootConcreteTrace.SetWalkingStateRecursively();
+            }
+            
             return this.WalkTraceTreeForGoneException(this.Value);
         }
 
@@ -83,47 +91,29 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
                 return false;
             }
 
-            // Set walking state to prevent modifications during the walk
-            bool isRootTrace = currentTrace == this.Value;
-            if (isRootTrace && currentTrace is Tracing.Trace rootConcreteTrace)
+            foreach (object datum in currentTrace.Data.Values)
             {
-                rootConcreteTrace.SetWalkingStateRecursively(true);
-            }
-
-            try
-            {
-                foreach (object datum in currentTrace.Data.Values)
+                if (datum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
                 {
-                    if (datum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
+                    foreach (StoreResponseStatistics responseStatistics in clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList)
                     {
-                        foreach (StoreResponseStatistics responseStatistics in clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList)
+                        if (responseStatistics.StoreResult != null && responseStatistics.StoreResult.StatusCode == Documents.StatusCodes.Gone)
                         {
-                            if (responseStatistics.StoreResult != null && responseStatistics.StoreResult.StatusCode == Documents.StatusCodes.Gone)
-                            {
-                                return true;
-                            }
+                            return true;
                         }
                     }
                 }
-
-                foreach (ITrace childTrace in currentTrace.Children)
-                {
-                    if (this.WalkTraceTreeForGoneException(childTrace))
-                    {
-                        return true;
-                    }
-                }
-
-                return false;
             }
-            finally
+
+            foreach (ITrace childTrace in currentTrace.Children)
             {
-                // Clear walking state when done
-                if (isRootTrace && currentTrace is Tracing.Trace rootConcreteTraceFinally)
+                if (this.WalkTraceTreeForGoneException(childTrace))
                 {
-                    rootConcreteTraceFinally.SetWalkingStateRecursively(false);
+                    return true;
                 }
             }
+
+            return false;
         }
 
         private string ToJsonString()
@@ -142,23 +132,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         private static ServerSideCumulativeMetrics PopulateServerSideCumulativeMetrics(ITrace trace)
         {
             ServerSideMetricsInternalAccumulator accumulator = new ServerSideMetricsInternalAccumulator();
-            
-            if (trace is Tracing.Trace rootConcreteTrace)
-            {
-                rootConcreteTrace.SetWalkingStateRecursively(true);
-                try
-                {
-                    ServerSideMetricsTraceExtractor.WalkTraceTreeForQueryMetrics(trace, accumulator);
-                }
-                finally
-                {
-                    rootConcreteTrace.SetWalkingStateRecursively(false);
-                }
-            }
-            else
-            {
-                ServerSideMetricsTraceExtractor.WalkTraceTreeForQueryMetrics(trace, accumulator);
-            }
+            ServerSideMetricsTraceExtractor.WalkTraceTreeForQueryMetrics(trace, accumulator);
 
             IReadOnlyList<ServerSidePartitionedMetricsInternal> serverSideMetricsList = accumulator.GetPartitionedServerSideMetrics().Select(metrics => new ServerSidePartitionedMetricsInternal(metrics)).ToList();
 

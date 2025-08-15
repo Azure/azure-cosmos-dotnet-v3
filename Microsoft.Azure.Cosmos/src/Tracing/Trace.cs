@@ -150,8 +150,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 }
 
                 this.data.Value.Add(key, traceDatum);
+                this.Summary.UpdateRegionContacted(traceDatum);
             }
-            this.Summary.UpdateRegionContacted(traceDatum);
         }
 
         public void AddDatum(string key, object value)
@@ -180,17 +180,22 @@ namespace Microsoft.Azure.Cosmos.Tracing
             }
         }
 
-        internal void SetWalkingStateRecursively(bool isWalking)
+        internal void SetWalkingStateRecursively()
         {
-            this.isBeingWalked = isWalking;
-            
             lock (this.children)
             {
+                if (this.isBeingWalked)
+                {
+                    return; // Already set, return early
+                }
+
+                this.isBeingWalked = true;
+                
                 foreach (ITrace child in this.children)
                 {
                     if (child is Trace concreteChild)
                     {
-                        concreteChild.SetWalkingStateRecursively(isWalking);
+                        concreteChild.SetWalkingStateRecursively();
                     }
                 }
             }

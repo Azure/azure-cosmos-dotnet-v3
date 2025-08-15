@@ -34,74 +34,59 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     throw new ArgumentNullException(nameof(trace));
                 }
 
-                // Set walking state to prevent modifications during the walk
-                if (isRootTrace && trace is Trace concreteTrace)
-                {
-                    concreteTrace.SetWalkingStateRecursively(true);
-                }
+                writer.WriteObjectStart();
 
-                try
+                if (isRootTrace)
                 {
+                    writer.WriteFieldName("Summary");
+                    SummaryDiagnostics summaryDiagnostics = new SummaryDiagnostics(trace);
+                    summaryDiagnostics.WriteSummaryDiagnostics(writer);
+                }
+                writer.WriteFieldName("name");
+                writer.WriteStringValue(trace.Name);
+
+                if (isRootTrace)
+                {
+                    writer.WriteFieldName("start datetime");
+                    writer.WriteStringValue(trace.StartTime.ToString(TraceWriter.DateTimeFormatString));
+                }
+                writer.WriteFieldName("duration in milliseconds");
+                writer.WriteNumberValue(trace.Duration.TotalMilliseconds);
+
+                // Use direct enumeration protected by walking state
+                if (trace.Data.Any())
+                {
+                    writer.WriteFieldName("data");
                     writer.WriteObjectStart();
 
-                    if (isRootTrace)
+                    foreach (KeyValuePair<string, object> kvp in trace.Data)
                     {
-                        writer.WriteFieldName("Summary");
-                        SummaryDiagnostics summaryDiagnostics = new SummaryDiagnostics(trace);
-                        summaryDiagnostics.WriteSummaryDiagnostics(writer);
-                    }
-                    writer.WriteFieldName("name");
-                    writer.WriteStringValue(trace.Name);
+                        string key = kvp.Key;
+                        object value = kvp.Value;
 
-                    if (isRootTrace)
-                    {
-                        writer.WriteFieldName("start datetime");
-                        writer.WriteStringValue(trace.StartTime.ToString(TraceWriter.DateTimeFormatString));
-                    }
-                    writer.WriteFieldName("duration in milliseconds");
-                    writer.WriteNumberValue(trace.Duration.TotalMilliseconds);
-
-                    if (trace.Data.Any())
-                    {
-                        writer.WriteFieldName("data");
-                        writer.WriteObjectStart();
-
-                        foreach (KeyValuePair<string, object> kvp in trace.Data)
-                        {
-                            string key = kvp.Key;
-                            object value = kvp.Value;
-
-                            writer.WriteFieldName(key);
-                            WriteTraceDatum(writer, value);
-                        }
-
-                        writer.WriteObjectEnd();
+                        writer.WriteFieldName(key);
+                        WriteTraceDatum(writer, value);
                     }
 
-                    if (trace.Children.Any())
-                    {
-                        writer.WriteFieldName("children");
-                        writer.WriteArrayStart();
-
-                        foreach (ITrace child in trace.Children)
-                        {
-                            WriteTrace(writer, 
-                                child, 
-                                isRootTrace: false);
-                        }
-
-                        writer.WriteArrayEnd();
-                    }
                     writer.WriteObjectEnd();
                 }
-                finally
+
+                // Use direct enumeration protected by walking state
+                if (trace.Children.Any())
                 {
-                    // Clear walking state when done
-                    if (isRootTrace && trace is Trace concreteTraceFinally)
+                    writer.WriteFieldName("children");
+                    writer.WriteArrayStart();
+
+                    foreach (ITrace child in trace.Children)
                     {
-                        concreteTraceFinally.SetWalkingStateRecursively(false);
+                        WriteTrace(writer, 
+                            child, 
+                            isRootTrace: false);
                     }
+
+                    writer.WriteArrayEnd();
                 }
+                writer.WriteObjectEnd();
             }
         }
 
