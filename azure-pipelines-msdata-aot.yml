@@ -18,15 +18,6 @@ stages:
       parameters:
         BuildConfiguration: Release
         VmImage: $(VmImage)
-        ReleasePackage: true
-        OutputPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/Release/Microsoft.Azure.Cosmos'
-        BlobVersion: 'aot/$(BlobVersion)'
-    - template: templates/nuget-pack.yml
-      parameters:
-        BuildConfiguration: Release
-        VmImage: $(VmImage)
-        ReleasePackage: false
-        OutputPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/Release/Microsoft.Azure.Cosmos'
 - stage:
   displayName: NugetPack 
   jobs:
@@ -36,5 +27,5 @@ stages:
         VmImage: $(VmImage)
         ReleasePackage: true
         OutputPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/Release/Microsoft.Azure.Cosmos'
-        BlobVersion: 'aot/$(BlobVersion)'
+        BlobVersion: 'aot/$(BlobPath)'
 
