@@ -1,23 +1,19 @@
-﻿// ------------------------------------------------------------
+// ------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.Tracing
 {
     using System;
-    using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Linq;
-    using System.Runtime.CompilerServices;
-    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
 
     internal sealed class Trace : ITrace
     {
         private static readonly IReadOnlyDictionary<string, object> EmptyDictionary = new Dictionary<string, object>();
         private readonly List<ITrace> children;
-        private readonly Lazy<ConcurrentDictionary<string, object>> data;
+        private readonly Lazy<Dictionary<string, object>> data;
+        private volatile IReadOnlyDictionary<string, object> materializedData = null;
         private ValueStopwatch stopwatch;
 
         private Trace(
@@ -35,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
             this.Component = component;
             this.Parent = parent;
             this.children = new List<ITrace>();
-            this.data = new Lazy<ConcurrentDictionary<string, object>>(() => new ConcurrentDictionary<string, object>());
+            this.data = new Lazy<Dictionary<string, object>>();
             this.Summary = summary ?? throw new ArgumentNullException(nameof(summary));
         }
 
@@ -57,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public IReadOnlyList<ITrace> Children => this.children;
 
-        public IReadOnlyDictionary<string, object> Data => this.data.IsValueCreated ? this.data.Value : Trace.EmptyDictionary;
+        public IReadOnlyDictionary<string, object> Data => this.EnsureMaterializedData();
 
         public void Dispose()
         {
@@ -123,46 +119,57 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 summary: new TraceSummary());
         }
 
-        /// <summary>
-        /// Adds a datum to the this trace instance.
-        /// This method is thread-safe.
-        /// </summary>
-        /// <param name="key">The key to associate the datum.</param>
-        /// <param name="traceDatum">The datum itself.</param>
-        /// <exception cref="ArgumentException">Thrown when the key already exists in the dictionary.</exception>
         public void AddDatum(string key, TraceDatum traceDatum)
         {
-            if (!this.data.Value.TryAdd(key, traceDatum))
+            lock (this.Name)
             {
-                throw new ArgumentException($"An item with the same key has already been added: '{key}'");
+                this.data.Value.Add(key, traceDatum);
+                this.materializedData = null;
             }
+
             this.Summary.UpdateRegionContacted(traceDatum);
         }
 
-        /// <summary>
-        /// Adds a datum to the this trace instance.
-        /// This method is thread-safe.
-        /// </summary>
-        /// <param name="key">The key to associate the datum.</param>
-        /// <param name="value">The datum itself.</param>
-        /// <exception cref="ArgumentException">Thrown when the key already exists in the dictionary.</exception>
         public void AddDatum(string key, object value)
         {
-            if (!this.data.Value.TryAdd(key, value))
+            lock (this.Name)
             {
-                throw new ArgumentException($"An item with the same key has already been added: '{key}'");
+                this.data.Value.Add(key, value);
+                this.materializedData = null;
             }
         }
 
-        /// <summary>
-        /// Updates the given datum in this trace instance if exists, otherwise Add
-        /// This method is thread-safe.
-        /// </summary>
-        /// <param name="key">The key to associate the datum.</param>
-        /// <param name="value">The datum itself.</param>
         public void AddOrUpdateDatum(string key, object value)
         {
-            this.data.Value.AddOrUpdate(key, value, (k, oldValue) => value);
+            lock (this.Name)
+            {
+                this.data.Value[key] = value;
+                this.materializedData = null;
+            }
+        }
+
+        private IReadOnlyDictionary<string, object> EnsureMaterializedData()
+        {
+            IReadOnlyDictionary<string, object> snapshot = this.materializedData;
+            if (snapshot != null)
+            {
+                return snapshot;
+            }
+
+            lock (this.Name)
+            {
+                if (snapshot != null)
+                {
+                    return snapshot;
+                }
+
+                if (!this.data.IsValueCreated)
+                {
+                    return this.materializedData = EmptyDictionary;
+                }
+
+                return this.materializedData = new Dictionary<string, object>(this.data.Value);
+            }
         }
     }
 }
