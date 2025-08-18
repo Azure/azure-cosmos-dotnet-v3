@@ -138,22 +138,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public void AddDatum(string key, TraceDatum traceDatum)
         {
-            lock (this.Name)
-            {
-                this.data ??= new Dictionary<string, object>();
-
-                if (!this.isBeingWalked)
-                {
-                    // If materialization has not started yet no cloning is needed
-                    this.data.Add(key, traceDatum);
-                    return; 
-                }
-
-                this.data = new Dictionary<string, object>(this.data)
-                {
-                    { key, traceDatum }
-                };
-            }
+            this.Summary.UpdateRegionContacted(traceDatum);
+            this.AddDatum(key, traceDatum as Object);
         }
 
         public void AddDatum(string key, object value)
