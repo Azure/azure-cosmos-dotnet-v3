@@ -88,5 +88,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
         {
             // NoOp
         }
+
+        bool ITrace.TryGetDatum(string key, out object datum)
+        {
+            datum = null;
+            return false;
+        }
     }
 }

@@ -120,5 +120,12 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// <param name="trace">Existing trace.</param>
         void AddChild(ITrace trace);
 
+        /// <summary>
+        /// Tries to get a specific datum - it is safe to call this even before IsBeingWalked is set.
+        /// </summary>
+        /// <param name="key">The key to identify the datum.</param>
+        /// <param name="datum">The datum itself.</param>
+        /// <returns>A flag indicating whether the datum with this key exists.</returns>
+        bool TryGetDatum(string key, out object datum);
     }
 }

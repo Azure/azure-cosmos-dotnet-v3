@@ -954,6 +954,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             {
                 this.data[key] = value;
             }
+
+            bool ITrace.TryGetDatum(string key, out object datum)
+            {
+                return this.data.TryGetValue(key, out datum);
+            }
         }
     }
 }

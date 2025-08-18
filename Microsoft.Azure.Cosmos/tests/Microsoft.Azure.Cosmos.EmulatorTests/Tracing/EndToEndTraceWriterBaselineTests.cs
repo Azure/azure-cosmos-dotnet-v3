@@ -1926,6 +1926,11 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
 
                 this.data[key] = "Redacted To Not Change The Baselines From Run To Run";
             }
+
+            bool ITrace.TryGetDatum(string key, out object datum)
+            {
+                return this.data.TryGetValue(key, out datum);
+            }
         }
 
         private sealed class RequestHandlerSleepHelper : RequestHandler

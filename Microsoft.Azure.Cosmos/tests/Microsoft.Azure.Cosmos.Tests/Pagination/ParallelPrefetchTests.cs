@@ -511,6 +511,12 @@
 
                 return child;
             }
+
+            bool ITrace.TryGetDatum(string key, out object datum)
+            {
+                datum = null;
+                return false;
+            }
         }
 
         /// <summary>

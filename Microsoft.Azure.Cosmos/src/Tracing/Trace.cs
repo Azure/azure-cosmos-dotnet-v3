@@ -229,5 +229,19 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.isBeingWalked = true;
             }
         }
+
+        bool ITrace.TryGetDatum(string key, out object datum)
+        {
+            lock (this.Name)
+            {
+                if (this.data == null)
+                {
+                    datum = null;
+                    return false;
+                }
+
+                return this.data.TryGetValue(key, out datum);
+            }
+        }
     }
 }

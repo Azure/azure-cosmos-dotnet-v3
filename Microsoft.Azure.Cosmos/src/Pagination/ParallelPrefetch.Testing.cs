@@ -118,6 +118,11 @@ namespace Microsoft.Azure.Cosmos.Pagination
             {
                 this.innerTrace.Dispose();
             }
+
+            bool ITrace.TryGetDatum(string key, out object datum)
+            {
+                return this.innerTrace.TryGetDatum(key, out datum);
+            }
         }
     }
 }
