@@ -196,7 +196,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     WriteInfoIndents(writer, indentStack, asciiTreeIndents, isLastChild: isLastChild, isLeaf: isLeaf);
                     writer.WriteLine('(');
 
-                    foreach (KeyValuePair<string, object> kvp in trace.Data)
+                    foreach (KeyValuePair<string, object> kvp in trace.Data.OrderBy(kvp => kvp.Key))
                     {
                         string key = kvp.Key;
                         object value = kvp.Value;

@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     writer.WriteFieldName("data");
                     writer.WriteObjectStart();
 
-                    foreach (KeyValuePair<string, object> kvp in trace.Data)
+                    foreach (KeyValuePair<string, object> kvp in trace.Data.OrderBy(kvp => kvp.Key))
                     {
                         string key = kvp.Key;
                         object value = kvp.Value;
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     writer.WriteFieldName("children");
                     writer.WriteArrayStart();
 
-                    foreach (ITrace child in trace.Children)
+                    foreach (ITrace child in trace.Children.OrderByDescending(child => child.StartTime))
                     {
                         WriteTrace(writer, 
                             child, 
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
             {
                 writer.WriteObjectStart();
 
-                foreach (KeyValuePair<string, object> kvp in dictionary)
+                foreach (KeyValuePair<string, object> kvp in dictionary.OrderBy(kvp => kvp.Key))
                 {
                     writer.WriteFieldName(kvp.Key);
                     WriteTraceDatum(writer, kvp.Value);

@@ -1642,13 +1642,13 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
         {
             TraceForBaselineTesting convertedTrace = new TraceForBaselineTesting(trace.Name, trace.Level, trace.Component, parent);
 
-            foreach (ITrace child in trace.Children)
+            foreach (ITrace child in trace.Children.OrderBy(child => child.StartTime))
             {
                 TraceForBaselineTesting convertedChild = CreateTraceForBaslineTesting(child, convertedTrace);
                 convertedTrace.children.Add(convertedChild);
             }
 
-            foreach (KeyValuePair<string, object> kvp in trace.Data)
+            foreach (KeyValuePair<string, object> kvp in trace.Data.OrderByDescending(kvp => kvp.Key))
             {
                 convertedTrace.AddDatum(kvp.Key, kvp.Value);
             }
@@ -1726,7 +1726,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             // Trace stopwatch should be greater than the sum of all children's stop watches
             TimeSpan rootTimeSpan = trace.Duration;
             TimeSpan sumOfChildrenTimeSpan = TimeSpan.Zero;
-            foreach (ITrace child in trace.Children)
+            foreach (ITrace child in trace.Children.OrderBy(child => child.StartTime))
             {
                 sumOfChildrenTimeSpan += child.Duration;
                 AssertTraceProperites(child);
