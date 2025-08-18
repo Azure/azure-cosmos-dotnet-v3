@@ -182,6 +182,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         internal void SetWalkingStateRecursively()
         {
+            if (this.isBeingWalked)
+            {
+                return; // Already set, return early
+            }
+
             lock (this.Name)
             {
                 if (this.isBeingWalked)
@@ -196,10 +201,10 @@ namespace Microsoft.Azure.Cosmos.Tracing
                         concreteChild.SetWalkingStateRecursively();
                     }
                 }
-            }
 
-            // Set the walking state for this trace after processing children
-            this.isBeingWalked = true;
+                // Set the walking state for this trace after processing children
+                this.isBeingWalked = true;
+            }
         }
     }
 }
