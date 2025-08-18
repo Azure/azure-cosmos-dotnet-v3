@@ -10,10 +10,10 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
     internal sealed class Trace : ITrace
     {
-        private static readonly IReadOnlyDictionary<string, object> EmptyDictionary = new Dictionary<string, object>();
+        private static readonly Dictionary<string, object> EmptyDictionary = new Dictionary<string, object>();
         private readonly List<ITrace> children;
-        private readonly Lazy<Dictionary<string, object>> data;
-        private volatile IReadOnlyDictionary<string, object> materializedData = null;
+        private volatile Dictionary<string, object> data;
+        private volatile Boolean materializationStarted;
         private ValueStopwatch stopwatch;
 
         private Trace(
@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
             this.Component = component;
             this.Parent = parent;
             this.children = new List<ITrace>();
-            this.data = new Lazy<Dictionary<string, object>>();
+            this.data = null;
             this.Summary = summary ?? throw new ArgumentNullException(nameof(summary));
         }
 
@@ -53,7 +53,17 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public IReadOnlyList<ITrace> Children => this.children;
 
-        public IReadOnlyDictionary<string, object> Data => this.EnsureMaterializedData();
+        public IReadOnlyDictionary<string, object> Data
+        {
+            get
+            {
+                lock (this.Name)
+                {
+                    this.materializationStarted = true;
+                    return this.data;
+                }
+            }
+        }
 
         public void Dispose()
         {
@@ -123,8 +133,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
         {
             lock (this.Name)
             {
-                this.data.Value.Add(key, traceDatum);
-                this.materializedData = null;
+                Dictionary<string, object> writableSnapshot = this.EnsureDataForWriteUnderLock();
+                writableSnapshot.Add(key, traceDatum);
+                this.data = writableSnapshot;
             }
 
             this.Summary.UpdateRegionContacted(traceDatum);
@@ -134,8 +145,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
         {
             lock (this.Name)
             {
-                this.data.Value.Add(key, value);
-                this.materializedData = null;
+                Dictionary<string, object> writableSnapshot = this.EnsureDataForWriteUnderLock();
+                writableSnapshot.Add(key, value);
+                this.data = writableSnapshot;
             }
         }
 
@@ -143,33 +155,20 @@ namespace Microsoft.Azure.Cosmos.Tracing
         {
             lock (this.Name)
             {
-                this.data.Value[key] = value;
-                this.materializedData = null;
+                Dictionary<string, object> writableSnapshot = this.EnsureDataForWriteUnderLock();
+                writableSnapshot[key] = value;
+                this.data = writableSnapshot;
             }
         }
 
-        private IReadOnlyDictionary<string, object> EnsureMaterializedData()
+        private Dictionary<string, object> EnsureDataForWriteUnderLock()
         {
-            IReadOnlyDictionary<string, object> snapshot = this.materializedData;
-            if (snapshot != null)
+            if (this.materializationStarted)
             {
-                return snapshot;
+                return new Dictionary<string, object>(this.data ?? EmptyDictionary);
             }
 
-            lock (this.Name)
-            {
-                if (snapshot != null)
-                {
-                    return snapshot;
-                }
-
-                if (!this.data.IsValueCreated)
-                {
-                    return this.materializedData = EmptyDictionary;
-                }
-
-                return this.materializedData = new Dictionary<string, object>(this.data.Value);
-            }
+            return this.data;
         }
     }
 }
