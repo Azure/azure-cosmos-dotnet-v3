@@ -22,7 +22,11 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 = new Lazy<Dictionary<(int, int), int>>(() => new Dictionary<(int, int), int>());
             this.AllRegionsContacted 
                 = new Lazy<HashSet<Uri>>(() => new HashSet<Uri>());
-            
+
+            if (trace is Tracing.Trace rootConcreteTrace)
+            {
+                rootConcreteTrace.SetWalkingStateRecursively();
+            }
             this.CollectSummaryFromTraceTree(trace);
         }
 
