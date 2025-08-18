@@ -51,8 +51,12 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public ITrace Parent { get; }
 
+        // NOTE: no lock necessary here only because every reference to any this.children instance is immutable when isBeingWalked == true
+        // and isBeingWalked is guaranteed to be set to true before this Property is called
         public IReadOnlyList<ITrace> Children => this.children;
 
+        // NOTE: no lock necessary here only because every reference to any this.data instance is immutable when isBeingWalked == true
+        // and isBeingWalked is guaranteed to be set to true before this Property is called
         public IReadOnlyDictionary<string, object> Data => this.data ?? Trace.EmptyDictionary;
 
         public bool IsBeingWalked => this.isBeingWalked;
@@ -65,11 +69,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
         public ITrace StartChild(
             string name)
         {
-            if (this.isBeingWalked)
-            {
-                return NoOpTrace.Singleton;
-            }
-
             return this.StartChild(
                 name,
                 level: TraceLevel.Verbose,
