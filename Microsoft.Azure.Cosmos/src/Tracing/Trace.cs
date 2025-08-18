@@ -6,17 +6,13 @@ namespace Microsoft.Azure.Cosmos.Tracing
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Linq;
-    using System.Runtime.CompilerServices;
-    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
 
     internal sealed class Trace : ITrace
     {
         private static readonly IReadOnlyDictionary<string, object> EmptyDictionary = new Dictionary<string, object>();
-        private readonly List<ITrace> children;
-        private readonly Lazy<Dictionary<string, object>> data;
+        private volatile List<ITrace> children;
+        private volatile Dictionary<string, object> data;
         private ValueStopwatch stopwatch;
         private volatile bool isBeingWalked;
 
@@ -35,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
             this.Component = component;
             this.Parent = parent;
             this.children = new List<ITrace>();
-            this.data = new Lazy<Dictionary<string, object>>();
+            this.data = null;
             this.Summary = summary ?? throw new ArgumentNullException(nameof(summary));
         }
 
@@ -57,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public IReadOnlyList<ITrace> Children => this.children;
 
-        public IReadOnlyDictionary<string, object> Data => this.data.IsValueCreated ? this.data.Value : Trace.EmptyDictionary;
+        public IReadOnlyDictionary<string, object> Data => this.data ?? Trace.EmptyDictionary;
 
         public bool IsBeingWalked => this.isBeingWalked;
 
@@ -85,11 +81,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
             TraceComponent component,
             TraceLevel level)
         {
-            if (this.isBeingWalked)
-            {
-                return NoOpTrace.Singleton;
-            }
-
             if (this.Parent != null && !this.stopwatch.IsRunning)
             {
                 return this.Parent.StartChild(name, component, level);
@@ -103,19 +94,25 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 summary: this.Summary);
 
             this.AddChild(child);
+
             return child;
         }
 
         public void AddChild(ITrace child)
         {
-            lock (this.children)
+            lock (this.Name)
             {
-                if (this.isBeingWalked)
+                if (!this.isBeingWalked)
                 {
-                    return; // Ignore modifications while being walked
+                    this.children.Add(child);
+
+                    return;
                 }
 
-                this.children.Add(child);
+                List<ITrace> writableSnapshot = new List<ITrace>(this.children.Count + 1);
+                writableSnapshot.AddRange(this.children);
+                writableSnapshot.Add(child);
+                this.children = writableSnapshot;
             }
         }
 
@@ -142,47 +139,65 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public void AddDatum(string key, TraceDatum traceDatum)
         {
-            lock (this.children)
+            lock (this.Name)
             {
-                if (this.isBeingWalked)
+                this.data ??= new Dictionary<string, object>();
+
+                if (!this.isBeingWalked)
                 {
-                    return; // Ignore modifications while being walked
+                    // If materialization has not started yet no cloning is needed
+                    this.data.Add(key, traceDatum);
+                    return; 
                 }
 
-                this.data.Value.Add(key, traceDatum);
-                this.Summary.UpdateRegionContacted(traceDatum);
+                this.data = new Dictionary<string, object>(this.data)
+                {
+                    { key, traceDatum }
+                };
             }
         }
 
         public void AddDatum(string key, object value)
         {
-            lock (this.children)
+            lock (this.Name)
             {
-                if (this.isBeingWalked)
+                this.data ??= new Dictionary<string, object>();
+
+                if (!this.isBeingWalked)
                 {
-                    return; // Ignore modifications while being walked
+                    // If materialization has not started yet no cloning is needed
+                    this.data.Add(key, value);
+                    return;
                 }
 
-                this.data.Value.Add(key, value);
+                this.data = new Dictionary<string, object>(this.data)
+                {
+                    { key, value }
+                };
             }
         }
 
         public void AddOrUpdateDatum(string key, object value)
         {
-            lock (this.children)
+            lock (this.Name)
             {
-                if (this.isBeingWalked)
+                if (!this.isBeingWalked)
                 {
+                    // If materialization has not started yet no cloning is needed
+                    this.data[key] = value;
                     return; // Ignore modifications while being walked
                 }
 
-                this.data.Value[key] = value;
+                this.data = new Dictionary<string, object>(this.data)
+                {
+                    [key] = value
+                };
             }
         }
 
         internal void SetWalkingStateRecursively()
         {
-            lock (this.children)
+            lock (this.Name)
             {
                 if (this.isBeingWalked)
                 {

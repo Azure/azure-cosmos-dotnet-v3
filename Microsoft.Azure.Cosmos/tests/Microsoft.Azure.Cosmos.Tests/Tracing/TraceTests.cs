@@ -4,8 +4,8 @@
     using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
@@ -133,6 +133,52 @@
             }
 
             Assert.AreEqual(0, storeResultProperties.Count, $"Json is missing properties: {string.Join(';', storeResultProperties)}");
+        }
+
+        [TestMethod]
+        public void TestAddOrUpdateDatumThreadSafety()
+        {
+            Trace trace = Trace.GetRootTrace("ThreadSafetyTest");
+
+            // Create multiple threads to access the dictionary concurrently
+            const int numThreads = 10;
+            const int operationsPerThread = 100;
+
+            // Use a list to keep track of the tasks
+            List<Task> tasks = new List<Task>();
+
+            for (int i = 0; i < numThreads; i++)
+            {
+                int threadIndex = i;
+                tasks.Add(Task.Run(() =>
+                {
+                    for (int j = 0; j < operationsPerThread; j++)
+                    {
+                        string key = $"key_{threadIndex}_{j}";
+                        object value = j;
+
+                        // Perform operations that would previously cause thread safety issues
+                        trace.AddOrUpdateDatum(key, value);
+
+                        // Also test AddDatum
+                        try
+                        {
+                            trace.AddDatum($"add_{threadIndex}_{j}", value);
+                        }
+                        catch (ArgumentException)
+                        {
+                            // Ignore key already exists exceptions which may occur
+                            // when threads try to add the same key
+                        }
+                    }
+                }));
+            }
+
+            // Wait for all tasks to complete
+            Task.WaitAll(tasks.ToArray());
+
+            // Verify the data dictionary has entries
+            Assert.IsTrue(trace.Data.Count > 0);
         }
     }
 }
