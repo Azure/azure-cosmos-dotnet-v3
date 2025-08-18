@@ -189,6 +189,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
         {
             lock (this.Name)
             {
+                this.data ??= new Dictionary<string, object>();
+
                 if (!this.isBeingWalked)
                 {
                     // If materialization has not started yet no cloning is needed
