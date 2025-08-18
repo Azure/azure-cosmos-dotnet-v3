@@ -196,13 +196,13 @@
 		<None Include="$(OutputPath)\msvcp140.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" />
 		<None Include="$(NugetPackageRoot)\Microsoft.HybridRow\$(HybridRowVersion)\lib\netstandard2.0\Microsoft.Azure.Cosmos.Core.dll" Pack="true" IsAssembly="true" PackagePath="lib\netstandard2.0" />
 		<None Include="$(NugetPackageRoot)\Microsoft.HybridRow\$(HybridRowVersion)\lib\netstandard2.0\Microsoft.Azure.Cosmos.Serialization.HybridRow.dll" Pack="true" IsAssembly="true" PackagePath="lib\netstandard2.0" />
-		-->
 		<None Include="$(MSBuildThisFileDirectory)\Microsoft.Azure.Cosmos.Aot.targets" Pack="true" PackagePath="build\netstandard2.0">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 		<None Include="$(MSBuildThisFileDirectory)\Microsoft.Azure.Cosmos.Aot.targets" Pack="true" PackagePath="buildTransitive\netstandard2.0">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
+		-->
 	</ItemGroup>
 
 	<ItemGroup>
