@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using Microsoft.Azure.Documents;
 
     internal sealed class Trace : ITrace
@@ -51,13 +52,35 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public ITrace Parent { get; }
 
-        // NOTE: no lock necessary here only because every reference to any this.children instance is immutable when isBeingWalked == true
-        // and isBeingWalked is guaranteed to be set to true before this Property is called
-        public IReadOnlyList<ITrace> Children => this.children;
+        // NOTE: no lock necessary here only because this.children is volatile
+        // and every reference to it is immutable when isBeingWalked == true
+        // and isBeingWalked is guaranteed to be set to true before this
+        // Property is called
+        public IReadOnlyList<ITrace> Children
+        {
+            get
+            {
+                // Assert that walking state is set
+                Debug.Assert(this.isBeingWalked, "SetWalkingStateRecursively should be set to true");
 
-        // NOTE: no lock necessary here only because every reference to any this.data instance is immutable when isBeingWalked == true
-        // and isBeingWalked is guaranteed to be set to true before this Property is called
-        public IReadOnlyDictionary<string, object> Data => this.data ?? Trace.EmptyDictionary;
+                return this.children;
+            }
+        }
+
+        // NOTE: no lock necessary here only because this.data is volatile
+        // and every reference to it is immutable when isBeingWalked == true
+        // and isBeingWalked is guaranteed to be set to true before this
+        // Property is called
+        public IReadOnlyDictionary<string, object> Data
+        {
+            get
+            {
+                // Assert that walking state is set
+                Debug.Assert(this.isBeingWalked, "SetWalkingStateRecursively should be set to true");
+
+                return this.data ?? Trace.EmptyDictionary;
+            }
+        }
 
         public bool IsBeingWalked => this.isBeingWalked;
 

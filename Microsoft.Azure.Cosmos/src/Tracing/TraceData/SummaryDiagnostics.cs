@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Globalization;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Json;
@@ -43,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         private void CollectSummaryFromTraceTree(ITrace currentTrace)
         {
             // Assert that walking state is set
-            System.Diagnostics.Debug.Assert(currentTrace.IsBeingWalked, "SetWalkingStateRecursively should be set to true");
+            Debug.Assert(currentTrace.IsBeingWalked, "SetWalkingStateRecursively should be set to true");
 
             foreach (object datums in currentTrace.Data.Values)
             {
