@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
             public IReadOnlyDictionary<string, object> Data => this.data;
 
-            public bool IsBeingWalked => false;
+            public bool IsBeingWalked => true; // needs to return true to allow materialization
 
             public IReadOnlyList<(string, Uri)> RegionsContacted => new List<(string, Uri)>();
 

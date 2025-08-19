@@ -459,7 +459,7 @@
 
             public IReadOnlyDictionary<string, object> Data { get; } = new Dictionary<string, object>();
 
-            public bool IsBeingWalked => false;
+            public bool IsBeingWalked => true; // needs to return true to allow materialization
 
             internal SimpleTrace(ITrace parent, string name, TraceComponent component, Cosmos.Tracing.TraceLevel level)
             {
