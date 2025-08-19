@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public IReadOnlyDictionary<string, object> Data => NoOpData;
 
-        public bool IsBeingWalked => true;
+        public bool IsBeingWalked => false;
 
         public void Dispose()
         {
