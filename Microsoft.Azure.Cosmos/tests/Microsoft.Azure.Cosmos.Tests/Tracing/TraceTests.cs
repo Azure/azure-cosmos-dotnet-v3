@@ -23,6 +23,7 @@
             using (rootTrace = Trace.GetRootTrace(name: "RootTrace"))
             {
                 Assert.IsNotNull(rootTrace);
+                rootTrace.SetWalkingStateRecursively();
                 Assert.IsNotNull(rootTrace.Children);
                 Assert.AreEqual(0, rootTrace.Children.Count);
                 Assert.AreEqual(rootTrace.Component, TraceComponent.Unknown);
@@ -49,6 +50,7 @@
                 rootTrace.AddChild(twoChild);
             }
 
+            rootTrace.SetWalkingStateRecursively();
             Assert.AreEqual(2, rootTrace.Children.Count);
             Assert.AreEqual(oneChild, rootTrace.Children[0]);
             Assert.AreEqual(twoChild, rootTrace.Children[1]);
@@ -176,6 +178,8 @@
 
             // Wait for all tasks to complete
             Task.WaitAll(tasks.ToArray());
+
+            trace.SetWalkingStateRecursively();
 
             // Verify the data dictionary has entries
             Assert.IsTrue(trace.Data.Count > 0);
