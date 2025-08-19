@@ -190,7 +190,8 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private async ValueTask<AccessToken> RefreshCachedTokenWithRetryHelperAsync(ITrace trace)
+        private async ValueTask<AccessToken> RefreshCachedTokenWithRetryHelperAsync(
+            ITrace trace)
         {
             try
             {
@@ -200,7 +201,9 @@ namespace Microsoft.Azure.Cosmos
                 {
                     if (this.cancellationToken.IsCancellationRequested)
                     {
-                        DefaultTrace.TraceInformation("Stop RefreshTokenWithIndefiniteRetries because cancellation is requested");
+                        DefaultTrace.TraceInformation(
+                            "Stop RefreshTokenWithIndefiniteRetries because cancellation is requested");
+
                         break;
                     }
 
@@ -263,7 +266,10 @@ namespace Microsoft.Azure.Cosmos
 
                             throw CosmosExceptionFactory.CreateRequestTimeoutException(
                                 message: ClientResources.FailedToGetAadToken,
-                                headers: new Headers() { SubStatusCode = SubStatusCodes.FailedToGetAadToken, },
+                                headers: new Headers()
+                                {
+                                    SubStatusCode = SubStatusCodes.FailedToGetAadToken,
+                                },
                                 innerException: lastException,
                                 trace: getTokenTrace);
                         }
