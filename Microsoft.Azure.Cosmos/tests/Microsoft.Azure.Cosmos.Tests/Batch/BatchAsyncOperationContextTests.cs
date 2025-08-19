@@ -98,6 +98,11 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             batchAsyncOperationContext.Complete(null, result);
 
+            if (result.Trace is Trace rootLevelTrace)
+            {
+                rootLevelTrace.SetWalkingStateRecursively();
+            }
+
             Assert.AreEqual(result, await batchAsyncOperationContext.OperationTask);
             Assert.AreEqual(1, result.Trace.Children.Count, "The final trace should have the initial trace, plus the final trace, since the result is not retried, it should not capture it");
             Assert.AreEqual(rootTrace, result.Trace, "The first trace child should be the initial root");
