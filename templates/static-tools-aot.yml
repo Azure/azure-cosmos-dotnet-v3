@@ -1,0 +1,103 @@
+# File: templates\static-tools-aot.yml
+
+parameters:
+  - name: BuildConfiguration
+    type: string
+    default: ''
+  - name: Arguments
+    type: string
+    default: ''
+  - name: VmImage
+    type: string
+    default: ''
+  - name: CleanupFolder
+    type: boolean
+    default: false
+
+jobs:
+- job:
+  displayName: Static Analysis
+  pool:
+    name: 'OneES'
+
+  steps:
+  - task: UseDotNet@2
+    displayName: Use .NET 9.0
+    inputs:
+      packageType: 'runtime'
+      version: '9.x'
+
+  - task: UseDotNet@2
+    displayName: Use .NET 9.0
+    inputs:
+      packageType: 'sdk'
+      version: '9.x'
+
+  - task: DotNetCoreCLI@2
+    displayName: Build Microsoft.Azure.Cosmos PREVIEW
+    inputs: 
+      command: build
+      configuration: $(BuildConfiguration)
+      nugetConfigPath: NuGet.config
+      projects: Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj
+      arguments: --configuration $(BuildConfiguration) -p:Optimize=true  ${{ parameters.Arguments }}
+      versioningScheme: OFF
+
+  - task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@4
+    displayName: 'BinSkim'
+    condition: eq(1,2) #disablng as nuget repo failing
+    inputs:
+        AnalyzeTargetGlob:  $(Build.SourcesDirectory)\Microsoft.Azure.Cosmos\src\bin\Release\netstandard2.0\Microsoft.Azure.Cosmos.Client.dll
+        AnalyzeRecurse:     true
+        AnalyzeVerbose:     true
+        AnalyzeHashes:      false
+        AnalyzeStatistics:  false
+        AnalyzeEnvironment: false
+
+  # Analyze source and build output text files for credentials
+  - task: securedevelopmentteam.vss-secure-development-tools.build-task-credscan.CredScan@3
+    displayName: 'CredScan'
+    condition: eq(1,2) #disablng as nuget repo failing
+    inputs:
+      toolMajorVersion: V2
+      scanFolder: $(Build.SourcesDirectory)
+      suppressionsFile: CredScanSuppressions.json
+      debugMode: false
+      verboseOutput: false
+
+  # Scan text elements including code, code comments, and content/web pages, for sensitive terms based on legal, cultural, or geopolitical reasons
+  - task: securedevelopmentteam.vss-secure-development-tools.build-task-policheck.PoliCheck@2
+    displayName: 'PoliCheck'
+    condition: eq(1,2) #disablng as nuget repo failing
+    inputs:
+      targetType: F
+      optionsFC: 0
+
+  # AntiMalware scan
+  - task: securedevelopmentteam.vss-secure-development-tools.build-task-antimalware.AntiMalware@4
+    displayName: 'AntiMalware'
+    continueOnError: true # signature refresh failing resulting in tasks failures
+    inputs:
+      EnableServices: true
+
+  - task: ms.vss-governance-buildtask.governance-build-task-component-detection.ComponentGovernanceComponentDetection@0
+    displayName: 'Component Governance Detection' #https://docs.opensource.microsoft.com/tools/cg.html
+    inputs:
+      alertWarningLevel: Medium
+      failOnAlert: true
+
+  # Publish Analysis Results (position after all tools ran)
+  - task: securedevelopmentteam.vss-secure-development-tools.build-task-publishsecurityanalysislogs.PublishSecurityAnalysisLogs@3
+    displayName: 'Publish Security Analysis Logs'
+
+  # The Post-Analysis build task will analyze the log files produced by the tools, and introduce a build break
+  - task: securedevelopmentteam.vss-secure-development-tools.build-task-postanalysis.PostAnalysis@2
+    displayName: 'Post Analysis'
+    condition: eq(1,2) #disablng as nuget repo failing
+    inputs:
+      GdnBreakFast: true
+      GdnBreakAllTools: false
+      GdnBreakGdnToolCredScan: true
+      GdnBreakGdnToolBinSkim: true
+      GdnBreakGdnToolPoliCheck: true
+      GdnBreakGdnToolPoliCheckSeverity: Error

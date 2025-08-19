@@ -1725,6 +1725,7 @@ namespace Microsoft.Azure.Cosmos
             FeedRange feedRange,
             CancellationToken cancellationToken = default);
 
+#if !COSMOS_GW_AOT
         /// <summary>
         /// Initializes a <see cref="GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes"/> for change feed processing with all versions and deletes.
         /// </summary>
@@ -1799,7 +1800,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
             string processorName,
             ChangeFeedHandler<ChangeFeedItem<T>> onChangesDelegate);
-
+#endif
         /// <summary>
         /// Determines whether the given y feed range is a part of the specified x feed range.
         /// </summary>

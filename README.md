@@ -1,42 +1,132 @@
 [![NuGet](https://img.shields.io/nuget/v/Microsoft.Azure.Cosmos.svg)](https://www.nuget.org/packages/Microsoft.Azure.Cosmos)
 [![NuGet Prerelease](https://img.shields.io/nuget/vpre/Microsoft.Azure.Cosmos.svg)](https://www.nuget.org/packages/Microsoft.Azure.Cosmos)
 
-# Microsoft Azure Cosmos DB .NET SDK Version 3
+# Microsoft Azure Cosmos DB .NET SDK AOT
 
 This client library enables client applications to connect to Azure Cosmos DB for NoSQL. Azure Cosmos DB is a globally distributed, multi-model database service. For more information, refer to https://azure.microsoft.com/services/cosmos-db/.
 
+
+# Feature supported
+ The following stream based features are supported
+
+ * Get Account Details
+ * Get Databases
+ * Get Containers
+ * Read Document Collection
+ * Query for items.
+
 ```csharp
 CosmosClient client = new CosmosClient("https://mycosmosaccount.documents.azure.com:443/", "mysupersecretkey");
-Database database = await client.CreateDatabaseIfNotExistsAsync("MyDatabaseName");
-Container container = await database.CreateContainerIfNotExistsAsync(
-    "MyContainerName",
-    "/partitionKeyPath",
-    400);
 
-// Create an item
-dynamic testItem = new { id = "MyTestItemId", partitionKeyPath = "MyTestPkValue", details = "it's working", status = "done" };
-ItemResponse<dynamic> createResponse = await container.CreateItemAsync(testItem);
+//Read Account Details.
+AccountProperties accountProperties = await client.ReadAccountAsync();
+Console.WriteLine($"Account Name: {accountProperties.Id}");
 
-// Query for an item
-using (FeedIterator<dynamic> feedIterator = container.GetItemQueryIterator<dynamic>(
-    "select * from T where T.status = 'done'"))
+//Read Databases and Containers.
+
+// Read Databases from the Cosmos account as Feed Stream.
+FeedIterator db_feed_itr = client.GetDatabaseQueryStreamIterator();
+while (db_feed_itr.HasMoreResults)
 {
-    while (feedIterator.HasMoreResults)
+    ResponseMessage db_response = await db_feed_itr.ReadNextAsync();
+    if (db_response.IsSuccessStatusCode)
     {
-        FeedResponse<dynamic> response = await feedIterator.ReadNextAsync();
-        foreach (var item in response)
+        using JsonDocument dbsQueryResultDoc = JsonDocument.Parse(db_response.Content);
+
+        if (dbsQueryResultDoc.RootElement.TryGetProperty("Databases", out JsonElement documentsElement))
         {
-            Console.WriteLine(item);
+            //Extract database from database array.
+            foreach (JsonElement databaseElement in documentsElement.EnumerateArray())
+            {
+                //Extract database ids.
+                string? databaseId = databaseElement.GetProperty("id").GetString();
+                Console.WriteLine($"Database: {databaseId}");
+
+                Database database = client.GetDatabase(databaseId);
+                // Read Containers from the database as Feed Stream.
+                FeedIterator container_feed_itr = database.GetContainerQueryStreamIterator();
+
+                while (container_feed_itr.HasMoreResults)
+                {
+                    ResponseMessage cont_response = await container_feed_itr.ReadNextAsync();
+                    if (cont_response.IsSuccessStatusCode)
+                    {
+                        using JsonDocument containersQueryResultDoc = JsonDocument.Parse(cont_response.Content);
+                        Console.WriteLine($"Raw JSON (cont result): {containersQueryResultDoc.RootElement.GetRawText()}");
+
+                        if (containersQueryResultDoc.RootElement.TryGetProperty("DocumentCollections", out JsonElement containersElement))
+                        {
+                            foreach (JsonElement containerElement in containersElement.EnumerateArray())
+                            {
+                                string? containerId = containerElement.GetProperty("id").GetString();
+                                string? PartitionKeyPath = containerElement.TryGetProperty("partitionKey", out JsonElement partitionKeyElement)
+                                    ? partitionKeyElement.GetProperty("paths").EnumerateArray().FirstOrDefault().GetString()
+                                    : null;
+                                Console.WriteLine($"Container: {containerId} PartitionKeyPath: {PartitionKeyPath}");
+
+                                // Get Container based on Id.
+                                Container container = database.GetContainer(containerId);
+
+                                ContainerProperties containerProperties = await container.ReadContainerAsync();
+                                Console.WriteLine($"Container-Read: {containerProperties.Id} PartitionKeyPath: {containerProperties.PartitionKeyPath}");
+
+                                String itemsQuery = "SELECT * FROM c";
+                                QueryDefinition itemsQueryDef = new QueryDefinition(itemsQuery);
+
+                                //Querying.
+                                FeedIterator queryIterator = container.GetItemQueryStreamIterator(
+                                    itemsQueryDef,
+                                    requestOptions: new QueryRequestOptions { MaxItemCount = -1 }
+                                );
+
+                                while (queryIterator.HasMoreResults)
+                                {
+                                    ResponseMessage response = await queryIterator.ReadNextAsync();
+
+                                    if (response.Content == null)
+                                    {
+                                        Console.WriteLine("QueryResponse.Content is null");
+                                        continue;
+                                    }
+                                    if (response.Content.CanSeek && response.Content.Length == 0)
+                                    {
+                                        Console.WriteLine("QueryResponse.Content stream is empty");
+                                        continue;
+                                    }
+
+                                    try
+                                    {
+                                        using JsonDocument itemsQueryResultDoc = JsonDocument.Parse(response.Content);
+                                        Console.WriteLine($"Raw JSON (Query result): {itemsQueryResultDoc.RootElement.GetRawText()}");
+
+                                        if (itemsQueryResultDoc.RootElement.TryGetProperty("Documents", out JsonElement docsElement))
+                                        {
+                                            foreach (JsonElement item in docsElement.EnumerateArray())
+                                            {
+                                                Console.WriteLine($"Data JSON (Query result): {item.GetRawText()}");
+                                            }
+                                        }
+                                    }
+                                    catch (JsonException ex)
+                                    {
+                                        Console.WriteLine($"JsonException: {ex.Message}");
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
 ```
 
-## Install via [Nuget.org](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/)
+## Install via [Nuget.org](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Aot/)
 
-`Install-Package Microsoft.Azure.Cosmos`
+`Install-Package Microsoft.Azure.Cosmos.Aot`
 
-For available versions, see [SDK versioning](./docs/versioning.md).
+Only Preview Versions available for use.
 
 ## Useful links
 
