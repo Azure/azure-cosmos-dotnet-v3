@@ -131,6 +131,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     return;
                 }
 
+                if (child is Trace traceChild)
+                {
+                    traceChild.SetWalkingStateRecursively();
+                }
+
                 List<ITrace> writableSnapshot = new List<ITrace>(this.children.Count + 1);
                 writableSnapshot.AddRange(this.children);
                 writableSnapshot.Add(child);
