@@ -69,6 +69,7 @@
                 {
                 }
 
+                rootTrace.SetWalkingStateRecursively();
                 Assert.AreEqual(rootTrace.Children.Count, 2);
                 Assert.AreEqual(rootTrace.Children[0].Component, TraceComponent.Query);
                 Assert.AreEqual(rootTrace.Children[1].Component, TraceComponent.Transport);
