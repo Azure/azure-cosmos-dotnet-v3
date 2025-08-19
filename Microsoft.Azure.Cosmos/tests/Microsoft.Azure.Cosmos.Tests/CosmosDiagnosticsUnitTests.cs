@@ -69,6 +69,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(HttpStatusCode.Gone, response.StatusCode);
             Assert.AreEqual(SubStatusCodes.PartitionKeyRangeGone, response.Headers.SubStatusCode);
 
+            if (trace is Cosmos.Tracing.Trace rootLevelTrace)
+            {
+                rootLevelTrace.SetWalkingStateRecursively();
+            }
+
             IEnumerable<PointOperationStatisticsTraceDatum> pointOperationStatistics = trace.Data.Values
                 .Where(traceDatum => traceDatum is PointOperationStatisticsTraceDatum operationStatistics)
                 .Select(x => (PointOperationStatisticsTraceDatum)x);
