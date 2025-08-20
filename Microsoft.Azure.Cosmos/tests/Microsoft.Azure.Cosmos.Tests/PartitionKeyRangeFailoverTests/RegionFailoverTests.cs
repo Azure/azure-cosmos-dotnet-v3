@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -344,6 +345,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                     CosmosTraceDiagnostics traceDiagnostic = readResponse.Diagnostics as CosmosTraceDiagnostics;
                     Assert.IsNotNull(traceDiagnostic);
 
+                    if (traceDiagnostic.Value is Trace rootLevelTrace)
+                    {
+                        rootLevelTrace.SetWalkingStateRecursively();
+                    }
+
                     traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
 
                     if (enablePartitionLevelFailover)
@@ -637,6 +643,11 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                         CosmosTraceDiagnostics traceDiagnostic = createItemResponse.Diagnostics as CosmosTraceDiagnostics;
                         Assert.IsNotNull(traceDiagnostic);
+
+                        if (traceDiagnostic.Value is Trace rootLevelTrace)
+                        {
+                            rootLevelTrace.SetWalkingStateRecursively();
+                        }
 
                         traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
                         Assert.IsNull(hedgeContext);
