@@ -1088,7 +1088,8 @@ namespace Microsoft.Azure.Cosmos
                 httpClient: this.httpClient,
                 globalPartitionEndpointManager: this.PartitionKeyRangeLocation,
                 isThinClientEnabled: this.isThinClientEnabled,
-                userAgentContainer: this.ConnectionPolicy.UserAgentContainer);
+                userAgentContainer: this.ConnectionPolicy.UserAgentContainer,
+                this.chaosInterceptor);
 
             this.GatewayStoreModel = gatewayStoreModel;
 
