@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using global::Azure;
     using global::Azure.Core;
+    using Microsoft.Azure.Cosmos.Authorization;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -36,20 +37,14 @@ namespace Microsoft.Azure.Cosmos
         // If the background refresh fails with less than a minute then just allow the request to hit the exception.
         public static readonly TimeSpan MinimumTimeBetweenBackgroundRefreshInterval = TimeSpan.FromMinutes(1);
 
-        private const string ScopeFormat = "https://{0}/.default";
-        private const string AadInvalidScopeErrorMessage = "AADSTS500011";
-        private const string AadDefaultScope = "https://cosmos.azure.com/.default";
-
-        private readonly TokenRequestContext tokenRequestContext;
         private readonly TokenCredential tokenCredential;
         private readonly CancellationTokenSource cancellationTokenSource;
         private readonly CancellationToken cancellationToken;
         private readonly TimeSpan? userDefinedBackgroundTokenCredentialRefreshInterval;
-        private readonly string accountScope;
-        private readonly bool isOverrideScopeProvided;
 
         private readonly SemaphoreSlim isTokenRefreshingLock = new SemaphoreSlim(1);
         private readonly object backgroundRefreshLock = new object();
+        private readonly IScopeProvider scopeProvider;
 
         private TimeSpan? systemBackgroundTokenCredentialRefreshInterval;
         private Task<AccessToken>? currentRefreshOperation = null;
@@ -69,15 +64,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(accountEndpoint));
             }
 
-            string? scopeOverride = ConfigurationManager.AADScopeOverrideValue(defaultValue: null);
-
-            this.accountScope = string.Format(TokenCredentialCache.ScopeFormat, accountEndpoint.Host);
-            this.isOverrideScopeProvided = !string.IsNullOrEmpty(scopeOverride);
-
-            this.tokenRequestContext = new TokenRequestContext(new string[]
-            {
-                this.isOverrideScopeProvided ? scopeOverride! : this.accountScope
-            });
+            this.scopeProvider = new Microsoft.Azure.Cosmos.Authorization.CosmosScopeProvider(accountEndpoint);
 
             if (backgroundTokenCredentialRefreshInterval.HasValue)
             {
@@ -174,24 +161,7 @@ namespace Microsoft.Azure.Cosmos
             return await currentTask;
         }
 
-        private void ApplyTokenAndSetRefreshInterval(AccessToken token)
-        {
-            this.cachedAccessToken = token;
-
-            if (!this.userDefinedBackgroundTokenCredentialRefreshInterval.HasValue)
-            {
-                double refreshIntervalInSeconds =
-                    (token.ExpiresOn - DateTimeOffset.UtcNow).TotalSeconds * DefaultBackgroundTokenCredentialRefreshIntervalPercentage;
-
-                refreshIntervalInSeconds = Math.Max(refreshIntervalInSeconds, TokenCredentialCache.MinimumTimeBetweenBackgroundRefreshInterval.TotalSeconds);
-                refreshIntervalInSeconds = Math.Min(refreshIntervalInSeconds, TokenCredentialCache.MaxBackgroundRefreshInterval.TotalSeconds);
-
-                this.systemBackgroundTokenCredentialRefreshInterval = TimeSpan.FromSeconds(refreshIntervalInSeconds);
-            }
-        }
-
-        private async ValueTask<AccessToken> RefreshCachedTokenWithRetryHelperAsync(
-            ITrace trace)
+        private async ValueTask<AccessToken> RefreshCachedTokenWithRetryHelperAsync(ITrace trace)
         {
             try
             {
@@ -212,26 +182,35 @@ namespace Microsoft.Azure.Cosmos
                         component: TraceComponent.Authorization,
                         level: Tracing.TraceLevel.Info))
                     {
-                        bool shouldAttemptAadFallback = false;
-
                         try
                         {
-                            AccessToken? tokenNullable = await this.tokenCredential.GetTokenAsync(
-                                requestContext: this.tokenRequestContext,
+                            TokenRequestContext tokenRequestContext = this.scopeProvider.GetTokenRequestContext();
+
+                            this.cachedAccessToken = await this.tokenCredential.GetTokenAsync(
+                                requestContext: tokenRequestContext,
                                 cancellationToken: this.cancellationToken);
 
-                            if (!tokenNullable.HasValue)
+                            if (!this.cachedAccessToken.HasValue)
                             {
                                 throw new ArgumentNullException("TokenCredential.GetTokenAsync returned a null token.");
                             }
 
-                            if (tokenNullable.Value.ExpiresOn < DateTimeOffset.UtcNow)
+                            if (this.cachedAccessToken.Value.ExpiresOn < DateTimeOffset.UtcNow)
                             {
-                                throw new ArgumentOutOfRangeException($"TokenCredential.GetTokenAsync returned a token that is already expired. Current Time:{DateTime.UtcNow:O}; Token expire time:{tokenNullable.Value.ExpiresOn:O}");
+                                throw new ArgumentOutOfRangeException($"TokenCredential.GetTokenAsync returned a token that is already expired. Current Time:{DateTime.UtcNow:O}; Token expire time:{this.cachedAccessToken.Value.ExpiresOn:O}");
                             }
 
-                            this.ApplyTokenAndSetRefreshInterval(tokenNullable.Value);
-                            return tokenNullable.Value;
+                            if (!this.userDefinedBackgroundTokenCredentialRefreshInterval.HasValue)
+                            {
+                                double refreshIntervalInSeconds = (this.cachedAccessToken.Value.ExpiresOn - DateTimeOffset.UtcNow).TotalSeconds * DefaultBackgroundTokenCredentialRefreshIntervalPercentage;
+
+                                // Ensure the background refresh interval is a valid range.
+                                refreshIntervalInSeconds = Math.Max(refreshIntervalInSeconds, TokenCredentialCache.MinimumTimeBetweenBackgroundRefreshInterval.TotalSeconds);
+                                refreshIntervalInSeconds = Math.Min(refreshIntervalInSeconds, TokenCredentialCache.MaxBackgroundRefreshInterval.TotalSeconds);
+                                this.systemBackgroundTokenCredentialRefreshInterval = TimeSpan.FromSeconds(refreshIntervalInSeconds);
+                            }
+
+                            return this.cachedAccessToken.Value;
                         }
                         catch (RequestFailedException requestFailedException)
                         {
@@ -240,17 +219,19 @@ namespace Microsoft.Azure.Cosmos
                                 $"RequestFailedException at {DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)}",
                                 requestFailedException.Message);
 
-                            DefaultTrace.TraceError($"TokenCredential.GetToken() failed with RequestFailedException. scope = {string.Join(";", this.tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException.Message}");
+                            DefaultTrace.TraceError($"TokenCredential.GetToken() failed with RequestFailedException. scope = {string.Join(";", this.scopeProvider.GetTokenRequestContext().Scopes)}, retry = {retry}, Exception = {lastException.Message}");
 
-                            if (this.isOverrideScopeProvided)
+                            // Don't retry on auth failures
+                            if (requestFailedException.Status == (int)HttpStatusCode.Unauthorized ||
+                                requestFailedException.Status == (int)HttpStatusCode.Forbidden)
                             {
-                                if (requestFailedException.Status == (int)HttpStatusCode.Unauthorized ||
-                                    requestFailedException.Status == (int)HttpStatusCode.Forbidden)
-                                {
-                                    this.cachedAccessToken = default;
-                                    throw;
-                                }
+                                this.cachedAccessToken = default;
+                                throw;
+                            }
 
+                            // Fallback logic
+                            if (this.scopeProvider.TryFallback(requestFailedException))
+                            {
                                 continue;
                             }
                         }
@@ -262,7 +243,7 @@ namespace Microsoft.Azure.Cosmos
                                 operationCancelled.Message);
 
                             DefaultTrace.TraceError(
-                                $"TokenCredential.GetTokenAsync() failed. scope = {string.Join(";", this.tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException.Message}");
+                                $"TokenCredential.GetTokenAsync() failed. scope = {string.Join(";", this.scopeProvider.GetTokenRequestContext().Scopes)}, retry = {retry}, Exception = {lastException.Message}");
 
                             throw CosmosExceptionFactory.CreateRequestTimeoutException(
                                 message: ClientResources.FailedToGetAadToken,
@@ -281,83 +262,12 @@ namespace Microsoft.Azure.Cosmos
                                 exception.Message);
 
                             DefaultTrace.TraceError(
-                                $"TokenCredential.GetTokenAsync() failed. scope = {string.Join(";", this.tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException.Message}");
+                                $"TokenCredential.GetTokenAsync() failed. scope = {string.Join(";", this.scopeProvider.GetTokenRequestContext().Scopes)}, retry = {retry}, Exception = {lastException.Message}");
 
-                            if (this.isOverrideScopeProvided)
+                            // Fallback logic
+                            if (this.scopeProvider.TryFallback(exception))
                             {
                                 continue;
-                            }
-
-                            if (exception.InnerException?.Message.Contains(AadInvalidScopeErrorMessage) == true)
-                            {
-                                shouldAttemptAadFallback = true;
-                            }
-                        }
-
-                        if (!this.isOverrideScopeProvided && shouldAttemptAadFallback)
-                        {
-                            TokenRequestContext fallbackContext = new TokenRequestContext(new[] { AadDefaultScope });
-
-                            try
-                            {
-                                AccessToken? tokenNullable = await this.tokenCredential.GetTokenAsync(
-                                    requestContext: fallbackContext,
-                                    cancellationToken: this.cancellationToken);
-
-                                if (!tokenNullable.HasValue)
-                                {
-                                    throw new ArgumentNullException("TokenCredential.GetTokenAsync returned a null token.");
-                                }
-
-                                if (tokenNullable.Value.ExpiresOn < DateTimeOffset.UtcNow)
-                                {
-                                    throw new ArgumentOutOfRangeException($"TokenCredential.GetTokenAsync returned a token that is already expired. Current Time:{DateTime.UtcNow:O}; Token expire time:{tokenNullable.Value.ExpiresOn:O}");
-                                }
-
-                                this.ApplyTokenAndSetRefreshInterval(tokenNullable.Value);
-                                return tokenNullable.Value;
-                            }
-                            catch (RequestFailedException requestFailedExceptionFallback)
-                            {
-                                lastException = requestFailedExceptionFallback;
-                                getTokenTrace.AddDatum(
-                                    $"RequestFailedException (fallback) at {DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)}",
-                                    requestFailedExceptionFallback.Message);
-
-                                DefaultTrace.TraceError($"TokenCredential.GetToken() failed with RequestFailedException on fallback. scope = {string.Join(";", fallbackContext.Scopes)}, retry = {retry}, Exception = {lastException.Message}");
-
-                                if (requestFailedExceptionFallback.Status == (int)HttpStatusCode.Unauthorized ||
-                                    requestFailedExceptionFallback.Status == (int)HttpStatusCode.Forbidden)
-                                {
-                                    this.cachedAccessToken = default;
-                                    throw;
-                                }
-                            }
-                            catch (OperationCanceledException operationCancelledFallback)
-                            {
-                                lastException = operationCancelledFallback;
-                                getTokenTrace.AddDatum(
-                                    $"OperationCanceledException (fallback) at {DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)}",
-                                    operationCancelledFallback.Message);
-
-                                DefaultTrace.TraceError(
-                                    $"TokenCredential.GetTokenAsync() failed on fallback. scope = {string.Join(";", fallbackContext.Scopes)}, retry = {retry}, Exception = {lastException.Message}");
-
-                                throw CosmosExceptionFactory.CreateRequestTimeoutException(
-                                    message: ClientResources.FailedToGetAadToken,
-                                    headers: new Headers() { SubStatusCode = SubStatusCodes.FailedToGetAadToken, },
-                                    innerException: lastException,
-                                    trace: getTokenTrace);
-                            }
-                            catch (Exception exceptionFallback)
-                            {
-                                lastException = exceptionFallback;
-                                getTokenTrace.AddDatum(
-                                    $"Exception (fallback) at {DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)}",
-                                    exceptionFallback.Message);
-
-                                DefaultTrace.TraceError(
-                                    $"TokenCredential.GetTokenAsync() failed on fallback. scope = {string.Join(";", fallbackContext.Scopes)}, retry = {retry}, Exception = {lastException.Message}");
                             }
                         }
                     }
