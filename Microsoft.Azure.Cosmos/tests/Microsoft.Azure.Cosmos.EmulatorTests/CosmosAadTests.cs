@@ -335,7 +335,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task Aad_AccountScope_Fallbacks_ToCosmos_OnSniCertRevoked_Unit()
+        public async Task Aad_AccountScope_Fallbacks_ToCosmosScope()
         {
             (string endpoint, string authKey) = TestCommon.GetAccountInfo();
 

@@ -18,7 +18,6 @@ namespace Microsoft.Azure.Cosmos.Authorization
         private readonly string accountScope;
         private readonly string overrideScope;
         private string currentScope;
-        private bool fallbackAttempted = false;
 
         public CosmosScopeProvider(Uri accountEndpoint)
         {
@@ -40,8 +39,8 @@ namespace Microsoft.Azure.Cosmos.Authorization
                 return false;
             }
 
-            // If already attempted fallback, do not fallback again
-            if (this.fallbackAttempted)
+            // If already using fallback scope, do not fallback again
+            if (this.currentScope == AadDefaultScope)
             {
                 return false;
             }
@@ -49,7 +48,6 @@ namespace Microsoft.Azure.Cosmos.Authorization
             if (ex.InnerException?.Message.Contains(AadInvalidScopeErrorMessage) == true)
             {
                 this.currentScope = AadDefaultScope;
-                this.fallbackAttempted = true;
                 return true;
             }
 
