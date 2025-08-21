@@ -47,6 +47,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.HybridRow" Version="1.1.0-preview3" />
+    <PackageReference Include="System.Text.Json" Version="9.0.7" />
   </ItemGroup>
 
   <ItemGroup>

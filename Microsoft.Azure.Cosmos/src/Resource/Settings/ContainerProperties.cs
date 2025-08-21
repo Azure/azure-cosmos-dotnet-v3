@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
         /// </summary>
         [JsonExtensionData]
-        internal IDictionary<string, JsonElement> AdditionalProperties { get; private set; }
+        internal IDictionary<string, JsonElement> AdditionalProperties { get; set; }
 
         private IReadOnlyList<IReadOnlyList<string>> partitionKeyPathTokens;
         private string id;
@@ -235,7 +235,7 @@ namespace Microsoft.Azure.Cosmos
         /// ETags are used for concurrency checking when updating resources.
         /// </remarks>
         [JsonPropertyName(Constants.Properties.ETag)]
-        public string ETag { get; private set; }
+        public string ETag { get; set; }
 
         /// <summary>
         /// Gets the last modified time stamp associated with <see cref="ContainerProperties" /> from the Azure Cosmos DB service.
@@ -243,7 +243,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>The last modified time stamp associated with the resource.</value>
         [JsonPropertyName(Constants.Properties.LastModified)]
         [JsonConverter(typeof(UnixDateTimeConverter))]
-        public DateTime? LastModified { get; private set; }
+        public DateTime? LastModified { get; set; }
 
         /// <summary>
         /// Gets or sets the client encryption policy information for storing items in a container from the Azure Cosmos service.
@@ -633,7 +633,7 @@ namespace Microsoft.Azure.Cosmos
         /// E.g. a self-link for a document could be dbs/db_resourceid/colls/coll_resourceid/documents/doc_resourceid
         /// </remarks>
         [JsonPropertyName(Constants.Properties.SelfLink)]
-        public string SelfLink { get; private set; }
+        public string SelfLink { get; set; }
 
         /// <summary>
         /// The function selects the right partition key constant mapping for <see cref="PartitionKey.None"/>

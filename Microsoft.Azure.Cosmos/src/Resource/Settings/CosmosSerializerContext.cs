@@ -76,6 +76,7 @@ namespace Microsoft.Azure.Cosmos
     [JsonSerializable(typeof(SpatialIndex))]
     [JsonSerializable(typeof(Error))]
     [JsonSerializable(typeof(FeedRangeCompositeContinuation))]
+    [JsonSerializable(typeof(UnixDateTimeConverter))]
     internal partial class CosmosSerializerContext : JsonSerializerContext
     {
     }

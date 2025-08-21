@@ -8,6 +8,16 @@ namespace AOTSample
 
     public class Program
     {
+        public class ToDoItem
+        {
+#pragma warning disable IDE1006 // Naming Styles
+            public string id { get; set; } = Guid.NewGuid().ToString();
+
+            public string title { get; set; } = "Test Task";
+            public bool completed { get; set; } = false;
+#pragma warning restore IDE1006 // Naming Styles
+        }
+
         public static async Task Main(string[] _)
         {
             const string CosmosBaseUri = "https://localhost:8081";
@@ -20,13 +30,33 @@ namespace AOTSample
                 return;
             }
 
+            JsonSerializerOptions options = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+                WriteIndented = true// Passing in custome TypeInfoResolver to help deserilization of custom type.
+            };
+            CosmosClientOptions cosmosOptions = new CosmosClientOptions
+            {
+                UseSystemTextJsonSerializerWithOptions = options,//Set System.Text.Json serializer options.
+            };
+
             CosmosClient client = new CosmosClient(
                 CosmosBaseUri,
-                primaryKey);
+                primaryKey,
+                cosmosOptions);
 
             AccountProperties accountProperties = await client.ReadAccountAsync();
             Console.WriteLine($"Account Name: {accountProperties.Id}");
 
+            Container contr = client.GetContainer("ananthdb", "ananthcont");
+            ToDoItem entry = new ToDoItem();
+            await contr.UpsertItemAsync(
+                entry,
+                jsonTypeInfo: JsonContext.Default.ToDoItem
+            );
+
+            Console.WriteLine($"Item Upserted: {entry.id}");
             FeedIterator db_feed_itr = client.GetDatabaseQueryStreamIterator();
             while (db_feed_itr.HasMoreResults)
             {

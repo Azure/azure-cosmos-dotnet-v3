@@ -94,7 +94,6 @@ namespace Microsoft.Azure.Cosmos
             this.ApiType = CosmosClientOptions.DefaultApiType;
             this.CustomHandlers = new Collection<RequestHandler>();
             this.CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions();
-            this.UseSystemTextJsonSerializerWithOptions = new System.Text.Json.JsonSerializerOptions();
         }
 
         /// <summary>
@@ -972,6 +971,10 @@ namespace Microsoft.Azure.Cosmos
             this.ValidateDirectTCPSettings();
             this.ValidateLimitToEndpointSettings();
             this.ValidatePartitionLevelFailoverSettings();
+            if (this.UseSystemTextJsonSerializerWithOptions == null)
+            {
+                this.UseSystemTextJsonSerializerWithOptions = new System.Text.Json.JsonSerializerOptions();
+            }
 
             ConnectionPolicy connectionPolicy = new ConnectionPolicy()
             {
