@@ -406,10 +406,21 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Assert.IsNotNull(containerProperties.VectorEmbeddingPolicy);
             Assert.AreEqual(4, containerProperties.VectorEmbeddingPolicy.Embeddings.Count);
+
             Assert.AreEqual("/vector1", containerProperties.VectorEmbeddingPolicy.Embeddings[0].Path);
             Assert.AreEqual(Cosmos.VectorDataType.Float32, containerProperties.VectorEmbeddingPolicy.Embeddings[0].DataType);
             Assert.AreEqual(1200, containerProperties.VectorEmbeddingPolicy.Embeddings[0].Dimensions);
             Assert.AreEqual(Cosmos.DistanceFunction.Cosine, containerProperties.VectorEmbeddingPolicy.Embeddings[0].DistanceFunction);
+
+            Assert.AreEqual("/vector2", containerProperties.VectorEmbeddingPolicy.Embeddings[1].Path);
+            Assert.AreEqual(Cosmos.VectorDataType.Int8, containerProperties.VectorEmbeddingPolicy.Embeddings[1].DataType);
+            Assert.AreEqual(3, containerProperties.VectorEmbeddingPolicy.Embeddings[1].Dimensions);
+            Assert.AreEqual(Cosmos.DistanceFunction.DotProduct, containerProperties.VectorEmbeddingPolicy.Embeddings[1].DistanceFunction);
+
+            Assert.AreEqual("/vector3", containerProperties.VectorEmbeddingPolicy.Embeddings[2].Path);
+            Assert.AreEqual(Cosmos.VectorDataType.Uint8, containerProperties.VectorEmbeddingPolicy.Embeddings[2].DataType);
+            Assert.AreEqual(400, containerProperties.VectorEmbeddingPolicy.Embeddings[2].Dimensions);
+            Assert.AreEqual(Cosmos.DistanceFunction.Euclidean, containerProperties.VectorEmbeddingPolicy.Embeddings[2].DistanceFunction);
 
             Assert.AreEqual("/vector4", containerProperties.VectorEmbeddingPolicy.Embeddings[3].Path);
             Assert.AreEqual(Cosmos.VectorDataType.Float16, containerProperties.VectorEmbeddingPolicy.Embeddings[3].DataType);
