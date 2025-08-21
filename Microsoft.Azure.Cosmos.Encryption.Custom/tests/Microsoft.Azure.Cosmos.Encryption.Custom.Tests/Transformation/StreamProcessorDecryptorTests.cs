@@ -323,6 +323,108 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => new StreamProcessor().DecryptStreamAsync(corruptedStream, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None));
         }
 
+        [TestMethod]
+        public async Task Decrypt_IgnoredBlock_PartialEiSkip()
+        {
+            // Force the _ei metadata object to span multiple buffer reads so Utf8JsonReader.TrySkip() returns false,
+            // exercising the fallback isIgnoredBlock path.
+            const int propertyCount = 250; // large to inflate _ei encrypted paths list
+            Dictionary<string, object> doc = new() { ["id"] = "1" };
+            List<string> paths = new(propertyCount);
+            for (int i = 0; i < propertyCount; i++)
+            {
+                string name = "P" + i.ToString();
+                // moderately sized value to enlarge encrypted base64 + metadata
+                string value = new string('x', 32 + (i % 5));
+                doc[name] = value;
+                paths.Add("/" + name);
+            }
+
+            EncryptionOptions options = CreateOptions(paths);
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+
+            // Choose very small initial buffer so _ei object is fragmented.
+            int original = StreamProcessor.InitialBufferSize;
+            StreamProcessor.InitialBufferSize = 32;
+            try
+            {
+                MemoryStream output = new();
+                DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
+                output.Position = 0;
+                using JsonDocument jd = JsonDocument.Parse(output, new JsonDocumentOptions { AllowTrailingCommas = true });
+                JsonElement root = jd.RootElement;
+                // _ei must be removed
+                Assert.IsFalse(root.TryGetProperty(Constants.EncryptedInfo, out _), "_ei should be skipped");
+                // spot check a few decrypted properties
+                Assert.AreEqual(JsonValueKind.String, root.GetProperty("P0").ValueKind);
+                Assert.AreEqual(JsonValueKind.String, root.GetProperty("P100").ValueKind);
+                // Ensure some decrypted paths recorded
+                Assert.IsTrue(ctx.DecryptionInfoList[0].PathsDecrypted.Count > 200);
+            }
+            finally
+            {
+                StreamProcessor.InitialBufferSize = original; // restore
+            }
+        }
+
+        [TestMethod]
+        public async Task Decrypt_ForgedCipherText_TypeMarkerNull()
+        {
+            // Goal: cover TypeMarker.Null branch in TransformDecryptProperty switch.
+            // Strategy: Encrypt a normal string path, then replace its base64 with one that decodes to a ciphertext whose
+            // first byte (type marker) == TypeMarker.Null and whose decrypted payload is empty so writer.WriteNullValue() fires.
+            var doc = new { id = "1", SensitiveStr = "abc" };
+            var paths = new[] { "/SensitiveStr" };
+            EncryptionOptions options = CreateOptions(paths);
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+
+            // Modify encrypted JSON: we need a valid base64 string which when decrypted via mock DEK returns 0-length plaintext.
+            // mockDek.DecryptData decrypts by TestCommon.DecryptData -> which reverses encryption done by TestCommon.EncryptData.
+            // Instead of relying on real decrypt, we forge a ciphertext that after base64 decode still passes through MdeEncryptor.Decrypt + mockDek.
+            // Simplify: mock the Encryptor (MdeEncryptor dependency) to directly return an empty plaintext buffer, bypassing DEK logic.
+            // We'll craft a base64 payload minimal length (just marker + 1 dummy byte for cipher so Decrypt attempts).
+
+            encrypted.Position = 0;
+            string json = Encoding.UTF8.GetString(encrypted.ToArray());
+            using JsonDocument jd = JsonDocument.Parse(json);
+            string originalCipher = jd.RootElement.GetProperty("SensitiveStr").GetString();
+            Assert.IsNotNull(originalCipher);
+
+            // Ciphertext structure consumed by MdeEncryptor.Decrypt: first byte is type marker, rest passed to DEK.
+            // We need at least 2 bytes total (marker + 1 dummy) to avoid negative length in GetDecryptByteCount mock (which returns input length minus 1; our mock returns i). Use marker Null (enum value) then a filler 0.
+            byte[] forged = new byte[] { (byte)TypeMarker.Null, 0x00 };
+            string forgedBase64 = Convert.ToBase64String(forged);
+            string fragmentOld = "\"SensitiveStr\":\"" + originalCipher + "\"";
+            string fragmentNew = "\"SensitiveStr\":\"" + forgedBase64 + "\"";
+            Assert.IsTrue(json.Contains(fragmentOld));
+            json = json.Replace(fragmentOld, fragmentNew);
+
+            MemoryStream forgedStream = new MemoryStream(Encoding.UTF8.GetBytes(json));
+
+            // Use a custom Encryptor injected via internal settable property to return empty plaintext for our forged cipher.
+            var sp = new StreamProcessor
+            {
+                Encryptor = new NullMarkerMdeEncryptor()
+            };
+            MemoryStream output = new();
+            DecryptionContext ctx = await sp.DecryptStreamAsync(forgedStream, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
+            output.Position = 0;
+            using JsonDocument outDoc = JsonDocument.Parse(output);
+            Assert.AreEqual(JsonValueKind.Null, outDoc.RootElement.GetProperty("SensitiveStr").ValueKind);
+            // Path should be marked decrypted even though value is null
+            Assert.IsTrue(ctx.DecryptionInfoList[0].PathsDecrypted.Contains("/SensitiveStr"));
+        }
+
+        private class NullMarkerMdeEncryptor : MdeEncryptor
+        {
+            internal override (byte[] plainText, int plainTextLength) Decrypt(DataEncryptionKey encryptionKey, byte[] cipherText, int cipherTextLength, ArrayPoolManager arrayPoolManager)
+            {
+                // Return empty plaintext buffer (length 0). Caller will write null based on marker (already in cipherText[0]).
+                byte[] buffer = arrayPoolManager.Rent(0);
+                return (buffer, 0);
+            }
+        }
+
     }
 }
 #endif
