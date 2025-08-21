@@ -37,6 +37,7 @@ namespace Microsoft.Azure.Cosmos
         // If the background refresh fails with less than a minute then just allow the request to hit the exception.
         public static readonly TimeSpan MinimumTimeBetweenBackgroundRefreshInterval = TimeSpan.FromMinutes(1);
 
+        private readonly IScopeProvider scopeProvider;
         private readonly TokenCredential tokenCredential;
         private readonly CancellationTokenSource cancellationTokenSource;
         private readonly CancellationToken cancellationToken;
@@ -44,7 +45,6 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly SemaphoreSlim isTokenRefreshingLock = new SemaphoreSlim(1);
         private readonly object backgroundRefreshLock = new object();
-        private readonly IScopeProvider scopeProvider;
 
         private TimeSpan? systemBackgroundTokenCredentialRefreshInterval;
         private Task<AccessToken>? currentRefreshOperation = null;
@@ -161,7 +161,8 @@ namespace Microsoft.Azure.Cosmos
             return await currentTask;
         }
 
-        private async ValueTask<AccessToken> RefreshCachedTokenWithRetryHelperAsync(ITrace trace)
+        private async ValueTask<AccessToken> RefreshCachedTokenWithRetryHelperAsync(
+            ITrace trace)
         {
             try
             {
@@ -243,7 +244,7 @@ namespace Microsoft.Azure.Cosmos
                                 operationCancelled.Message);
 
                             DefaultTrace.TraceError(
-                                $"TokenCredential.GetTokenAsync() failed. scope = {string.Join(";", this.scopeProvider.GetTokenRequestContext().Scopes)}, retry = {retry}, Exception = {lastException.Message}");
+                               $"TokenCredential.GetTokenAsync() failed. scope = {string.Join(";", this.scopeProvider.GetTokenRequestContext().Scopes)}, retry = {retry}, Exception = {lastException.Message}");
 
                             throw CosmosExceptionFactory.CreateRequestTimeoutException(
                                 message: ClientResources.FailedToGetAadToken,
