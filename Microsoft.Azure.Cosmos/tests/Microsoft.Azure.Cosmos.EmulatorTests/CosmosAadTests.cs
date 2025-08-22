@@ -394,5 +394,54 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Environment.SetEnvironmentVariable("AZURE_COSMOS_AAD_SCOPE_OVERRIDE", previous);
             }
         }
+
+        [TestMethod]
+        public async Task Aad_AccountScope_Success_NoFallback()
+        {
+            // Arrange
+            (string endpoint, string authKey) = TestCommon.GetAccountInfo();
+
+            string accountScope = $"https://{new Uri(endpoint).Host}/.default";
+            string aadScope = "https://cosmos.azure.com/.default";
+
+            int accountScopeCount = 0;
+            int cosmosScopeCount = 0;
+
+            void GetAadTokenCallBack(TokenRequestContext context, CancellationToken token)
+            {
+                string scope = context.Scopes[0];
+
+                if (string.Equals(scope, accountScope, StringComparison.OrdinalIgnoreCase))
+                {
+                    accountScopeCount++;
+                }
+
+                if (string.Equals(scope, aadScope, StringComparison.OrdinalIgnoreCase))
+                {
+                    cosmosScopeCount++;
+                }
+            }
+
+            LocalEmulatorTokenCredential credential = new LocalEmulatorTokenCredential(
+                expectedScopes: new[] { accountScope },
+                masterKey: authKey,
+                getTokenCallback: GetAadTokenCallBack);
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Gateway,
+                TokenCredentialBackgroundRefreshInterval = TimeSpan.FromSeconds(60)
+            };
+
+            using CosmosClient aadClient = new CosmosClient(endpoint, credential, clientOptions);
+            TokenCredentialCache tokenCredentialCache =
+                ((AuthorizationTokenProviderTokenCredential)aadClient.AuthorizationTokenProvider).tokenCredentialCache;
+
+            string token = await tokenCredentialCache.GetTokenAsync(Tracing.Trace.GetRootTrace("account-scope-success-no-fallback"));
+            Assert.IsFalse(string.IsNullOrEmpty(token), "Token should be acquired successfully with account scope.");
+
+            Assert.AreEqual(1, accountScopeCount, "Account scope must be used exactly once.");
+            Assert.AreEqual(0, cosmosScopeCount, "Cosmos scope must not be used (no fallback).");
+        }
     }
 }

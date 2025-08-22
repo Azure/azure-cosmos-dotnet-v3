@@ -122,6 +122,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.cancellationTokenSource.Cancel();
             this.cancellationTokenSource.Dispose();
+            this.scopeProvider.Dispose();
             this.isDisposed = true;
         }
 
@@ -222,7 +223,7 @@ namespace Microsoft.Azure.Cosmos
                                 $"RequestFailedException at {DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)}",
                                 requestFailedException.Message);
 
-                            DefaultTrace.TraceError($"TokenCredential.GetToken() failed with RequestFailedException. scope = {string.Join(";", tokenRequestContext.Scopes ?? Array.Empty<string>())}, retry = {retry}, Exception = {lastException.Message}");
+                            DefaultTrace.TraceError($"TokenCredential.GetToken() failed with RequestFailedException. scope = {string.Join(";", tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException.Message}");
 
                             // Don't retry on auth failures
                             if (requestFailedException.Status == (int)HttpStatusCode.Unauthorized ||
@@ -246,7 +247,7 @@ namespace Microsoft.Azure.Cosmos
                                 operationCancelled.Message);
 
                             DefaultTrace.TraceError(
-                               $"TokenCredential.GetTokenAsync() failed. scope = {string.Join(";", tokenRequestContext.Scopes ?? Array.Empty<string>())}, retry = {retry}, Exception = {lastException.Message}");
+                               $"TokenCredential.GetTokenAsync() failed. scope = {string.Join(";", tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException.Message}");
 
                             throw CosmosExceptionFactory.CreateRequestTimeoutException(
                                 message: ClientResources.FailedToGetAadToken,
@@ -265,7 +266,7 @@ namespace Microsoft.Azure.Cosmos
                                 exception.Message);
 
                             DefaultTrace.TraceError(
-                                $"TokenCredential.GetTokenAsync() failed. scope = {string.Join(";", tokenRequestContext.Scopes ?? Array.Empty<string>())}, retry = {retry}, Exception = {lastException.Message}");
+                                $"TokenCredential.GetTokenAsync() failed. scope = {string.Join(";", tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException.Message}");
 
                             // Fallback logic
                             if (this.scopeProvider.TryFallback(exception))
