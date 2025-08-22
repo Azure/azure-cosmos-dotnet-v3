@@ -94,6 +94,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         [TestMethod]
         public async Task Decrypt_AllPrimitiveTypesAndContainers()
         {
+            // Arrange
             var doc = new
             {
                 id = Guid.NewGuid().ToString(),
@@ -137,6 +138,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         [TestMethod]
         public async Task Decrypt_CompressedPayloads()
         {
+            // Arrange
             var doc = new
             {
                 id = Guid.NewGuid().ToString(),
@@ -151,12 +153,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             Assert.IsNotNull(props.CompressedEncryptedPaths);
             Assert.IsTrue(props.CompressedEncryptedPaths.Count > 0); // at least LargeStr is compressed
 
+            // Act
             MemoryStream output = new();
             DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
             output.Position = 0;
             using JsonDocument jd = JsonDocument.Parse(output);
             JsonElement root = jd.RootElement;
 
+            // Assert
             foreach (string p in paths)
             {
                 Assert.IsTrue(ctx.DecryptionInfoList[0].PathsDecrypted.Contains(p));
@@ -192,15 +196,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         [TestMethod]
         public async Task Decrypt_Skips_EncryptionInfo_Block()
         {
+            // Arrange
             // Build a document that already has _ei. (Encryptor will append another one during encryption; we want to ensure decryptor skips only the encrypted one at top-level.)
             var doc = new { id = "1", _ei = new { ignore = true }, SensitiveStr = "abc" };
             string[] paths = new[] { "/SensitiveStr" };
             EncryptionOptions options = CreateOptions(paths);
             (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
 
+            // Act
             MemoryStream output = new();
             DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
 
+            // Assert
             output.Position = 0;
             using JsonDocument jd = JsonDocument.Parse(output);
             JsonElement root = jd.RootElement;
@@ -212,15 +219,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         [TestMethod]
         public async Task Decrypt_IgnoresUnknownPropertyTypesAndMaintainsJson()
         {
+            // Arrange
             var doc = new { id = "1", SensitiveStr = "abc", Regular = 5 };
             string[] paths = new[] { "/SensitiveStr" };
             EncryptionOptions options = CreateOptions(paths);
             (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
 
+            // Act
             MemoryStream output = new();
             _ = await new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
             output.Position = 0;
             using JsonDocument jd = JsonDocument.Parse(output);
+            // Assert
             JsonElement root = jd.RootElement;
             Assert.AreEqual(5, root.GetProperty("Regular").GetInt32());
         }
@@ -228,11 +238,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         [TestMethod]
         public async Task Decrypt_Throws_OnUnknownEncryptionFormatVersion()
         {
+            // Arrange
             var doc = new { id = "1", SensitiveStr = "abc" };
             string[] paths = new[] { "/SensitiveStr" };
             EncryptionOptions options = CreateOptions(paths);
             (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
             EncryptionProperties invalid = new EncryptionProperties(999, props.EncryptionAlgorithm, props.DataEncryptionKeyId, null, props.EncryptedPaths, props.CompressionAlgorithm, props.CompressedEncryptedPaths);
+            // Act + Assert
             MemoryStream output = new();
             await Assert.ThrowsExceptionAsync<NotSupportedException>(() => new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, invalid, new CosmosDiagnosticsContext(), CancellationToken.None));
         }
@@ -240,6 +252,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         [TestMethod]
         public async Task Decrypt_Throws_OnInvalidBase64Ciphertext()
         {
+            // Arrange
             var doc = new { id = "1", SensitiveStr = "abc" };
             string[] paths = new[] { "/SensitiveStr" };
             EncryptionOptions options = CreateOptions(paths);
@@ -251,6 +264,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             string corruptedCipher = string.Concat("#", originalCipher.AsSpan(1)); // invalid base64 start
             jsonText = jsonText.Replace("\"SensitiveStr\":\"" + originalCipher + "\"", "\"SensitiveStr\":\"" + corruptedCipher + "\"");
             MemoryStream corruptedStream = new(Encoding.UTF8.GetBytes(jsonText));
+            // Act + Assert
             MemoryStream output = new();
             await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => new StreamProcessor().DecryptStreamAsync(corruptedStream, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None));
         }
@@ -318,6 +332,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         [TestMethod]
         public async Task Decrypt_IgnoredBlock_PartialEiSkip()
         {
+            // Arrange
             // Force the _ei metadata object to span multiple buffer reads so Utf8JsonReader.TrySkip() returns false,
             // exercising the fallback isIgnoredBlock path.
             const int propertyCount = 250; // large to inflate _ei encrypted paths list
@@ -340,11 +355,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             StreamProcessor.InitialBufferSize = 32;
             try
             {
+                // Act
                 MemoryStream output = new();
                 DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
                 output.Position = 0;
                 using JsonDocument jd = JsonDocument.Parse(output, new JsonDocumentOptions { AllowTrailingCommas = true });
                 JsonElement root = jd.RootElement;
+                // Assert
                 // _ei must be removed
                 Assert.IsFalse(root.TryGetProperty(Constants.EncryptedInfo, out _), "_ei should be skipped");
                 // spot check a few decrypted properties
@@ -362,6 +379,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         [TestMethod]
         public async Task Decrypt_CompressedPathsPropertyNull()
         {
+            // Arrange
             // Cover branch where EncryptionProperties.CompressedEncryptedPaths is null (as opposed to empty dictionary or populated),
             // exercising the null path of the null-conditional operator in: bool containsCompressed = properties.CompressedEncryptedPaths?.Count > 0;
             var doc = new { id = "1", SensitiveStr = "abc" };
@@ -380,9 +398,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
                 compressedEncryptedPaths: null);
 
             encrypted.Position = 0;
+            // Act
             MemoryStream output = new();
             DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, propsNullCompressed, new CosmosDiagnosticsContext(), CancellationToken.None);
 
+            // Assert
             output.Position = 0;
             using JsonDocument jd = JsonDocument.Parse(output);
             Assert.AreEqual("abc", jd.RootElement.GetProperty("SensitiveStr").GetString());
@@ -392,6 +412,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         [TestMethod]
         public async Task Decrypt_UnencryptedArrayAndBooleans()
         {
+            // Arrange
             // Covers StartArray / EndArray / True / False switch branches where decryptPropertyName == null (no encryption for those tokens).
             var doc = new
             {
@@ -405,9 +426,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             EncryptionOptions options = CreateOptions(paths);
             (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
 
+            // Act
             MemoryStream output = new();
             DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
 
+            // Assert
             output.Position = 0;
             using JsonDocument jd = JsonDocument.Parse(output);
             JsonElement root = jd.RootElement;
@@ -429,6 +452,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         [TestMethod]
         public async Task Decrypt_ForgedCipherText_TypeMarkerNull()
         {
+            // Arrange
             // Covers TypeMarker.Null switch branch by forging a ciphertext with first byte = Null marker.
             var doc = new { id = "1", SensitiveStr = "abc" };
             string[] paths = new[] { "/SensitiveStr" };
@@ -457,10 +481,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             }
             forged.Position = 0;
 
+            // Act
             // Use custom encryptor that returns empty plaintext for Null marker
             StreamProcessor sp = new StreamProcessor { Encryptor = new NullMarkerMdeEncryptor() };
             MemoryStream output = new();
             DecryptionContext ctx = await sp.DecryptStreamAsync(forged, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
+            // Assert
             output.Position = 0;
             using JsonDocument outDoc = JsonDocument.Parse(output);
             Assert.AreEqual(JsonValueKind.Null, outDoc.RootElement.GetProperty("SensitiveStr").ValueKind);
@@ -470,6 +496,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         [TestMethod]
         public async Task Decrypt_Throws_OnMissingDataEncryptionKey()
         {
+            // Arrange
             // Arrange: create a valid encrypted payload
             var doc = new { id = "1", SensitiveStr = "abc" };
             string[] paths = new[] { "/SensitiveStr" };
@@ -579,6 +606,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             }
             forged.Position = 0;
 
+            // Act
             // Use a bypass encryptor to return raw bytes that are not valid JSON, exercising the default branch (WriteRawValue)
             StreamProcessor sp = new StreamProcessor { Encryptor = new AlwaysPlaintextMdeEncryptor("NOT_JSON") };
             MemoryStream output = new();
@@ -624,6 +652,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             }
             forged.Position = 0;
 
+            // Act
             // Use encryptor that returns a plaintext that is invalid for a long serializer
             StreamProcessor sp = new StreamProcessor { Encryptor = new AlwaysPlaintextMdeEncryptor("abc") };
             MemoryStream output = new();
@@ -642,6 +671,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         [TestMethod]
         public async Task Decrypt_CompressedContainsPathButNotCurrentProperty()
         {
+            // Arrange
             // Scenario: compression enabled, some paths compressed, but the current decryptPropertyName is NOT in CompressedEncryptedPaths.
             // Covers branch: containsCompressed == true && TryGetValue == false so decompression block is skipped.
             var doc = new
@@ -656,11 +686,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             Assert.IsTrue(props.CompressedEncryptedPaths.ContainsKey("/LargeStr"));
             Assert.IsFalse(props.CompressedEncryptedPaths.ContainsKey("/OtherStr"));
 
+            // Act
             MemoryStream output = new();
             DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
             output.Position = 0;
             using JsonDocument jd = JsonDocument.Parse(output);
             JsonElement root = jd.RootElement;
+            // Assert
             Assert.AreEqual(400, root.GetProperty("LargeStr").GetString().Length);
             Assert.AreEqual(50, root.GetProperty("OtherStr").GetString().Length);
             // Both should appear in decrypted paths
@@ -671,6 +703,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         [TestMethod]
         public async Task Decrypt_Fuzz_Ciphertext_Length_And_TypeMarker_CrossProduct()
         {
+            // Arrange
             // Property-style fuzzing across type markers and plaintext lengths. We don't assert per-iteration outcomes;
             // instead we ensure a wide set runs without catastrophic failures and that some known-good cases succeed.
             var doc = new { id = "1", V = "seed" };
@@ -698,6 +731,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             StreamProcessor sp = new StreamProcessor { Encryptor = new MutablePlaintextMdeEncryptor() };
             MutablePlaintextMdeEncryptor mut = (MutablePlaintextMdeEncryptor)sp.Encryptor;
 
+            // Act
             for (int len = 0; len <= maxLen; len++)
             {
                 for (int m = 0; m < markers.Length; m++)
@@ -784,6 +818,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
                 }
             }
 
+            // Assert
             Assert.IsTrue(attempts > 0, "No fuzz attempts executed");
             Assert.IsTrue(successes > 0, "Expected at least some successful decrypt/writes during fuzzing");
         }
