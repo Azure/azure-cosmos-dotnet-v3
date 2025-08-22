@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                     switch (tokenType)
                     {
-                        case JsonTokenType.None:
+                        case JsonTokenType.None: // Unreachable after first Read()
                             break;
                         case JsonTokenType.StartObject:
                             if (encryptPropertyName != null && encryptionPayloadWriter == null)
@@ -187,7 +187,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                             currentWriter.WritePropertyName(reader.ValueSpan);
                             break;
-                        case JsonTokenType.Comment:
+                        case JsonTokenType.Comment: // Skipped via reader options
                             currentWriter.WriteCommentValue(reader.ValueSpan);
                             break;
                         case JsonTokenType.String:
@@ -249,6 +249,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             break;
                         case JsonTokenType.Null:
                             currentWriter.WriteNullValue();
+                            encryptPropertyName = null;
                             break;
                     }
                 }
@@ -287,18 +288,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
         private static (TypeMarker typeMarker, byte[] buffer, int length) SerializeNumber(ReadOnlySpan<byte> utf8bytes, ArrayPoolManager arrayPoolManager)
         {
-            if (long.TryParse(utf8bytes, out long longValue))
+            if (System.Buffers.Text.Utf8Parser.TryParse(utf8bytes, out long longValue, out int consumedLong) && consumedLong == utf8bytes.Length)
             {
                 return Serialize(longValue, arrayPoolManager);
             }
-            else if (double.TryParse(utf8bytes, out double doubleValue))
+
+            if (System.Buffers.Text.Utf8Parser.TryParse(utf8bytes, out double doubleValue, out int consumedDouble) && consumedDouble == utf8bytes.Length)
             {
-                return Serialize(doubleValue, arrayPoolManager);
+                // Reject non-finite numbers to keep JSON contract compatibility
+                if (double.IsFinite(doubleValue))
+                {
+                    return Serialize(doubleValue, arrayPoolManager);
+                }
             }
-            else
-            {
-                throw new InvalidOperationException("Unsupported Number type");
-            }
+
+            throw new InvalidOperationException("Unsupported Number type");
         }
 
         private static (TypeMarker typeMarker, byte[] buffer, int length) Serialize(long value, ArrayPoolManager arrayPoolManager)
