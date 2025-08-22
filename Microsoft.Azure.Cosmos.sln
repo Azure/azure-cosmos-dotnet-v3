@@ -40,6 +40,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Azure.Cosmos.Encr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AOT-Sample", "AOT-Sample\AOT-Sample.csproj", "{41813CD4-EBAB-418D-8F27-57CAB655A94B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Azure.Cosmos.Tests.Aot", "Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests.Aot\Microsoft.Azure.Cosmos.Tests.Aot.csproj", "{DE09354D-4B04-471A-BF67-8FB1B03EFCF7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Cover|Any CPU = Cover|Any CPU
@@ -305,6 +307,24 @@ Global
 		{41813CD4-EBAB-418D-8F27-57CAB655A94B}.Release|x64.Build.0 = Release|Any CPU
 		{41813CD4-EBAB-418D-8F27-57CAB655A94B}.Release|x86.ActiveCfg = Release|Any CPU
 		{41813CD4-EBAB-418D-8F27-57CAB655A94B}.Release|x86.Build.0 = Release|Any CPU
+		{DE09354D-4B04-471A-BF67-8FB1B03EFCF7}.Cover|Any CPU.ActiveCfg = Debug|Any CPU
+		{DE09354D-4B04-471A-BF67-8FB1B03EFCF7}.Cover|Any CPU.Build.0 = Debug|Any CPU
+		{DE09354D-4B04-471A-BF67-8FB1B03EFCF7}.Cover|x64.ActiveCfg = Debug|Any CPU
+		{DE09354D-4B04-471A-BF67-8FB1B03EFCF7}.Cover|x64.Build.0 = Debug|Any CPU
+		{DE09354D-4B04-471A-BF67-8FB1B03EFCF7}.Cover|x86.ActiveCfg = Debug|Any CPU
+		{DE09354D-4B04-471A-BF67-8FB1B03EFCF7}.Cover|x86.Build.0 = Debug|Any CPU
+		{DE09354D-4B04-471A-BF67-8FB1B03EFCF7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DE09354D-4B04-471A-BF67-8FB1B03EFCF7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DE09354D-4B04-471A-BF67-8FB1B03EFCF7}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{DE09354D-4B04-471A-BF67-8FB1B03EFCF7}.Debug|x64.Build.0 = Debug|Any CPU
+		{DE09354D-4B04-471A-BF67-8FB1B03EFCF7}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{DE09354D-4B04-471A-BF67-8FB1B03EFCF7}.Debug|x86.Build.0 = Debug|Any CPU
+		{DE09354D-4B04-471A-BF67-8FB1B03EFCF7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DE09354D-4B04-471A-BF67-8FB1B03EFCF7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DE09354D-4B04-471A-BF67-8FB1B03EFCF7}.Release|x64.ActiveCfg = Release|Any CPU
+		{DE09354D-4B04-471A-BF67-8FB1B03EFCF7}.Release|x64.Build.0 = Release|Any CPU
+		{DE09354D-4B04-471A-BF67-8FB1B03EFCF7}.Release|x86.ActiveCfg = Release|Any CPU
+		{DE09354D-4B04-471A-BF67-8FB1B03EFCF7}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
