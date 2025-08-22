@@ -22,8 +22,9 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <param name="range">This method will return all ranges which overlap this range.</param>
         /// <param name="trace">The trace.</param>
         /// <param name="forceRefresh">Whether forcefully refreshing the routing map is necessary</param>
+        /// <param name="partitionKeyDefinition"></param>
         /// <returns>List of effective partition key ranges for a collection or null if collection doesn't exist.</returns>
-        Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(string collectionResourceId, Range<string> range, ITrace trace, bool forceRefresh = false);
+        Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(string collectionResourceId, Range<string> range, ITrace trace, bool forceRefresh = false, PartitionKeyDefinition partitionKeyDefinition = null);
 
         Task<PartitionKeyRange> TryGetPartitionKeyRangeByIdAsync(string collectionResourceId, string partitionKeyRangeId, ITrace trace, bool forceRefresh = false);
     }

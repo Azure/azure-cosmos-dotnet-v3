@@ -31,11 +31,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
         /// <param name="collectionResourceId">Collection for which to retrieve routing map.</param>
         /// <param name="range">This method will return all ranges which overlap this range.</param>
         /// <param name="forceRefresh">Whether forcefully refreshing the routing map is necessary</param>
+        /// <param name="partitionKeyDefinition">Partition key definition optional param if the consumer wants input EPK range normalization</param>
         /// <returns>List of effective partition key ranges for a collection or null if collection doesn't exist.</returns>
         public abstract Task<IReadOnlyList<Documents.PartitionKeyRange>> TryGetOverlappingRangesAsync(
             string collectionResourceId,
             Documents.Routing.Range<string> range,
-            bool forceRefresh = false);
+            bool forceRefresh = false,
+            Documents.PartitionKeyDefinition partitionKeyDefinition = null);
 
         public abstract Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetPartitionedQueryExecutionInfoAsync(
             SqlQuerySpec sqlQuerySpec,
@@ -93,7 +95,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             string collectionResourceId,
             IReadOnlyList<Documents.Routing.Range<string>> providedRanges,
             bool forceRefresh,
-            ITrace trace);
+            ITrace trace,
+            Documents.PartitionKeyDefinition partitionKeyDefinition = null);
 
         public abstract bool BypassQueryParsing();
 
