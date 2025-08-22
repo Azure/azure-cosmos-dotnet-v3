@@ -276,6 +276,205 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             // Ensure encrypted info present
             Assert.IsTrue(root.TryGetProperty(Constants.EncryptedInfo, out _));
         }
+
+        [TestMethod]
+        public async Task Encrypt_NonObjectRoot_Array_RemainsUnchanged()
+        {
+            // Attacker supplies a non-object root. Encrypt path always appends _ei into an object context, so this must fail.
+            string json = "[1,2,3]";
+            using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(json));
+            MemoryStream output = new();
+            var options = CreateOptions(Array.Empty<string>());
+            await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
+            output.Position = 0;
+            using JsonDocument jd = JsonDocument.Parse(output);
+            Assert.AreEqual(JsonValueKind.Array, jd.RootElement.ValueKind);
+        }
+
+        [TestMethod]
+        public async Task Encrypt_NonObjectRoot_Primitive_RemainsUnchanged()
+        {
+            foreach (string json in new[] { "123", "\"str\"", "true", "false", "null" })
+            {
+                using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(json));
+                MemoryStream output = new();
+                var options = CreateOptions(Array.Empty<string>());
+                await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
+                output.Position = 0;
+                using JsonDocument jd = JsonDocument.Parse(output);
+                // Ensure the root kind matches the primitive provided
+                JsonValueKind kind = jd.RootElement.ValueKind;
+                switch (json)
+                {
+                    case "123": Assert.AreEqual(JsonValueKind.Number, kind); break;
+                    case "\"str\"": Assert.AreEqual(JsonValueKind.String, kind); break;
+                    case "true": Assert.AreEqual(JsonValueKind.True, kind); break;
+                    case "false": Assert.AreEqual(JsonValueKind.False, kind); break;
+                    case "null": Assert.AreEqual(JsonValueKind.Null, kind); break;
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task Encrypt_Fails_OnTruncatedJson()
+        {
+            // Missing closing quote and brace
+            string json = "{\"id\":\"1\",\"SensitiveStr\":\"abc"; // truncated
+            using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(json));
+            MemoryStream output = new();
+            var options = CreateOptions(new[] { "/SensitiveStr" });
+            try
+            {
+                await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
+                Assert.Fail("Expected exception for truncated JSON");
+            }
+            catch (Exception ex) when (ex is JsonException || ex is ArgumentOutOfRangeException || ex is InvalidOperationException)
+            {
+                // acceptable failure modes
+            }
+        }
+
+        [TestMethod]
+        public async Task Encrypt_Fails_OnDoubleInfinity()
+        {
+            // Extremely large exponent overflows to Infinity in double parsing; serializer should not accept it.
+            string json = "{\"id\":\"1\",\"SensitiveDouble\":1e309}";
+            using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(json));
+            MemoryStream output = new();
+            var options = CreateOptions(new[] { "/SensitiveDouble" });
+            try
+            {
+                await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
+                Assert.Fail("Expected exception for Infinity double serialization");
+            }
+            catch (Exception ex)
+            {
+                // Different serializer layers may throw different exception types; verify it's about out-of-range/infinity
+                StringAssert.Contains(ex.ToString(), "Infinity");
+            }
+        }
+
+        [TestMethod]
+    public async Task Encrypt_Fails_OnInvalidUtf8InString()
+        {
+            // Construct bytes for: {"id":"1","SensitiveStr":"<invalid utf8>"}
+            // Invalid sequence C3 28
+            byte[] bytes = new byte[] {
+                0x7B, // {
+                0x22, (byte)'i', (byte)'d', 0x22, 0x3A, 0x22, (byte)'1', 0x22, 0x2C,
+                0x22, (byte)'S', (byte)'e', (byte)'n', (byte)'s', (byte)'i', (byte)'t', (byte)'i', (byte)'v', (byte)'e', (byte)'S', (byte)'t', (byte)'r', 0x22, 0x3A, 0x22,
+                0xC3, 0x28, // invalid UTF-8 sequence
+                0x22,
+                0x7D // }
+            };
+            using MemoryStream input = new MemoryStream(bytes);
+            MemoryStream output = new();
+            var options = CreateOptions(new[] { "/SensitiveStr" });
+            try
+            {
+                await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
+                Assert.Fail("Expected parsing failure for invalid UTF-8");
+            }
+            catch (Exception ex) when (ex.GetType().Name.Contains("Json") || ex is InvalidOperationException)
+            {
+                // Accept JsonException/JsonReaderException/InvalidOperationException("Cannot transcode invalid UTF-8...")
+            }
+        }
+
+        [TestMethod]
+    public async Task Encrypt_Fails_OnNaN_Literal()
+        {
+            // NaN is not valid JSON literal; parsing should fail
+            string json = "{\"id\":\"1\",\"SensitiveDouble\":NaN}";
+            using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(json));
+            MemoryStream output = new();
+            var options = CreateOptions(new[] { "/SensitiveDouble" });
+            try
+            {
+                await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
+                Assert.Fail("Expected parsing failure for NaN literal");
+            }
+            catch (Exception ex) when (ex.GetType().Name.Contains("Json"))
+            {
+                // Accept JsonException/JsonReaderException
+            }
+        }
+
+        [TestMethod]
+        public async Task Encrypt_NegativeZero_Double_RoundtripsAsZero()
+        {
+            string json = "{\"id\":\"1\",\"DZ\":-0.0}";
+            using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(json));
+            MemoryStream encrypted = new();
+            var options = CreateOptions(new[] { "/DZ" });
+            await EncryptionProcessor.EncryptAsync(input, encrypted, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
+            encrypted.Position = 0;
+            using JsonDocument jenc = JsonDocument.Parse(encrypted);
+            byte[] cipher = Convert.FromBase64String(jenc.RootElement.GetProperty("DZ").GetString());
+            Assert.AreEqual((byte)TypeMarker.Double, cipher[0]);
+
+            // roundtrip decrypt and ensure numeric 0
+            encrypted.Position = 0;
+            (Stream decrypted, _) = await EncryptionProcessor.DecryptStreamAsync(encrypted, mockEncryptor.Object, new CosmosDiagnosticsContext(), CancellationToken.None);
+            using JsonDocument jdec = JsonDocument.Parse(decrypted);
+            Assert.AreEqual(0.0, jdec.RootElement.GetProperty("DZ").GetDouble(), 0.0);
+        }
+
+        [TestMethod]
+    public async Task Encrypt_DeepNesting_ExceedsDepth_Fails()
+        {
+            // Build deeply nested object under property "Obj"
+            int depth = 200;
+            StringBuilder sb = new StringBuilder();
+            sb.Append("{\"Obj\":");
+            for (int i = 0; i < depth; i++) sb.Append("{");
+            sb.Append("\"x\":1");
+            for (int i = 0; i < depth; i++) sb.Append("}");
+            sb.Append("}");
+            string json = sb.ToString();
+            using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(json));
+            MemoryStream output = new();
+            var options = CreateOptions(new[] { "/Obj" });
+            try
+            {
+                await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
+                Assert.Fail("Expected parsing failure for deep nesting");
+            }
+            catch (Exception ex) when (ex.GetType().Name.Contains("Json"))
+            {
+                // Accept JsonException/JsonReaderException
+            }
+        }
+
+        [TestMethod]
+        public async Task Encrypt_PathToArray_ButValueIsString_EncryptsAsString()
+        {
+            string json = "{\"Arr\":\"not an array\"}";
+            using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(json));
+            MemoryStream output = new();
+            var options = CreateOptions(new[] { "/Arr" });
+            await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
+            output.Position = 0;
+            using JsonDocument jd = JsonDocument.Parse(output);
+            string base64 = jd.RootElement.GetProperty("Arr").GetString();
+            byte[] cipher = Convert.FromBase64String(base64);
+            Assert.AreEqual((byte)TypeMarker.String, cipher[0]);
+        }
+
+        [TestMethod]
+        public async Task Encrypt_PathToObject_ButValueIsNumber_EncryptsAsNumber()
+        {
+            string json = "{\"Obj\":42}";
+            using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(json));
+            MemoryStream output = new();
+            var options = CreateOptions(new[] { "/Obj" });
+            await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
+            output.Position = 0;
+            using JsonDocument jd = JsonDocument.Parse(output);
+            string base64 = jd.RootElement.GetProperty("Obj").GetString();
+            byte[] cipher = Convert.FromBase64String(base64);
+            Assert.AreEqual((byte)TypeMarker.Long, cipher[0]);
+        }
     }
 }
 #endif

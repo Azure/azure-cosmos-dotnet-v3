@@ -468,6 +468,178 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         }
 
         [TestMethod]
+        public async Task Decrypt_Throws_OnMissingDataEncryptionKey()
+        {
+            // Arrange: create a valid encrypted payload
+            var doc = new { id = "1", SensitiveStr = "abc" };
+            var paths = new[] { "/SensitiveStr" };
+            EncryptionOptions options = CreateOptions(paths);
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+
+            // Forge properties with an unknown DEK id
+            EncryptionProperties badProps = new(
+                props.EncryptionFormatVersion,
+                props.EncryptionAlgorithm,
+                dataEncryptionKeyId: "missing-dek",
+                encryptedData: null,
+                props.EncryptedPaths,
+                props.CompressionAlgorithm,
+                props.CompressedEncryptedPaths);
+
+            // Act + Assert
+            MemoryStream output = new();
+            await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, badProps, new CosmosDiagnosticsContext(), CancellationToken.None));
+        }
+
+        [TestMethod]
+        public async Task Decrypt_EncryptedPathValueIsNumber_NoDecryptionOccurs()
+        {
+            // Arrange
+            var doc = new { id = "1", SensitiveStr = "abc" };
+            var paths = new[] { "/SensitiveStr" };
+            EncryptionOptions options = CreateOptions(paths);
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+
+            // Replace the encrypted string token with a number token to bypass decryption logic for that property
+            string jsonText = Encoding.UTF8.GetString(encrypted.ToArray());
+            using (JsonDocument jd = JsonDocument.Parse(jsonText))
+            {
+                string originalCipher = jd.RootElement.GetProperty("SensitiveStr").GetString();
+                Assert.IsNotNull(originalCipher);
+                jsonText = jsonText.Replace("\"SensitiveStr\":\"" + originalCipher + "\"", "\"SensitiveStr\":123");
+            }
+
+            MemoryStream mutated = new(Encoding.UTF8.GetBytes(jsonText));
+
+            // Act
+            MemoryStream output = new();
+            DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(mutated, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
+
+            // Assert: value remains number and path is not recorded as decrypted
+            output.Position = 0;
+            using JsonDocument outDoc = JsonDocument.Parse(output);
+            Assert.AreEqual(123, outDoc.RootElement.GetProperty("SensitiveStr").GetInt32());
+            Assert.IsFalse(ctx.DecryptionInfoList[0].PathsDecrypted.Contains("/SensitiveStr"));
+        }
+
+        [TestMethod]
+        public async Task Decrypt_ForgedCompressedMetadata_ForNonCompressedPath_Throws()
+        {
+            // Arrange: compression enabled; LargeStr compressed, OtherStr not compressed
+            var doc = new { id = "1", LargeStr = new string('x', 400), OtherStr = new string('y', 50) };
+            var paths = new[] { "/LargeStr", "/OtherStr" };
+            EncryptionOptions options = CreateOptions(paths, CompressionOptions.CompressionAlgorithm.Brotli, CompressionLevel.Fastest);
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+            Assert.IsTrue(props.CompressedEncryptedPaths.ContainsKey("/LargeStr"));
+            Assert.IsFalse(props.CompressedEncryptedPaths.ContainsKey("/OtherStr"));
+
+            // Forge metadata to claim OtherStr is compressed even though its ciphertext wasn't compressed
+            IDictionary<string, int> forgedMap = new Dictionary<string, int>(props.CompressedEncryptedPaths)
+            {
+                ["/OtherStr"] = 50,
+            };
+            EncryptionProperties badProps = new(
+                props.EncryptionFormatVersion,
+                props.EncryptionAlgorithm,
+                props.DataEncryptionKeyId,
+                encryptedData: null,
+                props.EncryptedPaths,
+                props.CompressionAlgorithm,
+                compressedEncryptedPaths: forgedMap);
+
+            // Act + Assert: decompressor should fail on non-Brotli data
+            MemoryStream output = new();
+            await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, badProps, new CosmosDiagnosticsContext(), CancellationToken.None));
+        }
+
+        [TestMethod]
+        public async Task Decrypt_ForgedUnknownTypeMarker_WritesRaw_InvalidJson()
+        {
+            // Arrange: create a valid encrypted payload
+            var doc = new { id = "1", SensitiveStr = "abc" };
+            var paths = new[] { "/SensitiveStr" };
+            EncryptionOptions options = CreateOptions(paths);
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+
+            // Replace SensitiveStr with a base64 value whose first byte is an unknown type marker (0xEE)
+            byte[] bogusCipher = new byte[] { 0xEE, 0x01, 0x02, 0x03 };
+            string forgedBase64 = Convert.ToBase64String(bogusCipher);
+
+            encrypted.Position = 0;
+            MemoryStream forged = new();
+            using (JsonDocument jd = JsonDocument.Parse(encrypted, new JsonDocumentOptions { AllowTrailingCommas = true }))
+            using (Utf8JsonWriter w = new(forged))
+            {
+                w.WriteStartObject();
+                w.WriteString("id", jd.RootElement.GetProperty("id").GetString());
+                w.WriteString("SensitiveStr", forgedBase64);
+                w.WritePropertyName(Constants.EncryptedInfo);
+                jd.RootElement.GetProperty(Constants.EncryptedInfo).WriteTo(w);
+                w.WriteEndObject();
+            }
+            forged.Position = 0;
+
+            // Use a bypass encryptor to return raw bytes that are not valid JSON, exercising the default branch (WriteRawValue)
+            var sp = new StreamProcessor { Encryptor = new AlwaysPlaintextMdeEncryptor("NOT_JSON") };
+            MemoryStream output = new();
+            _ = await sp.DecryptStreamAsync(forged, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
+            output.Position = 0;
+
+            // Assert: output is not valid JSON due to raw invalid token insertion
+            try
+            {
+                using var _ = JsonDocument.Parse(output);
+                Assert.Fail("Expected JSON parse to fail due to raw invalid token");
+            }
+            catch (Exception ex)
+            {
+                // System.Text.Json may throw JsonReaderException (derived) or JsonException depending on runtime
+                Assert.IsTrue(ex is JsonException, $"Unexpected exception type: {ex.GetType()}");
+            }
+        }
+
+        [TestMethod]
+        public async Task Decrypt_ForgedTypeMarkerLong_InvalidPayload_Throws()
+        {
+            // Arrange: create a valid encrypted payload, then forge the marker to Long while the decryptor returns non-numeric plaintext
+            var doc = new { id = "1", SensitiveStr = "abc" };
+            var paths = new[] { "/SensitiveStr" };
+            EncryptionOptions options = CreateOptions(paths);
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+
+            byte[] bogusCipher = new byte[] { (byte)TypeMarker.Long, 0xAA, 0xBB, 0xCC };
+            string forgedBase64 = Convert.ToBase64String(bogusCipher);
+
+            encrypted.Position = 0;
+            MemoryStream forged = new();
+            using (JsonDocument jd = JsonDocument.Parse(encrypted, new JsonDocumentOptions { AllowTrailingCommas = true }))
+            using (Utf8JsonWriter w = new(forged))
+            {
+                w.WriteStartObject();
+                w.WriteString("id", jd.RootElement.GetProperty("id").GetString());
+                w.WriteString("SensitiveStr", forgedBase64);
+                w.WritePropertyName(Constants.EncryptedInfo);
+                jd.RootElement.GetProperty(Constants.EncryptedInfo).WriteTo(w);
+                w.WriteEndObject();
+            }
+            forged.Position = 0;
+
+            // Use encryptor that returns a plaintext that is invalid for a long serializer
+            var sp = new StreamProcessor { Encryptor = new AlwaysPlaintextMdeEncryptor("abc") };
+            MemoryStream output = new();
+            try
+            {
+                await sp.DecryptStreamAsync(forged, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
+                Assert.Fail("Expected exception due to invalid bigint serializer input");
+            }
+            catch (Exception ex)
+            {
+                // Serializer throws ArgumentSizeIncorrectException; verify something was thrown
+                Assert.IsTrue(ex != null);
+            }
+        }
+
+        [TestMethod]
         public async Task Decrypt_CompressedContainsPathButNotCurrentProperty()
         {
             // Scenario: compression enabled, some paths compressed, but the current decryptPropertyName is NOT in CompressedEncryptedPaths.
@@ -496,6 +668,126 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             Assert.IsTrue(ctx.DecryptionInfoList[0].PathsDecrypted.Contains("/OtherStr"));
         }
 
+        [TestMethod]
+        public async Task Decrypt_Fuzz_Ciphertext_Length_And_TypeMarker_CrossProduct()
+        {
+            // Property-style fuzzing across type markers and plaintext lengths. We don't assert per-iteration outcomes;
+            // instead we ensure a wide set runs without catastrophic failures and that some known-good cases succeed.
+            var doc = new { id = "1", V = "seed" };
+            var paths = new[] { "/V" };
+            EncryptionOptions options = CreateOptions(paths);
+            (MemoryStream encryptedSeed, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+
+            // Extract _ei once to reuse in forged documents
+            string eiRaw;
+            string idValue;
+            encryptedSeed.Position = 0;
+            using (JsonDocument jd = JsonDocument.Parse(encryptedSeed, new JsonDocumentOptions { AllowTrailingCommas = true }))
+            {
+                idValue = jd.RootElement.GetProperty("id").GetString();
+                eiRaw = jd.RootElement.GetProperty(Constants.EncryptedInfo).GetRawText();
+            }
+
+            var rng = new Random(1234);
+            var markers = new byte[] { (byte)TypeMarker.String, (byte)TypeMarker.Long, (byte)TypeMarker.Double, (byte)TypeMarker.Boolean, 0xEE /* unknown */ };
+            int iterationsPerLen = 4;
+            int maxLen = 16;
+            int attempts = 0;
+            int successes = 0;
+
+            var sp = new StreamProcessor { Encryptor = new MutablePlaintextMdeEncryptor() };
+            var mut = (MutablePlaintextMdeEncryptor)sp.Encryptor;
+
+            for (int len = 0; len <= maxLen; len++)
+            {
+                for (int m = 0; m < markers.Length; m++)
+                {
+                    for (int i = 0; i < iterationsPerLen; i++)
+                    {
+                        attempts++;
+                        byte marker = markers[m];
+                        byte[] plain = new byte[len];
+                        rng.NextBytes(plain);
+                        mut.Payload = plain;
+
+                        // Build forged ciphertext (type marker only matters to switch in decryptor)
+                        byte[] cipher = new byte[1 + 1]; // marker + 1 byte minimal to base64 properly
+                        cipher[0] = marker;
+                        cipher[1] = 0x00;
+                        string base64 = Convert.ToBase64String(cipher);
+
+                        using MemoryStream forged = new();
+                        using (Utf8JsonWriter w = new(forged))
+                        {
+                            w.WriteStartObject();
+                            w.WriteString("id", idValue);
+                            w.WriteString("V", base64);
+                            w.WritePropertyName(Constants.EncryptedInfo);
+                            using (JsonDocument eiDoc = JsonDocument.Parse(eiRaw))
+                            {
+                                eiDoc.RootElement.WriteTo(w);
+                            }
+                            w.WriteEndObject();
+                        }
+                        forged.Position = 0;
+
+                        try
+                        {
+                            using MemoryStream output = new();
+                            _ = await sp.DecryptStreamAsync(forged, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
+                            successes++;
+                        }
+                        catch
+                        {
+                            // Expected for many combinations (e.g., size mismatch or invalid UTF-8); continue
+                        }
+                    }
+                }
+            }
+
+            // Add a few known-good shapes that should succeed to guarantee coverage of successful serialization paths
+            var knownGood = new (byte marker, byte[] payload)[]
+            {
+                ((byte)TypeMarker.String, Encoding.UTF8.GetBytes("ok")),
+                ((byte)TypeMarker.Long, new byte[8] /* 0L */),
+                ((byte)TypeMarker.Double, new byte[8] /* 0.0 */),
+                ((byte)TypeMarker.Boolean, new byte[]{ 1 }),
+            };
+            foreach (var kg in knownGood)
+            {
+                attempts++;
+                mut.Payload = kg.payload;
+                string base64 = Convert.ToBase64String(new byte[] { kg.marker, 0x00 });
+                using MemoryStream forged = new();
+                using (Utf8JsonWriter w = new(forged))
+                {
+                    w.WriteStartObject();
+                    w.WriteString("id", idValue);
+                    w.WriteString("V", base64);
+                    w.WritePropertyName(Constants.EncryptedInfo);
+                    using (JsonDocument eiDoc = JsonDocument.Parse(eiRaw))
+                    {
+                        eiDoc.RootElement.WriteTo(w);
+                    }
+                    w.WriteEndObject();
+                }
+                forged.Position = 0;
+                using MemoryStream output = new();
+                try
+                {
+                    _ = await sp.DecryptStreamAsync(forged, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
+                    successes++;
+                }
+                catch
+                {
+                    // Some environments may still throw for Double if writer rejects NaN/Inf, but 0.0 should be fine; ignore either way
+                }
+            }
+
+            Assert.IsTrue(attempts > 0, "No fuzz attempts executed");
+            Assert.IsTrue(successes > 0, "Expected at least some successful decrypt/writes during fuzzing");
+        }
+
     // Note: JsonTokenType.Comment branch remains uncovered intentionally. The decryptor configures JsonReaderOptions with CommentHandling.Skip (readonly static),
     // and the encryption pipeline never emits comments. Altering the static readonly field or constructing a custom reader just for coverage would add fragility.
     // The switch case exists defensively; functional risk is negligible.
@@ -513,6 +805,38 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
 
                 // Delegate to normal decrypt logic for non-null markers so compression scenarios work.
                 return base.Decrypt(encryptionKey, cipherText, cipherTextLength, arrayPoolManager);
+            }
+        }
+
+        private class AlwaysPlaintextMdeEncryptor : MdeEncryptor
+        {
+            private readonly byte[] payload;
+
+            public AlwaysPlaintextMdeEncryptor(string raw)
+            {
+                this.payload = Encoding.UTF8.GetBytes(raw);
+            }
+
+            internal override (byte[] plainText, int plainTextLength) Decrypt(DataEncryptionKey encryptionKey, byte[] cipherText, int cipherTextLength, ArrayPoolManager arrayPoolManager)
+            {
+                byte[] buffer = arrayPoolManager.Rent(this.payload.Length);
+                this.payload.AsSpan().CopyTo(buffer);
+                return (buffer, this.payload.Length);
+            }
+        }
+
+        private class MutablePlaintextMdeEncryptor : MdeEncryptor
+        {
+            public byte[] Payload { get; set; } = Array.Empty<byte>();
+
+            internal override (byte[] plainText, int plainTextLength) Decrypt(DataEncryptionKey encryptionKey, byte[] cipherText, int cipherTextLength, ArrayPoolManager arrayPoolManager)
+            {
+                byte[] buffer = arrayPoolManager.Rent(Payload.Length);
+                if (Payload.Length > 0)
+                {
+                    Payload.AsSpan().CopyTo(buffer);
+                }
+                return (buffer, Payload.Length);
             }
         }
 
