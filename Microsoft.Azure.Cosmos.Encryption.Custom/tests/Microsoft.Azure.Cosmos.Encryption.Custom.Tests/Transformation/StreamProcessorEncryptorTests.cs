@@ -221,6 +221,27 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         }
 
         [TestMethod]
+        public async Task Encrypt_NullThenPlain_RemainsPlain()
+        {
+            // Regression: if encryption state isn't cleared after a null, the next property might be incorrectly encrypted
+            string json = "{\"Maybe\":null,\"Plain\":42,\"id\":\"1\"}";
+            using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(json));
+            MemoryStream output = new();
+            var options = CreateOptions(new[] { "/Maybe" });
+            await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
+            output.Position = 0;
+            using JsonDocument jd = JsonDocument.Parse(output);
+            JsonElement root = jd.RootElement;
+            // Maybe remains null and is not listed in encrypted paths
+            Assert.AreEqual(JsonValueKind.Null, root.GetProperty("Maybe").ValueKind);
+            EncryptionProperties props = System.Text.Json.JsonSerializer.Deserialize<EncryptionProperties>(root.GetProperty(Constants.EncryptedInfo).GetRawText());
+            Assert.IsFalse(props.EncryptedPaths.Contains("/Maybe"));
+            // Plain must remain a number (not a base64 string)
+            Assert.AreEqual(JsonValueKind.Number, root.GetProperty("Plain").ValueKind);
+            Assert.AreEqual(42, root.GetProperty("Plain").GetInt32());
+        }
+
+        [TestMethod]
         public void Encrypt_InternalProperty_Getter_Coverage()
         {
             // Touch internal partial members for coverage: Encryptor property lives on decryptor partial file
@@ -230,7 +251,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         }
 
         [TestMethod]
-        public async Task Encrypt_UnsupportedNumberFormat_Throws()
+    public async Task Encrypt_NumberParsing_IsCultureInvariant()
         {
             // Force a culture that expects comma as decimal separator so parsing a dot-formatted invariant number fails
             CultureInfo original = CultureInfo.CurrentCulture;
@@ -246,8 +267,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
                 var paths = new[] { "/Weird" };
                 EncryptionOptions options = CreateOptions(paths);
 
-                InvalidOperationException ex = await Assert.ThrowsExceptionAsync<InvalidOperationException>(async () => await EncryptAsync(doc, options));
-                StringAssert.Contains(ex.Message, "Unsupported Number type");
+        // Should succeed regardless of current culture and round-trip the value as a double
+        MemoryStream encrypted = await EncryptAsync(doc, options);
+        encrypted.Position = 0;
+        (Stream decrypted, _) = await EncryptionProcessor.DecryptStreamAsync(encrypted, mockEncryptor.Object, new CosmosDiagnosticsContext(), CancellationToken.None);
+        using JsonDocument d2 = JsonDocument.Parse(decrypted);
+        double value = d2.RootElement.GetProperty("Weird").GetDouble();
+        Assert.AreEqual(1.23, value, 1e-12);
             }
             finally
             {
