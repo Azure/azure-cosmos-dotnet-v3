@@ -8,20 +8,21 @@
 
     internal class RestHelper
     {
-        private readonly string accountEndpoint;
-        private readonly string cosmosKey;
         private readonly string baseUrl;
+        private readonly string cosmosKey;
         private readonly HttpClient httpClient;
         private readonly bool outputToConsole;
 
         public RestHelper(string accountEndpoint, string cosmosKey, bool outputToConsole = false)
         {
-            this.accountEndpoint = accountEndpoint;
-            this.cosmosKey = cosmosKey;
             this.baseUrl = $"{accountEndpoint}/";
+            this.cosmosKey = cosmosKey;
             this.httpClient = new HttpClient();
             this.outputToConsole = outputToConsole;
         }
+
+        // Rest helper implementation is based on the sample found here:
+        // https://github.com/Azure-Samples/cosmos-db-rest-samples/blob/main/Program.cs
 
         #region Database Operations
 

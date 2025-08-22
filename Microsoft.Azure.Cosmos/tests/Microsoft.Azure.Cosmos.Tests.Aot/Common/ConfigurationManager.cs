@@ -2,14 +2,8 @@
 {
     using System.Text.Json;
 
-    /// <summary>
-    /// ConfigurationManager shim for netstandard
-    /// </summary>
     internal static class ConfigurationManager
     {
-        private const string GatewayEndpointSettingName = "GatewayEndpoint";
-        private const string GatewayEndpointEnvironmentName = "COSMOSDBEMULATOR_ENDPOINT";
-
         static ConfigurationManager()
         {
             AppSettings = new Dictionary<string, string>();

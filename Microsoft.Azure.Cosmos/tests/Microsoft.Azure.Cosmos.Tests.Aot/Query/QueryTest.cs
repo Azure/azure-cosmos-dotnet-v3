@@ -15,7 +15,7 @@
         }
 
         [TestMethod]
-        public async Task SampleTest()
+        public async Task SelectAll()
         {
             string query = "SELECT * FROM c";
             
@@ -28,7 +28,7 @@
                 results.AddRange(response);
             }
 
-            Assert.IsTrue(results.Count > 0);
+            Assert.AreEqual(100, results.Count);
             foreach (object item in results)
             {
                 Console.WriteLine(item);
