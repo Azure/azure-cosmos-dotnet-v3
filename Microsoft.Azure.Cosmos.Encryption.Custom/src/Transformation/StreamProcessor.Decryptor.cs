@@ -140,7 +140,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             decryptPropertyName = null;
                             writer.WriteRawValue(reader.ValueSpan);
                             break;
-
                         case JsonTokenType.None: // Unreachable: pre-first-Read state
                             decryptPropertyName = null;
                             break;
