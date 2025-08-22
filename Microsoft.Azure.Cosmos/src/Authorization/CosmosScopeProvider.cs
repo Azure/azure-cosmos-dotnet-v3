@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Authorization
             return new TokenRequestContext(new[] { this.currentScope });
         }
 
-        public bool TryFallback(Exception ex)
+        public bool TryFallback(Exception exception)
         {
             // If override scope is set, never fallback
             if (!string.IsNullOrEmpty(this.overrideScope))
@@ -40,16 +40,18 @@ namespace Microsoft.Azure.Cosmos.Authorization
             }
 
             // If already using fallback scope, do not fallback again
-            if (this.currentScope == AadDefaultScope)
+            if (this.currentScope == CosmosScopeProvider.AadDefaultScope)
             {
                 return false;
             }
 
-            if (ex.InnerException?.Message.Contains(AadInvalidScopeErrorMessage) == true)
+#pragma warning disable CDX1003 // DontUseExceptionToString
+            if (exception.ToString().Contains(CosmosScopeProvider.AadInvalidScopeErrorMessage) == true)
             {
-                this.currentScope = AadDefaultScope;
+                this.currentScope = CosmosScopeProvider.AadDefaultScope;
                 return true;
             }
+#pragma warning restore CDX1003 // DontUseExceptionToString
 
             return false;
         }
