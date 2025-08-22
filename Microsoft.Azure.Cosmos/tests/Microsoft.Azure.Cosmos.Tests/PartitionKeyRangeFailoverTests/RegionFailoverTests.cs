@@ -302,13 +302,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                     containerName: containerName,
                     containerRid: containerRid);
 
-                if (enablePartitionLevelFailover)
+                bool isThinClientEnabled = ConfigurationManager.IsThinClientEnabled(defaultValue: false);
+                if (enablePartitionLevelFailover || isThinClientEnabled)
                 {
                     MockSetupsHelper.SetupPartitionKeyRanges(
-                        mockHttpHandler: mockHttpHandler,
-                        regionEndpoint: primaryRegionEndpoint,
-                        containerResourceId: containerResourceId,
-                        partitionKeyRangeIds: out IReadOnlyList<string> secondaryRegionPartitionKeyRangeIds);
+                         mockHttpHandler: mockHttpHandler,
+                         regionEndpoint: primaryRegionEndpoint,
+                         containerResourceId: containerResourceId,
+                         partitionKeyRangeIds: out IReadOnlyList<string> secondaryRegionPartitionKeyRangeIds);
                 }
 
                 CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
@@ -456,6 +457,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                     databaseName: databaseName,
                     containerName: containerName,
                     containerRid: containerRid);
+
+                MockSetupsHelper.SetupPartitionKeyRanges(
+                    mockHttpHandler: mockHttpHandler,
+                    regionEndpoint: primaryRegionEndpoint,
+                    containerResourceId: containerResourceId,
+                    partitionKeyRangeIds: out IReadOnlyList<string> partitionKeyRangeIds);
 
                 CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
                 {
@@ -606,6 +613,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                     databaseName: databaseName,
                     containerName: containerName,
                     containerRid: containerRid);
+
+                MockSetupsHelper.SetupPartitionKeyRanges(
+                    mockHttpHandler: mockHttpHandler,
+                    regionEndpoint: primaryRegionEndpoint,
+                    containerResourceId: containerResourceId,
+                    partitionKeyRangeIds: out IReadOnlyList<string> partitionKeyRangeIds);
 
                 CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
                 {
