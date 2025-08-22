@@ -13026,6 +13026,13 @@
           "Attributes": [],
           "MethodInfo": "Int32 value__;IsInitOnly:False;IsStatic:False;"
         },
+        "Microsoft.Azure.Cosmos.VectorDataType Float16[System.Runtime.Serialization.EnumMemberAttribute(Value = \"float16\")]": {
+          "Type": "Field",
+          "Attributes": [
+            "EnumMemberAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.VectorDataType Float16;IsInitOnly:False;IsStatic:True;"
+        },
         "Microsoft.Azure.Cosmos.VectorDataType Float32[System.Runtime.Serialization.EnumMemberAttribute(Value = \"float32\")]": {
           "Type": "Field",
           "Attributes": [
