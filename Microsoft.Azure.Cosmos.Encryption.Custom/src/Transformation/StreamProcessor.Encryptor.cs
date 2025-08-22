@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                     switch (tokenType)
                     {
-                        case JsonTokenType.None:
+                        case JsonTokenType.None: // Unreachable after first Read()
                             break;
                         case JsonTokenType.StartObject:
                             if (encryptPropertyName != null && encryptionPayloadWriter == null)
@@ -187,7 +187,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                             currentWriter.WritePropertyName(reader.ValueSpan);
                             break;
-                        case JsonTokenType.Comment:
+                        case JsonTokenType.Comment: // Skipped via reader options
                             currentWriter.WriteCommentValue(reader.ValueSpan);
                             break;
                         case JsonTokenType.String:

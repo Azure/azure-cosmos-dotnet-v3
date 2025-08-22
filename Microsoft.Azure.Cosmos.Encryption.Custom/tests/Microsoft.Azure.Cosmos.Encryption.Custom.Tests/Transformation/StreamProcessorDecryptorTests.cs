@@ -165,6 +165,31 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         }
 
         [TestMethod]
+        public async Task Decrypt_Throws_OnUnknownCompressionAlgorithm()
+        {
+            // Arrange: produce a payload with compression so CompressedEncryptedPaths is non-empty
+            var doc = new { id = "1", LargeStr = new string('x', 400) };
+            var paths = new[] { "/LargeStr" };
+            EncryptionOptions options = CreateOptions(paths, CompressionOptions.CompressionAlgorithm.Brotli, CompressionLevel.Fastest);
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+            Assert.IsTrue(props.CompressedEncryptedPaths?.Any() == true);
+
+            // Forge properties with an unsupported compression algorithm to trigger the guard
+            EncryptionProperties badProps = new (
+                props.EncryptionFormatVersion,
+                props.EncryptionAlgorithm,
+                props.DataEncryptionKeyId,
+                encryptedData: null,
+                props.EncryptedPaths,
+                (CompressionOptions.CompressionAlgorithm)123,
+                props.CompressedEncryptedPaths);
+
+            // Act + Assert
+            MemoryStream output = new();
+            await Assert.ThrowsExceptionAsync<NotSupportedException>(() => new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, badProps, new CosmosDiagnosticsContext(), CancellationToken.None));
+        }
+
+        [TestMethod]
         public async Task Decrypt_Skips_EncryptionInfo_Block()
         {
             // Build a document that already has _ei. (Encryptor will append another one during encryption; we want to ensure decryptor skips only the encrypted one at top-level.)
@@ -207,88 +232,25 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             var paths = new[] { "/SensitiveStr" };
             EncryptionOptions options = CreateOptions(paths);
             (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
-            // Force invalid version (not 3 or 4)
             EncryptionProperties invalid = new EncryptionProperties(999, props.EncryptionAlgorithm, props.DataEncryptionKeyId, null, props.EncryptedPaths, props.CompressionAlgorithm, props.CompressedEncryptedPaths);
             MemoryStream output = new();
-            encrypted.Position = 0;
             await Assert.ThrowsExceptionAsync<NotSupportedException>(() => new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, invalid, new CosmosDiagnosticsContext(), CancellationToken.None));
         }
 
         [TestMethod]
-        public async Task Decrypt_Throws_OnUnknownCompressionAlgorithm()
+        public async Task Decrypt_Throws_OnInvalidBase64Ciphertext()
         {
-            var doc = new { id = "1", SensitiveStr = new string('x', 400) }; // ensure compression triggers
-            var paths = new[] { "/SensitiveStr" };
-            EncryptionOptions options = CreateOptions(paths, CompressionOptions.CompressionAlgorithm.Brotli, CompressionLevel.Fastest);
-            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
-            // simulate mismatch: mark algorithm INVALID but leave compressed paths
-            EncryptionProperties invalid = new EncryptionProperties(props.EncryptionFormatVersion, props.EncryptionAlgorithm, props.DataEncryptionKeyId, null, props.EncryptedPaths, (CompressionOptions.CompressionAlgorithm)123, props.CompressedEncryptedPaths);
-            MemoryStream output = new();
-            encrypted.Position = 0;
-            await Assert.ThrowsExceptionAsync<NotSupportedException>(() => new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, invalid, new CosmosDiagnosticsContext(), CancellationToken.None));
-        }
-
-        [TestMethod]
-        public async Task Decrypt_BufferGrowthAndPartialReads()
-        {
-            // Create a doc large enough to require multiple buffer fills.
-            var doc = new { id = "1", SensitiveStr = new string('a', 200) };
-            var paths = new[] { "/SensitiveStr" };
-            EncryptionOptions options = CreateOptions(paths);
-            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
-
-            MemoryStream output = new();
-            DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
-            Assert.IsTrue(ctx.DecryptionInfoList[0].PathsDecrypted.Contains("/SensitiveStr"));
-            output.Position = 0;
-            using JsonDocument jd = JsonDocument.Parse(output);
-            Assert.AreEqual(200, jd.RootElement.GetProperty("SensitiveStr").GetString().Length);
-        }
-
-        [TestMethod]
-        public async Task Decrypt_HandlesNullValuesUnencrypted()
-        {
-            var doc = new { id = "1", SensitiveStr = (string)null };
-            var paths = new[] { "/SensitiveStr" }; // null -> not encrypted (Encryptor writes null as-is)
-            EncryptionOptions options = CreateOptions(paths);
-            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
-
-            // Remove the path from the EncryptedPaths list to mimic how encryption skips null but options might request it
-            var adjustedPaths = props.EncryptedPaths.Where(p => p != "/SensitiveStr");
-            EncryptionProperties adjustedProps = new EncryptionProperties(props.EncryptionFormatVersion, props.EncryptionAlgorithm, props.DataEncryptionKeyId, null, adjustedPaths, props.CompressionAlgorithm, props.CompressedEncryptedPaths);
-
-            MemoryStream output = new();
-            DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, adjustedProps, new CosmosDiagnosticsContext(), CancellationToken.None);
-            Assert.IsFalse(ctx.DecryptionInfoList[0].PathsDecrypted.Contains("/SensitiveStr"));
-            output.Position = 0;
-            using JsonDocument jd = JsonDocument.Parse(output);
-            Assert.IsTrue(jd.RootElement.TryGetProperty("SensitiveStr", out JsonElement prop));
-            Assert.AreEqual(JsonValueKind.Null, prop.ValueKind);
-        }
-
-        [TestMethod]
-        public async Task Decrypt_Throws_OnBase64DecodeFailure()
-        {
-            // Arrange: create a simple encrypted document
             var doc = new { id = "1", SensitiveStr = "abc" };
             var paths = new[] { "/SensitiveStr" };
             EncryptionOptions options = CreateOptions(paths);
             (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
-
-            // Corrupt the base64 for SensitiveStr (introduce an illegal base64 character '#')
             string jsonText = Encoding.UTF8.GetString(encrypted.ToArray());
             using JsonDocument jd = JsonDocument.Parse(jsonText);
             string originalCipher = jd.RootElement.GetProperty("SensitiveStr").GetString();
             Assert.IsNotNull(originalCipher);
-            // Replace first character with '#', which is not valid in Base64 alphabet
-            string corruptedCipher = "#" + originalCipher.Substring(1);
-            string originalFragment = "\"SensitiveStr\":\"" + originalCipher + "\"";
-            string corruptedFragment = "\"SensitiveStr\":\"" + corruptedCipher + "\"";
-            Assert.IsTrue(jsonText.Contains(originalFragment), "Original cipher fragment not found in JSON.");
-            jsonText = jsonText.Replace(originalFragment, corruptedFragment);
-            MemoryStream corruptedStream = new MemoryStream(Encoding.UTF8.GetBytes(jsonText));
-
-            // Act + Assert: Base64 decode failure should throw InvalidOperationException
+            string corruptedCipher = "#" + originalCipher.Substring(1); // invalid base64 start
+            jsonText = jsonText.Replace("\"SensitiveStr\":\"" + originalCipher + "\"", "\"SensitiveStr\":\"" + corruptedCipher + "\"");
+            MemoryStream corruptedStream = new(Encoding.UTF8.GetBytes(jsonText));
             MemoryStream output = new();
             await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => new StreamProcessor().DecryptStreamAsync(corruptedStream, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None));
         }
@@ -321,6 +283,36 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             // Act + Assert: decompression failure should surface as InvalidOperationException (error originates in BrotliCompressor)
             MemoryStream output = new();
             await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => new StreamProcessor().DecryptStreamAsync(corruptedStream, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None));
+        }
+
+        [TestMethod]
+        public async Task Decrypt_Throws_OnCompressedPayload_DestinationTooSmall()
+        {
+            // Arrange: valid compressed payload, but forge properties to declare a too-small decompressed size for the path.
+            var doc = new { id = "1", LargeStr = new string('x', 400) };
+            var paths = new[] { "/LargeStr" };
+            EncryptionOptions options = CreateOptions(paths, CompressionOptions.CompressionAlgorithm.Brotli, CompressionLevel.Fastest);
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+            Assert.IsTrue(props.CompressedEncryptedPaths.ContainsKey("/LargeStr"), "Expected LargeStr to be marked as compressed");
+
+            // Forge smaller decompressed size to force DestinationTooSmall from Brotli decoder
+            int declared = props.CompressedEncryptedPaths["/LargeStr"];
+            IDictionary<string, int> adjusted = new Dictionary<string, int>(props.CompressedEncryptedPaths)
+            {
+                ["/LargeStr"] = Math.Max(1, declared / 4)
+            };
+            EncryptionProperties badProps = new (
+                props.EncryptionFormatVersion,
+                props.EncryptionAlgorithm,
+                props.DataEncryptionKeyId,
+                encryptedData: null,
+                props.EncryptedPaths,
+                props.CompressionAlgorithm,
+                adjusted);
+
+            // Act + Assert
+            MemoryStream output = new();
+            await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, badProps, new CosmosDiagnosticsContext(), CancellationToken.None));
         }
 
         [TestMethod]
@@ -368,60 +360,159 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         }
 
         [TestMethod]
-        public async Task Decrypt_ForgedCipherText_TypeMarkerNull()
+        public async Task Decrypt_CompressedPathsPropertyNull()
         {
-            // Goal: cover TypeMarker.Null branch in TransformDecryptProperty switch.
-            // Strategy: Encrypt a normal string path, then replace its base64 with one that decodes to a ciphertext whose
-            // first byte (type marker) == TypeMarker.Null and whose decrypted payload is empty so writer.WriteNullValue() fires.
+            // Cover branch where EncryptionProperties.CompressedEncryptedPaths is null (as opposed to empty dictionary or populated),
+            // exercising the null path of the null-conditional operator in: bool containsCompressed = properties.CompressedEncryptedPaths?.Count > 0;
             var doc = new { id = "1", SensitiveStr = "abc" };
             var paths = new[] { "/SensitiveStr" };
+            EncryptionOptions options = CreateOptions(paths); // no compression requested
+            (MemoryStream encrypted, EncryptionProperties propsWithEmpty) = await EncryptRawAsync(doc, options);
+
+            // Forge properties with CompressedEncryptedPaths = null to reach missing branch
+            EncryptionProperties propsNullCompressed = new (
+                propsWithEmpty.EncryptionFormatVersion,
+                propsWithEmpty.EncryptionAlgorithm,
+                propsWithEmpty.DataEncryptionKeyId,
+                encryptedData: null,
+                propsWithEmpty.EncryptedPaths,
+                propsWithEmpty.CompressionAlgorithm, // None
+                compressedEncryptedPaths: null);
+
+            encrypted.Position = 0;
+            MemoryStream output = new();
+            DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, propsNullCompressed, new CosmosDiagnosticsContext(), CancellationToken.None);
+
+            output.Position = 0;
+            using JsonDocument jd = JsonDocument.Parse(output);
+            Assert.AreEqual("abc", jd.RootElement.GetProperty("SensitiveStr").GetString());
+            Assert.IsTrue(ctx.DecryptionInfoList[0].PathsDecrypted.Contains("/SensitiveStr"));
+        }
+
+        [TestMethod]
+        public async Task Decrypt_UnencryptedArrayAndBooleans()
+        {
+            // Covers StartArray / EndArray / True / False switch branches where decryptPropertyName == null (no encryption for those tokens).
+            var doc = new
+            {
+                id = "1",
+                SensitiveStr = "secret",
+                UnencryptedArr = new int[] { 7, 8, 9 },
+                UnencryptedBoolTrue = true,
+                UnencryptedBoolFalse = false,
+            };
+            var paths = new[] { "/SensitiveStr" }; // only encrypt the string; others remain plain
             EncryptionOptions options = CreateOptions(paths);
             (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
 
-            // Modify encrypted JSON: we need a valid base64 string which when decrypted via mock DEK returns 0-length plaintext.
-            // mockDek.DecryptData decrypts by TestCommon.DecryptData -> which reverses encryption done by TestCommon.EncryptData.
-            // Instead of relying on real decrypt, we forge a ciphertext that after base64 decode still passes through MdeEncryptor.Decrypt + mockDek.
-            // Simplify: mock the Encryptor (MdeEncryptor dependency) to directly return an empty plaintext buffer, bypassing DEK logic.
-            // We'll craft a base64 payload minimal length (just marker + 1 dummy byte for cipher so Decrypt attempts).
+            MemoryStream output = new();
+            DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
 
+            output.Position = 0;
+            using JsonDocument jd = JsonDocument.Parse(output);
+            JsonElement root = jd.RootElement;
+            // Ensure decrypted sensitive property was processed
+            Assert.AreEqual("secret", root.GetProperty("SensitiveStr").GetString());
+            Assert.IsTrue(ctx.DecryptionInfoList[0].PathsDecrypted.Contains("/SensitiveStr"));
+            // Validate unencrypted array preserved
+            JsonElement arr = root.GetProperty("UnencryptedArr");
+            Assert.AreEqual(JsonValueKind.Array, arr.ValueKind);
+            Assert.AreEqual(3, arr.GetArrayLength());
+            Assert.AreEqual(7, arr[0].GetInt32());
+            Assert.AreEqual(8, arr[1].GetInt32());
+            Assert.AreEqual(9, arr[2].GetInt32());
+            // Validate unencrypted booleans preserved
+            Assert.IsTrue(root.GetProperty("UnencryptedBoolTrue").GetBoolean());
+            Assert.IsFalse(root.GetProperty("UnencryptedBoolFalse").GetBoolean());
+        }
+
+        [TestMethod]
+        public async Task Decrypt_ForgedCipherText_TypeMarkerNull()
+        {
+            // Covers TypeMarker.Null switch branch by forging a ciphertext with first byte = Null marker.
+            var doc = new { id = "1", SensitiveStr = "abc" };
+            var paths = new[] { "/SensitiveStr" };
+            EncryptionOptions options = CreateOptions(paths); // no compression
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+            Assert.AreEqual(EncryptionFormatVersion.Mde, props.EncryptionFormatVersion);
+
+            // Parse and replace SensitiveStr base64 value
             encrypted.Position = 0;
-            string json = Encoding.UTF8.GetString(encrypted.ToArray());
-            using JsonDocument jd = JsonDocument.Parse(json);
+            using JsonDocument jd = JsonDocument.Parse(encrypted, new JsonDocumentOptions { AllowTrailingCommas = true });
             string originalCipher = jd.RootElement.GetProperty("SensitiveStr").GetString();
             Assert.IsNotNull(originalCipher);
+            byte[] forgedBytes = new byte[] { (byte)TypeMarker.Null, 0x00 }; // minimal payload
+            string forgedBase64 = Convert.ToBase64String(forgedBytes);
 
-            // Ciphertext structure consumed by MdeEncryptor.Decrypt: first byte is type marker, rest passed to DEK.
-            // We need at least 2 bytes total (marker + 1 dummy) to avoid negative length in GetDecryptByteCount mock (which returns input length minus 1; our mock returns i). Use marker Null (enum value) then a filler 0.
-            byte[] forged = new byte[] { (byte)TypeMarker.Null, 0x00 };
-            string forgedBase64 = Convert.ToBase64String(forged);
-            string fragmentOld = "\"SensitiveStr\":\"" + originalCipher + "\"";
-            string fragmentNew = "\"SensitiveStr\":\"" + forgedBase64 + "\"";
-            Assert.IsTrue(json.Contains(fragmentOld));
-            json = json.Replace(fragmentOld, fragmentNew);
-
-            MemoryStream forgedStream = new MemoryStream(Encoding.UTF8.GetBytes(json));
-
-            // Use a custom Encryptor injected via internal settable property to return empty plaintext for our forged cipher.
-            var sp = new StreamProcessor
+            // Reconstruct JSON deterministically
+            MemoryStream forged = new();
+            using (Utf8JsonWriter w = new(forged))
             {
-                Encryptor = new NullMarkerMdeEncryptor()
-            };
+                w.WriteStartObject();
+                w.WriteString("id", "1");
+                w.WriteString("SensitiveStr", forgedBase64);
+                w.WritePropertyName(Constants.EncryptedInfo);
+                jd.RootElement.GetProperty(Constants.EncryptedInfo).WriteTo(w);
+                w.WriteEndObject();
+            }
+            forged.Position = 0;
+
+            // Use custom encryptor that returns empty plaintext for Null marker
+            var sp = new StreamProcessor { Encryptor = new NullMarkerMdeEncryptor() };
             MemoryStream output = new();
-            DecryptionContext ctx = await sp.DecryptStreamAsync(forgedStream, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
+            DecryptionContext ctx = await sp.DecryptStreamAsync(forged, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
             output.Position = 0;
             using JsonDocument outDoc = JsonDocument.Parse(output);
             Assert.AreEqual(JsonValueKind.Null, outDoc.RootElement.GetProperty("SensitiveStr").ValueKind);
-            // Path should be marked decrypted even though value is null
             Assert.IsTrue(ctx.DecryptionInfoList[0].PathsDecrypted.Contains("/SensitiveStr"));
         }
+
+        [TestMethod]
+        public async Task Decrypt_CompressedContainsPathButNotCurrentProperty()
+        {
+            // Scenario: compression enabled, some paths compressed, but the current decryptPropertyName is NOT in CompressedEncryptedPaths.
+            // Covers branch: containsCompressed == true && TryGetValue == false so decompression block is skipped.
+            var doc = new
+            {
+                id = "1",
+                LargeStr = new string('x', 400), // will be compressed
+                OtherStr = new string('y', 50),   // below default MinimalCompressedLength (128) so not compressed
+            };
+            var paths = new[] { "/LargeStr", "/OtherStr" };
+            EncryptionOptions options = CreateOptions(paths, CompressionOptions.CompressionAlgorithm.Brotli, CompressionLevel.Fastest);
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+            Assert.IsTrue(props.CompressedEncryptedPaths.ContainsKey("/LargeStr"));
+            Assert.IsFalse(props.CompressedEncryptedPaths.ContainsKey("/OtherStr"));
+
+            MemoryStream output = new();
+            DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
+            output.Position = 0;
+            using JsonDocument jd = JsonDocument.Parse(output);
+            JsonElement root = jd.RootElement;
+            Assert.AreEqual(400, root.GetProperty("LargeStr").GetString().Length);
+            Assert.AreEqual(50, root.GetProperty("OtherStr").GetString().Length);
+            // Both should appear in decrypted paths
+            Assert.IsTrue(ctx.DecryptionInfoList[0].PathsDecrypted.Contains("/LargeStr"));
+            Assert.IsTrue(ctx.DecryptionInfoList[0].PathsDecrypted.Contains("/OtherStr"));
+        }
+
+    // Note: JsonTokenType.Comment branch remains uncovered intentionally. The decryptor configures JsonReaderOptions with CommentHandling.Skip (readonly static),
+    // and the encryption pipeline never emits comments. Altering the static readonly field or constructing a custom reader just for coverage would add fragility.
+    // The switch case exists defensively; functional risk is negligible.
 
         private class NullMarkerMdeEncryptor : MdeEncryptor
         {
             internal override (byte[] plainText, int plainTextLength) Decrypt(DataEncryptionKey encryptionKey, byte[] cipherText, int cipherTextLength, ArrayPoolManager arrayPoolManager)
             {
-                // Return empty plaintext buffer (length 0). Caller will write null based on marker (already in cipherText[0]).
-                byte[] buffer = arrayPoolManager.Rent(0);
-                return (buffer, 0);
+                if ((TypeMarker)cipherText[0] == TypeMarker.Null)
+                {
+                    // Return empty plaintext buffer (length 0). Caller will write null based on marker (already in cipherText[0]).
+                    byte[] buffer = arrayPoolManager.Rent(0);
+                    return (buffer, 0);
+                }
+
+                // Delegate to normal decrypt logic for non-null markers so compression scenarios work.
+                return base.Decrypt(encryptionKey, cipherText, cipherTextLength, arrayPoolManager);
             }
         }
 

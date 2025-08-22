@@ -140,7 +140,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             decryptPropertyName = null;
                             writer.WriteRawValue(reader.ValueSpan);
                             break;
-                        case JsonTokenType.None:
+
+                        case JsonTokenType.None: // Unreachable: pre-first-Read state
                             decryptPropertyName = null;
                             break;
                         case JsonTokenType.StartObject:
@@ -177,7 +178,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                             writer.WritePropertyName(reader.ValueSpan);
                             break;
-                        case JsonTokenType.Comment:
+                        case JsonTokenType.Comment: // Skipped via reader options
                             break;
                         case JsonTokenType.True:
                             decryptPropertyName = null;
@@ -213,7 +214,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                 (byte[] bytes, int processedBytes) = this.Encryptor.Decrypt(encryptionKey, cipherTextWithTypeMarker, cipherTextLength, arrayPoolManager);
 
-                if (containsCompressed && properties.CompressedEncryptedPaths?.TryGetValue(decryptPropertyName, out int decompressedSize) == true)
+                // containsCompressed is derived from CompressedEncryptedPaths.Count > 0, so the map is non-null when true
+                if (containsCompressed && properties.CompressedEncryptedPaths.TryGetValue(decryptPropertyName, out int decompressedSize))
                 {
                     BrotliCompressor decompressor = new ();
                     byte[] buffer = arrayPoolManager.Rent(decompressedSize);
@@ -237,7 +239,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     case TypeMarker.Boolean:
                         writer.WriteBooleanValue(SqlBoolSerializer.Deserialize(bytesToWrite));
                         break;
-                    case TypeMarker.Null:
+                    case TypeMarker.Null: // Produced only if ciphertext was forged or future versions choose to encrypt nulls; current encryptor skips nulls.
                         writer.WriteNullValue();
                         break;
                     default:
