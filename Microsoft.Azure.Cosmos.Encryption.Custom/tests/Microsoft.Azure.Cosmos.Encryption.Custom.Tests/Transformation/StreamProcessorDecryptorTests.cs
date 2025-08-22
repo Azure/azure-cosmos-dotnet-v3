@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
                 SensitiveObj = new { a = 5, b = "text" },
                 NonSensitive = 999
             };
-            var paths = new[] { "/SensitiveStr", "/SensitiveInt", "/SensitiveBoolTrue", "/SensitiveBoolFalse", "/SensitiveNull", "/SensitiveArr", "/SensitiveObj" };
+            string[] paths = new[] { "/SensitiveStr", "/SensitiveInt", "/SensitiveBoolTrue", "/SensitiveBoolFalse", "/SensitiveNull", "/SensitiveArr", "/SensitiveObj" };
             EncryptionOptions options = CreateOptions(paths);
             (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
 
@@ -143,7 +143,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
                 LargeStr = new string('x', 400), // ensure above minimal compression (default 0 but large anyway)
                 SmallStr = "s",
             };
-            var paths = new[] { "/LargeStr", "/SmallStr" };
+            string[] paths = new[] { "/LargeStr", "/SmallStr" };
             EncryptionOptions options = CreateOptions(paths, CompressionOptions.CompressionAlgorithm.Brotli, CompressionLevel.Fastest);
 
             (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
@@ -169,13 +169,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         {
             // Arrange: produce a payload with compression so CompressedEncryptedPaths is non-empty
             var doc = new { id = "1", LargeStr = new string('x', 400) };
-            var paths = new[] { "/LargeStr" };
+            string[] paths = new[] { "/LargeStr" };
             EncryptionOptions options = CreateOptions(paths, CompressionOptions.CompressionAlgorithm.Brotli, CompressionLevel.Fastest);
             (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
             Assert.IsTrue(props.CompressedEncryptedPaths?.Any() == true);
 
             // Forge properties with an unsupported compression algorithm to trigger the guard
-            EncryptionProperties badProps = new (
+            EncryptionProperties badProps = new(
                 props.EncryptionFormatVersion,
                 props.EncryptionAlgorithm,
                 props.DataEncryptionKeyId,
@@ -194,7 +194,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         {
             // Build a document that already has _ei. (Encryptor will append another one during encryption; we want to ensure decryptor skips only the encrypted one at top-level.)
             var doc = new { id = "1", _ei = new { ignore = true }, SensitiveStr = "abc" };
-            var paths = new[] { "/SensitiveStr" };
+            string[] paths = new[] { "/SensitiveStr" };
             EncryptionOptions options = CreateOptions(paths);
             (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
 
@@ -213,7 +213,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         public async Task Decrypt_IgnoresUnknownPropertyTypesAndMaintainsJson()
         {
             var doc = new { id = "1", SensitiveStr = "abc", Regular = 5 };
-            var paths = new[] { "/SensitiveStr" };
+            string[] paths = new[] { "/SensitiveStr" };
             EncryptionOptions options = CreateOptions(paths);
             (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
 
@@ -229,7 +229,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         public async Task Decrypt_Throws_OnUnknownEncryptionFormatVersion()
         {
             var doc = new { id = "1", SensitiveStr = "abc" };
-            var paths = new[] { "/SensitiveStr" };
+            string[] paths = new[] { "/SensitiveStr" };
             EncryptionOptions options = CreateOptions(paths);
             (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
             EncryptionProperties invalid = new EncryptionProperties(999, props.EncryptionAlgorithm, props.DataEncryptionKeyId, null, props.EncryptedPaths, props.CompressionAlgorithm, props.CompressedEncryptedPaths);
@@ -241,14 +241,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         public async Task Decrypt_Throws_OnInvalidBase64Ciphertext()
         {
             var doc = new { id = "1", SensitiveStr = "abc" };
-            var paths = new[] { "/SensitiveStr" };
+            string[] paths = new[] { "/SensitiveStr" };
             EncryptionOptions options = CreateOptions(paths);
             (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
             string jsonText = Encoding.UTF8.GetString(encrypted.ToArray());
             using JsonDocument jd = JsonDocument.Parse(jsonText);
             string originalCipher = jd.RootElement.GetProperty("SensitiveStr").GetString();
             Assert.IsNotNull(originalCipher);
-            string corruptedCipher = "#" + originalCipher.Substring(1); // invalid base64 start
+            string corruptedCipher = string.Concat("#", originalCipher.AsSpan(1)); // invalid base64 start
             jsonText = jsonText.Replace("\"SensitiveStr\":\"" + originalCipher + "\"", "\"SensitiveStr\":\"" + corruptedCipher + "\"");
             MemoryStream corruptedStream = new(Encoding.UTF8.GetBytes(jsonText));
             MemoryStream output = new();
@@ -260,7 +260,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         {
             // Arrange: create a document with compression enabled
             var doc = new { id = "1", LargeStr = new string('x', 400) };
-            var paths = new[] { "/LargeStr" };
+            string[] paths = new[] { "/LargeStr" };
             EncryptionOptions options = CreateOptions(paths, CompressionOptions.CompressionAlgorithm.Brotli, CompressionLevel.Fastest);
             (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
             Assert.IsTrue(props.CompressedEncryptedPaths.ContainsKey("/LargeStr"), "Payload not compressed as expected");
@@ -290,7 +290,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         {
             // Arrange: valid compressed payload, but forge properties to declare a too-small decompressed size for the path.
             var doc = new { id = "1", LargeStr = new string('x', 400) };
-            var paths = new[] { "/LargeStr" };
+            string[] paths = new[] { "/LargeStr" };
             EncryptionOptions options = CreateOptions(paths, CompressionOptions.CompressionAlgorithm.Brotli, CompressionLevel.Fastest);
             (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
             Assert.IsTrue(props.CompressedEncryptedPaths.ContainsKey("/LargeStr"), "Expected LargeStr to be marked as compressed");
@@ -301,7 +301,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             {
                 ["/LargeStr"] = Math.Max(1, declared / 4)
             };
-            EncryptionProperties badProps = new (
+            EncryptionProperties badProps = new(
                 props.EncryptionFormatVersion,
                 props.EncryptionAlgorithm,
                 props.DataEncryptionKeyId,
@@ -365,12 +365,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             // Cover branch where EncryptionProperties.CompressedEncryptedPaths is null (as opposed to empty dictionary or populated),
             // exercising the null path of the null-conditional operator in: bool containsCompressed = properties.CompressedEncryptedPaths?.Count > 0;
             var doc = new { id = "1", SensitiveStr = "abc" };
-            var paths = new[] { "/SensitiveStr" };
+            string[] paths = new[] { "/SensitiveStr" };
             EncryptionOptions options = CreateOptions(paths); // no compression requested
             (MemoryStream encrypted, EncryptionProperties propsWithEmpty) = await EncryptRawAsync(doc, options);
 
             // Forge properties with CompressedEncryptedPaths = null to reach missing branch
-            EncryptionProperties propsNullCompressed = new (
+            EncryptionProperties propsNullCompressed = new(
                 propsWithEmpty.EncryptionFormatVersion,
                 propsWithEmpty.EncryptionAlgorithm,
                 propsWithEmpty.DataEncryptionKeyId,
@@ -401,7 +401,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
                 UnencryptedBoolTrue = true,
                 UnencryptedBoolFalse = false,
             };
-            var paths = new[] { "/SensitiveStr" }; // only encrypt the string; others remain plain
+            string[] paths = new[] { "/SensitiveStr" }; // only encrypt the string; others remain plain
             EncryptionOptions options = CreateOptions(paths);
             (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
 
@@ -431,7 +431,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         {
             // Covers TypeMarker.Null switch branch by forging a ciphertext with first byte = Null marker.
             var doc = new { id = "1", SensitiveStr = "abc" };
-            var paths = new[] { "/SensitiveStr" };
+            string[] paths = new[] { "/SensitiveStr" };
             EncryptionOptions options = CreateOptions(paths); // no compression
             (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
             Assert.AreEqual(EncryptionFormatVersion.Mde, props.EncryptionFormatVersion);
@@ -458,7 +458,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             forged.Position = 0;
 
             // Use custom encryptor that returns empty plaintext for Null marker
-            var sp = new StreamProcessor { Encryptor = new NullMarkerMdeEncryptor() };
+            StreamProcessor sp = new StreamProcessor { Encryptor = new NullMarkerMdeEncryptor() };
             MemoryStream output = new();
             DecryptionContext ctx = await sp.DecryptStreamAsync(forged, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
             output.Position = 0;
@@ -472,7 +472,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         {
             // Arrange: create a valid encrypted payload
             var doc = new { id = "1", SensitiveStr = "abc" };
-            var paths = new[] { "/SensitiveStr" };
+            string[] paths = new[] { "/SensitiveStr" };
             EncryptionOptions options = CreateOptions(paths);
             (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
 
@@ -496,7 +496,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         {
             // Arrange
             var doc = new { id = "1", SensitiveStr = "abc" };
-            var paths = new[] { "/SensitiveStr" };
+            string[] paths = new[] { "/SensitiveStr" };
             EncryptionOptions options = CreateOptions(paths);
             (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
 
@@ -527,7 +527,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         {
             // Arrange: compression enabled; LargeStr compressed, OtherStr not compressed
             var doc = new { id = "1", LargeStr = new string('x', 400), OtherStr = new string('y', 50) };
-            var paths = new[] { "/LargeStr", "/OtherStr" };
+            string[] paths = new[] { "/LargeStr", "/OtherStr" };
             EncryptionOptions options = CreateOptions(paths, CompressionOptions.CompressionAlgorithm.Brotli, CompressionLevel.Fastest);
             (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
             Assert.IsTrue(props.CompressedEncryptedPaths.ContainsKey("/LargeStr"));
@@ -557,7 +557,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         {
             // Arrange: create a valid encrypted payload
             var doc = new { id = "1", SensitiveStr = "abc" };
-            var paths = new[] { "/SensitiveStr" };
+            string[] paths = new[] { "/SensitiveStr" };
             EncryptionOptions options = CreateOptions(paths);
             (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
 
@@ -580,7 +580,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             forged.Position = 0;
 
             // Use a bypass encryptor to return raw bytes that are not valid JSON, exercising the default branch (WriteRawValue)
-            var sp = new StreamProcessor { Encryptor = new AlwaysPlaintextMdeEncryptor("NOT_JSON") };
+            StreamProcessor sp = new StreamProcessor { Encryptor = new AlwaysPlaintextMdeEncryptor("NOT_JSON") };
             MemoryStream output = new();
             _ = await sp.DecryptStreamAsync(forged, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
             output.Position = 0;
@@ -588,7 +588,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             // Assert: output is not valid JSON due to raw invalid token insertion
             try
             {
-                using var _ = JsonDocument.Parse(output);
+                using JsonDocument _ = JsonDocument.Parse(output);
                 Assert.Fail("Expected JSON parse to fail due to raw invalid token");
             }
             catch (Exception ex)
@@ -603,7 +603,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         {
             // Arrange: create a valid encrypted payload, then forge the marker to Long while the decryptor returns non-numeric plaintext
             var doc = new { id = "1", SensitiveStr = "abc" };
-            var paths = new[] { "/SensitiveStr" };
+            string[] paths = new[] { "/SensitiveStr" };
             EncryptionOptions options = CreateOptions(paths);
             (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
 
@@ -625,7 +625,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             forged.Position = 0;
 
             // Use encryptor that returns a plaintext that is invalid for a long serializer
-            var sp = new StreamProcessor { Encryptor = new AlwaysPlaintextMdeEncryptor("abc") };
+            StreamProcessor sp = new StreamProcessor { Encryptor = new AlwaysPlaintextMdeEncryptor("abc") };
             MemoryStream output = new();
             try
             {
@@ -650,7 +650,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
                 LargeStr = new string('x', 400), // will be compressed
                 OtherStr = new string('y', 50),   // below default MinimalCompressedLength (128) so not compressed
             };
-            var paths = new[] { "/LargeStr", "/OtherStr" };
+            string[] paths = new[] { "/LargeStr", "/OtherStr" };
             EncryptionOptions options = CreateOptions(paths, CompressionOptions.CompressionAlgorithm.Brotli, CompressionLevel.Fastest);
             (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
             Assert.IsTrue(props.CompressedEncryptedPaths.ContainsKey("/LargeStr"));
@@ -674,7 +674,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             // Property-style fuzzing across type markers and plaintext lengths. We don't assert per-iteration outcomes;
             // instead we ensure a wide set runs without catastrophic failures and that some known-good cases succeed.
             var doc = new { id = "1", V = "seed" };
-            var paths = new[] { "/V" };
+            string[] paths = new[] { "/V" };
             EncryptionOptions options = CreateOptions(paths);
             (MemoryStream encryptedSeed, EncryptionProperties props) = await EncryptRawAsync(doc, options);
 
@@ -688,15 +688,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
                 eiRaw = jd.RootElement.GetProperty(Constants.EncryptedInfo).GetRawText();
             }
 
-            var rng = new Random(1234);
-            var markers = new byte[] { (byte)TypeMarker.String, (byte)TypeMarker.Long, (byte)TypeMarker.Double, (byte)TypeMarker.Boolean, 0xEE /* unknown */ };
+            Random rng = new Random(1234);
+            byte[] markers = new byte[] { (byte)TypeMarker.String, (byte)TypeMarker.Long, (byte)TypeMarker.Double, (byte)TypeMarker.Boolean, 0xEE /* unknown */ };
             int iterationsPerLen = 4;
             int maxLen = 16;
             int attempts = 0;
             int successes = 0;
 
-            var sp = new StreamProcessor { Encryptor = new MutablePlaintextMdeEncryptor() };
-            var mut = (MutablePlaintextMdeEncryptor)sp.Encryptor;
+            StreamProcessor sp = new StreamProcessor { Encryptor = new MutablePlaintextMdeEncryptor() };
+            MutablePlaintextMdeEncryptor mut = (MutablePlaintextMdeEncryptor)sp.Encryptor;
 
             for (int len = 0; len <= maxLen; len++)
             {
@@ -746,18 +746,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             }
 
             // Add a few known-good shapes that should succeed to guarantee coverage of successful serialization paths
-            var knownGood = new (byte marker, byte[] payload)[]
+            (byte marker, byte[] payload)[] knownGood = new (byte marker, byte[] payload)[]
             {
                 ((byte)TypeMarker.String, Encoding.UTF8.GetBytes("ok")),
                 ((byte)TypeMarker.Long, new byte[8] /* 0L */),
                 ((byte)TypeMarker.Double, new byte[8] /* 0.0 */),
                 ((byte)TypeMarker.Boolean, new byte[]{ 1 }),
             };
-            foreach (var kg in knownGood)
+            foreach ((byte marker, byte[] payload) in knownGood)
             {
                 attempts++;
-                mut.Payload = kg.payload;
-                string base64 = Convert.ToBase64String(new byte[] { kg.marker, 0x00 });
+                mut.Payload = payload;
+                string base64 = Convert.ToBase64String(new byte[] { marker, 0x00 });
                 using MemoryStream forged = new();
                 using (Utf8JsonWriter w = new(forged))
                 {
@@ -788,9 +788,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             Assert.IsTrue(successes > 0, "Expected at least some successful decrypt/writes during fuzzing");
         }
 
-    // Note: JsonTokenType.Comment branch remains uncovered intentionally. The decryptor configures JsonReaderOptions with CommentHandling.Skip (readonly static),
-    // and the encryption pipeline never emits comments. Altering the static readonly field or constructing a custom reader just for coverage would add fragility.
-    // The switch case exists defensively; functional risk is negligible.
+        // Note: JsonTokenType.Comment branch remains uncovered intentionally. The decryptor configures JsonReaderOptions with CommentHandling.Skip (readonly static),
+        // and the encryption pipeline never emits comments. Altering the static readonly field or constructing a custom reader just for coverage would add fragility.
+        // The switch case exists defensively; functional risk is negligible.
 
         private class NullMarkerMdeEncryptor : MdeEncryptor
         {
@@ -831,12 +831,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
 
             internal override (byte[] plainText, int plainTextLength) Decrypt(DataEncryptionKey encryptionKey, byte[] cipherText, int cipherTextLength, ArrayPoolManager arrayPoolManager)
             {
-                byte[] buffer = arrayPoolManager.Rent(Payload.Length);
-                if (Payload.Length > 0)
+                byte[] buffer = arrayPoolManager.Rent(this.Payload.Length);
+                if (this.Payload.Length > 0)
                 {
-                    Payload.AsSpan().CopyTo(buffer);
+                    this.Payload.AsSpan().CopyTo(buffer);
                 }
-                return (buffer, Payload.Length);
+                return (buffer, this.Payload.Length);
             }
         }
 

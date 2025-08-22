@@ -159,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
                 LargeStr = new string('x', 400),
                 SmallStr = new string('y', 10)
             };
-            var paths = new[] { "/LargeStr", "/SmallStr" };
+            string[] paths = new[] { "/LargeStr", "/SmallStr" };
             EncryptionOptions options = CreateOptions(paths, CompressionOptions.CompressionAlgorithm.Brotli, CompressionLevel.Fastest, minCompressedLength: 64);
             MemoryStream encrypted = await EncryptAsync(doc, options);
             using JsonDocument jd = Parse(encrypted);
@@ -180,7 +180,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
                 Arr = new object[] { new { x = 1 }, new { x = 2 } },
                 Plain = 7
             };
-            var paths = new[] { "/Nested", "/Arr" };
+            string[] paths = new[] { "/Nested", "/Arr" };
             MemoryStream encrypted = await EncryptAsync(doc, CreateOptions(paths));
             using JsonDocument jd = Parse(encrypted);
             JsonElement root = jd.RootElement;
@@ -200,7 +200,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         public async Task Encrypt_BufferGrowthLargeString()
         {
             var doc = new { id = "1", Big = new string('a', 5000) };
-            var paths = new[] { "/Big" };
+            string[] paths = new[] { "/Big" };
             MemoryStream encrypted = await EncryptAsync(doc, CreateOptions(paths));
             using JsonDocument jd = Parse(encrypted);
             string cipher = jd.RootElement.GetProperty("Big").GetString();
@@ -211,7 +211,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         public async Task Encrypt_SkipsNullProperty()
         {
             var doc = new { id = "1", Maybe = (string)null };
-            var paths = new[] { "/Maybe" };
+            string[] paths = new[] { "/Maybe" };
             MemoryStream encrypted = await EncryptAsync(doc, CreateOptions(paths));
             using JsonDocument jd = Parse(encrypted);
             JsonElement root = jd.RootElement;
@@ -227,7 +227,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             string json = "{\"Maybe\":null,\"Plain\":42,\"id\":\"1\"}";
             using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(json));
             MemoryStream output = new();
-            var options = CreateOptions(new[] { "/Maybe" });
+            EncryptionOptions options = CreateOptions(new[] { "/Maybe" });
             await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
             output.Position = 0;
             using JsonDocument jd = JsonDocument.Parse(output);
@@ -245,13 +245,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         public void Encrypt_InternalProperty_Getter_Coverage()
         {
             // Touch internal partial members for coverage: Encryptor property lives on decryptor partial file
-            var sp = new StreamProcessor();
+            StreamProcessor sp = new StreamProcessor();
             Assert.IsNotNull(sp.Encryptor); // covers getter sequence point
             Assert.IsTrue(StreamProcessor.InitialBufferSize > 0);
         }
 
         [TestMethod]
-    public async Task Encrypt_NumberParsing_IsCultureInvariant()
+        public async Task Encrypt_NumberParsing_IsCultureInvariant()
         {
             // Force a culture that expects comma as decimal separator so parsing a dot-formatted invariant number fails
             CultureInfo original = CultureInfo.CurrentCulture;
@@ -264,16 +264,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
 
                 // Anonymous object with a decimal value will be serialized using invariant culture ("1.23") by Json.NET
                 var doc = new { id = "1", Weird = 1.23m };
-                var paths = new[] { "/Weird" };
+                string[] paths = new[] { "/Weird" };
                 EncryptionOptions options = CreateOptions(paths);
 
-        // Should succeed regardless of current culture and round-trip the value as a double
-        MemoryStream encrypted = await EncryptAsync(doc, options);
-        encrypted.Position = 0;
-        (Stream decrypted, _) = await EncryptionProcessor.DecryptStreamAsync(encrypted, mockEncryptor.Object, new CosmosDiagnosticsContext(), CancellationToken.None);
-        using JsonDocument d2 = JsonDocument.Parse(decrypted);
-        double value = d2.RootElement.GetProperty("Weird").GetDouble();
-        Assert.AreEqual(1.23, value, 1e-12);
+                // Should succeed regardless of current culture and round-trip the value as a double
+                MemoryStream encrypted = await EncryptAsync(doc, options);
+                encrypted.Position = 0;
+                (Stream decrypted, _) = await EncryptionProcessor.DecryptStreamAsync(encrypted, mockEncryptor.Object, new CosmosDiagnosticsContext(), CancellationToken.None);
+                using JsonDocument d2 = JsonDocument.Parse(decrypted);
+                double value = d2.RootElement.GetProperty("Weird").GetDouble();
+                Assert.AreEqual(1.23, value, 1e-12);
             }
             finally
             {
@@ -290,7 +290,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             string json = "{\n  // comment before sensitive\n  \"SensitiveStr\": \"abc\",\n  // trailing comment\n  \"id\": \"1\"\n}";
             using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(json));
             MemoryStream output = new();
-            var options = CreateOptions(new[] { "/SensitiveStr" });
+            EncryptionOptions options = CreateOptions(new[] { "/SensitiveStr" });
             await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
             output.Position = 0;
             using JsonDocument jd = Parse(output);
@@ -310,7 +310,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             string json = "[1,2,3]";
             using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(json));
             MemoryStream output = new();
-            var options = CreateOptions(Array.Empty<string>());
+            EncryptionOptions options = CreateOptions(Array.Empty<string>());
             await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
             output.Position = 0;
             using JsonDocument jd = JsonDocument.Parse(output);
@@ -324,7 +324,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             {
                 using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(json));
                 MemoryStream output = new();
-                var options = CreateOptions(Array.Empty<string>());
+                EncryptionOptions options = CreateOptions(Array.Empty<string>());
                 await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
                 output.Position = 0;
                 using JsonDocument jd = JsonDocument.Parse(output);
@@ -348,7 +348,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             string json = "{\"id\":\"1\",\"SensitiveStr\":\"abc"; // truncated
             using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(json));
             MemoryStream output = new();
-            var options = CreateOptions(new[] { "/SensitiveStr" });
+            EncryptionOptions options = CreateOptions(new[] { "/SensitiveStr" });
             try
             {
                 await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
@@ -367,7 +367,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             string json = "{\"id\":\"1\",\"SensitiveDouble\":1e309}";
             using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(json));
             MemoryStream output = new();
-            var options = CreateOptions(new[] { "/SensitiveDouble" });
+            EncryptionOptions options = CreateOptions(new[] { "/SensitiveDouble" });
             try
             {
                 await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
@@ -381,7 +381,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         }
 
         [TestMethod]
-    public async Task Encrypt_Fails_OnInvalidUtf8InString()
+        public async Task Encrypt_Fails_OnInvalidUtf8InString()
         {
             // Construct bytes for: {"id":"1","SensitiveStr":"<invalid utf8>"}
             // Invalid sequence C3 28
@@ -395,7 +395,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             };
             using MemoryStream input = new MemoryStream(bytes);
             MemoryStream output = new();
-            var options = CreateOptions(new[] { "/SensitiveStr" });
+            EncryptionOptions options = CreateOptions(new[] { "/SensitiveStr" });
             try
             {
                 await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
@@ -408,13 +408,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         }
 
         [TestMethod]
-    public async Task Encrypt_Fails_OnNaN_Literal()
+        public async Task Encrypt_Fails_OnNaN_Literal()
         {
             // NaN is not valid JSON literal; parsing should fail
             string json = "{\"id\":\"1\",\"SensitiveDouble\":NaN}";
             using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(json));
             MemoryStream output = new();
-            var options = CreateOptions(new[] { "/SensitiveDouble" });
+            EncryptionOptions options = CreateOptions(new[] { "/SensitiveDouble" });
             try
             {
                 await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
@@ -432,7 +432,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             string json = "{\"id\":\"1\",\"DZ\":-0.0}";
             using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(json));
             MemoryStream encrypted = new();
-            var options = CreateOptions(new[] { "/DZ" });
+            EncryptionOptions options = CreateOptions(new[] { "/DZ" });
             await EncryptionProcessor.EncryptAsync(input, encrypted, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
             encrypted.Position = 0;
             using JsonDocument jenc = JsonDocument.Parse(encrypted);
@@ -447,7 +447,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         }
 
         [TestMethod]
-    public async Task Encrypt_DeepNesting_ExceedsDepth_Fails()
+        public async Task Encrypt_DeepNesting_ExceedsDepth_Fails()
         {
             // Build deeply nested object under property "Obj"
             int depth = 200;
@@ -460,7 +460,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             string json = sb.ToString();
             using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(json));
             MemoryStream output = new();
-            var options = CreateOptions(new[] { "/Obj" });
+            EncryptionOptions options = CreateOptions(new[] { "/Obj" });
             try
             {
                 await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
@@ -478,7 +478,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             string json = "{\"Arr\":\"not an array\"}";
             using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(json));
             MemoryStream output = new();
-            var options = CreateOptions(new[] { "/Arr" });
+            EncryptionOptions options = CreateOptions(new[] { "/Arr" });
             await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
             output.Position = 0;
             using JsonDocument jd = JsonDocument.Parse(output);
@@ -493,7 +493,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             string json = "{\"Obj\":42}";
             using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(json));
             MemoryStream output = new();
-            var options = CreateOptions(new[] { "/Obj" });
+            EncryptionOptions options = CreateOptions(new[] { "/Obj" });
             await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
             output.Position = 0;
             using JsonDocument jd = JsonDocument.Parse(output);
