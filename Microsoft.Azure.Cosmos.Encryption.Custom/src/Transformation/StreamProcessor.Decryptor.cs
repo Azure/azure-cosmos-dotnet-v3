@@ -214,7 +214,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                 (byte[] bytes, int processedBytes) = this.Encryptor.Decrypt(encryptionKey, cipherTextWithTypeMarker, cipherTextLength, arrayPoolManager);
 
-                // containsCompressed is derived from CompressedEncryptedPaths.Count > 0, so the map is non-null when true
                 if (containsCompressed && properties.CompressedEncryptedPaths.TryGetValue(decryptPropertyName, out int decompressedSize))
                 {
                     BrotliCompressor decompressor = new ();
