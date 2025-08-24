@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Text.Json.Serialization;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -73,31 +74,36 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// </para>
         /// </remarks>
         [JsonProperty(PropertyName = "id")]
+        [JsonPropertyName("id")]
         public string Id { get; internal set; }
 
         /// <summary>
         /// Gets the Encryption algorithm that will be used along with this data encryption key to encrypt/decrypt data.
         /// </summary>
         [JsonProperty(PropertyName = "encryptionAlgorithm", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("encryptionAlgorithm")]
         public string EncryptionAlgorithm { get; internal set; }
 
         /// <summary>
         /// Gets wrapped form of the data encryption key.
         /// </summary>
         [JsonProperty(PropertyName = "wrappedDataEncryptionKey", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("wrappedDataEncryptionKey")]
         public byte[] WrappedDataEncryptionKey { get; internal set; }
 
         /// <summary>
         /// Gets metadata for the wrapping provider that can be used to unwrap the wrapped data encryption key.
         /// </summary>
         [JsonProperty(PropertyName = "keyWrapMetadata", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("keyWrapMetadata")]
         public EncryptionKeyWrapMetadata EncryptionKeyWrapMetadata { get; internal set; }
 
         /// <summary>
         /// Gets the creation time of the resource from the Azure Cosmos DB service.
         /// </summary>
-        [JsonConverter(typeof(UnixDateTimeConverter))]
+        [Newtonsoft.Json.JsonConverter(typeof(UnixDateTimeConverter))]
         [JsonProperty(PropertyName = "createTime", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("createTime")]
         public DateTime? CreatedTime { get; internal set; }
 
         /// <summary>
@@ -110,14 +116,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// ETags are used for concurrency checking when updating resources.
         /// </remarks>
         [JsonProperty(PropertyName = "_etag", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("_etag")]
         public string ETag { get; internal set; }
 
         /// <summary>
         /// Gets the last modified time stamp associated with the resource from the Azure Cosmos DB service.
         /// </summary>
         /// <value>The last modified time stamp associated with the resource.</value>
-        [JsonConverter(typeof(UnixDateTimeConverter))]
+        [Newtonsoft.Json.JsonConverter(typeof(UnixDateTimeConverter))]
         [JsonProperty(PropertyName = "_ts", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("_ts")]
         public DateTime? LastModified { get; internal set; }
 
         /// <summary>
@@ -129,6 +137,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// E.g. a self-link for a document could be dbs/db_resourceid/colls/coll_resourceid/documents/doc_resourceid
         /// </remarks>
         [JsonProperty(PropertyName = "_self", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("_self")]
         public virtual string SelfLink { get; internal set; }
 
         /// <summary>
@@ -143,6 +152,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// These resource ids are used when building up SelfLinks, a static addressable Uri for each resource within a database account.
         /// </remarks>
         [JsonProperty(PropertyName = "_rid", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("_rid")]
         internal string ResourceId { get; set; }
 
         /// <summary>
