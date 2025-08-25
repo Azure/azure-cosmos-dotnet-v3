@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private readonly DateTime? DefaultDateTime = null;
         private readonly Action<TokenRequestContext, CancellationToken> GetTokenCallback;
         private readonly string masterKey;
-        private readonly string expectedScope;
+        private readonly string[] expectedScopes;
 
         internal LocalEmulatorTokenCredential(
             string expectedScope,
@@ -29,7 +29,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.masterKey = masterKey;
             this.GetTokenCallback = getTokenCallback;
             this.DefaultDateTime = defaultDateTime;
-            this.expectedScope = expectedScope;
+            this.expectedScopes = new string[] { expectedScope };
+        }
+
+        internal LocalEmulatorTokenCredential(
+           string[] expectedScopes,
+           string masterKey = null,
+           Action<TokenRequestContext, CancellationToken> getTokenCallback = null,
+           DateTime? defaultDateTime = null)
+        {
+            this.masterKey = masterKey;
+            this.GetTokenCallback = getTokenCallback;
+            this.DefaultDateTime = defaultDateTime;
+            this.expectedScopes = expectedScopes;
         }
 
         public override AccessToken GetToken(TokenRequestContext requestContext, CancellationToken cancellationToken)
@@ -44,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private AccessToken GetAccessToken(TokenRequestContext requestContext, CancellationToken cancellationToken)
         {
-            Assert.AreEqual(this.expectedScope, requestContext.Scopes.First());
+            Assert.IsTrue(this.expectedScopes.Contains(requestContext.Scopes.First()));
 
             this.GetTokenCallback?.Invoke(
                 requestContext,

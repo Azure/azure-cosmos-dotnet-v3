@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using global::Azure;
     using global::Azure.Core;
+    using Microsoft.Azure.Cosmos.Authorization;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -36,9 +37,7 @@ namespace Microsoft.Azure.Cosmos
         // If the background refresh fails with less than a minute then just allow the request to hit the exception.
         public static readonly TimeSpan MinimumTimeBetweenBackgroundRefreshInterval = TimeSpan.FromMinutes(1);
 
-        private const string ScopeFormat = "https://{0}/.default";
-
-        private readonly TokenRequestContext tokenRequestContext;
+        private readonly IScopeProvider scopeProvider;
         private readonly TokenCredential tokenCredential;
         private readonly CancellationTokenSource cancellationTokenSource;
         private readonly CancellationToken cancellationToken;
@@ -65,14 +64,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(accountEndpoint));
             }
 
-            string? scopeOverride = ConfigurationManager.AADScopeOverrideValue(defaultValue: null);
-
-            this.tokenRequestContext = new TokenRequestContext(new string[]
-            {
-                !string.IsNullOrEmpty(scopeOverride)
-                    ? scopeOverride
-                    : string.Format(TokenCredentialCache.ScopeFormat, accountEndpoint.Host)
-            });
+            this.scopeProvider = new Microsoft.Azure.Cosmos.Authorization.CosmosScopeProvider(accountEndpoint);
 
             if (backgroundTokenCredentialRefreshInterval.HasValue)
             {
@@ -172,10 +164,12 @@ namespace Microsoft.Azure.Cosmos
         private async ValueTask<AccessToken> RefreshCachedTokenWithRetryHelperAsync(
             ITrace trace)
         {
+            Exception? lastException = null;
+            const int totalRetryCount = 2;
+            TokenRequestContext tokenRequestContext = default;
+
             try
             {
-                Exception? lastException = null;
-                const int totalRetryCount = 2;
                 for (int retry = 0; retry < totalRetryCount; retry++)
                 {
                     if (this.cancellationToken.IsCancellationRequested)
@@ -193,8 +187,10 @@ namespace Microsoft.Azure.Cosmos
                     {
                         try
                         {
+                            tokenRequestContext = this.scopeProvider.GetTokenRequestContext();
+
                             this.cachedAccessToken = await this.tokenCredential.GetTokenAsync(
-                                requestContext: this.tokenRequestContext,
+                                requestContext: tokenRequestContext,
                                 cancellationToken: this.cancellationToken);
 
                             if (!this.cachedAccessToken.HasValue)
@@ -226,7 +222,7 @@ namespace Microsoft.Azure.Cosmos
                                 $"RequestFailedException at {DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)}",
                                 requestFailedException.Message);
 
-                            DefaultTrace.TraceError($"TokenCredential.GetToken() failed with RequestFailedException. scope = {string.Join(";", this.tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException.Message}");
+                            DefaultTrace.TraceError($"TokenCredential.GetToken() failed with RequestFailedException. scope = {string.Join(";", tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException.Message}");
 
                             // Don't retry on auth failures
                             if (requestFailedException.Status == (int)HttpStatusCode.Unauthorized ||
@@ -234,6 +230,19 @@ namespace Microsoft.Azure.Cosmos
                             {
                                 this.cachedAccessToken = default;
                                 throw;
+                            }
+
+                            bool didFallback = this.scopeProvider.TryFallback(requestFailedException);
+                            string logMessage = $"TokenCredential.GetToken() failed. scope = {string.Join(";", tokenRequestContext.Scopes)}, retry = {retry}, Exception = {requestFailedException.Message}. Fallback attempted: {didFallback}";
+
+                            if (didFallback)
+                            {
+                                DefaultTrace.TraceInformation(logMessage);
+                                continue;
+                            }
+                            else
+                            {
+                                DefaultTrace.TraceWarning(logMessage);
                             }
                         }
                         catch (OperationCanceledException operationCancelled)
@@ -244,7 +253,7 @@ namespace Microsoft.Azure.Cosmos
                                 operationCancelled.Message);
 
                             DefaultTrace.TraceError(
-                                $"TokenCredential.GetTokenAsync() failed. scope = {string.Join(";", this.tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException.Message}");
+                               $"TokenCredential.GetTokenAsync() failed. scope = {string.Join(";", tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException.Message}");
 
                             throw CosmosExceptionFactory.CreateRequestTimeoutException(
                                 message: ClientResources.FailedToGetAadToken,
@@ -262,8 +271,18 @@ namespace Microsoft.Azure.Cosmos
                                 $"Exception at {DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)}",
                                 exception.Message);
 
-                            DefaultTrace.TraceError(
-                                $"TokenCredential.GetTokenAsync() failed. scope = {string.Join(";", this.tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException.Message}");
+                            bool didFallback = this.scopeProvider.TryFallback(exception);
+                            string logMessage = $"TokenCredential.GetTokenAsync() failed. scope = {string.Join(";", tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException.Message}. Fallback attempted: {didFallback}";
+
+                            if (didFallback)
+                            {
+                                DefaultTrace.TraceInformation(logMessage);
+                                continue;
+                            }
+                            else
+                            {
+                                DefaultTrace.TraceWarning(logMessage);
+                            }
                         }
                     }
                 }
