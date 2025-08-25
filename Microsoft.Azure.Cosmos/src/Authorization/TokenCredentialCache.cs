@@ -232,12 +232,17 @@ namespace Microsoft.Azure.Cosmos
                                 throw;
                             }
 
-                            // Fallback logic
-                            if (this.scopeProvider.TryFallback(requestFailedException))
+                            bool didFallback = this.scopeProvider.TryFallback(requestFailedException);
+                            string logMessage = $"TokenCredential.GetToken() failed. scope = {string.Join(";", tokenRequestContext.Scopes)}, retry = {retry}, Exception = {requestFailedException.Message}. Fallback attempted: {didFallback}";
+
+                            if (didFallback)
                             {
-                                DefaultTrace.TraceWarning(
-                                    $"TokenCredentialCache: Fallback to default scope triggered due to exception: {requestFailedException.Message}");
+                                DefaultTrace.TraceInformation(logMessage);
                                 continue;
+                            }
+                            else
+                            {
+                                DefaultTrace.TraceWarning(logMessage);
                             }
                         }
                         catch (OperationCanceledException operationCancelled)
@@ -266,13 +271,17 @@ namespace Microsoft.Azure.Cosmos
                                 $"Exception at {DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)}",
                                 exception.Message);
 
-                            DefaultTrace.TraceError(
-                                $"TokenCredential.GetTokenAsync() failed. scope = {string.Join(";", tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException.Message}");
+                            bool didFallback = this.scopeProvider.TryFallback(exception);
+                            string logMessage = $"TokenCredential.GetTokenAsync() failed. scope = {string.Join(";", tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException.Message}. Fallback attempted: {didFallback}";
 
-                            // Fallback logic
-                            if (this.scopeProvider.TryFallback(exception))
+                            if (didFallback)
                             {
+                                DefaultTrace.TraceInformation(logMessage);
                                 continue;
+                            }
+                            else
+                            {
+                                DefaultTrace.TraceWarning(logMessage);
                             }
                         }
                     }
