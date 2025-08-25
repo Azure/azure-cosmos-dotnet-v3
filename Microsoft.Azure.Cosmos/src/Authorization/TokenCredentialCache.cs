@@ -122,7 +122,6 @@ namespace Microsoft.Azure.Cosmos
 
             this.cancellationTokenSource.Cancel();
             this.cancellationTokenSource.Dispose();
-            this.scopeProvider.Dispose();
             this.isDisposed = true;
         }
 
@@ -236,6 +235,8 @@ namespace Microsoft.Azure.Cosmos
                             // Fallback logic
                             if (this.scopeProvider.TryFallback(requestFailedException))
                             {
+                                DefaultTrace.TraceWarning(
+                                    $"TokenCredentialCache: Fallback to default scope triggered due to exception: {requestFailedException.Message}");
                                 continue;
                             }
                         }

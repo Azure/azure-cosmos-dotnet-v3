@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.Authorization
     using System.Text;
     using global::Azure.Core;
 
-    internal interface IScopeProvider : IDisposable
+    internal interface IScopeProvider
     {
         TokenRequestContext GetTokenRequestContext();
         bool TryFallback(Exception ex);
