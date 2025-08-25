@@ -342,6 +342,10 @@
 
         public static void ValidateJsonAreSame(string baselineJson, string currentJson)
         {
+            // Sanity checks: ensure inputs are not empty to avoid misleading comparisons
+            Assert.IsFalse(string.IsNullOrWhiteSpace(baselineJson), "Baseline/expected JSON is empty.");
+            Assert.IsFalse(string.IsNullOrWhiteSpace(currentJson), "Current/actual JSON is empty.");
+
             // This prevents failures caused by it being serialized slightly different order
             string normalizedBaselineJson = NormalizeJsonString(baselineJson);
             string normalizedCurrentJson = NormalizeJsonString(currentJson);

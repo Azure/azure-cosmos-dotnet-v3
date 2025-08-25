@@ -20,9 +20,6 @@
     [TestMethod]
     public void ContractChanges()
     {
-            // Anchor to force-load the assembly through a referenced public type (no explicit Assembly.Load).
-            _ = typeof(CosmosEncryptor);
-
             Cosmos.Tests.Contracts.ContractEnforcement.ValidateContractContainBreakingChanges(
                 assembly: typeof(CosmosEncryptor).Assembly,
                 baselinePath: "DotNetSDKEncryptionCustomAPI.json",
