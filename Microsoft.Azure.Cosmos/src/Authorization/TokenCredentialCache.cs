@@ -165,12 +165,12 @@ namespace Microsoft.Azure.Cosmos
         private async ValueTask<AccessToken> RefreshCachedTokenWithRetryHelperAsync(
             ITrace trace)
         {
+            Exception? lastException = null;
+            const int totalRetryCount = 2;
+            TokenRequestContext tokenRequestContext = default;
+
             try
             {
-                Exception? lastException = null;
-                const int totalRetryCount = 2;
-                TokenRequestContext tokenRequestContext = default;
-
                 for (int retry = 0; retry < totalRetryCount; retry++)
                 {
                     if (this.cancellationToken.IsCancellationRequested)
