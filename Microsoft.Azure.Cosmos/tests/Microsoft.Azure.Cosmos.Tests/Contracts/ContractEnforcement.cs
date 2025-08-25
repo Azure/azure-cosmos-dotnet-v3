@@ -18,11 +18,10 @@
 
         private static Assembly GetAssemblyLocally(string name)
         {
-            Assembly.Load(name);
-            Assembly[] loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
-            return loadedAssemblies
-                .Where((candidate) => candidate.FullName.Contains(name + ","))
-                .FirstOrDefault();
+            // Resolve the assembly already loaded by the test host from the current AppDomain by simple name.
+            return AppDomain.CurrentDomain
+                .GetAssemblies()
+                .First(a => string.Equals(a.GetName().Name, name, StringComparison.InvariantCulture));
         }
 
         private sealed class MemberMetadata
@@ -206,6 +205,19 @@
             ContractEnforcement.ValidateJsonAreSame(baselineJson, localJson);
         }
 
+        // Overload that avoids any dynamic assembly loading: the caller supplies the Assembly.
+        public static void ValidateContractContainBreakingChanges(
+            Assembly assembly,
+            string baselinePath,
+            string breakingChangesPath)
+        {
+            string localJson = GetCurrentContract(assembly);
+            File.WriteAllText($"Contracts/{breakingChangesPath}", localJson);
+
+            string baselineJson = GetBaselineContract(baselinePath);
+            ContractEnforcement.ValidateJsonAreSame(baselineJson, localJson);
+        }
+
         public static void ValidateTelemetryContractContainBreakingChanges(
           string dllName,
           string baselinePath,
@@ -246,6 +258,17 @@
         {
             TypeTree locally = new(typeof(object));
             Assembly assembly = ContractEnforcement.GetAssemblyLocally(dllName);
+            Type[] exportedTypes = assembly.GetExportedTypes();
+            ContractEnforcement.BuildTypeTree(locally, exportedTypes);
+
+            string localJson = JsonConvert.SerializeObject(locally, Formatting.Indented);
+            return localJson;
+        }
+
+        // Overload that avoids any dynamic assembly loading
+        public static string GetCurrentContract(Assembly assembly)
+        {
+            TypeTree locally = new(typeof(object));
             Type[] exportedTypes = assembly.GetExportedTypes();
             ContractEnforcement.BuildTypeTree(locally, exportedTypes);
 
