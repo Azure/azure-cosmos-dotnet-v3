@@ -231,19 +231,6 @@ namespace Microsoft.Azure.Cosmos
                                 this.cachedAccessToken = default;
                                 throw;
                             }
-
-                            bool didFallback = this.scopeProvider.TryFallback(requestFailedException);
-                            string logMessage = $"TokenCredential.GetToken() failed. scope = {string.Join(";", tokenRequestContext.Scopes)}, retry = {retry}, Exception = {requestFailedException.Message}. Fallback attempted: {didFallback}";
-
-                            if (didFallback)
-                            {
-                                DefaultTrace.TraceInformation(logMessage);
-                                continue;
-                            }
-                            else
-                            {
-                                DefaultTrace.TraceWarning(logMessage);
-                            }
                         }
                         catch (OperationCanceledException operationCancelled)
                         {
@@ -277,7 +264,6 @@ namespace Microsoft.Azure.Cosmos
                             if (didFallback)
                             {
                                 DefaultTrace.TraceInformation(logMessage);
-                                continue;
                             }
                             else
                             {

@@ -4,9 +4,6 @@
 namespace Microsoft.Azure.Cosmos.Authorization
 {
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
     using global::Azure.Core;
 
     internal sealed class CosmosScopeProvider : IScopeProvider
@@ -54,10 +51,6 @@ namespace Microsoft.Azure.Cosmos.Authorization
 #pragma warning restore CDX1003 // DontUseExceptionToString
 
             return false;
-        }
-
-        public void Dispose()
-        { 
         }
     }
 }
