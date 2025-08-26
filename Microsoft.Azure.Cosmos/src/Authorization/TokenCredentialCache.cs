@@ -215,23 +215,6 @@ namespace Microsoft.Azure.Cosmos
 
                             return this.cachedAccessToken.Value;
                         }
-                        catch (RequestFailedException requestFailedException)
-                        {
-                            lastException = requestFailedException;
-                            getTokenTrace.AddDatum(
-                                $"RequestFailedException at {DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)}",
-                                requestFailedException.Message);
-
-                            DefaultTrace.TraceError($"TokenCredential.GetToken() failed with RequestFailedException. scope = {string.Join(";", tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException.Message}");
-
-                            // Don't retry on auth failures
-                            if (requestFailedException.Status == (int)HttpStatusCode.Unauthorized ||
-                                requestFailedException.Status == (int)HttpStatusCode.Forbidden)
-                            {
-                                this.cachedAccessToken = default;
-                                throw;
-                            }
-                        }
                         catch (OperationCanceledException operationCancelled)
                         {
                             lastException = operationCancelled;
@@ -258,16 +241,21 @@ namespace Microsoft.Azure.Cosmos
                                 $"Exception at {DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)}",
                                 exception.Message);
 
+                            DefaultTrace.TraceError($"TokenCredential.GetToken() failed with RequestFailedException. scope = {string.Join(";", tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException.Message}");
+
+                            // Don't retry on auth failures
+                            if (exception is RequestFailedException requestFailedException &&
+                                   (requestFailedException.Status == (int)HttpStatusCode.Unauthorized ||
+                                    requestFailedException.Status == (int)HttpStatusCode.Forbidden))
+                            {
+                                this.cachedAccessToken = default;
+                                throw;
+                            }
                             bool didFallback = this.scopeProvider.TryFallback(exception);
-                            string logMessage = $"TokenCredential.GetTokenAsync() failed. scope = {string.Join(";", tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException.Message}. Fallback attempted: {didFallback}";
 
                             if (didFallback)
                             {
-                                DefaultTrace.TraceInformation(logMessage);
-                            }
-                            else
-                            {
-                                DefaultTrace.TraceWarning(logMessage);
+                                DefaultTrace.TraceInformation($"TokenCredential.GetTokenAsync() failed. scope = {string.Join(";", tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException.Message}. Fallback attempted: {didFallback}");
                             }
                         }
                     }
