@@ -1212,6 +1212,17 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Global Strong write barrier has not been met for the request..
+        /// </summary>
+        internal static string NRegionCommitSynchronousWriteBarrierNotMet
+        {
+            get
+            {
+                return ResourceManager.GetString("NRegionCommitSynchronousWriteBarrierNotMet", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to The requested resource is no longer available at the server..
         /// </summary>
         internal static string Gone
@@ -3221,6 +3232,17 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+        /// <summary>
+        ///   Looks up a localized string similar to Nregion commit barrier not met for less than strong accounts.
+        /// </summary>
+        internal static string Server_NRegionCommitWriteBarrierNotMet
+        {
+            get
+            {
+                return ResourceManager.GetString("Server_NRegionCommitWriteBarrierNotMet", resourceCulture);
+            }
+
+        }
         /// <summary>
         ///   Looks up a localized string similar to Container was re-created, exceeded retries to resolve new identifier. Please contact support with the full exception.
         /// </summary>

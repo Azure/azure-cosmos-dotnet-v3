@@ -759,6 +759,9 @@
   <data name="GlobalStrongWriteBarrierNotMet" xml:space="preserve">
     <value>Global Strong write barrier has not been met for the request.</value>
   </data>
+	<data name="NRegionCommitWriteBarrierNotMet" xml:space="preserve">
+    <value>N-Region Commit write barrier has not been met for the request.</value>
+  </data>
   <data name="BadClientMongo" xml:space="preserve">
     <value>At this time, only write operations made from the MongoDB SDKs are supported. Modifications to MongoDB collections using other SDKs is temporarily blocked.</value>
   </data>
@@ -1306,6 +1309,9 @@ If you would like to serve this query through continuation tokens, then please r
   </data>
   <data name="Server_GlobalStrongWriteBarrierNotMet" xml:space="preserve">
     <value>Service is currently unavailable. More info: https://aka.ms/cosmosdb-tsg-service-unavailable. Could not achieve backend quorum for Strong or Bounded Staleness after barrier requests.</value>
+  </data>
+  <data name="Server_NRegionCommitWriteBarrierNotMet" xml:space="preserve">
+    <value>Service is currently unavailable. More info: https://aka.ms/cosmosdb-tsg-service-unavailable. N-Region Commit write barrier has not been met for the request.</value>
   </data>
   <data name="Server_NameCacheIsStaleExceededRetryLimit" xml:space="preserve">
     <value>Service is currently unavailable. More info: https://aka.ms/cosmosdb-tsg-service-unavailable. Container was re-created, exceeded retries to resolve new identifier. Please contact support with the full exception.</value>

@@ -11,7 +11,12 @@ namespace Microsoft.Azure.Documents
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using static Antlr4.Runtime.Atn.SemanticContext;
+
+    using static Microsoft.Azure.Documents.RntbdConstants;
+
     /*
 
 ConsistencyWriter has two modes for writing - local quorum-acked write and globally strong write.
@@ -33,6 +38,16 @@ For globally strong write:
 5. Each barrier response will contain its own LSN and GlobalCommittedLSN, check for any response that satisfies GlobalCommittedLSN >= SelectedGlobalCommittedLSN
 6. Return to caller on success.
 
+For Less than Strong accounts with EnableNRegionSynchronousCommit feature enabled:
+Business logic: We send single request to primary of the Write region,which will take care of replicating to its secondaries, one of which is XPPrimary. XPPrimary in this case will replicate this request to n read regions, which will ack from within their region.
+    In the write region where the original request was sent to , the request returns from the backend once write quorum number of replicas commits the write - but at this time, the response cannot be returned to caller, since linearizability guarantees will be violated.
+    ConsistencyWriter will continuously issue barrier head requests against the partition in question, until GlobalNRegionCommittedGLSN is at least as big as the lsn of the original response.
+Sequence of steps:
+1. After receiving response from primary of write region, look at GlobalNRegionCommittedGLSN and LSN headers.
+2. If GlobalNRegionCommittedGLSN == LSN, return response to caller
+3. If GlobalNRegionCommittedGLSN < LSN && storeResponse.NumberOFReadRegions > 0 , cache LSN in request as SelectedGlobalNRegionCommittedGLSN, and issue barrier requests against any/all replicas.
+4. Each barrier response will contain its own LSN and GlobalNRegionCommittedGLSN, check for any response that satisfies GlobalNRegionCommittedGLSN >= SelectedGlobalNRegionCommittedGLSN
+5. Return to caller on success.
      */
 
     [SuppressMessage("", "AvoidMultiLineComments", Justification = "Multi line business logic")]
@@ -57,6 +72,7 @@ For globally strong write:
         private readonly IAuthorizationTokenProvider authorizationTokenProvider;
         private readonly bool useMultipleWriteLocations;
         private readonly ISessionRetryOptions sessionRetryOptions;
+        private readonly AccountConfigurationProperties accountConfigurationProperties;
 
         public ConsistencyWriter(
             AddressSelector addressSelector,
@@ -82,6 +98,7 @@ For globally strong write:
                                     new AddressEnumerator(),
                                     sessionContainer: null,
                                     enableReplicaValidation); //we need store reader only for global strong, no session is needed*/
+            this.accountConfigurationProperties = accountConfigurationProperties;
         }
 
         // Test hook
@@ -264,54 +281,39 @@ For globally strong write:
                     throw new InternalServerErrorException();
                 }
 
-                if (ReplicatedResourceClient.IsGlobalStrongEnabled() && this.ShouldPerformWriteBarrierForGlobalStrong(storeResult.Target, request.OperationType))
+                WriteBarrierKind barrierKind = this.ComputeBarrierKind(storeResult, request);
+                if (barrierKind == WriteBarrierKind.None)
                 {
-                    long lsn = storeResult.Target.LSN;
-                    long globalCommittedLsn = storeResult.Target.GlobalCommittedLSN;
-
-                    if (lsn == -1 || globalCommittedLsn == -1)
-                    {
-                        DefaultTrace.TraceWarning("ConsistencyWriter: LSN {0} or GlobalCommittedLsn {1} is not set for global strong request",
-                            lsn, globalCommittedLsn);
-                        // Service Generated because no lsn and glsn set by service
-                        throw new GoneException(RMResources.Gone, SubStatusCodes.ServerGenerated410);
-                    }
-
-                    request.RequestContext.GlobalStrongWriteStoreResult = storeResult;
-                    request.RequestContext.GlobalCommittedSelectedLSN = lsn;
-
-                    //if necessary we would have already refreshed cache by now.
-                    request.RequestContext.ForceRefreshAddressCache = false;
-
-                    DefaultTrace.TraceInformation("ConsistencyWriter: globalCommittedLsn {0}, lsn {1}", globalCommittedLsn, lsn);
-                    //barrier only if necessary, i.e. when write region completes write, but read regions have not.
-                    if (globalCommittedLsn < lsn)
-                    {
-#pragma warning disable SA1001 // Commas should be spaced correctly
-                        using (DocumentServiceRequest barrierRequest = await BarrierRequestHelper.CreateAsync(request, this.authorizationTokenProvider, null, request.RequestContext.GlobalCommittedSelectedLSN , includeRegionContext: true))
-                        {
-                            if (!await this.WaitForWriteBarrierAsync(barrierRequest, request.RequestContext.GlobalCommittedSelectedLSN))
-                            {
-                                DefaultTrace.TraceError("ConsistencyWriter: Write barrier has not been met for global strong request. SelectedGlobalCommittedLsn: {0}", request.RequestContext.GlobalCommittedSelectedLSN);
-                                throw new GoneException(RMResources.GlobalStrongWriteBarrierNotMet, SubStatusCodes.Server_GlobalStrongWriteBarrierNotMet);
-                            }
-                        }
-#pragma warning restore SA1001 // Commas should be spaced correctly
-                    }
-                }
-                else
-                {
+                    // If barrier is not performed, we can return the store result directly.
                     return storeResult.Target.ToResponse();
                 }
+
+                await this.TryBarrierRequestForWritesAsync(storeResult, request, barrierKind);
+
             }
             else
             {
-                using (DocumentServiceRequest barrierRequest = await BarrierRequestHelper.CreateAsync(request, this.authorizationTokenProvider, null, request.RequestContext.GlobalCommittedSelectedLSN, includeRegionContext: true))
+                WriteBarrierKind barrierKind = this.ComputeBarrierKind(request.RequestContext.GlobalStrongWriteStoreResult, request);
+                using (DocumentServiceRequest barrierRequest = await BarrierRequestHelper.CreateAsync(request, this.authorizationTokenProvider, null,
+                    barrierKind == WriteBarrierKind.GlobalStrongWrite ? request.RequestContext.GlobalCommittedSelectedLSN : null,
+                    barrierKind == WriteBarrierKind.NRegionSynchronousCommit ? request.RequestContext.GlobalCommittedSelectedLSN : null,
+                    includeRegionContext: true))
                 {
-                    if (!await this.WaitForWriteBarrierAsync(barrierRequest, request.RequestContext.GlobalCommittedSelectedLSN))
+                    Func<StoreResult, long> lsnAttributeSelector = barrierKind == WriteBarrierKind.GlobalStrongWrite ? (sr => sr.GlobalCommittedLSN) : (sr => sr.GlobalNRegionCommittedGLSN);
+                    if (!await this.WaitForWriteBarrierAsync(barrierRequest, request.RequestContext.GlobalCommittedSelectedLSN,
+                        lsnAttributeSelector))
                     {
-                        DefaultTrace.TraceWarning("ConsistencyWriter: Write barrier has not been met for global strong request. SelectedGlobalCommittedLsn: {0}", request.RequestContext.GlobalCommittedSelectedLSN);
-                        throw new GoneException(RMResources.GlobalStrongWriteBarrierNotMet, SubStatusCodes.Server_GlobalStrongWriteBarrierNotMet);
+                        if (barrierKind == WriteBarrierKind.GlobalStrongWrite)
+                        {
+                            DefaultTrace.TraceWarning("ConsistencyWriter: Write barrier has not been met for global strong request. SelectedGlobalCommittedLsn: {0}", request.RequestContext.GlobalCommittedSelectedLSN);
+                            throw new GoneException(RMResources.GlobalStrongWriteBarrierNotMet, SubStatusCodes.Server_GlobalStrongWriteBarrierNotMet);
+                        }
+                        else
+                        {
+                            DefaultTrace.TraceWarning("ConsistencyWriter: Write barrier has not been met for n region synchronous commit request. SelectedGlobalCommittedLsn: {0}", request.RequestContext.GlobalCommittedSelectedLSN);
+                            throw new GoneException(RMResources.NRegionCommitSynchronousWriteBarrierNotMet, SubStatusCodes.Server_NRegionCommitWriteBarrierNotMet);
+                        }
+
                     }
                 }
             }
@@ -339,24 +341,113 @@ For globally strong write:
 
             return false;
         }
+#pragma warning disable CS1570
+        /** <summary>
+        Attempt barrier requests if applicable.
+        Cases in which barrier head requests are applicable (refer to comments on the class definition for more details on the whole write protocol.
+          For globally strong write:
+              1. After receiving response from primary of write region, look at GlobalCommittedLsn and LSN headers.
+              2. If GlobalCommittedLSN == LSN, return response to caller
+              3. If GlobalCommittedLSN < LSN, cache LSN in request as SelectedGlobalCommittedLSN, and issue barrier requests against any/all replicas.
+              4. Each barrier response will contain its own LSN and GlobalCommittedLSN, check for any response that satisfies GlobalCommittedLSN >= SelectedGlobalCommittedLSN
+              5. Return to caller on success.
+          For less than Strong Accounts and If EnableNRegionSynchronousCommit is enabled for the account:
+              1. After receiving response from primary of write region, look at GlobalCommittedLsn and LSN headers.
+              2. If GlobalNRegionCommittedGLSN == LSN, return response to caller
+              3. If GlobalNRegionCommittedGLSN < LSN && storeResponse.NumberOFReadRegions > 0 , cache LSN in request as SelectedGlobalNRegionCommittedGLSN, and issue barrier requests against any/all replicas.
+              4. Each barrier response will contain its own LSN and GlobalNRegionCommittedGLSN, check for any response that satisfies GlobalNRegionCommittedGLSN >= SelectedGlobalNRegionCommittedGLSN
+              5. Return to caller on success.
+        **/
+#pragma warning restore CS1570
+        private async Task<bool> TryBarrierRequestForWritesAsync(ReferenceCountedDisposable<StoreResult> storeResult, DocumentServiceRequest request, WriteBarrierKind barrierKind)
+        {
+            long lsn = storeResult.Target.LSN;
+            long globalCommitLsnToBeTracked = -1;
+            Func<StoreResult, long> lsnAttributeSelector = null;
+
+            //No need to run any barriers.
+            if (barrierKind == WriteBarrierKind.None)
+            {
+                return true;
+            }
+
+            string warningMessage;
+            if (barrierKind == WriteBarrierKind.GlobalStrongWrite)
+            {
+                globalCommitLsnToBeTracked = storeResult.Target.GlobalCommittedLSN;
+                warningMessage = "ConsistencyWriter: LSN {0} or GlobalCommittedLsn {1} is not set for global strong request";
+
+                DefaultTrace.TraceInformation("ConsistencyWriter: globalCommittedLsn {0}, lsn {1}", globalCommitLsnToBeTracked, lsn);
+                lsnAttributeSelector = sr => sr.GlobalCommittedLSN;
+            }
+            else
+            {
+                globalCommitLsnToBeTracked = storeResult.Target.GlobalNRegionCommittedGLSN;
+                warningMessage = "ConsistencyWriter: LSN {0} or globalNRegionCommittedLsn {1} is not set for less than strong request with EnableNRegionSynchronousCommit property enabled ";
+                lsnAttributeSelector = sr => sr.GlobalNRegionCommittedGLSN;
+            }
+
+            if (lsn == -1 || globalCommitLsnToBeTracked == -1)
+            {
+                DefaultTrace.TraceWarning(warningMessage, lsn, globalCommitLsnToBeTracked);
+                // Service Generated because no lsn and glsn set by service
+                throw new GoneException(RMResources.Gone, SubStatusCodes.ServerGenerated410);
+            }
+
+            request.RequestContext.GlobalCommittedSelectedLSN = lsn;
+            request.RequestContext.GlobalStrongWriteStoreResult = storeResult;
+
+            //if necessary we would have already refreshed cache by now.
+            request.RequestContext.ForceRefreshAddressCache = false;
+
+            //barrier only if necessary, i.e. when write region completes write, but read regions have not.
+            if (globalCommitLsnToBeTracked < lsn)
+            {
+#pragma warning disable SA1001 // Commas should be spaced correctly
+                using (DocumentServiceRequest barrierRequest = await BarrierRequestHelper.CreateAsync(request,
+                    this.authorizationTokenProvider, null,
+                    barrierKind == WriteBarrierKind.GlobalStrongWrite ? request.RequestContext.GlobalCommittedSelectedLSN : null,
+                    barrierKind == WriteBarrierKind.NRegionSynchronousCommit ? request.RequestContext.GlobalCommittedSelectedLSN : null,
+                    includeRegionContext: true))
+                {
+                    if (!await this.WaitForWriteBarrierAsync(barrierRequest, request.RequestContext.GlobalCommittedSelectedLSN, lsnAttributeSelector))
+                    {
+                        if (barrierKind == WriteBarrierKind.GlobalStrongWrite)
+                        {
+                            DefaultTrace.TraceWarning("ConsistencyWriter: Write barrier has not been met for global strong request. SelectedGlobalCommittedLsn: {0}", request.RequestContext.GlobalCommittedSelectedLSN);
+                            throw new GoneException(RMResources.GlobalStrongWriteBarrierNotMet, SubStatusCodes.Server_GlobalStrongWriteBarrierNotMet);
+                        }
+                        else
+                        {
+                            DefaultTrace.TraceWarning("ConsistencyWriter: Write barrier has not been met for n region synchronous commit request. SelectedGlobalCommittedLsn: {0}", request.RequestContext.GlobalCommittedSelectedLSN);
+                            throw new GoneException(RMResources.NRegionCommitSynchronousWriteBarrierNotMet, SubStatusCodes.Server_NRegionCommitWriteBarrierNotMet);
+                        }
+                    }
+                }
+#pragma warning restore SA1001 // Commas should be spaced correctly
+            }
+            return true;
+        }
 
         private Task<bool> WaitForWriteBarrierAsync(
             DocumentServiceRequest barrierRequest,
-            long selectedGlobalCommittedLsn)
+            long selectedGlobalCommittedLsn,
+            Func<StoreResult, long> lsnAttributeSelector)
         {
             if (BarrierRequestHelper.IsOldBarrierRequestHandlingEnabled)
             {
-                return this.WaitForWriteBarrierOldAsync(barrierRequest, selectedGlobalCommittedLsn);
+                return this.WaitForWriteBarrierOldAsync(barrierRequest, selectedGlobalCommittedLsn, lsnAttributeSelector);
             }
 
-            return this.WaitForWriteBarrierNewAsync(barrierRequest, selectedGlobalCommittedLsn);
+            return this.WaitForWriteBarrierNewAsync(barrierRequest, selectedGlobalCommittedLsn, lsnAttributeSelector);
         }
 
         // NOTE this is only temporarily kept to have a feature flag
         // (Env variable 'AZURE_COSMOS_OLD_BARRIER_REQUESTS_HANDLING_ENABLED' allowing to fall back
         // This old implementation will be removed (and the environment
         // variable not been used anymore) after some bake time.
-        private async Task<bool> WaitForWriteBarrierOldAsync(DocumentServiceRequest barrierRequest, long selectedGlobalCommittedLsn)
+        private async Task<bool> WaitForWriteBarrierOldAsync(DocumentServiceRequest barrierRequest, long selectedGlobalCommittedLsn,
+             Func<StoreResult, long> lsnAttributeSelector)
         {
             int writeBarrierRetryCount = ConsistencyWriter.maxNumberOfWriteBarrierReadRetries;
 
@@ -374,13 +465,13 @@ For globally strong write:
                     checkMinLSN: false,
                     forceReadAll: false);
 
-                if (responses != null && responses.Any(response => response.Target.GlobalCommittedLSN >= selectedGlobalCommittedLsn))
+                if (responses != null && responses.Any(response => lsnAttributeSelector(response.Target) >= selectedGlobalCommittedLsn))
                 {
                     return true;
                 }
 
                 //get max global committed lsn from current batch of responses, then update if greater than max of all batches.
-                long maxGlobalCommittedLsn = responses != null ? responses.Select(s => s.Target.GlobalCommittedLSN).DefaultIfEmpty(0).Max() : 0;
+                long maxGlobalCommittedLsn = responses != null ? responses.Select(s => lsnAttributeSelector(s.Target)).DefaultIfEmpty(0).Max() : 0;
                 maxGlobalCommittedLsnReceived = maxGlobalCommittedLsnReceived > maxGlobalCommittedLsn ? maxGlobalCommittedLsnReceived : maxGlobalCommittedLsn;
 
                 //only refresh on first barrier call, set to false for subsequent attempts.
@@ -412,7 +503,8 @@ For globally strong write:
 
         private async Task<bool> WaitForWriteBarrierNewAsync(
             DocumentServiceRequest barrierRequest,
-            long selectedGlobalCommittedLsn)
+            long selectedGlobalCommittedLsn,
+            Func<StoreResult, long> lsnAttributeSelector)
         {
             TimeSpan remainingDelay = totalAllowedBarrierRequestDelay;
 
@@ -442,12 +534,13 @@ For globally strong write:
                 {
                     foreach (ReferenceCountedDisposable<StoreResult> response in responses)
                     {
-                        if (response.Target.GlobalCommittedLSN >= selectedGlobalCommittedLsn)
+                        long selectedLsn = lsnAttributeSelector(response.Target);
+                        if (selectedLsn >= selectedGlobalCommittedLsn)
                         {
                             return true;
                         }
 
-                        if (response.Target.GlobalCommittedLSN >= maxGlobalCommittedLsn)
+                        if (selectedLsn >= maxGlobalCommittedLsn)
                         {
                             maxGlobalCommittedLsn = response.Target.GlobalCommittedLSN;
                         }
@@ -487,6 +580,28 @@ For globally strong write:
             DefaultTrace.TraceInformation("ConsistencyWriter: Highest global committed lsn received for write barrier call is {0}", maxGlobalCommittedLsnReceived);
 
             return false;
+        }
+
+        public enum WriteBarrierKind
+        {
+            None = 0,                   // No barrier needed
+            GlobalStrongWrite = 1,      // Barrier for global strong consistency writes
+            NRegionSynchronousCommit = 2 // Barrier for N-region synchronous commit writes
+        }
+
+        private WriteBarrierKind ComputeBarrierKind(ReferenceCountedDisposable<StoreResult> storeResult, DocumentServiceRequest request)
+        {
+            if (ReplicatedResourceClient.IsGlobalStrongEnabled() && this.ShouldPerformWriteBarrierForGlobalStrong(storeResult.Target, request.OperationType))
+            {
+                return WriteBarrierKind.GlobalStrongWrite;
+            }
+            else if (this.serviceConfigReader.DefaultConsistencyLevel != ConsistencyLevel.Strong
+                && storeResult.Target.GlobalNRegionCommittedGLSN != -1
+                && this.accountConfigurationProperties.EnableNRegionSynchronousCommit && storeResult.Target.NumberOfReadRegions > 0)
+            {
+                return WriteBarrierKind.NRegionSynchronousCommit;
+            }
+            return WriteBarrierKind.None;
         }
     }
 }

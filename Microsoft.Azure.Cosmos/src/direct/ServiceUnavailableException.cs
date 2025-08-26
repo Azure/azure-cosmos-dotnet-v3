@@ -109,6 +109,8 @@ namespace Microsoft.Azure.Documents
                     return RMResources.ServerGenerated410;
                 case SubStatusCodes.Server_GlobalStrongWriteBarrierNotMet:
                     return RMResources.Server_GlobalStrongWriteBarrierNotMet;
+                case SubStatusCodes.Server_NRegionCommitWriteBarrierNotMet:
+                    return RMResources.Server_NRegionCommitWriteBarrierNotMet;
                 case SubStatusCodes.Server_ReadQuorumNotMet:
                     return RMResources.Server_ReadQuorumNotMet;
                 case SubStatusCodes.ServerGenerated503:

@@ -376,6 +376,7 @@ namespace Microsoft.Azure.Documents
         ServerGenerated503 = 21008,
         Server_NoValidStoreResponse = 21009,
         // ServerGenerated408 = 21010 - currently only applicable in Java
+        Server_NRegionCommitWriteBarrierNotMet = 21011,
 
         // Data Transfer Application related
         MissingPartitionKeyInDataTransfer = 22001,
