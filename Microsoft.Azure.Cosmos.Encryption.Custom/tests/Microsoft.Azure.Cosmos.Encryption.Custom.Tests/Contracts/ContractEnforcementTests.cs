@@ -29,7 +29,6 @@
         {
             string contractsDir = "Contracts";
             string tfm = GetCurrentTFM(); // e.g., net8.0
-
             string[] candidates = new[]
             {
                 tfm is null ? null : $"{baseFileName}.{tfm.Split('.')[0]}.json",
