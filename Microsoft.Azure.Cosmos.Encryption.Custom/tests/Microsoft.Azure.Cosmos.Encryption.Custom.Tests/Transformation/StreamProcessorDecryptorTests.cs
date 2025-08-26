@@ -483,7 +483,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
 
             // Act
             // Use custom encryptor that returns empty plaintext for Null marker
-            StreamProcessor sp = new StreamProcessor { Encryptor = new NullMarkerMdeEncryptor() };
+            StreamProcessor sp = new StreamProcessor { MdeEngine = new NullMarkerMdeEncryptor() };
             MemoryStream output = new();
             DecryptionContext ctx = await sp.DecryptStreamAsync(forged, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
             // Assert
@@ -608,7 +608,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
 
             // Act
             // Use a bypass encryptor to return raw bytes that are not valid JSON, exercising the default branch (WriteRawValue)
-            StreamProcessor sp = new StreamProcessor { Encryptor = new AlwaysPlaintextMdeEncryptor("NOT_JSON") };
+            StreamProcessor sp = new StreamProcessor { MdeEngine = new AlwaysPlaintextMdeEncryptor("NOT_JSON") };
             MemoryStream output = new();
             _ = await sp.DecryptStreamAsync(forged, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
             output.Position = 0;
@@ -654,7 +654,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
 
             // Act
             // Use encryptor that returns a plaintext that is invalid for a long serializer
-            StreamProcessor sp = new StreamProcessor { Encryptor = new AlwaysPlaintextMdeEncryptor("abc") };
+            StreamProcessor sp = new StreamProcessor { MdeEngine = new AlwaysPlaintextMdeEncryptor("abc") };
             MemoryStream output = new();
             try
             {
@@ -728,8 +728,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             int attempts = 0;
             int successes = 0;
 
-            StreamProcessor sp = new StreamProcessor { Encryptor = new MutablePlaintextMdeEncryptor() };
-            MutablePlaintextMdeEncryptor mut = (MutablePlaintextMdeEncryptor)sp.Encryptor;
+            StreamProcessor sp = new StreamProcessor { MdeEngine = new MutablePlaintextMdeEncryptor() };
+            MutablePlaintextMdeEncryptor mut = (MutablePlaintextMdeEncryptor)sp.MdeEngine;
 
             // Act
             for (int len = 0; len <= maxLen; len++)

@@ -271,7 +271,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     processedBytes = compressedBytes;
                 }
 
-                (byte[] encryptedBytes, int encryptedBytesCount) = this.Encryptor.Encrypt(encryptionKey, typeMarker, processedBytes, processedBytesLength, arrayPoolManager);
+                (byte[] encryptedBytes, int encryptedBytesCount) = this.MdeEngine.Encrypt(encryptionKey, typeMarker, processedBytes, processedBytesLength, arrayPoolManager);
 
                 pathsEncrypted.Add(encryptPropertyName);
                 return encryptedBytes.AsSpan(0, encryptedBytesCount);

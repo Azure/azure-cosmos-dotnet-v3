@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             this.initialBufferSize = initialBufferSize > 0 ? initialBufferSize : InitialBufferSize;
         }
 
-        internal MdeEncryptor Encryptor { get; set; } = new MdeEncryptor();
+    internal MdeEncryptor MdeEngine { get; set; } = new MdeEncryptor();
 
         internal async Task<DecryptionContext> DecryptStreamAsync(
             Stream inputStream,
@@ -234,7 +234,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     throw new InvalidOperationException($"Base64 decoding failed for encrypted field at path {pathInfo}: {status}. The field may be corrupted or not a valid base64 string.");
                 }
 
-                (byte[] bytes, int processedBytes) = this.Encryptor.Decrypt(encryptionKey, cipherTextWithTypeMarker, cipherTextLength, arrayPoolManager);
+                (byte[] bytes, int processedBytes) = this.MdeEngine.Decrypt(encryptionKey, cipherTextWithTypeMarker, cipherTextLength, arrayPoolManager);
 
                 if (containsCompressed && properties.CompressedEncryptedPaths.TryGetValue(decryptPropertyName, out int decompressedSize))
                 {
