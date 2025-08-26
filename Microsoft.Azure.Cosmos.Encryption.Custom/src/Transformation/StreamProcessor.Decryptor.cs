@@ -49,7 +49,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            _ = diagnosticsContext;
+            long bytesRead = 0;
+            long bytesWritten = 0;
+            long propertiesDecrypted = 0;
+            long compressedPathsDecompressed = 0;
+            long startTimestamp = System.Diagnostics.Stopwatch.GetTimestamp();
 
             if (properties.EncryptionFormatVersion != EncryptionFormatVersion.Mde && properties.EncryptionFormatVersion != EncryptionFormatVersion.MdeWithCompression)
             {
@@ -69,7 +73,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             List<string> pathsDecrypted = new (properties.EncryptedPaths.Count());
 
-            using Utf8JsonWriter writer = new (outputStream);
+            // If output stream is seekable we can compute bytes written via Position delta; otherwise wrap to count writes.
+            long initialOutputPos = outputStream.CanSeek ? outputStream.Position : 0;
+            Stream countingOutput = outputStream.CanSeek ? outputStream : new CountingStream(outputStream, onWrite:(n) => { bytesWritten += n; });
+            using Utf8JsonWriter writer = new (countingOutput);
 
             byte[] buffer = arrayPoolManager.Rent(this.initialBufferSize);
 
@@ -102,6 +109,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             {
                 int dataLength = await inputStream.ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), cancellationToken);
                 int dataSize = dataLength + leftOver;
+                bytesRead += dataLength;
                 isFinalBlock = dataSize == 0;
                 long bytesConsumed = 0;
 
@@ -125,7 +133,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             }
 
             writer.Flush();
-            outputStream.Position = 0;
+            if (outputStream.CanSeek)
+            {
+                bytesWritten = Math.Max(0, outputStream.Position - initialOutputPos);
+                outputStream.Position = 0;
+            }
+
+            // finalize diagnostics
+            diagnosticsContext?.SetMetric("decrypt.bytesRead", bytesRead);
+            diagnosticsContext?.SetMetric("decrypt.bytesWritten", bytesWritten);
+            diagnosticsContext?.SetMetric("decrypt.propertiesDecrypted", propertiesDecrypted);
+            diagnosticsContext?.SetMetric("decrypt.compressedPathsDecompressed", compressedPathsDecompressed);
+            long elapsedTicks = System.Diagnostics.Stopwatch.GetTimestamp() - startTimestamp;
+            long elapsedMs = (long)(elapsedTicks * 1000.0 / System.Diagnostics.Stopwatch.Frequency);
+            diagnosticsContext?.SetMetric("decrypt.elapsedMs", elapsedMs);
 
             return EncryptionProcessor.CreateDecryptionContext(pathsDecrypted, properties.DataEncryptionKeyId);
 
@@ -164,8 +185,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             else
                             {
                                 TransformDecryptProperty(ref reader);
-
                                 pathsDecrypted.Add(decryptPropertyName);
+                                propertiesDecrypted++;
                             }
 
                             decryptPropertyName = null;
@@ -266,6 +287,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     // Early return the previous buffer if it was rented
                     arrayPoolManager.Return(bytes);
                     bytes = decompressed;
+                    compressedPathsDecompressed++;
                 }
 
                 ReadOnlySpan<byte> bytesToWrite = bytes.AsSpan(0, processedBytes);
@@ -317,6 +339,60 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             writer.WriteStringValue("[[unsupported_encrypted_value]]");
                         }
                         break;
+                }
+            }
+
+            // Simple wrapper to count writes when the base stream isn't seekable.
+            private sealed class CountingStream : Stream
+            {
+                private readonly Stream inner;
+                private readonly Action<int> onWrite;
+
+                public CountingStream(Stream inner, Action<int> onWrite)
+                {
+                    this.inner = inner ?? throw new ArgumentNullException(nameof(inner));
+                    this.onWrite = onWrite ?? (_ => { });
+                }
+
+                public override bool CanRead => this.inner.CanRead;
+                public override bool CanSeek => this.inner.CanSeek;
+                public override bool CanWrite => this.inner.CanWrite;
+                public override long Length => this.inner.Length;
+                public override long Position { get => this.inner.Position; set => this.inner.Position = value; }
+                public override void Flush() => this.inner.Flush();
+                public override int Read(byte[] buffer, int offset, int count) => this.inner.Read(buffer, offset, count);
+                public override long Seek(long offset, SeekOrigin origin) => this.inner.Seek(offset, origin);
+                public override void SetLength(long value) => this.inner.SetLength(value);
+                public override void Write(byte[] buffer, int offset, int count)
+                {
+                    this.inner.Write(buffer, offset, count);
+                    this.onWrite(count);
+                }
+                public override void Write(ReadOnlySpan<byte> buffer)
+                {
+                    this.inner.Write(buffer);
+                    this.onWrite(buffer.Length);
+                }
+                public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+                {
+                    var task = this.inner.WriteAsync(buffer, cancellationToken);
+                    if (task.IsCompletedSuccessfully)
+                    {
+                        this.onWrite(buffer.Length);
+                        return task;
+                    }
+                    return CountAfterAsync(task, buffer.Length);
+                }
+
+                private async ValueTask CountAfterAsync(ValueTask task, int len)
+                {
+                    await task.ConfigureAwait(false);
+                    this.onWrite(len);
+                }
+
+                public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+                {
+                    return this.WriteAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
                 }
             }
         }
