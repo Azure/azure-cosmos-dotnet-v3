@@ -1432,6 +1432,15 @@
       "NestedTypes": {}
     }
   },
-  "Members": {},
+  "Members": {
+    "System.Type GetType()[System.Runtime.CompilerServices.NullableContextAttribute((Byte)1)]-[System.Runtime.CompilerServices.IntrinsicAttribute()]": {
+      "Type": "Method",
+      "Attributes": [
+        "IntrinsicAttribute",
+        "NullableContextAttribute"
+      ],
+      "MethodInfo": "System.Type GetType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+    }
+  },
   "NestedTypes": {}
 }
