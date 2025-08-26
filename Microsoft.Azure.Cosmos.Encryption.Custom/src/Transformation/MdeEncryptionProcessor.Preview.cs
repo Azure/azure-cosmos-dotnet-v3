@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     return await this.JObjectEncryptionProcessor.EncryptAsync(input, encryptor, encryptionOptions, token);
                 case JsonProcessor.Stream:
                     MemoryStream ms = new ();
-                    await this.StreamProcessor.EncryptStreamAsync(input, ms, encryptor, encryptionOptions, token);
+                    await this.StreamProcessor.EncryptStreamAsync(input, ms, encryptor, encryptionOptions, diagnosticsContext: null, token);
                     return ms;
 
                 default:

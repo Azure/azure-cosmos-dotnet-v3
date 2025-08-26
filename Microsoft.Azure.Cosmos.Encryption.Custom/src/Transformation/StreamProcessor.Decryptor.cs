@@ -18,15 +18,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
     internal partial class StreamProcessor
     {
-    private readonly int initialBufferSize;
         private const string EncryptionPropertiesPath = "/" + Constants.EncryptedInfo;
+
+    // Cap buffer growth to prevent unbounded memory usage for extremely large tokens
+    private const int MaxBufferSizeBytes = 8 * 1024 * 1024; // 8 MB
+    private const int BufferGrowthMinIncrement = 4096; // 4 KB minimal additional headroom
+
         private static readonly SqlBitSerializer SqlBoolSerializer = new ();
         private static readonly SqlFloatSerializer SqlDoubleSerializer = new ();
         private static readonly SqlBigIntSerializer SqlLongSerializer = new ();
 
-        private static readonly JsonReaderOptions JsonReaderOptions = new () { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip };
+    private static readonly JsonReaderOptions JsonReaderOptions = new () { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip };
+    private static readonly JsonWriterOptions JsonWriterOptions = new () { Indented = false };
 
         internal static int InitialBufferSize { get; set; } = 16384;
+
+        private readonly int initialBufferSize;
 
         internal StreamProcessor()
             : this(InitialBufferSize)
@@ -39,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             this.initialBufferSize = initialBufferSize > 0 ? initialBufferSize : InitialBufferSize;
         }
 
-    internal MdeEncryptor MdeEngine { get; set; } = new MdeEncryptor();
+        internal MdeEncryptor Encryptor { get; set; } = new MdeEncryptor();
 
         internal async Task<DecryptionContext> DecryptStreamAsync(
             Stream inputStream,
@@ -75,20 +82,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             // If output stream is seekable we can compute bytes written via Position delta; otherwise wrap to count writes.
             long initialOutputPos = outputStream.CanSeek ? outputStream.Position : 0;
-            Stream countingOutput = outputStream.CanSeek ? outputStream : new CountingStream(outputStream, onWrite:(n) => { bytesWritten += n; });
-            using Utf8JsonWriter writer = new (countingOutput);
+            Stream countingOutput = outputStream.CanSeek ? outputStream : new CountingStream(outputStream, onWrite: (n) => bytesWritten += n);
+            using Utf8JsonWriter writer = new (countingOutput, StreamProcessor.JsonWriterOptions);
 
             byte[] buffer = arrayPoolManager.Rent(this.initialBufferSize);
 
             JsonReaderState state = new (StreamProcessor.JsonReaderOptions);
 
             // Build a top-level property map: property name (without leading slash) -> is encrypted
-            Dictionary<string, bool> encryptedTopLevel = new(StringComparer.Ordinal);
+            Dictionary<string, bool> encryptedTopLevel = new (StringComparer.Ordinal);
             foreach (string p in properties.EncryptedPaths)
             {
                 if (!string.IsNullOrEmpty(p) && p[0] == '/')
                 {
-                    string name = p.Substring(1);
+                    string name = p[1..];
+
                     // Only consider top-level, ignore nested paths (keeps behavior consistent for current design)
                     if (!name.Contains('/'))
                     {
@@ -122,8 +130,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 // Guard against end-of-stream: when dataSize == 0, don't resize unnecessarily
                 if (dataSize > 0 && leftOver == dataSize)
                 {
-                    byte[] newBuffer = arrayPoolManager.Rent(buffer.Length * 2);
-                    buffer.AsSpan().CopyTo(newBuffer);
+                    int target = Math.Max(buffer.Length * 2, leftOver + BufferGrowthMinIncrement);
+                    int capped = Math.Min(MaxBufferSizeBytes, target);
+                    if (buffer.Length >= capped)
+                    {
+                        throw new InvalidOperationException($"JSON token exceeds maximum supported size of {MaxBufferSizeBytes} bytes at path {currentPropertyPath ?? "<unknown>"}.");
+                    }
+
+                    byte[] newBuffer = arrayPoolManager.Rent(capped);
+                    buffer.AsSpan(0, dataSize).CopyTo(newBuffer);
                     buffer = newBuffer;
                 }
                 else if (leftOver != 0)
@@ -216,6 +231,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             break;
                         case JsonTokenType.PropertyName:
                             ReadOnlySpan<byte> rawName = reader.HasValueSequence ? reader.ValueSequence.ToArray().AsSpan() : reader.ValueSpan;
+
                             // Fast-path skip for _ei without allocating a string
                             if (reader.ValueTextEquals(Constants.EncryptedInfo))
                             {
@@ -224,20 +240,24 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                 {
                                     isIgnoredBlock = true;
                                 }
+
                                 break;
                             }
 
                             string propertyName = null;
+
                             // Minimal allocation: only materialize string if we need to check encryption map
                             if (!rawName.IsEmpty)
                             {
                                 propertyName = System.Text.Encoding.UTF8.GetString(rawName);
                             }
+
                             currentPropertyPath = "/" + propertyName;
                             if (propertyName != null && encryptedTopLevel.ContainsKey(propertyName))
                             {
                                 decryptPropertyName = currentPropertyPath;
                             }
+
                             writer.WritePropertyName(reader.ValueSpan);
                             break;
                         case JsonTokenType.Comment: // Skipped via reader options
@@ -275,7 +295,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     throw new InvalidOperationException($"Base64 decoding failed for encrypted field at path {pathInfo}: {status}. The field may be corrupted or not a valid base64 string.");
                 }
 
-                (byte[] bytes, int processedBytes) = this.MdeEngine.Decrypt(encryptionKey, cipherTextWithTypeMarker, cipherTextLength, arrayPoolManager);
+                // Capture the type marker before the ciphertext buffer is returned
+                TypeMarker marker = (TypeMarker)cipherTextWithTypeMarker[0];
+
+                (byte[] bytes, int processedBytes) = this.Encryptor.Decrypt(encryptionKey, cipherTextWithTypeMarker, cipherTextLength, arrayPoolManager);
+
                 // Early return the ciphertext buffer since it's no longer needed
                 arrayPoolManager.Return(cipherTextWithTypeMarker);
 
@@ -284,6 +308,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     BrotliCompressor decompressor = new ();
                     byte[] decompressed = arrayPoolManager.Rent(decompressedSize);
                     processedBytes = decompressor.Decompress(bytes, processedBytes, decompressed);
+
                     // Early return the previous buffer if it was rented
                     arrayPoolManager.Return(bytes);
                     bytes = decompressed;
@@ -291,7 +316,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 }
 
                 ReadOnlySpan<byte> bytesToWrite = bytes.AsSpan(0, processedBytes);
-                TypeMarker marker = (TypeMarker)cipherTextWithTypeMarker[0];
+
                 switch (marker)
                 {
                     case TypeMarker.String:
@@ -303,6 +328,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                         {
                             throw new InvalidOperationException($"Invalid UTF-8 while writing decrypted string at path {decryptPropertyName ?? "<unknown>"}", ex);
                         }
+
                         break;
                     case TypeMarker.Long:
                         try
@@ -313,6 +339,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                         {
                             throw new InvalidOperationException($"Failed to deserialize decrypted payload at path {decryptPropertyName ?? "<unknown>"} as Long. The ciphertext may be corrupted or forged.", ex);
                         }
+
                         break;
                     case TypeMarker.Double:
                         try
@@ -323,6 +350,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                         {
                             throw new InvalidOperationException($"Failed to deserialize decrypted payload at path {decryptPropertyName ?? "<unknown>"} as Double. The ciphertext may be corrupted or forged.", ex);
                         }
+
                         break;
                     case TypeMarker.Boolean:
                         writer.WriteBooleanValue(SqlBoolSerializer.Deserialize(bytesToWrite));
@@ -338,64 +366,90 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             // Use a redaction token to avoid leaking decrypted plaintext.
                             writer.WriteStringValue("[[unsupported_encrypted_value]]");
                         }
+
                         break;
                 }
             }
+        }
 
-            // Simple wrapper to count writes when the base stream isn't seekable.
-            private sealed class CountingStream : Stream
+        // Simple wrapper to count writes when the base stream isn't seekable.
+        private sealed class CountingStream : Stream
+        {
+            private readonly Stream inner;
+            private readonly Action<int> onWrite;
+
+            public CountingStream(Stream inner, Action<int> onWrite)
             {
-                private readonly Stream inner;
-                private readonly Action<int> onWrite;
+                this.inner = inner ?? throw new ArgumentNullException(nameof(inner));
+                this.onWrite = onWrite ?? (_ => { });
+            }
 
-                public CountingStream(Stream inner, Action<int> onWrite)
-                {
-                    this.inner = inner ?? throw new ArgumentNullException(nameof(inner));
-                    this.onWrite = onWrite ?? (_ => { });
-                }
+            public override bool CanRead => this.inner.CanRead;
 
-                public override bool CanRead => this.inner.CanRead;
-                public override bool CanSeek => this.inner.CanSeek;
-                public override bool CanWrite => this.inner.CanWrite;
-                public override long Length => this.inner.Length;
-                public override long Position { get => this.inner.Position; set => this.inner.Position = value; }
-                public override void Flush() => this.inner.Flush();
-                public override int Read(byte[] buffer, int offset, int count) => this.inner.Read(buffer, offset, count);
-                public override long Seek(long offset, SeekOrigin origin) => this.inner.Seek(offset, origin);
-                public override void SetLength(long value) => this.inner.SetLength(value);
-                public override void Write(byte[] buffer, int offset, int count)
+            public override bool CanSeek => this.inner.CanSeek;
+
+            public override bool CanWrite => this.inner.CanWrite;
+
+            public override long Length => this.inner.Length;
+
+            public override long Position { get => this.inner.Position; set => this.inner.Position = value; }
+
+            public override void Flush()
+            {
+                this.inner.Flush();
+            }
+
+            public override int Read(byte[] buffer, int offset, int count)
+            {
+                return this.inner.Read(buffer, offset, count);
+            }
+
+            public override long Seek(long offset, SeekOrigin origin)
+            {
+                return this.inner.Seek(offset, origin);
+            }
+
+            public override void SetLength(long value)
+            {
+                this.inner.SetLength(value);
+            }
+
+            public override void Write(byte[] buffer, int offset, int count)
+            {
+                this.inner.Write(buffer, offset, count);
+                this.onWrite(count);
+            }
+
+            public override void Write(ReadOnlySpan<byte> buffer)
+            {
+                this.inner.Write(buffer);
+                this.onWrite(buffer.Length);
+            }
+
+            public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+            {
+                ValueTask task = this.inner.WriteAsync(buffer, cancellationToken);
+                if (task.IsCompletedSuccessfully)
                 {
-                    this.inner.Write(buffer, offset, count);
-                    this.onWrite(count);
-                }
-                public override void Write(ReadOnlySpan<byte> buffer)
-                {
-                    this.inner.Write(buffer);
                     this.onWrite(buffer.Length);
-                }
-                public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
-                {
-                    var task = this.inner.WriteAsync(buffer, cancellationToken);
-                    if (task.IsCompletedSuccessfully)
-                    {
-                        this.onWrite(buffer.Length);
-                        return task;
-                    }
-                    return CountAfterAsync(task, buffer.Length);
+                    return task;
                 }
 
-                private async ValueTask CountAfterAsync(ValueTask task, int len)
-                {
-                    await task.ConfigureAwait(false);
-                    this.onWrite(len);
-                }
+                return this.CountAfterAsync(task, buffer.Length);
+            }
 
-                public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-                {
-                    return this.WriteAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
-                }
+            private async ValueTask CountAfterAsync(ValueTask task, int len)
+            {
+                await task.ConfigureAwait(false);
+                this.onWrite(len);
+            }
+
+            public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            {
+                return this.WriteAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
             }
         }
     }
 }
+
 #endif

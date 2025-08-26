@@ -15,15 +15,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
     internal partial class StreamProcessor
     {
-    private readonly byte[] encryptionPropertiesNameBytes = Encoding.UTF8.GetBytes(Constants.EncryptedInfo);
+        private readonly byte[] encryptionPropertiesNameBytes = Encoding.UTF8.GetBytes(Constants.EncryptedInfo);
 
         internal async Task EncryptStreamAsync(
             Stream inputStream,
             Stream outputStream,
             Encryptor encryptor,
             EncryptionOptions encryptionOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
+            long bytesRead = 0;
+            long bytesWritten = 0;
+            long propertiesEncrypted = 0;
+            long compressedPathsCompressed = 0;
+            long startTimestamp = System.Diagnostics.Stopwatch.GetTimestamp();
+
             List<string> pathsEncrypted = new ();
 
             using ArrayPoolManager arrayPoolManager = new ();
@@ -36,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 ? new BrotliCompressor(encryptionOptions.CompressionOptions.CompressionLevel) : null;
 
             // Build a top-level property map for encryption
-            Dictionary<string, bool> pathsToEncryptTopLevel = new(StringComparer.Ordinal);
+            Dictionary<string, bool> pathsToEncryptTopLevel = new (StringComparer.Ordinal);
             foreach (string p in encryptionOptions.PathsToEncrypt)
             {
                 if (!string.IsNullOrEmpty(p) && p[0] == '/')
@@ -51,7 +58,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             Dictionary<string, int> compressedPaths = new ();
 
-            using Utf8JsonWriter writer = new (outputStream);
+            // If output stream is seekable we can compute bytes written via Position delta; otherwise wrap to count writes.
+            long initialOutputPos = outputStream.CanSeek ? outputStream.Position : 0;
+            Stream countingOutput = outputStream.CanSeek ? outputStream : new CountingStream(outputStream, onWrite: (n) => { bytesWritten += n; });
+            using Utf8JsonWriter writer = new (countingOutput, StreamProcessor.JsonWriterOptions);
 
             byte[] buffer = arrayPoolManager.Rent(this.initialBufferSize);
 
@@ -69,6 +79,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             {
                 int dataLength = await inputStream.ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), cancellationToken);
                 int dataSize = dataLength + leftOver;
+                bytesRead += dataLength;
                 isFinalBlock = dataSize == 0;
                 long bytesConsumed = 0;
 
@@ -80,8 +91,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 // Guard against end-of-stream: when dataSize == 0, don't resize unnecessarily
                 if (dataSize > 0 && leftOver == dataSize)
                 {
-                    byte[] newBuffer = arrayPoolManager.Rent(buffer.Length * 2);
-                    buffer.AsSpan().CopyTo(newBuffer);
+                    int target = Math.Max(buffer.Length * 2, leftOver + BufferGrowthMinIncrement);
+                    int capped = Math.Min(MaxBufferSizeBytes, target);
+                    if (buffer.Length >= capped)
+                    {
+                        throw new InvalidOperationException($"JSON token exceeds maximum supported size of {MaxBufferSizeBytes} bytes.");
+                    }
+
+                    byte[] newBuffer = arrayPoolManager.Rent(capped);
+                    buffer.AsSpan(0, dataSize).CopyTo(newBuffer);
                     buffer = newBuffer;
                 }
                 else if (leftOver != 0)
@@ -91,7 +109,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             }
 
             // Do not dispose inputStream here; caller owns streams for consistency with decryptor.
-
             EncryptionProperties encryptionProperties = new (
                 encryptionFormatVersion: compressionEnabled ? 4 : 3,
                 encryptionOptions.EncryptionAlgorithm,
@@ -106,7 +123,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             writer.WriteEndObject();
 
             writer.Flush();
-            outputStream.Position = 0;
+            if (outputStream.CanSeek)
+            {
+                bytesWritten = Math.Max(0, outputStream.Position - initialOutputPos);
+                outputStream.Position = 0;
+            }
+
+            // finalize diagnostics
+            diagnosticsContext?.SetMetric("encrypt.bytesRead", bytesRead);
+            diagnosticsContext?.SetMetric("encrypt.bytesWritten", bytesWritten);
+            diagnosticsContext?.SetMetric("encrypt.propertiesEncrypted", propertiesEncrypted);
+            diagnosticsContext?.SetMetric("encrypt.compressedPathsCompressed", compressedPathsCompressed);
+            long elapsedTicks = System.Diagnostics.Stopwatch.GetTimestamp() - startTimestamp;
+            long elapsedMs = (long)(elapsedTicks * 1000.0 / System.Diagnostics.Stopwatch.Frequency);
+            diagnosticsContext?.SetMetric("encrypt.elapsedMs", elapsedMs);
 
             long TransformEncryptBuffer(ReadOnlySpan<byte> buffer)
             {
@@ -148,6 +178,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                 (byte[] bytes, int length) = bufferWriter.WrittenBuffer;
                                 ReadOnlySpan<byte> encryptedBytes = TransformEncryptPayload(bytes, length, TypeMarker.Object);
                                 writer.WriteBase64StringValue(encryptedBytes);
+                                propertiesEncrypted++;
 
                                 encryptPropertyName = null;
 #pragma warning disable VSTHRD103 // Call async methods when in an async method - this method cannot be async, Utf8JsonReader is ref struct
@@ -180,6 +211,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                 (byte[] bytes, int length) = bufferWriter.WrittenBuffer;
                                 ReadOnlySpan<byte> encryptedBytes = TransformEncryptPayload(bytes, length, TypeMarker.Array);
                                 writer.WriteBase64StringValue(encryptedBytes);
+                                propertiesEncrypted++;
 
                                 encryptPropertyName = null;
 #pragma warning disable VSTHRD103 // Call async methods when in an async method - this method cannot be async, Utf8JsonReader is ref struct
@@ -209,10 +241,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                 byte[] bytes = arrayPoolManager.Rent(reader.ValueSpan.Length);
                                 int length = reader.CopyString(bytes);
                                 ReadOnlySpan<byte> encryptedBytes = TransformEncryptPayload(bytes, length, TypeMarker.String);
+
                                 // Early return temp string buffer
                                 arrayPoolManager.Return(bytes);
                                 currentWriter.WriteBase64StringValue(encryptedBytes);
                                 encryptPropertyName = null;
+                                propertiesEncrypted++;
                             }
                             else
                             {
@@ -225,10 +259,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             {
                                 (TypeMarker typeMarker, byte[] bytes, int length) = SerializeNumber(reader.ValueSpan, arrayPoolManager);
                                 ReadOnlySpan<byte> encryptedBytes = TransformEncryptPayload(bytes, length, typeMarker);
+
                                 // Early return temp number buffer
                                 arrayPoolManager.Return(bytes);
                                 currentWriter.WriteBase64StringValue(encryptedBytes);
                                 encryptPropertyName = null;
+                                propertiesEncrypted++;
                             }
                             else
                             {
@@ -243,6 +279,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                 ReadOnlySpan<byte> encryptedBytes = TransformEncryptPayload(bytes, length, TypeMarker.Boolean);
                                 currentWriter.WriteBase64StringValue(encryptedBytes);
                                 encryptPropertyName = null;
+                                propertiesEncrypted++;
                             }
                             else
                             {
@@ -257,6 +294,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                 ReadOnlySpan<byte> encryptedBytes = TransformEncryptPayload(bytes, length, TypeMarker.Boolean);
                                 currentWriter.WriteBase64StringValue(encryptedBytes);
                                 encryptPropertyName = null;
+                                propertiesEncrypted++;
                             }
                             else
                             {
@@ -285,9 +323,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     byte[] compressedBytes = arrayPoolManager.Rent(BrotliCompressor.GetMaxCompressedSize(payloadSize));
                     processedBytesLength = compressor.Compress(compressedPaths, encryptPropertyName, processedBytes, payloadSize, compressedBytes);
                     processedBytes = compressedBytes;
+                    compressedPathsCompressed++;
                 }
 
-                (byte[] encryptedBytes, int encryptedBytesCount) = this.MdeEngine.Encrypt(encryptionKey, typeMarker, processedBytes, processedBytesLength, arrayPoolManager);
+                (byte[] encryptedBytes, int encryptedBytesCount) = this.Encryptor.Encrypt(encryptionKey, typeMarker, processedBytes, processedBytesLength, arrayPoolManager);
 
                 pathsEncrypted.Add(encryptPropertyName);
                 return encryptedBytes.AsSpan(0, encryptedBytesCount);
