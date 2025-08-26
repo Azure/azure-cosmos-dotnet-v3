@@ -35,7 +35,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             BrotliCompressor compressor = encryptionOptions.CompressionOptions.Algorithm == CompressionOptions.CompressionAlgorithm.Brotli
                 ? new BrotliCompressor(encryptionOptions.CompressionOptions.CompressionLevel) : null;
 
-            HashSet<string> pathsToEncrypt = encryptionOptions.PathsToEncrypt as HashSet<string> ?? new (encryptionOptions.PathsToEncrypt, StringComparer.Ordinal);
+            // Build a top-level property map for encryption
+            Dictionary<string, bool> pathsToEncryptTopLevel = new(StringComparer.Ordinal);
+            foreach (string p in encryptionOptions.PathsToEncrypt)
+            {
+                if (!string.IsNullOrEmpty(p) && p[0] == '/')
+                {
+                    string name = p.Substring(1);
+                    if (!name.Contains('/'))
+                    {
+                        pathsToEncryptTopLevel[name] = true;
+                    }
+                }
+            }
 
             Dictionary<string, int> compressedPaths = new ();
 
@@ -180,10 +192,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                             break;
                         case JsonTokenType.PropertyName:
-                            string propertyName = "/" + reader.GetString();
-                            if (pathsToEncrypt.Contains(propertyName))
+                            string propName = reader.GetString();
+                            if (propName != null && pathsToEncryptTopLevel.ContainsKey(propName))
                             {
-                                encryptPropertyName = propertyName;
+                                encryptPropertyName = "/" + propName;
                             }
 
                             currentWriter.WritePropertyName(reader.ValueSpan);
@@ -197,6 +209,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                 byte[] bytes = arrayPoolManager.Rent(reader.ValueSpan.Length);
                                 int length = reader.CopyString(bytes);
                                 ReadOnlySpan<byte> encryptedBytes = TransformEncryptPayload(bytes, length, TypeMarker.String);
+                                // Early return temp string buffer
+                                arrayPoolManager.Return(bytes);
                                 currentWriter.WriteBase64StringValue(encryptedBytes);
                                 encryptPropertyName = null;
                             }
@@ -211,6 +225,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             {
                                 (TypeMarker typeMarker, byte[] bytes, int length) = SerializeNumber(reader.ValueSpan, arrayPoolManager);
                                 ReadOnlySpan<byte> encryptedBytes = TransformEncryptPayload(bytes, length, typeMarker);
+                                // Early return temp number buffer
+                                arrayPoolManager.Return(bytes);
                                 currentWriter.WriteBase64StringValue(encryptedBytes);
                                 encryptPropertyName = null;
                             }

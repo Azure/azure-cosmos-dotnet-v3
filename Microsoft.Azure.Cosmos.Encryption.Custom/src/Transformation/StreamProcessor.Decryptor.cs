@@ -75,7 +75,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             JsonReaderState state = new (StreamProcessor.JsonReaderOptions);
 
-            HashSet<string> encryptedPaths = properties.EncryptedPaths as HashSet<string> ?? new (properties.EncryptedPaths, StringComparer.Ordinal);
+            // Build a top-level property map: property name (without leading slash) -> is encrypted
+            Dictionary<string, bool> encryptedTopLevel = new(StringComparer.Ordinal);
+            foreach (string p in properties.EncryptedPaths)
+            {
+                if (!string.IsNullOrEmpty(p) && p[0] == '/')
+                {
+                    string name = p.Substring(1);
+                    // Only consider top-level, ignore nested paths (keeps behavior consistent for current design)
+                    if (!name.Contains('/'))
+                    {
+                        encryptedTopLevel[name] = true;
+                    }
+                }
+            }
 
             int leftOver = 0;
 
@@ -181,22 +194,29 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             writer.WriteEndArray();
                             break;
                         case JsonTokenType.PropertyName:
-                            string propertyName = "/" + reader.GetString();
-                            currentPropertyPath = propertyName;
-                            if (encryptedPaths.Contains(propertyName))
+                            ReadOnlySpan<byte> rawName = reader.HasValueSequence ? reader.ValueSequence.ToArray().AsSpan() : reader.ValueSpan;
+                            // Fast-path skip for _ei without allocating a string
+                            if (reader.ValueTextEquals(Constants.EncryptedInfo))
                             {
-                                decryptPropertyName = propertyName;
-                            }
-                            else if (propertyName == StreamProcessor.EncryptionPropertiesPath)
-                            {
+                                currentPropertyPath = EncryptionPropertiesPath;
                                 if (!reader.TrySkip())
                                 {
                                     isIgnoredBlock = true;
                                 }
-
                                 break;
                             }
 
+                            string propertyName = null;
+                            // Minimal allocation: only materialize string if we need to check encryption map
+                            if (!rawName.IsEmpty)
+                            {
+                                propertyName = System.Text.Encoding.UTF8.GetString(rawName);
+                            }
+                            currentPropertyPath = "/" + propertyName;
+                            if (propertyName != null && encryptedTopLevel.ContainsKey(propertyName))
+                            {
+                                decryptPropertyName = currentPropertyPath;
+                            }
                             writer.WritePropertyName(reader.ValueSpan);
                             break;
                         case JsonTokenType.Comment: // Skipped via reader options
@@ -235,14 +255,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 }
 
                 (byte[] bytes, int processedBytes) = this.MdeEngine.Decrypt(encryptionKey, cipherTextWithTypeMarker, cipherTextLength, arrayPoolManager);
+                // Early return the ciphertext buffer since it's no longer needed
+                arrayPoolManager.Return(cipherTextWithTypeMarker);
 
                 if (containsCompressed && properties.CompressedEncryptedPaths.TryGetValue(decryptPropertyName, out int decompressedSize))
                 {
                     BrotliCompressor decompressor = new ();
-                    byte[] buffer = arrayPoolManager.Rent(decompressedSize);
-                    processedBytes = decompressor.Decompress(bytes, processedBytes, buffer);
-
-                    bytes = buffer;
+                    byte[] decompressed = arrayPoolManager.Rent(decompressedSize);
+                    processedBytes = decompressor.Decompress(bytes, processedBytes, decompressed);
+                    // Early return the previous buffer if it was rented
+                    arrayPoolManager.Return(bytes);
+                    bytes = decompressed;
                 }
 
                 ReadOnlySpan<byte> bytesToWrite = bytes.AsSpan(0, processedBytes);
