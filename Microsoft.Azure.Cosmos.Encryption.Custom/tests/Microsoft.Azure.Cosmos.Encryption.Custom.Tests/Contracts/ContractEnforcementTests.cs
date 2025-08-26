@@ -29,10 +29,11 @@
         {
             string contractsDir = "Contracts";
             string tfm = GetCurrentTFM(); // e.g., net8.0
-            var candidates = new[]
+
+            string[] candidates = new[]
             {
-                tfm is null ? null : $"{baseFileName}.{tfm}.json",
-                tfm is null ? null : $"{baseFileName}.{tfm.Split('.')[0]}.json",
+                tfm is null ? null : $"{baseFileName}.{tfm}.json", // eg. net8.0
+                tfm is null ? null : $"{baseFileName}.{tfm.Split('.')[0]}.json", // eg. net8
                 defaultFileName
             };
 
@@ -55,7 +56,7 @@
             }
 
             // Example: ".NETCoreApp,Version=v8.0" -> net8.0
-            var fx = new FrameworkName(attr.FrameworkName);
+            FrameworkName fx = new FrameworkName(attr.FrameworkName);
             return $"net{fx.Version.Major}.{fx.Version.Minor}";
         }
     }
