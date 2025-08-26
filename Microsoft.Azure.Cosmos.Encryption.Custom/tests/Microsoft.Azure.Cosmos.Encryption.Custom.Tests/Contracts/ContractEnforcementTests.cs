@@ -32,8 +32,7 @@
 
             string[] candidates = new[]
             {
-                tfm is null ? null : $"{baseFileName}.{tfm}.json", // eg. net8.0
-                tfm is null ? null : $"{baseFileName}.{tfm.Split('.')[0]}.json", // eg. net8
+                tfm is null ? null : $"{baseFileName}.{tfm.Split('.')[0]}.json",
                 defaultFileName
             };
 

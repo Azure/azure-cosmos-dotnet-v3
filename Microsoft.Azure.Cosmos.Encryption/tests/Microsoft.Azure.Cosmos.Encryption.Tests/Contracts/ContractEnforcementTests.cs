@@ -31,7 +31,6 @@
             string tfm = GetCurrentTFM();
             var candidates = new[]
             {
-                tfm is null ? null : $"{baseFileName}.{tfm}.json",
                 tfm is null ? null : $"{baseFileName}.{tfm.Split('.')[0]}.json",
                 defaultFileName
             };
