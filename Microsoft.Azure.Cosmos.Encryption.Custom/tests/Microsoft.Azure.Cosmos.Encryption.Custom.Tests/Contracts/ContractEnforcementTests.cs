@@ -1,5 +1,9 @@
 ﻿namespace Microsoft.Azure.Cosmos.Encryption.Tests.Contracts
 {
+    using System.IO;
+    using System.Linq;
+    using System.Reflection;
+    using System.Runtime.Versioning;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestCategory("Windows")]
@@ -10,26 +14,49 @@
         [TestMethod]
         public void ContractChanges()
         {
-            // Pick baseline per target framework to account for runtime-specific signature differences
-            string baseline = "DotNetSDKEncryptionCustomAPI.json";
-#if NET8_0
-            // Prefer a .NET 8-specific baseline if present
-            const string net8Baseline = "DotNetSDKEncryptionCustomAPI.net8.json";
-            string net8Path = System.IO.Path.Combine("Contracts", net8Baseline);
-            if (System.IO.File.Exists(net8Path))
-            {
-                baseline = net8Baseline;
-            }
-            else
-            {
-                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.Fail($"Missing .NET 8 baseline file '{net8Baseline}'. Run UpdateContracts.ps1 to generate it.");
-            }
-#endif
+            // Resolve a framework-specific baseline if available; otherwise fall back to the generic baseline.
+            string baseline = ResolveFrameworkSpecificBaseline(
+                baseFileName: "DotNetSDKEncryptionCustomAPI",
+                defaultFileName: "DotNetSDKEncryptionCustomAPI.json");
 
             Cosmos.Tests.Contracts.ContractEnforcement.ValidateContractContainBreakingChanges(
                 dllName: "Microsoft.Azure.Cosmos.Encryption.Custom",
                 baselinePath: baseline,
                 breakingChangesPath: "DotNetSDKEncryptionCustomAPIChanges.json");
+        }
+
+        private static string ResolveFrameworkSpecificBaseline(string baseFileName, string defaultFileName)
+        {
+            string contractsDir = "Contracts";
+            string tfm = GetCurrentTFM(); // e.g., net8.0
+            var candidates = new[]
+            {
+                tfm is null ? null : $"{baseFileName}.{tfm}.json",
+                tfm is null ? null : $"{baseFileName}.{tfm.Split('.')[0]}.json",
+                defaultFileName
+            };
+
+            string existing = candidates
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Select(name => Path.Combine(contractsDir, name))
+                .FirstOrDefault(File.Exists);
+
+            // Return just the file name as expected by ContractEnforcement
+            return existing != null ? Path.GetFileName(existing) : defaultFileName;
+        }
+
+        private static string GetCurrentTFM()
+        {
+            // Read the TFM from the current test assembly TargetFrameworkAttribute
+            TargetFrameworkAttribute attr = Assembly.GetExecutingAssembly().GetCustomAttribute<TargetFrameworkAttribute>();
+            if (attr?.FrameworkName == null)
+            {
+                return null;
+            }
+
+            // Example: ".NETCoreApp,Version=v8.0" -> net8.0
+            var fx = new FrameworkName(attr.FrameworkName);
+            return $"net{fx.Version.Major}.{fx.Version.Minor}";
         }
     }
 }
