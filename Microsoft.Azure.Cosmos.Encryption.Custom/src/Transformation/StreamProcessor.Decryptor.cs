@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
     internal partial class StreamProcessor
     {
+    private readonly int initialBufferSize;
         private const string EncryptionPropertiesPath = "/" + Constants.EncryptedInfo;
         private static readonly SqlBitSerializer SqlBoolSerializer = new ();
         private static readonly SqlFloatSerializer SqlDoubleSerializer = new ();
@@ -26,6 +27,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         private static readonly JsonReaderOptions JsonReaderOptions = new () { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip };
 
         internal static int InitialBufferSize { get; set; } = 16384;
+
+        internal StreamProcessor()
+            : this(InitialBufferSize)
+        {
+        }
+
+        internal StreamProcessor(int initialBufferSize)
+        {
+            // Ensure a positive buffer size; fallback to legacy default if invalid
+            this.initialBufferSize = initialBufferSize > 0 ? initialBufferSize : InitialBufferSize;
+        }
 
         internal MdeEncryptor Encryptor { get; set; } = new MdeEncryptor();
 
@@ -59,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             using Utf8JsonWriter writer = new (outputStream);
 
-            byte[] buffer = arrayPoolManager.Rent(InitialBufferSize);
+            byte[] buffer = arrayPoolManager.Rent(this.initialBufferSize);
 
             JsonReaderState state = new (StreamProcessor.JsonReaderOptions);
 
@@ -71,6 +83,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             bool isIgnoredBlock = false;
 
             string decryptPropertyName = null;
+            string currentPropertyPath = null;
 
             while (!isFinalBlock)
             {
@@ -85,7 +98,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 leftOver = dataSize - (int)bytesConsumed;
 
                 // we need to scale out buffer
-                if (leftOver == dataSize)
+                // Guard against end-of-stream: when dataSize == 0, don't resize unnecessarily
+                if (dataSize > 0 && leftOver == dataSize)
                 {
                     byte[] newBuffer = arrayPoolManager.Rent(buffer.Length * 2);
                     buffer.AsSpan().CopyTo(newBuffer);
@@ -125,7 +139,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                         case JsonTokenType.String:
                             if (decryptPropertyName == null)
                             {
-                                writer.WriteStringValue(reader.ValueSpan);
+                                try
+                                {
+                                    writer.WriteStringValue(reader.ValueSpan);
+                                }
+                                catch (Exception ex)
+                                {
+                                    throw new InvalidOperationException($"Invalid UTF-8 while writing string at path {currentPropertyPath ?? "<unknown>"}", ex);
+                                }
                             }
                             else
                             {
@@ -161,6 +182,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             break;
                         case JsonTokenType.PropertyName:
                             string propertyName = "/" + reader.GetString();
+                            currentPropertyPath = propertyName;
                             if (encryptedPaths.Contains(propertyName))
                             {
                                 decryptPropertyName = propertyName;
@@ -208,7 +230,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 OperationStatus status = Base64.DecodeFromUtf8InPlace(cipherTextWithTypeMarker.AsSpan(0, initialLength), out int cipherTextLength);
                 if (status != OperationStatus.Done)
                 {
-                    throw new InvalidOperationException($"Base64 decoding failed: {status}");
+                    string pathInfo = decryptPropertyName ?? currentPropertyPath ?? "<unknown>";
+                    throw new InvalidOperationException($"Base64 decoding failed for encrypted field at path {pathInfo}: {status}. The field may be corrupted or not a valid base64 string.");
                 }
 
                 (byte[] bytes, int processedBytes) = this.Encryptor.Decrypt(encryptionKey, cipherTextWithTypeMarker, cipherTextLength, arrayPoolManager);
@@ -223,16 +246,38 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 }
 
                 ReadOnlySpan<byte> bytesToWrite = bytes.AsSpan(0, processedBytes);
-                switch ((TypeMarker)cipherTextWithTypeMarker[0])
+                TypeMarker marker = (TypeMarker)cipherTextWithTypeMarker[0];
+                switch (marker)
                 {
                     case TypeMarker.String:
-                        writer.WriteStringValue(bytesToWrite);
+                        try
+                        {
+                            writer.WriteStringValue(bytesToWrite);
+                        }
+                        catch (Exception ex)
+                        {
+                            throw new InvalidOperationException($"Invalid UTF-8 while writing decrypted string at path {decryptPropertyName ?? "<unknown>"}", ex);
+                        }
                         break;
                     case TypeMarker.Long:
-                        writer.WriteNumberValue(SqlLongSerializer.Deserialize(bytesToWrite));
+                        try
+                        {
+                            writer.WriteNumberValue(SqlLongSerializer.Deserialize(bytesToWrite));
+                        }
+                        catch (Exception ex)
+                        {
+                            throw new InvalidOperationException($"Failed to deserialize decrypted payload at path {decryptPropertyName ?? "<unknown>"} as Long. The ciphertext may be corrupted or forged.", ex);
+                        }
                         break;
                     case TypeMarker.Double:
-                        writer.WriteNumberValue(SqlDoubleSerializer.Deserialize(bytesToWrite));
+                        try
+                        {
+                            writer.WriteNumberValue(SqlDoubleSerializer.Deserialize(bytesToWrite));
+                        }
+                        catch (Exception ex)
+                        {
+                            throw new InvalidOperationException($"Failed to deserialize decrypted payload at path {decryptPropertyName ?? "<unknown>"} as Double. The ciphertext may be corrupted or forged.", ex);
+                        }
                         break;
                     case TypeMarker.Boolean:
                         writer.WriteBooleanValue(SqlBoolSerializer.Deserialize(bytesToWrite));
@@ -241,7 +286,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                         writer.WriteNullValue();
                         break;
                     default:
-                        writer.WriteRawValue(bytesToWrite, true);
+                        // Option A: emit a safe JSON string token instead of raw bytes to preserve valid JSON,
+                        // and record a diagnostics scope for visibility.
+                        using (diagnosticsContext?.CreateScope($"DecryptUnknownTypeMarker Path={decryptPropertyName} Marker={(byte)marker}"))
+                        {
+                            // Use a redaction token to avoid leaking decrypted plaintext.
+                            writer.WriteStringValue("[[unsupported_encrypted_value]]");
+                        }
                         break;
                 }
             }

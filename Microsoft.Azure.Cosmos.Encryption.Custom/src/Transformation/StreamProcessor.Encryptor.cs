@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
     internal partial class StreamProcessor
     {
-        private readonly byte[] encryptionPropertiesNameBytes = Encoding.UTF8.GetBytes(Constants.EncryptedInfo);
+    private readonly byte[] encryptionPropertiesNameBytes = Encoding.UTF8.GetBytes(Constants.EncryptedInfo);
 
         internal async Task EncryptStreamAsync(
             Stream inputStream,
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             using Utf8JsonWriter writer = new (outputStream);
 
-            byte[] buffer = arrayPoolManager.Rent(InitialBufferSize);
+            byte[] buffer = arrayPoolManager.Rent(this.initialBufferSize);
 
             JsonReaderState state = new (StreamProcessor.JsonReaderOptions);
 
@@ -65,7 +65,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 leftOver = dataSize - (int)bytesConsumed;
 
                 // we need to scale out buffer
-                if (leftOver == dataSize)
+                // Guard against end-of-stream: when dataSize == 0, don't resize unnecessarily
+                if (dataSize > 0 && leftOver == dataSize)
                 {
                     byte[] newBuffer = arrayPoolManager.Rent(buffer.Length * 2);
                     buffer.AsSpan().CopyTo(newBuffer);
@@ -77,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 }
             }
 
-            await inputStream.DisposeAsync();
+            // Do not dispose inputStream here; caller owns streams for consistency with decryptor.
 
             EncryptionProperties encryptionProperties = new (
                 encryptionFormatVersion: compressionEnabled ? 4 : 3,
