@@ -243,7 +243,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             {
                                 try
                                 {
-                                    writer.WriteStringValue(reader.ValueSpan);
+                                    // If the value is contiguous and unescaped, fast-path write
+                                    if (!reader.HasValueSequence && !reader.ValueIsEscaped)
+                                    {
+                                        writer.WriteStringValue(reader.ValueSpan);
+                                    }
+                                    else
+                                    {
+                                        // Copy and unescape into a pooled buffer when needed (multi-segment or escaped)
+                                        int estimatedLength = reader.HasValueSequence ? (int)reader.ValueSequence.Length : reader.ValueSpan.Length;
+                                        byte[] tmp = arrayPoolManager.Rent(Math.Max(estimatedLength, 64));
+                                        int copied = reader.CopyString(tmp);
+                                        writer.WriteStringValue(tmp.AsSpan(0, copied));
+                                        arrayPoolManager.Return(tmp);
+                                    }
                                 }
                                 catch (Exception ex)
                                 {
@@ -261,7 +274,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             break;
                         case JsonTokenType.Number:
                             decryptPropertyName = null;
-                            writer.WriteRawValue(reader.ValueSpan);
+                            if (!reader.HasValueSequence)
+                            {
+                                writer.WriteRawValue(reader.ValueSpan);
+                            }
+                            else
+                            {
+                                int len = (int)reader.ValueSequence.Length;
+                                byte[] tmp = arrayPoolManager.Rent(Math.Max(len, 32));
+                                reader.ValueSequence.CopyTo(tmp);
+                                writer.WriteRawValue(tmp.AsSpan(0, len));
+                                arrayPoolManager.Return(tmp);
+                            }
                             break;
                         case JsonTokenType.None: // Unreachable: pre-first-Read state
                             decryptPropertyName = null;
@@ -386,9 +410,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             void TransformDecryptProperty(ref Utf8JsonReader reader)
             {
-                byte[] cipherTextWithTypeMarker = arrayPoolManager.Rent(reader.ValueSpan.Length);
+                int estimatedCipherLen = reader.HasValueSequence ? (int)reader.ValueSequence.Length : reader.ValueSpan.Length;
+                byte[] cipherTextWithTypeMarker = arrayPoolManager.Rent(Math.Max(estimatedCipherLen, 64));
 
-                // necessary for proper un-escaping
+                // necessary for proper un-escaping and multi-segment handling
                 int initialLength = reader.CopyString(cipherTextWithTypeMarker);
 
                 OperationStatus status = Base64.DecodeFromUtf8InPlace(cipherTextWithTypeMarker.AsSpan(0, initialLength), out int cipherTextLength);
