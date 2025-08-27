@@ -117,6 +117,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             string decryptPropertyName = null;
             string currentPropertyPath = null;
 
+            // Robust cross-buffer skipping state for the special encrypted info property value
+            bool skippingEi = false;
+            bool skipEiFirstTokenPending = false;
+            int skipEiContainerDepth = 0;
+
                 while (!isFinalBlock)
                 {
                     int dataLength = await inputStream.ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), cancellationToken);
@@ -180,6 +185,45 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                 while (reader.Read())
                 {
+                    // If we're currently skipping the value of the EncryptedInfo property, consume tokens until complete
+                    if (skippingEi)
+                    {
+                        if (skipEiFirstTokenPending)
+                        {
+                            skipEiFirstTokenPending = false;
+                            if (reader.TokenType == JsonTokenType.StartObject || reader.TokenType == JsonTokenType.StartArray)
+                            {
+                                // Start of a container value; track nested depth
+                                skipEiContainerDepth = 1;
+                            }
+                            else
+                            {
+                                // Scalar value skipped in one token
+                                skippingEi = false;
+                            }
+                            continue;
+                        }
+
+                        if (reader.TokenType == JsonTokenType.StartObject || reader.TokenType == JsonTokenType.StartArray)
+                        {
+                            skipEiContainerDepth++;
+                            continue;
+                        }
+
+                        if (reader.TokenType == JsonTokenType.EndObject || reader.TokenType == JsonTokenType.EndArray)
+                        {
+                            skipEiContainerDepth--;
+                            if (skipEiContainerDepth == 0)
+                            {
+                                // Finished skipping the container
+                                skippingEi = false;
+                            }
+                            continue;
+                        }
+
+                        // Intermediate token inside the container being skipped
+                        continue;
+                    }
                     JsonTokenType tokenType = reader.TokenType;
 
                     if (isIgnoredBlock && reader.CurrentDepth == 1 && tokenType == JsonTokenType.EndObject)
@@ -239,16 +283,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             writer.WriteEndArray();
                             break;
                         case JsonTokenType.PropertyName:
-                            // Fast-path skip for _ei without allocating a string
+                            // Fast-path skip for encrypted info property without allocating a string
                             if (reader.ValueTextEquals(Constants.EncryptedInfo))
                             {
                                 currentPropertyPath = EncryptionPropertiesPath;
+                                // Try to skip the value within the current buffer; if it doesn't fit, set state to continue skipping across buffers
                                 if (!reader.TrySkip())
                                 {
-                                    isIgnoredBlock = true;
+                                    skippingEi = true;
+                                    skipEiFirstTokenPending = true; // next token starts the value
+                                    skipEiContainerDepth = 0;
                                 }
-
-                                break;
+                                // Do not write the property name nor its value
+                                continue; // continue the outer read loop
                             }
 
                             // Check if current property is an encrypted top-level name without allocating a string
