@@ -410,26 +410,53 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             void TransformDecryptProperty(ref Utf8JsonReader reader)
             {
-                int estimatedCipherLen = reader.HasValueSequence ? (int)reader.ValueSequence.Length : reader.ValueSpan.Length;
-                byte[] cipherTextWithTypeMarker = arrayPoolManager.Rent(Math.Max(estimatedCipherLen, 64));
+                int base64Len = reader.HasValueSequence ? (int)reader.ValueSequence.Length : reader.ValueSpan.Length;
+                const int StackThreshold = 512;
 
-                // necessary for proper un-escaping and multi-segment handling
-                int initialLength = reader.CopyString(cipherTextWithTypeMarker);
+                byte[] cipherInput = null;
+                int cipherTextLength;
+                TypeMarker marker;
 
-                OperationStatus status = Base64.DecodeFromUtf8InPlace(cipherTextWithTypeMarker.AsSpan(0, initialLength), out int cipherTextLength);
-                if (status != OperationStatus.Done)
+                if (base64Len <= StackThreshold)
                 {
-                    string pathInfo = decryptPropertyName ?? currentPropertyPath ?? "<unknown>";
-                    throw new InvalidOperationException($"Base64 decoding failed for encrypted field at path {pathInfo}: {status}. The field may be corrupted or not a valid base64 string.");
+                    // Decode into stack buffer and then copy exactly the decoded bytes into a rented array for decrypt
+                    Span<byte> tmp = base64Len == 0 ? Span<byte>.Empty : stackalloc byte[base64Len];
+                    int initialLength = reader.CopyString(tmp);
+                    OperationStatus status = Base64.DecodeFromUtf8InPlace(tmp.Slice(0, initialLength), out cipherTextLength);
+                    if (status != OperationStatus.Done)
+                    {
+                        string pathInfo = decryptPropertyName ?? currentPropertyPath ?? "<unknown>";
+                        throw new InvalidOperationException($"Base64 decoding failed for encrypted field at path {pathInfo}: {status}. The field may be corrupted or not a valid base64 string.");
+                    }
+
+                    cipherInput = arrayPoolManager.Rent(Math.Max(cipherTextLength, 1));
+                    if (cipherTextLength > 0)
+                    {
+                        tmp.Slice(0, cipherTextLength).CopyTo(cipherInput);
+                    }
+                    marker = (TypeMarker)cipherInput[0];
+                }
+                else
+                {
+                    // Use pooled array sized for incoming base64 to decode in-place
+                    byte[] pooled = arrayPoolManager.Rent(Math.Max(base64Len, 64));
+                    int initialLength = reader.CopyString(pooled);
+                    OperationStatus status = Base64.DecodeFromUtf8InPlace(pooled.AsSpan(0, initialLength), out cipherTextLength);
+                    if (status != OperationStatus.Done)
+                    {
+                        arrayPoolManager.Return(pooled);
+                        string pathInfo = decryptPropertyName ?? currentPropertyPath ?? "<unknown>";
+                        throw new InvalidOperationException($"Base64 decoding failed for encrypted field at path {pathInfo}: {status}. The field may be corrupted or not a valid base64 string.");
+                    }
+
+                    cipherInput = pooled;
+                    marker = (TypeMarker)cipherInput[0];
                 }
 
-                // Capture the type marker before the ciphertext buffer is returned
-                TypeMarker marker = (TypeMarker)cipherTextWithTypeMarker[0];
-
-                (byte[] bytes, int processedBytes) = this.Encryptor.Decrypt(encryptionKey, cipherTextWithTypeMarker, cipherTextLength, arrayPoolManager);
+                (byte[] bytes, int processedBytes) = this.Encryptor.Decrypt(encryptionKey, cipherInput, cipherTextLength, arrayPoolManager);
 
                 // Early return the ciphertext buffer since it's no longer needed
-                arrayPoolManager.Return(cipherTextWithTypeMarker);
+                arrayPoolManager.Return(cipherInput);
 
                 if (decompressor != null && properties.CompressedEncryptedPaths.TryGetValue(decryptPropertyName, out int decompressedSize))
                 {
