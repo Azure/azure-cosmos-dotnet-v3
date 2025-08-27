@@ -410,6 +410,122 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         }
 
         [TestMethod]
+        public async Task Decrypt_Skips_Ei_ScalarString_AcrossBuffers()
+        {
+            // Arrange: craft a JSON with a very long string as the value of _ei so it spans buffers
+            int original = StreamProcessor.InitialBufferSize;
+            StreamProcessor.InitialBufferSize = 32; // ensure fragmentation for TrySkip false
+            try
+            {
+                string longEi = new string('x', 2000);
+                string json = "{\"id\":\"1\",\"_ei\":\"" + longEi + "\",\"Regular\":5}";
+                MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(json));
+
+                // No encrypted paths; properties still need a valid DEK id for the current flow
+                EncryptionProperties props = new(
+                    EncryptionFormatVersion.Mde,
+                    CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                    DekId,
+                    encryptedData: null,
+                    encryptedPaths: Array.Empty<string>(),
+                    CompressionOptions.CompressionAlgorithm.None,
+                    compressedEncryptedPaths: null);
+
+                // Act
+                MemoryStream output = new();
+                DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(input, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
+
+                // Assert: _ei removed, other content intact, and no decryption info needed
+                output.Position = 0;
+                using JsonDocument jd = JsonDocument.Parse(output);
+                JsonElement root = jd.RootElement;
+                Assert.IsFalse(root.TryGetProperty(Constants.EncryptedInfo, out _));
+                Assert.AreEqual(5, root.GetProperty("Regular").GetInt32());
+                Assert.IsNull(ctx); // no decrypted paths
+            }
+            finally
+            {
+                StreamProcessor.InitialBufferSize = original;
+            }
+        }
+
+        [TestMethod]
+        public async Task Decrypt_Preserves_MultiSegment_String_And_Number()
+        {
+            // Arrange: long unencrypted tokens to force multi-segment ValueSequence
+            int original = StreamProcessor.InitialBufferSize;
+            StreamProcessor.InitialBufferSize = 32;
+            try
+            {
+                string longStr = new string('a', 8192);
+                string longDigits = new string('7', 5000);
+                string json = "{\"id\":\"1\",\"LongStr\":\"" + longStr + "\",\"BigNumber\":" + longDigits + "}";
+                MemoryStream input = new(Encoding.UTF8.GetBytes(json));
+
+                EncryptionProperties props = new(
+                    EncryptionFormatVersion.Mde,
+                    CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                    DekId,
+                    encryptedData: null,
+                    encryptedPaths: Array.Empty<string>(),
+                    CompressionOptions.CompressionAlgorithm.None,
+                    compressedEncryptedPaths: null);
+
+                // Act
+                MemoryStream output = new();
+                _ = await new StreamProcessor().DecryptStreamAsync(input, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
+                output.Position = 0;
+
+                // Assert: values preserved
+                using JsonDocument jd = JsonDocument.Parse(output);
+                JsonElement root = jd.RootElement;
+                Assert.AreEqual(longStr, root.GetProperty("LongStr").GetString());
+                Assert.AreEqual(longDigits, root.GetProperty("BigNumber").GetRawText());
+            }
+            finally
+            {
+                StreamProcessor.InitialBufferSize = original;
+            }
+        }
+
+        [TestMethod]
+        public async Task Decrypt_Encrypted_SmallAndLargeBase64_AcrossBuffers()
+        {
+            // Arrange: encrypted small and large strings to exercise stackalloc and pooled paths, and multi-buffer
+            var doc = new
+            {
+                id = "1",
+                Small = "s",
+                Large = new string('Z', 20000),
+            };
+            string[] paths = new[] { "/Small", "/Large" };
+            EncryptionOptions options = CreateOptions(paths);
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+
+            int original = StreamProcessor.InitialBufferSize;
+            StreamProcessor.InitialBufferSize = 64; // force segmentation for Large
+            try
+            {
+                // Act
+                MemoryStream output = new();
+                DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
+
+                // Assert
+                output.Position = 0;
+                using JsonDocument jd = JsonDocument.Parse(output);
+                JsonElement root = jd.RootElement;
+                Assert.AreEqual("s", root.GetProperty("Small").GetString());
+                Assert.AreEqual(doc.Large, root.GetProperty("Large").GetString());
+                Assert.IsTrue(ctx.DecryptionInfoList[0].PathsDecrypted.Contains("/Small"));
+                Assert.IsTrue(ctx.DecryptionInfoList[0].PathsDecrypted.Contains("/Large"));
+            }
+            finally
+            {
+                StreamProcessor.InitialBufferSize = original;
+            }
+        }
+
+        [TestMethod]
         public async Task Decrypt_UnencryptedArrayAndBooleans()
         {
             // Arrange
@@ -698,6 +814,33 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             // Both should appear in decrypted paths
             Assert.IsTrue(ctx.DecryptionInfoList[0].PathsDecrypted.Contains("/LargeStr"));
             Assert.IsTrue(ctx.DecryptionInfoList[0].PathsDecrypted.Contains("/OtherStr"));
+        }
+
+        [TestMethod]
+        public async Task Decrypt_PopulatesDiagnostics_BytesReadWritten()
+        {
+            // Arrange: small known payload with one encrypted property
+            var doc = new { id = "1", SensitiveStr = "abc", Regular = 5 };
+            string[] paths = new[] { "/SensitiveStr" };
+            EncryptionOptions options = CreateOptions(paths);
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+
+            CosmosDiagnosticsContext diag = new CosmosDiagnosticsContext();
+            MemoryStream output = new();
+
+            // Act
+            _ = await new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, props, diag, CancellationToken.None);
+
+            // Assert
+            IReadOnlyDictionary<string, long> metrics = diag.GetMetricsSnapshot();
+            Assert.IsTrue(metrics.ContainsKey("decrypt.bytesRead"));
+            Assert.IsTrue(metrics.ContainsKey("decrypt.bytesWritten"));
+            Assert.AreEqual(encrypted.Length, metrics["decrypt.bytesRead"], "bytesRead should equal input length for MemoryStream");
+            Assert.AreEqual(output.Length, metrics["decrypt.bytesWritten"], "bytesWritten should equal output length");
+            // quick sanity: output is valid JSON and contains decrypted value
+            output.Position = 0;
+            using JsonDocument jd = JsonDocument.Parse(output);
+            Assert.AreEqual("abc", jd.RootElement.GetProperty("SensitiveStr").GetString());
         }
 
         [TestMethod]
