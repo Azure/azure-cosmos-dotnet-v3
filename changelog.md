@@ -15,6 +15,14 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.54.0-preview.1"/> [3.54.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.54.0-preview.1) - 2025-8-27
+
+### <a name="3.53.1"/> [3.53.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.53.1) - 2025-8-27
+
+#### Added
+- [5364](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5364) TokenCredentialCache: Adds a fallback mechanism to AAD scope override.
+
+
 ### <a name="3.54.0-preview.0"/> [3.54.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.54.0-preview.0) - 2025-8-13
 
 ### <a name="3.53.0"/> [3.53.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.53.0) - 2025-8-13
