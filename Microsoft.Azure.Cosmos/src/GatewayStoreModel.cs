@@ -18,15 +18,18 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
+    using Microsoft.Azure.Documents.FaultInjection;
     using Newtonsoft.Json;
 
     // Marking it as non-sealed in order to unit test it using Moq framework
     internal class GatewayStoreModel : IStoreModelExtension, IDisposable
     {
+        private readonly bool isThinClientEnabled;
         private static readonly string sessionConsistencyAsString = ConsistencyLevel.Session.ToString();
         private readonly GlobalPartitionEndpointManager globalPartitionEndpointManager;
         private readonly ISessionContainer sessionContainer;
         private readonly DocumentClientEventSource eventSource;
+        private readonly IChaosInterceptor chaosInterceptor;
 
         internal readonly GlobalEndpointManager endpointManager;
         internal readonly ConsistencyLevel defaultConsistencyLevel;
@@ -48,18 +51,21 @@ namespace Microsoft.Azure.Cosmos
              CosmosHttpClient httpClient,
              GlobalPartitionEndpointManager globalPartitionEndpointManager,
              bool isThinClientEnabled,
-             UserAgentContainer userAgentContainer = null)
+             UserAgentContainer userAgentContainer = null,
+             IChaosInterceptor chaosInterceptor = null)
         {
             this.endpointManager = endpointManager;
             this.sessionContainer = sessionContainer;
             this.defaultConsistencyLevel = defaultConsistencyLevel;
             this.eventSource = eventSource;
             this.globalPartitionEndpointManager = globalPartitionEndpointManager;
+            this.chaosInterceptor = chaosInterceptor;
             this.gatewayStoreClient = new GatewayStoreClient(
                 httpClient,
                 this.eventSource,
                 globalPartitionEndpointManager,
                 serializerSettings);
+            this.isThinClientEnabled = isThinClientEnabled;
 
             if (isThinClientEnabled)
             {
@@ -68,7 +74,8 @@ namespace Microsoft.Azure.Cosmos
                     userAgentContainer,
                     this.eventSource,
                     globalPartitionEndpointManager,
-                    serializerSettings);
+                    serializerSettings,
+                    this.chaosInterceptor);
             }
 
             this.globalPartitionEndpointManager.SetBackgroundConnectionPeriodicRefreshTask(
@@ -94,8 +101,9 @@ namespace Microsoft.Azure.Cosmos
                     request.RequestContext.RegionName = regionName;
                 }
 
+                bool isPPAFEnabled = this.IsPartitionLevelFailoverEnabled();
                 // This is applicable for both per partition automatic failover and per partition circuit breaker.
-                if (this.IsPartitionLevelFailoverEnabled()
+                if ((isPPAFEnabled || this.isThinClientEnabled)
                     && !ReplicatedResourceClient.IsMasterResource(request.ResourceType)
                     && request.ResourceType.IsPartitioned())
                 {
@@ -107,7 +115,11 @@ namespace Microsoft.Azure.Cosmos
                         refreshCache: false);
 
                     request.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
-                    this.globalPartitionEndpointManager.TryAddPartitionLevelLocationOverride(request);
+
+                    if (isPPAFEnabled)
+                    {
+                        this.globalPartitionEndpointManager.TryAddPartitionLevelLocationOverride(request);
+                    }
                 }
 
                 bool canUseThinClient =
