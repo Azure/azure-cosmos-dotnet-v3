@@ -42,26 +42,31 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             BrotliCompressor compressor = encryptionOptions.CompressionOptions.Algorithm == CompressionOptions.CompressionAlgorithm.Brotli
                 ? new BrotliCompressor(encryptionOptions.CompressionOptions.CompressionLevel) : null;
 
-            // Build a top-level property map for encryption
-            Dictionary<string, bool> pathsToEncryptTopLevel = new (StringComparer.Ordinal);
-            foreach (string p in encryptionOptions.PathsToEncrypt)
+            // Precompute top-level names and canonical full paths to avoid per-hit string concat and reduce lookups
+            HashSet<string> encryptedFullPaths = new (encryptionOptions.PathsToEncrypt ?? Array.Empty<string>(), StringComparer.Ordinal);
+            List<byte[]> topLevelNameUtf8 = new (encryptedFullPaths.Count);
+            List<string> topLevelFullPaths = new (encryptedFullPaths.Count);
+            foreach (string p in encryptedFullPaths)
             {
-                if (!string.IsNullOrEmpty(p) && p[0] == '/')
+                if (string.IsNullOrEmpty(p) || p[0] != '/')
                 {
-                    string name = p.Substring(1);
-                    if (!name.Contains('/'))
-                    {
-                        pathsToEncryptTopLevel[name] = true;
-                    }
+                    continue;
                 }
+
+                string name = p.Length > 1 ? p.Substring(1) : string.Empty;
+                if (name.IndexOf('/') >= 0)
+                {
+                    continue; // only support top-level names here
+                }
+
+                topLevelNameUtf8.Add(Encoding.UTF8.GetBytes(name));
+                topLevelFullPaths.Add(p); // reuse canonical provided full path
             }
 
             Dictionary<string, int> compressedPaths = new ();
 
-            // If output stream is seekable we can compute bytes written via Position delta; otherwise wrap to count writes.
-            long initialOutputPos = outputStream.CanSeek ? outputStream.Position : 0;
-            Stream countingOutput = outputStream.CanSeek ? outputStream : new CountingStream(outputStream, onWrite: (n) => { bytesWritten += n; });
-            using Utf8JsonWriter writer = new (countingOutput, StreamProcessor.JsonWriterOptions);
+            // Write directly to the provided output stream; we'll compute bytes written via Utf8JsonWriter.BytesCommitted
+            using Utf8JsonWriter writer = new (outputStream, StreamProcessor.JsonWriterOptions);
 
             byte[] buffer = arrayPoolManager.Rent(this.initialBufferSize);
 
@@ -123,9 +128,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             writer.WriteEndObject();
 
             writer.Flush();
+            bytesWritten = writer.BytesCommitted;
             if (outputStream.CanSeek)
             {
-                bytesWritten = Math.Max(0, outputStream.Position - initialOutputPos);
                 outputStream.Position = 0;
             }
 
@@ -224,10 +229,24 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                             break;
                         case JsonTokenType.PropertyName:
-                            string propName = reader.GetString();
-                            if (propName != null && pathsToEncryptTopLevel.ContainsKey(propName))
+                            // Top-level match using zero-allocation UTF8 comparison
+                            if (reader.CurrentDepth == 1 && topLevelNameUtf8.Count != 0)
                             {
-                                encryptPropertyName = "/" + propName;
+                                string matchedFullPath = null;
+                                for (int i = 0; i < topLevelNameUtf8.Count; i++)
+                                {
+                                    if (reader.ValueTextEquals(topLevelNameUtf8[i]))
+                                    {
+                                        matchedFullPath = topLevelFullPaths[i];
+                                        break;
+                                    }
+                                }
+
+                                encryptPropertyName = matchedFullPath; // may be null if not encrypted
+                            }
+                            else
+                            {
+                                encryptPropertyName = null;
                             }
 
                             currentWriter.WritePropertyName(reader.ValueSpan);

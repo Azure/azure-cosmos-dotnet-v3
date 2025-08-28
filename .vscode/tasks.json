@@ -77,6 +77,150 @@
 				"/consoleloggerparameters:NoSummary"
 			],
 			"group": "build"
+		},
+		{
+			"label": "build",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"build",
+				"/property:GenerateFullPaths=true",
+				"/consoleloggerparameters:NoSummary"
+			],
+			"group": "build"
+		},
+		{
+			"label": "build",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"build",
+				"/property:GenerateFullPaths=true",
+				"/consoleloggerparameters:NoSummary"
+			],
+			"group": "build"
+		},
+		{
+			"label": "build",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"build",
+				"/property:GenerateFullPaths=true",
+				"/consoleloggerparameters:NoSummary"
+			],
+			"group": "build"
+		},
+		{
+			"label": "build",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"build",
+				"/property:GenerateFullPaths=true",
+				"/consoleloggerparameters:NoSummary"
+			],
+			"group": "build"
+		},
+		{
+			"label": "build",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"build",
+				"/property:GenerateFullPaths=true",
+				"/consoleloggerparameters:NoSummary"
+			],
+			"group": "build"
+		},
+		{
+			"label": "build",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"build",
+				"/property:GenerateFullPaths=true",
+				"/consoleloggerparameters:NoSummary"
+			],
+			"group": "build"
+		},
+		{
+			"label": "build",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"build",
+				"/property:GenerateFullPaths=true",
+				"/consoleloggerparameters:NoSummary"
+			],
+			"group": "build"
+		},
+		{
+			"label": "build",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"build",
+				"/property:GenerateFullPaths=true",
+				"/consoleloggerparameters:NoSummary"
+			],
+			"group": "build"
+		},
+		{
+			"label": "build",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"build",
+				"/property:GenerateFullPaths=true",
+				"/consoleloggerparameters:NoSummary"
+			],
+			"group": "build"
+		},
+		{
+			"label": "test: Encryption.Custom.Tests",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"test",
+				"c:\\repos\\azure-cosmos-dotnet-v3\\Microsoft.Azure.Cosmos.Encryption.Custom\\tests\\Microsoft.Azure.Cosmos.Encryption.Custom.Tests\\Microsoft.Azure.Cosmos.Encryption.Custom.Tests.csproj",
+				"-c",
+				"Debug",
+				"--logger",
+				"trx;LogFileName=EncryptionCustomTests.trx",
+				"-v",
+				"minimal"
+			]
+		},
+		{
+			"label": "test: Encryption.Custom.Tests (no-build)",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"test",
+				"c:\\repos\\azure-cosmos-dotnet-v3\\Microsoft.Azure.Cosmos.Encryption.Custom\\tests\\Microsoft.Azure.Cosmos.Encryption.Custom.Tests\\Microsoft.Azure.Cosmos.Encryption.Custom.Tests.csproj",
+				"-c",
+				"Debug",
+				"--no-build",
+				"-v",
+				"minimal",
+				"--logger",
+				"trx;LogFileName=EncryptionCustomTests.trx"
+			]
+		},
+		{
+			"label": "test: Encryption.Custom.Tests verbose (no-build)",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"test",
+				"c:\\repos\\azure-cosmos-dotnet-v3\\Microsoft.Azure.Cosmos.Encryption.Custom\\tests\\Microsoft.Azure.Cosmos.Encryption.Custom.Tests\\Microsoft.Azure.Cosmos.Encryption.Custom.Tests.csproj",
+				"-c",
+				"Debug",
+				"--no-build",
+				"-v",
+				"normal"
+			]
 		}
 	]
 }
