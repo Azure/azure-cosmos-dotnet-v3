@@ -3,7 +3,11 @@
 // ------------------------------------------------------------
 
 // Temporarily disable strict StyleCop rules for this preview-only implementation to unblock iteration.
+#pragma warning disable SA1512 // Single-line comments should not be followed by blank line
+
+// Temporarily disable strict StyleCop rules for this preview-only implementation to unblock iteration.
 #pragma warning disable SA1513 // Closing brace should be followed by blank line
+#pragma warning disable SA1512 // Single-line comments should not be followed by blank line
 #pragma warning disable SA1510 // 'else' statement should not be preceded by a blank line
 #pragma warning disable SA1515 // Single-line comment should be preceded by blank line
 #pragma warning disable SA1137 // Elements should have the same indentation
@@ -605,5 +609,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 #pragma warning restore SA1505
 #pragma warning restore SA1137
 #pragma warning restore SA1515
+#pragma warning restore SA1512
 #pragma warning restore SA1510
 #pragma warning restore SA1513
