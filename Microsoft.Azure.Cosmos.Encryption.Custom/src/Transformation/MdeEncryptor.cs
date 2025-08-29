@@ -51,7 +51,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 throw new InvalidOperationException($"{nameof(DataEncryptionKey)} returned null cipherText from {nameof(DataEncryptionKey.EncryptData)}.");
             }
 
-            return (encryptedText, encryptedTextLength);
+            // Return the actual number of bytes produced (including the type marker at index 0)
+            return (encryptedText, 1 + encryptedLength);
         }
 
         internal virtual (byte[] plainText, int plainTextLength) Decrypt(DataEncryptionKey encryptionKey, byte[] cipherText, int cipherTextLength, ArrayPoolManager arrayPoolManager)

@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Performance.StreamBenchmarks
             Mock<DataEncryptionKeyProvider> keyProvider = new();
             keyProvider
                 .Setup(x => x.FetchDataEncryptionKeyWithoutRawKeyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(() => new MdeEncryptionAlgorithm(DekProperties, EncryptionType.Randomized, storeProvider.Object, cacheTimeToLive: TimeSpan.MaxValue));
+                .ReturnsAsync(() => new MdeEncryptionAlgorithm(DekProperties, Microsoft.Data.Encryption.Cryptography.EncryptionType.Randomized, storeProvider.Object, cacheTimeToLive: TimeSpan.MaxValue));
 
             this.encryptor = new(keyProvider.Object);
 

@@ -39,7 +39,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         private static readonly SqlBigIntSerializer SqlLongSerializer = new ();
 
         private static readonly JsonReaderOptions JsonReaderOptions = new () { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip };
-        private static readonly JsonWriterOptions JsonWriterOptions = new () { Indented = false };
+        private static readonly JsonWriterOptions JsonWriterOptions = new ()
+        {
+            Indented = false,
+            SkipValidation = true,
+        };
 
         internal static int InitialBufferSize { get; set; } = 16384;
 
@@ -94,6 +98,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             using Utf8JsonWriter writer = new (outputStream, StreamProcessor.JsonWriterOptions);
 
             byte[] buffer = arrayPoolManager.Rent(this.initialBufferSize);
+            // Reusable pooled scratch buffers to reduce per-field rents; declared outside try so they can be returned in finally
+            byte[] base64Scratch = null; // used for copying base64 text and in-place decoding
+            byte[] tmpScratch = null;    // used for multi-segment strings, property names, and numbers
             try
             {
                 JsonReaderState state = new (StreamProcessor.JsonReaderOptions);
@@ -103,6 +110,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                 // Keep a full-path set for diagnostics and final context
                 HashSet<string> encryptedFullPaths = new (properties.EncryptedPaths ?? Array.Empty<string>(), StringComparer.Ordinal);
+                // Back-compat variable removed; full paths set retained for diagnostics and context
 
                 // Precompute top-level names as UTF8 bytes alongside their canonical full-path ("/name").
                 // This avoids per-hit string concatenation and allocations when matching/writing.
@@ -129,6 +137,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                 int leftOver = 0;
 
+                // Local helper to ensure pooled buffer capacity with minimal churn
+                static void EnsureCapacity(ref byte[] scratch, int needed, ArrayPoolManager pool)
+                {
+                    if (scratch == null || scratch.Length < needed)
+                    {
+                        byte[] newBuf = pool.Rent(needed);
+                        if (scratch != null)
+                        {
+                            pool.Return(scratch);
+                        }
+                        scratch = newBuf;
+                    }
+                }
+
                 bool isFinalBlock = false;
                 string decryptPropertyName = null;
                 string currentPropertyPath = null;
@@ -153,53 +175,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     string currentPropertyPath)
                 {
                     int base64Len = reader.HasValueSequence ? (int)reader.ValueSequence.Length : reader.ValueSpan.Length;
-                    const int StackThreshold = 512;
+                    // For in-place decode, destination length <= source length; ensure we have enough capacity for the source.
+                    // If switching to non in-place in the future, consider Base64.GetMaxDecodedFromUtf8Length(base64Len) for destination sizing.
+                    EnsureCapacity(ref base64Scratch, Math.Max(base64Len, 64), arrayPoolManager);
 
-                    byte[] cipherInput = null;
-                    int cipherTextLength;
-                    TypeMarker marker;
-
-                    if (base64Len <= StackThreshold)
+                    int initialLength = reader.CopyString(base64Scratch);
+                    OperationStatus status = Base64.DecodeFromUtf8InPlace(base64Scratch.AsSpan(0, initialLength), out int cipherTextLength);
+                    if (status != OperationStatus.Done)
                     {
-                        // Decode into stack buffer and then copy exactly the decoded bytes into a rented array for decrypt
-                        Span<byte> tmp = base64Len == 0 ? Span<byte>.Empty : stackalloc byte[base64Len];
-                        int initialLength = reader.CopyString(tmp);
-                        OperationStatus status = Base64.DecodeFromUtf8InPlace(tmp.Slice(0, initialLength), out cipherTextLength);
-                        if (status != OperationStatus.Done)
-                        {
-                            string pathInfo = decryptPropertyName ?? currentPropertyPath ?? "<unknown>";
-                            throw new InvalidOperationException($"Base64 decoding failed for encrypted field at path {pathInfo}: {status}. The field may be corrupted or not a valid base64 string.");
-                        }
-
-                        cipherInput = arrayPoolManager.Rent(Math.Max(cipherTextLength, 1));
-                        if (cipherTextLength > 0)
-                        {
-                            tmp.Slice(0, cipherTextLength).CopyTo(cipherInput);
-                        }
-                        marker = (TypeMarker)cipherInput[0];
+                        string pathInfo = decryptPropertyName ?? currentPropertyPath ?? "<unknown>";
+                        throw new InvalidOperationException($"Base64 decoding failed for encrypted field at path {pathInfo}: {status}. The field may be corrupted or not a valid base64 string.");
                     }
+                    TypeMarker marker = (TypeMarker)base64Scratch[0];
 
-                    else
-                    {
-                        // Use pooled array sized for incoming base64 to decode in-place
-                        byte[] pooled = arrayPoolManager.Rent(Math.Max(base64Len, 64));
-                        int initialLength = reader.CopyString(pooled);
-                        OperationStatus status = Base64.DecodeFromUtf8InPlace(pooled.AsSpan(0, initialLength), out cipherTextLength);
-                        if (status != OperationStatus.Done)
-                        {
-                            arrayPoolManager.Return(pooled);
-                            string pathInfo = decryptPropertyName ?? currentPropertyPath ?? "<unknown>";
-                            throw new InvalidOperationException($"Base64 decoding failed for encrypted field at path {pathInfo}: {status}. The field may be corrupted or not a valid base64 string.");
-                        }
+                    // Note: do not short-circuit on marker (including Null) before decrypting; we must verify/authenticate ciphertext.
 
-                        cipherInput = pooled;
-                        marker = (TypeMarker)cipherInput[0];
-                    }
-
-                    (byte[] bytes, int processedBytes) = encryptor.Decrypt(encryptionKey, cipherInput, cipherTextLength, arrayPoolManager);
-
-                    // Early return the ciphertext buffer since it's no longer needed
-                    arrayPoolManager.Return(cipherInput);
+                    (byte[] bytes, int processedBytes) = encryptor.Decrypt(encryptionKey, base64Scratch, cipherTextLength, arrayPoolManager);
 
                     if (decompressor != null && properties.CompressedEncryptedPaths.TryGetValue(decryptPropertyName, out int decompressedSize))
                     {
@@ -286,7 +277,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     ReadOnlySpan<byte> bufferSpan,
                     ref JsonReaderState state,
                     bool isFinalBlock,
-                    HashSet<string> encryptedTopLevel,
                     HashSet<string> encryptedFullPaths,
                     ArrayPoolManager arrayPoolManager,
                     Utf8JsonWriter writer,
@@ -362,12 +352,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                     }
                                     else
                                     {
-                                        // Copy and unescape into a pooled buffer when needed (multi-segment or escaped)
+                                        // Copy and unescape into a reusable pooled buffer when needed (multi-segment or escaped)
                                         int estimatedLength = reader.HasValueSequence ? (int)reader.ValueSequence.Length : reader.ValueSpan.Length;
-                                        byte[] tmp = arrayPoolManager.Rent(Math.Max(estimatedLength, 64));
-                                        int copied = reader.CopyString(tmp);
-                                        writer.WriteStringValue(tmp.AsSpan(0, copied));
-                                        arrayPoolManager.Return(tmp);
+                                        EnsureCapacity(ref tmpScratch, Math.Max(estimatedLength, 64), arrayPoolManager);
+                                        int copied = reader.CopyString(tmpScratch);
+                                        writer.WriteStringValue(tmpScratch.AsSpan(0, copied));
                                     }
                                 }
                                 catch (Exception ex)
@@ -404,10 +393,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             else
                             {
                                 int len = (int)reader.ValueSequence.Length;
-                                byte[] tmp = arrayPoolManager.Rent(Math.Max(len, 32));
-                                reader.ValueSequence.CopyTo(tmp);
-                                writer.WriteRawValue(tmp.AsSpan(0, len));
-                                arrayPoolManager.Return(tmp);
+                                EnsureCapacity(ref tmpScratch, Math.Max(len, 32), arrayPoolManager);
+                                reader.ValueSequence.CopyTo(tmpScratch);
+                                writer.WriteRawValue(tmpScratch.AsSpan(0, len));
                             }
                             break;
                         case JsonTokenType.None: // Unreachable: pre-first-Read state
@@ -488,10 +476,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             {
                                 // Handle rare multi-segment names without allocating a new array
                                 int estimatedLength = (int)reader.ValueSequence.Length;
-                                byte[] tmp = arrayPoolManager.Rent(Math.Max(estimatedLength, 64));
-                                int copied = reader.CopyString(tmp);
-                                writer.WritePropertyName(tmp.AsSpan(0, copied));
-                                arrayPoolManager.Return(tmp);
+                                EnsureCapacity(ref tmpScratch, Math.Max(estimatedLength, 64), arrayPoolManager);
+                                int copied = reader.CopyString(tmpScratch);
+                                writer.WritePropertyName(tmpScratch.AsSpan(0, copied));
                             }
 
                             break;
@@ -529,7 +516,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                         buffer.AsSpan(0, dataSize),
                         ref state,
                         isFinalBlock,
-                        encryptedTopLevel,
                         encryptedFullPaths,
                         arrayPoolManager,
                         writer,
@@ -596,6 +582,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             finally
             {
                 arrayPoolManager.Return(buffer);
+                if (base64Scratch != null)
+                {
+                    arrayPoolManager.Return(base64Scratch);
+                }
+
+                if (tmpScratch != null)
+                {
+                    arrayPoolManager.Return(tmpScratch);
+                }
             }
         }
     }

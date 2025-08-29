@@ -103,9 +103,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                         throw new InvalidOperationException($"JSON token exceeds maximum supported size of {MaxBufferSizeBytes} bytes.");
                     }
 
+                    byte[] oldBuffer = buffer;
                     byte[] newBuffer = arrayPoolManager.Rent(capped);
-                    buffer.AsSpan(0, dataSize).CopyTo(newBuffer);
+                    oldBuffer.AsSpan(0, dataSize).CopyTo(newBuffer);
                     buffer = newBuffer;
+                    arrayPoolManager.Return(oldBuffer);
                 }
                 else if (leftOver != 0)
                 {
@@ -181,11 +183,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             {
                                 currentWriter.Flush();
                                 (byte[] bytes, int length) = bufferWriter.WrittenBuffer;
-                                ReadOnlySpan<byte> encryptedBytes = TransformEncryptPayload(bytes, length, TypeMarker.Object);
-                                writer.WriteBase64StringValue(encryptedBytes);
+                                (byte[] encBytes, int encLength) = TransformEncryptPayload(bytes, length, TypeMarker.Object);
+                                writer.WriteBase64StringValue(encBytes.AsSpan(0, encLength));
+                                arrayPoolManager.Return(encBytes);
                                 propertiesEncrypted++;
 
                                 encryptPropertyName = null;
+
 #pragma warning disable VSTHRD103 // Call async methods when in an async method - this method cannot be async, Utf8JsonReader is ref struct
                                 encryptionPayloadWriter.Dispose();
 #pragma warning restore VSTHRD103 // Call async methods when in an async method
@@ -214,11 +218,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             {
                                 currentWriter.Flush();
                                 (byte[] bytes, int length) = bufferWriter.WrittenBuffer;
-                                ReadOnlySpan<byte> encryptedBytes = TransformEncryptPayload(bytes, length, TypeMarker.Array);
-                                writer.WriteBase64StringValue(encryptedBytes);
+                                (byte[] encBytes, int encLength) = TransformEncryptPayload(bytes, length, TypeMarker.Array);
+                                writer.WriteBase64StringValue(encBytes.AsSpan(0, encLength));
+                                arrayPoolManager.Return(encBytes);
                                 propertiesEncrypted++;
 
                                 encryptPropertyName = null;
+
 #pragma warning disable VSTHRD103 // Call async methods when in an async method - this method cannot be async, Utf8JsonReader is ref struct
                                 encryptionPayloadWriter.Dispose();
 #pragma warning restore VSTHRD103 // Call async methods when in an async method
@@ -259,11 +265,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             {
                                 byte[] bytes = arrayPoolManager.Rent(reader.ValueSpan.Length);
                                 int length = reader.CopyString(bytes);
-                                ReadOnlySpan<byte> encryptedBytes = TransformEncryptPayload(bytes, length, TypeMarker.String);
+                                (byte[] encBytes, int encLength) = TransformEncryptPayload(bytes, length, TypeMarker.String);
 
                                 // Early return temp string buffer
                                 arrayPoolManager.Return(bytes);
-                                currentWriter.WriteBase64StringValue(encryptedBytes);
+                                currentWriter.WriteBase64StringValue(encBytes.AsSpan(0, encLength));
+                                arrayPoolManager.Return(encBytes);
                                 encryptPropertyName = null;
                                 propertiesEncrypted++;
                             }
@@ -277,11 +284,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             if (encryptPropertyName != null && encryptionPayloadWriter == null)
                             {
                                 (TypeMarker typeMarker, byte[] bytes, int length) = SerializeNumber(reader.ValueSpan, arrayPoolManager);
-                                ReadOnlySpan<byte> encryptedBytes = TransformEncryptPayload(bytes, length, typeMarker);
+                                (byte[] encBytes, int encLength) = TransformEncryptPayload(bytes, length, typeMarker);
 
                                 // Early return temp number buffer
                                 arrayPoolManager.Return(bytes);
-                                currentWriter.WriteBase64StringValue(encryptedBytes);
+                                currentWriter.WriteBase64StringValue(encBytes.AsSpan(0, encLength));
+                                arrayPoolManager.Return(encBytes);
                                 encryptPropertyName = null;
                                 propertiesEncrypted++;
                             }
@@ -295,8 +303,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             if (encryptPropertyName != null && encryptionPayloadWriter == null)
                             {
                                 (byte[] bytes, int length) = Serialize(true, arrayPoolManager);
-                                ReadOnlySpan<byte> encryptedBytes = TransformEncryptPayload(bytes, length, TypeMarker.Boolean);
-                                currentWriter.WriteBase64StringValue(encryptedBytes);
+                                (byte[] encBytes, int encLength) = TransformEncryptPayload(bytes, length, TypeMarker.Boolean);
+
+                                // Return the serialized boolean input buffer promptly
+                                arrayPoolManager.Return(bytes);
+                                currentWriter.WriteBase64StringValue(encBytes.AsSpan(0, encLength));
+                                arrayPoolManager.Return(encBytes);
                                 encryptPropertyName = null;
                                 propertiesEncrypted++;
                             }
@@ -310,8 +322,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             if (encryptPropertyName != null && encryptionPayloadWriter == null)
                             {
                                 (byte[] bytes, int length) = Serialize(false, arrayPoolManager);
-                                ReadOnlySpan<byte> encryptedBytes = TransformEncryptPayload(bytes, length, TypeMarker.Boolean);
-                                currentWriter.WriteBase64StringValue(encryptedBytes);
+                                (byte[] encBytes, int encLength) = TransformEncryptPayload(bytes, length, TypeMarker.Boolean);
+
+                                // Return the serialized boolean input buffer promptly
+                                arrayPoolManager.Return(bytes);
+                                currentWriter.WriteBase64StringValue(encBytes.AsSpan(0, encLength));
+                                arrayPoolManager.Return(encBytes);
                                 encryptPropertyName = null;
                                 propertiesEncrypted++;
                             }
@@ -332,7 +348,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 return reader.BytesConsumed;
             }
 
-            ReadOnlySpan<byte> TransformEncryptPayload(byte[] payload, int payloadSize, TypeMarker typeMarker)
+            (byte[] buffer, int length) TransformEncryptPayload(byte[] payload, int payloadSize, TypeMarker typeMarker)
             {
                 byte[] processedBytes = payload;
                 int processedBytesLength = payloadSize;
@@ -347,8 +363,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                 (byte[] encryptedBytes, int encryptedBytesCount) = this.Encryptor.Encrypt(encryptionKey, typeMarker, processedBytes, processedBytesLength, arrayPoolManager);
 
+                // If we created a temporary compressed buffer, return it now
+                if (!ReferenceEquals(processedBytes, payload) && compressor != null)
+                {
+                    arrayPoolManager.Return(processedBytes);
+                }
+
                 pathsEncrypted.Add(encryptPropertyName);
-                return encryptedBytes.AsSpan(0, encryptedBytesCount);
+                return (encryptedBytes, encryptedBytesCount);
             }
         }
 
