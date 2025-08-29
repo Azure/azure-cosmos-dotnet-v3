@@ -31,6 +31,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         Mock<ClientCollectionCache> collectionCache;
         Mock<PartitionKeyRangeCache> partitionKeyRangeCache;
         Mock<GlobalEndpointManager> globalEndpointManager;
+        Mock<CosmosAccountServiceConfiguration> accountServiceConfiguration;
 
         private static readonly PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition()
         {
@@ -219,6 +220,12 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                                                                 this.ServiceEndpoint,
                                                                 this.GlobalEndpointManager,
                                                                 default);
+            this.accountServiceConfiguration = new Mock<CosmosAccountServiceConfiguration>();
+
+            this.accountServiceConfiguration
+                .Setup(x => x.DefaultConsistencyLevel)
+                .Returns(Documents.ConsistencyLevel.Session);
+
             this.InitStoreModels();
         }
 
