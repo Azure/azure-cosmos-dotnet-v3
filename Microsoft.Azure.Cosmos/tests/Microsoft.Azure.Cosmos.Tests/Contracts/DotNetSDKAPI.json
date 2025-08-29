@@ -13188,11 +13188,10 @@
       "Attributes": [],
       "MethodInfo": "System.String ToString();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
     },
-    "System.Type GetType()[System.Runtime.CompilerServices.NullableContextAttribute((Byte)1)]-[System.Runtime.CompilerServices.IntrinsicAttribute()]": {
+    "System.Type GetType()[System.Runtime.CompilerServices.IntrinsicAttribute()]": {
       "Type": "Method",
       "Attributes": [
-        "IntrinsicAttribute",
-        "NullableContextAttribute"
+        "IntrinsicAttribute"
       ],
       "MethodInfo": "System.Type GetType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
     },
