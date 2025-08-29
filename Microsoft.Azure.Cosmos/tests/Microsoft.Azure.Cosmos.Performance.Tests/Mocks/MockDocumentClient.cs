@@ -31,7 +31,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         Mock<ClientCollectionCache> collectionCache;
         Mock<PartitionKeyRangeCache> partitionKeyRangeCache;
         Mock<GlobalEndpointManager> globalEndpointManager;
-        Mock<CosmosAccountServiceConfiguration> accountServiceConfiguration;
 
         private static readonly PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition()
         {
@@ -44,6 +43,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
         string[] dummyHeaderNames;
         private readonly IComputeHash authKeyHashFunction;
+        private readonly Cosmos.ConsistencyLevel accountConsistencyLevel;
 
         public static CosmosClient CreateMockCosmosClient(
             bool useCustomSerializer = false,
@@ -83,6 +83,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             : base(new Uri("http://localhost"), connectionPolicy: policy)
         {
             this.authKeyHashFunction = new StringHMACSHA256Hash(MockDocumentClient.GenerateRandomKey());
+            this.accountConsistencyLevel = Cosmos.ConsistencyLevel.Session;
 
             this.Init();
         }
@@ -125,6 +126,11 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         internal override Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync(ITrace trace)
         {
             return Task.FromResult(this.partitionKeyRangeCache.Object);
+        }
+
+        internal override Task<Cosmos.ConsistencyLevel> GetDefaultConsistencyLevelAsync()
+        {
+            return Task.FromResult(this.accountConsistencyLevel);
         }
 
         ValueTask<string> ICosmosAuthorizationTokenProvider.GetUserAuthorizationTokenAsync(
@@ -220,12 +226,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                                                                 this.ServiceEndpoint,
                                                                 this.GlobalEndpointManager,
                                                                 default);
-            this.accountServiceConfiguration = new Mock<CosmosAccountServiceConfiguration>();
-
-            this.accountServiceConfiguration
-                .Setup(x => x.DefaultConsistencyLevel)
-                .Returns(Documents.ConsistencyLevel.Session);
-
             this.InitStoreModels();
         }
 
