@@ -15,7 +15,10 @@
                 .AddJob(Job.MediumRun.WithToolchain(InProcessEmitToolchain.Instance))
                 .AddDiagnoser(MemoryDiagnoser.Default);
 
-            BenchmarkRunner.Run<EncryptionBenchmark>(dontRequireSlnToRunBenchmarks, args);
+            // Run any benchmarks in this assembly; respects --filter and avoids crashing when a filter matches none
+            BenchmarkSwitcher
+                .FromAssembly(typeof(Program).Assembly)
+                .Run(args, dontRequireSlnToRunBenchmarks);
         }
     }
 }

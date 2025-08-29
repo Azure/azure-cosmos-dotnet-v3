@@ -37,6 +37,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
         }
 
+#if DEBUG
+        // Debug-only ownership probe to assert correct pooling contracts without impacting release perf
+        public bool IsOwned(T[] buffer)
+        {
+            if (buffer == null || this.rentedBuffers == null)
+            {
+                return false;
+            }
+
+            return this.rentedBuffers.IndexOf(buffer) >= 0;
+        }
+#endif
+
         protected virtual void Dispose(bool disposing)
         {
             if (!this.disposedValue)

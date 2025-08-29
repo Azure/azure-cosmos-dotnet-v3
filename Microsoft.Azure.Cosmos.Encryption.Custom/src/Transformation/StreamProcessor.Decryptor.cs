@@ -28,6 +28,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
     using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Encryption.Custom;
     using Microsoft.Data.Encryption.Cryptography.Serializers;
 
     internal partial class StreamProcessor
@@ -178,6 +179,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     string decryptPropertyName,
                     string currentPropertyPath)
                 {
+                    static string PathLabel(string a, string b) => a ?? b ?? "<unknown>";
                     int base64Len = reader.HasValueSequence ? (int)reader.ValueSequence.Length : reader.ValueSpan.Length;
                     // For in-place decode, destination length <= source length; ensure we have enough capacity for the source.
                     // If switching to non in-place in the future, consider Base64.GetMaxDecodedFromUtf8Length(base64Len) for destination sizing.
@@ -187,22 +189,32 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     OperationStatus status = Base64.DecodeFromUtf8InPlace(base64Scratch.AsSpan(0, initialLength), out int cipherTextLength);
                     if (status != OperationStatus.Done)
                     {
-                        string pathInfo = decryptPropertyName ?? currentPropertyPath ?? "<unknown>";
-                        throw new InvalidOperationException($"Base64 decoding failed for encrypted field at path {pathInfo}: {status}. The field may be corrupted or not a valid base64 string.");
+                        throw new InvalidOperationException($"Base64 decoding failed for encrypted field at path {PathLabel(decryptPropertyName, currentPropertyPath)}: {status}. The field may be corrupted or not a valid base64 string.");
                     }
                     TypeMarker marker = (TypeMarker)base64Scratch[0];
 
                     // Note: do not short-circuit on marker (including Null) before decrypting; we must verify/authenticate ciphertext.
 
-                    (byte[] bytes, int processedBytes) = encryptor.Decrypt(encryptionKey, base64Scratch, cipherTextLength, arrayPoolManager);
+                    using PooledByteOwner owner = encryptor.DecryptOwned(encryptionKey, base64Scratch, cipherTextLength, arrayPoolManager);
+                    byte[] bytes = owner.Array;
+                    int processedBytes = owner.Length;
 
-                    if (decompressor != null && properties.CompressedEncryptedPaths.TryGetValue(decryptPropertyName, out int decompressedSize))
+                    // Decompression handling (optional)
+                    if (decompressor != null
+                        && decryptPropertyName != null
+                        && properties.CompressedEncryptedPaths != null
+                        && properties.CompressedEncryptedPaths.TryGetValue(decryptPropertyName, out int decompressedSize))
                     {
+                        // Validate target size to avoid pathological allocations from corrupted metadata
+                        const int MaxDecompressedSizeBytes = MaxBufferSizeBytes; // align cap with token growth cap; keep fast const in method
+                        if (decompressedSize <= 0 || decompressedSize > MaxDecompressedSizeBytes)
+                        {
+                            throw new InvalidOperationException($"Invalid decompressed size {decompressedSize} for path {PathLabel(decryptPropertyName, currentPropertyPath)}. Max allowed is {MaxDecompressedSizeBytes}.");
+                        }
+
                         byte[] decompressed = arrayPoolManager.Rent(decompressedSize);
                         processedBytes = decompressor.Decompress(bytes, processedBytes, decompressed);
-
-                        // Early return the previous buffer if it was rented
-                        arrayPoolManager.Return(bytes);
+                        // Do not return the original buffer here; owner.Dispose() will handle it. Swap to decompressed.
                         bytes = decompressed;
                         compressedPathsDecompressed++;
                     }
@@ -221,7 +233,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                 }
                                 catch (Exception ex)
                                 {
-                                    throw new InvalidOperationException($"Invalid UTF-8 while writing decrypted string at path {decryptPropertyName ?? "<unknown>"}", ex);
+                                    throw new InvalidOperationException($"Invalid UTF-8 while writing decrypted string at path {PathLabel(decryptPropertyName, currentPropertyPath)}", ex);
                                 }
 
                                 break;
@@ -232,7 +244,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                 }
                                 catch (Exception ex)
                                 {
-                                    throw new InvalidOperationException($"Failed to deserialize decrypted payload at path {decryptPropertyName ?? "<unknown>"} as Long. The ciphertext may be corrupted or forged.", ex);
+                                    throw new InvalidOperationException($"Failed to deserialize decrypted payload at path {PathLabel(decryptPropertyName, currentPropertyPath)} as Long. The ciphertext may be corrupted or forged.", ex);
                                 }
 
                                 break;
@@ -243,7 +255,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                 }
                                 catch (Exception ex)
                                 {
-                                    throw new InvalidOperationException($"Failed to deserialize decrypted payload at path {decryptPropertyName ?? "<unknown>"} as Double. The ciphertext may be corrupted or forged.", ex);
+                                    throw new InvalidOperationException($"Failed to deserialize decrypted payload at path {PathLabel(decryptPropertyName, currentPropertyPath)} as Double. The ciphertext may be corrupted or forged.", ex);
                                 }
 
                                 break;
@@ -273,7 +285,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     }
                     finally
                     {
-                        arrayPoolManager.Return(bytes);
+                        // Return decompressed buffer if present; the original buffer (owner.Array) is returned by owner.Dispose().
+                        if (!ReferenceEquals(bytes, owner.Array))
+                        {
+                            arrayPoolManager.Return(bytes);
+                        }
                     }
                 }
 
