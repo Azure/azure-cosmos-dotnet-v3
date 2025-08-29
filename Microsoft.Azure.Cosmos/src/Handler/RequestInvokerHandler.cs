@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 request.Headers.Add(HttpConstants.HttpHeaders.SupportedSerializationFormats, RequestInvokerHandler.BinarySerializationFormat);
             }
 
-            await this.ValidateAndSetConsistencyLevelAsync(request);
+            Cosmos.ConsistencyLevel? selectedConsistencyLevel = await this.ValidateAndSetConsistencyLevelAsync(request);
             this.SetPriorityLevel(request);
             this.ValidateAndSetThroughputBucket(request);
 
@@ -85,6 +85,21 @@ namespace Microsoft.Azure.Cosmos.Handlers
             if (isError)
             {
                 return errorResponse;
+            }
+
+            if (ChangeFeedHelper.IsChangeFeedSupportedToHandleMissingPrimes(
+                request.ResourceType,
+                request.OperationType,
+                selectedConsistencyLevel,
+                this.client.DocumentClient.PartitionKeyRangeLocation.IsPartitionLevelAutomaticFailoverEnabled()))
+            {
+                // Today, during a partition level automatic failover, there is a gap in the backend where for a change
+                // feed operation (incremental or full-fedility) in a < strong consistency account, a false progress
+                // can cause data loss, since the change feed operation reads uses the GLSN. In a nut-shell a GLSN is unique
+                // for a GCN, however, for multiple GCNs, there could be duplicate GLSNs. In order to fix this, the SDK need
+                // to send the `x-ms-cosmos-read-global-committed-data` header with change feed operation so that the change
+                // feed can always read the globally committed data.
+                request.Headers.Add(HttpConstants.HttpHeaders.ReadGlobalCommittedData, true.ToString());
             }
 
             await request.AssertPartitioningDetailsAsync(this.client, cancellationToken, request.Trace);
@@ -455,9 +470,51 @@ namespace Microsoft.Azure.Cosmos.Handlers
         /// Validate the request consistency compatibility with account consistency
         /// Type based access context for requested consistency preferred for performance
         /// </summary>
-        /// <param name="requestMessage"></param>
+        /// <param name="requestMessage">An instance of <see cref="RequestMessage"/> containing the request message</param>
         /// <exception cref="ArgumentException">In case, Invalid consistency is passed</exception>
-        private async Task ValidateAndSetConsistencyLevelAsync(RequestMessage requestMessage)
+        /// <returns>An instance of <see cref="ConsistencyLevel"/> containing the client consistency level</returns>
+        private async Task<Cosmos.ConsistencyLevel?> ValidateAndSetConsistencyLevelAsync(
+            RequestMessage requestMessage)
+        {
+            Cosmos.ConsistencyLevel? userConsistencyLevel = this.GetUserConsistencyLevel(requestMessage);
+
+            if (!this.AccountConsistencyLevel.HasValue)
+            {
+                this.AccountConsistencyLevel = await this.client.GetAccountConsistencyLevelAsync();
+            }
+
+            if (userConsistencyLevel.HasValue)
+            {
+                if (!this.IsLocalQuorumConsistency.HasValue)
+                {
+                    this.IsLocalQuorumConsistency = this.client.ClientOptions.EnableUpgradeConsistencyToLocalQuorum;
+                }
+
+                if (ValidationHelpers.IsValidConsistencyLevelOverwrite(
+                            backendConsistency: this.AccountConsistencyLevel.Value, 
+                            desiredConsistency: userConsistencyLevel.Value,
+                            isLocalQuorumConsistency: this.IsLocalQuorumConsistency.Value,
+                            operationType: requestMessage.OperationType,
+                            resourceType: requestMessage.ResourceType))
+                {
+                    // ConsistencyLevel compatibility with back-end configuration will be done by RequestInvokeHandler
+                    requestMessage.Headers.ConsistencyLevel = userConsistencyLevel.Value.ToString();
+                }
+                else
+                {
+                    throw new ArgumentException(string.Format(
+                            CultureInfo.CurrentUICulture,
+                            RMResources.InvalidConsistencyLevel,
+                            userConsistencyLevel.Value.ToString(),
+                            this.AccountConsistencyLevel));
+                }
+            }
+
+            return userConsistencyLevel ?? this.AccountConsistencyLevel;
+        }
+
+        private Cosmos.ConsistencyLevel? GetUserConsistencyLevel(
+            RequestMessage requestMessage)
         {
             Cosmos.ConsistencyLevel? consistencyLevel = null;
             RequestOptions promotedRequestOptions = requestMessage.RequestOptions;
@@ -470,37 +527,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 consistencyLevel = this.RequestedClientConsistencyLevel;
             }
 
-            if (consistencyLevel.HasValue)
-            {
-                if (!this.AccountConsistencyLevel.HasValue)
-                {
-                    this.AccountConsistencyLevel = await this.client.GetAccountConsistencyLevelAsync();
-                }
-
-                if (!this.IsLocalQuorumConsistency.HasValue)
-                {
-                    this.IsLocalQuorumConsistency = this.client.ClientOptions.EnableUpgradeConsistencyToLocalQuorum;
-                }
-
-                if (ValidationHelpers.IsValidConsistencyLevelOverwrite(
-                            backendConsistency: this.AccountConsistencyLevel.Value, 
-                            desiredConsistency: consistencyLevel.Value,
-                            isLocalQuorumConsistency: this.IsLocalQuorumConsistency.Value,
-                            operationType: requestMessage.OperationType,
-                            resourceType: requestMessage.ResourceType))
-                {
-                    // ConsistencyLevel compatibility with back-end configuration will be done by RequestInvokeHandler
-                    requestMessage.Headers.ConsistencyLevel = consistencyLevel.Value.ToString();
-                }
-                else
-                {
-                    throw new ArgumentException(string.Format(
-                            CultureInfo.CurrentUICulture,
-                            RMResources.InvalidConsistencyLevel,
-                            consistencyLevel.Value.ToString(),
-                            this.AccountConsistencyLevel));
-                }
-            }
+            return consistencyLevel;
         }
 
         /// <summary>

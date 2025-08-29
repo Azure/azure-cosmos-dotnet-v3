@@ -9,17 +9,15 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
     using System.Collections.ObjectModel;
     using System.Linq;
     using System.Net;
+    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Documents.Client;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
-    using Microsoft.Azure.Cosmos.Services.Management.Tests;
-    using Microsoft.Azure.Cosmos.Telemetry;
 
     [SDK.EmulatorTests.TestClass]
     [TestCategory("ChangeFeed")]
@@ -52,6 +50,20 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
         private async Task<ContainerInternal> InitializeContainerAsync()
         {
             ContainerResponse response = await this.database.CreateContainerAsync(
+                new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: ChangeFeedIteratorCoreTests.PartitionKey),
+                cancellationToken: this.cancellationToken);
+
+            return (ContainerInternal)response;
+        }
+
+        private async Task<ContainerInternal> InitializeContainerAsync(
+            CosmosClient cosmosClient)
+        {
+            DatabaseResponse databaseResponse = await cosmosClient.CreateDatabaseAsync(
+                Guid.NewGuid().ToString(),
+                cancellationToken: this.cancellationToken);
+
+            ContainerResponse response = await databaseResponse.Database.CreateContainerAsync(
                 new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: ChangeFeedIteratorCoreTests.PartitionKey),
                 cancellationToken: this.cancellationToken);
 
@@ -1194,6 +1206,166 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             }
         }
 
+        /// <summary>
+        /// Test to verify that when per partition automatic failover is enabled at the account level,
+        /// the Change Feed read operation for less than strong consistency account should add the GCN header
+        /// to read the globally committed data.
+        /// </summary>
+        [TestMethod]
+        [DataRow(true, ConsistencyLevel.Session, DisplayName = "Session Consistency: case when partition level failover is enabled.")]
+        [DataRow(false, ConsistencyLevel.Session, DisplayName = "Session Consistency: case when partition level failover is disabled.")]
+        [Timeout(30000)]
+        public async Task ChangeFeedIteratorCore_ReadAll_WithPartitionLevelFailover_ShouldAddGCNHeader(
+            bool enablePPAF,
+            ConsistencyLevel consistencyLevel)
+        {
+            int totalCount = 0;
+            int firstRunTotal = 25;
+            int batchSize = 25;
+
+            string pkToRead = "pkToRead";
+            string otherPK = "otherPK";
+
+            // Now that the ppaf enablement flag is returned from gateway, we need to intercept the response and remove the flag from the response, so that
+            // the environment variable set above is honored.
+            HttpClientHandlerHelper httpClientHandlerHelper = new HttpClientHandlerHelper()
+            {
+                ResponseIntercepter = async (response, request) =>
+                {
+                    string json = await response?.Content?.ReadAsStringAsync();
+                    if (json.Length > 0 && json.Contains("databaseAccountEndpoint"))
+                    {
+                        if (enablePPAF)
+                        {
+                            JObject parsedDatabaseAccountResponse = JObject.Parse(json);
+                            parsedDatabaseAccountResponse.Add("enablePerPartitionFailoverBehavior", true);
+
+                            HttpResponseMessage interceptedResponse = new()
+                            {
+                                StatusCode = response.StatusCode,
+                                Content = new StringContent(parsedDatabaseAccountResponse.ToString()),
+                                Version = response.Version,
+                                ReasonPhrase = response.ReasonPhrase,
+                                RequestMessage = response.RequestMessage,
+                            };
+
+                            return interceptedResponse;
+                        }
+                        else
+                        {
+                            JObject parsedDatabaseAccountResponse = JObject.Parse(json);
+                            parsedDatabaseAccountResponse.Add("enablePerPartitionFailoverBehavior", false);
+
+                            HttpResponseMessage interceptedResponse = new()
+                            {
+                                StatusCode = response.StatusCode,
+                                Content = new StringContent(parsedDatabaseAccountResponse.ToString()),
+                                Version = response.Version,
+                                ReasonPhrase = response.ReasonPhrase,
+                                RequestMessage = response.RequestMessage,
+                            };
+
+                            return interceptedResponse;
+                        }
+                    }
+
+                    return response;
+                },
+            };
+
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+            {
+                RequestTimeout = TimeSpan.FromSeconds(15),
+                HttpClientFactory = () => new HttpClient(httpClientHandlerHelper),
+            };
+
+            using CosmosClient cosmosClient = TestCommon.CreateCosmosClient(cosmosClientOptions);
+
+            // Inject validating handler
+            ChangeFeedRequestHandler changeFeedRequestHandler = new (enablePPAF, consistencyLevel);
+
+            RequestHandler currentInnerHandler = cosmosClient.RequestHandler.InnerHandler;
+            cosmosClient.RequestHandler.InnerHandler = changeFeedRequestHandler;
+            changeFeedRequestHandler.InnerHandler = currentInnerHandler;
+
+            ContainerInternal itemsCore = await this.InitializeContainerAsync(cosmosClient);
+            for (int i = 0; i < batchSize; i++)
+            {
+                await itemsCore.CreateItemAsync(ToDoActivity.CreateRandomToDoActivity(pk: pkToRead));
+            }
+
+            for (int i = 0; i < batchSize; i++)
+            {
+                await itemsCore.CreateItemAsync(ToDoActivity.CreateRandomToDoActivity(pk: otherPK));
+            }
+
+            ChangeFeedIteratorCore feedIterator = itemsCore.GetChangeFeedStreamIterator(
+                ChangeFeedStartFrom.Beginning(
+                    FeedRange.FromPartitionKey(
+                        new PartitionKey(pkToRead))),
+                ChangeFeedMode.Incremental,
+                new ChangeFeedRequestOptions()
+                {
+                    PageSizeHint = 1,
+                }) as ChangeFeedIteratorCore;
+
+            string continuation = null;
+            while (feedIterator.HasMoreResults)
+            {
+                using (ResponseMessage responseMessage =
+                    await feedIterator.ReadNextAsync(this.cancellationToken))
+                {
+                    if (!responseMessage.IsSuccessStatusCode)
+                    {
+                        continuation = responseMessage.ContinuationToken;
+                        break;
+                    }
+
+                    Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
+                    totalCount += response.Count;
+                    foreach (ToDoActivity toDoActivity in response)
+                    {
+                        Assert.AreEqual(pkToRead, toDoActivity.pk);
+                    }
+                }
+            }
+
+            Assert.AreEqual(firstRunTotal, totalCount);
+
+            int expectedFinalCount = 50;
+
+            // Insert another batch of 25 and use the last FeedToken from the first cycle
+            for (int i = 0; i < batchSize; i++)
+            {
+                await itemsCore.CreateItemAsync(ToDoActivity.CreateRandomToDoActivity(pk: pkToRead));
+            }
+
+            ChangeFeedIteratorCore setIteratorNew = itemsCore.GetChangeFeedStreamIterator(
+                ChangeFeedStartFrom.ContinuationToken(continuation),
+                ChangeFeedMode.Incremental) as ChangeFeedIteratorCore;
+
+            while (setIteratorNew.HasMoreResults)
+            {
+                using (ResponseMessage responseMessage =
+                    await setIteratorNew.ReadNextAsync(this.cancellationToken))
+                {
+                    if (!responseMessage.IsSuccessStatusCode)
+                    {
+                        break;
+                    }
+
+                    Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
+                    totalCount += response.Count;
+                    foreach (ToDoActivity toDoActivity in response)
+                    {
+                        Assert.AreEqual(pkToRead, toDoActivity.pk);
+                    }
+                }
+            }
+
+            Assert.AreEqual(expectedFinalCount, totalCount);
+        }
+
         private static void AssertGatewayMode<T>(FeedResponse<T> feedResponse)
         {
             string diagnostics = feedResponse.Diagnostics.ToString();
@@ -1259,6 +1431,42 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             public override Task<ResponseMessage> SendAsync(RequestMessage request, CancellationToken cancellationToken)
             {
                 this.LastUsedToken = cancellationToken;
+                return base.SendAsync(request, cancellationToken);
+            }
+        }
+
+        private class ChangeFeedRequestHandler : RequestHandler
+        {
+            private readonly ConsistencyLevel consistencyLevel;
+            private readonly bool isPPAFEnabled;
+
+            public CancellationToken LastUsedToken { get; private set; }
+
+            public ChangeFeedRequestHandler(
+                bool isPPAFEnabled,
+                ConsistencyLevel consistencyLevel)
+            {
+                this.isPPAFEnabled = isPPAFEnabled;
+                this.consistencyLevel = consistencyLevel;
+            }
+
+            public override Task<ResponseMessage> SendAsync(RequestMessage request, CancellationToken cancellationToken)
+            {
+
+                if (request.ResourceType == Documents.ResourceType.Document
+                    && request.OperationType == Documents.OperationType.ReadFeed)
+                {
+                    if (this.isPPAFEnabled && this.consistencyLevel != ConsistencyLevel.Strong)
+                    {
+                        Assert.IsTrue(request.Headers.AllKeys().Contains(Documents.HttpConstants.HttpHeaders.ReadGlobalCommittedData));
+                        Assert.AreEqual(true.ToString(), request.Headers[Documents.HttpConstants.HttpHeaders.ReadGlobalCommittedData]);
+                    }
+                    else
+                    {
+                        Assert.IsFalse(request.Headers.AllKeys().Contains(Documents.HttpConstants.HttpHeaders.ReadGlobalCommittedData));
+                    }
+                }
+
                 return base.SendAsync(request, cancellationToken);
             }
         }

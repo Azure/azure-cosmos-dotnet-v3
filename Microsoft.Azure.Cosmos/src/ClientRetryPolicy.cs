@@ -232,18 +232,6 @@ namespace Microsoft.Azure.Cosmos
                 : this.globalEndpointManager.ResolveServiceEndpoint(request);
 
             request.RequestContext.RouteToLocation(this.locationEndpoint);
-
-            if (request.ResourceType == ResourceType.Document
-                && request.OperationType == OperationType.Create
-                && this.partitionKeyRangeLocationCache.IsPartitionLevelAutomaticFailoverEnabled()
-                && !string.IsNullOrEmpty(request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel]))
-            {
-                ConsistencyLevel consistency = (ConsistencyLevel)Enum.Parse(typeof(ConsistencyLevel), request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel]);
-                if (consistency != ConsistencyLevel.Strong)
-                {
-                    request.Headers.Add(HttpConstants.HttpHeaders.ReadGlobalCommittedData, true.ToString());
-                }
-            }
         }
 
         private async Task<ShouldRetryResult> ShouldRetryInternalAsync(
