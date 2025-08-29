@@ -1212,6 +1212,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
         /// to read the globally committed data.
         /// </summary>
         [TestMethod]
+        [DataRow(true, ConsistencyLevel.Strong, DisplayName = "Strong Consistency: case when partition level failover is enabled.")]
+        [DataRow(false, ConsistencyLevel.Strong, DisplayName = "Strong Consistency: case when partition level failover is disabled.")]
         [DataRow(true, ConsistencyLevel.Session, DisplayName = "Session Consistency: case when partition level failover is enabled.")]
         [DataRow(false, ConsistencyLevel.Session, DisplayName = "Session Consistency: case when partition level failover is disabled.")]
         [Timeout(30000)]
@@ -1282,6 +1284,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             {
                 RequestTimeout = TimeSpan.FromSeconds(15),
                 HttpClientFactory = () => new HttpClient(httpClientHandlerHelper),
+                ConsistencyLevel = consistencyLevel
             };
 
             using CosmosClient cosmosClient = TestCommon.CreateCosmosClient(cosmosClientOptions);
