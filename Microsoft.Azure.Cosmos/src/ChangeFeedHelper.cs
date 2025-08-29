@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Returns a boolean flag to indicate if a change feed operation can safely handle missing primes. This is
-        /// supported for both incremental and full-fedility change feed operations.
+        /// supported for both incremental and full-fidelity change feed operations.
         /// </summary>
         /// <param name="resourceType">An instance of <see cref="ResourceType"/> containing the resource type</param>
         /// <param name="operationType">An instance of <see cref="OperationType"/> containing the operation type</param>

@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 request.Headers.Add(HttpConstants.HttpHeaders.SupportedSerializationFormats, RequestInvokerHandler.BinarySerializationFormat);
             }
 
-            Cosmos.ConsistencyLevel? selectedConsistencyLevel = await this.ValidateAndSetConsistencyLevelAsync(request);
+            Cosmos.ConsistencyLevel? resolvedConsistencyLevel = await this.ValidateAndSetConsistencyLevelAsync(request);
             this.SetPriorityLevel(request);
             this.ValidateAndSetThroughputBucket(request);
 
@@ -91,11 +91,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
             if (ChangeFeedHelper.IsChangeFeedSupportedToHandleMissingPrimes(
                 request.ResourceType,
                 request.OperationType,
-                selectedConsistencyLevel,
+                resolvedConsistencyLevel,
                 isPartitionLevelFailoverEnabled))
             {
                 // Today, during a partition level automatic failover, there is a gap in the backend where for a change
-                // feed operation (incremental or full-fedility) in a < strong consistency account, a false progress
+                // feed operation (incremental or full-fidelity) in a < strong consistency account, a false progress
                 // can cause data loss, since the change feed operation reads uses the GLSN. In a nut-shell a GLSN is unique
                 // for a GCN, however, for multiple GCNs, there could be duplicate GLSNs. In order to fix this, the SDK need
                 // to send the `x-ms-cosmos-read-global-committed-data` header with change feed operation so that the change
