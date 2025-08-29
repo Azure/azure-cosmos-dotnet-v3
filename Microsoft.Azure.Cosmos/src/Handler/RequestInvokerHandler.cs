@@ -87,11 +87,12 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 return errorResponse;
             }
 
+            bool isPartitionLevelFailoverEnabled = this.client.DocumentClient?.PartitionKeyRangeLocation != null && this.client.DocumentClient.PartitionKeyRangeLocation.IsPartitionLevelAutomaticFailoverEnabled();
             if (ChangeFeedHelper.IsChangeFeedSupportedToHandleMissingPrimes(
                 request.ResourceType,
                 request.OperationType,
                 selectedConsistencyLevel,
-                this.client.DocumentClient.PartitionKeyRangeLocation.IsPartitionLevelAutomaticFailoverEnabled()))
+                isPartitionLevelFailoverEnabled))
             {
                 // Today, during a partition level automatic failover, there is a gap in the backend where for a change
                 // feed operation (incremental or full-fedility) in a < strong consistency account, a false progress
