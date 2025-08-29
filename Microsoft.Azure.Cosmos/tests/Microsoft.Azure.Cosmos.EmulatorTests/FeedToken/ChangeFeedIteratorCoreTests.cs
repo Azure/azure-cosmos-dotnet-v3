@@ -1233,6 +1233,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                 ResponseIntercepter = async (response, request) =>
                 {
                     string json = await response?.Content?.ReadAsStringAsync();
+                    Console.WriteLine("Original Response:" + json);
                     if (json.Length > 0 && json.Contains("databaseAccountEndpoint"))
                     {
                         if (enablePPAF)
@@ -1240,31 +1241,35 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                             JObject parsedDatabaseAccountResponse = JObject.Parse(json);
                             parsedDatabaseAccountResponse.Add("enablePerPartitionFailoverBehavior", true);
 
+                            string interceptedResponseStr = parsedDatabaseAccountResponse.ToString();
                             HttpResponseMessage interceptedResponse = new()
                             {
                                 StatusCode = response.StatusCode,
-                                Content = new StringContent(parsedDatabaseAccountResponse.ToString()),
+                                Content = new StringContent(interceptedResponseStr),
                                 Version = response.Version,
                                 ReasonPhrase = response.ReasonPhrase,
                                 RequestMessage = response.RequestMessage,
                             };
 
+                            Console.WriteLine("Intercepted Response:" + interceptedResponseStr);
                             return interceptedResponse;
                         }
                         else
                         {
                             JObject parsedDatabaseAccountResponse = JObject.Parse(json);
                             parsedDatabaseAccountResponse.Add("enablePerPartitionFailoverBehavior", false);
+                            string interceptedResponseStr = parsedDatabaseAccountResponse.ToString();
 
                             HttpResponseMessage interceptedResponse = new()
                             {
                                 StatusCode = response.StatusCode,
-                                Content = new StringContent(parsedDatabaseAccountResponse.ToString()),
+                                Content = new StringContent(interceptedResponseStr),
                                 Version = response.Version,
                                 ReasonPhrase = response.ReasonPhrase,
                                 RequestMessage = response.RequestMessage,
                             };
 
+                            Console.WriteLine("Intercepted Response:" + interceptedResponseStr);
                             return interceptedResponse;
                         }
                     }
