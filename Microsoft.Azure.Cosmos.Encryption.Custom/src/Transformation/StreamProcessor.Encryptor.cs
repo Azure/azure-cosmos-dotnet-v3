@@ -16,7 +16,135 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
     internal partial class StreamProcessor
     {
-    private readonly byte[] encryptionPropertiesNameBytes = Encoding.UTF8.GetBytes(Constants.EncryptedInfo);
+        private readonly byte[] encryptionPropertiesNameBytes = Encoding.UTF8.GetBytes(Constants.EncryptedInfo);
+
+        /// <summary>
+        /// Helper that precomputes candidate top-level encrypted paths for fast, readable matching.
+        /// Only paths starting with '/' and without additional '/' (i.e., top-level) are considered.
+        /// Keeps a compact bitmask of UTF-8 name byte lengths to quickly rule out impossible matches.
+        /// </summary>
+        private sealed class CandidatePaths
+        {
+            // Each entry stores: the original full path (e.g., "/foo"), the name without leading '/', and its UTF-8 byte length.
+            private readonly (string FullPath, string Name, int NameUtf8Len)[] topLevel;
+            private readonly ulong lengthMask;
+            private readonly bool hasLongNames;
+            private readonly bool includesEmpty; // true when "/" is present
+
+            private CandidatePaths(
+                (string FullPath, string Name, int NameUtf8Len)[] topLevel,
+                ulong lengthMask,
+                bool hasLongNames,
+                bool includesEmpty)
+            {
+                this.topLevel = topLevel;
+                this.lengthMask = lengthMask;
+                this.hasLongNames = hasLongNames;
+                this.includesEmpty = includesEmpty;
+            }
+
+            public static CandidatePaths Build(IEnumerable<string> paths)
+            {
+                if (paths == null)
+                {
+                    return new CandidatePaths(Array.Empty<(string, string, int)>(), 0UL, false, false);
+                }
+
+                List<(string FullPath, string Name, int NameUtf8Len)> list = new List<(string FullPath, string Name, int NameUtf8Len)>();
+                ulong mask = 0UL;
+                bool hasLong = false;
+                bool includesEmpty = false;
+
+                // Iterate the provided paths and extract only top-level candidates
+                foreach (string p in paths)
+                {
+                    if (string.IsNullOrEmpty(p) || p[0] != '/')
+                    {
+                        continue;
+                    }
+
+                    bool isEmpty = p.Length <= 1;
+                    ReadOnlySpan<char> nameSpan = isEmpty ? ReadOnlySpan<char>.Empty : p.AsSpan(1);
+                    if (!isEmpty && nameSpan.IndexOf('/') >= 0)
+                    {
+                        continue; // only support top-level names here
+                    }
+
+                    if (isEmpty)
+                    {
+                        includesEmpty = true; /* candidate for empty name (UTF-8 length 0) */
+                        mask |= 1UL << 0;
+                        list.Add((p, string.Empty, 0)); /* keep a representative entry for completeness (name is "") */
+                        continue;
+                    }
+
+                    // Compute UTF-8 byte length of the name without leading '/'
+                    string name = new string(nameSpan);
+                    int nameUtf8Len = Encoding.UTF8.GetByteCount(name);
+                    if ((uint)nameUtf8Len < 64)
+                    {
+                        mask |= 1UL << nameUtf8Len;
+                    }
+                    else
+                    {
+                        hasLong = true;
+                    }
+
+                    list.Add((p, name, nameUtf8Len));
+                }
+
+                return new CandidatePaths(list.ToArray(), mask, hasLong, includesEmpty);
+            }
+
+            [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+            private bool IsLengthPossible(int utf8Len)
+            {
+                return (utf8Len < 64) ? ((this.lengthMask & (1UL << utf8Len)) != 0) : this.hasLongNames;
+            }
+
+            public bool TryMatch(ref Utf8JsonReader reader, int propNameUtf8Len, out string matchedFullPath)
+            {
+                // Handle empty name candidate
+                if (propNameUtf8Len == 0 && this.includesEmpty)
+                {
+                    // Find the first "/" entry
+                    for (int i = 0; i < this.topLevel.Length; i++)
+                    {
+                        if (this.topLevel[i].NameUtf8Len == 0)
+                        {
+                            matchedFullPath = this.topLevel[i].FullPath;
+                            return true;
+                        }
+                    }
+                }
+
+                if (!this.IsLengthPossible(propNameUtf8Len))
+                {
+                    matchedFullPath = null;
+                    return false;
+                }
+
+                // Linear scan over small candidate set; early out on len mismatch.
+                for (int i = 0; i < this.topLevel.Length; i++)
+                {
+                    var entry = this.topLevel[i];
+                    if (entry.NameUtf8Len != propNameUtf8Len)
+                    {
+                        continue;
+                    }
+
+                    // Allocation-free compare using Utf8JsonReader.ValueTextEquals(string)
+                    if (reader.ValueTextEquals(entry.Name))
+                    {
+                        matchedFullPath = entry.FullPath;
+                        return true;
+                    }
+                }
+
+                matchedFullPath = null;
+                return false;
+            }
+        }
 
         internal async Task EncryptStreamAsync(
             Stream inputStream,
@@ -38,9 +166,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             {
                 pathsCapacity = coll.Count;
             }
+
             List<string> pathsEncrypted = pathsCapacity > 0 ? new List<string>(pathsCapacity) : new List<string>();
 
-            using ArrayPoolManager arrayPoolManager = new ();
+            using ArrayPoolManager arrayPoolManager = new ArrayPoolManager();
 
             DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionOptions.DataEncryptionKeyId, encryptionOptions.EncryptionAlgorithm, cancellationToken);
 
@@ -49,55 +178,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             BrotliCompressor compressor = encryptionOptions.CompressionOptions.Algorithm == CompressionOptions.CompressionAlgorithm.Brotli
                 ? new BrotliCompressor(encryptionOptions.CompressionOptions.CompressionLevel) : null;
 
-            // Precompute top-level names (UTF-8 bytes) and their canonical full paths.
-            // Compare using ValueTextEquals(ReadOnlySpan<byte>) to avoid substring allocations.
-            // We store UTF-8 length and (when ASCII) the first byte to quickly reject most non-matches.
-            List<(byte[] NameUtf8, string FullPath, int NameUtf8Len, bool FirstIsAscii, byte FirstAsciiByte, bool IsEmpty)> topLevelCandidates = pathsCapacity > 0 ? new List<(byte[], string, int, bool, byte, bool)>(pathsCapacity) : new List<(byte[], string, int, bool, byte, bool)>();
-            // Tiny bitmask of candidate UTF-8 name lengths (0..63). For any longer lengths, flip hasLongNameLength.
-            ulong candidateNameLengthsMask = 0UL;
-            foreach (string p in encryptionOptions.PathsToEncrypt ?? Array.Empty<string>())
-            {
-                if (string.IsNullOrEmpty(p) || p[0] != '/')
-                {
-                    continue;
-                }
-
-                bool isEmpty = p.Length <= 1;
-                ReadOnlySpan<char> nameSpan = isEmpty ? ReadOnlySpan<char>.Empty : p.AsSpan(1);
-                if (!isEmpty && nameSpan.IndexOf('/') >= 0)
-                {
-                    continue; // only support top-level names here
-                }
-
-                int nameUtf8Len = isEmpty ? 0 : Encoding.UTF8.GetByteCount(nameSpan);
-                bool firstIsAscii = false;
-                byte firstAsciiByte = 0;
-                if (!isEmpty)
-                {
-                    char ch0 = p[1];
-                    if (ch0 <= 0x7F)
-                    {
-                        firstIsAscii = true;
-                        firstAsciiByte = (byte)ch0;
-                    }
-                }
-
-                byte[] nameUtf8 = isEmpty ? Array.Empty<byte>() : Encoding.UTF8.GetBytes(nameSpan);
-                topLevelCandidates.Add((nameUtf8, p, nameUtf8Len, firstIsAscii, firstAsciiByte, isEmpty));
-                if ((uint)nameUtf8Len < 64)
-                {
-                    candidateNameLengthsMask |= 1UL << nameUtf8Len;
-                }
-            }
+            // Pre-compute candidate encrypted paths for fast matching at property names.
+            CandidatePaths candidatePaths = CandidatePaths.Build(encryptionOptions.PathsToEncrypt);
 
             Dictionary<string, int> compressedPaths = compressionEnabled && pathsCapacity > 0 ? new Dictionary<string, int>(pathsCapacity) : new Dictionary<string, int>();
 
             // Write directly to the provided output stream; we'll compute bytes written via Utf8JsonWriter.BytesCommitted
-            using Utf8JsonWriter writer = new (outputStream, StreamProcessor.JsonWriterOptions);
+            using Utf8JsonWriter writer = new Utf8JsonWriter(outputStream, StreamProcessor.JsonWriterOptions);
 
             byte[] buffer = arrayPoolManager.Rent(this.initialBufferSize);
 
-            JsonReaderState state = new (StreamProcessor.JsonReaderOptions);
+            JsonReaderState state = new JsonReaderState(StreamProcessor.JsonReaderOptions);
 
             int leftOver = 0;
 
@@ -105,16 +196,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             Utf8JsonWriter encryptionPayloadWriter = null;
             string encryptPropertyName = null;
+
             // Track the path of the currently-active encrypted container (object/array)
             // This guards against any accidental mutation of encryptPropertyName while the container is open
             string activeEncryptedPath = null;
+
             // Track nesting depth within the buffered encrypted container to know exactly when it closes
             // 0 means no active encrypted container. When we start buffering a container we set this to 1,
             // and increment/decrement on nested Start*/End* inside it. When it returns to 0, we flush.
             int encryptedContainerDepth = 0;
+
             // Track whether the JSON root is an object so we can append _ei correctly
             bool rootIsObject = false;
             RentArrayBufferWriter bufferWriter = null;
+
             // Reusable pooled scratch buffer used for multi-segment strings/numbers and property names
             byte[] tmpScratch = null;
 
@@ -128,6 +223,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     {
                         pool.Return(scratch);
                     }
+
                     scratch = newBuf;
                 }
             }
@@ -198,7 +294,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             long TransformEncryptBuffer(ReadOnlySpan<byte> buffer)
             {
-                Utf8JsonReader reader = new (buffer, isFinalBlock, state);
+                Utf8JsonReader reader = new Utf8JsonReader(buffer, isFinalBlock, state);
 
                 while (reader.Read())
                 {
@@ -216,6 +312,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             {
                                 rootIsObject = true;
                             }
+
                             if (encryptionPayloadWriter != null)
                             {
                                 // Inside a buffered encrypted container
@@ -271,7 +368,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                 // If we're closing the root object (depth becomes 0 after this EndObject), append _ei before closing.
                                 if (rootIsObject && reader.CurrentDepth == 0)
                                 {
-                                    EncryptionProperties encryptionProperties = new (
+                                    EncryptionProperties encryptionProperties = new EncryptionProperties(
                                         encryptionFormatVersion: compressionEnabled ? 4 : 3,
                                         encryptionOptions.EncryptionAlgorithm,
                                         encryptionOptions.DataEncryptionKeyId,
@@ -347,48 +444,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             // Only resolve/reset encryptPropertyName for top-level properties (depth == 1).
                             if (reader.CurrentDepth == 1)
                             {
-                                if (topLevelCandidates.Count != 0)
+                                string matchedFullPath = null;
+                                int propNameUtf8Len = reader.HasValueSequence ? (int)reader.ValueSequence.Length : reader.ValueSpan.Length;
+                                if (candidatePaths.TryMatch(ref reader, propNameUtf8Len, out string path))
                                 {
-                                    string matchedFullPath = null;
-                                    int propNameUtf8Len = reader.HasValueSequence ? (int)reader.ValueSequence.Length : reader.ValueSpan.Length;
-                                    bool lengthPossible = (uint)propNameUtf8Len < 64 && ((candidateNameLengthsMask & (1UL << propNameUtf8Len)) != 0);
-
-                                    if (lengthPossible)
-                                    {
-                                        if (propNameUtf8Len == 0)
-                                        {
-                                            foreach (var c in topLevelCandidates)
-                                            {
-                                                if (c.IsEmpty)
-                                                {
-                                                    matchedFullPath = c.FullPath;
-                                                    break;
-                                                }
-                                            }
-                                        }
-                                        else
-                                        {
-                                            byte firstByte = reader.HasValueSequence ? reader.ValueSequence.FirstSpan[0] : reader.ValueSpan[0];
-                                            foreach (var c in topLevelCandidates)
-                                            {
-                                                if (!c.IsEmpty && c.NameUtf8Len == propNameUtf8Len && (!c.FirstIsAscii || c.FirstAsciiByte == firstByte) && reader.ValueTextEquals(c.NameUtf8))
-                                                {
-                                                    matchedFullPath = c.FullPath;
-                                                    break;
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    encryptPropertyName = matchedFullPath; // may be null if not encrypted
+                                    matchedFullPath = path;
                                 }
-                                else
-                                {
-                                    encryptPropertyName = null;
-                                }
+
+                                encryptPropertyName = matchedFullPath; // may be null if not encrypted
                             }
-                            // For nested properties (depth > 1), do not modify encryptPropertyName so we keep the outer encrypted path.
 
+                            // For nested properties (depth > 1), do not modify encryptPropertyName so we keep the outer encrypted path.
                             if (!reader.HasValueSequence)
                             {
                                 currentWriter.WritePropertyName(reader.ValueSpan);
@@ -400,6 +466,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                 int copied = reader.CopyString(tmpScratch);
                                 currentWriter.WritePropertyName(tmpScratch.AsSpan(0, copied));
                             }
+
                             break;
                         case JsonTokenType.Comment: // Skipped via reader options
                             currentWriter.WriteCommentValue(reader.ValueSpan);
@@ -410,6 +477,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                 int estimatedLength = reader.HasValueSequence ? (int)reader.ValueSequence.Length : reader.ValueSpan.Length;
                                 byte[] bytes = arrayPoolManager.Rent(estimatedLength);
                                 int length = reader.CopyString(bytes);
+
                                 // At this point we encrypt a top-level primitive; encryptPropertyName must be set.
                                 (byte[] encBytes, int encLength) = TransformEncryptPayload(bytes, length, TypeMarker.String, encryptPropertyName);
 
@@ -454,6 +522,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                         segment.Span.CopyTo(tmpScratch.AsSpan(offset));
                                         offset += segment.Length;
                                     }
+
                                     numberSpan = tmpScratch.AsSpan(0, len);
                                 }
 
@@ -483,6 +552,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                         segment.Span.CopyTo(tmpScratch.AsSpan(offset));
                                         offset += segment.Length;
                                     }
+
                                     currentWriter.WriteRawValue(tmpScratch.AsSpan(0, len), true);
                                 }
                             }
@@ -531,6 +601,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             if (encryptPropertyName != null && encryptionPayloadWriter != null)
                             {
                                 currentWriter.WriteNullValue();
+
                                 // keep encryptPropertyName until the container closes
                             }
                             else
@@ -538,6 +609,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                 currentWriter.WriteNullValue();
                                 encryptPropertyName = null;
                             }
+
                             break;
                     }
                 }
@@ -546,19 +618,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 return reader.BytesConsumed;
             }
 
-        (byte[] buffer, int length) TransformEncryptPayload(byte[] payload, int payloadSize, TypeMarker typeMarker, string path)
+            (byte[] buffer, int length) TransformEncryptPayload(byte[] payload, int payloadSize, TypeMarker typeMarker, string path)
             {
                 // Defensive: ensure we always have a non-null path for metadata/tracking
                 if (path == null)
                 {
                     path = activeEncryptedPath ?? encryptPropertyName;
                 }
+
                 byte[] processedBytes = payload;
                 int processedBytesLength = payloadSize;
 
                 if (compressor != null && payloadSize >= encryptionOptions.CompressionOptions.MinimalCompressedLength && path != null)
                 {
                     byte[] compressedBytes = arrayPoolManager.Rent(BrotliCompressor.GetMaxCompressedSize(payloadSize));
+
                     // Use the explicit path for this payload (container or primitive). If path is null, skip compression and recording.
                     processedBytesLength = compressor.Compress(compressedPaths, path, processedBytes, payloadSize, compressedBytes);
                     processedBytes = compressedBytes;
@@ -577,6 +651,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 {
                     pathsEncrypted.Add(path);
                 }
+
                 return (encryptedBytes, encryptedBytesCount);
             }
         }

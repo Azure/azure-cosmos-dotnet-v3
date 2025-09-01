@@ -25,12 +25,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         private const int MaxBufferSizeBytes = 8 * 1024 * 1024; // 8 MB
         private const int BufferGrowthMinIncrement = 4096; // 4 KB minimal additional headroom
 
-        private static readonly SqlBitSerializer SqlBoolSerializer = new ();
-        private static readonly SqlFloatSerializer SqlDoubleSerializer = new ();
-        private static readonly SqlBigIntSerializer SqlLongSerializer = new ();
+        private static readonly SqlBitSerializer SqlBoolSerializer = new SqlBitSerializer();
+        private static readonly SqlFloatSerializer SqlDoubleSerializer = new SqlFloatSerializer();
+        private static readonly SqlBigIntSerializer SqlLongSerializer = new SqlBigIntSerializer();
 
-        private static readonly JsonReaderOptions JsonReaderOptions = new () { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip };
-        private static readonly JsonWriterOptions JsonWriterOptions = new ()
+        private static readonly JsonReaderOptions JsonReaderOptions = new JsonReaderOptions() { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip };
+        private static readonly JsonWriterOptions JsonWriterOptions = new JsonWriterOptions()
         {
             Indented = false,
             SkipValidation = true,
@@ -78,35 +78,37 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 throw new NotSupportedException($"Unknown compression algorithm {properties.CompressionAlgorithm}");
             }
 
-            using ArrayPoolManager arrayPoolManager = new ();
+            using ArrayPoolManager arrayPoolManager = new ArrayPoolManager();
 
             DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(properties.DataEncryptionKeyId, properties.EncryptionAlgorithm, cancellationToken);
 
             // Track decrypted paths; pre-size conservatively and guard against null
-            List<string> pathsDecrypted = new (properties.EncryptedPaths?.Count() ?? 0);
+            List<string> pathsDecrypted = new List<string>(properties.EncryptedPaths?.Count() ?? 0);
 
             // Write directly to the provided output stream; we'll compute bytes written via Utf8JsonWriter.BytesCommitted
-            using Utf8JsonWriter writer = new (outputStream, StreamProcessor.JsonWriterOptions);
+            using Utf8JsonWriter writer = new Utf8JsonWriter(outputStream, StreamProcessor.JsonWriterOptions);
 
             byte[] buffer = arrayPoolManager.Rent(this.initialBufferSize);
+
             // Reusable pooled scratch buffers to reduce per-field rents; declared outside try so they can be returned in finally
             byte[] base64Scratch = null; // used for copying base64 text and in-place decoding
             byte[] tmpScratch = null;    // used for multi-segment strings, property names, and numbers
             try
             {
-                JsonReaderState state = new (StreamProcessor.JsonReaderOptions);
+                JsonReaderState state = new JsonReaderState(StreamProcessor.JsonReaderOptions);
 
                 // Reuse a single decompressor instance per call to avoid per-field allocations
-                BrotliCompressor decompressor = containsCompressed ? new () : null;
+                BrotliCompressor decompressor = containsCompressed ? new BrotliCompressor() : null;
 
                 // Keep a full-path set for diagnostics and final context
-                HashSet<string> encryptedFullPaths = new (properties.EncryptedPaths ?? Array.Empty<string>(), StringComparer.Ordinal);
+                HashSet<string> encryptedFullPaths = new HashSet<string>(properties.EncryptedPaths ?? Array.Empty<string>(), StringComparer.Ordinal);
+
                 // Back-compat variable removed; full paths set retained for diagnostics and context
 
                 // Precompute top-level names as UTF8 bytes alongside their canonical full-path ("/name").
                 // This avoids per-hit string concatenation and allocations when matching/writing.
-                List<byte[]> topLevelNameUtf8 = new (encryptedFullPaths.Count);
-                List<string> topLevelFullPaths = new (encryptedFullPaths.Count);
+                List<byte[]> topLevelNameUtf8 = new List<byte[]>(encryptedFullPaths.Count);
+                List<string> topLevelFullPaths = new List<string>(encryptedFullPaths.Count);
                 foreach (string p in encryptedFullPaths)
                 {
                     if (string.IsNullOrEmpty(p) || p[0] != '/')
@@ -115,6 +117,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     }
 
                     string name = p.Length > 1 ? p[1..] : string.Empty;
+
                     // Only consider top-level (no additional '/'); nested encryption paths are not supported here.
                     if (name.IndexOf('/') >= 0)
                     {
@@ -138,6 +141,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                         {
                             pool.Return(scratch);
                         }
+
                         scratch = newBuf;
                     }
                 }
@@ -167,6 +171,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 {
                     static string PathLabel(string a, string b) => a ?? b ?? "<unknown>";
                     int base64Len = reader.HasValueSequence ? (int)reader.ValueSequence.Length : reader.ValueSpan.Length;
+
                     // For in-place decode, destination length <= source length; ensure we have enough capacity for the source.
                     // If switching to non in-place in the future, consider Base64.GetMaxDecodedFromUtf8Length(base64Len) for destination sizing.
                     EnsureCapacity(ref base64Scratch, Math.Max(base64Len, 64), arrayPoolManager);
@@ -177,9 +182,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     {
                         throw new InvalidOperationException($"Base64 decoding failed for encrypted field at path {PathLabel(decryptPropertyName, currentPropertyPath)}: {status}. The field may be corrupted or not a valid base64 string.");
                     }
-                    TypeMarker marker = (TypeMarker)base64Scratch[0];
 
-                    // Note: do not short-circuit on marker (including Null) before decrypting; we must verify/authenticate ciphertext.
+                    TypeMarker marker = (TypeMarker)base64Scratch[0];
 
                     using PooledByteOwner owner = encryptor.DecryptOwned(encryptionKey, base64Scratch, cipherTextLength, arrayPoolManager);
                     byte[] bytes = owner.Array;
@@ -200,6 +204,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                         byte[] decompressed = arrayPoolManager.Rent(decompressedSize);
                         processedBytes = decompressor.Decompress(bytes, processedBytes, decompressed);
+
                         // Do not return the original buffer here; owner.Dispose() will handle it. Swap to decompressed.
                         bytes = decompressed;
                         compressedPathsDecompressed++;
@@ -298,212 +303,219 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     ref bool skipEiFirstTokenPending,
                     ref int skipEiContainerDepth)
                 {
-                    Utf8JsonReader reader = new (bufferSpan, isFinalBlock, state);
+                    Utf8JsonReader reader = new Utf8JsonReader(bufferSpan, isFinalBlock, state);
 
                     while (reader.Read())
                     {
                         // If we're currently skipping the value of the EncryptedInfo property, consume tokens until complete
-                    if (skippingEi)
-                    {
-                        if (skipEiFirstTokenPending)
+                        if (skippingEi)
                         {
-                            skipEiFirstTokenPending = false;
+                            if (skipEiFirstTokenPending)
+                            {
+                                skipEiFirstTokenPending = false;
+                                if (reader.TokenType == JsonTokenType.StartObject || reader.TokenType == JsonTokenType.StartArray)
+                                {
+                                    // Start of a container value; track nested depth
+                                    skipEiContainerDepth = 1;
+                                }
+                                else
+                                {
+                                    // Scalar value skipped in one token
+                                    skippingEi = false;
+                                }
+
+                                continue;
+                            }
+
                             if (reader.TokenType == JsonTokenType.StartObject || reader.TokenType == JsonTokenType.StartArray)
                             {
-                                // Start of a container value; track nested depth
-                                skipEiContainerDepth = 1;
+                                skipEiContainerDepth++;
+                                continue;
                             }
-                            else
+
+                            if (reader.TokenType == JsonTokenType.EndObject || reader.TokenType == JsonTokenType.EndArray)
                             {
-                                // Scalar value skipped in one token
-                                skippingEi = false;
+                                skipEiContainerDepth--;
+                                if (skipEiContainerDepth == 0)
+                                {
+                                    // Finished skipping the container
+                                    skippingEi = false;
+                                }
+
+                                continue;
                             }
-                            continue;
-                        }
 
-                        if (reader.TokenType == JsonTokenType.StartObject || reader.TokenType == JsonTokenType.StartArray)
-                        {
-                            skipEiContainerDepth++;
+                            // Intermediate token inside the container being skipped
                             continue;
-                        }
-
-                        if (reader.TokenType == JsonTokenType.EndObject || reader.TokenType == JsonTokenType.EndArray)
-                        {
-                            skipEiContainerDepth--;
-                            if (skipEiContainerDepth == 0)
-                            {
-                                // Finished skipping the container
-                                skippingEi = false;
-                            }
-                            continue;
-                        }
-
-                        // Intermediate token inside the container being skipped
-                        continue;
                         }
 
                         JsonTokenType tokenType = reader.TokenType;
 
-                    switch (tokenType)
-                    {
-                        case JsonTokenType.String:
-                            if (decryptPropertyName == null)
-                            {
-                                try
+                        switch (tokenType)
+                        {
+                            case JsonTokenType.String:
+                                if (decryptPropertyName == null)
                                 {
-                                    // If the value is contiguous and unescaped, fast-path write
-                                    if (!reader.HasValueSequence && !reader.ValueIsEscaped)
+                                    try
                                     {
-                                        writer.WriteStringValue(reader.ValueSpan);
-                                    }
-                                    else
-                                    {
-                                        // Copy and unescape into a reusable pooled buffer when needed (multi-segment or escaped)
-                                        int estimatedLength = reader.HasValueSequence ? (int)reader.ValueSequence.Length : reader.ValueSpan.Length;
-                                        EnsureCapacity(ref tmpScratch, Math.Max(estimatedLength, 64), arrayPoolManager);
-                                        int copied = reader.CopyString(tmpScratch);
-                                        writer.WriteStringValue(tmpScratch.AsSpan(0, copied));
-                                    }
-                                }
-                                catch (Exception ex)
-                                {
-                                    throw new InvalidOperationException($"Invalid UTF-8 while writing string at path {currentPropertyPath ?? "<unknown>"}", ex);
-                                }
-                            }
-                            else
-                            {
-                                TransformDecryptProperty(
-                                    ref reader,
-                                    arrayPoolManager,
-                                    this.Encryptor,
-                                    encryptionKey,
-                                    decompressor,
-                                    properties,
-                                    writer,
-                                    diagnosticsContext,
-                                    ref compressedPathsDecompressed,
-                                    decryptPropertyName,
-                                    currentPropertyPath);
-                                pathsDecrypted.Add(decryptPropertyName);
-                                propertiesDecrypted++;
-                            }
-
-                            decryptPropertyName = null;
-                            break;
-                        case JsonTokenType.Number:
-                            decryptPropertyName = null;
-                            if (!reader.HasValueSequence)
-                            {
-                                writer.WriteRawValue(reader.ValueSpan);
-                            }
-                            else
-                            {
-                                int len = (int)reader.ValueSequence.Length;
-                                EnsureCapacity(ref tmpScratch, Math.Max(len, 32), arrayPoolManager);
-                                reader.ValueSequence.CopyTo(tmpScratch);
-                                writer.WriteRawValue(tmpScratch.AsSpan(0, len));
-                            }
-                            break;
-                        case JsonTokenType.None: // Unreachable: pre-first-Read state
-                            decryptPropertyName = null;
-                            break;
-                        case JsonTokenType.StartObject:
-                            decryptPropertyName = null;
-                            writer.WriteStartObject();
-                            break;
-                        case JsonTokenType.EndObject:
-                            decryptPropertyName = null;
-                            writer.WriteEndObject();
-                            break;
-                        case JsonTokenType.StartArray:
-                            decryptPropertyName = null;
-                            writer.WriteStartArray();
-                            break;
-                        case JsonTokenType.EndArray:
-                            decryptPropertyName = null;
-                            writer.WriteEndArray();
-                            break;
-                        case JsonTokenType.PropertyName:
-
-                            // Fast-path skip for encrypted info property without allocating a string
-                            if (reader.ValueTextEquals(Constants.EncryptedInfo))
-                            {
-                                currentPropertyPath = EncryptionPropertiesPath;
-                                // Try to skip the value within the current buffer; if it doesn't fit, set state to continue skipping across buffers
-                                if (!reader.TrySkip())
-                                {
-                                    skippingEi = true;
-                                    skipEiFirstTokenPending = true; // next token starts the value
-                                    skipEiContainerDepth = 0;
-                                }
-                                // Do not write the property name nor its value
-                                continue; // continue the outer read loop
-                            }
-
-                            // Check if current property is an encrypted top-level name without allocating a string
-                                    // Top-level fast-path: try zero-allocation match against precomputed UTF8 names
-                                    // PropertyName depth at root object is 1
-                                    if (reader.CurrentDepth == 1 && topLevelNameUtf8.Count != 0)
-                                    {
-                                        string matchedFullPath = null;
-                                        for (int i = 0; i < topLevelNameUtf8.Count; i++)
+                                        // If the value is contiguous and unescaped, fast-path write
+                                        if (!reader.HasValueSequence && !reader.ValueIsEscaped)
                                         {
-                                            if (reader.ValueTextEquals(topLevelNameUtf8[i]))
-                                            {
-                                                matchedFullPath = topLevelFullPaths[i];
-                                                break;
-                                            }
-                                        }
-
-                                        if (matchedFullPath != null)
-                                        {
-                                            decryptPropertyName = matchedFullPath; // reuse canonical full-path string
-                                            currentPropertyPath = matchedFullPath;
+                                            writer.WriteStringValue(reader.ValueSpan);
                                         }
                                         else
                                         {
-                                            decryptPropertyName = null;
-                                            currentPropertyPath = null;
+                                            // Copy and unescape into a reusable pooled buffer when needed (multi-segment or escaped)
+                                            int estimatedLength = reader.HasValueSequence ? (int)reader.ValueSequence.Length : reader.ValueSpan.Length;
+                                            EnsureCapacity(ref tmpScratch, Math.Max(estimatedLength, 64), arrayPoolManager);
+                                            int copied = reader.CopyString(tmpScratch);
+                                            writer.WriteStringValue(tmpScratch.AsSpan(0, copied));
                                         }
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        throw new InvalidOperationException($"Invalid UTF-8 while writing string at path {currentPropertyPath ?? "<unknown>"}", ex);
+                                    }
+                                }
+                                else
+                                {
+                                    TransformDecryptProperty(
+                                        ref reader,
+                                        arrayPoolManager,
+                                        this.Encryptor,
+                                        encryptionKey,
+                                        decompressor,
+                                        properties,
+                                        writer,
+                                        diagnosticsContext,
+                                        ref compressedPathsDecompressed,
+                                        decryptPropertyName,
+                                        currentPropertyPath);
+                                    pathsDecrypted.Add(decryptPropertyName);
+                                    propertiesDecrypted++;
+                                }
+
+                                decryptPropertyName = null;
+                                break;
+                            case JsonTokenType.Number:
+                                decryptPropertyName = null;
+                                if (!reader.HasValueSequence)
+                                {
+                                    writer.WriteRawValue(reader.ValueSpan);
+                                }
+                                else
+                                {
+                                    int len = (int)reader.ValueSequence.Length;
+                                    EnsureCapacity(ref tmpScratch, Math.Max(len, 32), arrayPoolManager);
+                                    reader.ValueSequence.CopyTo(tmpScratch);
+                                    writer.WriteRawValue(tmpScratch.AsSpan(0, len));
+                                }
+
+                                break;
+                            case JsonTokenType.None: // Unreachable: pre-first-Read state
+                                decryptPropertyName = null;
+                                break;
+                            case JsonTokenType.StartObject:
+                                decryptPropertyName = null;
+                                writer.WriteStartObject();
+                                break;
+                            case JsonTokenType.EndObject:
+                                decryptPropertyName = null;
+                                writer.WriteEndObject();
+                                break;
+                            case JsonTokenType.StartArray:
+                                decryptPropertyName = null;
+                                writer.WriteStartArray();
+                                break;
+                            case JsonTokenType.EndArray:
+                                decryptPropertyName = null;
+                                writer.WriteEndArray();
+                                break;
+                            case JsonTokenType.PropertyName:
+
+                                // Fast-path skip for encrypted info property without allocating a string
+                                if (reader.ValueTextEquals(Constants.EncryptedInfo))
+                                {
+                                    currentPropertyPath = EncryptionPropertiesPath;
+
+                                    // Try to skip the value within the current buffer; if it doesn't fit, set state to continue skipping across buffers
+                                    if (!reader.TrySkip())
+                                    {
+                                        skippingEi = true;
+
+                                        // next token starts the value
+                                        skipEiFirstTokenPending = true;
+                                        skipEiContainerDepth = 0;
+                                    }
+
+                                    // Do not write the property name nor its value
+                                    continue; // continue the outer read loop
+                                }
+
+                                // Check if current property is an encrypted top-level name without allocating a string
+                                // Top-level fast-path: try zero-allocation match against precomputed UTF8 names
+                                // PropertyName depth at root object is 1
+                                if (reader.CurrentDepth == 1 && topLevelNameUtf8.Count != 0)
+                                {
+                                    string matchedFullPath = null;
+                                    for (int i = 0; i < topLevelNameUtf8.Count; i++)
+                                    {
+                                        if (reader.ValueTextEquals(topLevelNameUtf8[i]))
+                                        {
+                                            matchedFullPath = topLevelFullPaths[i];
+                                            break;
+                                        }
+                                    }
+
+                                    if (matchedFullPath != null)
+                                    {
+                                        decryptPropertyName = matchedFullPath; // reuse canonical full-path string
+                                        currentPropertyPath = matchedFullPath;
                                     }
                                     else
                                     {
-                                        // Non top-level properties are not encrypted by path in this implementation; avoid extra lookups and allocations
                                         decryptPropertyName = null;
                                         currentPropertyPath = null;
                                     }
+                                }
+                                else
+                                {
+                                    // Non top-level properties are not encrypted by path in this implementation; avoid extra lookups and allocations
+                                    decryptPropertyName = null;
+                                    currentPropertyPath = null;
+                                }
 
-                            // Write the property name with zero allocation in the common case
-                            if (!reader.HasValueSequence)
-                            {
-                                writer.WritePropertyName(reader.ValueSpan);
-                            }
-                            else
-                            {
-                                // Handle rare multi-segment names without allocating a new array
-                                int estimatedLength = (int)reader.ValueSequence.Length;
-                                EnsureCapacity(ref tmpScratch, Math.Max(estimatedLength, 64), arrayPoolManager);
-                                int copied = reader.CopyString(tmpScratch);
-                                writer.WritePropertyName(tmpScratch.AsSpan(0, copied));
-                            }
+                                // Write the property name with zero allocation in the common case
+                                if (!reader.HasValueSequence)
+                                {
+                                    writer.WritePropertyName(reader.ValueSpan);
+                                }
+                                else
+                                {
+                                    // Handle rare multi-segment names without allocating a new array
+                                    int estimatedLength = (int)reader.ValueSequence.Length;
+                                    EnsureCapacity(ref tmpScratch, Math.Max(estimatedLength, 64), arrayPoolManager);
+                                    int copied = reader.CopyString(tmpScratch);
+                                    writer.WritePropertyName(tmpScratch.AsSpan(0, copied));
+                                }
 
-                            break;
-                        case JsonTokenType.Comment: // Skipped via reader options
-                            break;
-                        case JsonTokenType.True:
-                            decryptPropertyName = null;
-                            writer.WriteBooleanValue(true);
-                            break;
-                        case JsonTokenType.False:
-                            decryptPropertyName = null;
-                            writer.WriteBooleanValue(false);
-                            break;
-                        case JsonTokenType.Null:
-                            decryptPropertyName = null;
-                            writer.WriteNullValue();
-                            break;
+                                break;
+                            case JsonTokenType.Comment: // Skipped via reader options
+                                break;
+                            case JsonTokenType.True:
+                                decryptPropertyName = null;
+                                writer.WriteBooleanValue(true);
+                                break;
+                            case JsonTokenType.False:
+                                decryptPropertyName = null;
+                                writer.WriteBooleanValue(false);
+                                break;
+                            case JsonTokenType.Null:
+                                decryptPropertyName = null;
+                                writer.WriteNullValue();
+                                break;
+                        }
                     }
-                }
 
                     state = reader.CurrentState;
                     return reader.BytesConsumed;
