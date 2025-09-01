@@ -22,38 +22,50 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         /// Helper that precomputes candidate top-level encrypted paths for fast, readable matching.
         /// Only paths starting with '/' and without additional '/' (i.e., top-level) are considered.
         /// Keeps a compact bitmask of UTF-8 name byte lengths to quickly rule out impossible matches.
+        /// Avoids per-candidate substring allocation by slicing the original path at compare time.
         /// </summary>
         private sealed class CandidatePaths
         {
-            // Each entry stores: the original full path (e.g., "/foo"), the name without leading '/', and its UTF-8 byte length.
-            private readonly (string FullPath, string Name, int NameUtf8Len)[] topLevel;
+            private readonly struct Entry
+            {
+                public readonly string FullPath;      // e.g. "/foo"
+                public readonly int NameCharLen;      // FullPath.Length - 1
+                public readonly int NameUtf8Len;
+
+                public Entry(string fullPath, int nameUtf8Len)
+                {
+                    this.FullPath = fullPath;
+                    this.NameCharLen = fullPath.Length - 1;
+                    this.NameUtf8Len = nameUtf8Len;
+                }
+
+                public ReadOnlySpan<char> NameChars => this.FullPath.AsSpan(1, this.NameCharLen);
+            }
+
+            private readonly Entry[] topLevel;
             private readonly ulong lengthMask;
             private readonly bool hasLongNames;
-            private readonly bool includesEmpty; // true when "/" is present
+            private readonly string includesEmptyFullPath; // null unless "/" present
 
-            private CandidatePaths(
-                (string FullPath, string Name, int NameUtf8Len)[] topLevel,
-                ulong lengthMask,
-                bool hasLongNames,
-                bool includesEmpty)
+            private CandidatePaths(Entry[] topLevel, ulong lengthMask, bool hasLongNames, string includesEmptyFullPath)
             {
                 this.topLevel = topLevel;
                 this.lengthMask = lengthMask;
                 this.hasLongNames = hasLongNames;
-                this.includesEmpty = includesEmpty;
+                this.includesEmptyFullPath = includesEmptyFullPath;
             }
 
             public static CandidatePaths Build(IEnumerable<string> paths)
             {
                 if (paths == null)
                 {
-                    return new CandidatePaths(Array.Empty<(string, string, int)>(), 0UL, false, false);
+                    return new CandidatePaths(Array.Empty<Entry>(), 0UL, false, null);
                 }
 
-                List<(string FullPath, string Name, int NameUtf8Len)> list = new List<(string FullPath, string Name, int NameUtf8Len)>();
+                List<Entry> list = new List<Entry>();
                 ulong mask = 0UL;
                 bool hasLong = false;
-                bool includesEmpty = false;
+                string includesEmpty = null;
 
                 // Iterate the provided paths and extract only top-level candidates
                 foreach (string p in paths)
@@ -72,15 +84,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                     if (isEmpty)
                     {
-                        includesEmpty = true; /* candidate for empty name (UTF-8 length 0) */
+                        includesEmpty = p; // track "/" separately; do not add to list
                         mask |= 1UL << 0;
-                        list.Add((p, string.Empty, 0)); /* keep a representative entry for completeness (name is "") */
                         continue;
                     }
 
                     // Compute UTF-8 byte length of the name without leading '/'
-                    string name = new string(nameSpan);
-                    int nameUtf8Len = Encoding.UTF8.GetByteCount(name);
+                    int nameUtf8Len = Encoding.UTF8.GetByteCount(nameSpan);
                     if ((uint)nameUtf8Len < 64)
                     {
                         mask |= 1UL << nameUtf8Len;
@@ -90,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                         hasLong = true;
                     }
 
-                    list.Add((p, name, nameUtf8Len));
+                    list.Add(new Entry(p, nameUtf8Len));
                 }
 
                 return new CandidatePaths(list.ToArray(), mask, hasLong, includesEmpty);
@@ -104,18 +114,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             public bool TryMatch(ref Utf8JsonReader reader, int propNameUtf8Len, out string matchedFullPath)
             {
-                // Handle empty name candidate
-                if (propNameUtf8Len == 0 && this.includesEmpty)
+                // Handle empty name candidate (path "/")
+                if (propNameUtf8Len == 0 && this.includesEmptyFullPath != null)
                 {
-                    // Find the first "/" entry
-                    for (int i = 0; i < this.topLevel.Length; i++)
-                    {
-                        if (this.topLevel[i].NameUtf8Len == 0)
-                        {
-                            matchedFullPath = this.topLevel[i].FullPath;
-                            return true;
-                        }
-                    }
+                    matchedFullPath = this.includesEmptyFullPath;
+                    return true;
                 }
 
                 if (!this.IsLengthPossible(propNameUtf8Len))
@@ -125,18 +128,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 }
 
                 // Linear scan over small candidate set; early out on len mismatch.
-                for (int i = 0; i < this.topLevel.Length; i++)
+                foreach (ref readonly Entry e in this.topLevel.AsSpan())
                 {
-                    var entry = this.topLevel[i];
-                    if (entry.NameUtf8Len != propNameUtf8Len)
+                    if (e.NameUtf8Len != propNameUtf8Len)
                     {
                         continue;
                     }
 
-                    // Allocation-free compare using Utf8JsonReader.ValueTextEquals(string)
-                    if (reader.ValueTextEquals(entry.Name))
+                    // Allocation-free compare using Utf8JsonReader.ValueTextEquals(ReadOnlySpan<char>)
+                    if (reader.ValueTextEquals(e.NameChars))
                     {
-                        matchedFullPath = entry.FullPath;
+                        matchedFullPath = e.FullPath;
                         return true;
                     }
                 }
