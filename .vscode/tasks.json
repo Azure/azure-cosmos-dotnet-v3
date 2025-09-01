@@ -221,6 +221,60 @@
 				"-v",
 				"normal"
 			]
+		},
+		{
+			"label": "run perf: path match",
+			"type": "shell",
+			"command": "pwsh",
+			"args": [
+				"-NoLogo",
+				"-NoProfile",
+				"-Command",
+				"$env:IsPreview='True'; dotnet run -c Release --project 'c:\\repos\\azure-cosmos-dotnet-v3\\Microsoft.Azure.Cosmos.Encryption.Custom\\tests\\Microsoft.Azure.Cosmos.Encryption.Custom.Performance.Tests\\Microsoft.Azure.Cosmos.Encryption.Custom.Performance.Tests.csproj' -- --filter *StreamProcessorPathMatchBenchmark* --runtimes net8.0 --job short"
+			]
+		},
+		{
+			"label": "perf: path match baseline",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"run",
+				"-c",
+				"Release",
+				"-f",
+				"net8.0",
+				"--project",
+				"c:\\repos\\azure-cosmos-dotnet-v3\\.worktree-master\\Microsoft.Azure.Cosmos.Encryption.Custom\\tests\\Microsoft.Azure.Cosmos.Encryption.Custom.Performance.Tests\\Microsoft.Azure.Cosmos.Encryption.Custom.Performance.Tests.csproj",
+				"--",
+				"--filter",
+				"*StreamProcessorPathMatchBenchmark*",
+				"--job",
+				"short",
+				"--runtimes",
+				"net8.0"
+			]
+		},
+		{
+			"label": "build",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"build",
+				"/property:GenerateFullPaths=true",
+				"/consoleloggerparameters:NoSummary"
+			],
+			"group": "build"
+		},
+		{
+			"label": "build",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"build",
+				"/property:GenerateFullPaths=true",
+				"/consoleloggerparameters:NoSummary"
+			],
+			"group": "build"
 		}
 	]
 }

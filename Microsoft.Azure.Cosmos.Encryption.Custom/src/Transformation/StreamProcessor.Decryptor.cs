@@ -2,20 +2,6 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-// Temporarily disable strict StyleCop rules for this preview-only implementation to unblock iteration.
-#pragma warning disable SA1512 // Single-line comments should not be followed by blank line
-
-// Temporarily disable strict StyleCop rules for this preview-only implementation to unblock iteration.
-#pragma warning disable SA1513 // Closing brace should be followed by blank line
-#pragma warning disable SA1512 // Single-line comments should not be followed by blank line
-#pragma warning disable SA1510 // 'else' statement should not be preceded by a blank line
-#pragma warning disable SA1515 // Single-line comment should be preceded by blank line
-#pragma warning disable SA1137 // Elements should have the same indentation
-#pragma warning disable SA1505 // An opening brace should not be followed by a blank line
-#pragma warning disable SA1507 // Code should not contain multiple blank lines in a row
-#pragma warning disable SA1508 // A closing brace should not be preceded by a blank line
-#pragma warning disable SA1028 // Code should not contain trailing whitespace
-
 #if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
 namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 {
@@ -617,14 +603,3 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 }
 
 #endif
-
-// Restore disabled StyleCop rules
-#pragma warning restore SA1028
-#pragma warning restore SA1508
-#pragma warning restore SA1507
-#pragma warning restore SA1505
-#pragma warning restore SA1137
-#pragma warning restore SA1515
-#pragma warning restore SA1512
-#pragma warning restore SA1510
-#pragma warning restore SA1513
