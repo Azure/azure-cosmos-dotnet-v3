@@ -17,12 +17,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
     internal partial class StreamProcessor
     {
     private readonly byte[] encryptionPropertiesNameBytes = Encoding.UTF8.GetBytes(Constants.EncryptedInfo);
-    private static readonly byte[] ei_Ef_Name = Encoding.UTF8.GetBytes(Constants.EncryptionFormatVersion);
-    private static readonly byte[] ei_Ea_Name = Encoding.UTF8.GetBytes(Constants.EncryptionAlgorithm);
-    private static readonly byte[] ei_En_Name = Encoding.UTF8.GetBytes(Constants.EncryptionDekId);
-    private static readonly byte[] ei_Ep_Name = Encoding.UTF8.GetBytes(Constants.EncryptedPaths);
-    private static readonly byte[] ei_Ce_Name = Encoding.UTF8.GetBytes(Constants.CompressionAlgorithm);
-    private static readonly byte[] ei_Cp_Name = Encoding.UTF8.GetBytes(Constants.CompressedEncryptedPaths);
 
         internal async Task EncryptStreamAsync(
             Stream inputStream,
@@ -277,50 +271,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                 // If we're closing the root object (depth becomes 0 after this EndObject), append _ei before closing.
                                 if (rootIsObject && reader.CurrentDepth == 0)
                                 {
+                                    EncryptionProperties encryptionProperties = new (
+                                        encryptionFormatVersion: compressionEnabled ? 4 : 3,
+                                        encryptionOptions.EncryptionAlgorithm,
+                                        encryptionOptions.DataEncryptionKeyId,
+                                        encryptedData: null,
+                                        pathsEncrypted,
+                                        encryptionOptions.CompressionOptions.Algorithm,
+                                        compressedPaths);
+
                                     writer.WritePropertyName(this.encryptionPropertiesNameBytes);
-                                    writer.WriteStartObject();
-
-                                    // _ef
-                                    writer.WritePropertyName(ei_Ef_Name);
-                                    writer.WriteNumberValue(compressionEnabled ? 4 : 3);
-
-                                    // _en
-                                    writer.WritePropertyName(ei_En_Name);
-                                    writer.WriteStringValue(encryptionOptions.DataEncryptionKeyId);
-
-                                    // _ea
-                                    writer.WritePropertyName(ei_Ea_Name);
-                                    writer.WriteStringValue(encryptionOptions.EncryptionAlgorithm);
-
-                                    // _ed is omitted in stream encryptor (null), matching previous behavior
-
-                                    // _ep
-                                    writer.WritePropertyName(ei_Ep_Name);
-                                    writer.WriteStartArray();
-                                    foreach (string p in pathsEncrypted)
-                                    {
-                                        writer.WriteStringValue(p);
-                                    }
-                                    writer.WriteEndArray();
-
-                                    if (compressionEnabled)
-                                    {
-                                        // _ce
-                                        writer.WritePropertyName(ei_Ce_Name);
-                                        writer.WriteNumberValue((int)encryptionOptions.CompressionOptions.Algorithm);
-
-                                        // _cp
-                                        writer.WritePropertyName(ei_Cp_Name);
-                                        writer.WriteStartObject();
-                                        foreach (KeyValuePair<string, int> kvp in compressedPaths)
-                                        {
-                                            writer.WritePropertyName(kvp.Key);
-                                            writer.WriteNumberValue(kvp.Value);
-                                        }
-                                        writer.WriteEndObject();
-                                    }
-
-                                    writer.WriteEndObject();
+                                    JsonSerializer.Serialize(writer, encryptionProperties);
                                 }
 
                                 writer.WriteEndObject();
