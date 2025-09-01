@@ -169,7 +169,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     string decryptPropertyName,
                     string currentPropertyPath)
                 {
-                    static string PathLabel(string a, string b) => a ?? b ?? "<unknown>";
+                    static string PathLabel(string a, string b)
+                    {
+                        return a ?? b ?? "<unknown>";
+                    }
+
                     int base64Len = reader.HasValueSequence ? (int)reader.ValueSequence.Length : reader.ValueSpan.Length;
 
                     // For in-place decode, destination length <= source length; ensure we have enough capacity for the source.
@@ -288,7 +292,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     ReadOnlySpan<byte> bufferSpan,
                     ref JsonReaderState state,
                     bool isFinalBlock,
-                    HashSet<string> encryptedFullPaths,
                     ArrayPoolManager arrayPoolManager,
                     Utf8JsonWriter writer,
                     BrotliCompressor decompressor,
@@ -534,7 +537,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                         buffer.AsSpan(0, dataSize),
                         ref state,
                         isFinalBlock,
-                        encryptedFullPaths,
                         arrayPoolManager,
                         writer,
                         decompressor,

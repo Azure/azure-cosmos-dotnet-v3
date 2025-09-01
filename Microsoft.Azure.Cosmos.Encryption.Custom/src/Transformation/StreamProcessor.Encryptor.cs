@@ -16,7 +16,61 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
     internal partial class StreamProcessor
     {
-        private readonly byte[] encryptionPropertiesNameBytes = Encoding.UTF8.GetBytes(Constants.EncryptedInfo);
+        private static readonly byte[] EncryptionPropertiesNameBytes = Encoding.UTF8.GetBytes(Constants.EncryptedInfo);
+
+        // _ei is emitted manually to avoid allocations from JsonSerializer and DTOs.
+
+        // Helper that writes the encryption metadata object (_ei) using the provided values
+        // Emits all required fields and omits compressedEncryptedPaths when null.
+        internal static void WriteEncryptionInfo(
+            Utf8JsonWriter writer,
+            int formatVersion,
+            string encryptionAlgorithm,
+            string dataEncryptionKeyId,
+            IReadOnlyList<string> encryptedPaths,
+            CompressionOptions.CompressionAlgorithm compressionAlgorithm,
+            IReadOnlyDictionary<string, int> compressedEncryptedPaths)
+        {
+            // Property name: _ei
+            writer.WritePropertyName(EncryptionPropertiesNameBytes);
+            writer.WriteStartObject();
+
+            // version, algorithm, key id
+            writer.WriteNumber(Constants.EncryptionFormatVersion, formatVersion);
+            writer.WriteString(Constants.EncryptionAlgorithm, encryptionAlgorithm);
+            writer.WriteString(Constants.EncryptionDekId, dataEncryptionKeyId);
+
+            // encryptedPaths
+            writer.WritePropertyName(Constants.EncryptedPaths);
+            writer.WriteStartArray();
+            if (encryptedPaths != null)
+            {
+                foreach (string p in encryptedPaths)
+                {
+                    writer.WriteStringValue(p);
+                }
+            }
+
+            writer.WriteEndArray();
+
+            // compression algorithm (enum written as number like JsonSerializer default)
+            writer.WriteNumber(Constants.CompressionAlgorithm, (int)compressionAlgorithm);
+
+            // compressedEncryptedPaths (optional)
+            if (compressedEncryptedPaths != null)
+            {
+                writer.WritePropertyName(Constants.CompressedEncryptedPaths);
+                writer.WriteStartObject();
+                foreach (KeyValuePair<string, int> kvp in compressedEncryptedPaths)
+                {
+                    writer.WriteNumber(kvp.Key, kvp.Value);
+                }
+
+                writer.WriteEndObject();
+            }
+
+            writer.WriteEndObject();
+        }
 
         /// <summary>
         /// Helper that precomputes candidate top-level encrypted paths for fast, readable matching.
@@ -149,12 +203,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         }
 
         internal async Task EncryptStreamAsync(
-            Stream inputStream,
-            Stream outputStream,
-            Encryptor encryptor,
-            EncryptionOptions encryptionOptions,
-            CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken)
+                Stream inputStream,
+                Stream outputStream,
+                Encryptor encryptor,
+                EncryptionOptions encryptionOptions,
+                CosmosDiagnosticsContext diagnosticsContext,
+                CancellationToken cancellationToken)
         {
             long bytesRead = 0;
             long bytesWritten = 0;
@@ -183,10 +237,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             // Pre-compute candidate encrypted paths for fast matching at property names.
             CandidatePaths candidatePaths = CandidatePaths.Build(encryptionOptions.PathsToEncrypt);
 
-            Dictionary<string, int> compressedPaths = compressionEnabled && pathsCapacity > 0 ? new Dictionary<string, int>(pathsCapacity) : new Dictionary<string, int>();
+            Dictionary<string, int> compressedPaths = null; // allocate lazily on first compressed payload
 
             // Write directly to the provided output stream; we'll compute bytes written via Utf8JsonWriter.BytesCommitted
-            using Utf8JsonWriter writer = new Utf8JsonWriter(outputStream, StreamProcessor.JsonWriterOptions);
+            Utf8JsonWriter writer = new Utf8JsonWriter(outputStream, StreamProcessor.JsonWriterOptions);
 
             byte[] buffer = arrayPoolManager.Rent(this.initialBufferSize);
 
@@ -211,6 +265,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             // Track whether the JSON root is an object so we can append _ei correctly
             bool rootIsObject = false;
             RentArrayBufferWriter bufferWriter = null;
+
+            // Reusable pooled buffer and writer for encrypted payload containers
+            RentArrayBufferWriter reusablePayloadBuffer = new RentArrayBufferWriter();
+            Utf8JsonWriter reusablePayloadWriter = new Utf8JsonWriter(reusablePayloadBuffer);
+
+            // Helper moved to class scope below
 
             // Reusable pooled scratch buffer used for multi-segment strings/numbers and property names
             byte[] tmpScratch = null;
@@ -283,6 +343,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 {
                     arrayPoolManager.Return(tmpScratch);
                 }
+
+                // Dispose main writer
+#pragma warning disable VSTHRD103 // Call async methods when in an async method - Utf8JsonWriter does not implement IAsyncDisposable
+                writer?.Dispose();
+#pragma warning restore VSTHRD103 // Call async methods when in an async method
+
+                // Dispose reusable payload writer and its buffer
+#pragma warning disable VSTHRD103 // Call async methods when in an async method - Utf8JsonWriter/RentArrayBufferWriter do not implement IAsyncDisposable
+                reusablePayloadWriter?.Dispose();
+                reusablePayloadBuffer?.Dispose();
+#pragma warning restore VSTHRD103 // Call async methods when in an async method
             }
 
             // finalize diagnostics
@@ -323,9 +394,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             }
                             else if (encryptPropertyName != null)
                             {
-                                // Start buffering this object as the encrypted payload for the current property
-                                bufferWriter = new RentArrayBufferWriter();
-                                encryptionPayloadWriter = new Utf8JsonWriter(bufferWriter);
+                                // Start buffering this object as the encrypted payload for the current property (reuse pooled buffer/writer)
+                                bufferWriter = reusablePayloadBuffer;
+                                encryptionPayloadWriter = reusablePayloadWriter;
+                                bufferWriter.Clear();
+                                encryptionPayloadWriter.Reset(bufferWriter);
                                 encryptionPayloadWriter.WriteStartObject();
                                 activeEncryptedPath = encryptPropertyName;
                                 encryptedContainerDepth = 1; // start of the buffered container
@@ -356,11 +429,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                     encryptPropertyName = null;
                                     activeEncryptedPath = null;
 
-#pragma warning disable VSTHRD103 // Call async methods when in an async method - this method cannot be async, Utf8JsonReader is ref struct
-                                    encryptionPayloadWriter.Dispose();
-#pragma warning restore VSTHRD103 // Call async methods when in an async method
+                                    // Keep reusable instances for next use
                                     encryptionPayloadWriter = null;
-                                    bufferWriter.Dispose();
+                                    bufferWriter.Clear();
                                     bufferWriter = null;
                                 }
                             }
@@ -370,17 +441,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                 // If we're closing the root object (depth becomes 0 after this EndObject), append _ei before closing.
                                 if (rootIsObject && reader.CurrentDepth == 0)
                                 {
-                                    EncryptionProperties encryptionProperties = new EncryptionProperties(
-                                        encryptionFormatVersion: compressionEnabled ? 4 : 3,
+                                    int formatVersion = (encryptionOptions.CompressionOptions.Algorithm != CompressionOptions.CompressionAlgorithm.None) ? 4 : 3;
+
+                                    WriteEncryptionInfo(
+                                        writer,
+                                        formatVersion,
                                         encryptionOptions.EncryptionAlgorithm,
                                         encryptionOptions.DataEncryptionKeyId,
-                                        encryptedData: null,
                                         pathsEncrypted,
                                         encryptionOptions.CompressionOptions.Algorithm,
                                         compressedPaths);
-
-                                    writer.WritePropertyName(this.encryptionPropertiesNameBytes);
-                                    JsonSerializer.Serialize(writer, encryptionProperties);
                                 }
 
                                 writer.WriteEndObject();
@@ -396,9 +466,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             }
                             else if (encryptPropertyName != null)
                             {
-                                // Start buffering this array as the encrypted payload for the current property
-                                bufferWriter = new RentArrayBufferWriter();
-                                encryptionPayloadWriter = new Utf8JsonWriter(bufferWriter);
+                                // Start buffering this array as the encrypted payload for the current property (reuse pooled buffer/writer)
+                                bufferWriter = reusablePayloadBuffer;
+                                encryptionPayloadWriter = reusablePayloadWriter;
+                                bufferWriter.Clear();
+                                encryptionPayloadWriter.Reset(bufferWriter);
                                 encryptionPayloadWriter.WriteStartArray();
                                 activeEncryptedPath = encryptPropertyName;
                                 encryptedContainerDepth = 1; // start of the buffered array
@@ -427,11 +499,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                     encryptPropertyName = null;
                                     activeEncryptedPath = null;
 
-#pragma warning disable VSTHRD103 // Call async methods when in an async method - this method cannot be async, Utf8JsonReader is ref struct
-                                    encryptionPayloadWriter.Dispose();
-#pragma warning restore VSTHRD103 // Call async methods when in an async method
+                                    // Keep reusable instances for next use
                                     encryptionPayloadWriter = null;
-                                    bufferWriter.Dispose();
+                                    bufferWriter.Clear();
                                     bufferWriter = null;
                                 }
                             }
@@ -477,14 +547,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             if (encryptPropertyName != null && encryptionPayloadWriter == null)
                             {
                                 int estimatedLength = reader.HasValueSequence ? (int)reader.ValueSequence.Length : reader.ValueSpan.Length;
-                                byte[] bytes = arrayPoolManager.Rent(estimatedLength);
-                                int length = reader.CopyString(bytes);
+                                EnsureCapacity(ref tmpScratch, Math.Max(estimatedLength, 64), arrayPoolManager);
+                                int length = reader.CopyString(tmpScratch);
 
-                                // At this point we encrypt a top-level primitive; encryptPropertyName must be set.
-                                (byte[] encBytes, int encLength) = TransformEncryptPayload(bytes, length, TypeMarker.String, encryptPropertyName);
+                                // Encrypt a top-level string primitive using the shared scratch buffer to avoid extra allocations.
+                                (byte[] encBytes, int encLength) = TransformEncryptPayload(tmpScratch, length, TypeMarker.String, encryptPropertyName);
 
-                                // Early return temp string buffer
-                                arrayPoolManager.Return(bytes);
                                 currentWriter.WriteBase64StringValue(encBytes.AsSpan(0, encLength));
                                 arrayPoolManager.Return(encBytes);
                                 encryptPropertyName = null;
@@ -623,16 +691,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             (byte[] buffer, int length) TransformEncryptPayload(byte[] payload, int payloadSize, TypeMarker typeMarker, string path)
             {
                 // Defensive: ensure we always have a non-null path for metadata/tracking
-                if (path == null)
-                {
-                    path = activeEncryptedPath ?? encryptPropertyName;
-                }
+                path ??= activeEncryptedPath ?? encryptPropertyName;
 
                 byte[] processedBytes = payload;
                 int processedBytesLength = payloadSize;
 
                 if (compressor != null && payloadSize >= encryptionOptions.CompressionOptions.MinimalCompressedLength && path != null)
                 {
+                    // Lazily allocate the compressedPaths dictionary on first use
+                    if (compressedPaths == null)
+                    {
+                        int capacity = pathsCapacity > 0 ? Math.Min(pathsCapacity, 8) : 8;
+                        compressedPaths = new Dictionary<string, int>(capacity);
+                    }
+
                     byte[] compressedBytes = arrayPoolManager.Rent(BrotliCompressor.GetMaxCompressedSize(payloadSize));
 
                     // Use the explicit path for this payload (container or primitive). If path is null, skip compression and recording.
@@ -705,4 +777,5 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         }
     }
 }
+
 #endif
