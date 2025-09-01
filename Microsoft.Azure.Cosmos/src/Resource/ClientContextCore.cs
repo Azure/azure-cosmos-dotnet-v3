@@ -546,7 +546,7 @@ namespace Microsoft.Azure.Cosmos
                         }
 
                         // Checks if OpenTelemetry is configured for this operation when Metrics are enabled by customer
-                        if (!this.clientOptions.CosmosClientTelemetryOptions.IsClientMetricsEnabled)
+                        if (this.clientOptions.CosmosClientTelemetryOptions.IsClientMetricsEnabled)
                         {
                             RecordMetrics(getOperationName,
                                 this.client.Endpoint,
@@ -570,7 +570,7 @@ namespace Microsoft.Azure.Cosmos
                         }
 
                         // Checks if OpenTelemetry is configured for this operation when Metrics are enabled by customer
-                        if (!this.clientOptions.CosmosClientTelemetryOptions.IsClientMetricsEnabled)
+                        if (this.clientOptions.CosmosClientTelemetryOptions.IsClientMetricsEnabled)
                         {
                             RecordMetrics(getOperationName,
                             gatewayEndpoint,
