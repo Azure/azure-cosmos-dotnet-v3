@@ -55,10 +55,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             BrotliCompressor compressor = encryptionOptions.CompressionOptions.Algorithm == CompressionOptions.CompressionAlgorithm.Brotli
                 ? new BrotliCompressor(encryptionOptions.CompressionOptions.CompressionLevel) : null;
 
-            // Precompute top-level names (strings) and their canonical full paths.
-            // ValueTextEquals(string) compares without allocating, ideal for small N.
+            // Precompute top-level names (UTF-8 bytes) and their canonical full paths.
+            // Compare using ValueTextEquals(ReadOnlySpan<byte>) to avoid substring allocations.
             // We store UTF-8 length and (when ASCII) the first byte to quickly reject most non-matches.
-            List<(string Name, string FullPath, int NameUtf8Len, bool FirstIsAscii, byte FirstAsciiByte, bool IsEmpty)> topLevelCandidates = new ();
+            List<(byte[] NameUtf8, string FullPath, int NameUtf8Len, bool FirstIsAscii, byte FirstAsciiByte, bool IsEmpty)> topLevelCandidates = pathsCapacity > 0 ? new List<(byte[], string, int, bool, byte, bool)>(pathsCapacity) : new List<(byte[], string, int, bool, byte, bool)>();
             // Tiny bitmask of candidate UTF-8 name lengths (0..63). For any longer lengths, flip hasLongNameLength.
             ulong candidateNameLengthsMask = 0UL;
             foreach (string p in encryptionOptions.PathsToEncrypt ?? Array.Empty<string>())
@@ -68,19 +68,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     continue;
                 }
 
-                string name = p.Length > 1 ? p.Substring(1) : string.Empty;
-                if (name.IndexOf('/') >= 0)
+                bool isEmpty = p.Length <= 1;
+                ReadOnlySpan<char> nameSpan = isEmpty ? ReadOnlySpan<char>.Empty : p.AsSpan(1);
+                if (!isEmpty && nameSpan.IndexOf('/') >= 0)
                 {
                     continue; // only support top-level names here
                 }
 
-                bool isEmpty = name.Length == 0;
-                int nameUtf8Len = isEmpty ? 0 : Encoding.UTF8.GetByteCount(name);
+                int nameUtf8Len = isEmpty ? 0 : Encoding.UTF8.GetByteCount(nameSpan);
                 bool firstIsAscii = false;
                 byte firstAsciiByte = 0;
                 if (!isEmpty)
                 {
-                    char ch0 = name[0];
+                    char ch0 = p[1];
                     if (ch0 <= 0x7F)
                     {
                         firstIsAscii = true;
@@ -88,7 +88,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     }
                 }
 
-                topLevelCandidates.Add((name, p, nameUtf8Len, firstIsAscii, firstAsciiByte, isEmpty));
+                byte[] nameUtf8 = isEmpty ? Array.Empty<byte>() : Encoding.UTF8.GetBytes(nameSpan);
+                topLevelCandidates.Add((nameUtf8, p, nameUtf8Len, firstIsAscii, firstAsciiByte, isEmpty));
                 if ((uint)nameUtf8Len < 64)
                 {
                     candidateNameLengthsMask |= 1UL << nameUtf8Len;
@@ -409,7 +410,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                             byte firstByte = reader.HasValueSequence ? reader.ValueSequence.FirstSpan[0] : reader.ValueSpan[0];
                                             foreach (var c in topLevelCandidates)
                                             {
-                                                if (!c.IsEmpty && c.NameUtf8Len == propNameUtf8Len && (!c.FirstIsAscii || c.FirstAsciiByte == firstByte) && reader.ValueTextEquals(c.Name))
+                                                if (!c.IsEmpty && c.NameUtf8Len == propNameUtf8Len && (!c.FirstIsAscii || c.FirstAsciiByte == firstByte) && reader.ValueTextEquals(c.NameUtf8))
                                                 {
                                                     matchedFullPath = c.FullPath;
                                                     break;
