@@ -49,7 +49,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 props.DataEncryptionKeyId,
                 props.EncryptedPaths.ToList(),
                 props.CompressionAlgorithm,
-                props.CompressedEncryptedPaths as IReadOnlyDictionary<string, int>);
+                props.CompressedEncryptedPaths as IReadOnlyDictionary<string, int>,
+                props.EncryptedData);
             writer.WriteEndObject();
             writer.Flush();
             string manualJson = System.Text.Encoding.UTF8.GetString(msManual.ToArray());
@@ -62,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             using JsonDocument d1 = JsonDocument.Parse(manualJson);
             using JsonDocument d2 = JsonDocument.Parse(serJson);
 
-            Assert.IsTrue(JsonElementDeepEquals(d1.RootElement, d2.RootElement), $"Manual JSON: {manualJson}\nSerializer JSON: {serJson}");
+            JsonElementAssertEqual(d1.RootElement, d2.RootElement, $"Manual JSON: {manualJson}\nSerializer JSON: {serJson}");
 
             // Also assert fields exist and types are correct
             JsonElement ei = d1.RootElement.GetProperty(Constants.EncryptedInfo);
@@ -70,6 +71,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.AreEqual(props.EncryptionAlgorithm, ei.GetProperty(Constants.EncryptionAlgorithm).GetString());
             Assert.AreEqual(props.DataEncryptionKeyId, ei.GetProperty(Constants.EncryptionDekId).GetString());
             Assert.AreEqual((int)props.CompressionAlgorithm, ei.GetProperty(Constants.CompressionAlgorithm).GetInt32());
+
+            // _ed must always be present; empty byte[] serializes to empty base64 string
+            Assert.IsTrue(ei.TryGetProperty(Constants.EncryptedData, out JsonElement edProp), "Missing _ed property in manual JSON");
+            Assert.AreEqual(string.Empty, edProp.GetString());
 
             // ep array contents
             string[] ep = ei.GetProperty(Constants.EncryptedPaths).EnumerateArray().Select(e => e.GetString()).ToArray();
@@ -96,7 +101,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 dataEncryptionKeyId: "kid",
                 encryptedPaths: new List<string> { "/p" },
                 compressionAlgorithm: CompressionOptions.CompressionAlgorithm.None,
-                compressedEncryptedPaths: null);
+                compressedEncryptedPaths: null,
+                encryptedData: Array.Empty<byte>());
             writer.WriteEndObject();
             writer.Flush();
 
@@ -107,6 +113,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.AreEqual("alg", ei.GetProperty(Constants.EncryptionAlgorithm).GetString());
             Assert.AreEqual("kid", ei.GetProperty(Constants.EncryptionDekId).GetString());
             Assert.AreEqual(0, ei.GetProperty(Constants.CompressionAlgorithm).GetInt32());
+
+            // _ed should still be present even when cep is omitted
+            Assert.IsTrue(ei.TryGetProperty(Constants.EncryptedData, out JsonElement ed2));
+            Assert.AreEqual(string.Empty, ed2.GetString());
         }
 
         [TestMethod]
@@ -134,7 +144,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 props.DataEncryptionKeyId,
                 props.EncryptedPaths.ToList(),
                 props.CompressionAlgorithm,
-                props.CompressedEncryptedPaths as IReadOnlyDictionary<string, int>);
+                props.CompressedEncryptedPaths as IReadOnlyDictionary<string, int>,
+                props.EncryptedData);
             writer.WriteEndObject();
             writer.Flush();
             string manualJson = System.Text.Encoding.UTF8.GetString(msManual.ToArray());
@@ -150,49 +161,113 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             // Assert equality ignoring ordering
             using JsonDocument d1 = JsonDocument.Parse(manualJson);
             using JsonDocument d2 = JsonDocument.Parse(wrapperJson);
-            Assert.IsTrue(JsonElementDeepEquals(d1.RootElement, d2.RootElement), $"Manual JSON: {manualJson}\nWrapper JSON: {wrapperJson}");
+            JsonElementAssertEqual(d1.RootElement, d2.RootElement, $"Manual JSON: {manualJson}\nWrapper JSON: {wrapperJson}");
         }
 
-        private static bool JsonElementDeepEquals(JsonElement x, JsonElement y)
+        private static void JsonElementAssertEqual(JsonElement x, JsonElement y, string context = null, string path = "$")
         {
+            string Msg(string detail)
+            {
+                if (context == null)
+                {
+                    return $"{detail} at path '{path}'.";
+                }
+                else
+                {
+                    return $"{detail} at path '{path}'. Context:\n{context}";
+                }
+            }
+
             if (x.ValueKind != y.ValueKind)
             {
-                return false;
+                Assert.AreEqual(x.ValueKind, y.ValueKind, Msg($"ValueKind mismatch: {x.ValueKind} != {y.ValueKind}"));
+                return; // will not reach due to Assert failure
             }
 
             switch (x.ValueKind)
             {
                 case JsonValueKind.Object:
+                {
                     JsonProperty[] xProps = x.EnumerateObject().OrderBy(p => p.Name).ToArray();
                     JsonProperty[] yProps = y.EnumerateObject().OrderBy(p => p.Name).ToArray();
-                    if (xProps.Length != yProps.Length) return false;
+
+                    if (xProps.Length != yProps.Length)
+                    {
+                        string xNames = string.Join(", ", xProps.Select(p => p.Name));
+                        string yNames = string.Join(", ", yProps.Select(p => p.Name));
+                        Assert.AreEqual(xProps.Length, yProps.Length, Msg($"Object property count mismatch: {xProps.Length} != {yProps.Length}.\nLeft: [{xNames}]\nRight: [{yNames}]"));
+                    }
+
                     for (int i = 0; i < xProps.Length; i++)
                     {
-                        if (xProps[i].Name != yProps[i].Name) return false;
-                        if (!JsonElementDeepEquals(xProps[i].Value, yProps[i].Value)) return false;
+                        if (!string.Equals(xProps[i].Name, yProps[i].Name, StringComparison.Ordinal))
+                        {
+                            Assert.AreEqual(xProps[i].Name, yProps[i].Name, Msg($"Property name mismatch at index {i}: '{xProps[i].Name}' != '{yProps[i].Name}'"));
+                        }
+
+                        string childPath = path == "$" ? $"$.{xProps[i].Name}" : $"{path}.{xProps[i].Name}";
+                        JsonElementAssertEqual(xProps[i].Value, yProps[i].Value, context, childPath);
                     }
-                    return true;
+                    break;
+                }
+
                 case JsonValueKind.Array:
+                {
                     JsonElement[] xArr = x.EnumerateArray().ToArray();
                     JsonElement[] yArr = y.EnumerateArray().ToArray();
-                    if (xArr.Length != yArr.Length) return false;
+
+                    if (xArr.Length != yArr.Length)
+                    {
+                        Assert.AreEqual(xArr.Length, yArr.Length, Msg($"Array length mismatch: {xArr.Length} != {yArr.Length}"));
+                    }
+
                     for (int i = 0; i < xArr.Length; i++)
                     {
-                        if (!JsonElementDeepEquals(xArr[i], yArr[i])) return false;
+                        JsonElementAssertEqual(xArr[i], yArr[i], context, $"{path}[{i}]");
                     }
-                    return true;
+                    break;
+                }
+
                 case JsonValueKind.String:
-                    return x.GetString() == y.GetString();
+                {
+                    string xs = x.GetString();
+                    string ys = y.GetString();
+                    Assert.AreEqual(xs, ys, Msg($"String mismatch: '{xs}' != '{ys}'"));
+                    break;
+                }
+
                 case JsonValueKind.Number:
-                    return x.GetDouble() == y.GetDouble();
+                {
+                    if (x.TryGetDecimal(out decimal dx) && y.TryGetDecimal(out decimal dy))
+                    {
+                        Assert.AreEqual(dx, dy, Msg($"Number mismatch: {dx} != {dy}"));
+                    }
+                    else
+                    {
+                        double xd = x.GetDouble();
+                        double yd = y.GetDouble();
+                        Assert.AreEqual(xd, yd, Msg($"Number mismatch: {xd} != {yd}"));
+                    }
+                    break;
+                }
+
                 case JsonValueKind.True:
                 case JsonValueKind.False:
-                    return x.GetBoolean() == y.GetBoolean();
+                {
+                    bool xb = x.GetBoolean();
+                    bool yb = y.GetBoolean();
+                    Assert.AreEqual(xb, yb, Msg($"Boolean mismatch: {xb} != {yb}"));
+                    break;
+                }
+
                 case JsonValueKind.Null:
                 case JsonValueKind.Undefined:
-                    return true;
+                    // Both are null/undefined, nothing to assert further
+                    break;
+
                 default:
-                    return false;
+                    Assert.Fail(Msg($"Unsupported JsonValueKind: {x.ValueKind}"));
+                    break;
             }
         }
     }

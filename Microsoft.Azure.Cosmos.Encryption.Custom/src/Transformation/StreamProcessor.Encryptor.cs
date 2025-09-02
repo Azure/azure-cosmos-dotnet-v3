@@ -29,7 +29,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             string dataEncryptionKeyId,
             IReadOnlyList<string> encryptedPaths,
             CompressionOptions.CompressionAlgorithm compressionAlgorithm,
-            IReadOnlyDictionary<string, int> compressedEncryptedPaths)
+            IReadOnlyDictionary<string, int> compressedEncryptedPaths,
+            byte[] encryptedData)
         {
             // Property name: _ei
             writer.WritePropertyName(EncryptionPropertiesNameBytes);
@@ -39,6 +40,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             writer.WriteNumber(Constants.EncryptionFormatVersion, formatVersion);
             writer.WriteString(Constants.EncryptionAlgorithm, encryptionAlgorithm);
             writer.WriteString(Constants.EncryptionDekId, dataEncryptionKeyId);
+
+            // encrypted data (base64). Empty array serializes to empty string, matching JsonSerializer behavior
+            writer.WriteBase64String(Constants.EncryptedData, encryptedData ?? Array.Empty<byte>());
 
             // encryptedPaths
             writer.WritePropertyName(Constants.EncryptedPaths);
@@ -450,7 +454,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                         encryptionOptions.DataEncryptionKeyId,
                                         pathsEncrypted,
                                         encryptionOptions.CompressionOptions.Algorithm,
-                                        compressedPaths);
+                                        compressedPaths,
+                                        Array.Empty<byte>());
                                 }
 
                                 writer.WriteEndObject();

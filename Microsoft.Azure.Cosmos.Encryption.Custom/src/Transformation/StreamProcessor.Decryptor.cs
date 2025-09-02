@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         private const string EncryptionPropertiesPath = "/" + Constants.EncryptedInfo;
 
         // Cap buffer growth to prevent unbounded memory usage for extremely large tokens
-        private const int MaxBufferSizeBytes = 8 * 1024 * 1024; // 8 MB
+        private const int MaxBufferSizeBytes = 32 * 1024 * 1024; // 8 MB
         private const int BufferGrowthMinIncrement = 4096; // 4 KB minimal additional headroom
 
         private static readonly SqlBitSerializer SqlBoolSerializer = new SqlBitSerializer();
