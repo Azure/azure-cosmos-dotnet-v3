@@ -532,35 +532,53 @@ namespace Microsoft.Azure.Cosmos
                 try
                 {
                     TResult result = await task(trace).ConfigureAwait(false);
-                    // Checks if OpenTelemetry is configured for this operation and either Trace or Metrics are enabled by customer
+
                     if (isOtelCompatibleOperation)
                     {
                         // Extracts and records telemetry data from the result of the operation.
                         OpenTelemetryAttributes otelAttributes = openTelemetry?.GetAttributes(result);
 
-                        // Records the telemetry attributes for Distributed Tracing (if enabled) and Metrics
-                        recorder.Record(otelAttributes);
-                        RecordMetrics(getOperationName,
-                            this.client.Endpoint,
-                            containerName,
-                            databaseName,
-                            requestOptions,
-                            attributes: otelAttributes);
-                    }
+                        // Checks if OpenTelemetry is configured for this operation when Trace are enabled by customer
+                        if (!this.clientOptions.CosmosClientTelemetryOptions.DisableDistributedTracing)
+                        {
+                            // Records the telemetry attributes for Distributed Tracing (if enabled) and Metrics
+                            recorder.Record(otelAttributes);
+                        }
 
+                        // Checks if OpenTelemetry is configured for this operation when Metrics are enabled by customer
+                        if (this.clientOptions.CosmosClientTelemetryOptions.IsClientMetricsEnabled)
+                        {
+                            RecordMetrics(getOperationName,
+                                this.client.Endpoint,
+                                containerName,
+                                databaseName,
+                                requestOptions,
+                                attributes: otelAttributes);
+                        }
+                    }
+                   
                     return result;
                 }
                 catch (Exception ex) when (TryTransformException(ex, trace, this.client, out Exception cosmosException))
                 {
                     if (isOtelCompatibleOperation)
                     {
-                        recorder.MarkFailed(cosmosException);
-                        RecordMetrics(getOperationName,
+                        // Checks if OpenTelemetry is configured for this operation when Trace are enabled by customer
+                        if (!this.clientOptions.CosmosClientTelemetryOptions.DisableDistributedTracing)
+                        {
+                            recorder.MarkFailed(cosmosException);
+                        }
+
+                        // Checks if OpenTelemetry is configured for this operation when Metrics are enabled by customer
+                        if (this.clientOptions.CosmosClientTelemetryOptions.IsClientMetricsEnabled)
+                        {
+                            RecordMetrics(getOperationName,
                             gatewayEndpoint,
                             containerName,
                             databaseName,
                             requestOptions,
                             cosmosException: cosmosException);
+                        }
                     }
 
                     throw cosmosException; // Rethrow after recording telemetry
