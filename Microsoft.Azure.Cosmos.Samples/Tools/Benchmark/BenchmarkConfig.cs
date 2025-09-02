@@ -243,6 +243,7 @@ namespace CosmosBenchmark
                     DisableSendingMetricsToService = !this.EnableTelemetry,
                     DisableDistributedTracing = !this.EnableDistributedTracing
                 },
+                GatewayModeMaxConnectionLimit = 500
             };
 
             if (!string.IsNullOrEmpty(this.ApplicationPreferredRegions))
