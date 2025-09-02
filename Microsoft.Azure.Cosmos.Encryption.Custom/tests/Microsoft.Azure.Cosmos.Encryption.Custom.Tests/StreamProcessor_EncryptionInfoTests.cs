@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     public class StreamProcessor_EncryptionInfoTests
     {
         [TestMethod]
-        public async Task WriteEncryptionInfo_WritesAllFields_AndMatchesJsonSerializer()
+        public void WriteEncryptionInfo_WritesAllFields_AndMatchesJsonSerializer()
         {
             // Arrange
             CompressionOptions.CompressionAlgorithm alg =
@@ -54,25 +54,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             writer.Flush();
             string manualJson = System.Text.Encoding.UTF8.GetString(msManual.ToArray());
 
-            // Build equivalent object graph for serializer using the same short keys as the manual writer (via Constants)
-            using MemoryStream msSer = new MemoryStream();
-            Dictionary<string, object> eiShape = new Dictionary<string, object>
-            {
-                [Constants.EncryptionFormatVersion] = props.EncryptionFormatVersion,
-                [Constants.EncryptionAlgorithm] = props.EncryptionAlgorithm,
-                [Constants.EncryptionDekId] = props.DataEncryptionKeyId,
-                [Constants.EncryptedPaths] = props.EncryptedPaths.ToArray(),
-                [Constants.CompressionAlgorithm] = (int)props.CompressionAlgorithm,
-                [Constants.CompressedEncryptedPaths] = props.CompressedEncryptedPaths,
-            };
-
-            Dictionary<string, object> rootShape = new Dictionary<string, object>
-            {
-                [Constants.EncryptedInfo] = eiShape,
-            };
-
-            await JsonSerializer.SerializeAsync(msSer, rootShape);
-            string serJson = System.Text.Encoding.UTF8.GetString(msSer.ToArray());
+            // Serialize the DTO directly (short keys via attributes) and wrap it under the root _ei property
+            string propsJson = JsonSerializer.Serialize(props);
+            string serJson = $"{{\"{Constants.EncryptedInfo}\":{propsJson}}}";
 
             // Assert: structure equality by parsing to JsonDocument to ignore ordering nuances
             using JsonDocument d1 = JsonDocument.Parse(manualJson);
@@ -123,6 +107,50 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.AreEqual("alg", ei.GetProperty(Constants.EncryptionAlgorithm).GetString());
             Assert.AreEqual("kid", ei.GetProperty(Constants.EncryptionDekId).GetString());
             Assert.AreEqual(0, ei.GetProperty(Constants.CompressionAlgorithm).GetInt32());
+        }
+
+        [TestMethod]
+        public void WriteEncryptionInfo_MatchesWrapperSerialization_WithExplicitOptions()
+        {
+            // Arrange
+            EncryptionProperties props = new EncryptionProperties(
+                encryptionFormatVersion: 4,
+                encryptionAlgorithm: "A256CBC-HS512",
+                dataEncryptionKeyId: "dek-id-123",
+                encryptedData: Array.Empty<byte>(),
+                encryptedPaths: new[] { "/a", "/b", "/c" },
+                compressionAlgorithm: CompressionOptions.CompressionAlgorithm.Brotli,
+                compressedEncryptedPaths: new Dictionary<string, int> { ["/a"] = 100, ["/c"] = 42 });
+
+            using MemoryStream msManual = new MemoryStream();
+            using Utf8JsonWriter writer = new Utf8JsonWriter(msManual, new JsonWriterOptions { Indented = false, SkipValidation = true });
+
+            // Act: manual _ei under root
+            writer.WriteStartObject();
+            StreamProcessor.WriteEncryptionInfo(
+                writer,
+                props.EncryptionFormatVersion,
+                props.EncryptionAlgorithm,
+                props.DataEncryptionKeyId,
+                props.EncryptedPaths.ToList(),
+                props.CompressionAlgorithm,
+                props.CompressedEncryptedPaths as IReadOnlyDictionary<string, int>);
+            writer.WriteEndObject();
+            writer.Flush();
+            string manualJson = System.Text.Encoding.UTF8.GetString(msManual.ToArray());
+
+            // Serialize wrapper with explicit options (no naming policy)
+            EncryptionPropertiesWrapper wrapper = new EncryptionPropertiesWrapper(props);
+            JsonSerializerOptions options = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = null,
+            };
+            string wrapperJson = JsonSerializer.Serialize(wrapper, options);
+
+            // Assert equality ignoring ordering
+            using JsonDocument d1 = JsonDocument.Parse(manualJson);
+            using JsonDocument d2 = JsonDocument.Parse(wrapperJson);
+            Assert.IsTrue(JsonElementDeepEquals(d1.RootElement, d2.RootElement), $"Manual JSON: {manualJson}\nWrapper JSON: {wrapperJson}");
         }
 
         private static bool JsonElementDeepEquals(JsonElement x, JsonElement y)
