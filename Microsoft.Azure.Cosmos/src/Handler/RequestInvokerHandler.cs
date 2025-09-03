@@ -87,6 +87,23 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 return errorResponse;
             }
 
+            bool isPartitionLevelFailoverEnabled = this.client.DocumentClient?.PartitionKeyRangeLocation != null && this.client.DocumentClient.PartitionKeyRangeLocation.IsPartitionLevelAutomaticFailoverEnabled();
+            if (ChangeFeedHelper.IsChangeFeedSupportedToHandleMissingPrimes(
+                request.ResourceType,
+                request.OperationType,
+                isPartitionLevelFailoverEnabled))
+            {
+                // Today, during a partition level automatic failover, there is a gap in the backend where for a change
+                // feed operation (incremental or full-fidelity) in a < strong consistency account, a false progress
+                // can cause data loss, since the change feed operation reads uses the GLSN. In a nut-shell a GLSN is unique
+                // for a GCN, however, for multiple GCNs, there could be duplicate GLSNs. In order to fix this, the SDK need
+                // to send the `x-ms-cosmos-read-global-committed-data` header with change feed operation so that the change
+                // feed can always read the globally committed data.
+                // Note: Though we are sending this header irrespective of the account consistency, the backend will only
+                // honor this header for lesst than strong consistency accounts only.
+                request.Headers.Add(HttpConstants.HttpHeaders.ReadGlobalCommittedData, true.ToString());
+            }
+
             await request.AssertPartitioningDetailsAsync(this.client, cancellationToken, request.Trace);
             this.FillMultiMasterContext(request);
 
@@ -483,7 +500,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 }
 
                 if (ValidationHelpers.IsValidConsistencyLevelOverwrite(
-                            backendConsistency: this.AccountConsistencyLevel.Value, 
+                            backendConsistency: this.AccountConsistencyLevel.Value,
                             desiredConsistency: consistencyLevel.Value,
                             isLocalQuorumConsistency: this.IsLocalQuorumConsistency.Value,
                             operationType: requestMessage.OperationType,
