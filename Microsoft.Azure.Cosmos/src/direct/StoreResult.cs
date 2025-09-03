@@ -210,7 +210,7 @@ namespace Microsoft.Azure.Documents
                     headerValue = documentClientException.Headers[WFConstants.BackendHeaders.GlobalNRegionCommittedGLSN];
                     if (!string.IsNullOrEmpty(headerValue))
                     {
-                        globalNRegionCommittedGLSN = int.Parse(headerValue, CultureInfo.InvariantCulture);
+                        globalNRegionCommittedGLSN = long.Parse(headerValue, CultureInfo.InvariantCulture);
                     }
                     ISessionToken sessionToken = null;
                     if (StoreResult.UseSessionTokenHeader)

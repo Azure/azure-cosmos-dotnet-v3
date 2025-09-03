@@ -759,8 +759,8 @@
   <data name="GlobalStrongWriteBarrierNotMet" xml:space="preserve">
     <value>Global Strong write barrier has not been met for the request.</value>
   </data>
-	<data name="NRegionCommitWriteBarrierNotMet" xml:space="preserve">
-    <value>N-Region Commit write barrier has not been met for the request.</value>
+  <data name="NRegionCommitWriteBarrierNotMet" xml:space="preserve">
+    <value>NRegion Commit write barrier has not been met for the request.</value>
   </data>
   <data name="BadClientMongo" xml:space="preserve">
     <value>At this time, only write operations made from the MongoDB SDKs are supported. Modifications to MongoDB collections using other SDKs is temporarily blocked.</value>

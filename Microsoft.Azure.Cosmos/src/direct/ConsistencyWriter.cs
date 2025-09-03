@@ -13,9 +13,6 @@ namespace Microsoft.Azure.Documents
     using System.Threading.Tasks;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using static Antlr4.Runtime.Atn.SemanticContext;
-
-    using static Microsoft.Azure.Documents.RntbdConstants;
 
     /*
 
@@ -542,7 +539,7 @@ Sequence of steps:
 
                         if (selectedLsn >= maxGlobalCommittedLsn)
                         {
-                            maxGlobalCommittedLsn = response.Target.GlobalCommittedLSN;
+                            maxGlobalCommittedLsn = selectedLsn;
                         }
                      }
                 }
@@ -596,8 +593,8 @@ Sequence of steps:
                 return WriteBarrierKind.GlobalStrongWrite;
             }
             else if (this.serviceConfigReader.DefaultConsistencyLevel != ConsistencyLevel.Strong
-                && storeResult.Target.GlobalNRegionCommittedGLSN != -1
-                && this.accountConfigurationProperties.EnableNRegionSynchronousCommit && storeResult.Target.NumberOfReadRegions > 0)
+                 && storeResult.Target.GlobalNRegionCommittedGLSN != -1
+                 && this.accountConfigurationProperties.EnableNRegionSynchronousCommit && storeResult.Target.NumberOfReadRegions > 0)
             {
                 return WriteBarrierKind.NRegionSynchronousCommit;
             }
