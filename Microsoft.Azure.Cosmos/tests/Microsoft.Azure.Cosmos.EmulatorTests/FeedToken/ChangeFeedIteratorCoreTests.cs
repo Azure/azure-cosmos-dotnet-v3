@@ -1212,6 +1212,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
         /// to read the globally committed data.
         /// </summary>
         [TestMethod]
+        [Ignore("The x-ms-cosmos-read-global-committed-data header is not supported on strong consistency accounts." +
+            "Since emulator initializes with strong consistency, we will enable this test once this header is supported for strong consistency.")]
         [DataRow(true, ConsistencyLevel.Strong, DisplayName = "Strong Consistency: case when partition level failover is enabled.")]
         [DataRow(false, ConsistencyLevel.Strong, DisplayName = "Strong Consistency: case when partition level failover is disabled.")]
         [DataRow(true, ConsistencyLevel.Session, DisplayName = "Session Consistency: case when partition level failover is enabled.")]
@@ -1240,23 +1242,40 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                         if (enablePPAF)
                         {
                             JObject parsedDatabaseAccountResponse = JObject.Parse(json);
-                            parsedDatabaseAccountResponse.Add("enablePerPartitionFailoverBehavior", true);
+
+                            if (json.Contains("enablePerPartitionFailoverBehavior"))
+                            {
+                                parsedDatabaseAccountResponse.Property("enablePerPartitionFailoverBehavior").Value = true.ToString();
+                            }
+                            else
+                            {
+                                parsedDatabaseAccountResponse.Add("enablePerPartitionFailoverBehavior", true);
+                            }
 
                             HttpResponseMessage interceptedResponse = new()
-                            {
-                                StatusCode = response.StatusCode,
-                                Content = new StringContent(parsedDatabaseAccountResponse.ToString()),
-                                Version = response.Version,
-                                ReasonPhrase = response.ReasonPhrase,
-                                RequestMessage = response.RequestMessage,
-                            };
+                                {
+                                    StatusCode = response.StatusCode,
+                                    Content = new StringContent(parsedDatabaseAccountResponse.ToString()),
+                                    Version = response.Version,
+                                    ReasonPhrase = response.ReasonPhrase,
+                                    RequestMessage = response.RequestMessage,
+                                };
 
                             return interceptedResponse;
                         }
                         else
                         {
                             JObject parsedDatabaseAccountResponse = JObject.Parse(json);
-                            parsedDatabaseAccountResponse.Add("enablePerPartitionFailoverBehavior", false);
+
+                            if (json.Contains("enablePerPartitionFailoverBehavior"))
+                            {
+                                parsedDatabaseAccountResponse.Property("enablePerPartitionFailoverBehavior").Value = false.ToString();
+                            }
+                            else
+                            {
+                                parsedDatabaseAccountResponse.Add("enablePerPartitionFailoverBehavior", false);
+                            }
+
                             HttpResponseMessage interceptedResponse = new()
                             {
                                 StatusCode = response.StatusCode,
@@ -1458,7 +1477,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                 if (request.ResourceType == Documents.ResourceType.Document
                     && request.OperationType == Documents.OperationType.ReadFeed)
                 {
-                    if (this.isPPAFEnabled && this.consistencyLevel != ConsistencyLevel.Strong)
+                    if (this.isPPAFEnabled)
                     {
                         Assert.IsTrue(request.Headers.AllKeys().Contains(Documents.HttpConstants.HttpHeaders.ReadGlobalCommittedData));
                         Assert.AreEqual(true.ToString(), request.Headers[Documents.HttpConstants.HttpHeaders.ReadGlobalCommittedData]);
