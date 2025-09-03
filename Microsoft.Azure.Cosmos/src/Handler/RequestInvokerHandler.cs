@@ -520,23 +520,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
         }
 
-        private Cosmos.ConsistencyLevel? GetUserConsistencyLevel(
-            RequestMessage requestMessage)
-        {
-            Cosmos.ConsistencyLevel? consistencyLevel = null;
-            RequestOptions promotedRequestOptions = requestMessage.RequestOptions;
-            if (promotedRequestOptions != null && promotedRequestOptions.BaseConsistencyLevel.HasValue)
-            {
-                consistencyLevel = promotedRequestOptions.BaseConsistencyLevel;
-            }
-            else if (this.RequestedClientConsistencyLevel.HasValue)
-            {
-                consistencyLevel = this.RequestedClientConsistencyLevel;
-            }
-
-            return consistencyLevel;
-        }
-
         /// <summary>
         /// Set the PriorityLevel in the request headers
         /// </summary>
