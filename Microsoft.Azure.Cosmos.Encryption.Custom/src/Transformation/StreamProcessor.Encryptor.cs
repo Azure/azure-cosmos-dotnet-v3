@@ -41,8 +41,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             writer.WriteString(Constants.EncryptionAlgorithm, encryptionAlgorithm);
             writer.WriteString(Constants.EncryptionDekId, dataEncryptionKeyId);
 
-            // encrypted data (base64). Empty array serializes to empty string, matching JsonSerializer behavior
-            writer.WriteBase64String(Constants.EncryptedData, encryptedData ?? Array.Empty<byte>());
+            // encrypted data: emit null when not present to match Newtonsoft-based contract in tests
+            if (encryptedData == null)
+            {
+                writer.WritePropertyName(Constants.EncryptedData);
+                writer.WriteNullValue();
+            }
+            else
+            {
+                writer.WriteBase64String(Constants.EncryptedData, encryptedData);
+            }
 
             // encryptedPaths
             writer.WritePropertyName(Constants.EncryptedPaths);
@@ -167,7 +175,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
             private bool IsLengthPossible(int utf8Len)
             {
-                return (utf8Len < 64) ? ((this.lengthMask & (1UL << utf8Len)) != 0) : this.hasLongNames;
+                return utf8Len < 64 ? (this.lengthMask & (1UL << utf8Len)) != 0 : this.hasLongNames;
             }
 
             public bool TryMatch(ref Utf8JsonReader reader, int propNameUtf8Len, out string matchedFullPath)
@@ -445,7 +453,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                 // If we're closing the root object (depth becomes 0 after this EndObject), append _ei before closing.
                                 if (rootIsObject && reader.CurrentDepth == 0)
                                 {
-                                    int formatVersion = (encryptionOptions.CompressionOptions.Algorithm != CompressionOptions.CompressionAlgorithm.None) ? 4 : 3;
+                                    int formatVersion = encryptionOptions.CompressionOptions.Algorithm != CompressionOptions.CompressionAlgorithm.None ? 4 : 3;
 
                                     WriteEncryptionInfo(
                                         writer,
@@ -455,7 +463,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                         pathsEncrypted,
                                         encryptionOptions.CompressionOptions.Algorithm,
                                         compressedPaths,
-                                        Array.Empty<byte>());
+                                        null);
                                 }
 
                                 writer.WriteEndObject();
@@ -744,14 +752,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             return (buffer, length);
         }
 
-        private static (TypeMarker typeMarker, byte[] buffer, int length) SerializeNumber(ReadOnlySpan<byte> utf8bytes, ArrayPoolManager arrayPoolManager)
+        private static (TypeMarker typeMarker, byte[] buffer, int length) SerializeNumber(ReadOnlySpan<byte> utf8Bytes, ArrayPoolManager arrayPoolManager)
         {
-            if (System.Buffers.Text.Utf8Parser.TryParse(utf8bytes, out long longValue, out int consumedLong) && consumedLong == utf8bytes.Length)
+            if (System.Buffers.Text.Utf8Parser.TryParse(utf8Bytes, out long longValue, out int consumedLong) && consumedLong == utf8Bytes.Length)
             {
                 return Serialize(longValue, arrayPoolManager);
             }
 
-            if (System.Buffers.Text.Utf8Parser.TryParse(utf8bytes, out double doubleValue, out int consumedDouble) && consumedDouble == utf8bytes.Length)
+            if (System.Buffers.Text.Utf8Parser.TryParse(utf8Bytes, out double doubleValue, out int consumedDouble) && consumedDouble == utf8Bytes.Length)
             {
                 // Reject non-finite numbers to keep JSON contract compatibility
                 if (double.IsFinite(doubleValue))

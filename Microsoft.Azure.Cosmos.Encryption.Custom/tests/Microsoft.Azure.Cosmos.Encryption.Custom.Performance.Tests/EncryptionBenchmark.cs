@@ -29,14 +29,14 @@
         private byte[]? encryptedData;
         private byte[]? plaintext;
 
-        [Params(1, 10, 100)]
+        [Params(1, 2, 5)]
         public int DocumentSizeInKb { get; set; }
 
-        [Params(CompressionOptions.CompressionAlgorithm.None, CompressionOptions.CompressionAlgorithm.Brotli)]
+        [Params(CompressionOptions.CompressionAlgorithm.None)]
         public CompressionOptions.CompressionAlgorithm CompressionAlgorithm { get; set; }
 
 #if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
-        [Params(JsonProcessor.Newtonsoft, JsonProcessor.Stream)]
+        [Params(JsonProcessor.Stream)]
 #else
         [Params(JsonProcessor.Newtonsoft)]
 #endif

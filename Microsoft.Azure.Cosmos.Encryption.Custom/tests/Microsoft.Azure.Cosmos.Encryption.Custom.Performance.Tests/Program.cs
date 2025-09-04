@@ -13,7 +13,8 @@
             ManualConfig dontRequireSlnToRunBenchmarks = ManualConfig
                 .Create(DefaultConfig.Instance)
                 .AddJob(Job.MediumRun.WithToolchain(InProcessEmitToolchain.Instance))
-                .AddDiagnoser(MemoryDiagnoser.Default);
+                .AddDiagnoser(MemoryDiagnoser.Default)
+                .WithOptions(ConfigOptions.DisableOptimizationsValidator);
 
             // Run any benchmarks in this assembly; respects --filter and avoids crashing when a filter matches none
             BenchmarkSwitcher

@@ -76,30 +76,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             return (plainText, decryptedLength);
         }
 
-        // Span-based caller-supplied destination variant to enable scratch buffer reuse.
-        // Returns number of plaintext bytes written. Destination MUST be sized with GetDecryptByteCount(cipherLen-1).
-        internal virtual int DecryptInto(DataEncryptionKey encryptionKey, ReadOnlySpan<byte> cipherTextWithMarker, Span<byte> destination)
-        {
-            if (cipherTextWithMarker.Length < 1)
-            {
-                throw new ArgumentException("Ciphertext too short (missing type marker)", nameof(cipherTextWithMarker));
-            }
-
-            int cipherLen = cipherTextWithMarker.Length - 1;
-            if (cipherLen == 0)
-            {
-                return 0;
-            }
-
-            // TEMP implementation: copy into temp array to leverage existing decrypt API.
-            byte[] temp = new byte[cipherLen];
-            cipherTextWithMarker.Slice(1).CopyTo(temp);
-
-            // Destination must be sized using GetDecryptByteCount by caller.
-            int written = encryptionKey.DecryptData(temp, 0, cipherLen, destination.ToArray(), 0);
-            return written;
-        }
-
         // Ownership-explicit variant: return IMemoryOwner<byte> for deterministic lifetime management without DEBUG probes
         internal virtual PooledByteOwner DecryptOwned(DataEncryptionKey encryptionKey, byte[] cipherText, int cipherTextLength, ArrayPoolManager arrayPoolManager)
         {
