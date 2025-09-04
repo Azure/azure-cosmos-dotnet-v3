@@ -844,6 +844,59 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         }
 
         [TestMethod]
+        public async Task Decrypt_NonSeekable_SmallPayload_SinglePass()
+        {
+            // Arrange: create a small (<2KB) encrypted payload and wrap it in a non-seekable stream
+            var doc = new { id = "1", SensitiveStr = "abc", Other = 42 };
+            string[] paths = new[] { "/SensitiveStr" };
+            EncryptionOptions options = CreateOptions(paths);
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+            encrypted.Position = 0;
+            using NonSeekableStream nonSeekable = new NonSeekableStream(encrypted.ToArray());
+
+            MemoryStream output = new();
+            DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(nonSeekable, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
+
+            // Assert
+            output.Position = 0;
+            using JsonDocument jd = JsonDocument.Parse(output);
+            JsonElement root = jd.RootElement;
+            Assert.AreEqual("abc", root.GetProperty("SensitiveStr").GetString());
+            Assert.AreEqual(42, root.GetProperty("Other").GetInt32());
+            Assert.IsTrue(ctx.DecryptionInfoList[0].PathsDecrypted.Contains("/SensitiveStr"));
+        }
+
+        private sealed class NonSeekableStream : Stream
+        {
+            private readonly MemoryStream inner;
+
+            public NonSeekableStream(byte[] data)
+            {
+                this.inner = new MemoryStream(data, writable: false);
+            }
+
+            public override bool CanRead => true;
+            public override bool CanSeek => false;
+            public override bool CanWrite => false;
+            public override long Length => throw new NotSupportedException();
+            public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+            public override void Flush() { }
+            public override int Read(byte[] buffer, int offset, int count) => this.inner.Read(buffer, offset, count);
+            public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+            public override void SetLength(long value) => throw new NotSupportedException();
+            public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+            public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) => this.inner.ReadAsync(buffer, cancellationToken);
+            protected override void Dispose(bool disposing)
+            {
+                if (disposing)
+                {
+                    this.inner.Dispose();
+                }
+                base.Dispose(disposing);
+            }
+        }
+
+        [TestMethod]
         public async Task Decrypt_Fuzz_Ciphertext_Length_And_TypeMarker_CrossProduct()
         {
             // Arrange

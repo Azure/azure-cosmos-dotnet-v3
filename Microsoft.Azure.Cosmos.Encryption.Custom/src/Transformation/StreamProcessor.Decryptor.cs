@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         private const string EncryptionPropertiesPath = "/" + Constants.EncryptedInfo;
 
         // Cap buffer growth to prevent unbounded memory usage for extremely large tokens
-        private const int MaxBufferSizeBytes = 32 * 1024 * 1024; // 8 MB
+        private const int MaxBufferSizeBytes = 32 * 1024 * 1024; // 32 MB
         private const int BufferGrowthMinIncrement = 4096; // 4 KB minimal additional headroom
 
         private static readonly SqlBitSerializer SqlBoolSerializer = new SqlBitSerializer();
@@ -29,6 +29,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         private static readonly SqlBigIntSerializer SqlLongSerializer = new SqlBigIntSerializer();
 
         private static readonly JsonReaderOptions JsonReaderOptions = new JsonReaderOptions() { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip };
+
         private static readonly JsonWriterOptions JsonWriterOptions = new JsonWriterOptions()
         {
             Indented = false,
@@ -93,7 +94,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             // Write directly to the provided output stream; we'll compute bytes written via Utf8JsonWriter.BytesCommitted
             using Utf8JsonWriter writer = new Utf8JsonWriter(outputStream, StreamProcessor.JsonWriterOptions);
 
-            byte[] buffer = arrayPoolManager.Rent(this.initialBufferSize);
+            // Lazily rent the main buffer only if we don't take the small-payload fast path
+            byte[] buffer = null;
 
             // Reusable pooled scratch buffers to reduce per-field rents; declared outside try so they can be returned in finally
             byte[] tmpScratch = null;    // used for multi-segment strings, property names, and numbers
@@ -523,8 +525,102 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     return reader.BytesConsumed;
                 }
 
+                // Small-payload fast path: if stream is seekable and remaining length <= 2KB, read once and parse once.
+                if (inputStream.CanSeek)
+                {
+                    long remaining = inputStream.Length - inputStream.Position;
+                    if (remaining > 0 && remaining <= 2048)
+                    {
+                        int len = (int)remaining;
+                        byte[] oneShot = arrayPoolManager.Rent(len);
+                        try
+                        {
+                            int total = 0;
+                            while (total < len)
+                            {
+                                int r = await inputStream.ReadAsync(oneShot.AsMemory(total, len - total), cancellationToken);
+                                if (r == 0)
+                                {
+                                    break;
+                                }
+
+                                total += r;
+                            }
+
+                            int read = total;
+                            bytesRead += read;
+
+                            // Process the full payload in one pass and mark final block to skip the streaming loop.
+                            _ = TransformDecryptBuffer(
+                                oneShot.AsSpan(0, read),
+                                ref state,
+                                isFinalBlock: true,
+                                arrayPoolManager,
+                                writer,
+                                decompressor,
+                                properties,
+                                ref propertiesDecrypted,
+                                pathsDecrypted,
+                                ref compressedPathsDecompressed,
+                                encryptionKey,
+                                ref decryptPropertyName,
+                                ref currentPropertyPath,
+                                ref skippingEi,
+                                ref skipEiFirstTokenPending,
+                                ref skipEiContainerDepth);
+
+                            isFinalBlock = true;
+                        }
+                        finally
+                        {
+                            arrayPoolManager.Return(oneShot);
+                        }
+                    }
+                }
+                else
+                {
+                    // Non-seekable small payload probe: optimistically read up to 2KB once; if stream ends, we finish in a single pass.
+                    const int ProbeSize = 2048;
+                    buffer = arrayPoolManager.Rent(ProbeSize); // reuse as main buffer if more data follows
+                    int read = await inputStream.ReadAsync(buffer.AsMemory(0, ProbeSize), cancellationToken);
+                    bytesRead += read;
+                    if (read > 0)
+                    {
+                        bool finalProbe = read < ProbeSize; // if fewer bytes than requested, very likely end-of-stream
+                        long bytesConsumed = TransformDecryptBuffer(
+                            buffer.AsSpan(0, read),
+                            ref state,
+                            finalProbe,
+                            arrayPoolManager,
+                            writer,
+                            decompressor,
+                            properties,
+                            ref propertiesDecrypted,
+                            pathsDecrypted,
+                            ref compressedPathsDecompressed,
+                            encryptionKey,
+                            ref decryptPropertyName,
+                            ref currentPropertyPath,
+                            ref skippingEi,
+                            ref skipEiFirstTokenPending,
+                            ref skipEiContainerDepth);
+                        leftOver = read - (int)bytesConsumed;
+                        if (finalProbe && leftOver == 0)
+                        {
+                            isFinalBlock = true; // done; skip streaming loop
+                        }
+                    }
+                    else
+                    {
+                        isFinalBlock = true; // empty stream
+                    }
+                }
+
                 while (!isFinalBlock)
                 {
+                    // Ensure buffer is available for the streaming path
+                    buffer ??= arrayPoolManager.Rent(this.initialBufferSize);
+
                     int dataLength = await inputStream.ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), cancellationToken);
                     int dataSize = dataLength + leftOver;
                     bytesRead += dataLength;
@@ -599,7 +695,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             }
             finally
             {
-                arrayPoolManager.Return(buffer);
+                if (buffer != null)
+                {
+                    arrayPoolManager.Return(buffer);
+                }
+
                 if (tmpScratch != null)
                 {
                     arrayPoolManager.Return(tmpScratch);
