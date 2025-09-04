@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Documents
                                 entity, 
                                 this.authorizationTokenProvider, 
                                 secondaryQuorumReadResult.SelectedLsn,
-                                secondaryQuorumReadResult.GlobalCommittedSelectedLsn);
+                                secondaryQuorumReadResult.GlobalCommittedSelectedLsn, null);
                             if (await this.WaitForReadBarrierAsync(
                                     barrierRequest,
                                     allowPrimary: true,
@@ -311,7 +311,7 @@ namespace Microsoft.Azure.Documents
             }
 
             // ReadBarrier required
-            DocumentServiceRequest barrierRequest = await BarrierRequestHelper.CreateAsync(entity, this.authorizationTokenProvider, readLsn, globalCommittedLSN);
+            DocumentServiceRequest barrierRequest = await BarrierRequestHelper.CreateAsync(entity, this.authorizationTokenProvider, readLsn, globalCommittedLSN, null);
             if (!await this.WaitForReadBarrierAsync(barrierRequest, false, readQuorum, readLsn, globalCommittedLSN, readMode))
             {
                 return new ReadQuorumResult(
@@ -404,7 +404,7 @@ namespace Microsoft.Azure.Documents
                 DefaultTrace.TraceWarning("Store LSN {0} and quorum acked LSN {1} don't match", storeResult.LSN, storeResult.QuorumAckedLSN);
                 long higherLsn = storeResult.LSN > storeResult.QuorumAckedLSN ? storeResult.LSN : storeResult.QuorumAckedLSN;
 
-                DocumentServiceRequest waitForLsnRequest = await BarrierRequestHelper.CreateAsync(entity, this.authorizationTokenProvider, higherLsn, null);
+                DocumentServiceRequest waitForLsnRequest = await BarrierRequestHelper.CreateAsync(entity, this.authorizationTokenProvider, higherLsn, null, null);
                 PrimaryReadOutcome primaryWaitForLsnResponse = await this.WaitForPrimaryLsnAsync(waitForLsnRequest, higherLsn, readQuorum);
                 if (primaryWaitForLsnResponse == PrimaryReadOutcome.QuorumNotMet)
                 {
