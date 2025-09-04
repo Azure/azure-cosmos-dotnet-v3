@@ -94,8 +94,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             List<string> pathsDecrypted = new List<string>(expectedDecrypted);
 
-            // Write directly to the provided output stream; we'll compute bytes written via Utf8JsonWriter.BytesCommitted
-            using Utf8JsonWriter writer = new Utf8JsonWriter(outputStream, StreamProcessor.JsonWriterOptions);
+            // Write through a chunked buffer writer to avoid large contiguous growth when producing JSON output.
+            using StreamChunkedBufferWriter chunkedWriter = new StreamChunkedBufferWriter(outputStream, arrayPoolManager, this.initialBufferSize);
+            using Utf8JsonWriter writer = new Utf8JsonWriter(chunkedWriter, StreamProcessor.JsonWriterOptions);
 
             // Lazily rent the main buffer only if we don't take the small-payload fast path
             byte[] buffer = null;
@@ -890,8 +891,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     }
                 }
 
-                writer.Flush();
-                long bytesWritten = writer.BytesCommitted;
+                writer.Flush(); // pushes any Utf8JsonWriter buffered data into the IBufferWriter
+                chunkedWriter.FinalFlush(); // write any remaining chunk bytes to the target stream
+                long bytesWritten = writer.BytesCommitted; // committed bytes == total JSON length
                 if (outputStream.CanSeek)
                 {
                     outputStream.Position = 0;
@@ -902,6 +904,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 diagnosticsContext?.SetMetric("decrypt.bytesWritten", bytesWritten);
                 diagnosticsContext?.SetMetric("decrypt.propertiesDecrypted", propertiesDecrypted);
                 diagnosticsContext?.SetMetric("decrypt.compressedPathsDecompressed", compressedPathsDecompressed);
+                diagnosticsContext?.SetMetric("decrypt.writerFlushes", chunkedWriter.Flushes);
                 long elapsedTicks = System.Diagnostics.Stopwatch.GetTimestamp() - startTimestamp;
                 long elapsedMs = (long)(elapsedTicks * 1000.0 / System.Diagnostics.Stopwatch.Frequency);
                 diagnosticsContext?.SetMetric("decrypt.elapsedMs", elapsedMs);
