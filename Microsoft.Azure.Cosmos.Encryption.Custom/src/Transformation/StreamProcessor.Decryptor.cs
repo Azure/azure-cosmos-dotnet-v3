@@ -22,7 +22,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
         // Cap buffer growth to prevent unbounded memory usage for extremely large tokens
         private const int MaxBufferSizeBytes = 32 * 1024 * 1024; // 32 MB
-        private const int BufferGrowthMinIncrement = 4096; // 4 KB minimal additional headroom
+    private const int BufferGrowthMinIncrement = 4096; // 4 KB minimal additional headroom for large documents
+    private const int SmallDocGrowthMinIncrement = 1024; // 1 KB headroom for small/medium documents to reduce over-allocation
 
         private static readonly SqlBitSerializer SqlBoolSerializer = new SqlBitSerializer();
         private static readonly SqlFloatSerializer SqlDoubleSerializer = new SqlFloatSerializer();
@@ -36,7 +37,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             SkipValidation = true,
         };
 
-        internal static int InitialBufferSize { get; set; } = 16384;
+    // Default initial buffer size tuned for common 1-2 KB payloads; large docs will resize progressively.
+    internal static int InitialBufferSize { get; set; } = 2048;
 
         private readonly int initialBufferSize;
 
@@ -618,8 +620,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                 while (!isFinalBlock)
                 {
-                    // Ensure buffer is available for the streaming path
-                    buffer ??= arrayPoolManager.Rent(this.initialBufferSize);
+                    // Ensure buffer is available for the streaming path (adaptive size: if stream length is known and modest, right-size first rent)
+                    if (buffer == null)
+                    {
+                        int desired = this.initialBufferSize;
+                        if (inputStream.CanSeek)
+                        {
+                            long remain = inputStream.Length - inputStream.Position;
+                            // If remaining fits within 4KB, size exactly (rounded up to nearest 512) to avoid early growth.
+                            if (remain > this.initialBufferSize && remain <= 4096)
+                            {
+                                int rounded = (int)((remain + 511) & ~511); // round to 512 boundary
+                                desired = Math.Max(desired, rounded);
+                            }
+                        }
+                        buffer = arrayPoolManager.Rent(desired);
+                    }
 
                     int dataLength = await inputStream.ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), cancellationToken);
                     int dataSize = dataLength + leftOver;
@@ -650,7 +666,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                     if (dataSize > 0 && leftOver == dataSize)
                     {
-                        int target = Math.Max(buffer.Length * 2, leftOver + BufferGrowthMinIncrement);
+                        int growthIncrement = buffer.Length <= 4096 ? SmallDocGrowthMinIncrement : BufferGrowthMinIncrement;
+                        int target = Math.Max(buffer.Length * 2, leftOver + growthIncrement);
                         int capped = Math.Min(MaxBufferSizeBytes, target);
                         if (buffer.Length >= capped)
                         {
