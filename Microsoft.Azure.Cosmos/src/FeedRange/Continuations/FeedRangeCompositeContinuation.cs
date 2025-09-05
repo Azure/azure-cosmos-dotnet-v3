@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -186,7 +187,8 @@ namespace Microsoft.Azure.Cosmos
             }
 
             Routing.PartitionKeyRangeCache partitionKeyRangeCache = await containerCore.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
-            IReadOnlyList<Documents.PartitionKeyRange> resolvedRanges = await this.TryGetOverlappingRangesAsync(partitionKeyRangeCache, this.CurrentToken.Range.Min, this.CurrentToken.Range.Max, forceRefresh: true);
+            Documents.PartitionKeyDefinition partitionKeyDefinition = await containerCore.GetPartitionKeyDefinitionAsync(cancellationToken);
+            IReadOnlyList<Documents.PartitionKeyRange> resolvedRanges = await this.TryGetOverlappingRangesAsync(partitionKeyRangeCache, this.CurrentToken.Range.Min, this.CurrentToken.Range.Max, forceRefresh: true, partitionKeyDefinition);
             if (resolvedRanges.Count > 0)
             {
                 this.CreateChildRanges(resolvedRanges);
@@ -309,7 +311,8 @@ namespace Microsoft.Azure.Cosmos
             Routing.PartitionKeyRangeCache partitionKeyRangeCache,
             string min,
             string max,
-            bool forceRefresh = false)
+            bool forceRefresh = false,
+            PartitionKeyDefinition partitionKeyDefinition = null)
         {
             IReadOnlyList<Documents.PartitionKeyRange> keyRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
                 this.ContainerRid,
@@ -319,7 +322,8 @@ namespace Microsoft.Azure.Cosmos
                     isMaxInclusive: false,
                     isMinInclusive: true),
                 NoOpTrace.Singleton,
-                forceRefresh);
+                forceRefresh,
+                partitionKeyDefinition);
 
             if (keyRanges.Count == 0)
             {

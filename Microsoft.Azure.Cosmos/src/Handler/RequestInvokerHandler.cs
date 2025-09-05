@@ -286,11 +286,14 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             }
 
                             PartitionKeyRangeCache routingMapProvider = await this.client.DocumentClient.GetPartitionKeyRangeCacheAsync(childTrace);
+                            PartitionKeyDefinition partitionKeyDefinition = await cosmosContainerCore.GetPartitionKeyDefinitionAsync(cancellationToken);
+
                             IReadOnlyList<PartitionKeyRange> overlappingRanges = await routingMapProvider.TryGetOverlappingRangesAsync(
                                 collectionFromCache.ResourceId,
                                 feedRangeEpk.Range,
                                 childTrace,
-                                forceRefresh: false);
+                                forceRefresh: false,
+                                partitionKeyDefinition);
                             if (overlappingRanges == null)
                             {
                                 CosmosException notFound = new CosmosException(

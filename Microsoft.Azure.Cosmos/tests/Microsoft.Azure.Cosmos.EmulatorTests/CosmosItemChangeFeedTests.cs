@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
@@ -387,7 +388,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 string serialized = JsonConvert.SerializeObject(compositeContinuationTokens);
 
-                this.compositeContinuationToken = StandByFeedContinuationToken.CreateAsync("containerRid", serialized, (string containerRid, Documents.Routing.Range<string> ranges, ITrace trace, bool forceRefresh) =>
+                this.compositeContinuationToken = StandByFeedContinuationToken.CreateAsync("containerRid", serialized, (string containerRid, Documents.Routing.Range<string> ranges, ITrace trace, bool forceRefresh, PartitionKeyDefinition partitionKeyDefinition) =>
                 {
                     IReadOnlyList<Documents.PartitionKeyRange> filteredRanges = new List<Documents.PartitionKeyRange>()
                     {
