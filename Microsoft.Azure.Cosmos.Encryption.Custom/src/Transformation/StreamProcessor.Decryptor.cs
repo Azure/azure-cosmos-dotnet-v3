@@ -588,19 +588,27 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             }
             else
             {
-                using PooledByteOwner owner =
-                    ctx.Decryptor.DecryptOwned(ctx.DataKey, ctx.CipherScratch, cipherTextLength, ctx.Pool);
-                bytes = owner.Array;
-                processedBytes = owner.Length;
+                // Fallback to decrypt with rented buffer (previously used DecryptOwned before revert)
+                (byte[] rentedPlain, int decryptedLen) = ctx.Decryptor.Decrypt(
+                    ctx.DataKey,
+                    ctx.CipherScratch,
+                    cipherTextLength,
+                    ctx.Pool);
+
+                bytes = rentedPlain;
+                processedBytes = decryptedLen;
 
                 TryDecompressIfConfigured(ctx, pathLabel, ref bytes, ref processedBytes);
                 ReadOnlySpan<byte> span = bytes.AsSpan(0, processedBytes);
                 WriteDecryptedPayload(marker, span, ctx.Writer, ctx.Diagnostics, pathLabel);
 
-                if (!ReferenceEquals(bytes, owner.Array))
+                // Return any transient buffer used for decompression (if different from original decrypt buffer)
+                if (!ReferenceEquals(bytes, rentedPlain))
                 {
                     ctx.Pool.Return(bytes);
                 }
+
+                ctx.Pool.Return(rentedPlain);
             }
         }
 
