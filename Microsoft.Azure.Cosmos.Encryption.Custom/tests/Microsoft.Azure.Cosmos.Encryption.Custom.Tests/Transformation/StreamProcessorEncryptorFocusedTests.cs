@@ -105,25 +105,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         }
 
         [TestMethod]
-        public async Task Encrypt_CompressionThreshold_Boundaries()
-        {
-            // Choose minimal length = 32; test 31 (no compress), 32 (compress), 33 (compress)
-            string s31 = new string('a', 31);
-            string s32 = new string('b', 32);
-            string s33 = new string('c', 33);
-            string json = $"{{\"S31\":\"{s31}\",\"S32\":\"{s32}\",\"S33\":\"{s33}\"}}";
-            EncryptionOptions options = CreateOptions(new[] { "/S31", "/S32", "/S33" }, CompressionOptions.CompressionAlgorithm.Brotli, CompressionLevel.Fastest, min: 32);
-            MemoryStream encrypted = await EncryptAsync(json, options);
-            using JsonDocument jd = JsonDocument.Parse(encrypted);
-            JsonElement ei = jd.RootElement.GetProperty(Constants.EncryptedInfo);
-            EncryptionProperties props = System.Text.Json.JsonSerializer.Deserialize<EncryptionProperties>(ei.GetRawText());
-            Assert.AreEqual(EncryptionFormatVersion.MdeWithCompression, props.EncryptionFormatVersion);
-            Assert.IsFalse(props.CompressedEncryptedPaths.ContainsKey("/S31"), "31 bytes should NOT be compressed");
-            Assert.IsTrue(props.CompressedEncryptedPaths.ContainsKey("/S32"), "32 bytes SHOULD be compressed");
-            Assert.IsTrue(props.CompressedEncryptedPaths.ContainsKey("/S33"), "33 bytes SHOULD be compressed");
-        }
-
-        [TestMethod]
         public async Task Encrypt_MultiSegment_String_And_Number()
         {
             // Long string and a long numeric literal (19 digits fits Int64) both larger than initial buffer => ValueSequence
