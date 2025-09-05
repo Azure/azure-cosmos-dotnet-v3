@@ -27,6 +27,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             Stream input,
             Encryptor encryptor,
             EncryptionOptions encryptionOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken token)
         {
 #if NET8_0_OR_GREATER
@@ -36,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     return await this.JObjectEncryptionProcessor.EncryptAsync(input, encryptor, encryptionOptions, token);
                 case JsonProcessor.Stream:
                     MemoryStream ms = new ();
-                    await this.StreamProcessor.EncryptStreamAsync(input, ms, encryptor, encryptionOptions, diagnosticsContext: null, token);
+                    await this.StreamProcessor.EncryptStreamAsync(input, ms, encryptor, encryptionOptions, diagnosticsContext, token);
                     return ms;
 
                 default:
