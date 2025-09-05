@@ -51,8 +51,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 throw new InvalidOperationException($"{nameof(DataEncryptionKey)} returned null cipherText from {nameof(DataEncryptionKey.EncryptData)}.");
             }
 
-            // Return the actual number of bytes produced (including the type marker at index 0)
-            return (encryptedText, 1 + encryptedLength);
+            return (encryptedText, encryptedTextLength);
         }
 
         internal virtual (byte[] plainText, int plainTextLength) Decrypt(DataEncryptionKey encryptionKey, byte[] cipherText, int cipherTextLength, ArrayPoolManager arrayPoolManager)
@@ -74,13 +73,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             }
 
             return (plainText, decryptedLength);
-        }
-
-        // Ownership-explicit variant: return IMemoryOwner<byte> for deterministic lifetime management without DEBUG probes
-        internal virtual PooledByteOwner DecryptOwned(DataEncryptionKey encryptionKey, byte[] cipherText, int cipherTextLength, ArrayPoolManager arrayPoolManager)
-        {
-            (byte[] bytes, int len) = this.Decrypt(encryptionKey, cipherText, cipherTextLength, arrayPoolManager);
-            return new PooledByteOwner(arrayPoolManager, bytes, len);
         }
     }
 }

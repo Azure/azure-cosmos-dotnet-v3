@@ -34,50 +34,36 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             IReadOnlyDictionary<string, int> compressedEncryptedPaths,
             byte[] encryptedData)
         {
-            writer.WritePropertyName(EncryptionPropertiesNameBytes);
-            writer.WriteStartObject();
-
-            writer.WriteNumber(Constants.EncryptionFormatVersion, formatVersion);
-            writer.WriteString(Constants.EncryptionAlgorithm, encryptionAlgorithm);
-            writer.WriteString(Constants.EncryptionDekId, dataEncryptionKeyId);
-
-            if (encryptedData == null)
-            {
-                writer.WritePropertyName(Constants.EncryptedData);
-                writer.WriteNullValue();
-            }
-            else
-            {
-                writer.WriteBase64String(Constants.EncryptedData, encryptedData);
-            }
-
-            writer.WritePropertyName(Constants.EncryptedPaths);
-            writer.WriteStartArray();
-            if (encryptedPaths != null)
-            {
-                foreach (string p in encryptedPaths)
-                {
-                    writer.WriteStringValue(p);
-                }
-            }
-
-            writer.WriteEndArray();
-
-            writer.WriteNumber(Constants.CompressionAlgorithm, (int)compressionAlgorithm);
-
+            // Build DTO and serialize with System.Text.Json to reduce custom code complexity.
+            // Minor additional allocations (~few KB) are acceptable for clarity.
+            IDictionary<string, int> compressed = null;
             if (compressedEncryptedPaths != null)
             {
-                writer.WritePropertyName(Constants.CompressedEncryptedPaths);
-                writer.WriteStartObject();
-                foreach (KeyValuePair<string, int> kvp in compressedEncryptedPaths)
-                {
-                    writer.WriteNumber(kvp.Key, kvp.Value);
-                }
-
-                writer.WriteEndObject();
+                // Ensure a concrete IDictionary for constructor (avoid copy if already one).
+                compressed = compressedEncryptedPaths as IDictionary<string, int> ?? new Dictionary<string, int>(compressedEncryptedPaths);
             }
 
-            writer.WriteEndObject();
+            EncryptionProperties props = new EncryptionProperties(
+                encryptionFormatVersion: formatVersion,
+                encryptionAlgorithm: encryptionAlgorithm,
+                dataEncryptionKeyId: dataEncryptionKeyId,
+                encryptedData: encryptedData,
+                encryptedPaths: encryptedPaths,
+                compressionAlgorithm: compressionAlgorithm,
+                compressedEncryptedPaths: compressed);
+
+            // Serialize only the _ei object (not wrapped). We write property name then raw value.
+            // Use options with default naming (attributes already specify names) and no policy.
+            JsonSerializerOptions options = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = null,
+                WriteIndented = false,
+                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.Never,
+            };
+
+            byte[] json = JsonSerializer.SerializeToUtf8Bytes(props, options);
+            writer.WritePropertyName(EncryptionPropertiesNameBytes);
+            writer.WriteRawValue(json, skipInputValidation: true);
         }
 
         internal async Task EncryptStreamAsync(
