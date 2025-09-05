@@ -9,20 +9,25 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
     using System.Buffers;
     using System.Buffers.Text;
     using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Encryption.Custom;
     using Microsoft.Data.Encryption.Cryptography.Serializers;
 
     internal partial class StreamProcessor
     {
-        private const string EncryptionPropertiesPath = "/" + Constants.EncryptedInfo;
+        private const string EncryptedInfoPropertyPath = "/" + Constants.EncryptedInfo;
 
-        // Cap buffer growth to prevent unbounded memory usage for extremely large tokens
-        private const int MaxBufferSizeBytes = 32 * 1024 * 1024; // 32 MB
-        private const int BufferGrowthMinIncrement = 4096; // 4 KB minimal additional headroom
+        // Buffer/stream thresholds
+        private const int MaxBufferSizeBytes = 32 * 1024 * 1024; // 32 MB cap for safety
+        private const int BufferGrowthMinIncrement = 4096; // 4 KB minimal headroom to trigger growth
+        private const int SmallPayloadMaxBytes = 2048; // One-shot parse threshold
+        private const int ProbeSize = 2048; // Non-seekable probe size
+        private const int StackallocStringThreshold = 256; // Small strings/property names use stackalloc
+        private const int Base64StackThreshold = 4096; // Small base64 decode temp uses stackalloc
 
         private static readonly SqlBitSerializer SqlBoolSerializer = new SqlBitSerializer();
         private static readonly SqlFloatSerializer SqlDoubleSerializer = new SqlFloatSerializer();
@@ -33,10 +38,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
         private static readonly JsonWriterOptions JsonWriterOptions = new JsonWriterOptions()
         {
-            Indented = false, SkipValidation = true,
+            Indented = false,
+            SkipValidation = true,
         };
 
-        // Use 8 KB as an amortized sweet spot; avoids early resizes while not too large for small docs.
         internal static int InitialBufferSize { get; set; } = 8192;
 
         private readonly int initialBufferSize;
@@ -48,753 +53,71 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
         internal StreamProcessor(int initialBufferSize)
         {
-            // Ensure a positive buffer size; fallback to legacy default if invalid
             this.initialBufferSize = initialBufferSize > 0 ? initialBufferSize : InitialBufferSize;
         }
 
+        // Used for decryption logic (fast-path when exact type match); key retrieval uses method parameter
         internal MdeEncryptor Encryptor { get; set; } = new MdeEncryptor();
 
         internal async Task<DecryptionContext> DecryptStreamAsync(
             Stream inputStream,
             Stream outputStream,
-            Encryptor encryptor,
+            Encryptor encryptor, // key provider
             EncryptionProperties properties,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            long bytesRead = 0;
-            long propertiesDecrypted = 0;
-            long compressedPathsDecompressed = 0;
-            long startTimestamp = System.Diagnostics.Stopwatch.GetTimestamp();
+            ValidateEncryptionProperties(properties);
 
-            if (properties.EncryptionFormatVersion != EncryptionFormatVersion.Mde &&
-                properties.EncryptionFormatVersion != EncryptionFormatVersion.MdeWithCompression)
-            {
-                throw new NotSupportedException(
-                    $"Unknown encryption format version: {properties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
-            }
+            using ArrayPoolManager pool = new ArrayPoolManager();
+            DataEncryptionKey dataKey = await encryptor
+                .GetEncryptionKeyAsync(properties.DataEncryptionKeyId, properties.EncryptionAlgorithm, cancellationToken)
+                .ConfigureAwait(false);
 
-            bool containsCompressed = properties.CompressedEncryptedPaths?.Count > 0;
-
-            if (properties.CompressionAlgorithm != CompressionOptions.CompressionAlgorithm.Brotli && containsCompressed)
-            {
-                throw new NotSupportedException($"Unknown compression algorithm {properties.CompressionAlgorithm}");
-            }
-
-            using ArrayPoolManager arrayPoolManager = new ArrayPoolManager();
-
-            DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(properties.DataEncryptionKeyId, properties.EncryptionAlgorithm, cancellationToken);
-
-            // Track decrypted paths; pre-size when collection count is known
-            int expectedDecrypted = 0;
-            if (properties.EncryptedPaths is ICollection<string> encColl)
-            {
-                expectedDecrypted = encColl.Count;
-            }
-
+            int expectedDecrypted = properties.EncryptedPaths is ICollection<string> c ? c.Count : 0;
             List<string> pathsDecrypted = new List<string>(expectedDecrypted);
 
-            // Write through a chunked buffer writer to avoid large contiguous growth when producing JSON output.
-            using StreamChunkedBufferWriter chunkedWriter = new StreamChunkedBufferWriter(outputStream, arrayPoolManager, this.initialBufferSize);
-            using Utf8JsonWriter writer = new Utf8JsonWriter(chunkedWriter, StreamProcessor.JsonWriterOptions);
+            using StreamChunkedBufferWriter chunkedWriter =
+                new StreamChunkedBufferWriter(outputStream, pool, this.initialBufferSize);
+            await using Utf8JsonWriter writer = new Utf8JsonWriter(chunkedWriter, JsonWriterOptions);
 
-            // Lazily rent the main buffer only if we don't take the small-payload fast path
+            ProcessingContext ctx = new ProcessingContext(
+                pool: pool,
+                writer: writer,
+                properties: properties,
+                diagnostics: diagnosticsContext,
+                decryptor: this.Encryptor,
+                dataKey: dataKey,
+                expectedDecrypted: expectedDecrypted,
+                pathsDecrypted: pathsDecrypted);
+
+            JsonReaderState readerState = new JsonReaderState(JsonReaderOptions);
+            SkipState skip = default;
             byte[] buffer = null;
+            int leftOver = 0;
+            bool isFinalBlock = false;
 
-            // Reusable pooled scratch buffers to reduce per-field rents; declared outside try so they can be returned in finally
-            byte[] tmpScratch = null; // used for large multi-segment strings, property names, and numbers
-            byte[] cipherScratch = null; // shared base64 decode buffer across all encrypted properties
-            byte[] plainScratch = null; // shared plaintext buffer when using base encryptor (avoids per-field rent)
             try
             {
-                JsonReaderState state = new JsonReaderState(StreamProcessor.JsonReaderOptions);
+                long startTimestamp = Stopwatch.GetTimestamp();
+                ctx.StartTimestamp = startTimestamp;
 
-                // Reuse a single decompressor instance per call to avoid per-field allocations
-                BrotliCompressor decompressor = containsCompressed ? new BrotliCompressor() : null;
-
-                // Build candidate matcher for fast, allocation-free top-level path matching (supports "/").
-                IEnumerable<string> encryptedPaths = properties.EncryptedPaths ?? Array.Empty<string>();
-                CandidatePaths candidatePaths = CandidatePaths.Build(encryptedPaths);
-
-                int leftOver = 0;
-
-                // Local helper: ensure pooled buffer capacity with bucketed growth (next power-of-two) to
-                // increase ArrayPool hit rate. Without bucketing we might rent many subtly different lengths
-                // (e.g., 1372, 1419, 1510 ...) that the shared pool keeps as distinct buckets, increasing LOH
-                // pressure and fragmentation over time when large docs with varying token sizes are processed.
-                // Shared bucket helper so main streaming buffer growth also reuses the same discrete sizes.
-                static int Bucket(int value)
-                {
-                    const int minBucket = 64;
-                    if (value <= minBucket)
-                    {
-                        return minBucket;
-                    }
-
-                    if (value >= MaxBufferSizeBytes)
-                    {
-                        return MaxBufferSizeBytes;
-                    }
-
-                    // next power of two
-                    uint v = (uint)(value - 1);
-                    v |= v >> 1;
-                    v |= v >> 2;
-                    v |= v >> 4;
-                    v |= v >> 8;
-                    v |= v >> 16;
-                    int pow2 = (int)(v + 1);
-                    return pow2 > MaxBufferSizeBytes ? MaxBufferSizeBytes : pow2;
-                }
-
-                static void EnsureCapacity(ref byte[] scratch, int needed, ArrayPoolManager pool)
-                {
-                    if (scratch != null && scratch.Length >= needed)
-                    {
-                        return; // already large enough
-                    }
-
-                    int bucketed = Bucket(needed);
-                    byte[] newBuf = pool.Rent(bucketed);
-                    if (scratch != null)
-                    {
-                        pool.Return(scratch);
-                    }
-
-                    scratch = newBuf;
-                }
-
-                bool isFinalBlock = false;
-                string decryptPropertyName = null;
-                string currentPropertyPath = null;
-
-                // Robust cross-buffer skipping state for the special encrypted info property value
-                bool skippingEi = false;
-                bool skipEiFirstTokenPending = false;
-                int skipEiContainerDepth = 0;
-
-                // Local helper: decrypt a single property value using the provided context/state
-                void TransformDecryptProperty(
-                    ref Utf8JsonReader reader,
-                    ArrayPoolManager arrayPoolManager,
-                    MdeEncryptor encryptor,
-                    DataEncryptionKey encryptionKey,
-                    BrotliCompressor decompressor,
-                    EncryptionProperties properties,
-                    Utf8JsonWriter writer,
-                    CosmosDiagnosticsContext diagnosticsContext,
-                    ref long compressedPathsDecompressed,
-                    string decryptPropertyName,
-                    string currentPropertyPath)
-                {
-                    static string PathLabel(string a, string b)
-                    {
-                        return a ?? b ?? "<unknown>";
-                    }
-
-                    int srcLen = reader.HasValueSequence ? (int)reader.ValueSequence.Length : reader.ValueSpan.Length;
-                    int maxDecoded = Base64.GetMaxDecodedFromUtf8Length(srcLen);
-                    EnsureCapacity(ref cipherScratch, maxDecoded, arrayPoolManager);
-                    Span<byte> cipher = cipherScratch.AsSpan();
-                    int cipherTextLength;
-
-                    try
-                    {
-                        if (!reader.HasValueSequence && !reader.ValueIsEscaped)
-                        {
-                            OperationStatus status = Base64.DecodeFromUtf8(
-                                reader.ValueSpan,
-                                cipher,
-                                out int consumed,
-                                out int written);
-                            if (status != OperationStatus.Done || consumed != srcLen)
-                            {
-                                throw new InvalidOperationException(
-                                    $"Base64 decoding failed for encrypted field at path {PathLabel(decryptPropertyName, currentPropertyPath)}: {status}.");
-                            }
-
-                            cipherTextLength = written;
-                        }
-                        else
-                        {
-                            // Multi-segment or escaped; use stackalloc for small sizes (up to 4 KB) to avoid renting
-                            const int base64StackThreshold = 4096;
-                            if (srcLen <= base64StackThreshold)
-                            {
-                                Span<byte> local = stackalloc byte[srcLen];
-                                int copied = reader.CopyString(local); // copied should == srcLen (escaped path may differ)
-                                OperationStatus status = Base64.DecodeFromUtf8(
-                                    local[..copied],
-                                    cipher,
-                                    out int consumed,
-                                    out int written);
-                                if (status != OperationStatus.Done || consumed != copied)
-                                {
-                                    throw new InvalidOperationException(
-                                        $"Base64 decoding failed for encrypted field at path {PathLabel(decryptPropertyName, currentPropertyPath)}: {status}.");
-                                }
-
-                                cipherTextLength = written;
-                            }
-                            else
-                            {
-                                EnsureCapacity(ref tmpScratch, Math.Max(srcLen, 64), arrayPoolManager);
-                                int copied = reader.CopyString(tmpScratch);
-                                OperationStatus status = Base64.DecodeFromUtf8(
-                                    tmpScratch.AsSpan(0, copied),
-                                    cipher,
-                                    out int consumed,
-                                    out int written);
-                                if (status != OperationStatus.Done || consumed != copied)
-                                {
-                                    throw new InvalidOperationException(
-                                        $"Base64 decoding failed for encrypted field at path {PathLabel(decryptPropertyName, currentPropertyPath)}: {status}.");
-                                }
-
-                                cipherTextLength = written;
-                            }
-                        }
-
-                        // Type marker (not encrypted) at index 0
-                        TypeMarker marker = (TypeMarker)cipher[0];
-
-                        byte[] bytes;
-                        int processedBytes;
-
-                        // Fast path: if encryptor is the base implementation (not overridden), decrypt directly into reusable scratch buffer
-                        if (encryptor.GetType() == typeof(MdeEncryptor))
-                        {
-                            int needed = encryptionKey.GetDecryptByteCount(cipherTextLength - 1);
-                            EnsureCapacity(ref plainScratch, needed, arrayPoolManager);
-                            int decryptedLength = encryptionKey.DecryptData(
-                                cipherScratch,
-                                cipherTextOffset: 1,
-                                cipherTextLength: cipherTextLength - 1,
-                                plainScratch,
-                                outputOffset: 0);
-                            if (decryptedLength < 0)
-                            {
-                                throw new InvalidOperationException(
-                                    $"{nameof(DataEncryptionKey)} returned null plainText from {nameof(DataEncryptionKey.DecryptData)}.");
-                            }
-
-                            bytes = plainScratch;
-                            processedBytes = decryptedLength;
-                        }
-                        else
-                        {
-                            using PooledByteOwner owner = encryptor.DecryptOwned(
-                                encryptionKey,
-                                cipherScratch,
-                                cipherTextLength,
-                                arrayPoolManager);
-                            bytes = owner.Array;
-                            processedBytes = owner.Length;
-
-                            // Optional decompression
-                            if (decompressor != null &&
-                                decryptPropertyName != null &&
-                                properties.CompressedEncryptedPaths != null &&
-                                properties.CompressedEncryptedPaths.TryGetValue(decryptPropertyName, out int decompressedSizeCustom))
-                            {
-                                const int MaxDecompressedSizeBytes = MaxBufferSizeBytes;
-                                if (decompressedSizeCustom <= 0 || decompressedSizeCustom > MaxDecompressedSizeBytes)
-                                {
-                                    throw new InvalidOperationException(
-                                        $"Invalid decompressed size {decompressedSizeCustom} for path {PathLabel(decryptPropertyName, currentPropertyPath)}. Max allowed is {MaxDecompressedSizeBytes}.");
-                                }
-
-                                byte[] decompressed = arrayPoolManager.Rent(decompressedSizeCustom);
-                                int newLen = decompressor.Decompress(bytes, processedBytes, decompressed);
-                                bytes = decompressed;
-                                processedBytes = newLen;
-                                compressedPathsDecompressed++;
-                            }
-
-                            ReadOnlySpan<byte> customSpan = bytes.AsSpan(0, processedBytes);
-                            try
-                            {
-                                switch (marker)
-                                {
-                                    case TypeMarker.String:
-                                        try
-                                        {
-                                            writer.WriteStringValue(customSpan);
-                                        }
-                                        catch (Exception ex)
-                                        {
-                                            throw new InvalidOperationException(
-                                                $"Invalid UTF-8 while writing decrypted string at path {PathLabel(decryptPropertyName, currentPropertyPath)}",
-                                                ex);
-                                        }
-
-                                        break;
-
-                                    case TypeMarker.Long:
-                                        try
-                                        {
-                                            writer.WriteNumberValue(SqlLongSerializer.Deserialize(customSpan));
-                                        }
-                                        catch (Exception ex)
-                                        {
-                                            throw new InvalidOperationException(
-                                                $"Failed to deserialize decrypted payload at path {PathLabel(decryptPropertyName, currentPropertyPath)} as Long.",
-                                                ex);
-                                        }
-
-                                        break;
-
-                                    case TypeMarker.Double:
-                                        try
-                                        {
-                                            writer.WriteNumberValue(SqlDoubleSerializer.Deserialize(customSpan));
-                                        }
-                                        catch (Exception ex)
-                                        {
-                                            throw new InvalidOperationException(
-                                                $"Failed to deserialize decrypted payload at path {PathLabel(decryptPropertyName, currentPropertyPath)} as Double.",
-                                                ex);
-                                        }
-
-                                        break;
-
-                                    case TypeMarker.Boolean:
-                                        writer.WriteBooleanValue(SqlBoolSerializer.Deserialize(customSpan));
-                                        break;
-
-                                    case TypeMarker.Null:
-                                        writer.WriteNullValue();
-                                        break;
-
-                                    case TypeMarker.Array:
-                                        writer.WriteRawValue(customSpan, skipInputValidation: true);
-                                        break;
-
-                                    case TypeMarker.Object:
-                                        writer.WriteRawValue(customSpan, skipInputValidation: true);
-                                        break;
-                                    default:
-                                        using (diagnosticsContext?.CreateScope(
-                                                   $"DecryptUnknownTypeMarker Path={decryptPropertyName} Marker={(byte)marker}"))
-                                        {
-                                            writer.WriteRawValue(customSpan, skipInputValidation: true);
-                                        }
-
-                                        break;
-                                }
-                            }
-                            finally
-                            {
-                                // Return decompressed buffer if allocated (not owner.Array)
-                                if (!ReferenceEquals(bytes, owner.Array))
-                                {
-                                    arrayPoolManager.Return(bytes);
-                                }
-                            }
-
-                            return;
-                        }
-
-                        // Direct decrypt path continues here (owner not used)
-                        if (encryptor.GetType() == typeof(MdeEncryptor))
-                        {
-                            if (decompressor != null
-                                && decryptPropertyName != null
-                                && properties.CompressedEncryptedPaths != null
-                                && properties.CompressedEncryptedPaths.TryGetValue(decryptPropertyName, out int decompressedSize))
-                            {
-                                const int maxDecompressedSizeBytes = MaxBufferSizeBytes;
-                                if (decompressedSize <= 0 || decompressedSize > maxDecompressedSizeBytes)
-                                {
-                                    throw new InvalidOperationException(
-                                        $"Invalid decompressed size {decompressedSize} for path {PathLabel(decryptPropertyName, currentPropertyPath)}. Max allowed is {maxDecompressedSizeBytes}.");
-                                }
-
-                                byte[] decompressed = arrayPoolManager.Rent(decompressedSize);
-                                processedBytes = decompressor.Decompress(bytes, processedBytes, decompressed);
-                                bytes = decompressed;
-                                compressedPathsDecompressed++;
-                            }
-
-                            ReadOnlySpan<byte> spanToWrite = bytes.AsSpan(0, processedBytes);
-                            try
-                            {
-                                switch (marker)
-                                {
-                                    case TypeMarker.String:
-                                        try
-                                        {
-                                            writer.WriteStringValue(spanToWrite);
-                                        }
-                                        catch (Exception ex)
-                                        {
-                                            throw new InvalidOperationException(
-                                                $"Invalid UTF-8 while writing decrypted string at path {PathLabel(decryptPropertyName, currentPropertyPath)}",
-                                                ex);
-                                        }
-
-                                        break;
-
-                                    case TypeMarker.Long:
-                                        try
-                                        {
-                                            writer.WriteNumberValue(SqlLongSerializer.Deserialize(spanToWrite));
-                                        }
-                                        catch (Exception ex)
-                                        {
-                                            throw new InvalidOperationException(
-                                                $"Failed to deserialize decrypted payload at path {PathLabel(decryptPropertyName, currentPropertyPath)} as Long.",
-                                                ex);
-                                        }
-
-                                        break;
-
-                                    case TypeMarker.Double:
-                                        try
-                                        {
-                                            writer.WriteNumberValue(SqlDoubleSerializer.Deserialize(spanToWrite));
-                                        }
-                                        catch (Exception ex)
-                                        {
-                                            throw new InvalidOperationException(
-                                                $"Failed to deserialize decrypted payload at path {PathLabel(decryptPropertyName, currentPropertyPath)} as Double.",
-                                                ex);
-                                        }
-
-                                        break;
-
-                                    case TypeMarker.Boolean:
-                                        writer.WriteBooleanValue(SqlBoolSerializer.Deserialize(spanToWrite));
-                                        break;
-
-                                    case TypeMarker.Null:
-                                        writer.WriteNullValue();
-                                        break;
-
-                                    case TypeMarker.Array:
-                                        writer.WriteRawValue(spanToWrite, skipInputValidation: true);
-                                        break;
-
-                                    case TypeMarker.Object:
-                                        writer.WriteRawValue(spanToWrite, skipInputValidation: true);
-                                        break;
-                                    default:
-                                        using (diagnosticsContext?.CreateScope(
-                                                   $"DecryptUnknownTypeMarker Path={decryptPropertyName} Marker={(byte)marker}"))
-                                        {
-                                            writer.WriteRawValue(spanToWrite, skipInputValidation: true);
-                                        }
-
-                                        break;
-                                }
-                            }
-                            finally
-                            {
-                                if (!ReferenceEquals(bytes, plainScratch))
-                                {
-                                    arrayPoolManager.Return(bytes);
-                                }
-                            }
-                        }
-                    }
-                    finally
-                    {
-                        // cipherScratch reused across properties
-                    }
-                }
-
-                long TransformDecryptBuffer(
-                    ReadOnlySpan<byte> bufferSpan,
-                    ref JsonReaderState state,
-                    bool isFinalBlock,
-                    ArrayPoolManager arrayPoolManager,
-                    Utf8JsonWriter writer,
-                    BrotliCompressor decompressor,
-                    EncryptionProperties properties,
-                    ref long propertiesDecrypted,
-                    List<string> pathsDecrypted,
-                    ref long compressedPathsDecompressed,
-                    DataEncryptionKey encryptionKey,
-                    ref string decryptPropertyName,
-                    ref string currentPropertyPath,
-                    ref bool skippingEi,
-                    ref bool skipEiFirstTokenPending,
-                    ref int skipEiContainerDepth)
-                {
-                    Utf8JsonReader reader = new Utf8JsonReader(bufferSpan, isFinalBlock, state);
-
-                    while (reader.Read())
-                    {
-                        // If we're currently skipping the value of the EncryptedInfo property, consume tokens until complete
-                        if (skippingEi)
-                        {
-                            if (skipEiFirstTokenPending)
-                            {
-                                skipEiFirstTokenPending = false;
-                                if (reader.TokenType == JsonTokenType.StartObject ||
-                                    reader.TokenType == JsonTokenType.StartArray)
-                                {
-                                    // Start of a container value; track nested depth
-                                    skipEiContainerDepth = 1;
-                                }
-                                else
-                                {
-                                    // Scalar value skipped in one token
-                                    skippingEi = false;
-                                }
-
-                                continue;
-                            }
-
-                            if (reader.TokenType == JsonTokenType.StartObject ||
-                                reader.TokenType == JsonTokenType.StartArray)
-                            {
-                                skipEiContainerDepth++;
-                                continue;
-                            }
-
-                            if (reader.TokenType == JsonTokenType.EndObject ||
-                                reader.TokenType == JsonTokenType.EndArray)
-                            {
-                                skipEiContainerDepth--;
-                                if (skipEiContainerDepth == 0)
-                                {
-                                    // Finished skipping the container
-                                    skippingEi = false;
-                                }
-
-                                continue;
-                            }
-
-                            // Intermediate token inside the container being skipped
-                            continue;
-                        }
-
-                        JsonTokenType tokenType = reader.TokenType;
-
-                        switch (tokenType)
-                        {
-                            case JsonTokenType.String:
-                                if (decryptPropertyName == null)
-                                {
-                                    try
-                                    {
-                                        // If the value is contiguous and unescaped, fast-path write
-                                        if (!reader.HasValueSequence && !reader.ValueIsEscaped)
-                                        {
-                                            writer.WriteStringValue(reader.ValueSpan);
-                                        }
-                                        else
-                                        {
-                                            int estimatedLength = reader.HasValueSequence
-                                                ? (int)reader.ValueSequence.Length
-                                                : reader.ValueSpan.Length;
-                                            const int stackScratch = 256;
-                                            if (estimatedLength <= stackScratch)
-                                            {
-#pragma warning disable CA2014
-                                                Span<byte> local = stackalloc byte[stackScratch];
-#pragma warning restore CA2014
-                                                int copied = reader.CopyString(local);
-                                                writer.WriteStringValue(local[..copied]);
-                                            }
-                                            else
-                                            {
-                                                EnsureCapacity(ref tmpScratch, Math.Max(estimatedLength, 64), arrayPoolManager);
-                                                int copied = reader.CopyString(tmpScratch);
-                                                writer.WriteStringValue(tmpScratch.AsSpan(0, copied));
-                                            }
-                                        }
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        throw new InvalidOperationException(
-                                            $"Invalid UTF-8 while writing string at path {currentPropertyPath ?? "<unknown>"}",
-                                            ex);
-                                    }
-                                }
-                                else
-                                {
-                                    TransformDecryptProperty(
-                                        ref reader,
-                                        arrayPoolManager,
-                                        this.Encryptor,
-                                        encryptionKey,
-                                        decompressor,
-                                        properties,
-                                        writer,
-                                        diagnosticsContext,
-                                        ref compressedPathsDecompressed,
-                                        decryptPropertyName,
-                                        currentPropertyPath);
-                                    pathsDecrypted.Add(decryptPropertyName);
-                                    propertiesDecrypted++;
-                                }
-
-                                decryptPropertyName = null;
-                                break;
-                            case JsonTokenType.Number:
-                                decryptPropertyName = null;
-                                if (!reader.HasValueSequence)
-                                {
-                                    writer.WriteRawValue(reader.ValueSpan, true);
-                                }
-                                else
-                                {
-                                    int len = (int)reader.ValueSequence.Length;
-                                    const int stackScratch = 256;
-                                    if (len <= stackScratch)
-                                    {
-#pragma warning disable CA2014
-                                        Span<byte> local = stackalloc byte[stackScratch];
-#pragma warning restore CA2014
-                                        reader.ValueSequence.CopyTo(local);
-                                        writer.WriteRawValue(local[..len], true);
-                                    }
-                                    else
-                                    {
-                                        EnsureCapacity(ref tmpScratch, Math.Max(len, 32), arrayPoolManager);
-                                        reader.ValueSequence.CopyTo(tmpScratch);
-                                        writer.WriteRawValue(tmpScratch.AsSpan(0, len), true);
-                                    }
-                                }
-
-                                break;
-                            case JsonTokenType.None: // Unreachable: pre-first-Read state
-                                decryptPropertyName = null;
-                                break;
-                            case JsonTokenType.StartObject:
-                                decryptPropertyName = null;
-                                writer.WriteStartObject();
-                                break;
-                            case JsonTokenType.EndObject:
-                                decryptPropertyName = null;
-                                writer.WriteEndObject();
-                                break;
-                            case JsonTokenType.StartArray:
-                                decryptPropertyName = null;
-                                writer.WriteStartArray();
-                                break;
-                            case JsonTokenType.EndArray:
-                                decryptPropertyName = null;
-                                writer.WriteEndArray();
-                                break;
-                            case JsonTokenType.PropertyName:
-
-                                // Fast-path skip for encrypted info property without allocating a string
-                                if (reader.ValueTextEquals(Constants.EncryptedInfo))
-                                {
-                                    currentPropertyPath = EncryptionPropertiesPath;
-
-                                    // Try to skip the value within the current buffer; if it doesn't fit, set state to continue skipping across buffers
-                                    if (!reader.TrySkip())
-                                    {
-                                        skippingEi = true;
-
-                                        // next token starts the value
-                                        skipEiFirstTokenPending = true;
-                                        skipEiContainerDepth = 0;
-                                    }
-
-                                    // Do not write the property name nor its value
-                                    continue; // continue the outer read loop
-                                }
-
-                                // Check if current property is an encrypted top-level name without allocating a string
-                                // PropertyName depth at root object is 1
-                                if (reader.CurrentDepth == 1)
-                                {
-                                    string matchedFullPath = null;
-                                    int propNameUtf8Len = reader.HasValueSequence
-                                        ? (int)reader.ValueSequence.Length
-                                        : reader.ValueSpan.Length;
-                                    if (candidatePaths.TryMatch(ref reader, propNameUtf8Len, out string path))
-                                    {
-                                        matchedFullPath = path;
-                                    }
-
-                                    if (matchedFullPath != null)
-                                    {
-                                        decryptPropertyName = matchedFullPath;
-                                        currentPropertyPath = matchedFullPath;
-                                    }
-                                    else
-                                    {
-                                        decryptPropertyName = null;
-                                        currentPropertyPath = null;
-                                    }
-                                }
-                                else
-                                {
-                                    // Non top-level properties are not encrypted by path in this implementation; avoid extra lookups and allocations
-                                    decryptPropertyName = null;
-                                    currentPropertyPath = null;
-                                }
-
-                                // Write the property name with zero allocation in the common case
-                                if (!reader.HasValueSequence)
-                                {
-                                    writer.WritePropertyName(reader.ValueSpan);
-                                }
-                                else
-                                {
-                                    int estimatedLength = (int)reader.ValueSequence.Length;
-                                    const int stackScratch = 256;
-                                    if (estimatedLength <= stackScratch)
-                                    {
-#pragma warning disable CA2014
-                                        Span<byte> local = stackalloc byte[stackScratch];
-#pragma warning restore CA2014
-                                        int copied = reader.CopyString(local);
-                                        writer.WritePropertyName(local[..copied]);
-                                    }
-                                    else
-                                    {
-                                        EnsureCapacity(ref tmpScratch, Math.Max(estimatedLength, 64), arrayPoolManager);
-                                        int copied = reader.CopyString(tmpScratch);
-                                        writer.WritePropertyName(tmpScratch.AsSpan(0, copied));
-                                    }
-                                }
-
-                                break;
-                            case JsonTokenType.Comment: // Skipped via reader options
-                                break;
-                            case JsonTokenType.True:
-                                decryptPropertyName = null;
-                                writer.WriteBooleanValue(true);
-                                break;
-                            case JsonTokenType.False:
-                                decryptPropertyName = null;
-                                writer.WriteBooleanValue(false);
-                                break;
-                            case JsonTokenType.Null:
-                                decryptPropertyName = null;
-                                writer.WriteNullValue();
-                                break;
-                        }
-                    }
-
-                    state = reader.CurrentState;
-                    return reader.BytesConsumed;
-                }
-
-                // Small-payload fast path: if stream is seekable and remaining length <= 2KB, read once and parse once.
-                // Enhancement: stackalloc for <=1KB to avoid renting; for >1KB use bucketed pool sizes to reduce distinct lengths.
+                // Try small payload one-shot for seekable streams
                 if (inputStream.CanSeek)
                 {
                     long remaining = inputStream.Length - inputStream.Position;
-                    if (remaining > 0 && remaining <= 2048)
+                    if (remaining > 0 && remaining <= SmallPayloadMaxBytes)
                     {
                         int len = (int)remaining;
-                        int rentSize = Bucket(len); // bucketed size for small one-shot payload
-                        byte[] oneShot = arrayPoolManager.Rent(rentSize);
+                        byte[] oneShot = pool.Rent(Bucket(len));
                         try
                         {
                             int total = 0;
                             while (total < len)
                             {
                                 int toRead = Math.Min(len - total, oneShot.Length - total);
-                                int r = await inputStream.ReadAsync(oneShot.AsMemory(total, toRead), cancellationToken);
+                                int r = await inputStream.ReadAsync(oneShot.AsMemory(total, toRead), cancellationToken)
+                                    .ConfigureAwait(false);
                                 if (r == 0)
                                 {
                                     break;
@@ -804,118 +127,91 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             }
 
                             int read = Math.Min(total, len);
-                            bytesRead += read;
-                            _ = TransformDecryptBuffer(
+                            ctx.BytesRead += read;
+
+                            _ = this.ProcessBufferChunk(
+                                ctx,
                                 oneShot.AsSpan(0, read),
-                                ref state,
+                                ref readerState,
                                 isFinalBlock: true,
-                                arrayPoolManager,
-                                writer,
-                                decompressor,
-                                properties,
-                                ref propertiesDecrypted,
-                                pathsDecrypted,
-                                ref compressedPathsDecompressed,
-                                encryptionKey,
-                                ref decryptPropertyName,
-                                ref currentPropertyPath,
-                                ref skippingEi,
-                                ref skipEiFirstTokenPending,
-                                ref skipEiContainerDepth);
+                                ref skip);
+
                             isFinalBlock = true;
                         }
                         finally
                         {
-                            arrayPoolManager.Return(oneShot);
+                            pool.Return(oneShot);
                         }
                     }
                 }
                 else
                 {
-                    // Non-seekable small payload probe: optimistically read up to 2KB once; if stream ends, we finish in a single pass.
-                    const int ProbeSize = 2048;
-                    buffer = arrayPoolManager.Rent(Bucket(ProbeSize)); // bucketed
-                    int read = await inputStream.ReadAsync(buffer.AsMemory(0, ProbeSize), cancellationToken);
-                    bytesRead += read;
+                    // Non-seekable probe: read up to ProbeSize once
+                    buffer = pool.Rent(Bucket(ProbeSize));
+                    int read = await inputStream.ReadAsync(buffer.AsMemory(0, ProbeSize), cancellationToken)
+                        .ConfigureAwait(false);
+                    ctx.BytesRead += read;
+
                     if (read > 0)
                     {
-                        bool finalProbe = read < ProbeSize; // if fewer bytes than requested, very likely end-of-stream
-                        long bytesConsumed = TransformDecryptBuffer(
+                        bool finalProbe = read < ProbeSize;
+                        long consumed = this.ProcessBufferChunk(
+                            ctx,
                             buffer.AsSpan(0, read),
-                            ref state,
-                            finalProbe,
-                            arrayPoolManager,
-                            writer,
-                            decompressor,
-                            properties,
-                            ref propertiesDecrypted,
-                            pathsDecrypted,
-                            ref compressedPathsDecompressed,
-                            encryptionKey,
-                            ref decryptPropertyName,
-                            ref currentPropertyPath,
-                            ref skippingEi,
-                            ref skipEiFirstTokenPending,
-                            ref skipEiContainerDepth);
-                        leftOver = read - (int)bytesConsumed;
+                            ref readerState,
+                            isFinalBlock: finalProbe,
+                            ref skip);
+
+                        leftOver = read - (int)consumed;
                         if (finalProbe && leftOver == 0)
                         {
-                            isFinalBlock = true; // done; skip streaming loop
+                            isFinalBlock = true;
                         }
                     }
                     else
                     {
-                        isFinalBlock = true; // empty stream
+                        isFinalBlock = true;
                     }
                 }
 
+                // Streaming loop
                 while (!isFinalBlock)
                 {
-                    buffer ??= arrayPoolManager.Rent(this.initialBufferSize);
+                    buffer ??= pool.Rent(this.initialBufferSize);
 
-                    int dataLength = await inputStream.ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), cancellationToken);
-                    int dataSize = dataLength + leftOver;
-                    bytesRead += dataLength;
+                    int read = await inputStream
+                        .ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), cancellationToken)
+                        .ConfigureAwait(false);
+                    int dataSize = read + leftOver;
+                    ctx.BytesRead += read;
                     isFinalBlock = dataSize == 0;
-                    long bytesConsumed = 0;
 
-                    // processing itself here
-                    bytesConsumed = TransformDecryptBuffer(
+                    long consumed = this.ProcessBufferChunk(
+                        ctx,
                         buffer.AsSpan(0, dataSize),
-                        ref state,
+                        ref readerState,
                         isFinalBlock,
-                        arrayPoolManager,
-                        writer,
-                        decompressor,
-                        properties,
-                        ref propertiesDecrypted,
-                        pathsDecrypted,
-                        ref compressedPathsDecompressed,
-                        encryptionKey,
-                        ref decryptPropertyName,
-                        ref currentPropertyPath,
-                        ref skippingEi,
-                        ref skipEiFirstTokenPending,
-                        ref skipEiContainerDepth);
+                        ref skip);
 
-                    leftOver = dataSize - (int)bytesConsumed;
+                    leftOver = dataSize - (int)consumed;
 
                     if (dataSize > 0 && leftOver == dataSize)
                     {
+                        // Grow buffer to fit token spanning buffers
                         int target = Math.Max(buffer.Length * 2, leftOver + BufferGrowthMinIncrement);
                         int bucketedGrow = Bucket(target);
                         int capped = Math.Min(MaxBufferSizeBytes, bucketedGrow);
                         if (buffer.Length >= capped)
                         {
                             throw new InvalidOperationException(
-                                $"JSON token exceeds maximum supported size of {MaxBufferSizeBytes} bytes at path {currentPropertyPath ?? "<unknown>"}.");
+                                $"JSON token exceeds maximum supported size of {MaxBufferSizeBytes} bytes at path {ctx.CurrentPropertyPath ?? "<unknown>"}.");
                         }
 
-                        byte[] oldBuffer = buffer;
-                        byte[] newBuffer = arrayPoolManager.Rent(capped);
-                        oldBuffer.AsSpan(0, dataSize).CopyTo(newBuffer);
-                        buffer = newBuffer;
-                        arrayPoolManager.Return(oldBuffer);
+                        byte[] old = buffer;
+                        byte[] newBuf = pool.Rent(capped);
+                        old.AsSpan(0, dataSize).CopyTo(newBuf);
+                        buffer = newBuf;
+                        pool.Return(old);
                     }
                     else if (leftOver != 0)
                     {
@@ -923,52 +219,646 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     }
                 }
 
-                writer.Flush(); // pushes any Utf8JsonWriter buffered data into the IBufferWriter
-                chunkedWriter.FinalFlush(); // write any remaining chunk bytes to the target stream
-                long bytesWritten = writer.BytesCommitted; // committed bytes == total JSON length
+                writer.Flush();
+                chunkedWriter.FinalFlush();
+
+                long bytesWritten = writer.BytesCommitted;
                 if (outputStream.CanSeek)
                 {
                     outputStream.Position = 0;
                 }
 
-                // finalize diagnostics
-                diagnosticsContext?.SetMetric("decrypt.bytesRead", bytesRead);
-                diagnosticsContext?.SetMetric("decrypt.bytesWritten", bytesWritten);
-                diagnosticsContext?.SetMetric("decrypt.propertiesDecrypted", propertiesDecrypted);
-                diagnosticsContext?.SetMetric("decrypt.compressedPathsDecompressed", compressedPathsDecompressed);
-                diagnosticsContext?.SetMetric("decrypt.writerFlushes", chunkedWriter.Flushes);
-                long elapsedTicks = System.Diagnostics.Stopwatch.GetTimestamp() - startTimestamp;
-                long elapsedMs = (long)(elapsedTicks * 1000.0 / System.Diagnostics.Stopwatch.Frequency);
-                diagnosticsContext?.SetMetric("decrypt.elapsedMs", elapsedMs);
+                // Metrics
+                ctx.Diagnostics?.SetMetric("decrypt.bytesRead", ctx.BytesRead);
+                ctx.Diagnostics?.SetMetric("decrypt.bytesWritten", bytesWritten);
+                ctx.Diagnostics?.SetMetric("decrypt.propertiesDecrypted", ctx.PropertiesDecrypted);
+                ctx.Diagnostics?.SetMetric("decrypt.compressedPathsDecompressed", ctx.CompressedPathsDecompressed);
+                ctx.Diagnostics?.SetMetric("decrypt.writerFlushes", chunkedWriter.Flushes);
+                long elapsedTicks = Stopwatch.GetTimestamp() - ctx.StartTimestamp;
+                long elapsedMs = (long)(elapsedTicks * 1000.0 / Stopwatch.Frequency);
+                ctx.Diagnostics?.SetMetric("decrypt.elapsedMs", elapsedMs);
 
-                // Preserve legacy behavior: if nothing was decrypted AND no encrypted paths were requested, return null context.
-                if (pathsDecrypted.Count == 0 && expectedDecrypted == 0)
+                // Preserve legacy behavior: return null context if nothing decrypted and no encrypted paths requested
+                if (ctx.PathsDecrypted.Count == 0 && ctx.ExpectedDecrypted == 0)
                 {
                     return null;
                 }
 
-                return EncryptionProcessor.CreateDecryptionContext(pathsDecrypted, properties.DataEncryptionKeyId);
+                return EncryptionProcessor.CreateDecryptionContext(ctx.PathsDecrypted, properties.DataEncryptionKeyId);
             }
             finally
             {
                 if (buffer != null)
                 {
-                    arrayPoolManager.Return(buffer);
+                    pool.Return(buffer);
                 }
 
-                if (tmpScratch != null)
+                // return pooled scratch arrays
+                ctx.Dispose();
+            }
+        }
+
+        private static void ValidateEncryptionProperties(EncryptionProperties properties)
+        {
+            if (properties.EncryptionFormatVersion != EncryptionFormatVersion.Mde &&
+                properties.EncryptionFormatVersion != EncryptionFormatVersion.MdeWithCompression)
+            {
+                throw new NotSupportedException(
+                    $"Unknown encryption format version: {properties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
+            }
+
+            bool containsCompressed = properties.CompressedEncryptedPaths?.Count > 0;
+            if (containsCompressed && properties.CompressionAlgorithm != CompressionOptions.CompressionAlgorithm.Brotli)
+            {
+                throw new NotSupportedException($"Unknown compression algorithm {properties.CompressionAlgorithm}");
+            }
+        }
+
+        private long ProcessBufferChunk(
+            ProcessingContext ctx,
+            ReadOnlySpan<byte> bufferSpan,
+            ref JsonReaderState readerState,
+            bool isFinalBlock,
+            ref SkipState skip)
+        {
+            Utf8JsonReader reader = new Utf8JsonReader(bufferSpan, isFinalBlock, readerState);
+
+            while (reader.Read())
+            {
+                // Handle ongoing skip of EncryptedInfo value across buffers
+                if (skip.Active)
                 {
-                    arrayPoolManager.Return(tmpScratch);
+                    if (skip.FirstValueTokenPending)
+                    {
+                        skip.FirstValueTokenPending = false;
+                        if (reader.TokenType == JsonTokenType.StartObject ||
+                            reader.TokenType == JsonTokenType.StartArray)
+                        {
+                            skip.Depth = 1;
+                        }
+                        else
+                        {
+                            skip.Active = false;
+                        }
+
+                        continue;
+                    }
+
+                    if (reader.TokenType == JsonTokenType.StartObject || reader.TokenType == JsonTokenType.StartArray)
+                    {
+                        skip.Depth++;
+                        continue;
+                    }
+
+                    if (reader.TokenType == JsonTokenType.EndObject || reader.TokenType == JsonTokenType.EndArray)
+                    {
+                        skip.Depth--;
+                        if (skip.Depth == 0)
+                        {
+                            skip.Active = false;
+                        }
+                    }
+
+                    continue;
                 }
 
-                if (cipherScratch != null)
+                switch (reader.TokenType)
                 {
-                    arrayPoolManager.Return(cipherScratch);
+                    case JsonTokenType.PropertyName:
+                        {
+                            // Special-case skip for encrypted info property
+                            if (reader.ValueTextEquals(Constants.EncryptedInfo))
+                            {
+                                ctx.CurrentPropertyPath = EncryptedInfoPropertyPath;
+
+                                if (!reader.TrySkip())
+                                {
+                                    skip.Active = true;
+                                    skip.FirstValueTokenPending = true;
+                                    skip.Depth = 0;
+                                }
+
+                                // Skip writing property name and its value entirely
+                                continue;
+                            }
+
+                            // Only top-level properties are eligible for encryption by path
+                            if (reader.CurrentDepth == 1)
+                            {
+                                string matchedFullPath = null;
+                                int propLen = reader.HasValueSequence
+                                    ? (int)reader.ValueSequence.Length
+                                    : reader.ValueSpan.Length;
+                                if (ctx.PathMatcher.TryMatch(ref reader, propLen, out string path))
+                                {
+                                    matchedFullPath = path;
+                                }
+
+                                if (matchedFullPath != null)
+                                {
+                                    ctx.DecryptPropertyName = matchedFullPath;
+                                    ctx.CurrentPropertyPath = matchedFullPath;
+                                }
+                                else
+                                {
+                                    ctx.DecryptPropertyName = null;
+                                    ctx.CurrentPropertyPath = null;
+                                }
+                            }
+                            else
+                            {
+                                ctx.DecryptPropertyName = null;
+                                ctx.CurrentPropertyPath = null;
+                            }
+
+                            // Write property name with minimal allocation
+                            if (!reader.HasValueSequence)
+                            {
+                                ctx.Writer.WritePropertyName(reader.ValueSpan);
+                            }
+                            else
+                            {
+                                int estimatedLength = (int)reader.ValueSequence.Length;
+                                Span<byte> nameSpan = CopyStringToSpan(ref reader, ref ctx.TempScratch, ctx.Pool, estimatedLength);
+                                ctx.Writer.WritePropertyName(nameSpan);
+                            }
+
+                            break;
+                        }
+
+                    case JsonTokenType.String:
+                        {
+                            if (ctx.DecryptPropertyName == null)
+                            {
+                                // Pass-through string
+                                try
+                                {
+                                    if (!reader.HasValueSequence && !reader.ValueIsEscaped)
+                                    {
+                                        ctx.Writer.WriteStringValue(reader.ValueSpan);
+                                    }
+                                    else
+                                    {
+                                        int estimatedLength = reader.HasValueSequence
+                                            ? (int)reader.ValueSequence.Length
+                                            : reader.ValueSpan.Length;
+                                        Span<byte> strSpan = CopyStringToSpan(ref reader, ref ctx.TempScratch, ctx.Pool, estimatedLength);
+                                        ctx.Writer.WriteStringValue(strSpan);
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    throw new InvalidOperationException(
+                                        $"Invalid UTF-8 while writing string at path {ctx.CurrentPropertyPath ?? "<unknown>"}",
+                                        ex);
+                                }
+                            }
+                            else
+                            {
+                                this.DecryptAndWriteEncryptedValue(ctx, ref reader, ctx.DecryptPropertyName);
+                                ctx.PathsDecrypted.Add(ctx.DecryptPropertyName);
+                                ctx.PropertiesDecrypted++;
+                            }
+
+                            ctx.DecryptPropertyName = null;
+                            break;
+                        }
+
+                    case JsonTokenType.Number:
+                        {
+                            ctx.DecryptPropertyName = null;
+
+                            if (!reader.HasValueSequence)
+                            {
+                                ctx.Writer.WriteRawValue(reader.ValueSpan, skipInputValidation: true);
+                            }
+                            else
+                            {
+                                int len = (int)reader.ValueSequence.Length;
+                                if (len <= StackallocStringThreshold)
+                                {
+                                    Span<byte> local = stackalloc byte[StackallocStringThreshold];
+                                    reader.ValueSequence.CopyTo(local);
+                                    ctx.Writer.WriteRawValue(local[..len], true);
+                                }
+                                else
+                                {
+                                    EnsureCapacity(ref ctx.TempScratch, Math.Max(len, 32), ctx.Pool);
+                                    reader.ValueSequence.CopyTo(ctx.TempScratch);
+                                    ctx.Writer.WriteRawValue(ctx.TempScratch.AsSpan(0, len), true);
+                                }
+                            }
+
+                            break;
+                        }
+
+                    case JsonTokenType.True:
+                        ctx.DecryptPropertyName = null;
+                        ctx.Writer.WriteBooleanValue(true);
+                        break;
+
+                    case JsonTokenType.False:
+                        ctx.DecryptPropertyName = null;
+                        ctx.Writer.WriteBooleanValue(false);
+                        break;
+
+                    case JsonTokenType.Null:
+                        ctx.DecryptPropertyName = null;
+                        ctx.Writer.WriteNullValue();
+                        break;
+
+                    case JsonTokenType.StartObject:
+                        ctx.DecryptPropertyName = null;
+                        ctx.Writer.WriteStartObject();
+                        break;
+
+                    case JsonTokenType.EndObject:
+                        ctx.DecryptPropertyName = null;
+                        ctx.Writer.WriteEndObject();
+                        break;
+
+                    case JsonTokenType.StartArray:
+                        ctx.DecryptPropertyName = null;
+                        ctx.Writer.WriteStartArray();
+                        break;
+
+                    case JsonTokenType.EndArray:
+                        ctx.DecryptPropertyName = null;
+                        ctx.Writer.WriteEndArray();
+                        break;
+                }
+            }
+
+            readerState = reader.CurrentState;
+            return reader.BytesConsumed;
+        }
+
+        private void DecryptAndWriteEncryptedValue(
+            ProcessingContext ctx,
+            ref Utf8JsonReader reader,
+            string pathLabel)
+        {
+            // Decode base64 to cipher buffer
+            int srcLen = reader.HasValueSequence ? (int)reader.ValueSequence.Length : reader.ValueSpan.Length;
+            int maxDecoded = Base64.GetMaxDecodedFromUtf8Length(srcLen);
+            EnsureCapacity(ref ctx.CipherScratch, maxDecoded, ctx.Pool);
+
+            Span<byte> cipher = ctx.CipherScratch.AsSpan();
+            int cipherTextLength;
+
+            if (!reader.HasValueSequence && !reader.ValueIsEscaped)
+            {
+                OperationStatus status =
+                    Base64.DecodeFromUtf8(reader.ValueSpan, cipher, out int consumed, out int written);
+                if (status != OperationStatus.Done || consumed != srcLen)
+                {
+                    throw new InvalidOperationException(
+                        $"Base64 decoding failed for encrypted field at path {pathLabel}: {status}.");
                 }
 
-                if (plainScratch != null)
+                cipherTextLength = written;
+            }
+            else
+            {
+                if (srcLen <= Base64StackThreshold)
                 {
-                    arrayPoolManager.Return(plainScratch);
+                    Span<byte> local = stackalloc byte[srcLen];
+                    int copied = reader.CopyString(local);
+                    OperationStatus status =
+                        Base64.DecodeFromUtf8(local[..copied], cipher, out int consumed, out int written);
+                    if (status != OperationStatus.Done || consumed != copied)
+                    {
+                        throw new InvalidOperationException(
+                            $"Base64 decoding failed for encrypted field at path {pathLabel}: {status}.");
+                    }
+
+                    cipherTextLength = written;
+                }
+                else
+                {
+                    EnsureCapacity(ref ctx.TempScratch, Math.Max(srcLen, 64), ctx.Pool);
+                    int copied = reader.CopyString(ctx.TempScratch);
+                    OperationStatus status = Base64.DecodeFromUtf8(
+                        ctx.TempScratch.AsSpan(0, copied), cipher, out int consumed, out int written);
+                    if (status != OperationStatus.Done || consumed != copied)
+                    {
+                        throw new InvalidOperationException(
+                            $"Base64 decoding failed for encrypted field at path {pathLabel}: {status}.");
+                    }
+
+                    cipherTextLength = written;
+                }
+            }
+
+            // First byte (index 0) is type marker, ciphertext starts at offset 1
+            TypeMarker marker = (TypeMarker)cipher[0];
+
+            byte[] bytes;
+            int processedBytes;
+
+            if (ctx.IsBaseDecryptor)
+            {
+                int needed = ctx.DataKey.GetDecryptByteCount(cipherTextLength - 1);
+                EnsureCapacity(ref ctx.PlainScratch, needed, ctx.Pool);
+
+                int decryptedLength = ctx.DataKey.DecryptData(
+                    ctx.CipherScratch,
+                    cipherTextOffset: 1,
+                    cipherTextLength: cipherTextLength - 1,
+                    ctx.PlainScratch,
+                    outputOffset: 0);
+
+                if (decryptedLength < 0)
+                {
+                    throw new InvalidOperationException(
+                        $"{nameof(DataEncryptionKey)} returned invalid plainText from {nameof(DataEncryptionKey.DecryptData)}.");
+                }
+
+                bytes = ctx.PlainScratch;
+                processedBytes = decryptedLength;
+
+                TryDecompressIfConfigured(ctx, pathLabel, ref bytes, ref processedBytes);
+                ReadOnlySpan<byte> span = bytes.AsSpan(0, processedBytes);
+                WriteDecryptedPayload(marker, span, ctx.Writer, ctx.Diagnostics, pathLabel);
+
+                if (!ReferenceEquals(bytes, ctx.PlainScratch))
+                {
+                    ctx.Pool.Return(bytes);
+                }
+            }
+            else
+            {
+                using PooledByteOwner owner =
+                    ctx.Decryptor.DecryptOwned(ctx.DataKey, ctx.CipherScratch, cipherTextLength, ctx.Pool);
+                bytes = owner.Array;
+                processedBytes = owner.Length;
+
+                TryDecompressIfConfigured(ctx, pathLabel, ref bytes, ref processedBytes);
+                ReadOnlySpan<byte> span = bytes.AsSpan(0, processedBytes);
+                WriteDecryptedPayload(marker, span, ctx.Writer, ctx.Diagnostics, pathLabel);
+
+                if (!ReferenceEquals(bytes, owner.Array))
+                {
+                    ctx.Pool.Return(bytes);
+                }
+            }
+        }
+
+        private static void WriteDecryptedPayload(
+            TypeMarker marker,
+            ReadOnlySpan<byte> payload,
+            Utf8JsonWriter writer,
+            CosmosDiagnosticsContext diagnosticsContext,
+            string pathLabel)
+        {
+            switch (marker)
+            {
+                case TypeMarker.String:
+                    try
+                    {
+                        writer.WriteStringValue(payload);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new InvalidOperationException(
+                            $"Invalid UTF-8 while writing decrypted string at path {pathLabel}", ex);
+                    }
+
+                    break;
+
+                case TypeMarker.Long:
+                    try
+                    {
+                        writer.WriteNumberValue(SqlLongSerializer.Deserialize(payload));
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new InvalidOperationException(
+                            $"Failed to deserialize decrypted payload at path {pathLabel} as Long.", ex);
+                    }
+
+                    break;
+
+                case TypeMarker.Double:
+                    try
+                    {
+                        writer.WriteNumberValue(SqlDoubleSerializer.Deserialize(payload));
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new InvalidOperationException(
+                            $"Failed to deserialize decrypted payload at path {pathLabel} as Double.", ex);
+                    }
+
+                    break;
+
+                case TypeMarker.Boolean:
+                    writer.WriteBooleanValue(SqlBoolSerializer.Deserialize(payload));
+                    break;
+
+                case TypeMarker.Null:
+                    writer.WriteNullValue();
+                    break;
+
+                case TypeMarker.Array:
+                case TypeMarker.Object:
+                    writer.WriteRawValue(payload, skipInputValidation: true);
+                    break;
+
+                default:
+                    using (diagnosticsContext?.CreateScope(
+                               $"DecryptUnknownTypeMarker Path={pathLabel} Marker={(byte)marker}"))
+                    {
+                        writer.WriteRawValue(payload, skipInputValidation: true);
+                    }
+
+                    break;
+            }
+        }
+
+        private static void TryDecompressIfConfigured(
+            ProcessingContext ctx,
+            string pathLabel,
+            ref byte[] bytes,
+            ref int length)
+        {
+            if (ctx.Decompressor == null || pathLabel == null || ctx.Properties.CompressedEncryptedPaths == null)
+            {
+                return;
+            }
+
+            if (!ctx.Properties.CompressedEncryptedPaths.TryGetValue(pathLabel, out int decompressedSize))
+            {
+                return;
+            }
+
+            const int maxDecompressedSizeBytes = MaxBufferSizeBytes;
+            if (decompressedSize is <= 0 or > maxDecompressedSizeBytes)
+            {
+                throw new InvalidOperationException(
+                    $"Invalid decompressed size {decompressedSize} for path {pathLabel}. Max allowed is {maxDecompressedSizeBytes}.");
+            }
+
+            byte[] decompressed = ctx.Pool.Rent(decompressedSize);
+            int newLen = ctx.Decompressor.Decompress(bytes, length, decompressed);
+            bytes = decompressed;
+            length = newLen;
+            ctx.CompressedPathsDecompressed++;
+        }
+
+        private static Span<byte> CopyStringToSpan(
+            ref Utf8JsonReader reader,
+            ref byte[] scratch,
+            ArrayPoolManager pool,
+            int estimatedLength)
+        {
+            EnsureCapacity(ref scratch, Math.Max(estimatedLength, 64), pool);
+            int len = reader.CopyString(scratch);
+            return scratch.AsSpan(0, len);
+        }
+
+        private static void EnsureCapacity(ref byte[] scratch, int needed, ArrayPoolManager pool)
+        {
+            if (scratch != null && scratch.Length >= needed)
+            {
+                return;
+            }
+
+            int bucketed = Bucket(needed);
+            byte[] newBuf = pool.Rent(bucketed);
+            if (scratch != null)
+            {
+                pool.Return(scratch);
+            }
+
+            scratch = newBuf;
+        }
+
+        private static int Bucket(int value)
+        {
+            const int minBucket = 64;
+            if (value <= minBucket)
+            {
+                return minBucket;
+            }
+
+            if (value >= MaxBufferSizeBytes)
+            {
+                return MaxBufferSizeBytes;
+            }
+
+            // next power of two
+            uint v = (uint)(value - 1);
+            v |= v >> 1;
+            v |= v >> 2;
+            v |= v >> 4;
+            v |= v >> 8;
+            v |= v >> 16;
+            int pow2 = (int)(v + 1);
+            return pow2 > MaxBufferSizeBytes ? MaxBufferSizeBytes : pow2;
+        }
+
+        private struct SkipState
+        {
+            public bool Active;
+            public bool FirstValueTokenPending;
+            public int Depth;
+        }
+
+        private sealed class ProcessingContext : IDisposable
+        {
+            public ProcessingContext(
+                ArrayPoolManager pool,
+                Utf8JsonWriter writer,
+                EncryptionProperties properties,
+                CosmosDiagnosticsContext diagnostics,
+                MdeEncryptor decryptor,
+                DataEncryptionKey dataKey,
+                int expectedDecrypted,
+                List<string> pathsDecrypted)
+            {
+                this.Pool = pool;
+                this.Writer = writer;
+                this.Properties = properties;
+                this.Diagnostics = diagnostics;
+                this.Decryptor = decryptor;
+                this.DataKey = dataKey;
+                this.ExpectedDecrypted = expectedDecrypted;
+                this.PathsDecrypted = pathsDecrypted;
+
+                IEnumerable<string> encryptedPaths = properties.EncryptedPaths ?? Array.Empty<string>();
+                this.PathMatcher = CandidatePaths.Build(encryptedPaths);
+
+                bool containsCompressed = properties.CompressedEncryptedPaths?.Count > 0;
+                this.Decompressor = containsCompressed ? new BrotliCompressor() : null;
+
+                this.IsBaseDecryptor = decryptor.GetType() == typeof(MdeEncryptor);
+            }
+
+            public ArrayPoolManager Pool { get; }
+
+            public Utf8JsonWriter Writer { get; }
+
+            public EncryptionProperties Properties { get; }
+
+            public CosmosDiagnosticsContext Diagnostics { get; }
+
+            public MdeEncryptor Decryptor { get; }
+
+            public DataEncryptionKey DataKey { get; }
+
+            public CandidatePaths PathMatcher { get; }
+
+            public BrotliCompressor Decompressor { get; }
+
+            public bool IsBaseDecryptor { get; }
+
+            // Scratch buffers (pooled) with ref-return properties to preserve by-ref passing semantics
+            // while complying with SA1401 (fields should be private). Ref properties allow calls like
+            // EnsureCapacity(ref ctx.TempScratch, ...) without exposing mutable fields publicly.
+            private byte[] tempScratch;          // transient string / number copies
+            private byte[] cipherScratch;        // decoded ciphertext (Base64 -> bytes)
+            private byte[] plainScratch;         // decrypted plaintext prior to write
+
+            public ref byte[] TempScratch => ref this.tempScratch;
+
+            public ref byte[] CipherScratch => ref this.cipherScratch;
+
+            public ref byte[] PlainScratch => ref this.plainScratch;
+
+            // Streaming/decryption state
+            public string CurrentPropertyPath { get; set; } // current full path (only for matched properties)
+
+            public string DecryptPropertyName { get; set; } // non-null when next value token must be decrypted
+
+            // Metrics (frequently updated)
+            public long StartTimestamp { get; set; }
+
+            public long BytesRead { get; set; }
+
+            public long PropertiesDecrypted { get; set; }
+
+            public long CompressedPathsDecompressed { get; set; }
+
+            public int ExpectedDecrypted { get; set; } // expected properties decrypted (capacity hint)
+
+            public List<string> PathsDecrypted { get; set; } // collects decrypted property paths
+
+            public void Dispose()
+            {
+                if (this.tempScratch != null)
+                {
+                    this.Pool.Return(this.tempScratch);
+                }
+
+                if (this.cipherScratch != null)
+                {
+                    this.Pool.Return(this.cipherScratch);
+                }
+
+                if (this.plainScratch != null)
+                {
+                    this.Pool.Return(this.plainScratch);
                 }
             }
         }

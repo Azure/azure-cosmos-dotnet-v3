@@ -8,20 +8,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
     using System;
     using System.Buffers;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Text;
     using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
 
+    // Streaming JSON encryptor:
+    // - Parses with Utf8JsonReader and writes with Utf8JsonWriter (no DOM).
+    // - Encrypts values of top-level properties whose paths match configured candidates.
+    // - For object/array values under encrypted properties, buffers their JSON, then encrypts the entire payload.
+    // - Emits _ei metadata just before closing the root object.
     internal partial class StreamProcessor
     {
         private static readonly byte[] EncryptionPropertiesNameBytes = Encoding.UTF8.GetBytes(Constants.EncryptedInfo);
 
-        // _ei is emitted manually to avoid allocations from JsonSerializer and DTOs.
-
-        // Helper that writes the encryption metadata object (_ei) using the provided values
-        // Emits all required fields and omits compressedEncryptedPaths when null.
         internal static void WriteEncryptionInfo(
             Utf8JsonWriter writer,
             int formatVersion,
@@ -32,16 +34,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             IReadOnlyDictionary<string, int> compressedEncryptedPaths,
             byte[] encryptedData)
         {
-            // Property name: _ei
             writer.WritePropertyName(EncryptionPropertiesNameBytes);
             writer.WriteStartObject();
 
-            // version, algorithm, key id
             writer.WriteNumber(Constants.EncryptionFormatVersion, formatVersion);
             writer.WriteString(Constants.EncryptionAlgorithm, encryptionAlgorithm);
             writer.WriteString(Constants.EncryptionDekId, dataEncryptionKeyId);
 
-            // encrypted data: emit null when not present to match Newtonsoft-based contract in tests
             if (encryptedData == null)
             {
                 writer.WritePropertyName(Constants.EncryptedData);
@@ -52,7 +51,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 writer.WriteBase64String(Constants.EncryptedData, encryptedData);
             }
 
-            // encryptedPaths
             writer.WritePropertyName(Constants.EncryptedPaths);
             writer.WriteStartArray();
             if (encryptedPaths != null)
@@ -65,10 +63,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             writer.WriteEndArray();
 
-            // compression algorithm (enum written as number like JsonSerializer default)
             writer.WriteNumber(Constants.CompressionAlgorithm, (int)compressionAlgorithm);
 
-            // compressedEncryptedPaths (optional)
             if (compressedEncryptedPaths != null)
             {
                 writer.WritePropertyName(Constants.CompressedEncryptedPaths);
@@ -85,109 +81,91 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         }
 
         internal async Task EncryptStreamAsync(
-                Stream inputStream,
-                Stream outputStream,
-                Encryptor encryptor,
-                EncryptionOptions encryptionOptions,
-                CosmosDiagnosticsContext diagnosticsContext,
-                CancellationToken cancellationToken)
+            Stream inputStream,
+            Stream outputStream,
+            Encryptor encryptor,
+            EncryptionOptions encryptionOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
         {
+            ArgumentNullException.ThrowIfNull(inputStream);
+            ArgumentNullException.ThrowIfNull(outputStream);
+            ArgumentNullException.ThrowIfNull(encryptor);
+            ArgumentNullException.ThrowIfNull(encryptionOptions);
+            if (!inputStream.CanRead)
+            {
+                throw new ArgumentException("Input stream must be readable.", nameof(inputStream));
+            }
+
+            if (!outputStream.CanWrite)
+            {
+                throw new ArgumentException("Output stream must be writable.", nameof(outputStream));
+            }
+
             long bytesRead = 0;
             long bytesWritten = 0;
-            long propertiesEncrypted = 0;
-            long compressedPathsCompressed = 0;
-            long startTimestamp = System.Diagnostics.Stopwatch.GetTimestamp();
+            long startTimestamp = Stopwatch.GetTimestamp();
 
-            // Pre-size pathsEncrypted if we know the candidate count
             int pathsCapacity = 0;
             if (encryptionOptions.PathsToEncrypt is ICollection<string> coll)
             {
                 pathsCapacity = coll.Count;
             }
 
-            List<string> pathsEncrypted = pathsCapacity > 0 ? new List<string>(pathsCapacity) : new List<string>();
-
             using ArrayPoolManager arrayPoolManager = new ArrayPoolManager();
 
-            DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionOptions.DataEncryptionKeyId, encryptionOptions.EncryptionAlgorithm, cancellationToken);
+            DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(
+                encryptionOptions.DataEncryptionKeyId,
+                encryptionOptions.EncryptionAlgorithm,
+                cancellationToken).ConfigureAwait(false);
 
-            bool compressionEnabled = encryptionOptions.CompressionOptions.Algorithm != CompressionOptions.CompressionAlgorithm.None;
+            BrotliCompressor compressor =
+                encryptionOptions.CompressionOptions.Algorithm == CompressionOptions.CompressionAlgorithm.Brotli
+                    ? new BrotliCompressor(encryptionOptions.CompressionOptions.CompressionLevel)
+                    : null;
 
-            BrotliCompressor compressor = encryptionOptions.CompressionOptions.Algorithm == CompressionOptions.CompressionAlgorithm.Brotli
-                ? new BrotliCompressor(encryptionOptions.CompressionOptions.CompressionLevel) : null;
-
-            // Pre-compute candidate encrypted paths for fast matching at property names.
             CandidatePaths candidatePaths = CandidatePaths.Build(encryptionOptions.PathsToEncrypt);
+            int formatVersion = encryptionOptions.CompressionOptions.Algorithm != CompressionOptions.CompressionAlgorithm.None ? 4 : 3;
 
-            Dictionary<string, int> compressedPaths = null; // allocate lazily on first compressed payload
+            using Utf8JsonWriter writer = new Utf8JsonWriter(outputStream, StreamProcessor.JsonWriterOptions);
 
-            // Write directly to the provided output stream; we'll compute bytes written via Utf8JsonWriter.BytesCommitted
-            Utf8JsonWriter writer = new Utf8JsonWriter(outputStream, StreamProcessor.JsonWriterOptions);
-
+            // Read buffer
             byte[] buffer = arrayPoolManager.Rent(this.initialBufferSize);
-
-            JsonReaderState state = new JsonReaderState(StreamProcessor.JsonReaderOptions);
-
             int leftOver = 0;
+            JsonReaderState readerState = new JsonReaderState(StreamProcessor.JsonReaderOptions);
 
-            bool isFinalBlock = false;
-
-            Utf8JsonWriter encryptionPayloadWriter = null;
-            string encryptPropertyName = null;
-
-            // Track the path of the currently-active encrypted container (object/array)
-            // This guards against any accidental mutation of encryptPropertyName while the container is open
-            string activeEncryptedPath = null;
-
-            // Track nesting depth within the buffered encrypted container to know exactly when it closes
-            // 0 means no active encrypted container. When we start buffering a container we set this to 1,
-            // and increment/decrement on nested Start*/End* inside it. When it returns to 0, we flush.
-            int encryptedContainerDepth = 0;
-
-            // Track whether the JSON root is an object so we can append _ei correctly
-            bool rootIsObject = false;
-            RentArrayBufferWriter bufferWriter = null;
-
-            // Reusable pooled buffer and writer for encrypted payload containers
-            RentArrayBufferWriter reusablePayloadBuffer = new RentArrayBufferWriter();
-            Utf8JsonWriter reusablePayloadWriter = new Utf8JsonWriter(reusablePayloadBuffer);
-
-            // Helper moved to class scope below
-
-            // Reusable pooled scratch buffer used for multi-segment strings/numbers and property names
-            byte[] tmpScratch = null;
-
-            // Local helper to ensure pooled buffer capacity with minimal churn
-            static void EnsureCapacity(ref byte[] scratch, int needed, ArrayPoolManager pool)
-            {
-                if (scratch == null || scratch.Length < needed)
-                {
-                    byte[] newBuf = pool.Rent(needed);
-                    if (scratch != null)
-                    {
-                        pool.Return(scratch);
-                    }
-
-                    scratch = newBuf;
-                }
-            }
+            EncryptionPipeline pipeline = new EncryptionPipeline(
+                writer,
+                encryptionKey,
+                encryptionOptions,
+                compressor,
+                candidatePaths,
+                formatVersion,
+                pathsCapacity,
+                arrayPoolManager,
+                readerState);
 
             try
             {
-                while (!isFinalBlock)
+                while (true)
                 {
-                    int dataLength = await inputStream.ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), cancellationToken);
-                    int dataSize = dataLength + leftOver;
-                    bytesRead += dataLength;
-                    isFinalBlock = dataSize == 0;
-                    long bytesConsumed = 0;
+                    cancellationToken.ThrowIfCancellationRequested();
 
-                    bytesConsumed = TransformEncryptBuffer(buffer.AsSpan(0, dataSize));
+                    int read = await inputStream.ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), cancellationToken).ConfigureAwait(false);
+                    int dataSize = read + leftOver;
+                    bytesRead += read;
 
-                    leftOver = dataSize - (int)bytesConsumed;
+                    bool isFinalBlock = read == 0;
+                    long consumed = pipeline.ProcessBufferChunk(buffer.AsSpan(0, dataSize), isFinalBlock);
 
-                    // we need to scale out buffer
-                    // Guard against end-of-stream: when dataSize == 0, don't resize unnecessarily
+                    leftOver = dataSize - (int)consumed;
+
+                    if (isFinalBlock)
+                    {
+                        break;
+                    }
+
+                    // If no progress (token larger than buffer), grow buffer with cap.
                     if (dataSize > 0 && leftOver == dataSize)
                     {
                         int target = Math.Max(buffer.Length * 2, leftOver + BufferGrowthMinIncrement);
@@ -209,9 +187,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     }
                 }
 
-                // Do not dispose inputStream here; caller owns streams for consistency with decryptor.
                 writer.Flush();
                 bytesWritten = writer.BytesCommitted;
+
                 if (outputStream.CanSeek)
                 {
                     outputStream.Position = 0;
@@ -219,246 +197,244 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             }
             finally
             {
-                // Return pooled buffers
                 arrayPoolManager.Return(buffer);
-                if (tmpScratch != null)
-                {
-                    arrayPoolManager.Return(tmpScratch);
-                }
-
-                // Dispose main writer
-#pragma warning disable VSTHRD103 // Call async methods when in an async method - Utf8JsonWriter does not implement IAsyncDisposable
-                writer?.Dispose();
-#pragma warning restore VSTHRD103 // Call async methods when in an async method
-
-                // Dispose reusable payload writer and its buffer
-#pragma warning disable VSTHRD103 // Call async methods when in an async method - Utf8JsonWriter/RentArrayBufferWriter do not implement IAsyncDisposable
-                reusablePayloadWriter?.Dispose();
-                reusablePayloadBuffer?.Dispose();
-#pragma warning restore VSTHRD103 // Call async methods when in an async method
+                pipeline.Dispose();
             }
 
-            // finalize diagnostics
             diagnosticsContext?.SetMetric("encrypt.bytesRead", bytesRead);
             diagnosticsContext?.SetMetric("encrypt.bytesWritten", bytesWritten);
-            diagnosticsContext?.SetMetric("encrypt.propertiesEncrypted", propertiesEncrypted);
-            diagnosticsContext?.SetMetric("encrypt.compressedPathsCompressed", compressedPathsCompressed);
-            long elapsedTicks = System.Diagnostics.Stopwatch.GetTimestamp() - startTimestamp;
-            long elapsedMs = (long)(elapsedTicks * 1000.0 / System.Diagnostics.Stopwatch.Frequency);
-            diagnosticsContext?.SetMetric("encrypt.elapsedMs", elapsedMs);
+            diagnosticsContext?.SetMetric("encrypt.propertiesEncrypted", pipeline.PropertiesEncrypted);
+            diagnosticsContext?.SetMetric("encrypt.compressedPathsCompressed", pipeline.CompressedPathsCompressed);
 
-            long TransformEncryptBuffer(ReadOnlySpan<byte> buffer)
+#if NET8_0_OR_GREATER
+            long elapsedMs = (long)Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds;
+#else
+            long elapsedTicks = Stopwatch.GetTimestamp() - startTimestamp;
+            long elapsedMs = (long)(elapsedTicks * 1000.0 / Stopwatch.Frequency);
+#endif
+            diagnosticsContext?.SetMetric("encrypt.elapsedMs", elapsedMs);
+        }
+
+        private sealed class EncryptionPipeline : IDisposable
+        {
+            private const int ScratchMinForStrings = 64;
+            private const int ScratchMinForNumbers = 32;
+
+            private readonly Utf8JsonWriter writer;
+            private readonly MdeEncryptor mdeEncryptor = new MdeEncryptor();
+            private readonly DataEncryptionKey encryptionKey;
+            private readonly string encryptionAlgorithmName;
+            private readonly string dataEncryptionKeyId;
+            private readonly CompressionOptions.CompressionAlgorithm compressionAlgorithm;
+            private readonly int minimalCompressedLength;
+            private readonly BrotliCompressor compressor;
+            private readonly CandidatePaths candidatePaths;
+            private readonly int formatVersion;
+            private readonly ArrayPoolManager pool;
+
+            private readonly List<string> pathsEncrypted;
+            private readonly RentArrayBufferWriter payloadBuffer;
+            private readonly Utf8JsonWriter payloadWriter;
+            private Dictionary<string, int> compressedPaths;
+
+            private byte[] scratch;
+            private JsonReaderState readerState;
+
+            // Buffering state
+            private Utf8JsonWriter currentPayloadWriter; // null when not buffering encrypted container
+            private string pendingEncryptedPath; // set when a top-level property is identified to encrypt
+            private string bufferingPath; // path of currently buffered container
+            private int bufferedDepth; // >0 when buffering an encrypted container
+
+            internal long PropertiesEncrypted { get; private set; }
+
+            internal long CompressedPathsCompressed { get; private set; }
+
+            internal EncryptionPipeline(
+                Utf8JsonWriter writer,
+                DataEncryptionKey encryptionKey,
+                EncryptionOptions options,
+                BrotliCompressor compressor,
+                CandidatePaths candidatePaths,
+                int formatVersion,
+                int pathsCapacity,
+                ArrayPoolManager pool,
+                JsonReaderState initialReaderState)
             {
-                Utf8JsonReader reader = new Utf8JsonReader(buffer, isFinalBlock, state);
+                this.writer = writer ?? throw new ArgumentNullException(nameof(writer));
+                this.encryptionKey = encryptionKey ?? throw new ArgumentNullException(nameof(encryptionKey));
+                this.encryptionAlgorithmName = options?.EncryptionAlgorithm ?? throw new ArgumentNullException(nameof(options));
+                this.dataEncryptionKeyId = options.DataEncryptionKeyId;
+                this.compressionAlgorithm = options.CompressionOptions.Algorithm;
+                this.minimalCompressedLength = options.CompressionOptions.MinimalCompressedLength;
+                this.compressor = compressor; // may be null
+                this.candidatePaths = candidatePaths ?? throw new ArgumentNullException(nameof(candidatePaths));
+                this.formatVersion = formatVersion;
+                this.pool = pool ?? throw new ArgumentNullException(nameof(pool));
+
+                this.pathsEncrypted = pathsCapacity > 0 ? new List<string>(pathsCapacity) : new List<string>();
+                this.payloadBuffer = new RentArrayBufferWriter();
+                this.payloadWriter = new Utf8JsonWriter(this.payloadBuffer);
+                this.readerState = initialReaderState;
+            }
+
+            public void Dispose()
+            {
+#pragma warning disable VSTHRD103
+                this.payloadWriter?.Dispose();
+                this.payloadBuffer?.Dispose();
+#pragma warning restore VSTHRD103
+
+                if (this.scratch != null)
+                {
+                    this.pool.Return(this.scratch);
+                    this.scratch = null;
+                }
+            }
+
+            internal long ProcessBufferChunk(ReadOnlySpan<byte> span, bool isFinalBlock)
+            {
+                Utf8JsonReader reader = new Utf8JsonReader(span, isFinalBlock, this.readerState);
 
                 while (reader.Read())
                 {
-                    Utf8JsonWriter currentWriter = encryptionPayloadWriter ?? writer;
+                    Utf8JsonWriter targetWriter = this.currentPayloadWriter ?? this.writer;
 
-                    JsonTokenType tokenType = reader.TokenType;
-
-                    switch (tokenType)
+                    switch (reader.TokenType)
                     {
-                        case JsonTokenType.None: // Unreachable after first Read()
-                            break;
                         case JsonTokenType.StartObject:
-                            // If this is the root start object, mark it so we can append _ei later
-                            if (reader.CurrentDepth == 0)
+                            if (this.currentPayloadWriter != null)
                             {
-                                rootIsObject = true;
+                                this.currentPayloadWriter.WriteStartObject();
+                                this.bufferedDepth++;
                             }
-
-                            if (encryptionPayloadWriter != null)
+                            else if (this.pendingEncryptedPath != null)
                             {
-                                // Inside a buffered encrypted container
-                                encryptionPayloadWriter.WriteStartObject();
-                                encryptedContainerDepth++;
-                            }
-                            else if (encryptPropertyName != null)
-                            {
-                                // Start buffering this object as the encrypted payload for the current property (reuse pooled buffer/writer)
-                                bufferWriter = reusablePayloadBuffer;
-                                encryptionPayloadWriter = reusablePayloadWriter;
-                                bufferWriter.Clear();
-                                encryptionPayloadWriter.Reset(bufferWriter);
-                                encryptionPayloadWriter.WriteStartObject();
-                                activeEncryptedPath = encryptPropertyName;
-                                encryptedContainerDepth = 1; // start of the buffered container
+                                this.BeginBufferingContainer(isArray: false, this.pendingEncryptedPath);
                             }
                             else
                             {
-                                // Regular object being written to the main writer
-                                writer.WriteStartObject();
+                                this.writer.WriteStartObject();
                             }
 
                             break;
+
                         case JsonTokenType.EndObject:
-                            if (encryptionPayloadWriter != null)
+                            if (this.currentPayloadWriter != null)
                             {
-                                // Closing an object inside the buffered encrypted container
-                                encryptionPayloadWriter.WriteEndObject();
-                                encryptedContainerDepth--;
-                                if (encryptedContainerDepth == 0)
+                                this.currentPayloadWriter.WriteEndObject();
+                                this.bufferedDepth--;
+                                if (this.bufferedDepth == 0)
                                 {
-                                    encryptionPayloadWriter.Flush();
-                                    (byte[] bytes, int length) = bufferWriter.WrittenBuffer;
-                                    string pathForPayload = activeEncryptedPath ?? encryptPropertyName;
-                                    (byte[] encBytes, int encLength) = TransformEncryptPayload(bytes, length, TypeMarker.Object, pathForPayload);
-                                    writer.WriteBase64StringValue(encBytes.AsSpan(0, encLength));
-                                    arrayPoolManager.Return(encBytes);
-                                    propertiesEncrypted++;
-
-                                    encryptPropertyName = null;
-                                    activeEncryptedPath = null;
-
-                                    // Keep reusable instances for next use
-                                    encryptionPayloadWriter = null;
-                                    bufferWriter.Clear();
-                                    bufferWriter = null;
+                                    this.EndBufferingContainer(TypeMarker.Object);
                                 }
                             }
                             else
                             {
-                                // Closing an object on the main writer path
-                                // If we're closing the root object (depth becomes 0 after this EndObject), append _ei before closing.
-                                if (rootIsObject && reader.CurrentDepth == 0)
+                                // Closing root object: append _ei metadata just before closing
+                                if (reader.CurrentDepth == 0)
                                 {
-                                    int formatVersion = encryptionOptions.CompressionOptions.Algorithm != CompressionOptions.CompressionAlgorithm.None ? 4 : 3;
-
-                                    WriteEncryptionInfo(
-                                        writer,
-                                        formatVersion,
-                                        encryptionOptions.EncryptionAlgorithm,
-                                        encryptionOptions.DataEncryptionKeyId,
-                                        pathsEncrypted,
-                                        encryptionOptions.CompressionOptions.Algorithm,
-                                        compressedPaths,
+                                    StreamProcessor.WriteEncryptionInfo(
+                                        this.writer,
+                                        this.formatVersion,
+                                        this.encryptionAlgorithmName,
+                                        this.dataEncryptionKeyId,
+                                        this.pathsEncrypted,
+                                        this.compressionAlgorithm,
+                                        this.compressedPaths,
                                         null);
                                 }
 
-                                writer.WriteEndObject();
+                                this.writer.WriteEndObject();
                             }
 
                             break;
+
                         case JsonTokenType.StartArray:
-                            if (encryptionPayloadWriter != null)
+                            if (this.currentPayloadWriter != null)
                             {
-                                // Inside a buffered encrypted container
-                                encryptionPayloadWriter.WriteStartArray();
-                                encryptedContainerDepth++;
+                                this.currentPayloadWriter.WriteStartArray();
+                                this.bufferedDepth++;
                             }
-                            else if (encryptPropertyName != null)
+                            else if (this.pendingEncryptedPath != null)
                             {
-                                // Start buffering this array as the encrypted payload for the current property (reuse pooled buffer/writer)
-                                bufferWriter = reusablePayloadBuffer;
-                                encryptionPayloadWriter = reusablePayloadWriter;
-                                bufferWriter.Clear();
-                                encryptionPayloadWriter.Reset(bufferWriter);
-                                encryptionPayloadWriter.WriteStartArray();
-                                activeEncryptedPath = encryptPropertyName;
-                                encryptedContainerDepth = 1; // start of the buffered array
+                                this.BeginBufferingContainer(isArray: true, this.pendingEncryptedPath);
                             }
                             else
                             {
-                                writer.WriteStartArray();
+                                this.writer.WriteStartArray();
                             }
 
                             break;
+
                         case JsonTokenType.EndArray:
-                            if (encryptionPayloadWriter != null)
+                            if (this.currentPayloadWriter != null)
                             {
-                                encryptionPayloadWriter.WriteEndArray();
-                                encryptedContainerDepth--;
-                                if (encryptedContainerDepth == 0)
+                                this.currentPayloadWriter.WriteEndArray();
+                                this.bufferedDepth--;
+                                if (this.bufferedDepth == 0)
                                 {
-                                    encryptionPayloadWriter.Flush();
-                                    (byte[] bytes, int length) = bufferWriter.WrittenBuffer;
-                                    string pathForPayload = activeEncryptedPath ?? encryptPropertyName;
-                                    (byte[] encBytes, int encLength) = TransformEncryptPayload(bytes, length, TypeMarker.Array, pathForPayload);
-                                    writer.WriteBase64StringValue(encBytes.AsSpan(0, encLength));
-                                    arrayPoolManager.Return(encBytes);
-                                    propertiesEncrypted++;
-
-                                    encryptPropertyName = null;
-                                    activeEncryptedPath = null;
-
-                                    // Keep reusable instances for next use
-                                    encryptionPayloadWriter = null;
-                                    bufferWriter.Clear();
-                                    bufferWriter = null;
+                                    this.EndBufferingContainer(TypeMarker.Array);
                                 }
                             }
                             else
                             {
-                                writer.WriteEndArray();
+                                this.writer.WriteEndArray();
                             }
 
                             break;
+
                         case JsonTokenType.PropertyName:
-                            // Maintain the current encrypted path while writing nested properties.
-                            // Only resolve/reset encryptPropertyName for top-level properties (depth == 1).
                             if (reader.CurrentDepth == 1)
                             {
-                                string matchedFullPath = null;
-                                int propNameUtf8Len = reader.HasValueSequence ? (int)reader.ValueSequence.Length : reader.ValueSpan.Length;
-                                if (candidatePaths.TryMatch(ref reader, propNameUtf8Len, out string path))
-                                {
-                                    matchedFullPath = path;
-                                }
-
-                                encryptPropertyName = matchedFullPath; // may be null if not encrypted
+                                int nameLen = reader.HasValueSequence ? (int)reader.ValueSequence.Length : reader.ValueSpan.Length;
+                                this.pendingEncryptedPath = this.candidatePaths.TryMatch(ref reader, nameLen, out string path) ? path : null;
                             }
 
-                            // For nested properties (depth > 1), do not modify encryptPropertyName so we keep the outer encrypted path.
                             if (!reader.HasValueSequence)
                             {
-                                currentWriter.WritePropertyName(reader.ValueSpan);
+                                targetWriter.WritePropertyName(reader.ValueSpan);
                             }
                             else
                             {
                                 int estimatedLength = (int)reader.ValueSequence.Length;
-                                EnsureCapacity(ref tmpScratch, Math.Max(estimatedLength, 64), arrayPoolManager);
-                                int copied = reader.CopyString(tmpScratch);
-                                currentWriter.WritePropertyName(tmpScratch.AsSpan(0, copied));
+                                EnsureCapacity(ref this.scratch, Math.Max(estimatedLength, ScratchMinForStrings), this.pool);
+                                int copied = reader.CopyString(this.scratch);
+                                targetWriter.WritePropertyName(this.scratch.AsSpan(0, copied));
                             }
 
                             break;
-                        case JsonTokenType.Comment: // Skipped via reader options
-                            currentWriter.WriteCommentValue(reader.ValueSpan);
-                            break;
+
                         case JsonTokenType.String:
-                            if (encryptPropertyName != null && encryptionPayloadWriter == null)
+                            if (this.pendingEncryptedPath != null && this.currentPayloadWriter == null)
                             {
                                 int estimatedLength = reader.HasValueSequence ? (int)reader.ValueSequence.Length : reader.ValueSpan.Length;
-                                EnsureCapacity(ref tmpScratch, Math.Max(estimatedLength, 64), arrayPoolManager);
-                                int length = reader.CopyString(tmpScratch);
+                                EnsureCapacity(ref this.scratch, Math.Max(estimatedLength, ScratchMinForStrings), this.pool);
+                                int len = reader.CopyString(this.scratch);
 
-                                // Encrypt a top-level string primitive using the shared scratch buffer to avoid extra allocations.
-                                (byte[] encBytes, int encLength) = TransformEncryptPayload(tmpScratch, length, TypeMarker.String, encryptPropertyName);
-
-                                currentWriter.WriteBase64StringValue(encBytes.AsSpan(0, encLength));
-                                arrayPoolManager.Return(encBytes);
-                                encryptPropertyName = null;
-                                propertiesEncrypted++;
+                                this.EncryptAndWritePrimitive(TypeMarker.String, this.scratch, len, this.pendingEncryptedPath);
+                                this.pendingEncryptedPath = null;
+                                this.PropertiesEncrypted++;
                             }
                             else
                             {
                                 if (!reader.HasValueSequence && !reader.ValueIsEscaped)
                                 {
-                                    currentWriter.WriteStringValue(reader.ValueSpan);
+                                    targetWriter.WriteStringValue(reader.ValueSpan);
                                 }
                                 else
                                 {
                                     int estimatedLength = reader.HasValueSequence ? (int)reader.ValueSequence.Length : reader.ValueSpan.Length;
-                                    EnsureCapacity(ref tmpScratch, Math.Max(estimatedLength, 64), arrayPoolManager);
-                                    int copied = reader.CopyString(tmpScratch);
-                                    currentWriter.WriteStringValue(tmpScratch.AsSpan(0, copied));
+                                    EnsureCapacity(ref this.scratch, Math.Max(estimatedLength, ScratchMinForStrings), this.pool);
+                                    int copied = reader.CopyString(this.scratch);
+                                    targetWriter.WriteStringValue(this.scratch.AsSpan(0, copied));
                                 }
                             }
 
                             break;
+
                         case JsonTokenType.Number:
-                            if (encryptPropertyName != null && encryptionPayloadWriter == null)
+                            if (this.pendingEncryptedPath != null && this.currentPayloadWriter == null)
                             {
                                 ReadOnlySpan<byte> numberSpan;
                                 if (!reader.HasValueSequence)
@@ -467,149 +443,182 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                 }
                                 else
                                 {
-                                    int len = (int)reader.ValueSequence.Length;
-                                    EnsureCapacity(ref tmpScratch, Math.Max(len, 32), arrayPoolManager);
-                                    int offset = 0;
-                                    foreach (ReadOnlyMemory<byte> segment in reader.ValueSequence)
-                                    {
-                                        segment.Span.CopyTo(tmpScratch.AsSpan(offset));
-                                        offset += segment.Length;
-                                    }
-
-                                    numberSpan = tmpScratch.AsSpan(0, len);
+                                    int len = CopySequenceToScratch(reader.ValueSequence, ref this.scratch, ScratchMinForNumbers, this.pool);
+                                    numberSpan = this.scratch.AsSpan(0, len);
                                 }
 
-                                (TypeMarker typeMarker, byte[] bytes, int length) = SerializeNumber(numberSpan, arrayPoolManager);
-                                (byte[] encBytes, int encLength) = TransformEncryptPayload(bytes, length, typeMarker, encryptPropertyName);
+                                (TypeMarker marker, byte[] bytes, int length) = StreamProcessor.SerializeNumber(numberSpan, this.pool);
+                                (byte[] encBytes, int encLen) = this.EncryptPayload(bytes, length, marker, this.pendingEncryptedPath);
 
-                                // Early return temp number buffer
-                                arrayPoolManager.Return(bytes);
-                                currentWriter.WriteBase64StringValue(encBytes.AsSpan(0, encLength));
-                                arrayPoolManager.Return(encBytes);
-                                encryptPropertyName = null;
-                                propertiesEncrypted++;
+                                this.pool.Return(bytes);
+                                targetWriter.WriteBase64StringValue(encBytes.AsSpan(0, encLen));
+                                this.pool.Return(encBytes);
+
+                                this.pendingEncryptedPath = null;
+                                this.PropertiesEncrypted++;
                             }
                             else
                             {
                                 if (!reader.HasValueSequence)
                                 {
-                                    currentWriter.WriteRawValue(reader.ValueSpan, true);
+                                    targetWriter.WriteRawValue(reader.ValueSpan, true);
                                 }
                                 else
                                 {
-                                    int len = (int)reader.ValueSequence.Length;
-                                    EnsureCapacity(ref tmpScratch, Math.Max(len, 32), arrayPoolManager);
-                                    int offset = 0;
-                                    foreach (ReadOnlyMemory<byte> segment in reader.ValueSequence)
-                                    {
-                                        segment.Span.CopyTo(tmpScratch.AsSpan(offset));
-                                        offset += segment.Length;
-                                    }
-
-                                    currentWriter.WriteRawValue(tmpScratch.AsSpan(0, len), true);
+                                    int len = CopySequenceToScratch(reader.ValueSequence, ref this.scratch, ScratchMinForNumbers, this.pool);
+                                    targetWriter.WriteRawValue(this.scratch.AsSpan(0, len), true);
                                 }
                             }
 
                             break;
+
                         case JsonTokenType.True:
-                            if (encryptPropertyName != null && encryptionPayloadWriter == null)
+                            if (this.pendingEncryptedPath != null && this.currentPayloadWriter == null)
                             {
-                                (byte[] bytes, int length) = Serialize(true, arrayPoolManager);
-                                (byte[] encBytes, int encLength) = TransformEncryptPayload(bytes, length, TypeMarker.Boolean, encryptPropertyName);
+                                (byte[] bytes, int length) = StreamProcessor.Serialize(true, this.pool);
+                                (byte[] encBytes, int encLen) = this.EncryptPayload(bytes, length, TypeMarker.Boolean, this.pendingEncryptedPath);
 
-                                // Return the serialized boolean input buffer promptly
-                                arrayPoolManager.Return(bytes);
-                                currentWriter.WriteBase64StringValue(encBytes.AsSpan(0, encLength));
-                                arrayPoolManager.Return(encBytes);
-                                encryptPropertyName = null;
-                                propertiesEncrypted++;
+                                this.pool.Return(bytes);
+                                targetWriter.WriteBase64StringValue(encBytes.AsSpan(0, encLen));
+                                this.pool.Return(encBytes);
+
+                                this.pendingEncryptedPath = null;
+                                this.PropertiesEncrypted++;
                             }
                             else
                             {
-                                currentWriter.WriteBooleanValue(true);
+                                targetWriter.WriteBooleanValue(true);
                             }
 
                             break;
+
                         case JsonTokenType.False:
-                            if (encryptPropertyName != null && encryptionPayloadWriter == null)
+                            if (this.pendingEncryptedPath != null && this.currentPayloadWriter == null)
                             {
-                                (byte[] bytes, int length) = Serialize(false, arrayPoolManager);
-                                (byte[] encBytes, int encLength) = TransformEncryptPayload(bytes, length, TypeMarker.Boolean, encryptPropertyName);
+                                (byte[] bytes, int length) = StreamProcessor.Serialize(false, this.pool);
+                                (byte[] encBytes, int encLen) = this.EncryptPayload(bytes, length, TypeMarker.Boolean, this.pendingEncryptedPath);
 
-                                // Return the serialized boolean input buffer promptly
-                                arrayPoolManager.Return(bytes);
-                                currentWriter.WriteBase64StringValue(encBytes.AsSpan(0, encLength));
-                                arrayPoolManager.Return(encBytes);
-                                encryptPropertyName = null;
-                                propertiesEncrypted++;
+                                this.pool.Return(bytes);
+                                targetWriter.WriteBase64StringValue(encBytes.AsSpan(0, encLen));
+                                this.pool.Return(encBytes);
+
+                                this.pendingEncryptedPath = null;
+                                this.PropertiesEncrypted++;
                             }
                             else
                             {
-                                currentWriter.WriteBooleanValue(false);
+                                targetWriter.WriteBooleanValue(false);
                             }
 
                             break;
-                        case JsonTokenType.Null:
-                            // If we're inside an encrypted container, the null must be part of the payload.
-                            if (encryptPropertyName != null && encryptionPayloadWriter != null)
-                            {
-                                currentWriter.WriteNullValue();
 
-                                // keep encryptPropertyName until the container closes
-                            }
-                            else
+                        case JsonTokenType.Null:
+                            // Null top-level values under an encrypted property are not encrypted by contract.
+                            targetWriter.WriteNullValue();
+                            if (this.currentPayloadWriter == null)
                             {
-                                currentWriter.WriteNullValue();
-                                encryptPropertyName = null;
+                                this.pendingEncryptedPath = null;
                             }
 
                             break;
                     }
                 }
 
-                state = reader.CurrentState;
+                this.readerState = reader.CurrentState;
                 return reader.BytesConsumed;
             }
 
-            (byte[] buffer, int length) TransformEncryptPayload(byte[] payload, int payloadSize, TypeMarker typeMarker, string path)
+            private void BeginBufferingContainer(bool isArray, string path)
             {
-                // Defensive: ensure we always have a non-null path for metadata/tracking
-                path ??= activeEncryptedPath ?? encryptPropertyName;
+                this.payloadBuffer.Clear();
+                this.payloadWriter.Reset(this.payloadBuffer);
 
-                byte[] processedBytes = payload;
-                int processedBytesLength = payloadSize;
-
-                if (compressor != null && payloadSize >= encryptionOptions.CompressionOptions.MinimalCompressedLength && path != null)
+                if (isArray)
                 {
-                    // Lazily allocate the compressedPaths dictionary on first use
-                    if (compressedPaths == null)
+                    this.payloadWriter.WriteStartArray();
+                }
+                else
+                {
+                    this.payloadWriter.WriteStartObject();
+                }
+
+                this.currentPayloadWriter = this.payloadWriter;
+                this.bufferingPath = path;
+                this.bufferedDepth = 1;
+            }
+
+            private void EndBufferingContainer(TypeMarker marker)
+            {
+                this.currentPayloadWriter.Flush();
+                (byte[] bytes, int len) = this.payloadBuffer.WrittenBuffer;
+
+                (byte[] encBytes, int encLen) = this.EncryptPayload(bytes, len, marker, this.bufferingPath);
+                this.writer.WriteBase64StringValue(encBytes.AsSpan(0, encLen));
+                this.pool.Return(encBytes);
+
+                this.PropertiesEncrypted++;
+
+                // Reset buffering state
+                this.pendingEncryptedPath = null;
+                this.bufferingPath = null;
+                this.currentPayloadWriter = null;
+                this.bufferedDepth = 0;
+                this.payloadBuffer.Clear();
+            }
+
+            private void EncryptAndWritePrimitive(TypeMarker marker, byte[] buffer, int length, string path)
+            {
+                (byte[] encBytes, int encLen) = this.EncryptPayload(buffer, length, marker, path);
+                (this.currentPayloadWriter ?? this.writer).WriteBase64StringValue(encBytes.AsSpan(0, encLen));
+                this.pool.Return(encBytes);
+            }
+
+            private (byte[] buffer, int length) EncryptPayload(byte[] payload, int payloadSize, TypeMarker typeMarker, string path)
+            {
+                byte[] processedBytes = payload;
+                int processedLength = payloadSize;
+
+                if (this.compressor != null && payloadSize >= this.minimalCompressedLength)
+                {
+                    this.compressedPaths ??= new Dictionary<string, int>();
+                    byte[] compressedBytes = this.pool.Rent(BrotliCompressor.GetMaxCompressedSize(payloadSize));
+
+                    processedLength = this.compressor.Compress(this.compressedPaths, path, processedBytes, payloadSize, compressedBytes);
+                    processedBytes = compressedBytes;
+                    this.CompressedPathsCompressed++;
+                }
+
+                (byte[] encryptedBytes, int encryptedCount) = this.mdeEncryptor.Encrypt(this.encryptionKey, typeMarker, processedBytes, processedLength, this.pool);
+
+                if (!ReferenceEquals(processedBytes, payload) && this.compressor != null)
+                {
+                    this.pool.Return(processedBytes);
+                }
+
+                this.pathsEncrypted.Add(path);
+                return (encryptedBytes, encryptedCount);
+            }
+
+            private static void EnsureCapacity(ref byte[] scratch, int needed, ArrayPoolManager pool)
+            {
+                if (scratch == null || scratch.Length < needed)
+                {
+                    byte[] newBuf = pool.Rent(needed);
+                    if (scratch != null)
                     {
-                        int capacity = pathsCapacity > 0 ? Math.Min(pathsCapacity, 8) : 8;
-                        compressedPaths = new Dictionary<string, int>(capacity);
+                        pool.Return(scratch);
                     }
 
-                    byte[] compressedBytes = arrayPoolManager.Rent(BrotliCompressor.GetMaxCompressedSize(payloadSize));
-
-                    // Use the explicit path for this payload (container or primitive). If path is null, skip compression and recording.
-                    processedBytesLength = compressor.Compress(compressedPaths, path, processedBytes, payloadSize, compressedBytes);
-                    processedBytes = compressedBytes;
-                    compressedPathsCompressed++;
+                    scratch = newBuf;
                 }
+            }
 
-                (byte[] encryptedBytes, int encryptedBytesCount) = this.Encryptor.Encrypt(encryptionKey, typeMarker, processedBytes, processedBytesLength, arrayPoolManager);
-
-                // If we created a temporary compressed buffer, return it now
-                if (!ReferenceEquals(processedBytes, payload) && compressor != null)
-                {
-                    arrayPoolManager.Return(processedBytes);
-                }
-
-                if (path != null)
-                {
-                    pathsEncrypted.Add(path);
-                }
-
-                return (encryptedBytes, encryptedBytesCount);
+            private static int CopySequenceToScratch(ReadOnlySequence<byte> sequence, ref byte[] scratch, int minCapacity, ArrayPoolManager pool)
+            {
+                int length = (int)sequence.Length;
+                EnsureCapacity(ref scratch, Math.Max(length, minCapacity), pool);
+                sequence.CopyTo(scratch.AsSpan(0, length));
+                return length;
             }
         }
 
@@ -618,7 +627,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             int byteCount = StreamProcessor.SqlBoolSerializer.GetSerializedMaxByteCount();
             byte[] buffer = arrayPoolManager.Rent(byteCount);
             int length = StreamProcessor.SqlBoolSerializer.Serialize(value, buffer);
-
             return (buffer, length);
         }
 
@@ -631,7 +639,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             if (System.Buffers.Text.Utf8Parser.TryParse(utf8Bytes, out double doubleValue, out int consumedDouble) && consumedDouble == utf8Bytes.Length)
             {
-                // Reject non-finite numbers to keep JSON contract compatibility
                 if (double.IsFinite(doubleValue))
                 {
                     return Serialize(doubleValue, arrayPoolManager);
@@ -646,7 +653,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             int byteCount = StreamProcessor.SqlLongSerializer.GetSerializedMaxByteCount();
             byte[] buffer = arrayPoolManager.Rent(byteCount);
             int length = StreamProcessor.SqlLongSerializer.Serialize(value, buffer);
-
             return (TypeMarker.Long, buffer, length);
         }
 
@@ -655,10 +661,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             int byteCount = StreamProcessor.SqlDoubleSerializer.GetSerializedMaxByteCount();
             byte[] buffer = arrayPoolManager.Rent(byteCount);
             int length = StreamProcessor.SqlDoubleSerializer.Serialize(value, buffer);
-
             return (TypeMarker.Double, buffer, length);
         }
     }
 }
-
 #endif
