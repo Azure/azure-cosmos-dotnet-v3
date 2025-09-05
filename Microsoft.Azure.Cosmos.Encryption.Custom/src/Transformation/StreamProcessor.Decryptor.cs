@@ -122,39 +122,36 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 // increase ArrayPool hit rate. Without bucketing we might rent many subtly different lengths
                 // (e.g., 1372, 1419, 1510 ...) that the shared pool keeps as distinct buckets, increasing LOH
                 // pressure and fragmentation over time when large docs with varying token sizes are processed.
+                // Shared bucket helper so main streaming buffer growth also reuses the same discrete sizes.
+                static int Bucket(int value)
+                {
+                    const int minBucket = 64;
+                    if (value <= minBucket)
+                    {
+                        return minBucket;
+                    }
+
+                    if (value >= MaxBufferSizeBytes)
+                    {
+                        return MaxBufferSizeBytes;
+                    }
+
+                    // next power of two
+                    uint v = (uint)(value - 1);
+                    v |= v >> 1;
+                    v |= v >> 2;
+                    v |= v >> 4;
+                    v |= v >> 8;
+                    v |= v >> 16;
+                    int pow2 = (int)(v + 1);
+                    return pow2 > MaxBufferSizeBytes ? MaxBufferSizeBytes : pow2;
+                }
+
                 static void EnsureCapacity(ref byte[] scratch, int needed, ArrayPoolManager pool)
                 {
                     if (scratch != null && scratch.Length >= needed)
                     {
                         return; // already large enough
-                    }
-
-                    // Round to next power-of-two up to MaxBufferSizeBytes to maximize reuse while capping growth.
-                    // Minimum practical bucket of 64 bytes (caller often already does Math.Max(x, 64)).
-                    static int Bucket(int value)
-                    {
-                        const int minBucket = 64;
-                        if (value <= minBucket)
-                        {
-                            return minBucket;
-                        }
-
-                        if (value >= MaxBufferSizeBytes)
-                        {
-                            return MaxBufferSizeBytes;
-                        }
-
-                        // next power of two
-                        uint v = (uint)(value - 1);
-                        v |= v >> 1;
-                        v |= v >> 2;
-                        v |= v >> 4;
-                        v |= v >> 8;
-                        v |= v >> 16;
-                        int pow2 = (int)(v + 1);
-
-                        // safeguard (should not exceed MaxBufferSizeBytes due to earlier check)
-                        return pow2 > MaxBufferSizeBytes ? MaxBufferSizeBytes : pow2;
                     }
 
                     int bucketed = Bucket(needed);
@@ -220,12 +217,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                         }
                         else
                         {
-                            // Multi-segment or escaped; use stackalloc for small sizes to avoid renting
-                            const int stackThreshold = 256;
-                            if (srcLen <= stackThreshold)
+                            // Multi-segment or escaped; use stackalloc for small sizes (up to 4 KB) to avoid renting
+                            const int base64StackThreshold = 4096;
+                            if (srcLen <= base64StackThreshold)
                             {
-                                Span<byte> local = stackalloc byte[stackThreshold];
-                                int copied = reader.CopyString(local);
+                                Span<byte> local = stackalloc byte[srcLen];
+                                int copied = reader.CopyString(local); // copied should == srcLen (escaped path may differ)
                                 OperationStatus status = Base64.DecodeFromUtf8(
                                     local[..copied],
                                     cipher,
@@ -782,19 +779,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 }
 
                 // Small-payload fast path: if stream is seekable and remaining length <= 2KB, read once and parse once.
+                // Enhancement: stackalloc for <=1KB to avoid renting; for >1KB use bucketed pool sizes to reduce distinct lengths.
                 if (inputStream.CanSeek)
                 {
                     long remaining = inputStream.Length - inputStream.Position;
                     if (remaining > 0 && remaining <= 2048)
                     {
                         int len = (int)remaining;
-                        byte[] oneShot = arrayPoolManager.Rent(len);
+                        int rentSize = Bucket(len); // bucketed size for small one-shot payload
+                        byte[] oneShot = arrayPoolManager.Rent(rentSize);
                         try
                         {
                             int total = 0;
                             while (total < len)
                             {
-                                int r = await inputStream.ReadAsync(oneShot.AsMemory(total, len - total), cancellationToken);
+                                int toRead = Math.Min(len - total, oneShot.Length - total);
+                                int r = await inputStream.ReadAsync(oneShot.AsMemory(total, toRead), cancellationToken);
                                 if (r == 0)
                                 {
                                     break;
@@ -803,10 +803,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                 total += r;
                             }
 
-                            int read = total;
+                            int read = Math.Min(total, len);
                             bytesRead += read;
-
-                            // Process the full payload in one pass and mark final block to skip the streaming loop.
                             _ = TransformDecryptBuffer(
                                 oneShot.AsSpan(0, read),
                                 ref state,
@@ -824,7 +822,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                 ref skippingEi,
                                 ref skipEiFirstTokenPending,
                                 ref skipEiContainerDepth);
-
                             isFinalBlock = true;
                         }
                         finally
@@ -837,7 +834,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 {
                     // Non-seekable small payload probe: optimistically read up to 2KB once; if stream ends, we finish in a single pass.
                     const int ProbeSize = 2048;
-                    buffer = arrayPoolManager.Rent(ProbeSize); // reuse as main buffer if more data follows
+                    buffer = arrayPoolManager.Rent(Bucket(ProbeSize)); // bucketed
                     int read = await inputStream.ReadAsync(buffer.AsMemory(0, ProbeSize), cancellationToken);
                     bytesRead += read;
                     if (read > 0)
@@ -906,7 +903,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     if (dataSize > 0 && leftOver == dataSize)
                     {
                         int target = Math.Max(buffer.Length * 2, leftOver + BufferGrowthMinIncrement);
-                        int capped = Math.Min(MaxBufferSizeBytes, target);
+                        int bucketedGrow = Bucket(target);
+                        int capped = Math.Min(MaxBufferSizeBytes, bucketedGrow);
                         if (buffer.Length >= capped)
                         {
                             throw new InvalidOperationException(
