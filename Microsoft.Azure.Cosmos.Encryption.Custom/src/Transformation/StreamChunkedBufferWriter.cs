@@ -37,6 +37,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
         public void Advance(int count)
         {
+            if (this.disposed)
+            {
+                throw new ObjectDisposedException(nameof(StreamChunkedBufferWriter));
+            }
+
             if (count < 0 || this.currentBuffer == null || this.index + count > this.currentBuffer.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -51,12 +56,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
         public Memory<byte> GetMemory(int sizeHint = 0)
         {
+            if (this.disposed)
+            {
+                throw new ObjectDisposedException(nameof(StreamChunkedBufferWriter));
+            }
+
             this.EnsureCapacity(sizeHint);
             return this.currentBuffer.AsMemory(this.index);
         }
 
         public Span<byte> GetSpan(int sizeHint = 0)
         {
+            if (this.disposed)
+            {
+                throw new ObjectDisposedException(nameof(StreamChunkedBufferWriter));
+            }
+
             this.EnsureCapacity(sizeHint);
             return this.currentBuffer.AsSpan(this.index);
         }
