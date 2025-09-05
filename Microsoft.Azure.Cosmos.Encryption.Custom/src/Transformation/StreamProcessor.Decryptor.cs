@@ -133,11 +133,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     // Minimum practical bucket of 64 bytes (caller often already does Math.Max(x, 64)).
                     static int Bucket(int value)
                     {
-                        const int MinBucket = 64;
-                        if (value <= MinBucket)
+                        const int minBucket = 64;
+                        if (value <= minBucket)
                         {
-                            return MinBucket;
+                            return minBucket;
                         }
+
                         if (value >= MaxBufferSizeBytes)
                         {
                             return MaxBufferSizeBytes;
@@ -151,6 +152,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                         v |= v >> 8;
                         v |= v >> 16;
                         int pow2 = (int)(v + 1);
+
                         // safeguard (should not exceed MaxBufferSizeBytes due to earlier check)
                         return pow2 > MaxBufferSizeBytes ? MaxBufferSizeBytes : pow2;
                     }
@@ -161,6 +163,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     {
                         pool.Return(scratch);
                     }
+
                     scratch = newBuf;
                 }
 
