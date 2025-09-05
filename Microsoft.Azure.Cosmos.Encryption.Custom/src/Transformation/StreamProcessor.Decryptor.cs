@@ -118,19 +118,50 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                 int leftOver = 0;
 
-                // Local helper to ensure pooled buffer capacity with minimal churn
+                // Local helper: ensure pooled buffer capacity with bucketed growth (next power-of-two) to
+                // increase ArrayPool hit rate. Without bucketing we might rent many subtly different lengths
+                // (e.g., 1372, 1419, 1510 ...) that the shared pool keeps as distinct buckets, increasing LOH
+                // pressure and fragmentation over time when large docs with varying token sizes are processed.
                 static void EnsureCapacity(ref byte[] scratch, int needed, ArrayPoolManager pool)
                 {
-                    if (scratch == null || scratch.Length < needed)
+                    if (scratch != null && scratch.Length >= needed)
                     {
-                        byte[] newBuf = pool.Rent(needed);
-                        if (scratch != null)
+                        return; // already large enough
+                    }
+
+                    // Round to next power-of-two up to MaxBufferSizeBytes to maximize reuse while capping growth.
+                    // Minimum practical bucket of 64 bytes (caller often already does Math.Max(x, 64)).
+                    static int Bucket(int value)
+                    {
+                        const int MinBucket = 64;
+                        if (value <= MinBucket)
                         {
-                            pool.Return(scratch);
+                            return MinBucket;
+                        }
+                        if (value >= MaxBufferSizeBytes)
+                        {
+                            return MaxBufferSizeBytes;
                         }
 
-                        scratch = newBuf;
+                        // next power of two
+                        uint v = (uint)(value - 1);
+                        v |= v >> 1;
+                        v |= v >> 2;
+                        v |= v >> 4;
+                        v |= v >> 8;
+                        v |= v >> 16;
+                        int pow2 = (int)(v + 1);
+                        // safeguard (should not exceed MaxBufferSizeBytes due to earlier check)
+                        return pow2 > MaxBufferSizeBytes ? MaxBufferSizeBytes : pow2;
                     }
+
+                    int bucketed = Bucket(needed);
+                    byte[] newBuf = pool.Rent(bucketed);
+                    if (scratch != null)
+                    {
+                        pool.Return(scratch);
+                    }
+                    scratch = newBuf;
                 }
 
                 bool isFinalBlock = false;
