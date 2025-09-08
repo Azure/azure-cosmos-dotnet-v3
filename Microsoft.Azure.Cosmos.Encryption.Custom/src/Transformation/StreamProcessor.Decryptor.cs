@@ -807,8 +807,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                     break;
             }
-        }
-        
+    }
+
         private static void TryDecompressIfConfigured(
             ProcessingContext ctx,
             string pathLabel,
