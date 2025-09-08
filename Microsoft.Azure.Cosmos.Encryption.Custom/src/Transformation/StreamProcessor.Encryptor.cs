@@ -15,11 +15,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
     using System.Threading;
     using System.Threading.Tasks;
 
-    // Streaming JSON encryptor:
-    // - Parses with Utf8JsonReader and writes with Utf8JsonWriter (no DOM).
-    // - Encrypts values of top-level properties whose paths match configured candidates.
-    // - For object/array values under encrypted properties, buffers their JSON, then encrypts the entire payload.
-    // - Emits _ei metadata just before closing the root object.
+    // Streaming encryptor: selective path encryption + optional compression, fully streaming (Utf8JsonReader -> Utf8JsonWriter), emits _ei metadata at root end.
     internal partial class StreamProcessor
     {
         private static readonly byte[] EncryptionPropertiesNameBytes = Encoding.UTF8.GetBytes(Constants.EncryptedInfo);
@@ -34,12 +30,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             IReadOnlyDictionary<string, int> compressedEncryptedPaths,
             byte[] encryptedData)
         {
-            // Build DTO and serialize with System.Text.Json to reduce custom code complexity.
-            // Minor additional allocations (~few KB) are acceptable for clarity.
+            // Serialize DTO for _ei; small extra allocation is acceptable for simplicity.
             IDictionary<string, int> compressed = null;
             if (compressedEncryptedPaths != null)
             {
-                // Ensure a concrete IDictionary for constructor (avoid copy if already one).
                 compressed = compressedEncryptedPaths as IDictionary<string, int> ?? new Dictionary<string, int>(compressedEncryptedPaths);
             }
 
@@ -52,8 +46,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 compressionAlgorithm: compressionAlgorithm,
                 compressedEncryptedPaths: compressed);
 
-            // Serialize only the _ei object (not wrapped). We write property name then raw value.
-            // Use options with default naming (attributes already specify names) and no policy.
+            // Write property name then raw JSON value for _ei.
             JsonSerializerOptions options = new JsonSerializerOptions
             {
                 PropertyNamingPolicy = null,
@@ -111,16 +104,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     : null;
 
             CandidatePaths candidatePaths = CandidatePaths.Build(encryptionOptions.PathsToEncrypt);
+
+            // Format version 4 introduces compression metadata; fall back to 3 when no compression.
             int formatVersion = encryptionOptions.CompressionOptions.Algorithm != CompressionOptions.CompressionAlgorithm.None ? 4 : 3;
 
             using Utf8JsonWriter writer = new Utf8JsonWriter(outputStream, StreamProcessor.JsonWriterOptions);
 
-            // Read buffer
+            // Streaming chunk buffer (grown only when a single token spans it below).
             byte[] buffer = arrayPoolManager.Rent(this.initialBufferSize);
             int leftOver = 0;
             JsonReaderState readerState = new JsonReaderState(StreamProcessor.JsonReaderOptions);
 
-            EncryptionPipeline pipeline = new EncryptionPipeline(
+            EncryptionPipelineState pipelineState = new EncryptionPipelineState(
                 writer,
                 encryptionKey,
                 encryptionOptions,
@@ -142,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     bytesRead += read;
 
                     bool isFinalBlock = read == 0;
-                    long consumed = pipeline.ProcessBufferChunk(buffer.AsSpan(0, dataSize), isFinalBlock);
+                    long consumed = ProcessBufferChunk(ref pipelineState, buffer.AsSpan(0, dataSize), isFinalBlock);
 
                     leftOver = dataSize - (int)consumed;
 
@@ -151,9 +146,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                         break;
                     }
 
-                    // If no progress (token larger than buffer), grow buffer with cap.
+                    // Grow buffer if a token spans the whole buffer; enforce max size.
                     if (dataSize > 0 && leftOver == dataSize)
                     {
+                        // Entire buffer is a partial token: grow (capped) so the reader can finish that token.
                         int target = Math.Max(buffer.Length * 2, leftOver + BufferGrowthMinIncrement);
                         int capped = Math.Min(MaxBufferSizeBytes, target);
                         if (buffer.Length >= capped)
@@ -184,13 +180,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             finally
             {
                 arrayPoolManager.Return(buffer);
-                pipeline.Dispose();
+                pipelineState.Dispose();
             }
 
             diagnosticsContext?.SetMetric("encrypt.bytesRead", bytesRead);
             diagnosticsContext?.SetMetric("encrypt.bytesWritten", bytesWritten);
-            diagnosticsContext?.SetMetric("encrypt.propertiesEncrypted", pipeline.PropertiesEncrypted);
-            diagnosticsContext?.SetMetric("encrypt.compressedPathsCompressed", pipeline.CompressedPathsCompressed);
+            diagnosticsContext?.SetMetric("encrypt.propertiesEncrypted", pipelineState.PropertiesEncrypted);
+            diagnosticsContext?.SetMetric("encrypt.compressedPathsCompressed", pipelineState.CompressedPathsCompressed);
 
 #if NET8_0_OR_GREATER
             long elapsedMs = (long)Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds;
@@ -201,410 +197,350 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             diagnosticsContext?.SetMetric("encrypt.elapsedMs", elapsedMs);
         }
 
-        private sealed class EncryptionPipeline : IDisposable
+        private static long ProcessBufferChunk(ref EncryptionPipelineState s, ReadOnlySpan<byte> span, bool isFinalBlock)
         {
-            private const int ScratchMinForStrings = 64;
-            private const int ScratchMinForNumbers = 32;
-
-            private readonly Utf8JsonWriter writer;
-            private readonly MdeEncryptor mdeEncryptor = new MdeEncryptor();
-            private readonly DataEncryptionKey encryptionKey;
-            private readonly string encryptionAlgorithmName;
-            private readonly string dataEncryptionKeyId;
-            private readonly CompressionOptions.CompressionAlgorithm compressionAlgorithm;
-            private readonly int minimalCompressedLength;
-            private readonly BrotliCompressor compressor;
-            private readonly CandidatePaths candidatePaths;
-            private readonly int formatVersion;
-            private readonly ArrayPoolManager pool;
-
-            private readonly List<string> pathsEncrypted;
-            private readonly RentArrayBufferWriter payloadBuffer;
-            private readonly Utf8JsonWriter payloadWriter;
-            private Dictionary<string, int> compressedPaths;
-
-            private byte[] scratch;
-            private JsonReaderState readerState;
-
-            // Buffering state
-            private Utf8JsonWriter currentPayloadWriter; // null when not buffering encrypted container
-            private string pendingEncryptedPath; // set when a top-level property is identified to encrypt
-            private string bufferingPath; // path of currently buffered container
-            private int bufferedDepth; // >0 when buffering an encrypted container
-
-            internal long PropertiesEncrypted { get; private set; }
-
-            internal long CompressedPathsCompressed { get; private set; }
-
-            internal EncryptionPipeline(
-                Utf8JsonWriter writer,
-                DataEncryptionKey encryptionKey,
-                EncryptionOptions options,
-                BrotliCompressor compressor,
-                CandidatePaths candidatePaths,
-                int formatVersion,
-                int pathsCapacity,
-                ArrayPoolManager pool,
-                JsonReaderState initialReaderState)
+            // Resume incremental reader with preserved state; bytes consumed returned so caller can keep leftovers.
+            Utf8JsonReader reader = new Utf8JsonReader(span, isFinalBlock, s.ReaderState);
+            while (reader.Read())
             {
-                this.writer = writer ?? throw new ArgumentNullException(nameof(writer));
-                this.encryptionKey = encryptionKey ?? throw new ArgumentNullException(nameof(encryptionKey));
-                this.encryptionAlgorithmName = options?.EncryptionAlgorithm ?? throw new ArgumentNullException(nameof(options));
-                this.dataEncryptionKeyId = options.DataEncryptionKeyId;
-                this.compressionAlgorithm = options.CompressionOptions.Algorithm;
-                this.minimalCompressedLength = options.CompressionOptions.MinimalCompressedLength;
-                this.compressor = compressor; // may be null
-                this.candidatePaths = candidatePaths ?? throw new ArgumentNullException(nameof(candidatePaths));
-                this.formatVersion = formatVersion;
-                this.pool = pool ?? throw new ArgumentNullException(nameof(pool));
-
-                this.pathsEncrypted = pathsCapacity > 0 ? new List<string>(pathsCapacity) : new List<string>();
-                this.payloadBuffer = new RentArrayBufferWriter();
-                this.payloadWriter = new Utf8JsonWriter(this.payloadBuffer);
-                this.readerState = initialReaderState;
+                DispatchToken(ref s, ref reader);
             }
 
-            public void Dispose()
-            {
-#pragma warning disable VSTHRD103
-                this.payloadWriter?.Dispose();
-                this.payloadBuffer?.Dispose();
-#pragma warning restore VSTHRD103
+            s.ReaderState = reader.CurrentState;
+            return reader.BytesConsumed;
+        }
 
-                if (this.scratch != null)
-                {
-                    this.pool.Return(this.scratch);
-                    this.scratch = null;
-                }
+        private static Utf8JsonWriter TargetWriter(EncryptionPipelineState s)
+        {
+            return s.CurrentPayloadWriter ?? s.Writer;
+        }
+
+        private static void DispatchToken(ref EncryptionPipelineState s, ref Utf8JsonReader reader)
+        {
+            switch (reader.TokenType)
+            {
+                case JsonTokenType.StartObject:
+                    HandleStartObject(ref s);
+                    break;
+                case JsonTokenType.EndObject:
+                    HandleEndObject(ref s, ref reader);
+                    break;
+                case JsonTokenType.StartArray:
+                    HandleStartArray(ref s);
+                    break;
+                case JsonTokenType.EndArray:
+                    HandleEndArray(ref s);
+                    break;
+                case JsonTokenType.PropertyName:
+                    HandlePropertyName(ref s, ref reader);
+                    break;
+                case JsonTokenType.String:
+                    HandleString(ref s, ref reader);
+                    break;
+                case JsonTokenType.Number:
+                    HandleNumber(ref s, ref reader);
+                    break;
+                case JsonTokenType.True:
+                    HandleBool(ref s, true);
+                    break;
+                case JsonTokenType.False:
+                    HandleBool(ref s, false);
+                    break;
+                case JsonTokenType.Null:
+                    HandleNull(ref s);
+                    break;
+            }
+        }
+
+        private static void BeginBufferingContainer(ref EncryptionPipelineState s, bool isArray, string path)
+        {
+            // Buffer full container (object/array) so we can encrypt it as a single payload instead of per element.
+            s.PayloadBuffer.Clear();
+            s.PayloadWriter.Reset(s.PayloadBuffer);
+            if (isArray)
+            {
+                s.PayloadWriter.WriteStartArray();
+            }
+            else
+            {
+                s.PayloadWriter.WriteStartObject();
             }
 
-            internal long ProcessBufferChunk(ReadOnlySpan<byte> span, bool isFinalBlock)
+            s.CurrentPayloadWriter = s.PayloadWriter;
+            s.BufferingPath = path;
+            s.BufferedDepth = 1;
+        }
+
+        private static void EndBufferingContainer(ref EncryptionPipelineState s, TypeMarker marker)
+        {
+            s.CurrentPayloadWriter.Flush();
+            (byte[] bytes, int len) = s.PayloadBuffer.WrittenBuffer;
+            (byte[] encBytes, int encLen) = EncryptPayload(ref s, bytes, len, marker, s.BufferingPath);
+            s.Writer.WriteBase64StringValue(encBytes.AsSpan(0, encLen));
+            s.Pool.Return(encBytes);
+            s.PropertiesEncrypted++;
+            s.PendingEncryptedPath = null;
+            s.BufferingPath = null;
+            s.CurrentPayloadWriter = null;
+            s.BufferedDepth = 0;
+            s.PayloadBuffer.Clear();
+        }
+
+        private static void EncryptAndWritePrimitive(ref EncryptionPipelineState s, TypeMarker marker, byte[] buffer, int length, string path)
+        {
+            (byte[] encBytes, int encLen) = EncryptPayload(ref s, buffer, length, marker, path);
+            TargetWriter(s).WriteBase64StringValue(encBytes.AsSpan(0, encLen));
+            s.Pool.Return(encBytes);
+        }
+
+        private static (byte[] buffer, int length) EncryptPayload(ref EncryptionPipelineState s, byte[] payload, int payloadSize, TypeMarker typeMarker, string path)
+        {
+            byte[] processedBytes = payload;
+            int processedLength = payloadSize;
+            if (s.Compressor != null && payloadSize >= s.MinimalCompressedLength)
             {
-                Utf8JsonReader reader = new Utf8JsonReader(span, isFinalBlock, this.readerState);
+                // Only attempt compression when over caller-specified threshold to avoid size regressions.
+                s.CompressedPaths ??= new Dictionary<string, int>();
+                byte[] compressedBytes = s.Pool.Rent(BrotliCompressor.GetMaxCompressedSize(payloadSize));
+                processedLength = s.Compressor.Compress(s.CompressedPaths, path, processedBytes, payloadSize, compressedBytes);
+                processedBytes = compressedBytes;
+                s.CompressedPathsCompressed++;
+            }
 
-                while (reader.Read())
+            (byte[] encryptedBytes, int encryptedCount) = s.Encryptor.Encrypt(s.DataEncryptionKey, typeMarker, processedBytes, processedLength, s.Pool);
+            if (!ReferenceEquals(processedBytes, payload) && s.Compressor != null)
+            {
+                s.Pool.Return(processedBytes);
+            }
+
+            s.PathsEncrypted.Add(path);
+            return (encryptedBytes, encryptedCount);
+        }
+
+        private static int CopySequenceToScratch(ReadOnlySequence<byte> sequence, ref byte[] scratch, int minCapacity, ArrayPoolManager pool)
+        {
+            int length = (int)sequence.Length;
+            EnsureScratchCapacity(ref scratch, Math.Max(length, minCapacity), pool);
+            sequence.CopyTo(scratch.AsSpan(0, length));
+            return length;
+        }
+
+        private static void EnsureScratchCapacity(ref byte[] scratch, int needed, ArrayPoolManager pool)
+        {
+            if (scratch == null || scratch.Length < needed)
+            {
+                byte[] newBuf = pool.Rent(needed);
+                if (scratch != null)
                 {
-                    Utf8JsonWriter targetWriter = this.currentPayloadWriter ?? this.writer;
-
-                    switch (reader.TokenType)
-                    {
-                        case JsonTokenType.StartObject:
-                            if (this.currentPayloadWriter != null)
-                            {
-                                this.currentPayloadWriter.WriteStartObject();
-                                this.bufferedDepth++;
-                            }
-                            else if (this.pendingEncryptedPath != null)
-                            {
-                                this.BeginBufferingContainer(isArray: false, this.pendingEncryptedPath);
-                            }
-                            else
-                            {
-                                this.writer.WriteStartObject();
-                            }
-
-                            break;
-
-                        case JsonTokenType.EndObject:
-                            if (this.currentPayloadWriter != null)
-                            {
-                                this.currentPayloadWriter.WriteEndObject();
-                                this.bufferedDepth--;
-                                if (this.bufferedDepth == 0)
-                                {
-                                    this.EndBufferingContainer(TypeMarker.Object);
-                                }
-                            }
-                            else
-                            {
-                                // Closing root object: append _ei metadata just before closing
-                                if (reader.CurrentDepth == 0)
-                                {
-                                    StreamProcessor.WriteEncryptionInfo(
-                                        this.writer,
-                                        this.formatVersion,
-                                        this.encryptionAlgorithmName,
-                                        this.dataEncryptionKeyId,
-                                        this.pathsEncrypted,
-                                        this.compressionAlgorithm,
-                                        this.compressedPaths,
-                                        null);
-                                }
-
-                                this.writer.WriteEndObject();
-                            }
-
-                            break;
-
-                        case JsonTokenType.StartArray:
-                            if (this.currentPayloadWriter != null)
-                            {
-                                this.currentPayloadWriter.WriteStartArray();
-                                this.bufferedDepth++;
-                            }
-                            else if (this.pendingEncryptedPath != null)
-                            {
-                                this.BeginBufferingContainer(isArray: true, this.pendingEncryptedPath);
-                            }
-                            else
-                            {
-                                this.writer.WriteStartArray();
-                            }
-
-                            break;
-
-                        case JsonTokenType.EndArray:
-                            if (this.currentPayloadWriter != null)
-                            {
-                                this.currentPayloadWriter.WriteEndArray();
-                                this.bufferedDepth--;
-                                if (this.bufferedDepth == 0)
-                                {
-                                    this.EndBufferingContainer(TypeMarker.Array);
-                                }
-                            }
-                            else
-                            {
-                                this.writer.WriteEndArray();
-                            }
-
-                            break;
-
-                        case JsonTokenType.PropertyName:
-                            if (reader.CurrentDepth == 1)
-                            {
-                                int nameLen = reader.HasValueSequence ? (int)reader.ValueSequence.Length : reader.ValueSpan.Length;
-                                this.pendingEncryptedPath = this.candidatePaths.TryMatch(ref reader, nameLen, out string path) ? path : null;
-                            }
-
-                            if (!reader.HasValueSequence)
-                            {
-                                targetWriter.WritePropertyName(reader.ValueSpan);
-                            }
-                            else
-                            {
-                                int estimatedLength = (int)reader.ValueSequence.Length;
-                                EnsureCapacity(ref this.scratch, Math.Max(estimatedLength, ScratchMinForStrings), this.pool);
-                                int copied = reader.CopyString(this.scratch);
-                                targetWriter.WritePropertyName(this.scratch.AsSpan(0, copied));
-                            }
-
-                            break;
-
-                        case JsonTokenType.String:
-                            if (this.pendingEncryptedPath != null && this.currentPayloadWriter == null)
-                            {
-                                int estimatedLength = reader.HasValueSequence ? (int)reader.ValueSequence.Length : reader.ValueSpan.Length;
-                                EnsureCapacity(ref this.scratch, Math.Max(estimatedLength, ScratchMinForStrings), this.pool);
-                                int len = reader.CopyString(this.scratch);
-
-                                this.EncryptAndWritePrimitive(TypeMarker.String, this.scratch, len, this.pendingEncryptedPath);
-                                this.pendingEncryptedPath = null;
-                                this.PropertiesEncrypted++;
-                            }
-                            else
-                            {
-                                if (!reader.HasValueSequence && !reader.ValueIsEscaped)
-                                {
-                                    targetWriter.WriteStringValue(reader.ValueSpan);
-                                }
-                                else
-                                {
-                                    int estimatedLength = reader.HasValueSequence ? (int)reader.ValueSequence.Length : reader.ValueSpan.Length;
-                                    EnsureCapacity(ref this.scratch, Math.Max(estimatedLength, ScratchMinForStrings), this.pool);
-                                    int copied = reader.CopyString(this.scratch);
-                                    targetWriter.WriteStringValue(this.scratch.AsSpan(0, copied));
-                                }
-                            }
-
-                            break;
-
-                        case JsonTokenType.Number:
-                            if (this.pendingEncryptedPath != null && this.currentPayloadWriter == null)
-                            {
-                                ReadOnlySpan<byte> numberSpan;
-                                if (!reader.HasValueSequence)
-                                {
-                                    numberSpan = reader.ValueSpan;
-                                }
-                                else
-                                {
-                                    int len = CopySequenceToScratch(reader.ValueSequence, ref this.scratch, ScratchMinForNumbers, this.pool);
-                                    numberSpan = this.scratch.AsSpan(0, len);
-                                }
-
-                                (TypeMarker marker, byte[] bytes, int length) = StreamProcessor.SerializeNumber(numberSpan, this.pool);
-                                (byte[] encBytes, int encLen) = this.EncryptPayload(bytes, length, marker, this.pendingEncryptedPath);
-
-                                this.pool.Return(bytes);
-                                targetWriter.WriteBase64StringValue(encBytes.AsSpan(0, encLen));
-                                this.pool.Return(encBytes);
-
-                                this.pendingEncryptedPath = null;
-                                this.PropertiesEncrypted++;
-                            }
-                            else
-                            {
-                                if (!reader.HasValueSequence)
-                                {
-                                    targetWriter.WriteRawValue(reader.ValueSpan, true);
-                                }
-                                else
-                                {
-                                    int len = CopySequenceToScratch(reader.ValueSequence, ref this.scratch, ScratchMinForNumbers, this.pool);
-                                    targetWriter.WriteRawValue(this.scratch.AsSpan(0, len), true);
-                                }
-                            }
-
-                            break;
-
-                        case JsonTokenType.True:
-                            if (this.pendingEncryptedPath != null && this.currentPayloadWriter == null)
-                            {
-                                (byte[] bytes, int length) = StreamProcessor.Serialize(true, this.pool);
-                                (byte[] encBytes, int encLen) = this.EncryptPayload(bytes, length, TypeMarker.Boolean, this.pendingEncryptedPath);
-
-                                this.pool.Return(bytes);
-                                targetWriter.WriteBase64StringValue(encBytes.AsSpan(0, encLen));
-                                this.pool.Return(encBytes);
-
-                                this.pendingEncryptedPath = null;
-                                this.PropertiesEncrypted++;
-                            }
-                            else
-                            {
-                                targetWriter.WriteBooleanValue(true);
-                            }
-
-                            break;
-
-                        case JsonTokenType.False:
-                            if (this.pendingEncryptedPath != null && this.currentPayloadWriter == null)
-                            {
-                                (byte[] bytes, int length) = StreamProcessor.Serialize(false, this.pool);
-                                (byte[] encBytes, int encLen) = this.EncryptPayload(bytes, length, TypeMarker.Boolean, this.pendingEncryptedPath);
-
-                                this.pool.Return(bytes);
-                                targetWriter.WriteBase64StringValue(encBytes.AsSpan(0, encLen));
-                                this.pool.Return(encBytes);
-
-                                this.pendingEncryptedPath = null;
-                                this.PropertiesEncrypted++;
-                            }
-                            else
-                            {
-                                targetWriter.WriteBooleanValue(false);
-                            }
-
-                            break;
-
-                        case JsonTokenType.Null:
-                            // Null top-level values under an encrypted property are not encrypted by contract.
-                            targetWriter.WriteNullValue();
-                            if (this.currentPayloadWriter == null)
-                            {
-                                this.pendingEncryptedPath = null;
-                            }
-
-                            break;
-                    }
+                    pool.Return(scratch);
                 }
 
-                this.readerState = reader.CurrentState;
-                return reader.BytesConsumed;
+                scratch = newBuf;
+            }
+        }
+
+        private static void HandleStartObject(ref EncryptionPipelineState s)
+        {
+            if (s.CurrentPayloadWriter != null)
+            {
+                s.CurrentPayloadWriter.WriteStartObject();
+                s.BufferedDepth++;
+            }
+            else if (s.PendingEncryptedPath != null)
+            {
+                BeginBufferingContainer(ref s, isArray: false, s.PendingEncryptedPath);
+            }
+            else
+            {
+                s.Writer.WriteStartObject();
+            }
+        }
+
+        private static void HandleEndObject(ref EncryptionPipelineState s, ref Utf8JsonReader reader)
+        {
+            if (s.CurrentPayloadWriter != null)
+            {
+                s.CurrentPayloadWriter.WriteEndObject();
+                s.BufferedDepth--;
+                if (s.BufferedDepth == 0)
+                {
+                    EndBufferingContainer(ref s, TypeMarker.Object);
+                }
+            }
+            else
+            {
+                if (reader.CurrentDepth == 0)
+                {
+                    // Insert encryption metadata before closing root object (so it remains part of the document body).
+                    WriteEncryptionInfo(
+                        s.Writer,
+                        s.FormatVersion,
+                        s.EncryptionAlgorithmName,
+                        s.DataEncryptionKeyId,
+                        s.PathsEncrypted,
+                        s.CompressionAlgorithm,
+                        s.CompressedPaths,
+                        null);
+                }
+
+                s.Writer.WriteEndObject();
+            }
+        }
+
+        private static void HandleStartArray(ref EncryptionPipelineState s)
+        {
+            if (s.CurrentPayloadWriter != null)
+            {
+                s.CurrentPayloadWriter.WriteStartArray();
+                s.BufferedDepth++;
+            }
+            else if (s.PendingEncryptedPath != null)
+            {
+                BeginBufferingContainer(ref s, isArray: true, s.PendingEncryptedPath);
+            }
+            else
+            {
+                s.Writer.WriteStartArray();
+            }
+        }
+
+        private static void HandleEndArray(ref EncryptionPipelineState s)
+        {
+            if (s.CurrentPayloadWriter != null)
+            {
+                s.CurrentPayloadWriter.WriteEndArray();
+                s.BufferedDepth--;
+                if (s.BufferedDepth == 0)
+                {
+                    EndBufferingContainer(ref s, TypeMarker.Array);
+                }
+            }
+            else
+            {
+                s.Writer.WriteEndArray();
+            }
+        }
+
+        private static void HandlePropertyName(ref EncryptionPipelineState s, ref Utf8JsonReader reader)
+        {
+            if (reader.CurrentDepth == 1)
+            {
+                // Only top-level properties are candidates for encryption path matches.
+                int nameLen = reader.HasValueSequence ? (int)reader.ValueSequence.Length : reader.ValueSpan.Length;
+                s.PendingEncryptedPath = s.CandidatePaths.TryMatch(ref reader, nameLen, out string path) ? path : null;
             }
 
-            private void BeginBufferingContainer(bool isArray, string path)
+            if (!reader.HasValueSequence)
             {
-                this.payloadBuffer.Clear();
-                this.payloadWriter.Reset(this.payloadBuffer);
+                TargetWriter(s).WritePropertyName(reader.ValueSpan);
+            }
+            else
+            {
+                int estimatedLength = (int)reader.ValueSequence.Length;
+                byte[] scratch = s.Scratch;
+                EnsureScratchCapacity(ref scratch, Math.Max(estimatedLength, EncryptionPipelineState.ScratchMinForStrings), s.Pool);
+                int copied = reader.CopyString(scratch);
+                s.Scratch = scratch;
+                TargetWriter(s).WritePropertyName(scratch.AsSpan(0, copied));
+            }
+        }
 
-                if (isArray)
+        private static void HandleString(ref EncryptionPipelineState s, ref Utf8JsonReader reader)
+        {
+            if (s.PendingEncryptedPath != null && s.CurrentPayloadWriter == null)
+            {
+                int estimatedLength = reader.HasValueSequence ? (int)reader.ValueSequence.Length : reader.ValueSpan.Length;
+                byte[] scratch = s.Scratch;
+                EnsureScratchCapacity(ref scratch, Math.Max(estimatedLength, EncryptionPipelineState.ScratchMinForStrings), s.Pool);
+                int len = reader.CopyString(scratch);
+                s.Scratch = scratch;
+                EncryptAndWritePrimitive(ref s, TypeMarker.String, scratch, len, s.PendingEncryptedPath);
+                s.PendingEncryptedPath = null;
+                s.PropertiesEncrypted++;
+            }
+            else
+            {
+                if (!reader.HasValueSequence && !reader.ValueIsEscaped)
                 {
-                    this.payloadWriter.WriteStartArray();
+                    TargetWriter(s).WriteStringValue(reader.ValueSpan);
                 }
                 else
                 {
-                    this.payloadWriter.WriteStartObject();
+                    int estimatedLength = reader.HasValueSequence ? (int)reader.ValueSequence.Length : reader.ValueSpan.Length;
+                    byte[] scratch = s.Scratch;
+                    EnsureScratchCapacity(ref scratch, Math.Max(estimatedLength, EncryptionPipelineState.ScratchMinForStrings), s.Pool);
+                    int copied = reader.CopyString(scratch);
+                    s.Scratch = scratch;
+                    TargetWriter(s).WriteStringValue(scratch.AsSpan(0, copied));
                 }
-
-                this.currentPayloadWriter = this.payloadWriter;
-                this.bufferingPath = path;
-                this.bufferedDepth = 1;
             }
+        }
 
-            private void EndBufferingContainer(TypeMarker marker)
+        private static void HandleNumber(ref EncryptionPipelineState s, ref Utf8JsonReader reader)
+        {
+            if (s.PendingEncryptedPath != null && s.CurrentPayloadWriter == null)
             {
-                this.currentPayloadWriter.Flush();
-                (byte[] bytes, int len) = this.payloadBuffer.WrittenBuffer;
-
-                (byte[] encBytes, int encLen) = this.EncryptPayload(bytes, len, marker, this.bufferingPath);
-                this.writer.WriteBase64StringValue(encBytes.AsSpan(0, encLen));
-                this.pool.Return(encBytes);
-
-                this.PropertiesEncrypted++;
-
-                // Reset buffering state
-                this.pendingEncryptedPath = null;
-                this.bufferingPath = null;
-                this.currentPayloadWriter = null;
-                this.bufferedDepth = 0;
-                this.payloadBuffer.Clear();
-            }
-
-            private void EncryptAndWritePrimitive(TypeMarker marker, byte[] buffer, int length, string path)
-            {
-                (byte[] encBytes, int encLen) = this.EncryptPayload(buffer, length, marker, path);
-                (this.currentPayloadWriter ?? this.writer).WriteBase64StringValue(encBytes.AsSpan(0, encLen));
-                this.pool.Return(encBytes);
-            }
-
-            private (byte[] buffer, int length) EncryptPayload(byte[] payload, int payloadSize, TypeMarker typeMarker, string path)
-            {
-                byte[] processedBytes = payload;
-                int processedLength = payloadSize;
-
-                if (this.compressor != null && payloadSize >= this.minimalCompressedLength)
+                ReadOnlySpan<byte> numberSpan;
+                if (!reader.HasValueSequence)
                 {
-                    this.compressedPaths ??= new Dictionary<string, int>();
-                    byte[] compressedBytes = this.pool.Rent(BrotliCompressor.GetMaxCompressedSize(payloadSize));
-
-                    processedLength = this.compressor.Compress(this.compressedPaths, path, processedBytes, payloadSize, compressedBytes);
-                    processedBytes = compressedBytes;
-                    this.CompressedPathsCompressed++;
+                    numberSpan = reader.ValueSpan;
                 }
-
-                (byte[] encryptedBytes, int encryptedCount) = this.mdeEncryptor.Encrypt(this.encryptionKey, typeMarker, processedBytes, processedLength, this.pool);
-
-                if (!ReferenceEquals(processedBytes, payload) && this.compressor != null)
+                else
                 {
-                    this.pool.Return(processedBytes);
+                    byte[] scratch = s.Scratch;
+                    int len = CopySequenceToScratch(reader.ValueSequence, ref scratch, EncryptionPipelineState.ScratchMinForNumbers, s.Pool);
+                    s.Scratch = scratch;
+                    numberSpan = scratch.AsSpan(0, len);
                 }
 
-                this.pathsEncrypted.Add(path);
-                return (encryptedBytes, encryptedCount);
+                (TypeMarker marker, byte[] bytes, int length) = SerializeNumber(numberSpan, s.Pool);
+                (byte[] encBytes, int encLen) = EncryptPayload(ref s, bytes, length, marker, s.PendingEncryptedPath);
+                s.Pool.Return(bytes);
+                TargetWriter(s).WriteBase64StringValue(encBytes.AsSpan(0, encLen));
+                s.Pool.Return(encBytes);
+                s.PendingEncryptedPath = null;
+                s.PropertiesEncrypted++;
             }
-
-            private static void EnsureCapacity(ref byte[] scratch, int needed, ArrayPoolManager pool)
+            else
             {
-                if (scratch == null || scratch.Length < needed)
+                if (!reader.HasValueSequence)
                 {
-                    byte[] newBuf = pool.Rent(needed);
-                    if (scratch != null)
-                    {
-                        pool.Return(scratch);
-                    }
-
-                    scratch = newBuf;
+                    TargetWriter(s).WriteRawValue(reader.ValueSpan, true);
+                }
+                else
+                {
+                    byte[] scratch = s.Scratch;
+                    int len = CopySequenceToScratch(reader.ValueSequence, ref scratch, EncryptionPipelineState.ScratchMinForNumbers, s.Pool);
+                    s.Scratch = scratch;
+                    TargetWriter(s).WriteRawValue(scratch.AsSpan(0, len), true);
                 }
             }
+        }
 
-            private static int CopySequenceToScratch(ReadOnlySequence<byte> sequence, ref byte[] scratch, int minCapacity, ArrayPoolManager pool)
+        private static void HandleBool(ref EncryptionPipelineState s, bool value)
+        {
+            if (s.PendingEncryptedPath != null && s.CurrentPayloadWriter == null)
             {
-                int length = (int)sequence.Length;
-                EnsureCapacity(ref scratch, Math.Max(length, minCapacity), pool);
-                sequence.CopyTo(scratch.AsSpan(0, length));
-                return length;
+                (byte[] bytes, int length) = Serialize(value, s.Pool);
+                (byte[] encBytes, int encLen) = EncryptPayload(ref s, bytes, length, TypeMarker.Boolean, s.PendingEncryptedPath);
+                s.Pool.Return(bytes);
+                TargetWriter(s).WriteBase64StringValue(encBytes.AsSpan(0, encLen));
+                s.Pool.Return(encBytes);
+                s.PendingEncryptedPath = null;
+                s.PropertiesEncrypted++;
+            }
+            else
+            {
+                TargetWriter(s).WriteBooleanValue(value);
+            }
+        }
+
+        private static void HandleNull(ref EncryptionPipelineState s)
+        {
+            TargetWriter(s).WriteNullValue();
+            if (s.CurrentPayloadWriter == null)
+            {
+                s.PendingEncryptedPath = null;
             }
         }
 
@@ -648,6 +584,97 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             byte[] buffer = arrayPoolManager.Rent(byteCount);
             int length = StreamProcessor.SqlDoubleSerializer.Serialize(value, buffer);
             return (TypeMarker.Double, buffer, length);
+        }
+
+        private sealed class EncryptionPipelineState : IDisposable
+        {
+            internal const int ScratchMinForStrings = 64;
+            internal const int ScratchMinForNumbers = 32;
+
+            // Scratch minimums chosen to reduce immediate re-rent for common small tokens.
+            internal Utf8JsonWriter Writer { get; }
+
+            internal MdeEncryptor Encryptor { get; } = new MdeEncryptor();
+
+            internal DataEncryptionKey DataEncryptionKey { get; }
+
+            internal string EncryptionAlgorithmName { get; }
+
+            internal string DataEncryptionKeyId { get; }
+
+            internal CompressionOptions.CompressionAlgorithm CompressionAlgorithm { get; }
+
+            internal int MinimalCompressedLength { get; }
+
+            internal BrotliCompressor Compressor { get; }
+
+            internal CandidatePaths CandidatePaths { get; }
+
+            internal int FormatVersion { get; }
+
+            internal ArrayPoolManager Pool { get; }
+
+            internal List<string> PathsEncrypted { get; }
+
+            internal RentArrayBufferWriter PayloadBuffer { get; }
+
+            internal Utf8JsonWriter PayloadWriter { get; }
+
+            internal Dictionary<string, int> CompressedPaths { get; set; }
+
+            internal byte[] Scratch { get; set; }
+
+            internal JsonReaderState ReaderState { get; set; }
+
+            internal Utf8JsonWriter CurrentPayloadWriter { get; set; }
+
+            internal string PendingEncryptedPath { get; set; }
+
+            internal string BufferingPath { get; set; }
+
+            internal int BufferedDepth { get; set; }
+
+            internal long PropertiesEncrypted { get; set; }
+
+            internal long CompressedPathsCompressed { get; set; }
+
+            internal EncryptionPipelineState(
+                Utf8JsonWriter writer,
+                DataEncryptionKey key,
+                EncryptionOptions options,
+                BrotliCompressor compressor,
+                CandidatePaths candidatePaths,
+                int formatVersion,
+                int pathsCapacity,
+                ArrayPoolManager pool,
+                JsonReaderState initialReaderState)
+            {
+                this.Writer = writer ?? throw new ArgumentNullException(nameof(writer));
+                this.DataEncryptionKey = key ?? throw new ArgumentNullException(nameof(key));
+                this.EncryptionAlgorithmName = options?.EncryptionAlgorithm ?? throw new ArgumentNullException(nameof(options));
+                this.DataEncryptionKeyId = options.DataEncryptionKeyId;
+                this.CompressionAlgorithm = options.CompressionOptions.Algorithm;
+                this.MinimalCompressedLength = options.CompressionOptions.MinimalCompressedLength;
+                this.Compressor = compressor;
+                this.CandidatePaths = candidatePaths ?? throw new ArgumentNullException(nameof(candidatePaths));
+                this.FormatVersion = formatVersion;
+                this.Pool = pool ?? throw new ArgumentNullException(nameof(pool));
+                this.PathsEncrypted = pathsCapacity > 0 ? new List<string>(pathsCapacity) : new List<string>();
+                this.PayloadBuffer = new RentArrayBufferWriter();
+                this.PayloadWriter = new Utf8JsonWriter(this.PayloadBuffer);
+                this.ReaderState = initialReaderState;
+            }
+
+            public void Dispose()
+            {
+                this.PayloadWriter?.Dispose();
+                this.PayloadBuffer?.Dispose();
+                if (this.Scratch != null)
+                {
+                    this.Pool.Return(this.Scratch);
+                    this.Scratch = null;
+                }
+            }
         }
     }
 }

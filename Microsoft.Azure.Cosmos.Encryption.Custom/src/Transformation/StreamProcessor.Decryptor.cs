@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
+    using System.Runtime.CompilerServices;
     using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
@@ -102,149 +103,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 long startTimestamp = Stopwatch.GetTimestamp();
                 ctx.StartTimestamp = startTimestamp;
 
-                // Try small payload one-shot for seekable streams
+                // Attempt fast paths (small seekable or non-seekable probe)
                 if (inputStream.CanSeek)
                 {
-                    long remaining = inputStream.Length - inputStream.Position;
-                    if (remaining > 0 && remaining <= SmallPayloadMaxBytes)
-                    {
-                        int len = (int)remaining;
-                        byte[] oneShot = pool.Rent(Bucket(len));
-                        try
-                        {
-                            int total = 0;
-                            while (total < len)
-                            {
-                                int toRead = Math.Min(len - total, oneShot.Length - total);
-                                int r = await inputStream.ReadAsync(oneShot.AsMemory(total, toRead), cancellationToken)
-                                    .ConfigureAwait(false);
-                                if (r == 0)
-                                {
-                                    break;
-                                }
-
-                                total += r;
-                            }
-
-                            int read = Math.Min(total, len);
-                            ctx.BytesRead += read;
-
-                            _ = this.ProcessBufferChunk(
-                                ctx,
-                                oneShot.AsSpan(0, read),
-                                ref readerState,
-                                isFinalBlock: true,
-                                ref skip);
-
-                            isFinalBlock = true;
-                        }
-                        finally
-                        {
-                            pool.Return(oneShot);
-                        }
-                    }
+                    (isFinalBlock, readerState, skip) = await this.TryProcessSmallSeekableAsync(inputStream, ctx, pool, readerState, skip, cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
-                    // Non-seekable probe: read up to ProbeSize once
-                    buffer = pool.Rent(Bucket(ProbeSize));
-                    int read = await inputStream.ReadAsync(buffer.AsMemory(0, ProbeSize), cancellationToken)
-                        .ConfigureAwait(false);
-                    ctx.BytesRead += read;
-
-                    if (read > 0)
-                    {
-                        bool finalProbe = read < ProbeSize;
-                        long consumed = this.ProcessBufferChunk(
-                            ctx,
-                            buffer.AsSpan(0, read),
-                            ref readerState,
-                            isFinalBlock: finalProbe,
-                            ref skip);
-
-                        leftOver = read - (int)consumed;
-                        if (finalProbe && leftOver == 0)
-                        {
-                            isFinalBlock = true;
-                        }
-                    }
-                    else
-                    {
-                        isFinalBlock = true;
-                    }
+                    (buffer, leftOver, isFinalBlock, readerState, skip) = await this.ProbeNonSeekableAsync(inputStream, ctx, pool, readerState, skip, cancellationToken).ConfigureAwait(false);
                 }
 
-                // Streaming loop
-                while (!isFinalBlock)
+                if (!isFinalBlock)
                 {
-                    buffer ??= pool.Rent(this.initialBufferSize);
-
-                    int read = await inputStream
-                        .ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), cancellationToken)
-                        .ConfigureAwait(false);
-                    int dataSize = read + leftOver;
-                    ctx.BytesRead += read;
-                    isFinalBlock = dataSize == 0;
-
-                    long consumed = this.ProcessBufferChunk(
-                        ctx,
-                        buffer.AsSpan(0, dataSize),
-                        ref readerState,
-                        isFinalBlock,
-                        ref skip);
-
-                    leftOver = dataSize - (int)consumed;
-
-                    if (dataSize > 0 && leftOver == dataSize)
-                    {
-                        // Grow buffer to fit token spanning buffers
-                        int target = Math.Max(buffer.Length * 2, leftOver + BufferGrowthMinIncrement);
-                        int bucketedGrow = Bucket(target);
-                        int capped = Math.Min(MaxBufferSizeBytes, bucketedGrow);
-                        if (buffer.Length >= capped)
-                        {
-                            throw new InvalidOperationException(
-                                $"JSON token exceeds maximum supported size of {MaxBufferSizeBytes} bytes at path {ctx.CurrentPropertyPath ?? "<unknown>"}.");
-                        }
-
-                        byte[] old = buffer;
-                        byte[] newBuf = pool.Rent(capped);
-                        old.AsSpan(0, dataSize).CopyTo(newBuf);
-                        buffer = newBuf;
-                        pool.Return(old);
-                    }
-                    else if (leftOver != 0)
-                    {
-                        buffer.AsSpan(dataSize - leftOver, leftOver).CopyTo(buffer);
-                    }
+                    (buffer, leftOver, isFinalBlock, readerState, skip) = await this.StreamProcessAsync(inputStream, ctx, pool, buffer, leftOver, readerState, skip, cancellationToken).ConfigureAwait(false);
                 }
 
-                writer.Flush();
-                chunkedWriter.FinalFlush();
-
-                long bytesWritten = writer.BytesCommitted;
-                if (outputStream.CanSeek)
-                {
-                    outputStream.Position = 0;
-                }
-
-                // Metrics
-                ctx.Diagnostics?.SetMetric("decrypt.bytesRead", ctx.BytesRead);
-                ctx.Diagnostics?.SetMetric("decrypt.bytesWritten", bytesWritten);
-                ctx.Diagnostics?.SetMetric("decrypt.propertiesDecrypted", ctx.PropertiesDecrypted);
-                ctx.Diagnostics?.SetMetric("decrypt.compressedPathsDecompressed", ctx.CompressedPathsDecompressed);
-                ctx.Diagnostics?.SetMetric("decrypt.writerFlushes", chunkedWriter.Flushes);
-                long elapsedTicks = Stopwatch.GetTimestamp() - ctx.StartTimestamp;
-                long elapsedMs = (long)(elapsedTicks * 1000.0 / Stopwatch.Frequency);
-                ctx.Diagnostics?.SetMetric("decrypt.elapsedMs", elapsedMs);
-
-                // Preserve legacy behavior: return null context if nothing decrypted and no encrypted paths requested
-                if (ctx.PathsDecrypted.Count == 0 && ctx.ExpectedDecrypted == 0)
-                {
-                    return null;
-                }
-
-                return EncryptionProcessor.CreateDecryptionContext(ctx.PathsDecrypted, properties.DataEncryptionKeyId);
+                return FinalizeAndCreateContext(outputStream, chunkedWriter, writer, ctx, properties);
             }
             finally
             {
@@ -260,11 +134,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
         private static void ValidateEncryptionProperties(EncryptionProperties properties)
         {
-            if (properties.EncryptionFormatVersion != EncryptionFormatVersion.Mde &&
-                properties.EncryptionFormatVersion != EncryptionFormatVersion.MdeWithCompression)
+            switch (properties.EncryptionFormatVersion)
             {
-                throw new NotSupportedException(
-                    $"Unknown encryption format version: {properties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
+                case EncryptionFormatVersion.Mde:
+                case EncryptionFormatVersion.MdeWithCompression:
+                    break;
+                default:
+                    throw new NotSupportedException(
+                        $"Unknown encryption format version: {properties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
             }
 
             bool containsCompressed = properties.CompressedEncryptedPaths?.Count > 0;
@@ -272,6 +149,154 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             {
                 throw new NotSupportedException($"Unknown compression algorithm {properties.CompressionAlgorithm}");
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static DecryptionContext FinalizeAndCreateContext(
+            Stream outputStream,
+            StreamChunkedBufferWriter chunkedWriter,
+            Utf8JsonWriter writer,
+            ProcessingContext ctx,
+            EncryptionProperties properties)
+        {
+            writer.Flush();
+            chunkedWriter.FinalFlush();
+
+            long bytesWritten = writer.BytesCommitted;
+            if (outputStream.CanSeek)
+            {
+                outputStream.Position = 0;
+            }
+
+            // Metrics
+            ctx.Diagnostics?.SetMetric("decrypt.bytesRead", ctx.BytesRead);
+            ctx.Diagnostics?.SetMetric("decrypt.bytesWritten", bytesWritten);
+            ctx.Diagnostics?.SetMetric("decrypt.propertiesDecrypted", ctx.PropertiesDecrypted);
+            ctx.Diagnostics?.SetMetric("decrypt.compressedPathsDecompressed", ctx.CompressedPathsDecompressed);
+            ctx.Diagnostics?.SetMetric("decrypt.writerFlushes", chunkedWriter.Flushes);
+            long elapsedTicks = Stopwatch.GetTimestamp() - ctx.StartTimestamp;
+            long elapsedMs = (long)(elapsedTicks * 1000.0 / Stopwatch.Frequency);
+            ctx.Diagnostics?.SetMetric("decrypt.elapsedMs", elapsedMs);
+
+            if (ctx.PathsDecrypted.Count == 0 && ctx.ExpectedDecrypted == 0)
+            {
+                return null; // preserve legacy behavior
+            }
+
+            return EncryptionProcessor.CreateDecryptionContext(ctx.PathsDecrypted, properties.DataEncryptionKeyId);
+        }
+
+        private async Task<(bool isFinalBlock, JsonReaderState readerState, SkipState skip)> TryProcessSmallSeekableAsync(
+            Stream inputStream,
+            ProcessingContext ctx,
+            ArrayPoolManager pool,
+            JsonReaderState readerState,
+            SkipState skip,
+            CancellationToken cancellationToken)
+        {
+            long remaining = inputStream.Length - inputStream.Position;
+            if (remaining <= 0 || remaining > SmallPayloadMaxBytes)
+            {
+                return (false, readerState, skip);
+            }
+
+            int len = (int)remaining;
+            byte[] oneShot = pool.Rent(Bucket(len));
+            try
+            {
+                int total = 0;
+                while (total < len)
+                {
+                    int toRead = Math.Min(len - total, oneShot.Length - total);
+                    int r = await inputStream.ReadAsync(oneShot.AsMemory(total, toRead), cancellationToken).ConfigureAwait(false);
+                    if (r == 0)
+                    {
+                        break;
+                    }
+
+                    total += r;
+                }
+
+                int read = Math.Min(total, len);
+                ctx.BytesRead += read;
+                _ = this.ProcessBufferChunk(ctx, oneShot.AsSpan(0, read), ref readerState, isFinalBlock: true, ref skip);
+                return (true, readerState, skip); // fully processed
+            }
+            finally
+            {
+                pool.Return(oneShot);
+            }
+        }
+
+        private async Task<(byte[] buffer, int leftOver, bool isFinalBlock, JsonReaderState readerState, SkipState skip)> ProbeNonSeekableAsync(
+            Stream inputStream,
+            ProcessingContext ctx,
+            ArrayPoolManager pool,
+            JsonReaderState readerState,
+            SkipState skip,
+            CancellationToken cancellationToken)
+        {
+            byte[] buffer = pool.Rent(Bucket(ProbeSize));
+            int read = await inputStream.ReadAsync(buffer.AsMemory(0, ProbeSize), cancellationToken).ConfigureAwait(false);
+            ctx.BytesRead += read;
+
+            if (read == 0)
+            {
+                return (buffer, 0, true, readerState, skip); // empty stream
+            }
+
+            bool finalProbe = read < ProbeSize;
+            long consumed = this.ProcessBufferChunk(ctx, buffer.AsSpan(0, read), ref readerState, isFinalBlock: finalProbe, ref skip);
+            int leftOver = read - (int)consumed;
+            bool isFinal = finalProbe && leftOver == 0;
+            return (buffer, leftOver, isFinal, readerState, skip);
+        }
+
+        private async Task<(byte[] buffer, int leftOver, bool isFinalBlock, JsonReaderState readerState, SkipState skip)> StreamProcessAsync(
+            Stream inputStream,
+            ProcessingContext ctx,
+            ArrayPoolManager pool,
+            byte[] buffer,
+            int leftOver,
+            JsonReaderState readerState,
+            SkipState skip,
+            CancellationToken cancellationToken)
+        {
+            bool isFinalBlock = false;
+            while (!isFinalBlock)
+            {
+                buffer ??= pool.Rent(this.initialBufferSize);
+                int read = await inputStream.ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), cancellationToken).ConfigureAwait(false);
+                int dataSize = read + leftOver;
+                ctx.BytesRead += read;
+                isFinalBlock = dataSize == 0;
+
+                long consumed = this.ProcessBufferChunk(ctx, buffer.AsSpan(0, dataSize), ref readerState, isFinalBlock, ref skip);
+                leftOver = dataSize - (int)consumed;
+
+                if (dataSize > 0 && leftOver == dataSize)
+                {
+                    int target = Math.Max(buffer.Length * 2, leftOver + BufferGrowthMinIncrement);
+                    int bucketedGrow = Bucket(target);
+                    int capped = Math.Min(MaxBufferSizeBytes, bucketedGrow);
+                    if (buffer.Length >= capped)
+                    {
+                        throw new InvalidOperationException($"JSON token exceeds maximum supported size of {MaxBufferSizeBytes} bytes at path {ctx.CurrentPropertyPath ?? "<unknown>"}.");
+                    }
+
+                    byte[] old = buffer;
+                    byte[] newBuf = pool.Rent(capped);
+                    old.AsSpan(0, dataSize).CopyTo(newBuf);
+                    buffer = newBuf;
+                    pool.Return(old);
+                }
+                else if (leftOver != 0)
+                {
+                    buffer.AsSpan(dataSize - leftOver, leftOver).CopyTo(buffer);
+                }
+            }
+
+            return (buffer, leftOver, true, readerState, skip);
         }
 
         private long ProcessBufferChunk(
@@ -286,211 +311,218 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             while (reader.Read())
             {
                 // Handle ongoing skip of EncryptedInfo value across buffers
-                if (skip.Active)
+                if (this.HandleActiveSkip(ref reader, ref skip))
                 {
-                    if (skip.FirstValueTokenPending)
-                    {
-                        skip.FirstValueTokenPending = false;
-                        if (reader.TokenType == JsonTokenType.StartObject ||
-                            reader.TokenType == JsonTokenType.StartArray)
-                        {
-                            skip.Depth = 1;
-                        }
-                        else
-                        {
-                            skip.Active = false;
-                        }
-
-                        continue;
-                    }
-
-                    if (reader.TokenType == JsonTokenType.StartObject || reader.TokenType == JsonTokenType.StartArray)
-                    {
-                        skip.Depth++;
-                        continue;
-                    }
-
-                    if (reader.TokenType == JsonTokenType.EndObject || reader.TokenType == JsonTokenType.EndArray)
-                    {
-                        skip.Depth--;
-                        if (skip.Depth == 0)
-                        {
-                            skip.Active = false;
-                        }
-                    }
-
                     continue;
                 }
 
-                switch (reader.TokenType)
+                if (this.ProcessToken(ref reader, ctx, ref skip))
                 {
-                    case JsonTokenType.PropertyName:
-                        {
-                            // Special-case skip for encrypted info property
-                            if (reader.ValueTextEquals(Constants.EncryptedInfo))
-                            {
-                                ctx.CurrentPropertyPath = EncryptedInfoPropertyPath;
-
-                                if (!reader.TrySkip())
-                                {
-                                    skip.Active = true;
-                                    skip.FirstValueTokenPending = true;
-                                    skip.Depth = 0;
-                                }
-
-                                // Skip writing property name and its value entirely
-                                continue;
-                            }
-
-                            // Only top-level properties are eligible for encryption by path
-                            if (reader.CurrentDepth == 1)
-                            {
-                                string matchedFullPath = null;
-                                int propLen = reader.HasValueSequence
-                                    ? (int)reader.ValueSequence.Length
-                                    : reader.ValueSpan.Length;
-                                if (ctx.PathMatcher.TryMatch(ref reader, propLen, out string path))
-                                {
-                                    matchedFullPath = path;
-                                }
-
-                                if (matchedFullPath != null)
-                                {
-                                    ctx.DecryptPropertyName = matchedFullPath;
-                                    ctx.CurrentPropertyPath = matchedFullPath;
-                                }
-                                else
-                                {
-                                    ctx.DecryptPropertyName = null;
-                                    ctx.CurrentPropertyPath = null;
-                                }
-                            }
-                            else
-                            {
-                                ctx.DecryptPropertyName = null;
-                                ctx.CurrentPropertyPath = null;
-                            }
-
-                            // Write property name with minimal allocation
-                            if (!reader.HasValueSequence)
-                            {
-                                ctx.Writer.WritePropertyName(reader.ValueSpan);
-                            }
-                            else
-                            {
-                                int estimatedLength = (int)reader.ValueSequence.Length;
-                                Span<byte> nameSpan = CopyStringToSpan(ref reader, ref ctx.TempScratch, ctx.Pool, estimatedLength);
-                                ctx.Writer.WritePropertyName(nameSpan);
-                            }
-
-                            break;
-                        }
-
-                    case JsonTokenType.String:
-                        {
-                            if (ctx.DecryptPropertyName == null)
-                            {
-                                // Pass-through string
-                                try
-                                {
-                                    if (!reader.HasValueSequence && !reader.ValueIsEscaped)
-                                    {
-                                        ctx.Writer.WriteStringValue(reader.ValueSpan);
-                                    }
-                                    else
-                                    {
-                                        int estimatedLength = reader.HasValueSequence
-                                            ? (int)reader.ValueSequence.Length
-                                            : reader.ValueSpan.Length;
-                                        Span<byte> strSpan = CopyStringToSpan(ref reader, ref ctx.TempScratch, ctx.Pool, estimatedLength);
-                                        ctx.Writer.WriteStringValue(strSpan);
-                                    }
-                                }
-                                catch (Exception ex)
-                                {
-                                    throw new InvalidOperationException(
-                                        $"Invalid UTF-8 while writing string at path {ctx.CurrentPropertyPath ?? "<unknown>"}",
-                                        ex);
-                                }
-                            }
-                            else
-                            {
-                                this.DecryptAndWriteEncryptedValue(ctx, ref reader, ctx.DecryptPropertyName);
-                                ctx.PathsDecrypted.Add(ctx.DecryptPropertyName);
-                                ctx.PropertiesDecrypted++;
-                            }
-
-                            ctx.DecryptPropertyName = null;
-                            break;
-                        }
-
-                    case JsonTokenType.Number:
-                        {
-                            ctx.DecryptPropertyName = null;
-
-                            if (!reader.HasValueSequence)
-                            {
-                                ctx.Writer.WriteRawValue(reader.ValueSpan, skipInputValidation: true);
-                            }
-                            else
-                            {
-                                int len = (int)reader.ValueSequence.Length;
-                                if (len <= StackallocStringThreshold)
-                                {
-                                    Span<byte> local = stackalloc byte[StackallocStringThreshold];
-                                    reader.ValueSequence.CopyTo(local);
-                                    ctx.Writer.WriteRawValue(local[..len], true);
-                                }
-                                else
-                                {
-                                    EnsureCapacity(ref ctx.TempScratch, Math.Max(len, 32), ctx.Pool);
-                                    reader.ValueSequence.CopyTo(ctx.TempScratch);
-                                    ctx.Writer.WriteRawValue(ctx.TempScratch.AsSpan(0, len), true);
-                                }
-                            }
-
-                            break;
-                        }
-
-                    case JsonTokenType.True:
-                        ctx.DecryptPropertyName = null;
-                        ctx.Writer.WriteBooleanValue(true);
-                        break;
-
-                    case JsonTokenType.False:
-                        ctx.DecryptPropertyName = null;
-                        ctx.Writer.WriteBooleanValue(false);
-                        break;
-
-                    case JsonTokenType.Null:
-                        ctx.DecryptPropertyName = null;
-                        ctx.Writer.WriteNullValue();
-                        break;
-
-                    case JsonTokenType.StartObject:
-                        ctx.DecryptPropertyName = null;
-                        ctx.Writer.WriteStartObject();
-                        break;
-
-                    case JsonTokenType.EndObject:
-                        ctx.DecryptPropertyName = null;
-                        ctx.Writer.WriteEndObject();
-                        break;
-
-                    case JsonTokenType.StartArray:
-                        ctx.DecryptPropertyName = null;
-                        ctx.Writer.WriteStartArray();
-                        break;
-
-                    case JsonTokenType.EndArray:
-                        ctx.DecryptPropertyName = null;
-                        ctx.Writer.WriteEndArray();
-                        break;
+                    continue; // token handler requested next iteration (e.g., encrypted info skip)
                 }
             }
 
             readerState = reader.CurrentState;
             return reader.BytesConsumed;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool ProcessToken(ref Utf8JsonReader reader, ProcessingContext ctx, ref SkipState skip)
+        {
+            switch (reader.TokenType)
+            {
+                case JsonTokenType.PropertyName:
+                    // Special-case skip for encrypted info property
+                    if (reader.ValueTextEquals(Constants.EncryptedInfo))
+                    {
+                        ctx.CurrentPropertyPath = EncryptedInfoPropertyPath;
+                        if (!reader.TrySkip())
+                        {
+                            skip.Active = true;
+                            skip.FirstValueTokenPending = true;
+                            skip.Depth = 0;
+                        }
+
+                        return true; // skip writing property name and its value
+                    }
+
+                    if (reader.CurrentDepth == 1)
+                    {
+                        string matchedFullPath = null;
+                        int propLen = reader.HasValueSequence ? (int)reader.ValueSequence.Length : reader.ValueSpan.Length;
+                        if (ctx.PathMatcher.TryMatch(ref reader, propLen, out string path))
+                        {
+                            matchedFullPath = path;
+                        }
+
+                        if (matchedFullPath != null)
+                        {
+                            ctx.DecryptPropertyName = matchedFullPath;
+                            ctx.CurrentPropertyPath = matchedFullPath;
+                        }
+                        else
+                        {
+                            ctx.DecryptPropertyName = null;
+                            ctx.CurrentPropertyPath = null;
+                        }
+                    }
+                    else
+                    {
+                        ctx.DecryptPropertyName = null;
+                        ctx.CurrentPropertyPath = null;
+                    }
+
+                    if (!reader.HasValueSequence)
+                    {
+                        ctx.Writer.WritePropertyName(reader.ValueSpan);
+                    }
+                    else
+                    {
+                        int estimatedLength = (int)reader.ValueSequence.Length;
+                        Span<byte> nameSpan = CopyStringToSpan(ref reader, ref ctx.TempScratch, ctx.Pool, estimatedLength);
+                        ctx.Writer.WritePropertyName(nameSpan);
+                    }
+
+                    break;
+
+                case JsonTokenType.String:
+                    if (ctx.DecryptPropertyName == null)
+                    {
+                        try
+                        {
+                            if (!reader.HasValueSequence && !reader.ValueIsEscaped)
+                            {
+                                ctx.Writer.WriteStringValue(reader.ValueSpan);
+                            }
+                            else
+                            {
+                                int estimatedLength = reader.HasValueSequence ? (int)reader.ValueSequence.Length : reader.ValueSpan.Length;
+                                Span<byte> strSpan = CopyStringToSpan(ref reader, ref ctx.TempScratch, ctx.Pool, estimatedLength);
+                                ctx.Writer.WriteStringValue(strSpan);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            throw new InvalidOperationException($"Invalid UTF-8 while writing string at path {ctx.CurrentPropertyPath ?? "<unknown>"}", ex);
+                        }
+                    }
+                    else
+                    {
+                        this.DecryptAndWriteEncryptedValue(ctx, ref reader, ctx.DecryptPropertyName);
+                        ctx.PathsDecrypted.Add(ctx.DecryptPropertyName);
+                        ctx.PropertiesDecrypted++;
+                    }
+
+                    ctx.DecryptPropertyName = null;
+                    break;
+
+                case JsonTokenType.Number:
+                    ctx.DecryptPropertyName = null;
+                    if (!reader.HasValueSequence)
+                    {
+                        ctx.Writer.WriteRawValue(reader.ValueSpan, skipInputValidation: true);
+                    }
+                    else
+                    {
+                        int len = (int)reader.ValueSequence.Length;
+                        if (len <= StackallocStringThreshold)
+                        {
+                            Span<byte> local = stackalloc byte[StackallocStringThreshold];
+                            reader.ValueSequence.CopyTo(local);
+                            ctx.Writer.WriteRawValue(local[..len], true);
+                        }
+                        else
+                        {
+                            EnsureCapacity(ref ctx.TempScratch, Math.Max(len, 32), ctx.Pool);
+                            reader.ValueSequence.CopyTo(ctx.TempScratch);
+                            ctx.Writer.WriteRawValue(ctx.TempScratch.AsSpan(0, len), true);
+                        }
+                    }
+
+                    break;
+
+                case JsonTokenType.True:
+                    ctx.DecryptPropertyName = null;
+                    ctx.Writer.WriteBooleanValue(true);
+                    break;
+
+                case JsonTokenType.False:
+                    ctx.DecryptPropertyName = null;
+                    ctx.Writer.WriteBooleanValue(false);
+                    break;
+
+                case JsonTokenType.Null:
+                    ctx.DecryptPropertyName = null;
+                    ctx.Writer.WriteNullValue();
+                    break;
+
+                case JsonTokenType.StartObject:
+                    ctx.DecryptPropertyName = null;
+                    ctx.Writer.WriteStartObject();
+                    break;
+
+                case JsonTokenType.EndObject:
+                    ctx.DecryptPropertyName = null;
+                    ctx.Writer.WriteEndObject();
+                    break;
+
+                case JsonTokenType.StartArray:
+                    ctx.DecryptPropertyName = null;
+                    ctx.Writer.WriteStartArray();
+                    break;
+
+                case JsonTokenType.EndArray:
+                    ctx.DecryptPropertyName = null;
+                    ctx.Writer.WriteEndArray();
+                    break;
+            }
+
+            return false; // do not force loop continue beyond normal flow
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool HandleActiveSkip(ref Utf8JsonReader reader, ref SkipState skip)
+        {
+            if (!skip.Active)
+            {
+                return false;
+            }
+
+            if (skip.FirstValueTokenPending)
+            {
+                skip.FirstValueTokenPending = false;
+                if (reader.TokenType == JsonTokenType.StartObject || reader.TokenType == JsonTokenType.StartArray)
+                {
+                    skip.Depth = 1;
+                }
+                else
+                {
+                    // Primitive value: done skipping
+                    skip.Active = false;
+                }
+
+                return true; // consume this token
+            }
+
+            if (reader.TokenType == JsonTokenType.StartObject || reader.TokenType == JsonTokenType.StartArray)
+            {
+                skip.Depth++;
+                return true;
+            }
+
+            if (reader.TokenType == JsonTokenType.EndObject || reader.TokenType == JsonTokenType.EndArray)
+            {
+                skip.Depth--;
+                if (skip.Depth == 0)
+                {
+                    skip.Active = false;
+                }
+
+                return true;
+            }
+
+            // Other tokens inside skipped metadata are ignored
+            return true;
         }
 
         private void DecryptAndWriteEncryptedValue(

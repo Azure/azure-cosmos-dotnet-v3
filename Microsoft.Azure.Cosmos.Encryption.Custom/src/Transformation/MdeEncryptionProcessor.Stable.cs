@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             }
 
             EncryptionProperties encryptionProperties = new (
-                encryptionFormatVersion: 3,
+                encryptionFormatVersion: EncryptionFormatVersion.Mde,
                 encryptionOptions.EncryptionAlgorithm,
                 encryptionOptions.DataEncryptionKeyId,
                 encryptedData: null,

@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             compressor?.Dispose();
 #endif
             EncryptionProperties encryptionProperties = new (
-                encryptionFormatVersion: compressionEnabled ? 4 : 3,
+                encryptionFormatVersion: compressionEnabled ? EncryptionFormatVersion.MdeWithCompression : EncryptionFormatVersion.Mde,
                 encryptionOptions.EncryptionAlgorithm,
                 encryptionOptions.DataEncryptionKeyId,
                 encryptedData: null,

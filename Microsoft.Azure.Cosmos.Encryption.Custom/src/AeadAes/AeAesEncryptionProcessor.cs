@@ -60,11 +60,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
 
             encryptionProperties = new EncryptionProperties(
-                    encryptionFormatVersion: 2,
-                    encryptionOptions.EncryptionAlgorithm,
-                    encryptionOptions.DataEncryptionKeyId,
-                    encryptedData: cipherText,
-                    encryptionOptions.PathsToEncrypt);
+                encryptionFormatVersion: EncryptionFormatVersion.AeAes,
+                encryptionOptions.EncryptionAlgorithm,
+                encryptionOptions.DataEncryptionKeyId,
+                encryptedData: cipherText,
+                encryptionOptions.PathsToEncrypt);
 
             itemJObj.Add(Constants.EncryptedInfo, JObject.FromObject(encryptionProperties));
 
