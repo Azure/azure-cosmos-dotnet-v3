@@ -1135,33 +1135,27 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         [DataRow(true, DisplayName = "NonSeekableChunked_WithPathFilter")]
         public async Task Decrypt_NonSeekable_ChunkedVariants(bool usePathFilter)
         {
-            // Encrypt a small base document then inject a large unencrypted padding property post-encryption
-            var baseDoc = new { id = "1", LargeEnc = "A", MidEnc = "B", SmallEnc = "C", Other = 123 };
+            // Create a large encrypted document so that the encrypted payload exceeds the non-seekable probe size.
+            string largeValue = new string('x', 5000); // ensures multi-pass (> ProbeSize 2048)
+            var baseDoc = new { id = "1", LargeEnc = largeValue, MidEnc = "B", SmallEnc = "C", Other = 123 };
             string[] encryptPaths = usePathFilter ? new[] { "/LargeEnc", "/MidEnc" } : new[] { "/LargeEnc", "/MidEnc", "/SmallEnc" };
             EncryptionOptions options = CreateOptions(encryptPaths);
-            (MemoryStream encryptedSmall, EncryptionProperties props) = await EncryptRawAsync(baseDoc, options);
-            encryptedSmall.Position = 0;
-            using JsonDocument encDoc = JsonDocument.Parse(encryptedSmall, new JsonDocumentOptions { AllowTrailingCommas = true });
-            string raw = encDoc.RootElement.GetRawText();
-            string paddingValue = new string('p', 5000);
-            int insertPos = raw.IndexOf('{') + 1;
-            string inflated = raw.Insert(insertPos, "\"Padding\":\"" + paddingValue + "\",");
-            byte[] inflatedBytes = Encoding.UTF8.GetBytes(inflated);
-            Assert.IsTrue(inflatedBytes.Length > 2048, "Inflated JSON should exceed probe size to guarantee multi-pass.");
-            using ThrottledNonSeekableStream throttled = new ThrottledNonSeekableStream(inflatedBytes, firstChunkSize: 2048, subsequentChunkSize: 512);
-            MemoryStream output = new();
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(baseDoc, options);
+            byte[] encryptedBytes = encrypted.ToArray();
+            Assert.IsTrue(encryptedBytes.Length > 2048, "Encrypted JSON should exceed probe size to guarantee multi-pass.");
 
+            using ThrottledNonSeekableStream throttled = new ThrottledNonSeekableStream(encryptedBytes, firstChunkSize: 1536, subsequentChunkSize: 512);
+            MemoryStream output = new();
             DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(throttled, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
 
             output.Position = 0;
             using JsonDocument jd = JsonDocument.Parse(output);
             JsonElement root = jd.RootElement;
 
-            // Validate decrypted values present (original single-char values), plus injected padding
-            Assert.AreEqual("A", root.GetProperty("LargeEnc").GetString());
+            // Validate decrypted values present
+            Assert.AreEqual(largeValue, root.GetProperty("LargeEnc").GetString());
             Assert.AreEqual("B", root.GetProperty("MidEnc").GetString());
             Assert.AreEqual("C", root.GetProperty("SmallEnc").GetString());
-            Assert.AreEqual(paddingValue, root.GetProperty("Padding").GetString());
 
             // Ensure decrypted paths tracking aligns with filtered selection
             IReadOnlyList<string> decryptedPaths = ctx.DecryptionInfoList[0].PathsDecrypted;

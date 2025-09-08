@@ -88,6 +88,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 byte[] utf8Bytes = GetUtf8Bytes(p);
                 list.Add(new Entry(p, nameUtf8Len, utf8Bytes));
             }
+
             return new CandidatePaths(list.ToArray(), hasRoot ? "/" : null);
         }
 

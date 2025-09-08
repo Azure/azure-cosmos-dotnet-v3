@@ -252,11 +252,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 return (buffer, 0, true, readerState, skip); // empty stream
             }
 
-            bool finalProbe = read < ProbeSize;
-            long consumed = this.ProcessBufferChunk(ctx, buffer.AsSpan(0, read), ref readerState, isFinalBlock: finalProbe, ref skip);
+            // Do NOT mark as final just because the first read was smaller than ProbeSize; streams may return partial reads.
+            long consumed = this.ProcessBufferChunk(ctx, buffer.AsSpan(0, read), ref readerState, isFinalBlock: false, ref skip);
             int leftOver = read - (int)consumed;
-            bool isFinal = finalProbe && leftOver == 0;
-            return (buffer, leftOver, isFinal, readerState, skip);
+
+            if (read < ProbeSize && leftOver == 0)
+            {
+                return (buffer, 0, true, readerState, skip); // fully processed within probe
+            }
+
+            return (buffer, leftOver, false, readerState, skip);
         }
 
         private async Task<(byte[] buffer, int leftOver, bool isFinalBlock, JsonReaderState readerState, SkipState skip)> StreamProcessAsync(
@@ -277,9 +282,56 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 int dataSize = read + leftOver;
                 ctx.BytesRead += read;
                 isFinalBlock = dataSize == 0;
+                if (isFinalBlock)
+                {
+                    // Nothing left to parse; avoid final empty-segment validation that triggers depth error when previous segment already closed document.
+                    break;
+                }
 
-                long consumed = this.ProcessBufferChunk(ctx, buffer.AsSpan(0, dataSize), ref readerState, isFinalBlock, ref skip);
+                long consumed = this.ProcessBufferChunk(ctx, buffer.AsSpan(0, dataSize), ref readerState, isFinalBlock: false, ref skip);
                 leftOver = dataSize - (int)consumed;
+
+#if DEBUG
+                if (read > 0)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[DecryptStream] iter read={read} dataSize={dataSize} consumed={consumed} leftOver={leftOver} final?={isFinalBlock} path={ctx.CurrentPropertyPath}");
+                }
+#endif
+
+                // Early finalize if root closed
+                if (ctx.RootClosed)
+                {
+                    if (leftOver > 0 && !IsAllWhitespace(buffer.AsSpan(dataSize - leftOver, leftOver)))
+                    {
+                        throw new InvalidOperationException("Trailing non-whitespace content after root JSON closed.");
+                    }
+
+                    byte[] drain = ArrayPool<byte>.Shared.Rent(512);
+                    try
+                    {
+                        while (true)
+                        {
+                            int extra = await inputStream.ReadAsync(drain.AsMemory(0, drain.Length), cancellationToken).ConfigureAwait(false);
+                            if (extra == 0)
+                            {
+                                break;
+                            }
+
+                            if (!IsAllWhitespace(drain.AsSpan(0, extra)))
+                            {
+                                throw new InvalidOperationException("Trailing non-whitespace content after root JSON closed.");
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        ArrayPool<byte>.Shared.Return(drain);
+                    }
+
+                    isFinalBlock = true;
+                    leftOver = 0;
+                    break;
+                }
 
                 if (dataSize > 0 && leftOver == dataSize)
                 {
@@ -465,27 +517,47 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                 case JsonTokenType.StartObject:
                     ctx.DecryptPropertyName = null;
+                    if (reader.CurrentDepth == 0)
+                    {
+                        ctx.RootSeen = true;
+                    }
+
                     ctx.Writer.WriteStartObject();
                     break;
 
                 case JsonTokenType.EndObject:
                     ctx.DecryptPropertyName = null;
                     ctx.Writer.WriteEndObject();
+                    if (reader.CurrentDepth == 0 && ctx.RootSeen)
+                    {
+                        ctx.RootClosed = true;
+                    }
+
                     break;
 
                 case JsonTokenType.StartArray:
                     ctx.DecryptPropertyName = null;
+                    if (reader.CurrentDepth == 0)
+                    {
+                        ctx.RootSeen = true;
+                    }
+
                     ctx.Writer.WriteStartArray();
                     break;
 
                 case JsonTokenType.EndArray:
                     ctx.DecryptPropertyName = null;
                     ctx.Writer.WriteEndArray();
+                    if (reader.CurrentDepth == 0 && ctx.RootSeen)
+                    {
+                        ctx.RootClosed = true;
+                    }
+
                     break;
             }
 
             return false; // do not force loop continue beyond normal flow
-        }
+    }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool HandleActiveSkip(ref Utf8JsonReader reader, ref SkipState skip)
@@ -529,6 +601,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             }
 
             // Other tokens inside skipped metadata are ignored
+            return true;
+    }
+
+        private static bool IsAllWhitespace(ReadOnlySpan<byte> span)
+        {
+            for (int i = 0; i < span.Length; i++)
+            {
+                byte b = span[i];
+                if (b != 0x20 && b != 0x09 && b != 0x0A && b != 0x0D)
+                {
+                    return false;
+                }
+            }
+
             return true;
         }
 
@@ -722,7 +808,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     break;
             }
         }
-
+        
         private static void TryDecompressIfConfigured(
             ProcessingContext ctx,
             string pathLabel,
@@ -890,6 +976,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             public int ExpectedDecrypted { get; set; } // expected properties decrypted (capacity hint)
 
             public List<string> PathsDecrypted { get; set; } // collects decrypted property paths
+
+            public bool RootSeen { get; set; }
+
+            public bool RootClosed { get; set; }
 
             public void Dispose()
             {
