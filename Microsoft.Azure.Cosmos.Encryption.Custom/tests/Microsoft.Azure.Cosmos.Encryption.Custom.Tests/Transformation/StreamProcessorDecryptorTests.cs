@@ -439,6 +439,35 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         }
 
         [TestMethod]
+        public async Task Decrypt_Compression_InvalidDecompressedSizeNegative_Throws()
+        {
+            // Arrange: forge decompressed size = -1 to hit negative guard path (<=0)
+            var doc = new { id = "1", LargeStr = new string('x', 400) };
+            string[] paths = new[] { "/LargeStr" };
+            EncryptionOptions options = CreateOptions(paths, CompressionOptions.CompressionAlgorithm.Brotli, CompressionLevel.Fastest);
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+            Assert.IsTrue(props.CompressedEncryptedPaths.ContainsKey("/LargeStr"));
+
+            IDictionary<string, int> forged = new Dictionary<string, int>(props.CompressedEncryptedPaths)
+            {
+                ["/LargeStr"] = -1
+            };
+
+            EncryptionProperties badProps = new(
+                props.EncryptionFormatVersion,
+                props.EncryptionAlgorithm,
+                props.DataEncryptionKeyId,
+                encryptedData: null,
+                props.EncryptedPaths,
+                props.CompressionAlgorithm,
+                forged);
+
+            encrypted.Position = 0;
+            MemoryStream output = new();
+            await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, badProps, new CosmosDiagnosticsContext(), CancellationToken.None));
+        }
+
+        [TestMethod]
         public async Task Decrypt_Compression_InvalidDecompressedSizeTooLarge_Throws()
         {
             // Arrange: same as above but set decompressed size beyond 32MB guard (MaxBufferSizeBytes = 32 * 1024 * 1024)
