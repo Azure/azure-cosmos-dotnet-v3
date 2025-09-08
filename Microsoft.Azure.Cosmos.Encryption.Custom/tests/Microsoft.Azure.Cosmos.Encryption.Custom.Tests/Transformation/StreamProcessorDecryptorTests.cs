@@ -892,6 +892,78 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         }
 
         [TestMethod]
+        public async Task Decrypt_ForgedTypeMarkerDouble_InvalidPayload_Throws()
+        {
+            // Arrange: valid encrypted payload, forge marker to Double while plaintext is non-double bytes.
+            var doc = new { id = "1", SensitiveStr = "abc" };
+            string[] paths = new[] { "/SensitiveStr" };
+            EncryptionOptions options = CreateOptions(paths);
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+
+            byte[] bogusCipher = new byte[] { (byte)TypeMarker.Double, 0xAA, 0xBB, 0xCC };
+            string forgedBase64 = Convert.ToBase64String(bogusCipher);
+
+            encrypted.Position = 0;
+            MemoryStream forged = new();
+            using (JsonDocument jd = JsonDocument.Parse(encrypted, new JsonDocumentOptions { AllowTrailingCommas = true }))
+            using (Utf8JsonWriter w = new(forged))
+            {
+                w.WriteStartObject();
+                w.WriteString("id", jd.RootElement.GetProperty("id").GetString());
+                w.WriteString("SensitiveStr", forgedBase64);
+                w.WritePropertyName(Constants.EncryptedInfo);
+                jd.RootElement.GetProperty(Constants.EncryptedInfo).WriteTo(w);
+                w.WriteEndObject();
+            }
+            forged.Position = 0;
+
+            StreamProcessor sp = new StreamProcessor { Encryptor = new AlwaysPlaintextMdeEncryptor("abc") };
+            MemoryStream output = new();
+            await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => sp.DecryptStreamAsync(forged, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None));
+        }
+
+        [TestMethod]
+        public async Task Decrypt_ForgedTypeMarkerBoolean_InvalidPayload_Throws()
+        {
+            // Arrange: forge Boolean marker but plaintext buffer empty causing deserializer to fail.
+            var doc = new { id = "1", SensitiveStr = "abc" };
+            string[] paths = new[] { "/SensitiveStr" };
+            EncryptionOptions options = CreateOptions(paths);
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+
+            byte[] bogusCipher = new byte[] { (byte)TypeMarker.Boolean, 0x00 }; // boolean serializer expects at least 1 byte (0 or 1)
+            string forgedBase64 = Convert.ToBase64String(bogusCipher);
+
+            encrypted.Position = 0;
+            MemoryStream forged = new();
+            using (JsonDocument jd = JsonDocument.Parse(encrypted, new JsonDocumentOptions { AllowTrailingCommas = true }))
+            using (Utf8JsonWriter w = new(forged))
+            {
+                w.WriteStartObject();
+                w.WriteString("id", jd.RootElement.GetProperty("id").GetString());
+                w.WriteString("SensitiveStr", forgedBase64);
+                w.WritePropertyName(Constants.EncryptedInfo);
+                jd.RootElement.GetProperty(Constants.EncryptedInfo).WriteTo(w);
+                w.WriteEndObject();
+            }
+            forged.Position = 0;
+
+            // Use encryptor returning empty plaintext to ensure boolean deserialize fails
+            StreamProcessor sp = new StreamProcessor { Encryptor = new AlwaysPlaintextMdeEncryptor(string.Empty) };
+            MemoryStream output = new();
+            try
+            {
+                await sp.DecryptStreamAsync(forged, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
+                Assert.Fail("Expected deserializer to throw due to invalid boolean payload length");
+            }
+            catch (Exception ex)
+            {
+                // Serializer throws a specific size exception (e.g., ArgumentSizeIncorrectException). We just validate it's not swallowed.
+                Assert.IsTrue(ex.GetType().Name.Contains("ArgumentSize") || ex is InvalidOperationException, $"Unexpected exception type: {ex.GetType()}" );
+            }
+        }
+
+        [TestMethod]
         public async Task Decrypt_CompressedContainsPathButNotCurrentProperty()
         {
             // Arrange
