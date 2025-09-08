@@ -1,6 +1,7 @@
 //------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
+
 #if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
 namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
 {
