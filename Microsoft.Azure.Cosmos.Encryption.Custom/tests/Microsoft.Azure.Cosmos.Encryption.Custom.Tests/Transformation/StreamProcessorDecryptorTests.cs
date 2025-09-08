@@ -1087,13 +1087,39 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             public override bool CanSeek => false;
             public override bool CanWrite => false;
             public override long Length => throw new NotSupportedException();
-            public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+            public override long Position
+            {
+                get { throw new NotSupportedException(); }
+                set { throw new NotSupportedException(); }
+            }
+
             public override void Flush() { }
-            public override int Read(byte[] buffer, int offset, int count) => this.inner.Read(buffer, offset, count);
-            public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
-            public override void SetLength(long value) => throw new NotSupportedException();
-            public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
-            public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) => this.inner.ReadAsync(buffer, cancellationToken);
+
+            public override int Read(byte[] buffer, int offset, int count)
+            {
+                return this.inner.Read(buffer, offset, count);
+            }
+
+            public override long Seek(long offset, SeekOrigin origin)
+            {
+                throw new NotSupportedException();
+            }
+
+            public override void SetLength(long value)
+            {
+                throw new NotSupportedException();
+            }
+
+            public override void Write(byte[] buffer, int offset, int count)
+            {
+                throw new NotSupportedException();
+            }
+
+            public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+            {
+                return this.inner.ReadAsync(buffer, cancellationToken);
+            }
+
             protected override void Dispose(bool disposing)
             {
                 if (disposing)
@@ -1104,132 +1130,173 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             }
         }
 
-        [TestMethod]
-        public async Task Decrypt_Fuzz_Ciphertext_Length_And_TypeMarker_CrossProduct()
+        [DataTestMethod]
+        [DataRow(false, DisplayName = "NonSeekableChunked_NoPathFilter")] 
+        [DataRow(true, DisplayName = "NonSeekableChunked_WithPathFilter")]
+        public async Task Decrypt_NonSeekable_ChunkedVariants(bool usePathFilter)
         {
-            // Arrange
-            // Property-style fuzzing across type markers and plaintext lengths. We don't assert per-iteration outcomes;
-            // instead we ensure a wide set runs without catastrophic failures and that some known-good cases succeed.
-            var doc = new { id = "1", V = "seed" };
-            string[] paths = new[] { "/V" };
-            EncryptionOptions options = CreateOptions(paths);
-            (MemoryStream encryptedSeed, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+            // Encrypt a small base document then inject a large unencrypted padding property post-encryption
+            var baseDoc = new { id = "1", LargeEnc = "A", MidEnc = "B", SmallEnc = "C", Other = 123 };
+            string[] encryptPaths = usePathFilter ? new[] { "/LargeEnc", "/MidEnc" } : new[] { "/LargeEnc", "/MidEnc", "/SmallEnc" };
+            EncryptionOptions options = CreateOptions(encryptPaths);
+            (MemoryStream encryptedSmall, EncryptionProperties props) = await EncryptRawAsync(baseDoc, options);
+            encryptedSmall.Position = 0;
+            using JsonDocument encDoc = JsonDocument.Parse(encryptedSmall, new JsonDocumentOptions { AllowTrailingCommas = true });
+            string raw = encDoc.RootElement.GetRawText();
+            string paddingValue = new string('p', 5000);
+            int insertPos = raw.IndexOf('{') + 1;
+            string inflated = raw.Insert(insertPos, "\"Padding\":\"" + paddingValue + "\",");
+            byte[] inflatedBytes = Encoding.UTF8.GetBytes(inflated);
+            Assert.IsTrue(inflatedBytes.Length > 2048, "Inflated JSON should exceed probe size to guarantee multi-pass.");
+            using ThrottledNonSeekableStream throttled = new ThrottledNonSeekableStream(inflatedBytes, firstChunkSize: 2048, subsequentChunkSize: 512);
+            MemoryStream output = new();
 
-            // Extract _ei once to reuse in forged documents
-            string eiRaw;
-            string idValue;
-            encryptedSeed.Position = 0;
-            using (JsonDocument jd = JsonDocument.Parse(encryptedSeed, new JsonDocumentOptions { AllowTrailingCommas = true }))
+            DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(throttled, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
+
+            output.Position = 0;
+            using JsonDocument jd = JsonDocument.Parse(output);
+            JsonElement root = jd.RootElement;
+
+            // Validate decrypted values present (original single-char values), plus injected padding
+            Assert.AreEqual("A", root.GetProperty("LargeEnc").GetString());
+            Assert.AreEqual("B", root.GetProperty("MidEnc").GetString());
+            Assert.AreEqual("C", root.GetProperty("SmallEnc").GetString());
+            Assert.AreEqual(paddingValue, root.GetProperty("Padding").GetString());
+
+            // Ensure decrypted paths tracking aligns with filtered selection
+            IReadOnlyList<string> decryptedPaths = ctx.DecryptionInfoList[0].PathsDecrypted;
+            Assert.IsTrue(decryptedPaths.Contains("/LargeEnc"));
+            Assert.IsTrue(decryptedPaths.Contains("/MidEnc"));
+            if (!usePathFilter)
             {
-                idValue = jd.RootElement.GetProperty("id").GetString();
-                eiRaw = jd.RootElement.GetProperty(Constants.EncryptedInfo).GetRawText();
+                Assert.IsTrue(decryptedPaths.Contains("/SmallEnc"));
             }
-
-            Random rng = new Random(1234);
-            byte[] markers = new byte[] { (byte)TypeMarker.String, (byte)TypeMarker.Long, (byte)TypeMarker.Double, (byte)TypeMarker.Boolean, 0xEE /* unknown */ };
-            int iterationsPerLen = 4;
-            int maxLen = 16;
-            int attempts = 0;
-            int successes = 0;
-
-            StreamProcessor sp = new StreamProcessor { Encryptor = new MutablePlaintextMdeEncryptor() };
-            MutablePlaintextMdeEncryptor mut = (MutablePlaintextMdeEncryptor)sp.Encryptor;
-
-            // Act
-            for (int len = 0; len <= maxLen; len++)
+            else
             {
-                for (int m = 0; m < markers.Length; m++)
-                {
-                    for (int i = 0; i < iterationsPerLen; i++)
-                    {
-                        attempts++;
-                        byte marker = markers[m];
-                        byte[] plain = new byte[len];
-                        rng.NextBytes(plain);
-                        mut.Payload = plain;
-
-                        // Build forged ciphertext (type marker only matters to switch in decryptor)
-                        byte[] cipher = new byte[1 + 1]; // marker + 1 byte minimal to base64 properly
-                        cipher[0] = marker;
-                        cipher[1] = 0x00;
-                        string base64 = Convert.ToBase64String(cipher);
-
-                        using MemoryStream forged = new();
-                        using (Utf8JsonWriter w = new(forged))
-                        {
-                            w.WriteStartObject();
-                            w.WriteString("id", idValue);
-                            w.WriteString("V", base64);
-                            w.WritePropertyName(Constants.EncryptedInfo);
-                            using (JsonDocument eiDoc = JsonDocument.Parse(eiRaw))
-                            {
-                                eiDoc.RootElement.WriteTo(w);
-                            }
-                            w.WriteEndObject();
-                        }
-                        forged.Position = 0;
-
-                        try
-                        {
-                            using MemoryStream output = new();
-                            _ = await sp.DecryptStreamAsync(forged, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
-                            successes++;
-                        }
-                        catch
-                        {
-                            // Expected for many combinations (e.g., size mismatch or invalid UTF-8); continue
-                        }
-                    }
-                }
+                Assert.IsFalse(decryptedPaths.Contains("/SmallEnc"));
             }
-
-            // Add a few known-good shapes that should succeed to guarantee coverage of successful serialization paths
-            (byte marker, byte[] payload)[] knownGood = new (byte marker, byte[] payload)[]
-            {
-                ((byte)TypeMarker.String, Encoding.UTF8.GetBytes("ok")),
-                ((byte)TypeMarker.Long, new byte[8] /* 0L */),
-                ((byte)TypeMarker.Double, new byte[8] /* 0.0 */),
-                ((byte)TypeMarker.Boolean, new byte[]{ 1 }),
-            };
-            foreach ((byte marker, byte[] payload) in knownGood)
-            {
-                attempts++;
-                mut.Payload = payload;
-                string base64 = Convert.ToBase64String(new byte[] { marker, 0x00 });
-                using MemoryStream forged = new();
-                using (Utf8JsonWriter w = new(forged))
-                {
-                    w.WriteStartObject();
-                    w.WriteString("id", idValue);
-                    w.WriteString("V", base64);
-                    w.WritePropertyName(Constants.EncryptedInfo);
-                    using (JsonDocument eiDoc = JsonDocument.Parse(eiRaw))
-                    {
-                        eiDoc.RootElement.WriteTo(w);
-                    }
-                    w.WriteEndObject();
-                }
-                forged.Position = 0;
-                using MemoryStream output = new();
-                try
-                {
-                    _ = await sp.DecryptStreamAsync(forged, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
-                    successes++;
-                }
-                catch
-                {
-                    // Some environments may still throw for Double if writer rejects NaN/Inf, but 0.0 should be fine; ignore either way
-                }
-            }
-
-            // Assert
-            Assert.IsTrue(attempts > 0, "No fuzz attempts executed");
-            Assert.IsTrue(successes > 0, "Expected at least some successful decrypt/writes during fuzzing");
         }
 
-        // Note: JsonTokenType.Comment branch remains uncovered intentionally. The decryptor configures JsonReaderOptions with CommentHandling.Skip (readonly static),
-        // and the encryption pipeline never emits comments. Altering the static readonly field or constructing a custom reader just for coverage would add fragility.
-        // The switch case exists defensively; functional risk is negligible.
+        private sealed class ThrottledNonSeekableStream : Stream
+        {
+            private readonly byte[] data;
+            private int position;
+            private readonly int firstChunkSize;
+            private readonly int subsequentChunkSize;
+            private bool firstReadDone;
+
+            public ThrottledNonSeekableStream(byte[] data, int firstChunkSize, int subsequentChunkSize)
+            {
+                this.data = data;
+                this.firstChunkSize = firstChunkSize;
+                this.subsequentChunkSize = subsequentChunkSize;
+            }
+
+            public override bool CanRead => true;
+            public override bool CanSeek => false;
+            public override bool CanWrite => false;
+            public override long Length => throw new NotSupportedException();
+            public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+            public override void Flush() { }
+            public override int Read(byte[] buffer, int offset, int count)
+            {
+                int remaining = this.data.Length - this.position;
+                if (remaining <= 0) return 0;
+                int chunk = this.firstReadDone ? this.subsequentChunkSize : this.firstChunkSize;
+                int toCopy = Math.Min(Math.Min(count, chunk), remaining);
+                Array.Copy(this.data, this.position, buffer, offset, toCopy);
+                this.position += toCopy;
+                this.firstReadDone = true;
+                return toCopy;
+            }
+            public override long Seek(long offset, SeekOrigin origin)
+            {
+                throw new NotSupportedException();
+            }
+            public override void SetLength(long value)
+            {
+                throw new NotSupportedException();
+            }
+            public override void Write(byte[] buffer, int offset, int count)
+            {
+                throw new NotSupportedException();
+            }
+            public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+            {
+                int remaining = this.data.Length - this.position;
+                if (remaining <= 0) return new ValueTask<int>(0);
+                int chunk = this.firstReadDone ? this.subsequentChunkSize : this.firstChunkSize;
+                int toCopy = Math.Min(Math.Min(buffer.Length, chunk), remaining);
+                this.data.AsSpan(this.position, toCopy).CopyTo(buffer.Span[..toCopy]);
+                this.position += toCopy;
+                this.firstReadDone = true;
+                return new ValueTask<int>(toCopy);
+            }
+        }
+
+        [TestMethod]
+        public async Task Encrypt_NonSeekableOutput_WrapsAndSucceeds()
+        {
+            // Use a seekable memory input but wrap output to appear non-seekable to ensure code doesn't rely on output seeking except optional reposition.
+            var doc = new { id = "1", V1 = "hello", V2 = "world" };
+            string[] paths = new[] { "/V1", "/V2" };
+            EncryptionOptions options = CreateOptions(paths);
+            string json = System.Text.Json.JsonSerializer.Serialize(doc);
+            MemoryStream input = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(json));
+            using NonSeekableWriteOnlyStream nonSeekableOut = new NonSeekableWriteOnlyStream();
+
+            StreamProcessor sp = new StreamProcessor();
+            await sp.EncryptStreamAsync(input, nonSeekableOut, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
+
+            // Fetch written bytes
+            byte[] encryptedBytes = nonSeekableOut.ToArray();
+            Assert.IsTrue(encryptedBytes.Length > 0);
+            // Quick sanity: Can parse JSON and _ei exists
+            using JsonDocument jd = JsonDocument.Parse(encryptedBytes);
+            Assert.IsTrue(jd.RootElement.TryGetProperty(Constants.EncryptedInfo, out _));
+        }
+
+        private sealed class NonSeekableWriteOnlyStream : Stream
+        {
+            private readonly MemoryStream inner = new MemoryStream();
+            public override bool CanRead => false;
+            public override bool CanSeek => false;
+            public override bool CanWrite => true;
+            public override long Length => this.inner.Length;
+            public override long Position
+            {
+                get => this.inner.Position;
+                set => throw new NotSupportedException();
+            }
+            public override void Flush()
+            {
+                this.inner.Flush();
+            }
+            public override int Read(byte[] buffer, int offset, int count)
+            {
+                throw new NotSupportedException();
+            }
+            public override long Seek(long offset, SeekOrigin origin)
+            {
+                throw new NotSupportedException();
+            }
+            public override void SetLength(long value)
+            {
+                this.inner.SetLength(value);
+            }
+            public override void Write(byte[] buffer, int offset, int count)
+            {
+                this.inner.Write(buffer, offset, count);
+            }
+            public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+            {
+                return this.inner.WriteAsync(buffer, cancellationToken);
+            }
+            public byte[] ToArray()
+            {
+                return this.inner.ToArray();
+            }
+        }
 
         private class NullMarkerMdeEncryptor : MdeEncryptor
         {

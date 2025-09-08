@@ -6,17 +6,15 @@
 namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 {
     using System;
-    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Text;
     using System.Text.Json;
 
     /// <summary>
-    /// Immutable, cached representation of candidate top-level encrypted JSON property paths.
+    /// Immutable representation of candidate top-level encrypted JSON property paths.
     /// Paths are normalized (top-level only, leading '/') and de-duplicated then stored with
     /// pre-encoded UTF-8 bytes for allocation-free comparison via Utf8JsonReader.ValueTextEquals.
-    /// Instances are cached (keyed by a canonical sorted path list) to avoid per-operation
-    /// allocations in steady state when the same schema repeats.
+    /// Simplified (no caching / length bitmask) because typical candidate counts are small.
     /// </summary>
     internal sealed class CandidatePaths
     {
@@ -36,18 +34,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             }
         }
 
-        private static readonly ConcurrentDictionary<string, CandidatePaths> Cache = new (StringComparer.Ordinal);
-
         private readonly Entry[] topLevel;
-        private readonly ulong lengthMask;          // bit n => exists candidate with utf8Len == n (<64)
-        private readonly bool hasLongNames;         // at least one utf8Len >= 64
         private readonly string includesEmptyFullPath; // set when path "/" exists
 
-        private CandidatePaths(Entry[] entries, ulong lengthMask, bool hasLong, string includesEmpty)
+        private CandidatePaths(Entry[] entries, string includesEmpty)
         {
             this.topLevel = entries;
-            this.lengthMask = lengthMask;
-            this.hasLongNames = hasLong;
             this.includesEmptyFullPath = includesEmpty;
         }
 
@@ -55,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         {
             if (paths == null)
             {
-                return new CandidatePaths(Array.Empty<Entry>(), 0UL, false, null);
+                return new CandidatePaths(Array.Empty<Entry>(), null);
             }
 
             List<string> prelim = new ();
@@ -84,61 +76,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             if (prelim.Count == 0 && !hasRoot)
             {
-                return new CandidatePaths(Array.Empty<Entry>(), 0UL, false, null);
+                return new CandidatePaths(Array.Empty<Entry>(), null);
             }
 
-            prelim.Sort(StringComparer.Ordinal);
-            int capacity = hasRoot ? 1 : 0; // root marker
-            foreach (string s in prelim)
-            {
-                capacity += s.Length + 1; // '|' + path
-            }
-
-            StringBuilder sb = new (capacity);
-            if (hasRoot)
-            {
-                sb.Append('/');
-            }
-
-            for (int i = 0; i < prelim.Count; i++)
-            {
-                if (i > 0 || hasRoot)
-                {
-                    sb.Append('|');
-                }
-
-                sb.Append(prelim[i]);
-            }
-
-            string key = sb.ToString();
-            if (Cache.TryGetValue(key, out CandidatePaths cached))
-            {
-                return cached;
-            }
-
+            prelim.Sort(StringComparer.Ordinal); // deterministic order
             List<Entry> list = new (prelim.Count);
-            ulong mask = 0UL;
-            bool hasLong = false;
             foreach (string p in prelim)
             {
                 ReadOnlySpan<char> nameSpan = p.AsSpan(1);
-                int nameUtf8Len = Encoding.UTF8.GetByteCount(nameSpan);
-                if ((uint)nameUtf8Len < 64)
-                {
-                    mask |= 1UL << nameUtf8Len;
-                }
-                else
-                {
-                    hasLong = true;
-                }
-
+                int nameUtf8Len = Encoding.UTF8.GetByteCount(nameSpan); // still store for quick length compare
                 byte[] utf8Bytes = GetUtf8Bytes(p);
                 list.Add(new Entry(p, nameUtf8Len, utf8Bytes));
             }
-
-            CandidatePaths built = new CandidatePaths(list.ToArray(), mask, hasLong, hasRoot ? "/" : null);
-            Cache.TryAdd(key, built);
-            return built;
+            return new CandidatePaths(list.ToArray(), hasRoot ? "/" : null);
         }
 
         public bool TryMatch(ref Utf8JsonReader reader, int propNameUtf8Len, out string matchedFullPath)
@@ -149,12 +99,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 return true;
             }
 
-            if (!this.IsLengthPossible(propNameUtf8Len))
-            {
-                matchedFullPath = null;
-                return false;
-            }
-
+            // Linear scan (typical candidate count is small). Length check still prunes quickly.
             foreach (ref readonly Entry e in this.topLevel.AsSpan())
             {
                 if (e.NameUtf8Len != propNameUtf8Len)
@@ -171,11 +116,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             matchedFullPath = null;
             return false;
-        }
-
-        private bool IsLengthPossible(int utf8Len)
-        {
-            return utf8Len < 64 ? (this.lengthMask & (1UL << utf8Len)) != 0 : this.hasLongNames;
         }
 
         // Cross-target helper: use string slice overload (available in netstandard2.0) for consistent behavior.
