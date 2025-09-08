@@ -23,7 +23,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         private const string EncryptedInfoPropertyPath = "/" + Constants.EncryptedInfo;
 
         // Buffer/stream thresholds
-        private const int MaxBufferSizeBytes = 32 * 1024 * 1024; // 32 MB cap for safety
+        // Changed from const to adjustable static (via test hook) so tests can lower ceiling and exercise overflow logic without huge allocations.
+        private const int DefaultMaxBufferSizeBytes = 32 * 1024 * 1024; // 32 MB cap for safety
+
+        // Test hook (internal) to reduce maximum buffer size for overflow testing; null => use default.
+        internal static int? TestMaxBufferSizeBytesOverride { get; set; }
+
+        private static int MaxBufferSizeBytes => TestMaxBufferSizeBytesOverride ?? DefaultMaxBufferSizeBytes;
+
         private const int BufferGrowthMinIncrement = 4096; // 4 KB minimal headroom to trigger growth
         private const int SmallPayloadMaxBytes = 2048; // One-shot parse threshold
         private const int ProbeSize = 2048; // Non-seekable probe size
@@ -732,8 +739,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 return;
             }
 
-            const int maxDecompressedSizeBytes = MaxBufferSizeBytes;
-            if (decompressedSize is <= 0 or > maxDecompressedSizeBytes)
+            int maxDecompressedSizeBytes = MaxBufferSizeBytes;
+            if (decompressedSize <= 0 || decompressedSize > maxDecompressedSizeBytes)
             {
                 throw new InvalidOperationException(
                     $"Invalid decompressed size {decompressedSize} for path {pathLabel}. Max allowed is {maxDecompressedSizeBytes}.");

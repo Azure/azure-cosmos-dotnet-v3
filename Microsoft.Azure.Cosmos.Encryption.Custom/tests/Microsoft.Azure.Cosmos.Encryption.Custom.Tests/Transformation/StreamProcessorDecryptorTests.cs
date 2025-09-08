@@ -410,6 +410,113 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         }
 
         [TestMethod]
+        public async Task Decrypt_Compression_InvalidDecompressedSizeZero_Throws()
+        {
+            // Arrange: create a compressed payload then forge decompressed size = 0 to trip guard (<=0)
+            var doc = new { id = "1", LargeStr = new string('x', 400) }; // ensure compression
+            string[] paths = new[] { "/LargeStr" };
+            EncryptionOptions options = CreateOptions(paths, CompressionOptions.CompressionAlgorithm.Brotli, CompressionLevel.Fastest);
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+            Assert.IsTrue(props.CompressedEncryptedPaths.ContainsKey("/LargeStr"), "Expected LargeStr to be compressed");
+
+            IDictionary<string, int> forged = new Dictionary<string, int>(props.CompressedEncryptedPaths)
+            {
+                ["/LargeStr"] = 0 // invalid
+            };
+
+            EncryptionProperties badProps = new(
+                props.EncryptionFormatVersion,
+                props.EncryptionAlgorithm,
+                props.DataEncryptionKeyId,
+                encryptedData: null,
+                props.EncryptedPaths,
+                props.CompressionAlgorithm,
+                forged);
+
+            encrypted.Position = 0;
+            MemoryStream output = new();
+            await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, badProps, new CosmosDiagnosticsContext(), CancellationToken.None));
+        }
+
+        [TestMethod]
+        public async Task Decrypt_Compression_InvalidDecompressedSizeTooLarge_Throws()
+        {
+            // Arrange: same as above but set decompressed size beyond 32MB guard (MaxBufferSizeBytes = 32 * 1024 * 1024)
+            var doc = new { id = "1", LargeStr = new string('x', 400) };
+            string[] paths = new[] { "/LargeStr" };
+            EncryptionOptions options = CreateOptions(paths, CompressionOptions.CompressionAlgorithm.Brotli, CompressionLevel.Fastest);
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+            Assert.IsTrue(props.CompressedEncryptedPaths.ContainsKey("/LargeStr"), "Expected LargeStr to be compressed");
+
+            const int TooLarge = 40_000_000; // > 32MB limit
+            IDictionary<string, int> forged = new Dictionary<string, int>(props.CompressedEncryptedPaths)
+            {
+                ["/LargeStr"] = TooLarge
+            };
+
+            EncryptionProperties badProps = new(
+                props.EncryptionFormatVersion,
+                props.EncryptionAlgorithm,
+                props.DataEncryptionKeyId,
+                encryptedData: null,
+                props.EncryptedPaths,
+                props.CompressionAlgorithm,
+                forged);
+
+            encrypted.Position = 0;
+            MemoryStream output = new();
+            await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, badProps, new CosmosDiagnosticsContext(), CancellationToken.None));
+        }
+
+        [TestMethod]
+        public async Task Decrypt_EncryptedToken_ExceedsAdjustedMax_Throws()
+        {
+            // Arrange: Lower the max buffer cap to 4MB and craft an encrypted value slightly above it.
+            // We generate a large plaintext string so that after encryption + base64 it exceeds the 4MB threshold.
+            int originalCap = StreamProcessor.TestMaxBufferSizeBytesOverride ?? 0;
+            StreamProcessor.TestMaxBufferSizeBytesOverride = 4 * 1024 * 1024; // 4MB
+            try
+            {
+                int cap = StreamProcessor.TestMaxBufferSizeBytesOverride.Value;
+                string[] paths = new[] { "/Big" };
+                EncryptionOptions options = CreateOptions(paths);
+                int plainLength = cap / 2; // start below
+                MemoryStream encrypted = null;
+                EncryptionProperties props = null;
+                string cipher = null;
+                for (int attempts = 0; attempts < 8; attempts++)
+                {
+                    string large = new string('Z', plainLength);
+                    var doc = new { id = "1", Big = large };
+                    (encrypted, props) = await EncryptRawAsync(doc, options);
+                    string json = Encoding.UTF8.GetString(encrypted.ToArray());
+                    using (JsonDocument jd = JsonDocument.Parse(json))
+                    {
+                        cipher = jd.RootElement.GetProperty("Big").GetString();
+                    }
+
+                    if (cipher.Length > cap)
+                    {
+                        break;
+                    }
+
+                    plainLength = (int)(plainLength * 1.6); // grow
+                }
+
+                Assert.IsNotNull(cipher);
+                Assert.IsTrue(cipher.Length > cap, "Failed to exceed lowered cap after growth attempts");
+
+                encrypted.Position = 0;
+                MemoryStream output = new();
+                await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None));
+            }
+            finally
+            {
+                StreamProcessor.TestMaxBufferSizeBytesOverride = originalCap == 0 ? null : originalCap; // restore
+            }
+        }
+
+        [TestMethod]
         public async Task Decrypt_Skips_Ei_ScalarString_AcrossBuffers()
         {
             // Arrange: craft a JSON with a very long string as the value of _ei so it spans buffers
