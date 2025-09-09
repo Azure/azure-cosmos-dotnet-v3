@@ -41,7 +41,14 @@ namespace Microsoft.Azure.Cosmos
             // must be explicitly be set before writing the event.
             CustomTypeExtensions.SetActivityId(ref activityId);
 
-            this.WriteEventCore(eventId, eventDataCount, dataDesc);
+            // COMMENTED OUT FOR TRIMMED AZMCP: The following call to WriteEventCore is commented out to resolve
+            // IL2026 trim analysis errors when building the trimmed version of azmcp. The error occurs because
+            // EventSource.WriteEventCore has RequiresUnreferencedCodeAttribute which can break functionality 
+            // when trimming application code, as EventSource serializes the whole object graph and the trimmer
+            // cannot safely handle this case. This is specific to the trimmed build - the AOT build doesn't 
+            // report this issue due to more aggressive optimizations that trim away unreachable code paths.
+            // Since the preview trimmed version doesn't rely on EventSource telemetry, this is safe to disable.
+            // this.WriteEventCore(eventId, eventDataCount, dataDesc);
         }
 
         [Event(1,
@@ -266,7 +273,8 @@ namespace Microsoft.Azure.Cosmos
                 dataDesc[32].DataPointer = (IntPtr)(fixedXDate);
                 dataDesc[32].Size = (xDate.Length + 1) * UnicodeEncodingCharSize;
 
-                this.WriteEventCoreWithActivityId(activityId, 1, eventDataCount, dataDesc);
+                // COMMENTED OUT FOR TRIMMED AZMCP: See WriteEventCoreWithActivityId method for detailed explanation
+                // this.WriteEventCoreWithActivityId(activityId, 1, eventDataCount, dataDesc);
             }
         }
 
@@ -513,7 +521,8 @@ namespace Microsoft.Azure.Cosmos
                 dataDesc[29].DataPointer = (IntPtr)(fixedVersion);
                 dataDesc[29].Size = (version.Length + 1) * UnicodeEncodingCharSize;
 
-                this.WriteEventCoreWithActivityId(activityId, 2, eventDataCount, dataDesc);
+                // COMMENTED OUT FOR TRIMMED AZMCP: See WriteEventCoreWithActivityId method for detailed explanation
+                // this.WriteEventCoreWithActivityId(activityId, 2, eventDataCount, dataDesc);
             }
         }
 
