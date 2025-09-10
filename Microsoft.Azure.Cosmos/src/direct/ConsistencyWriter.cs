@@ -292,8 +292,7 @@ Sequence of steps:
             {
                 WriteBarrierKind barrierKind = this.ComputeBarrierKind(request.RequestContext.GlobalStrongWriteStoreResult, request);
                 using (DocumentServiceRequest barrierRequest = await BarrierRequestHelper.CreateAsync(request, this.authorizationTokenProvider, null,
-                    barrierKind == WriteBarrierKind.GlobalStrongWrite ? request.RequestContext.GlobalCommittedSelectedLSN : null,
-                    barrierKind == WriteBarrierKind.NRegionSynchronousCommit ? request.RequestContext.GlobalCommittedSelectedLSN : null,
+                    request.RequestContext.GlobalCommittedSelectedLSN,
                     includeRegionContext: true))
                 {
                     Func<StoreResult, long> lsnAttributeSelector = barrierKind == WriteBarrierKind.GlobalStrongWrite ? (sr => sr.GlobalCommittedLSN) : (sr => sr.GlobalNRegionCommittedGLSN);
@@ -403,8 +402,7 @@ Sequence of steps:
 #pragma warning disable SA1001 // Commas should be spaced correctly
                 using (DocumentServiceRequest barrierRequest = await BarrierRequestHelper.CreateAsync(request,
                     this.authorizationTokenProvider, null,
-                    barrierKind == WriteBarrierKind.GlobalStrongWrite ? request.RequestContext.GlobalCommittedSelectedLSN : null,
-                    barrierKind == WriteBarrierKind.NRegionSynchronousCommit ? request.RequestContext.GlobalCommittedSelectedLSN : null,
+                    request.RequestContext.GlobalCommittedSelectedLSN,
                     includeRegionContext: true))
                 {
                     if (!await this.WaitForWriteBarrierAsync(barrierRequest, request.RequestContext.GlobalCommittedSelectedLSN, lsnAttributeSelector))

@@ -83,6 +83,7 @@
                         string lsnGlobalNRegionCommitted = createDocumentCallCount++ == 5 ? lsnActualWrite : "90";
                         storeResponse.Headers.Set(WFConstants.BackendHeaders.LSN, lsnActualWrite);
                         storeResponse.Headers.Set(WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_1");
+                        storeResponse.Headers.Set(WFConstants.BackendHeaders.GlobalCommittedLSN, "100");
                         storeResponse.Headers.Set(WFConstants.BackendHeaders.GlobalNRegionCommittedGLSN, lsnGlobalNRegionCommitted);
                         storeResponse.Headers.Set(WFConstants.BackendHeaders.NumberOfReadRegions, "1");
                     }
@@ -100,7 +101,7 @@
                 Container container = await this.database.CreateContainerAsync(
                     new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/pk"));
 
-                ToDoActivity temp = ToDoActivity.CreateRandomToDoActivity("Item with Strong writes");
+                ToDoActivity temp = ToDoActivity.CreateRandomToDoActivity("Item with Session Nregion commit writes");
 
                 ItemResponse<ToDoActivity> itemResponse = await container.CreateItemAsync<ToDoActivity>(
                     partitionKey: new Cosmos.PartitionKey(temp.pk),
@@ -168,7 +169,7 @@
                 Container container = await this.database.CreateContainerAsync(
                     new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/pk"));
 
-                ToDoActivity temp = ToDoActivity.CreateRandomToDoActivity("Item with Strong writes");
+                ToDoActivity temp = ToDoActivity.CreateRandomToDoActivity("Item with Session nregion writes");
                 CosmosException cosmosException =  await Assert.ThrowsExceptionAsync<CosmosException>(() => container.CreateItemAsync<ToDoActivity>(
                     partitionKey: new Cosmos.PartitionKey(temp.pk),
                     item: temp));

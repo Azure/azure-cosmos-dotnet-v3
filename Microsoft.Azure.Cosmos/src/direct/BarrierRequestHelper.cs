@@ -29,7 +29,6 @@ namespace Microsoft.Azure.Documents
             IAuthorizationTokenProvider authorizationTokenProvider,
             long? targetLsn,
             long? targetGlobalCommittedLsn,
-            long? globalNRegionCommittedLsn,
             bool includeRegionContext = false)
         {
             bool isCollectionHeadRequest = BarrierRequestHelper.IsCollectionHeadBarrierRequest(request.ResourceType, request.OperationType);
@@ -97,11 +96,6 @@ namespace Microsoft.Azure.Documents
             if (targetGlobalCommittedLsn.HasValue && targetGlobalCommittedLsn.Value > 0)
             {
                 barrierLsnRequest.Headers[HttpConstants.HttpHeaders.TargetGlobalCommittedLsn] = targetGlobalCommittedLsn.Value.ToString(CultureInfo.InvariantCulture);
-            }
-
-            if (globalNRegionCommittedLsn.HasValue && globalNRegionCommittedLsn.Value > 0)
-            {
-                barrierLsnRequest.Headers[HttpConstants.HttpHeaders.TargetGlobalNRegionCommittedLsn] = globalNRegionCommittedLsn.Value.ToString(CultureInfo.InvariantCulture);
             }
 
             switch (originalRequestTokenType)
