@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// The Cosmos Change Feed request options
     /// </summary>
-    public sealed class ChangeFeedRequestOptions : RequestOptions
+    public class ChangeFeedRequestOptions : RequestOptions
     {
         private int? pageSizeHint;
 

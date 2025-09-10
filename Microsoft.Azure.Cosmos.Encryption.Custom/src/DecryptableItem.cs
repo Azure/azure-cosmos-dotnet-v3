@@ -4,6 +4,8 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
+    using System;
+    using System.Threading;
     using System.Threading.Tasks;
 
     /// <summary>
@@ -79,5 +81,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <typeparam name="T">The type of item to be returned.</typeparam>
         /// <returns>The requested item and the decryption related context.</returns>
         public abstract Task<(T, DecryptionContext)> GetItemAsync<T>();
+
+        public abstract Task<(T, DecryptionContext)> GetItemAsync<T>(CancellationToken cancellationToken);
     }
 }

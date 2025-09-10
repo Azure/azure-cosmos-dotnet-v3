@@ -11,7 +11,7 @@
         [TestMethod]
         public void Ctor_Throws_OnNullParam()
         {
-            EncryptionFeedIterator iterator = new (null, null, null);
+            EncryptionFeedIterator iterator = EncryptionFeedIterator.CreateLegacyIterator(null, null, null);
             CosmosResponseFactory responseFactory = Mock.Of<CosmosResponseFactory>();
 
             Assert.ThrowsException<ArgumentNullException>(() => new EncryptionFeedIterator<Object>(null, responseFactory));

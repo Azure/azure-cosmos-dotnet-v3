@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionStreamIterator)} is only supported with {nameof(EncryptionContainer)}.");
             }
 
-            return new EncryptionFeedIterator(
+            return EncryptionFeedIterator.CreateLegacyIterator(
                 query.ToStreamIterator(),
                 encryptionContainer.Encryptor,
                 encryptionContainer.CosmosSerializer);

@@ -389,8 +389,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         internal static async Task<Stream> DeserializeAndDecryptResponseAsync(
             Stream content,
             Encryptor encryptor,
+            JsonProcessor jsonProcessor,
             CancellationToken cancellationToken)
         {
+            if (jsonProcessor != JsonProcessor.Newtonsoft)
+            {
+                // TODO add streaming support
+                throw new NotSupportedException($"Only {nameof(JsonProcessor.Newtonsoft)} is supported in Feed Response decryption.");
+            }
+
             JObject contentJObj = BaseSerializer.FromStream<JObject>(content);
 
             if (contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is not JArray documents)

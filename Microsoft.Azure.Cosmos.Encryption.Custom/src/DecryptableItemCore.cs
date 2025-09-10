@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
     using System;
+    using System.Threading;
     using System.Threading.Tasks;
     using Newtonsoft.Json.Linq;
 
@@ -56,6 +57,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     this.decryptableContent.ToString(),
                     exception);
             }
+        }
+
+        public override Task<(T, DecryptionContext)> GetItemAsync<T>(CancellationToken cancellationToken)
+        {
+            return this.GetItemAsync<T>(); // TODO implement here, call from the one above
         }
     }
 }
