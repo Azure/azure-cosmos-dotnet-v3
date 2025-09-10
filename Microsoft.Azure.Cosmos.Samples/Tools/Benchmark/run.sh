@@ -48,15 +48,8 @@ MODE_FLAGS="--isthinclientenabled=${THINCLIENT_ENABLED:-false} \
     # ---------- 1) ALWAYS RUN THESE 10 WORKLOADS ----------
 for WORKLOAD_NAME in \
   CreateItemV3BenchmarkOperation \
-#  InsertV3BenchmarkOperation \
   ReadItemV3BenchmarkOperation \
-#  ReadStreamExistsV3BenchmarkOperation \
-#  ReplaceItemV3BenchmarkOperation \
-#  ReplaceItemStreamV3BenchmarkOperation \
-#  UpsertItemV3BenchmarkOperation \
-#  UpsertItemStreamV3BenchmarkOperation \
-  DeleteItemV3BenchmarkOperation \
-#  DeleteItemStreamV3BenchmarkOperation
+  DeleteItemV3BenchmarkOperation
 do
   dotnet run -c Release \
             -- -n 2000000 \
