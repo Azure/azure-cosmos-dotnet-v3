@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [NonEvent]
-        [RequiresUnreferencedCode("EventSource will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
+        [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "WriteEventCoreWithActivityId is a private method and invoked only with primitive types")]
         private unsafe void WriteEventCoreWithActivityId(Guid activityId, int eventId, int eventDataCount, EventSource.EventData* dataDesc)
         {
             // EventProvider's ActivityId is set on the current thread context (not on the CallContext), so it
