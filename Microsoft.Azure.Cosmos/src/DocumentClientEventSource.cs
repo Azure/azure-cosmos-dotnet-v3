@@ -35,15 +35,21 @@ namespace Microsoft.Azure.Cosmos
             public const EventKeywords HttpRequestAndResponse = (EventKeywords)1;
         }
 
-        [NonEvent]
-        [RequiresUnreferencedCode("EventSource will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
-        private unsafe void WriteEventCoreWithActivityId(Guid activityId, int eventId, int eventDataCount, EventSource.EventData* dataDesc)
+        // This class exists entirely to "hide" methods marked with RequiresUnreferencedCode from
+        // the main EventSource class. This is necessary because EventSource is marked with
+        // DynamicAccessedMembers.NonPublicMethods, meaning that any method in this class could be a
+        // reflection target. Private nested types don't get included, so this trick hides these methods.
+        private static class TrimIncompatibleWriteEventHelpers
         {
-            // EventProvider's ActivityId is set on the current thread context (not on the CallContext), so it
-            // must be explicitly be set before writing the event.
-            CustomTypeExtensions.SetActivityId(ref activityId);
+            [RequiresUnreferencedCode("EventSource will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
+            public static unsafe void WriteEventCoreWithActivityId(DocumentClientEventSource ev, Guid activityId, int eventId, int eventDataCount, EventSource.EventData* dataDesc)
+            {
+                // EventProvider's ActivityId is set on the current thread context (not on the CallContext), so it
+                // must be explicitly be set before writing the event.
+                CustomTypeExtensions.SetActivityId(ref activityId);
 
-            this.WriteEventCore(eventId, eventDataCount, dataDesc);
+                ev.WriteEventCore(eventId, eventDataCount, dataDesc);
+            }
         }
 
         [Event(1,
@@ -269,7 +275,7 @@ namespace Microsoft.Azure.Cosmos
                 dataDesc[32].DataPointer = (IntPtr)(fixedXDate);
                 dataDesc[32].Size = (xDate.Length + 1) * UnicodeEncodingCharSize;
 
-                this.WriteEventCoreWithActivityId(activityId, 1, eventDataCount, dataDesc);
+                TrimIncompatibleWriteEventHelpers.WriteEventCoreWithActivityId(this, activityId, 1, eventDataCount, dataDesc);
             }
         }
 
@@ -517,7 +523,7 @@ namespace Microsoft.Azure.Cosmos
                 dataDesc[29].DataPointer = (IntPtr)(fixedVersion);
                 dataDesc[29].Size = (version.Length + 1) * UnicodeEncodingCharSize;
 
-                this.WriteEventCoreWithActivityId(activityId, 2, eventDataCount, dataDesc);
+                TrimIncompatibleWriteEventHelpers.WriteEventCoreWithActivityId(this, activityId, 2, eventDataCount, dataDesc);
             }
         }
 
