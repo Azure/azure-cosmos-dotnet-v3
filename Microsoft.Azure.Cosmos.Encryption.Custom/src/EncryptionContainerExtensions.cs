@@ -23,10 +23,39 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             this Container container,
             Encryptor encryptor)
         {
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+            if (container.Database.Client.ClientOptions.UseSystemTextJsonSerializerWithOptions is not null)
+            {
+                return new EncryptionContainerStream(container, encryptor);
+            }
+#endif
+
             return new EncryptionContainer(
                 container,
                 encryptor);
         }
+
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+        /// <summary>
+        /// Get container with <see cref="Encryptor"/> for performing operations using client-side encryption.
+        /// </summary>
+        /// <param name="container">Regular cosmos container.</param>
+        /// <param name="encryptor">Provider that allows encrypting and decrypting data.</param>
+        /// <param name="jsonProcessor">Json Processor used for the container.</param>
+        /// <returns>Container to perform operations supporting client-side encryption / decryption.</returns>
+        public static Container WithEncryptor(
+            this Container container,
+            Encryptor encryptor,
+            JsonProcessor jsonProcessor)
+        {
+            return jsonProcessor switch
+            {
+                JsonProcessor.Stream => new EncryptionContainerStream(container, encryptor),
+                JsonProcessor.Newtonsoft => new EncryptionContainer(container, encryptor),
+                _ => throw new NotSupportedException($"Json Processor {jsonProcessor} is not supported.")
+            };
+        }
+#endif
 
         /// <summary>
         /// This method gets the FeedIterator from LINQ IQueryable to execute query asynchronously.
@@ -50,14 +79,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             this Container container,
             IQueryable<T> query)
         {
-            if (container is not EncryptionContainer encryptionContainer)
+            return container switch
             {
-                throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionFeedIterator)} is only supported with {nameof(EncryptionContainer)}.");
-            }
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+                EncryptionContainerStream encryptionContainerStream => new EncryptionFeedIteratorStream<T>(
+                    (EncryptionFeedIteratorStream)encryptionContainerStream.ToEncryptionStreamIterator(query),
+                    encryptionContainerStream.ResponseFactory),
+#endif
+                EncryptionContainer encryptionContainer => new EncryptionFeedIterator<T>(
+                    (EncryptionFeedIterator)encryptionContainer.ToEncryptionStreamIterator(query),
+                    encryptionContainer.ResponseFactory),
 
-            return new EncryptionFeedIterator<T>(
-                (EncryptionFeedIterator)encryptionContainer.ToEncryptionStreamIterator(query),
-                encryptionContainer.ResponseFactory);
+                _ => throw new ArgumentOutOfRangeException(nameof(container), $"Container type {container.GetType().Name} is not supported.")
+
+            };
         }
 
         /// <summary>
@@ -82,15 +117,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             this Container container,
             IQueryable<T> query)
         {
-            if (container is not EncryptionContainer encryptionContainer)
+            return container switch
             {
-                throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionStreamIterator)} is only supported with {nameof(EncryptionContainer)}.");
-            }
-
-            return new EncryptionFeedIterator(
-                query.ToStreamIterator(),
-                encryptionContainer.Encryptor,
-                encryptionContainer.CosmosSerializer);
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+                EncryptionContainerStream encryptionContainerStream => new EncryptionFeedIteratorStream(
+                    query.ToStreamIterator(),
+                    encryptionContainerStream.Encryptor,
+                    encryptionContainerStream.CosmosSerializer,
+                    new MemoryStreamManager()),
+#endif
+                EncryptionContainer encryptionContainer => new EncryptionFeedIterator(
+                    query.ToStreamIterator(),
+                    encryptionContainer.Encryptor,
+                    encryptionContainer.CosmosSerializer),
+                _ => throw new ArgumentOutOfRangeException(nameof(container), $"Container type {container.GetType().Name} is not supported.")
+            };
         }
     }
 }
