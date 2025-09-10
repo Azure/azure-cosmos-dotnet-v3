@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionProperties.DataEncryptionKeyId, encryptionProperties.EncryptionAlgorithm, cancellationToken);
 
-            List<string> pathsDecrypted = new (encryptionProperties.EncryptedPaths.Count());
+            List<string> pathsDecrypted = new (encryptionProperties.EncryptedPaths.Count);
 
 #if NET8_0_OR_GREATER
             BrotliCompressor decompressor = null;

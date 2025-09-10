@@ -33,7 +33,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
         private const int BufferGrowthMinIncrement = 4096; // 4 KB minimal headroom to trigger growth
         private const int SmallPayloadMaxBytes = 2048; // One-shot parse threshold
-        private const int ProbeSize = 2048; // Non-seekable probe size
+
+        // Removed legacy non-seekable probe logic (previous ProbeSize constant and pre-read path)
         private const int StackallocStringThreshold = 256; // Small strings/property names use stackalloc
         private const int Base64StackThreshold = 4096; // Small base64 decode temp uses stackalloc
 
@@ -82,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 .GetEncryptionKeyAsync(properties.DataEncryptionKeyId, properties.EncryptionAlgorithm, cancellationToken)
                 .ConfigureAwait(false);
 
-            int expectedDecrypted = properties.EncryptedPaths is ICollection<string> c ? c.Count : 0;
+            int expectedDecrypted = properties.EncryptedPaths?.Count ?? 0;
             List<string> pathsDecrypted = new List<string>(expectedDecrypted);
 
             using StreamChunkedBufferWriter chunkedWriter =
@@ -110,14 +111,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 long startTimestamp = Stopwatch.GetTimestamp();
                 ctx.StartTimestamp = startTimestamp;
 
-                // Attempt fast paths (small seekable or non-seekable probe)
+                // Attempt small seekable one-shot fast path (non-seekable pre-probe removed as redundant)
                 if (inputStream.CanSeek)
                 {
                     (isFinalBlock, readerState, skip) = await this.TryProcessSmallSeekableAsync(inputStream, ctx, pool, readerState, skip, cancellationToken).ConfigureAwait(false);
-                }
-                else
-                {
-                    (buffer, leftOver, isFinalBlock, readerState, skip) = await this.ProbeNonSeekableAsync(inputStream, ctx, pool, readerState, skip, cancellationToken).ConfigureAwait(false);
                 }
 
                 if (!isFinalBlock)
@@ -233,37 +230,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             {
                 pool.Return(oneShot);
             }
-        }
+    }
 
-        private async Task<(byte[] buffer, int leftOver, bool isFinalBlock, JsonReaderState readerState, SkipState skip)> ProbeNonSeekableAsync(
-            Stream inputStream,
-            ProcessingContext ctx,
-            ArrayPoolManager pool,
-            JsonReaderState readerState,
-            SkipState skip,
-            CancellationToken cancellationToken)
-        {
-            byte[] buffer = pool.Rent(Bucket(ProbeSize));
-            int read = await inputStream.ReadAsync(buffer.AsMemory(0, ProbeSize), cancellationToken).ConfigureAwait(false);
-            ctx.BytesRead += read;
-
-            if (read == 0)
-            {
-                return (buffer, 0, true, readerState, skip); // empty stream
-            }
-
-            // Do NOT mark as final just because the first read was smaller than ProbeSize; streams may return partial reads.
-            long consumed = this.ProcessBufferChunk(ctx, buffer.AsSpan(0, read), ref readerState, isFinalBlock: false, ref skip);
-            int leftOver = read - (int)consumed;
-
-            if (read < ProbeSize && leftOver == 0)
-            {
-                return (buffer, 0, true, readerState, skip); // fully processed within probe
-            }
-
-            return (buffer, leftOver, false, readerState, skip);
-        }
-
+    // Removed ProbeNonSeekableAsync: unified streaming logic handles both seekable and non-seekable streams directly.
         private async Task<(byte[] buffer, int leftOver, bool isFinalBlock, JsonReaderState readerState, SkipState skip)> StreamProcessAsync(
             Stream inputStream,
             ProcessingContext ctx,
@@ -919,7 +888,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 this.ExpectedDecrypted = expectedDecrypted;
                 this.PathsDecrypted = pathsDecrypted;
 
-                IEnumerable<string> encryptedPaths = properties.EncryptedPaths ?? Array.Empty<string>();
+                IReadOnlyCollection<string> encryptedPaths = properties.EncryptedPaths ?? Array.Empty<string>();
                 this.PathMatcher = CandidatePaths.Build(encryptedPaths);
 
                 bool containsCompressed = properties.CompressedEncryptedPaths?.Count > 0;

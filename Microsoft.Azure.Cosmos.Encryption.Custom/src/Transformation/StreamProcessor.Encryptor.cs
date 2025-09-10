@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             int formatVersion,
             string encryptionAlgorithm,
             string dataEncryptionKeyId,
-            IReadOnlyList<string> encryptedPaths,
+            IReadOnlyCollection<string> encryptedPaths,
             CompressionOptions.CompressionAlgorithm compressionAlgorithm,
             IReadOnlyDictionary<string, int> compressedEncryptedPaths,
             byte[] encryptedData)
