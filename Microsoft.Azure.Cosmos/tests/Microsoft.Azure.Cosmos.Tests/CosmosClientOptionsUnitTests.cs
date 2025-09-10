@@ -494,75 +494,100 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         [TestMethod]
         [Owner("ntripician")]
-        [DataRow(true, false, true, "F2", DisplayName = "With PPCB and ApplicationName")]
-        [DataRow(true, true, true, "F3", DisplayName = "With PPAF and ApplicationName")]
-        [DataRow(false, false, true, "F2", DisplayName = "With PPCB and Without ApplicationName")]
-        [DataRow(false, false, false, "", DisplayName = "Without Any Features and ApplicationName")]
+        [DataRow(true, false, true, false, false, "F2", DisplayName = "With PPCB and ApplicationName")]
+        [DataRow(true, true, true, false, false, "F3", DisplayName = "With PPAF and ApplicationName")]
+        [DataRow(false, false, true, false, false, "F2", DisplayName = "With PPCB and Without ApplicationName")]
+        [DataRow(true, false, false, false, true, "F4", DisplayName = "With Thin Client and ApplicationName")]
+        [DataRow(true, false, false, true, false, "F8", DisplayName = "With Binary Encoding and ApplicationName")]
+        [DataRow(true, false, false, true, true, "FC", DisplayName = "With Thin Client, Binary Encoding and ApplicationName")]
+        [DataRow(true, false, true, true, true, "FE", DisplayName = "With PPCB, Thin Client, Binary Encoding and ApplicationName")]
+        [DataRow(true, true, true, true, true, "FF", DisplayName = "With PPAF, PPCB, Thin Client, Binary Encoding and ApplicationName")]
+        [DataRow(false, false, false, false, false, "", DisplayName = "Without Any Features and ApplicationName")]
         public void UserAgentContainsPPAFInformation(
             bool appName,
             bool ppaf, 
             bool ppcb,
+            bool binaryEncoding,
+            bool thinClient,
             string expectedHexStringPostFix)
         {
-            EnvironmentInformation environmentInformation = new EnvironmentInformation();
-            string expectedValue = "cosmos-netstandard-sdk/" + environmentInformation.ClientVersion;
-            string userAgentSuffix = "testSuffix";
-
-            string endpoint = AccountEndpoint;
-            string key = MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey;
-
-            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
-                accountEndpoint: endpoint,
-                authKeyOrResourceToken: key);
-
-            if (appName)
+            try
             {
-                cosmosClientBuilder.WithApplicationName(userAgentSuffix);
+                if (binaryEncoding)
+                {
+                    Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, "True");
+                }
+
+                if (thinClient)
+                {
+                    Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
+                }
+
+                EnvironmentInformation environmentInformation = new EnvironmentInformation();
+                string expectedValue = "cosmos-netstandard-sdk/" + environmentInformation.ClientVersion;
+                string userAgentSuffix = "testSuffix";
+
+                string endpoint = AccountEndpoint;
+                string key = MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey;
+
+                CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
+                    accountEndpoint: endpoint,
+                    authKeyOrResourceToken: key);
+
+                if (appName)
+                {
+                    cosmosClientBuilder.WithApplicationName(userAgentSuffix);
+                }
+
+                ConnectionPolicy policy = new ConnectionPolicy()
+                {
+                    EnablePartitionLevelCircuitBreaker = ppcb,
+                    EnablePartitionLevelFailover = ppaf
+                };
+
+                CosmosClient cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient(policy));
+
+                CosmosClientOptions cosmosClientOptions = cosmosClient.ClientOptions;
+
+                if (appName)
+                {
+                    Assert.AreEqual(userAgentSuffix, cosmosClientOptions.ApplicationName);
+                    cosmosClient.DocumentClient.ConnectionPolicy.UserAgentContainer.AppendFeatures(cosmosClientOptions.ApplicationName);
+                }
+                else
+                {
+                    Assert.IsNull(cosmosClientOptions.ApplicationName);
+                }
+
+                cosmosClient.DocumentClient.ConnectionPolicy.UserAgentContainer.AppendFeatures(cosmosClient.DocumentClient.GetUserAgentFeatures());
+
+                string userAgent = cosmosClient.DocumentClient.ConnectionPolicy.UserAgentContainer.UserAgent;
+                Console.WriteLine(userAgent);
+                if (appName)
+                {
+                    Assert.IsTrue(userAgent.EndsWith(userAgentSuffix));
+                }
+                else
+                {
+                    Assert.IsTrue(userAgent.EndsWith(expectedHexStringPostFix));
+                }
+
+                Assert.IsTrue(userAgent.StartsWith(expectedValue));
+                Assert.IsTrue(userAgent.Contains(expectedHexStringPostFix));
+
+                if (appName)
+                {
+                    Assert.IsTrue(userAgent.EndsWith(userAgentSuffix));
+                }
+                else
+                {
+                    Assert.IsTrue(userAgent.EndsWith(expectedHexStringPostFix));
+                }
             }
-
-            ConnectionPolicy policy = new ConnectionPolicy()
+            finally
             {
-                EnablePartitionLevelCircuitBreaker = ppcb,
-                EnablePartitionLevelFailover = ppaf
-            };
-
-            CosmosClient cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient(policy));
-
-            CosmosClientOptions cosmosClientOptions = cosmosClient.ClientOptions;
-            
-            if (appName)
-            {
-                Assert.AreEqual(userAgentSuffix, cosmosClientOptions.ApplicationName);
-                cosmosClient.DocumentClient.ConnectionPolicy.UserAgentContainer.AppendFeatures(cosmosClientOptions.ApplicationName);
-            }
-            else
-            {
-                Assert.IsNull(cosmosClientOptions.ApplicationName);
-            }
-
-            cosmosClient.DocumentClient.ConnectionPolicy.UserAgentContainer.AppendFeatures(cosmosClient.DocumentClient.GetUserAgentFeatures());
-
-            string userAgent = cosmosClient.DocumentClient.ConnectionPolicy.UserAgentContainer.UserAgent;
-            Console.WriteLine(userAgent);
-            if (appName)
-            {
-                Assert.IsTrue(userAgent.EndsWith(userAgentSuffix));
-            }
-            else
-            {
-                Assert.IsTrue(userAgent.EndsWith(expectedHexStringPostFix));
-            }
-
-            Assert.IsTrue(userAgent.StartsWith(expectedValue));
-            Assert.IsTrue(userAgent.Contains(expectedHexStringPostFix));
-
-            if (appName)
-            {
-                Assert.IsTrue(userAgent.EndsWith(userAgentSuffix));
-            }
-            else
-            {
-                Assert.IsTrue(userAgent.EndsWith(expectedHexStringPostFix));
+                Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, null);
+                Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, null);
             }
         }
 

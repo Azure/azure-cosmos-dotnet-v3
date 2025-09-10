@@ -471,6 +471,28 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         /// <summary>
+        /// This system function is used to combine two or more scores provided by other scoring functions.
+        /// For more information, see https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/query/rrf.
+        /// This method is to be used in LINQ expressions only and will be evaluated on server.
+        /// There's no implementation provided in the client library.
+        /// </summary>
+        /// <param name="scoringFunctions">the scoring functions to combine. Valid functions are FullTextScore and VectorDistance. </param>
+        /// <param name="weights">the weights to use for scoring functions</param>
+        /// <returns>Returns the the combined scores of the scoring functions.</returns>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// var matched = documents.OrderByRank(document => document.RRF(document.Name.FullTextScore(<keyword1>), document.Address.FullTextScore(<keyword2>)));
+        /// ]]>
+        /// </code>
+        /// </example>
+        public static double RRF(double[] scoringFunctions, double[] weights)
+        {
+            // The reason for not defining "this" keyword is because this causes undesirable serialization when call Expression.ToString() on this method
+            throw new NotImplementedException(ClientResources.ExtensionMethodNotImplemented);
+        }
+
+        /// <summary>
         /// This method generate query definition from LINQ query.
         /// </summary>
         /// <typeparam name="T">the type of object to query.</typeparam>
@@ -588,6 +610,27 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
 
             return linqQuery.ToStreamIterator();
+        }
+
+        /// <summary>
+        /// This extension method returns the Index Metrics for a given Response object. The index utilization metrics is to be used for debugging purposes only. 
+        /// This result is only available if QueryRequestOptions.PopulateIndexMetrics is set to true.Returns null if the index metrics is not available in the response.
+        /// </summary>
+        /// <param name="response">The query Response.</param>
+        /// <returns>A string represents the Index Metrics.</returns>
+        /// <example>
+        /// This example shows a common usage of this function.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// QueryRequestOptions queryRequestOption = new QueryRequestOptions() { PopulateIndexMetrics = true };
+        /// Response<int> response = await this.Container.GetLinqQueryable<T>(requestOptions: queryRequestOption).Select(item => item.Id).CountAsync(cancellationToken);
+        /// string indexMetrics = response.GetIndexMetrics();
+        /// ]]>
+        /// </code>
+        /// </example>
+        public static string GetIndexMetrics<T>(this Response<T> response)
+        {
+            return ResponseMessage.DecodeIndexMetrics(response.Headers, isBase64Encoded: false)?.Value;
         }
 
         /// <summary>

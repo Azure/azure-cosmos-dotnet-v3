@@ -13,26 +13,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using System.Reflection;
     using System.Text;
+    using System.Text.RegularExpressions;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Cosmos;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
+    using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
     using JsonReader = Json.JsonReader;
     using JsonWriter = Json.JsonWriter;
     using PartitionKey = Documents.PartitionKey;
-    using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
-    using System.Reflection;
-    using System.Text.RegularExpressions;
-    using Microsoft.Azure.Cosmos.Diagnostics;
 
     [TestClass]
     public class CosmosItemTests : BaseCosmosClientHelper
@@ -702,51 +702,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(hitCount > 0, "HTTP request event handler was not triggered");
 
             await database.DeleteAsync();
-        }
-
-        [TestMethod]
-        public async Task HttpRequestVersionIsTwoPointZeroWhenUsingThinClientMode()
-        {
-            try
-            {
-                Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
-
-                Version expectedGatewayVersion = new(1, 1);
-                Version expectedThinClientVersion = new(2, 0);
-
-                List<Version> postRequestVersions = new();
-
-                using CosmosClient client = TestCommon.CreateCosmosClient(builder =>
-                {
-                    builder.WithConnectionModeGateway();
-                    builder.WithSendingRequestEventArgs((sender, e) =>
-                    {
-                        if (e.HttpRequest.Method == HttpMethod.Post)
-                        {
-                            postRequestVersions.Add(e.HttpRequest.Version);
-                        }
-                    });
-                });
-
-                Cosmos.Database database = await client.CreateDatabaseIfNotExistsAsync("HttpVersionTestDb");
-                Container container = await database.CreateContainerIfNotExistsAsync("HttpVersionTestContainer", "/pk");
-
-                ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
-
-                await Assert.ThrowsExceptionAsync<CosmosException>(() => container.CreateItemAsync(testItem, new Cosmos.PartitionKey(testItem.pk)));
-
-                Assert.AreEqual(3, postRequestVersions.Count, "Expected exactly 3 POST requests (DB, Container, Item).");
-
-                Assert.AreEqual(expectedGatewayVersion, postRequestVersions[0], "Expected HTTP/1.1 for CreateDatabaseAsync.");
-                Assert.AreEqual(expectedGatewayVersion, postRequestVersions[1], "Expected HTTP/1.1 for CreateContainerAsync.");
-                Assert.AreEqual(expectedThinClientVersion, postRequestVersions[2], "Expected HTTP/2.0 for CreateItemAsync.");
-
-                await database.DeleteAsync();
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, null);
-            }
         }
 
         [TestMethod]

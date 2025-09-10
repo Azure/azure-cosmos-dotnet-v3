@@ -321,7 +321,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new DocumentClientEventSource(),
                 new JsonSerializerSettings(),
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
-                GlobalPartitionEndpointManagerNoOp.Instance);
+                GlobalPartitionEndpointManagerNoOp.Instance,
+                isThinClientEnabled: false);
         }
 
         private static Mock<IAddressResolver> GetMockAddressCache(AddressInformation[] addressInformation)

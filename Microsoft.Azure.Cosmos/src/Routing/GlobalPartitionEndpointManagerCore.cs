@@ -49,14 +49,9 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly int backgroundConnectionInitTimeIntervalInSeconds = ConfigurationManager.GetStalePartitionUnavailabilityRefreshIntervalInSeconds(300);
 
         /// <summary>
-        /// A readonly boolean flag used to determine if partition level failover is enabled.
+        /// A readonly boolean flag used to determine if thinclient is enabled.
         /// </summary>
-        private readonly bool isPartitionLevelFailoverEnabled;
-
-        /// <summary>
-        /// A readonly boolean flag used to determine if partition level circuit breaker is enabled.
-        /// </summary>
-        private readonly bool isPartitionLevelCircuitBreakerEnabled;
+        private readonly bool isThinClientEnabled;
 
         /// <summary>
         /// A <see cref="Lazy{T}"/> instance of <see cref="ConcurrentDictionary{K,V}"/> containing the partition key range to failover info mapping.
@@ -83,6 +78,16 @@ namespace Microsoft.Azure.Cosmos.Routing
         private bool isBackgroundConnectionInitActive = false;
 
         /// <summary>
+        /// A boolean (represented as an int to allow for thread-safety) flag used to determine if partition level failover is enabled.
+        /// </summary>
+        private int isPartitionLevelAutomaticFailoverEnabled;
+
+        /// <summary>
+        /// A boolean (represented as an int to allow for thread-safety) flag used to determine if partition level circuit breaker is enabled.
+        /// </summary>
+        private int isPartitionLevelCircuitBreakerEnabled;
+
+        /// <summary>
         /// A callback func delegate used by the background connection refresh recursive task to establish rntbd connections to backend replicas.
         /// </summary>
         private Func<Dictionary<PartitionKeyRange, Tuple<string, Uri, TransportAddressHealthState.HealthStatus>>, Task>? backgroundOpenConnectionTask;
@@ -93,13 +98,16 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <param name="globalEndpointManager">An instance of <see cref="GlobalEndpointManager"/>.</param>
         /// <param name="isPartitionLevelFailoverEnabled">A boolean flag indicating if partition level failover is enabled.</param>
         /// <param name="isPartitionLevelCircuitBreakerEnabled">A boolean flag indicating if partition level circuit breaker is enabled.</param>
+        /// <param name="isThinClientEnabled">A boolean flag indicating if thinclient is enabled.</param>
         public GlobalPartitionEndpointManagerCore(
             IGlobalEndpointManager globalEndpointManager,
             bool isPartitionLevelFailoverEnabled = false,
-            bool isPartitionLevelCircuitBreakerEnabled = false)
+            bool isPartitionLevelCircuitBreakerEnabled = false,
+            bool isThinClientEnabled = false)
         {
-            this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
-            this.isPartitionLevelCircuitBreakerEnabled = isPartitionLevelCircuitBreakerEnabled;
+            this.isPartitionLevelAutomaticFailoverEnabled = isPartitionLevelFailoverEnabled ? 1 : 0;
+            this.isPartitionLevelCircuitBreakerEnabled = isPartitionLevelCircuitBreakerEnabled ? 1 : 0;
+            this.isThinClientEnabled = isThinClientEnabled;
             this.globalEndpointManager = globalEndpointManager ?? throw new ArgumentNullException(nameof(globalEndpointManager));
             this.InitializeAndStartCircuitBreakerFailbackBackgroundRefresh();
         }
@@ -169,7 +177,9 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 // For multi master write accounts, since all the regions are treated as write regions, the next locations to fail over
                 // will be the preferred read regions that are configured in the application preferred regions in the CosmosClientOptions.
-                ReadOnlyCollection<Uri> nextLocations = this.globalEndpointManager.ReadEndpoints;
+                ReadOnlyCollection<Uri> nextLocations = this.isThinClientEnabled && GatewayStoreModel.IsOperationSupportedByThinClient(request)
+                    ? this.globalEndpointManager.ThinClientReadEndpoints
+                    : this.globalEndpointManager.ReadEndpoints;
 
                 return this.TryAddOrUpdatePartitionFailoverInfoAndMoveToNextLocation(
                     partitionKeyRange,
@@ -181,7 +191,9 @@ namespace Microsoft.Azure.Cosmos.Routing
             else if (this.IsRequestEligibleForPerPartitionAutomaticFailover(request))
             {
                 // For any single master write accounts, the next locations to fail over will be the read regions configured at the account level.
-                ReadOnlyCollection<Uri> nextLocations = this.globalEndpointManager.AccountReadEndpoints;
+                ReadOnlyCollection<Uri> nextLocations = this.isThinClientEnabled && GatewayStoreModel.IsOperationSupportedByThinClient(request)
+                    ? this.globalEndpointManager.ThinClientReadEndpoints
+                    : this.globalEndpointManager.AccountReadEndpoints;
 
                 return this.TryAddOrUpdatePartitionFailoverInfoAndMoveToNextLocation(
                     partitionKeyRange,
@@ -249,7 +261,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         public override bool IsRequestEligibleForPerPartitionAutomaticFailover(
             DocumentServiceRequest request)
         {
-            return this.isPartitionLevelFailoverEnabled
+            return this.isPartitionLevelAutomaticFailoverEnabled == 1
                 && !request.IsReadOnlyRequest
                 && !this.globalEndpointManager.CanSupportMultipleWriteLocations(request.ResourceType, request.OperationType);
         }
@@ -265,9 +277,35 @@ namespace Microsoft.Azure.Cosmos.Routing
         public override bool IsRequestEligibleForPartitionLevelCircuitBreaker(
             DocumentServiceRequest request)
         {
-            return this.isPartitionLevelCircuitBreakerEnabled
+            return this.isPartitionLevelCircuitBreakerEnabled == 1
                 && (request.IsReadOnlyRequest
                 || (!request.IsReadOnlyRequest && this.globalEndpointManager.CanSupportMultipleWriteLocations(request.ResourceType, request.OperationType)));
+        }
+
+        /// <inheritdoc/>
+        public override void SetIsPPAFEnabled(
+            bool isPPAFEnabled)
+        {
+            Interlocked.Exchange(ref this.isPartitionLevelAutomaticFailoverEnabled, isPPAFEnabled ? 1 : 0);
+        }
+
+        /// <inheritdoc/>
+        public override void SetIsPPCBEnabled(
+            bool isPPCBEnabled)
+        {
+            Interlocked.Exchange(ref this.isPartitionLevelCircuitBreakerEnabled, isPPCBEnabled ? 1 : 0);
+        }
+
+        /// <inheritdoc/>
+        public override bool IsPartitionLevelAutomaticFailoverEnabled()
+        {
+            return this.isPartitionLevelAutomaticFailoverEnabled == 1;
+        }
+
+        /// <inheritdoc/>
+        public override bool IsPartitionLevelCircuitBreakerEnabled()
+        {
+            return this.isPartitionLevelCircuitBreakerEnabled == 1;
         }
 
         /// <summary>
@@ -300,6 +338,12 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             partitionKeyRange = default;
             failedLocation = default;
+
+            if (!this.IsPartitionLevelAutomaticFailoverEnabled()
+                && !this.IsPartitionLevelCircuitBreakerEnabled())
+            {
+                return false;
+            }
 
             if (request == null)
             {
@@ -517,7 +561,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     return false;
                 }
 
-                string triggeredBy = this.isPartitionLevelFailoverEnabled ? "Automatic Failover" : "Circuit Breaker";
+                string triggeredBy = this.isPartitionLevelAutomaticFailoverEnabled == 1 ? "Automatic Failover" : "Circuit Breaker";
                 DefaultTrace.TraceInformation("Attempting to route request for partition level override triggered by {0}, for operation type: {1}. URI: {2}, PartitionKeyRange: {3}",
                     triggeredBy,
                     request.OperationType,
@@ -550,7 +594,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             DocumentServiceRequest request,
             Lazy<ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>> partitionKeyRangeToLocationMapping)
         {
-            string triggeredBy = this.isPartitionLevelFailoverEnabled ? "Automatic Failover" : "Circuit Breaker";
+            string triggeredBy = this.isPartitionLevelAutomaticFailoverEnabled == 1 ? "Automatic Failover" : "Circuit Breaker";
             PartitionKeyRangeFailoverInfo partionFailover = partitionKeyRangeToLocationMapping.Value.GetOrAdd(
                 partitionKeyRange,
                 (_) => new PartitionKeyRangeFailoverInfo(
@@ -608,7 +652,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 this.ConsecutiveWriteRequestFailureCount = 0;
                 this.ReadRequestFailureCounterThreshold = ConfigurationManager.GetCircuitBreakerConsecutiveFailureCountForReads(10);
                 this.WriteRequestFailureCounterThreshold = ConfigurationManager.GetCircuitBreakerConsecutiveFailureCountForWrites(5);
-                this.TimeoutCounterResetWindowInMinutes = TimeSpan.FromMinutes(1);
+                this.TimeoutCounterResetWindowInMinutes = TimeSpan.FromMinutes(ConfigurationManager.GetCircuitBreakerTimeoutCounterResetWindowInMinutes(5));
                 this.FirstRequestFailureTime = DateTime.UtcNow;
                 this.LastRequestFailureTime = DateTime.UtcNow;
             }

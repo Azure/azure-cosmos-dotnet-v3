@@ -96,6 +96,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
         {
             TryCatch<IQueryPipelineStage> ComponentPipelineFactory(QueryInfo rewrittenQueryInfo)
             {
+                HybridSearchDebugTraceHelpers.TraceQuerySpec(sqlQuerySpec);
+
                 return PipelineFactory.MonadicCreate(
                     documentContainer,
                     sqlQuerySpec,
@@ -288,6 +290,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                 }
 
                 QueryPage page = sourceStage.Current.Result;
+
+                HybridSearchDebugTraceHelpers.TraceQueryResultTSVHeader(1);
 
                 List<CosmosElement> documents = new List<CosmosElement>(page.Documents.Count);
                 foreach (CosmosElement cosmosElement in page.Documents)
@@ -951,6 +955,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 #pragma warning disable CS0162 // Unreachable code detected
 
             [Conditional("DEBUG")]
+            public static void TraceQuerySpec(SqlQuerySpec querySpec)
+            {
+                if (Enabled)
+                {
+                    CosmosSerializerCore serializerCore = new CosmosSerializerCore();
+                    System.IO.Stream stream = serializerCore.ToStreamSqlQuerySpec(querySpec, ResourceType.Document);
+                    string content = new System.IO.StreamReader(stream).ReadToEnd();
+                    System.Diagnostics.Trace.WriteLine(content);
+                    System.Diagnostics.Trace.WriteLine("\n");
+                }
+            }
+
+            [Conditional("DEBUG")]
             public static void TraceQueryResults(IReadOnlyList<HybridSearchQueryResult> queryResults, int componentCount)
             {
                 if (Enabled)
@@ -1026,7 +1043,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                 return builder;
             }
 
-            private static void TraceQueryResultTSVHeader(int componentCount)
+            public static void TraceQueryResultTSVHeader(int componentCount)
             {
                 StringBuilder builder = new StringBuilder();
                 builder.Append("_rid");

@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly GlobalEndpointManager globalEndpointManager;
         private readonly GlobalPartitionEndpointManager partitionKeyRangeLocationCache;
         private readonly bool enableEndpointDiscovery;
-        private readonly bool isPartitionLevelFailoverEnabled;
+        private readonly bool isThinClientEnabled;
         private int failoverRetryCount;
 
         private int sessionTokenRetryCount;
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
             GlobalPartitionEndpointManager partitionKeyRangeLocationCache,
             RetryOptions retryOptions,
             bool enableEndpointDiscovery,
-            bool isPartitionLevelFailoverEnabled)
+            bool isThinClientEnabled)
         {
             this.throttlingRetry = new ResourceThrottleRetryPolicy(
                 retryOptions.MaxRetryAttemptsOnThrottledRequests,
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos
             this.serviceUnavailableRetryCount = 0;
             this.canUseMultipleWriteLocations = false;
             this.isMultiMasterWriteRequest = false;
-            this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
+            this.isThinClientEnabled = isThinClientEnabled;
         }
 
         /// <summary> 
@@ -226,7 +226,11 @@ namespace Microsoft.Azure.Cosmos
 
             // Resolve the endpoint for the request and pin the resolution to the resolved endpoint
             // This enables marking the endpoint unavailability on endpoint failover/unreachability
-            this.locationEndpoint = this.globalEndpointManager.ResolveServiceEndpoint(request);
+            this.locationEndpoint = this.isThinClientEnabled
+                && GatewayStoreModel.IsOperationSupportedByThinClient(request)
+                ? this.globalEndpointManager.ResolveThinClientEndpoint(request)
+                : this.globalEndpointManager.ResolveServiceEndpoint(request);
+
             request.RequestContext.RouteToLocation(this.locationEndpoint);
         }
 
@@ -493,7 +497,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (!this.canUseMultipleWriteLocations
                     && !this.isReadRequest
-                    && !this.isPartitionLevelFailoverEnabled)
+                    && !this.partitionKeyRangeLocationCache.IsPartitionLevelAutomaticFailoverEnabled())
             {
                 // Write requests on single master cannot be retried if partition level failover is disabled.
                 // This means there are no other regions available to serve the writes.

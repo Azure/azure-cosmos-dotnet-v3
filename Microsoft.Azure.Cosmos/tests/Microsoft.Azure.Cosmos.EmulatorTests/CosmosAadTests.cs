@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 (string endpoint, string authKey) = TestCommon.GetAccountInfo();
-                LocalEmulatorTokenCredential simpleEmulatorTokenCredential = new LocalEmulatorTokenCredential(authKey);
+                LocalEmulatorTokenCredential simpleEmulatorTokenCredential = new LocalEmulatorTokenCredential(expectedScope: "https://127.0.0.1/.default", masterKey: authKey);
                 CosmosClientOptions clientOptions = new CosmosClientOptions()
                 {
                     ConnectionMode = connectionMode,
@@ -140,8 +140,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             (string endpoint, string authKey) = TestCommon.GetAccountInfo();
             LocalEmulatorTokenCredential simpleEmulatorTokenCredential = new LocalEmulatorTokenCredential(
-                authKey,
-                GetAadTokenCallBack);
+                expectedScope: "https://127.0.0.1/.default",
+                masterKey: authKey,
+                getTokenCallback: GetAadTokenCallBack);
 
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
@@ -191,8 +192,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             (string endpoint, string authKey) = TestCommon.GetAccountInfo();
             LocalEmulatorTokenCredential simpleEmulatorTokenCredential = new LocalEmulatorTokenCredential(
-                authKey,
-                GetAadTokenCallBack);
+                expectedScope: "https://127.0.0.1/.default",
+                masterKey: authKey,
+                getTokenCallback: GetAadTokenCallBack);
 
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
@@ -232,8 +234,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             (string endpoint, string authKey) = TestCommon.GetAccountInfo();
             LocalEmulatorTokenCredential simpleEmulatorTokenCredential = new LocalEmulatorTokenCredential(
-                authKey,
-                GetAadTokenCallBack);
+                expectedScope: "https://127.0.0.1/.default",
+                masterKey: authKey,
+                getTokenCallback: GetAadTokenCallBack);
 
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
@@ -260,6 +263,185 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.IsTrue(ce.ToString().Contains(errorMessage));
                 }
             }
+        }
+
+        [TestMethod]
+        public async Task Aad_OverrideScope_NoFallback_OnFailure_E2E()
+        {
+            // Arrange
+            (string endpoint, string authKey) = TestCommon.GetAccountInfo();
+            string databaseId = "db-" + Guid.NewGuid();
+            using (CosmosClient setupClient = TestCommon.CreateCosmosClient())
+            {
+                await setupClient.CreateDatabaseAsync(databaseId);
+            }
+
+            string overrideScope = "https://override/.default";
+            string accountScope = $"https://{new Uri(endpoint).Host}/.default";
+            int overrideScopeCount = 0;
+            int accountScopeCount = 0;
+
+            string previous = Environment.GetEnvironmentVariable("AZURE_COSMOS_AAD_SCOPE_OVERRIDE");
+            Environment.SetEnvironmentVariable("AZURE_COSMOS_AAD_SCOPE_OVERRIDE", overrideScope);
+
+            void GetAadTokenCallBack(TokenRequestContext context, CancellationToken token)
+            {
+                string scope = context.Scopes[0];
+                if (scope == overrideScope)
+                {
+                    overrideScopeCount++;
+                    throw new RequestFailedException(408, "Simulated override scope failure");
+                }
+                if (scope == accountScope)
+                {
+                    accountScopeCount++;
+                }
+            }
+
+            LocalEmulatorTokenCredential credential = new LocalEmulatorTokenCredential(
+                expectedScopes: new[] { overrideScope, accountScope },
+                masterKey: authKey,
+                getTokenCallback: GetAadTokenCallBack);
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Gateway,
+                TokenCredentialBackgroundRefreshInterval = TimeSpan.FromSeconds(60)
+            };
+
+            try
+            {
+                using CosmosClient aadClient = new CosmosClient(endpoint, credential, clientOptions);
+
+                try
+                {
+                    // Act
+                    ResponseMessage r = await aadClient.GetDatabase(databaseId).ReadStreamAsync();
+                    Assert.Fail("Expected failure when override scope token acquisition fails.");
+                }
+                catch (RequestFailedException ex) when (ex.Status == (int)HttpStatusCode.RequestTimeout || ex.Status == 408)
+                {
+                    // Assert
+                    Assert.IsTrue(overrideScopeCount > 0, "Override scope should have been attempted.");
+                    Assert.AreEqual(0, accountScopeCount, "No fallback to account scope must occur when override is configured.");
+                }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AZURE_COSMOS_AAD_SCOPE_OVERRIDE", previous);
+                using CosmosClient cleanup = TestCommon.CreateCosmosClient();
+                await cleanup.GetDatabase(databaseId).DeleteAsync();
+            }
+        }
+
+        [TestMethod]
+        public async Task Aad_AccountScope_Fallbacks_ToCosmosScope()
+        {
+            (string endpoint, string authKey) = TestCommon.GetAccountInfo();
+
+            string previous = Environment.GetEnvironmentVariable("AZURE_COSMOS_AAD_SCOPE_OVERRIDE");
+            Environment.SetEnvironmentVariable("AZURE_COSMOS_AAD_SCOPE_OVERRIDE", null);
+
+            string accountScope = $"https://{new Uri(endpoint).Host}/.default";
+            string aadScope = "https://cosmos.azure.com/.default";
+
+            int accountScopeCount = 0;
+            int cosmosScopeCount = 0;
+
+            void GetAadTokenCallBack(TokenRequestContext context, CancellationToken token)
+            {
+                string scope = context.Scopes[0];
+
+                if (string.Equals(scope, accountScope, StringComparison.OrdinalIgnoreCase))
+                {
+                    accountScopeCount++;
+                    throw new Exception(
+                        message: "AADSTS500011",
+                        innerException: new Exception("AADSTS500011"));
+                }
+
+                if (string.Equals(scope, aadScope, StringComparison.OrdinalIgnoreCase))
+                {
+                    cosmosScopeCount++;
+                }
+            }
+
+            LocalEmulatorTokenCredential credential = new LocalEmulatorTokenCredential(
+                expectedScopes: new[] { accountScope, aadScope },
+                masterKey: authKey,
+                getTokenCallback: GetAadTokenCallBack);
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Gateway,
+                TokenCredentialBackgroundRefreshInterval = TimeSpan.FromSeconds(60)
+            };
+
+            try
+            {
+                using CosmosClient aadClient = new CosmosClient(endpoint, credential, clientOptions);
+                TokenCredentialCache tokenCredentialCache =
+                    ((AuthorizationTokenProviderTokenCredential)aadClient.AuthorizationTokenProvider).tokenCredentialCache;
+
+                string token = await tokenCredentialCache.GetTokenAsync(Tracing.Trace.GetRootTrace("account-fallback-to-cosmos-test"));
+                Assert.IsFalse(string.IsNullOrEmpty(token), "Fallback should succeed and produce a token.");
+
+                Assert.IsTrue(accountScopeCount >= 1, "Account scope must be attempted first.");
+                Assert.IsTrue(cosmosScopeCount >= 1, "The client must fall back to cosmos.azure.com scope.");
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AZURE_COSMOS_AAD_SCOPE_OVERRIDE", previous);
+            }
+        }
+
+        [TestMethod]
+        public async Task Aad_AccountScope_Success_NoFallback()
+        {
+            // Arrange
+            (string endpoint, string authKey) = TestCommon.GetAccountInfo();
+
+            string accountScope = $"https://{new Uri(endpoint).Host}/.default";
+            string aadScope = "https://cosmos.azure.com/.default";
+
+            int accountScopeCount = 0;
+            int cosmosScopeCount = 0;
+
+            void GetAadTokenCallBack(TokenRequestContext context, CancellationToken token)
+            {
+                string scope = context.Scopes[0];
+
+                if (string.Equals(scope, accountScope, StringComparison.OrdinalIgnoreCase))
+                {
+                    accountScopeCount++;
+                }
+
+                if (string.Equals(scope, aadScope, StringComparison.OrdinalIgnoreCase))
+                {
+                    cosmosScopeCount++;
+                }
+            }
+
+            LocalEmulatorTokenCredential credential = new LocalEmulatorTokenCredential(
+                expectedScopes: new[] { accountScope },
+                masterKey: authKey,
+                getTokenCallback: GetAadTokenCallBack);
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Gateway,
+                TokenCredentialBackgroundRefreshInterval = TimeSpan.FromSeconds(60)
+            };
+
+            using CosmosClient aadClient = new CosmosClient(endpoint, credential, clientOptions);
+            TokenCredentialCache tokenCredentialCache =
+                ((AuthorizationTokenProviderTokenCredential)aadClient.AuthorizationTokenProvider).tokenCredentialCache;
+
+            string token = await tokenCredentialCache.GetTokenAsync(Tracing.Trace.GetRootTrace("account-scope-success-no-fallback"));
+            Assert.IsFalse(string.IsNullOrEmpty(token), "Token should be acquired successfully with account scope.");
+
+            Assert.AreEqual(1, accountScopeCount, "Account scope must be used exactly once.");
+            Assert.AreEqual(0, cosmosScopeCount, "Cosmos scope must not be used (no fallback).");
         }
     }
 }

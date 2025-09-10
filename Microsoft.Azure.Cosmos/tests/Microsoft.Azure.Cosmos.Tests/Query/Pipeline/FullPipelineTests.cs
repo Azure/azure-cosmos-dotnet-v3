@@ -254,6 +254,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 }
             }
 
+            rootTrace.SetWalkingStateRecursively();
             Assert.AreEqual(numTraces, rootTrace.Children.Count);
         }
 

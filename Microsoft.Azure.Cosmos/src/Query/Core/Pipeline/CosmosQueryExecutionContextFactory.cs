@@ -205,7 +205,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                             bool hasDistinct = sqlQuery.SelectClause.HasDistinct;
                             bool hasGroupBy = sqlQuery.GroupByClause != default;
                             bool hasAggregates = AggregateProjectionDetector.HasAggregate(sqlQuery.SelectClause.SelectSpec);
-                            bool createPassthroughQuery = !hasAggregates && !hasDistinct && !hasGroupBy;
+                            bool hasOrderBy = sqlQuery.OrderByClause != default;
+                            bool createPassthroughQuery = !hasAggregates && !hasDistinct && !hasGroupBy && !hasOrderBy;
 
                             if (createPassthroughQuery)
                             {
@@ -305,6 +306,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                         && partitionedQueryExecutionInfo.QueryRanges[0].IsSingleValue);
                     bool serverStreamingQuery = !partitionedQueryExecutionInfo.QueryInfo.HasAggregates
                         && !partitionedQueryExecutionInfo.QueryInfo.HasDistinct
+                        && !partitionedQueryExecutionInfo.QueryInfo.HasNonStreamingOrderBy
                         && !partitionedQueryExecutionInfo.QueryInfo.HasGroupBy;
                     bool streamingSinglePartitionQuery = singleLogicalPartitionKeyQuery && serverStreamingQuery;
 

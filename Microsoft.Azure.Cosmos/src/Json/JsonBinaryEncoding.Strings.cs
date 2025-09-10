@@ -431,7 +431,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 const byte OneByteCount = JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMax - JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin;
                 userStringId = OneByteCount
                     + stringToken[1]
-                    + ((stringToken[0] - JsonBinaryEncoding.TypeMarker.UserString2ByteLengthMin) * 0xFF);
+                    + ((stringToken[0] - JsonBinaryEncoding.TypeMarker.UserString2ByteLengthMin) * 256);
             }
 
             return true;
@@ -634,19 +634,28 @@ namespace Microsoft.Azure.Cosmos.Json
 
             // Convert the stringId to a multibyte type marker
             const byte OneByteCount = TypeMarker.UserString1ByteLengthMax - TypeMarker.UserString1ByteLengthMin;
+            const int TwoByteCount = (TypeMarker.UserString2ByteLengthMax - TypeMarker.UserString2ByteLengthMin) * 256;
+            const int MaxStringId = OneByteCount + TwoByteCount;
+
             if (stringId < OneByteCount)
             {
                 multiByteTypeMarker = new MultiByteTypeMarker(
                     length: 1,
                     one: (byte)(TypeMarker.UserString1ByteLengthMin + stringId));
             }
-            else
+            else if (stringId < MaxStringId)
             {
                 int twoByteOffset = stringId - OneByteCount;
                 multiByteTypeMarker = new MultiByteTypeMarker(
                     length: 2,
-                    one: (byte)((twoByteOffset / 0xFF) + TypeMarker.UserString2ByteLengthMin),
-                    two: (byte)(twoByteOffset % 0xFF));
+                    one: (byte)((twoByteOffset / 256) + TypeMarker.UserString2ByteLengthMin),
+                    two: (byte)(twoByteOffset % 256));
+            }
+            else
+            {
+                // String id out of range
+                multiByteTypeMarker = default;
+                return false;
             }
 
             return true;

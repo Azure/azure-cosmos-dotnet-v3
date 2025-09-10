@@ -86,15 +86,15 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')
                     ORDER BY RANK RRF(FullTextScore(c.title, ['John']), FullTextScore(c.text, ['United States']))",
                     new List<List<int>>{
-                        new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 25, 22, 2, 66, 57, 85 },
-                        new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 25, 22, 2, 66, 85, 57 },
+                        new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2, 22, 57, 85 },
+                        new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2, 22, 85, 57 },
                     }),
                 MakeSanityTest(@"
                     SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')
                     ORDER BY RANK RRF(FullTextScore(c.title, ['John']), FullTextScore(c.text, ['United States']))",
-                    new List<List<int>>{ new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 25 } }),
+                    new List<List<int>>{ new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2 } }),
                 MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
@@ -102,35 +102,35 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     ORDER BY RANK RRF(FullTextScore(c.title, ['John']), FullTextScore(c.text, ['United States']))
                     OFFSET 5 LIMIT 10",
                     new List<List<int>>{
-                        new List<int>{ 24, 77, 76, 80, 25, 22, 2, 66, 57, 85 },
-                        new List<int>{ 24, 77, 76, 80, 25, 22, 2, 66, 85, 57 },
+                        new List<int>{ 24, 77, 76, 80, 2, 22, 57, 85 },
+                        new List<int>{ 24, 77, 76, 80, 2, 22, 85, 57 },
                     }),
                 MakeSanityTest(@"
                     SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     ORDER BY RANK RRF(FullTextScore(c.title, ['John']), FullTextScore(c.text, ['United States']))",
-                    new List<List<int>>{new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 25 } }),
+                    new List<List<int>>{new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2 } }),
                 MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     ORDER BY RANK RRF(FullTextScore(c.title, ['John']), FullTextScore(c.text, ['United States']))
-                    OFFSET 0 LIMIT 13",
-                    new List<List<int>>{ new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 25, 22, 2, 66 } }),
+                    OFFSET 0 LIMIT 11",
+                    new List<List<int>>{ new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2, 22 } }),
                 MakeSanityTest($@"
                     SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     ORDER BY RANK RRF(FullTextScore(c.title, ['John']), FullTextScore(c.text, ['United States']), VectorDistance(c.vector, {SampleVector}))",
-                    new List<List<int>>{new List<int>{ 21, 75, 37, 24, 26, 35, 49, 87, 55, 9 } }),
+                    new List<List<int>>{new List<int>{ 21, 37, 75, 26, 35, 24, 87, 55, 49, 9 } }),
                 MakeSanityTest($@"
                     SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     ORDER BY RANK RRF(VectorDistance(c.vector, {SampleVector}), FullTextScore(c.title, ['John']), FullTextScore(c.text, ['United States']))",
-                    new List<List<int>>{new List<int>{ 21, 75, 37, 24, 26, 35, 49, 87, 55, 9 } }),
+                    new List<List<int>>{new List<int>{ 21, 37, 75, 26, 35, 24, 87, 55, 49, 9 } }),
                 MakeSanityTest($@"
                     SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     ORDER BY RANK RRF(VectorDistance(c.vector, {SampleVector}), FullTextScore(c.title, ['John']), VectorDistance(c.image, {SampleVector}), VectorDistance(c.backup_image, {SampleVector}), FullTextScore(c.text, ['United States']))",
-                    new List<List<int>>{new List<int>{ 21, 75, 37, 24, 26, 35, 49, 87, 55, 9 } }),
+                    new List<List<int>>{new List<int>{ 21, 37, 75, 26, 35, 24, 87, 55, 49, 9 } }),
             };
 
             await this.RunTests(testCases);
