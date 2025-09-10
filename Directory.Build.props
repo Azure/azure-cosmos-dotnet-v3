@@ -2,7 +2,7 @@
 	<PropertyGroup>
 		<ClientOfficialVersion>0.1.2</ClientOfficialVersion>
 		<ClientPreviewVersion>0.1.2</ClientPreviewVersion>
-		<ClientPreviewSuffixVersion>preview.1</ClientPreviewSuffixVersion>
+		<ClientPreviewSuffixVersion>preview.2</ClientPreviewSuffixVersion>
 		<DirectVersion>3.37.10</DirectVersion>
 		<FaultInjectionVersion>1.0.0</FaultInjectionVersion>
 		<FaultInjectionSuffixVersion>beta.0</FaultInjectionSuffixVersion>
