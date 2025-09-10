@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using System.Diagnostics.Tracing;
     using System.Net.Http.Headers;
     using Microsoft.Azure.Documents;
@@ -35,6 +36,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [NonEvent]
+        [RequiresUnreferencedCode("EventSource will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
         private unsafe void WriteEventCoreWithActivityId(Guid activityId, int eventId, int eventDataCount, EventSource.EventData* dataDesc)
         {
             // EventProvider's ActivityId is set on the current thread context (not on the CallContext), so it
@@ -58,6 +60,7 @@ namespace Microsoft.Azure.Cosmos
 #pragma warning restore SA1118 // Parameter should not span multiple lines
             Keywords = Keywords.HttpRequestAndResponse,
             Level = EventLevel.Verbose)]
+        [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "All arguments to WriteEventCoreWithActivityId are primitive types")]
         private unsafe void Request(
             Guid activityId,
             Guid localId,
@@ -329,6 +332,7 @@ namespace Microsoft.Azure.Cosmos
 #pragma warning restore SA1118 // Parameter should not span multiple lines
             Keywords = Keywords.HttpRequestAndResponse,
             Level = EventLevel.Verbose)]
+        [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "All arguments to WriteEventCoreWithActivityId are primitive types")]
         private unsafe void Response(Guid activityId,
             Guid localId,
             short statusCode,
