@@ -647,62 +647,33 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             // First byte (index 0) is type marker, ciphertext starts at offset 1
             TypeMarker marker = (TypeMarker)cipher[0];
 
-            byte[] bytes;
-            int processedBytes;
+            // Unified MDE-only fast path.
+            int needed = ctx.DataKey.GetDecryptByteCount(cipherTextLength - 1);
+            EnsureCapacity(ref ctx.PlainScratch, needed, ctx.Pool);
 
-            if (ctx.IsBaseDecryptor)
+            int decryptedLength = ctx.DataKey.DecryptData(
+                ctx.CipherScratch,
+                cipherTextOffset: 1,
+                cipherTextLength: cipherTextLength - 1,
+                ctx.PlainScratch,
+                outputOffset: 0);
+
+            if (decryptedLength < 0)
             {
-                int needed = ctx.DataKey.GetDecryptByteCount(cipherTextLength - 1);
-                EnsureCapacity(ref ctx.PlainScratch, needed, ctx.Pool);
-
-                int decryptedLength = ctx.DataKey.DecryptData(
-                    ctx.CipherScratch,
-                    cipherTextOffset: 1,
-                    cipherTextLength: cipherTextLength - 1,
-                    ctx.PlainScratch,
-                    outputOffset: 0);
-
-                if (decryptedLength < 0)
-                {
-                    throw new InvalidOperationException(
-                        $"{nameof(DataEncryptionKey)} returned invalid plainText from {nameof(DataEncryptionKey.DecryptData)}.");
-                }
-
-                bytes = ctx.PlainScratch;
-                processedBytes = decryptedLength;
-
-                TryDecompressIfConfigured(ctx, pathLabel, ref bytes, ref processedBytes);
-                ReadOnlySpan<byte> span = bytes.AsSpan(0, processedBytes);
-                WriteDecryptedPayload(marker, span, ctx.Writer, ctx.Diagnostics, pathLabel);
-
-                if (!ReferenceEquals(bytes, ctx.PlainScratch))
-                {
-                    ctx.Pool.Return(bytes);
-                }
+                throw new InvalidOperationException(
+                    $"{nameof(DataEncryptionKey)} returned invalid plainText from {nameof(DataEncryptionKey.DecryptData)}.");
             }
-            else
+
+            byte[] bytes = ctx.PlainScratch;
+            int processedBytes = decryptedLength;
+
+            TryDecompressIfConfigured(ctx, pathLabel, ref bytes, ref processedBytes);
+            ReadOnlySpan<byte> span = bytes.AsSpan(0, processedBytes);
+            WriteDecryptedPayload(marker, span, ctx.Writer, ctx.Diagnostics, pathLabel);
+
+            if (!ReferenceEquals(bytes, ctx.PlainScratch))
             {
-                // Fallback to decrypt with rented buffer (previously used DecryptOwned before revert)
-                (byte[] rentedPlain, int decryptedLen) = ctx.Decryptor.Decrypt(
-                    ctx.DataKey,
-                    ctx.CipherScratch,
-                    cipherTextLength,
-                    ctx.Pool);
-
-                bytes = rentedPlain;
-                processedBytes = decryptedLen;
-
-                TryDecompressIfConfigured(ctx, pathLabel, ref bytes, ref processedBytes);
-                ReadOnlySpan<byte> span = bytes.AsSpan(0, processedBytes);
-                WriteDecryptedPayload(marker, span, ctx.Writer, ctx.Diagnostics, pathLabel);
-
-                // Return any transient buffer used for decompression (if different from original decrypt buffer)
-                if (!ReferenceEquals(bytes, rentedPlain))
-                {
-                    ctx.Pool.Return(bytes);
-                }
-
-                ctx.Pool.Return(rentedPlain);
+                ctx.Pool.Return(bytes);
             }
         }
 
@@ -894,7 +865,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 bool containsCompressed = properties.CompressedEncryptedPaths?.Count > 0;
                 this.Decompressor = containsCompressed ? new BrotliCompressor() : null;
 
-                this.IsBaseDecryptor = decryptor.GetType() == typeof(MdeEncryptor);
+                if (decryptor.GetType() != typeof(MdeEncryptor))
+                {
+                    throw new NotSupportedException("StreamProcessor currently supports only the MDE encryption format (exact MdeEncryptor type).");
+                }
             }
 
             public ArrayPoolManager Pool { get; }
@@ -912,8 +886,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             public CandidatePaths PathMatcher { get; }
 
             public BrotliCompressor Decompressor { get; }
-
-            public bool IsBaseDecryptor { get; }
 
             // Scratch buffers (pooled) with ref-return properties to preserve by-ref passing semantics
             // while complying with SA1401 (fields should be private). Ref properties allow calls like
