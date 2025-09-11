@@ -50,18 +50,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     throw new InvalidOperationException($"{nameof(options.PathsToEncrypt)} includes a invalid path: '{path}'.");
                 }
             }
-
-            options.CompressionOptions?.Validate();
-        }
-
-        internal static void Validate(this CompressionOptions options)
-        {
-            if (options.MinimalCompressedLength < 0)
-            {
-#pragma warning disable CA2208 // Instantiate argument exceptions correctly
-                throw new ArgumentOutOfRangeException(nameof(options.MinimalCompressedLength));
-#pragma warning restore CA2208 // Instantiate argument exceptions correctly
-            }
         }
     }
 }

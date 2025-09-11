@@ -14,6 +14,8 @@
     <EmbeddedResource Include="sampledata\testdoc-100kb.json" />
     <EmbeddedResource Include="sampledata\testdoc-10kb.json" />
     <EmbeddedResource Include="sampledata\testdoc-1kb.json" />
+  <EmbeddedResource Include="sampledata\testdoc-2kb.json" Condition="Exists('sampledata\\testdoc-2kb.json')" />
+  <EmbeddedResource Include="sampledata\testdoc-5kb.json" Condition="Exists('sampledata\\testdoc-5kb.json')" />
   </ItemGroup>
 
   <ItemGroup>

@@ -28,32 +28,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         [JsonProperty(PropertyName = Constants.EncryptedPaths)]
         [JsonPropertyName(Constants.EncryptedPaths)]
-        public IEnumerable<string> EncryptedPaths { get; }
-
-        [JsonProperty(PropertyName = Constants.CompressionAlgorithm)]
-        [JsonPropertyName(Constants.CompressionAlgorithm)]
-        public CompressionOptions.CompressionAlgorithm CompressionAlgorithm { get; }
-
-        [JsonProperty(PropertyName = Constants.CompressedEncryptedPaths)]
-        [JsonPropertyName(Constants.CompressedEncryptedPaths)]
-        public IDictionary<string, int> CompressedEncryptedPaths { get; }
+        public IReadOnlyCollection<string> EncryptedPaths { get; }
 
         public EncryptionProperties(
             int encryptionFormatVersion,
             string encryptionAlgorithm,
             string dataEncryptionKeyId,
             byte[] encryptedData,
-            IEnumerable<string> encryptedPaths,
-            CompressionOptions.CompressionAlgorithm compressionAlgorithm = CompressionOptions.CompressionAlgorithm.None,
-            IDictionary<string, int> compressedEncryptedPaths = null)
+            IReadOnlyCollection<string> encryptedPaths)
         {
             this.EncryptionFormatVersion = encryptionFormatVersion;
             this.EncryptionAlgorithm = encryptionAlgorithm;
             this.DataEncryptionKeyId = dataEncryptionKeyId;
             this.EncryptedData = encryptedData;
             this.EncryptedPaths = encryptedPaths;
-            this.CompressionAlgorithm = compressionAlgorithm;
-            this.CompressedEncryptedPaths = compressedEncryptedPaths;
         }
     }
 }

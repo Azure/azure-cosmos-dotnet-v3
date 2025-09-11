@@ -59,12 +59,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 throw new InvalidOperationException($"{nameof(Encryptor)} returned null cipherText from {nameof(EncryptAsync)}.");
             }
 
+            // Materialize paths to an IReadOnlyCollection to satisfy ctor signature explicitly
+            IReadOnlyCollection<string> pathsToEncryptCollection = encryptionOptions.PathsToEncrypt as IReadOnlyCollection<string>;
+            if (pathsToEncryptCollection == null)
+            {
+                pathsToEncryptCollection = new List<string>(encryptionOptions.PathsToEncrypt);
+            }
+
             encryptionProperties = new EncryptionProperties(
-                    encryptionFormatVersion: 2,
-                    encryptionOptions.EncryptionAlgorithm,
-                    encryptionOptions.DataEncryptionKeyId,
-                    encryptedData: cipherText,
-                    encryptionOptions.PathsToEncrypt);
+                encryptionFormatVersion: EncryptionFormatVersion.AeAes,
+                encryptionOptions.EncryptionAlgorithm,
+                encryptionOptions.DataEncryptionKeyId,
+                encryptedData: cipherText,
+                pathsToEncryptCollection);
 
             itemJObj.Add(Constants.EncryptedInfo, JObject.FromObject(encryptionProperties));
 

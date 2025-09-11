@@ -52,20 +52,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
                 .ReturnsAsync((byte[] cipher, string dekId, string algo, CancellationToken t) => dekId == DekId ? TestCommon.DecryptData(cipher) : throw new InvalidOperationException("DEK not found"));
         }
 
-        private static EncryptionOptions CreateOptions(IEnumerable<string> paths, CompressionOptions.CompressionAlgorithm algorithm = CompressionOptions.CompressionAlgorithm.None, CompressionLevel compressionLevel = CompressionLevel.NoCompression, int? minCompressedLength = null)
+    private static EncryptionOptions CreateOptions(IEnumerable<string> paths)
         {
-            CompressionOptions comp = new CompressionOptions { Algorithm = algorithm, CompressionLevel = compressionLevel };
-            if (minCompressedLength.HasValue)
-            {
-                comp.MinimalCompressedLength = minCompressedLength.Value;
-            }
             return new EncryptionOptions
             {
                 DataEncryptionKeyId = DekId,
                 EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
                 JsonProcessor = JsonProcessor.Stream,
                 PathsToEncrypt = paths.ToList(),
-                CompressionOptions = comp
             };
         }
 
@@ -106,6 +100,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
 
             // Act (encrypt)
             MemoryStream encrypted = await EncryptAsync(doc, options);
+            string rawJson = Encoding.UTF8.GetString(encrypted.ToArray());
             using JsonDocument jd = Parse(encrypted);
             JsonElement root = jd.RootElement;
 
@@ -137,6 +132,25 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
                 }
             }
 
+            // Strong verification: ensure raw JSON does not contain plaintext for encrypted values (string/number markers)
+            EncryptionVerificationTestHelper.AssertEncryptedDocument(
+                rawJson,
+                encryptedProperties: new Dictionary<string, object>
+                {
+                    { "SensitiveStr", doc.SensitiveStr },
+                    { "SensitiveInt", doc.SensitiveInt },
+                    { "SensitiveDouble", doc.SensitiveDouble },
+                    { "SensitiveBoolTrue", doc.SensitiveBoolTrue },
+                    { "SensitiveBoolFalse", doc.SensitiveBoolFalse },
+                    { "SensitiveArr", doc.SensitiveArr },
+                    { "SensitiveObj", doc.SensitiveObj },
+                },
+                plainProperties: new Dictionary<string, object>
+                {
+                    { "SensitiveNull", (object)null },
+                    { "NonSensitive", doc.NonSensitive },
+                });
+
             // Act (decrypt)
             encrypted.Position = 0;
             (Stream decrypted, DecryptionContext ctx) = await EncryptionProcessor.DecryptStreamAsync(encrypted, mockEncryptor.Object, new CosmosDiagnosticsContext(), CancellationToken.None);
@@ -154,28 +168,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             Assert.IsTrue(ctx.DecryptionInfoList[0].PathsDecrypted.Contains("/SensitiveStr"));
         }
 
-        [TestMethod]
-        public async Task Encrypt_CompressionBehavior()
-        {
-            // Arrange
-            var doc = new
-            {
-                id = "1",
-                LargeStr = new string('x', 400),
-                SmallStr = new string('y', 10)
-            };
-            string[] paths = new[] { "/LargeStr", "/SmallStr" };
-            EncryptionOptions options = CreateOptions(paths, CompressionOptions.CompressionAlgorithm.Brotli, CompressionLevel.Fastest, minCompressedLength: 64);
-            // Act
-            MemoryStream encrypted = await EncryptAsync(doc, options);
-            using JsonDocument jd = Parse(encrypted);
-            JsonElement propsJson = jd.RootElement.GetProperty(Constants.EncryptedInfo);
-            // Assert
-            EncryptionProperties props = System.Text.Json.JsonSerializer.Deserialize<EncryptionProperties>(propsJson.GetRawText());
-            Assert.AreEqual(EncryptionFormatVersion.MdeWithCompression, props.EncryptionFormatVersion);
-            Assert.IsTrue(props.CompressedEncryptedPaths.ContainsKey("/LargeStr"));
-            Assert.IsFalse(props.CompressedEncryptedPaths.ContainsKey("/SmallStr"));
-        }
+    // Compression behavior test removed as compression support was dropped.
 
         [TestMethod]
         public async Task Encrypt_NestedObjectAndArray()
@@ -215,10 +208,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             string[] paths = new[] { "/Big" };
             // Act
             MemoryStream encrypted = await EncryptAsync(doc, CreateOptions(paths));
+            string rawJson = Encoding.UTF8.GetString(encrypted.ToArray());
             using JsonDocument jd = Parse(encrypted);
             // Assert
             string cipher = jd.RootElement.GetProperty("Big").GetString();
             Assert.IsTrue(cipher.Length > 10);
+            EncryptionVerificationTestHelper.AssertEncryptedDocument(rawJson, new Dictionary<string, object> { { "Big", doc.Big } });
         }
 
         [TestMethod]
@@ -248,6 +243,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             EncryptionOptions options = CreateOptions(new[] { "/Maybe" });
             // Act
             await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
+            string rawJson = Encoding.UTF8.GetString(output.ToArray());
             output.Position = 0;
             using JsonDocument jd = JsonDocument.Parse(output);
             JsonElement root = jd.RootElement;
@@ -259,6 +255,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             // Plain must remain a number (not a base64 string)
             Assert.AreEqual(JsonValueKind.Number, root.GetProperty("Plain").ValueKind);
             Assert.AreEqual(42, root.GetProperty("Plain").GetInt32());
+            EncryptionVerificationTestHelper.AssertEncryptedDocument(
+                rawJson,
+                encryptedProperties: new Dictionary<string, object>(),
+                plainProperties: new Dictionary<string, object> { { "Plain", 42 } });
         }
 
         [TestMethod]
@@ -319,6 +319,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             EncryptionOptions options = CreateOptions(new[] { "/SensitiveStr" });
             // Act
             await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
+            string rawJson = Encoding.UTF8.GetString(output.ToArray());
             output.Position = 0;
             using JsonDocument jd = Parse(output);
             JsonElement root = jd.RootElement;
@@ -329,6 +330,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             Assert.AreEqual("1", root.GetProperty("id").GetString());
             // Ensure encrypted info present
             Assert.IsTrue(root.TryGetProperty(Constants.EncryptedInfo, out _));
+            EncryptionVerificationTestHelper.AssertEncryptedDocument(
+                rawJson,
+                encryptedProperties: new Dictionary<string, object> { { "SensitiveStr", "abc" } },
+                plainProperties: new Dictionary<string, object> { { "id", "1" } });
         }
 
         [TestMethod]
@@ -482,10 +487,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             EncryptionOptions options = CreateOptions(new[] { "/DZ" });
             // Act (encrypt)
             await EncryptionProcessor.EncryptAsync(input, encrypted, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
+            string rawJson = Encoding.UTF8.GetString(encrypted.ToArray());
             encrypted.Position = 0;
             using JsonDocument jenc = JsonDocument.Parse(encrypted);
             byte[] cipher = Convert.FromBase64String(jenc.RootElement.GetProperty("DZ").GetString());
             Assert.AreEqual((byte)TypeMarker.Double, cipher[0]);
+            EncryptionVerificationTestHelper.AssertEncryptedDocument(
+                rawJson,
+                encryptedProperties: new Dictionary<string, object> { { "DZ", -0.0 } });
 
             // Act (decrypt)
             encrypted.Position = 0;
@@ -534,12 +543,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             EncryptionOptions options = CreateOptions(new[] { "/Arr" });
             // Act
             await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
+            string rawJson = Encoding.UTF8.GetString(output.ToArray());
             output.Position = 0;
             using JsonDocument jd = JsonDocument.Parse(output);
             // Assert
             string base64 = jd.RootElement.GetProperty("Arr").GetString();
             byte[] cipher = Convert.FromBase64String(base64);
             Assert.AreEqual((byte)TypeMarker.String, cipher[0]);
+            EncryptionVerificationTestHelper.AssertEncryptedDocument(
+                rawJson,
+                encryptedProperties: new Dictionary<string, object> { { "Arr", "not an array" } });
         }
 
         [TestMethod]
@@ -552,12 +565,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             EncryptionOptions options = CreateOptions(new[] { "/Obj" });
             // Act
             await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
+            string rawJson = Encoding.UTF8.GetString(output.ToArray());
             output.Position = 0;
             using JsonDocument jd = JsonDocument.Parse(output);
             // Assert
             string base64 = jd.RootElement.GetProperty("Obj").GetString();
             byte[] cipher = Convert.FromBase64String(base64);
             Assert.AreEqual((byte)TypeMarker.Long, cipher[0]);
+            EncryptionVerificationTestHelper.AssertEncryptedDocument(
+                rawJson,
+                encryptedProperties: new Dictionary<string, object> { { "Obj", 42 } });
         }
     }
 }
