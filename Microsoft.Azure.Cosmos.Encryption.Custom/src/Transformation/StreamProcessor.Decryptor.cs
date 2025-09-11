@@ -32,9 +32,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         private static int MaxBufferSizeBytes => TestMaxBufferSizeBytesOverride ?? DefaultMaxBufferSizeBytes;
 
         private const int BufferGrowthMinIncrement = 4096; // 4 KB minimal headroom to trigger growth
-        private const int SmallPayloadMaxBytes = 2048; // One-shot parse threshold
 
-        // Removed legacy non-seekable probe logic (previous ProbeSize constant and pre-read path)
         private const int StackallocStringThreshold = 256; // Small strings/property names use stackalloc
         private const int Base64StackThreshold = 4096; // Small base64 decode temp uses stackalloc
 
@@ -111,16 +109,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 long startTimestamp = Stopwatch.GetTimestamp();
                 ctx.StartTimestamp = startTimestamp;
 
-                // Attempt small seekable one-shot fast path (non-seekable pre-probe removed as redundant)
-                if (inputStream.CanSeek)
-                {
-                    (isFinalBlock, readerState, skip) = await this.TryProcessSmallSeekableAsync(inputStream, ctx, pool, readerState, skip, cancellationToken).ConfigureAwait(false);
-                }
-
-                if (!isFinalBlock)
-                {
-                    (buffer, leftOver, isFinalBlock, readerState, skip) = await this.StreamProcessAsync(inputStream, ctx, pool, buffer, leftOver, readerState, skip, cancellationToken).ConfigureAwait(false);
-                }
+                (buffer, leftOver, isFinalBlock, readerState, skip) = await this.StreamProcessAsync(inputStream, ctx, pool, buffer, leftOver, readerState, skip, cancellationToken).ConfigureAwait(false);
 
                 return FinalizeAndCreateContext(outputStream, chunkedWriter, writer, ctx, properties);
             }
@@ -177,48 +166,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             }
 
             return EncryptionProcessor.CreateDecryptionContext(ctx.PathsDecrypted, properties.DataEncryptionKeyId);
-        }
-
-        private async Task<(bool isFinalBlock, JsonReaderState readerState, SkipState skip)> TryProcessSmallSeekableAsync(
-            Stream inputStream,
-            ProcessingContext ctx,
-            ArrayPoolManager pool,
-            JsonReaderState readerState,
-            SkipState skip,
-            CancellationToken cancellationToken)
-        {
-            long remaining = inputStream.Length - inputStream.Position;
-            if (remaining <= 0 || remaining > SmallPayloadMaxBytes)
-            {
-                return (false, readerState, skip);
-            }
-
-            int len = (int)remaining;
-            byte[] oneShot = pool.Rent(len);
-            try
-            {
-                int total = 0;
-                while (total < len)
-                {
-                    int toRead = Math.Min(len - total, oneShot.Length - total);
-                    int r = await inputStream.ReadAsync(oneShot.AsMemory(total, toRead), cancellationToken).ConfigureAwait(false);
-                    if (r == 0)
-                    {
-                        break;
-                    }
-
-                    total += r;
-                }
-
-                int read = Math.Min(total, len);
-                ctx.BytesRead += read;
-                _ = this.ProcessBufferChunk(ctx, oneShot.AsSpan(0, read), ref readerState, isFinalBlock: true, ref skip);
-                return (true, readerState, skip); // fully processed
-            }
-            finally
-            {
-                pool.Return(oneShot);
-            }
         }
 
         private async Task<(byte[] buffer, int leftOver, bool isFinalBlock, JsonReaderState readerState, SkipState skip)> StreamProcessAsync(
