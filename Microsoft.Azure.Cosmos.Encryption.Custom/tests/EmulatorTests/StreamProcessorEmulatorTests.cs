@@ -109,20 +109,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         private static async Task ValidateRawEncryptedAsync(string id, string pk, IEnumerable<string> encryptedPlaintextValues, string expectedPlainValue)
         {
             string rawJson = await GetRawJsonAsync(id, pk);
-            Assert.IsTrue(rawJson.Contains("\"_ei\""), "_ei metadata missing (encryption properties)");
-            foreach (string val in encryptedPlaintextValues)
-            {
-                Assert.IsFalse(string.IsNullOrEmpty(val), "Encrypted plaintext values list contained a null or empty entry (test setup error).");
-                // Use quoted match to minimize accidental substring matches inside ciphertext/base64.
-                string quoted = "\"" + val + "\"";
-                Assert.IsFalse(rawJson.Contains(quoted), $"Found plaintext value '{val}' in stored JSON; expected it to be encrypted.");
-            }
-
-            // Plain property value should appear unencrypted
-            if (!string.IsNullOrEmpty(expectedPlainValue))
-            {
-                Assert.IsTrue(rawJson.Contains(expectedPlainValue), "Plain property value should remain in clear text.");
-            }
+            EncryptionVerificationTestHelper.AssertEncryptedRawJson(rawJson, encryptedPlaintextValues, string.IsNullOrEmpty(expectedPlainValue) ? null : new[] { expectedPlainValue });
         }
 
         [TestMethod]

@@ -100,6 +100,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
 
             // Act (encrypt)
             MemoryStream encrypted = await EncryptAsync(doc, options);
+            string rawJson = Encoding.UTF8.GetString(encrypted.ToArray());
             using JsonDocument jd = Parse(encrypted);
             JsonElement root = jd.RootElement;
 
@@ -130,6 +131,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
                     case "SensitiveObj": Assert.AreEqual((byte)TypeMarker.Object, cipherBytes[0]); break;
                 }
             }
+
+            // Strong verification: ensure raw JSON does not contain plaintext for encrypted values (string/number markers)
+            EncryptionVerificationTestHelper.AssertEncryptedRawJson(
+                rawJson,
+                stringPlaintextValuesEncrypted: new[] { doc.SensitiveStr },
+                numericPlaintextValuesEncrypted: new[]
+                {
+                    doc.SensitiveInt.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    doc.SensitiveDouble.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                },
+                expectedPlainValues: new[] { doc.NonSensitive.ToString(System.Globalization.CultureInfo.InvariantCulture) },
+                encryptedBooleanPropertyNames: new[] { "SensitiveBoolTrue", "SensitiveBoolFalse" });
 
             // Act (decrypt)
             encrypted.Position = 0;
@@ -188,10 +201,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             string[] paths = new[] { "/Big" };
             // Act
             MemoryStream encrypted = await EncryptAsync(doc, CreateOptions(paths));
+            string rawJson = Encoding.UTF8.GetString(encrypted.ToArray());
             using JsonDocument jd = Parse(encrypted);
             // Assert
             string cipher = jd.RootElement.GetProperty("Big").GetString();
             Assert.IsTrue(cipher.Length > 10);
+            EncryptionVerificationTestHelper.AssertEncryptedRawJson(rawJson, stringPlaintextValuesEncrypted: new[] { doc.Big });
         }
 
         [TestMethod]
@@ -221,6 +236,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             EncryptionOptions options = CreateOptions(new[] { "/Maybe" });
             // Act
             await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
+            string rawJson = Encoding.UTF8.GetString(output.ToArray());
             output.Position = 0;
             using JsonDocument jd = JsonDocument.Parse(output);
             JsonElement root = jd.RootElement;
@@ -232,6 +248,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             // Plain must remain a number (not a base64 string)
             Assert.AreEqual(JsonValueKind.Number, root.GetProperty("Plain").ValueKind);
             Assert.AreEqual(42, root.GetProperty("Plain").GetInt32());
+            EncryptionVerificationTestHelper.AssertEncryptedRawJson(rawJson, stringPlaintextValuesEncrypted: Array.Empty<string>(), expectedPlainValues: new[] { "42" });
         }
 
         [TestMethod]
@@ -292,6 +309,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             EncryptionOptions options = CreateOptions(new[] { "/SensitiveStr" });
             // Act
             await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
+            string rawJson = Encoding.UTF8.GetString(output.ToArray());
             output.Position = 0;
             using JsonDocument jd = Parse(output);
             JsonElement root = jd.RootElement;
@@ -302,6 +320,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             Assert.AreEqual("1", root.GetProperty("id").GetString());
             // Ensure encrypted info present
             Assert.IsTrue(root.TryGetProperty(Constants.EncryptedInfo, out _));
+            EncryptionVerificationTestHelper.AssertEncryptedRawJson(rawJson, stringPlaintextValuesEncrypted: new[] { "abc" }, expectedPlainValues: new[] { "1" });
         }
 
         [TestMethod]
@@ -455,10 +474,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             EncryptionOptions options = CreateOptions(new[] { "/DZ" });
             // Act (encrypt)
             await EncryptionProcessor.EncryptAsync(input, encrypted, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
+            string rawJson = Encoding.UTF8.GetString(encrypted.ToArray());
             encrypted.Position = 0;
             using JsonDocument jenc = JsonDocument.Parse(encrypted);
             byte[] cipher = Convert.FromBase64String(jenc.RootElement.GetProperty("DZ").GetString());
             Assert.AreEqual((byte)TypeMarker.Double, cipher[0]);
+            EncryptionVerificationTestHelper.AssertEncryptedRawJson(rawJson, stringPlaintextValuesEncrypted: Array.Empty<string>(), numericPlaintextValuesEncrypted: new[] { "-0.0" });
 
             // Act (decrypt)
             encrypted.Position = 0;
@@ -507,12 +528,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             EncryptionOptions options = CreateOptions(new[] { "/Arr" });
             // Act
             await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
+            string rawJson = Encoding.UTF8.GetString(output.ToArray());
             output.Position = 0;
             using JsonDocument jd = JsonDocument.Parse(output);
             // Assert
             string base64 = jd.RootElement.GetProperty("Arr").GetString();
             byte[] cipher = Convert.FromBase64String(base64);
             Assert.AreEqual((byte)TypeMarker.String, cipher[0]);
+            EncryptionVerificationTestHelper.AssertEncryptedRawJson(rawJson, stringPlaintextValuesEncrypted: new[] { "not an array" });
         }
 
         [TestMethod]
@@ -525,12 +548,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             EncryptionOptions options = CreateOptions(new[] { "/Obj" });
             // Act
             await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
+            string rawJson = Encoding.UTF8.GetString(output.ToArray());
             output.Position = 0;
             using JsonDocument jd = JsonDocument.Parse(output);
             // Assert
             string base64 = jd.RootElement.GetProperty("Obj").GetString();
             byte[] cipher = Convert.FromBase64String(base64);
             Assert.AreEqual((byte)TypeMarker.Long, cipher[0]);
+            EncryptionVerificationTestHelper.AssertEncryptedRawJson(rawJson, stringPlaintextValuesEncrypted: Array.Empty<string>(), numericPlaintextValuesEncrypted: new[] { "42" });
         }
     }
 }

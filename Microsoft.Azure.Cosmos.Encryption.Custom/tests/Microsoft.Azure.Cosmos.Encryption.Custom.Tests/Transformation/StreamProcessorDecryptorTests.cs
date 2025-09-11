@@ -110,6 +110,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             EncryptionOptions options = CreateOptions(paths);
             (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
 
+            // Strong pre-decrypt verification: encrypted raw JSON must not contain sensitive plaintext values.
+            string rawJson = Encoding.UTF8.GetString(encrypted.ToArray());
+            EncryptionVerificationTestHelper.AssertEncryptedRawJson(
+                rawJson,
+                stringPlaintextValuesEncrypted: new[] { doc.SensitiveStr },
+                numericPlaintextValuesEncrypted: new[] { doc.SensitiveInt.ToString(System.Globalization.CultureInfo.InvariantCulture) },
+                expectedPlainValues: new[] { doc.NonSensitive.ToString(System.Globalization.CultureInfo.InvariantCulture) },
+                encryptedBooleanPropertyNames: new[] { "SensitiveBoolTrue", "SensitiveBoolFalse" });
+
             // Act
             MemoryStream output = new();
             DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
@@ -435,6 +444,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             string[] paths = new[] { "/SensitiveStr" }; // only encrypt the string; others remain plain
             EncryptionOptions options = CreateOptions(paths);
             (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+
+            // Strong pre-decrypt verification: ensure SensitiveStr plaintext absent, while (heuristically) expect to still see boolean literals true/false.
+            string rawJson = Encoding.UTF8.GetString(encrypted.ToArray());
+            EncryptionVerificationTestHelper.AssertEncryptedRawJson(
+                rawJson,
+                stringPlaintextValuesEncrypted: new[] { doc.SensitiveStr },
+                expectedPlainValues: new[] { "true", "false" });
 
             // Act
             MemoryStream output = new();
