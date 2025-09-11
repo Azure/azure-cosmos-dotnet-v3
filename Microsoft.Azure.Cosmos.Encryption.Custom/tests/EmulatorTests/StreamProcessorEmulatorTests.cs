@@ -108,11 +108,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
 
         private static async Task ValidateRawEncryptedAsync(string id, string pk, IReadOnlyDictionary<string, object> encryptedProperties, string expectedPlainValue)
         {
-            // Fetch raw stored JSON from the underlying (unencrypted) container to validate ciphertext shapes.
             string rawJson = await GetRawJsonAsync(id, pk);
-
-            // Plain properties (currently only one in scenarios) are optionally validated.
-            var plainMap = string.IsNullOrEmpty(expectedPlainValue)
+            Dictionary<string, object> plainMap = string.IsNullOrEmpty(expectedPlainValue)
                 ? null
                 : new Dictionary<string, object> { { "Plain", expectedPlainValue } };
 
