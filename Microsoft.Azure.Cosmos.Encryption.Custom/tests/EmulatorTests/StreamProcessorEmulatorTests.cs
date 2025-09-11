@@ -106,17 +106,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             return Encoding.UTF8.GetString(ms.ToArray());
         }
 
-        private static async Task ValidateRawEncryptedAsync(string id, string pk, IEnumerable<string> encryptedPlaintextValues, string expectedPlainValue)
+        private static async Task ValidateRawEncryptedAsync(string id, string pk, IReadOnlyDictionary<string, object> encryptedProperties, string expectedPlainValue)
         {
+            // Fetch raw stored JSON from the underlying (unencrypted) container to validate ciphertext shapes.
             string rawJson = await GetRawJsonAsync(id, pk);
-            var encryptedMap = new Dictionary<string, object>();
-            foreach (string v in encryptedPlaintextValues)
-            {
-                // Use value itself as a synthetic property key placeholder since we only know plaintext; emulator doc model known in each caller though.
-                encryptedMap[v] = v;
-            }
-            var plainMap = string.IsNullOrEmpty(expectedPlainValue) ? null : new Dictionary<string, object> { { "Plain", expectedPlainValue } };
-            EncryptionVerificationTestHelper.AssertEncryptedDocument(rawJson, encryptedMap, plainMap);
+
+            // Plain properties (currently only one in scenarios) are optionally validated.
+            var plainMap = string.IsNullOrEmpty(expectedPlainValue)
+                ? null
+                : new Dictionary<string, object> { { "Plain", expectedPlainValue } };
+
+            EncryptionVerificationTestHelper.AssertEncryptedDocument(rawJson, encryptedProperties, plainMap);
         }
 
         [TestMethod]
@@ -149,7 +149,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             Assert.AreEqual(doc.SecretNum, roundtrip.SecretNum);
             Assert.AreEqual(doc.Plain, roundtrip.Plain);
 
-            await ValidateRawEncryptedAsync(doc.Id, doc.Pk, new[] { doc.SecretStr }, doc.Plain);
+            await ValidateRawEncryptedAsync(
+                doc.Id,
+                doc.Pk,
+                new Dictionary<string, object>
+                {
+                    { "SecretStr", doc.SecretStr },
+                    { "SecretNum", doc.SecretNum },
+                    { "SecretObj", doc.SecretObj },
+                    { "SecretArr", doc.SecretArr },
+                },
+                doc.Plain);
         }
 
         [TestMethod]
@@ -174,8 +184,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             Assert.AreEqual(d1.SecretStr, read1.Resource.SecretStr);
             Assert.AreEqual(d2.SecretStr, read2.Resource.SecretStr);
 
-            await ValidateRawEncryptedAsync(d1.Id, pk, new[] { d1.SecretStr }, d1.Plain);
-            await ValidateRawEncryptedAsync(d2.Id, pk, new[] { d2.SecretStr }, d2.Plain);
+            await ValidateRawEncryptedAsync(d1.Id, pk, new Dictionary<string, object> { { "SecretStr", d1.SecretStr } }, d1.Plain);
+            await ValidateRawEncryptedAsync(d2.Id, pk, new Dictionary<string, object> { { "SecretStr", d2.SecretStr } }, d2.Plain);
         }
 
         [TestMethod]
@@ -213,8 +223,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             Assert.IsTrue(changes.Count >= 2, "Expected at least two changes for encrypted items");
             Assert.AreEqual("secret_cf_value_two", changes[^1].SecretStr);
 
-            await ValidateRawEncryptedAsync(d.Id, pk, new[] { d.SecretStr }, d.Plain);
-            await ValidateRawEncryptedAsync(d2.Id, pk, new[] { d2.SecretStr }, d2.Plain);
+            await ValidateRawEncryptedAsync(d.Id, pk, new Dictionary<string, object> { { "SecretStr", d.SecretStr } }, d.Plain);
+            await ValidateRawEncryptedAsync(d2.Id, pk, new Dictionary<string, object> { { "SecretStr", d2.SecretStr } }, d2.Plain);
         }
 
         // Local minimal encryptor implementation
