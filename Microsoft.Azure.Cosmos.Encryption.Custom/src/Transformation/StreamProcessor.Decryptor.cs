@@ -194,7 +194,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             }
 
             int len = (int)remaining;
-            byte[] oneShot = pool.Rent(Bucket(len));
+            byte[] oneShot = pool.Rent(len);
             try
             {
                 int total = 0;
@@ -293,8 +293,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 if (dataSize > 0 && leftOver == dataSize)
                 {
                     int target = Math.Max(buffer.Length * 2, leftOver + BufferGrowthMinIncrement);
-                    int bucketedGrow = Bucket(target);
-                    int capped = Math.Min(MaxBufferSizeBytes, bucketedGrow);
+                    int capped = Math.Min(MaxBufferSizeBytes, target);
                     if (buffer.Length >= capped)
                     {
                         throw new InvalidOperationException($"JSON token exceeds maximum supported size of {MaxBufferSizeBytes} bytes at path {ctx.CurrentPropertyPath ?? "<unknown>"}.");
@@ -754,38 +753,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 return;
             }
 
-            int bucketed = Bucket(needed);
-            byte[] newBuf = pool.Rent(bucketed);
+            const int minSize = 64;
+            int requested = Math.Max(needed, minSize);
+            int capped = Math.Min(requested, MaxBufferSizeBytes);
+            byte[] newBuf = pool.Rent(capped);
             if (scratch != null)
             {
                 pool.Return(scratch);
             }
 
             scratch = newBuf;
-        }
-
-        private static int Bucket(int value)
-        {
-            const int minBucket = 64;
-            if (value <= minBucket)
-            {
-                return minBucket;
-            }
-
-            if (value >= MaxBufferSizeBytes)
-            {
-                return MaxBufferSizeBytes;
-            }
-
-            // next power of two
-            uint v = (uint)(value - 1);
-            v |= v >> 1;
-            v |= v >> 2;
-            v |= v >> 4;
-            v |= v >> 8;
-            v |= v >> 16;
-            int pow2 = (int)(v + 1);
-            return pow2 > MaxBufferSizeBytes ? MaxBufferSizeBytes : pow2;
         }
 
         private struct SkipState
