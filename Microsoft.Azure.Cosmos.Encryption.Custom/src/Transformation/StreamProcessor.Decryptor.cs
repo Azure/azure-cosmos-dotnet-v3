@@ -526,7 +526,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             ref Utf8JsonReader reader,
             string pathLabel)
         {
-            // Decode base64 to cipher buffer
             int srcLen = reader.HasValueSequence ? (int)reader.ValueSequence.Length : reader.ValueSpan.Length;
             int maxDecoded = Base64.GetMaxDecodedFromUtf8Length(srcLen);
             EnsureCapacity(ref ctx.CipherScratch, maxDecoded, ctx.Pool);
@@ -534,17 +533,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             Span<byte> cipher = ctx.CipherScratch.AsSpan();
             int cipherTextLength;
 
-            if (!reader.HasValueSequence && !reader.ValueIsEscaped)
+            // Local helper to validate a single Base64 decode operation.
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            int DecodeValidated(ReadOnlySpan<byte> source, int expectedLen)
             {
-                OperationStatus status =
-                    Base64.DecodeFromUtf8(reader.ValueSpan, cipher, out int consumed, out int written);
-                if (status != OperationStatus.Done || consumed != srcLen)
+                OperationStatus status = Base64.DecodeFromUtf8(source, cipher, out int consumed, out int written);
+                if (status != OperationStatus.Done || consumed != expectedLen)
                 {
                     throw new InvalidOperationException(
                         $"Base64 decoding failed for encrypted field at path {pathLabel}: {status}.");
                 }
+                return written;
+            }
 
-                cipherTextLength = written;
+            if (!reader.HasValueSequence && !reader.ValueIsEscaped)
+            {
+                cipherTextLength = DecodeValidated(reader.ValueSpan, srcLen);
             }
             else
             {
@@ -552,36 +556,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 {
                     Span<byte> local = stackalloc byte[srcLen];
                     int copied = reader.CopyString(local);
-                    OperationStatus status =
-                        Base64.DecodeFromUtf8(local[..copied], cipher, out int consumed, out int written);
-                    if (status != OperationStatus.Done || consumed != copied)
-                    {
-                        throw new InvalidOperationException(
-                            $"Base64 decoding failed for encrypted field at path {pathLabel}: {status}.");
-                    }
-
-                    cipherTextLength = written;
+                    cipherTextLength = DecodeValidated(local[..copied], copied);
                 }
                 else
                 {
                     EnsureCapacity(ref ctx.TempScratch, Math.Max(srcLen, 64), ctx.Pool);
                     int copied = reader.CopyString(ctx.TempScratch);
-                    OperationStatus status = Base64.DecodeFromUtf8(
-                        ctx.TempScratch.AsSpan(0, copied), cipher, out int consumed, out int written);
-                    if (status != OperationStatus.Done || consumed != copied)
-                    {
-                        throw new InvalidOperationException(
-                            $"Base64 decoding failed for encrypted field at path {pathLabel}: {status}.");
-                    }
-
-                    cipherTextLength = written;
+                    cipherTextLength = DecodeValidated(ctx.TempScratch.AsSpan(0, copied), copied);
                 }
             }
 
-            // First byte (index 0) is type marker, ciphertext starts at offset 1
             TypeMarker marker = (TypeMarker)cipher[0];
-
-            // Unified MDE-only fast path.
             int needed = ctx.DataKey.GetDecryptByteCount(cipherTextLength - 1);
             EnsureCapacity(ref ctx.PlainScratch, needed, ctx.Pool);
 
@@ -598,15 +583,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     $"{nameof(DataEncryptionKey)} returned invalid plainText from {nameof(DataEncryptionKey.DecryptData)}.");
             }
 
-            byte[] bytes = ctx.PlainScratch;
-            int processedBytes = decryptedLength;
-
-            ReadOnlySpan<byte> span = bytes.AsSpan(0, processedBytes);
+            ReadOnlySpan<byte> span = ctx.PlainScratch.AsSpan(0, decryptedLength);
             WriteDecryptedPayload(marker, span, ctx.Writer, ctx.Diagnostics, pathLabel);
 
-            if (!ReferenceEquals(bytes, ctx.PlainScratch))
+            if (!ReferenceEquals(ctx.PlainScratch, ctx.PlainScratch)) // (kept structure; condition always false)
             {
-                ctx.Pool.Return(bytes);
+                ctx.Pool.Return(ctx.PlainScratch);
             }
         }
 
