@@ -6,6 +6,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
 {
     using System.Collections.Generic;
     using System.Linq;
+    using System.Text.Json;
+    using Microsoft.Azure.Cosmos.Encryption.Custom.Transformation;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>
@@ -20,15 +22,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             IReadOnlyDictionary<string, object> plainProperties = null)
         {
             Assert.IsFalse(string.IsNullOrEmpty(rawJson), "rawJson was null/empty");
-            using var doc = System.Text.Json.JsonDocument.Parse(rawJson);
-            var root = doc.RootElement;
+            using JsonDocument doc = System.Text.Json.JsonDocument.Parse(rawJson);
+            JsonElement root = doc.RootElement;
             Assert.IsTrue(root.TryGetProperty("_ei", out _), "_ei metadata missing (encryption properties)");
 
-            foreach (var kvp in encryptedProperties)
+            foreach (KeyValuePair<string, object> kvp in encryptedProperties)
             {
                 string name = kvp.Key;
                 object original = kvp.Value;
-                Assert.IsTrue(root.TryGetProperty(name, out var encElem), $"Encrypted property '{name}' missing");
+                Assert.IsTrue(root.TryGetProperty(name, out JsonElement encElem), $"Encrypted property '{name}' missing");
 
                 if (original == null)
                 {
@@ -47,10 +49,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                 try { decoded = System.Convert.FromBase64String(b64); }
                 catch { Assert.Fail($"Encrypted property '{name}' invalid base64."); return; }
                 Assert.IsTrue(decoded.Length >= 1, $"Ciphertext '{name}' too short.");
-                var marker = (TypeMarker)decoded[0];
+                TypeMarker marker = (TypeMarker)decoded[0];
                 Assert.IsTrue(IsValidMarker(marker), $"Invalid type marker {(int)decoded[0]} for '{name}'.");
 
-                var expected = InferExpectedMarker(original);
+                TypeMarker expected = InferExpectedMarker(original);
                 if (IsPrimitiveMarker(expected))
                 {
                     Assert.AreEqual(expected, marker, $"Type marker mismatch for '{name}'. Expected {expected} got {marker}.");
@@ -59,11 +61,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
 
             if (plainProperties != null)
             {
-                foreach (var kvp in plainProperties)
+                foreach (KeyValuePair<string, object> kvp in plainProperties)
                 {
                     string name = kvp.Key;
                     object original = kvp.Value;
-                    Assert.IsTrue(root.TryGetProperty(name, out var elem), $"Plain property '{name}' missing");
+                    Assert.IsTrue(root.TryGetProperty(name, out JsonElement elem), $"Plain property '{name}' missing");
                     AssertPlainEquality(name, original, elem);
                 }
             }

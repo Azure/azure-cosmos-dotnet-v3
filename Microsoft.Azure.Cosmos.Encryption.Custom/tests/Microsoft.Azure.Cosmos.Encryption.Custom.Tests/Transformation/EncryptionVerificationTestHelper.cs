@@ -8,6 +8,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
+    using System.Text.Json;
+    using Microsoft.Azure.Cosmos.Encryption.Custom;
+    using Microsoft.Azure.Cosmos.Encryption.Custom.Transformation;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>
