@@ -32,25 +32,8 @@
                 PathsToEncrypt = null
             }.Validate());
 
-            Assert.ThrowsException<ArgumentOutOfRangeException>(() => new EncryptionOptions()
-            {
-                DataEncryptionKeyId = "something",
-                EncryptionAlgorithm = "something",
-                PathsToEncrypt = new List<string>(),
-                CompressionOptions = new CompressionOptions()
-                {
-                    MinimalCompressedLength = -1
-                }
-            }.Validate());
         }
 
-        [TestMethod]
-        public void Validate_CompressionOptions_Throws()
-        {
-            Assert.ThrowsException<ArgumentOutOfRangeException>(() => new CompressionOptions()
-            {
-                MinimalCompressedLength = -1
-            }.Validate());
-        }
+    // Compression option validation removed.
     }
 }

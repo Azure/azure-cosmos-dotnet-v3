@@ -314,19 +314,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             CrossFeedRangePage<Pagination.ChangeFeedPage, ChangeFeedState> crossFeedRangePage = enumerator.Current.Result;
             Pagination.ChangeFeedPage changeFeedPage = crossFeedRangePage.Page;
-            ResponseMessage responseMessage;
-            if (changeFeedPage is Pagination.ChangeFeedSuccessPage changeFeedSuccessPage)
+            ResponseMessage responseMessage = changeFeedPage switch
             {
-                responseMessage = new ResponseMessage(statusCode: System.Net.HttpStatusCode.OK)
+                ChangeFeedSuccessPage changeFeedSuccessPage => new ResponseMessage(statusCode: System.Net.HttpStatusCode.OK)
                 {
                     Content = changeFeedSuccessPage.Content
-                };
-            }
-            else
-            {
-                responseMessage = new ResponseMessage(statusCode: System.Net.HttpStatusCode.NotModified);
-            }
-
+                },
+                _ => new ResponseMessage(statusCode: System.Net.HttpStatusCode.NotModified),
+            };
             CrossFeedRangeState<ChangeFeedState> crossFeedRangeState = crossFeedRangePage.State;
             ChangeFeedCrossFeedRangeState changeFeedCrossFeedRangeState = new ChangeFeedCrossFeedRangeState(crossFeedRangeState.Value);
             string continuationToken = VersionedAndRidCheckedCompositeToken.ToCosmosElement(

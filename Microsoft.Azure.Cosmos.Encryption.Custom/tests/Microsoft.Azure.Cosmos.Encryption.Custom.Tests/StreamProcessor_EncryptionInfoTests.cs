@@ -18,24 +18,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     public class StreamProcessor_EncryptionInfoTests
     {
         [TestMethod]
-        public void WriteEncryptionInfo_WritesAllFields_AndMatchesJsonSerializer()
+    public void WriteEncryptionInfo_WritesAllFields_AndMatchesJsonSerializer()
         {
             // Arrange
-            CompressionOptions.CompressionAlgorithm alg =
-#if NET8_0_OR_GREATER
-                CompressionOptions.CompressionAlgorithm.Brotli;
-#else
-                (CompressionOptions.CompressionAlgorithm)1; // numeric equivalent without referencing undefined symbol on net6.0
-#endif
-
             EncryptionProperties props = new EncryptionProperties(
-                encryptionFormatVersion: 4,
+        encryptionFormatVersion: 3,
                 encryptionAlgorithm: "A256CBC-HS512",
                 dataEncryptionKeyId: "dek-id-123",
                 encryptedData: Array.Empty<byte>(),
-                encryptedPaths: new[] { "/a", "/b", "/c" },
-                compressionAlgorithm: alg,
-                compressedEncryptedPaths: new Dictionary<string, int> { ["/a"] = 100, ["/c"] = 42 });
+        encryptedPaths: new[] { "/a", "/b", "/c" });
 
             using MemoryStream msManual = new MemoryStream();
             using Utf8JsonWriter writer = new Utf8JsonWriter(msManual, new JsonWriterOptions { Indented = false, SkipValidation = true });
@@ -48,8 +39,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 props.EncryptionAlgorithm,
                 props.DataEncryptionKeyId,
                 props.EncryptedPaths.ToList(),
-                props.CompressionAlgorithm,
-                props.CompressedEncryptedPaths as IReadOnlyDictionary<string, int>,
                 props.EncryptedData);
             writer.WriteEndObject();
             writer.Flush();
@@ -70,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.AreEqual(props.EncryptionFormatVersion, ei.GetProperty(Constants.EncryptionFormatVersion).GetInt32());
             Assert.AreEqual(props.EncryptionAlgorithm, ei.GetProperty(Constants.EncryptionAlgorithm).GetString());
             Assert.AreEqual(props.DataEncryptionKeyId, ei.GetProperty(Constants.EncryptionDekId).GetString());
-            Assert.AreEqual((int)props.CompressionAlgorithm, ei.GetProperty(Constants.CompressionAlgorithm).GetInt32());
+            Assert.IsFalse(ei.TryGetProperty(Constants.CompressedEncryptedPaths, out _), "_cp should not be present after compression removal");
 
             // _ed must always be present; empty byte[] serializes to empty base64 string
             Assert.IsTrue(ei.TryGetProperty(Constants.EncryptedData, out JsonElement edProp), "Missing _ed property in manual JSON");
@@ -80,15 +69,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             string[] ep = ei.GetProperty(Constants.EncryptedPaths).EnumerateArray().Select(e => e.GetString()).ToArray();
             CollectionAssert.AreEqual(new[] { "/a", "/b", "/c" }, ep);
 
-            // cep map
-            Dictionary<string, int> cep = ei.GetProperty(Constants.CompressedEncryptedPaths).EnumerateObject().ToDictionary(p => p.Name, p => p.Value.GetInt32());
-            Assert.AreEqual(2, cep.Count);
-            Assert.AreEqual(100, cep["/a"]);
-            Assert.AreEqual(42, cep["/c"]);
+            // No compressed paths metadata expected
         }
 
         [TestMethod]
-        public void WriteEncryptionInfo_OmitsCompressedEncryptedPaths_WhenNull()
+        public void WriteEncryptionInfo_EmitsRequiredFields_WithoutCompression()
         {
             using MemoryStream ms = new MemoryStream();
             using Utf8JsonWriter writer = new Utf8JsonWriter(ms, new JsonWriterOptions { Indented = false, SkipValidation = true });
@@ -100,23 +85,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 encryptionAlgorithm: "alg",
                 dataEncryptionKeyId: "kid",
                 encryptedPaths: new List<string> { "/p" },
-                compressionAlgorithm: CompressionOptions.CompressionAlgorithm.None,
-                compressedEncryptedPaths: null,
                 encryptedData: Array.Empty<byte>());
             writer.WriteEndObject();
             writer.Flush();
 
             using JsonDocument d = JsonDocument.Parse(ms.ToArray());
             JsonElement ei = d.RootElement.GetProperty(Constants.EncryptedInfo);
-            // Serializer-based implementation will currently emit the property either absent or as null; both are acceptable.
-            if (ei.TryGetProperty(Constants.CompressedEncryptedPaths, out JsonElement cepProp))
-            {
-                Assert.AreEqual(JsonValueKind.Null, cepProp.ValueKind, "CompressedEncryptedPaths should be null when no entries provided.");
-            }
+            Assert.IsFalse(ei.TryGetProperty(Constants.CompressedEncryptedPaths, out _), "Compressed paths metadata should be removed");
             Assert.AreEqual(3, ei.GetProperty(Constants.EncryptionFormatVersion).GetInt32());
             Assert.AreEqual("alg", ei.GetProperty(Constants.EncryptionAlgorithm).GetString());
             Assert.AreEqual("kid", ei.GetProperty(Constants.EncryptionDekId).GetString());
-            Assert.AreEqual(0, ei.GetProperty(Constants.CompressionAlgorithm).GetInt32());
 
             // _ed should still be present even when cep is omitted
             Assert.IsTrue(ei.TryGetProperty(Constants.EncryptedData, out JsonElement ed2));
@@ -128,13 +106,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         {
             // Arrange
             EncryptionProperties props = new EncryptionProperties(
-                encryptionFormatVersion: 4,
+                encryptionFormatVersion: 3,
                 encryptionAlgorithm: "A256CBC-HS512",
                 dataEncryptionKeyId: "dek-id-123",
                 encryptedData: Array.Empty<byte>(),
-                encryptedPaths: new[] { "/a", "/b", "/c" },
-                compressionAlgorithm: CompressionOptions.CompressionAlgorithm.Brotli,
-                compressedEncryptedPaths: new Dictionary<string, int> { ["/a"] = 100, ["/c"] = 42 });
+                encryptedPaths: new[] { "/a", "/b", "/c" });
 
             using MemoryStream msManual = new MemoryStream();
             using Utf8JsonWriter writer = new Utf8JsonWriter(msManual, new JsonWriterOptions { Indented = false, SkipValidation = true });
@@ -147,8 +123,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 props.EncryptionAlgorithm,
                 props.DataEncryptionKeyId,
                 props.EncryptedPaths.ToList(),
-                props.CompressionAlgorithm,
-                props.CompressedEncryptedPaths as IReadOnlyDictionary<string, int>,
                 props.EncryptedData);
             writer.WriteEndObject();
             writer.Flush();

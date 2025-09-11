@@ -49,11 +49,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         public string EncryptionAlgorithm { get; set; }
 
         /// <summary>
-        /// Gets or sets payload compression mode
-        /// </summary>
-        public CompressionOptions CompressionOptions { get; set; } = new CompressionOptions();
-
-        /// <summary>
         /// Gets or sets list of JSON paths to encrypt on the payload.
         /// Only top level paths are supported.
         /// Example of a path specification: /sensitive

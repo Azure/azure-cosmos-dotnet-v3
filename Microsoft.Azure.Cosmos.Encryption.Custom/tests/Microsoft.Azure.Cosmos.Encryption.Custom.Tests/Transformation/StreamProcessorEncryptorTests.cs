@@ -52,20 +52,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
                 .ReturnsAsync((byte[] cipher, string dekId, string algo, CancellationToken t) => dekId == DekId ? TestCommon.DecryptData(cipher) : throw new InvalidOperationException("DEK not found"));
         }
 
-        private static EncryptionOptions CreateOptions(IEnumerable<string> paths, CompressionOptions.CompressionAlgorithm algorithm = CompressionOptions.CompressionAlgorithm.None, CompressionLevel compressionLevel = CompressionLevel.NoCompression, int? minCompressedLength = null)
+    private static EncryptionOptions CreateOptions(IEnumerable<string> paths)
         {
-            CompressionOptions comp = new CompressionOptions { Algorithm = algorithm, CompressionLevel = compressionLevel };
-            if (minCompressedLength.HasValue)
-            {
-                comp.MinimalCompressedLength = minCompressedLength.Value;
-            }
             return new EncryptionOptions
             {
                 DataEncryptionKeyId = DekId,
                 EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
                 JsonProcessor = JsonProcessor.Stream,
                 PathsToEncrypt = paths.ToList(),
-                CompressionOptions = comp
             };
         }
 
@@ -154,28 +148,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             Assert.IsTrue(ctx.DecryptionInfoList[0].PathsDecrypted.Contains("/SensitiveStr"));
         }
 
-        [TestMethod]
-        public async Task Encrypt_CompressionBehavior()
-        {
-            // Arrange
-            var doc = new
-            {
-                id = "1",
-                LargeStr = new string('x', 400),
-                SmallStr = new string('y', 10)
-            };
-            string[] paths = new[] { "/LargeStr", "/SmallStr" };
-            EncryptionOptions options = CreateOptions(paths, CompressionOptions.CompressionAlgorithm.Brotli, CompressionLevel.Fastest, minCompressedLength: 64);
-            // Act
-            MemoryStream encrypted = await EncryptAsync(doc, options);
-            using JsonDocument jd = Parse(encrypted);
-            JsonElement propsJson = jd.RootElement.GetProperty(Constants.EncryptedInfo);
-            // Assert
-            EncryptionProperties props = System.Text.Json.JsonSerializer.Deserialize<EncryptionProperties>(propsJson.GetRawText());
-            Assert.AreEqual(EncryptionFormatVersion.MdeWithCompression, props.EncryptionFormatVersion);
-            Assert.IsTrue(props.CompressedEncryptedPaths.ContainsKey("/LargeStr"));
-            Assert.IsFalse(props.CompressedEncryptedPaths.ContainsKey("/SmallStr"));
-        }
+    // Compression behavior test removed as compression support was dropped.
 
         [TestMethod]
         public async Task Encrypt_NestedObjectAndArray()

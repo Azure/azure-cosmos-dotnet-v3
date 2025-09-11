@@ -20,7 +20,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
     /// <summary>
     /// Focused additional coverage for StreamProcessor encryption per request:
     ///  - Encrypted containers with nested content; metadata emission ordering
-    ///  - Compression threshold boundary behavior (just below/at/above)
     ///  - Multi-segment (ValueSequence) tokens for strings and numbers
     ///  - Nulls inside encrypted containers round-trip (not individually marked)
     /// </summary>
@@ -58,19 +57,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
                 .ReturnsAsync((byte[] cipher, string dekId, string algo, CancellationToken t) => dekId == DekId ? TestCommon.DecryptData(cipher) : throw new InvalidOperationException("DEK not found"));
         }
 
-        private static EncryptionOptions CreateOptions(string[] paths, CompressionOptions.CompressionAlgorithm alg = CompressionOptions.CompressionAlgorithm.None, CompressionLevel cl = CompressionLevel.NoCompression, int? min = null)
-        {
-            CompressionOptions comp = new CompressionOptions { Algorithm = alg, CompressionLevel = cl };
-            if (min.HasValue) comp.MinimalCompressedLength = min.Value;
-            return new EncryptionOptions
+        private static EncryptionOptions CreateOptions(string[] paths)
+            => new EncryptionOptions
             {
                 DataEncryptionKeyId = DekId,
                 EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
                 JsonProcessor = JsonProcessor.Stream,
                 PathsToEncrypt = paths,
-                CompressionOptions = comp,
             };
-        }
 
         private static async Task<MemoryStream> EncryptAsync(string json, EncryptionOptions options)
         {
@@ -190,61 +184,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             using JsonDocument d2 = JsonDocument.Parse(dec);
             Assert.AreEqual(52, d2.RootElement.GetProperty("BigObj").EnumerateObject().Count(), "Property count inside BigObj matches (a + p0..p49 + inner)");
             Assert.AreEqual(60, d2.RootElement.GetProperty("BigArr").GetArrayLength());
-        }
-
-        [TestMethod]
-        public async Task Encrypt_CompressionThreshold_Mixed_Metrics()
-        {
-            string large = new string('x', 1500);
-            string small = new string('y', 40);
-            string json = $"{{\"Large\":\"{large}\",\"Small\":\"{small}\"}}";
-            using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(json));
-            MemoryStream output = new();
-            int threshold = 256; // ensure small < threshold < large
-            EncryptionOptions options = CreateOptions(new[] { "/Large", "/Small" }, CompressionOptions.CompressionAlgorithm.Brotli, CompressionLevel.Fastest, threshold);
-            CosmosDiagnosticsContext diag = new CosmosDiagnosticsContext();
-            await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, diag, CancellationToken.None);
-            output.Position = 0;
-            using JsonDocument jd = JsonDocument.Parse(output);
-            JsonElement root = jd.RootElement;
-            Assert.AreEqual(JsonValueKind.String, root.GetProperty("Large").ValueKind);
-            Assert.AreEqual(JsonValueKind.String, root.GetProperty("Small").ValueKind);
-            JsonElement propsEl = root.GetProperty(Constants.EncryptedInfo);
-            EncryptionProperties props = System.Text.Json.JsonSerializer.Deserialize<EncryptionProperties>(propsEl.GetRawText());
-            Assert.IsTrue(props.CompressedEncryptedPaths.ContainsKey("/Large"));
-            Assert.IsFalse(props.CompressedEncryptedPaths.ContainsKey("/Small"));
-            System.Collections.Generic.IReadOnlyDictionary<string, long> metrics = diag.GetMetricsSnapshot();
-            Assert.AreEqual(2L, metrics["encrypt.propertiesEncrypted"]);
-            Assert.AreEqual(1L, metrics["encrypt.compressedPathsCompressed"], "Only large property should be compressed");
-        }
-
-        [TestMethod]
-        public async Task Encrypt_LargeGrowingString_CompressionMetrics()
-        {
-            // Very large string to stress scratch growth and ensure compression path taken.
-            string huge = new string('z', 50000);
-            string json = $"{{\"Huge\":\"{huge}\"}}";
-            using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(json));
-            MemoryStream output = new();
-            int threshold = 1024; // below huge size so compression guaranteed
-            EncryptionOptions options = CreateOptions(new[] { "/Huge" }, CompressionOptions.CompressionAlgorithm.Brotli, CompressionLevel.Fastest, threshold);
-            CosmosDiagnosticsContext diag = new CosmosDiagnosticsContext();
-            await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, diag, CancellationToken.None);
-            output.Position = 0;
-            System.Collections.Generic.IReadOnlyDictionary<string, long> metrics = diag.GetMetricsSnapshot();
-            Assert.AreEqual(1L, metrics["encrypt.propertiesEncrypted"]);
-            Assert.AreEqual(1L, metrics["encrypt.compressedPathsCompressed"]);
-            using JsonDocument jd = JsonDocument.Parse(output);
-            string cipher = jd.RootElement.GetProperty("Huge").GetString();
-            Assert.IsFalse(string.IsNullOrEmpty(cipher), "Cipher text must not be empty");
-            // Validate first byte marker after base64 decode (should be String marker or compressed payload which still starts with type marker inside encrypted envelope)
-            byte[] cipherBytes = Convert.FromBase64String(cipher);
-            Assert.IsTrue(cipherBytes.Length > 16, "Encrypted payload should have length > 16 bytes including headers");
-            // Decrypt and validate length
-            output.Position = 0;
-            (Stream dec, _) = await EncryptionProcessor.DecryptStreamAsync(output, mockEncryptor.Object, new CosmosDiagnosticsContext(), CancellationToken.None);
-            using JsonDocument d2 = JsonDocument.Parse(dec);
-            Assert.AreEqual(huge.Length, d2.RootElement.GetProperty("Huge").GetString().Length);
         }
     }
 }

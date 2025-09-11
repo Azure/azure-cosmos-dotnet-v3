@@ -316,10 +316,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.IsNotNull(encryptionProperties);
             Assert.AreEqual(dekId, encryptionProperties.DataEncryptionKeyId);
 
-            int expectedVersion =
-                (encryptionOptions.CompressionOptions.Algorithm != CompressionOptions.CompressionAlgorithm.None)
-                ? 4 : 3;
-            Assert.AreEqual(expectedVersion, encryptionProperties.EncryptionFormatVersion);
+            Assert.AreEqual(3, encryptionProperties.EncryptionFormatVersion);
 
             Assert.IsNull(encryptionProperties.EncryptedData);
             Assert.IsNotNull(encryptionProperties.EncryptedPaths);
@@ -424,32 +421,23 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 #endif
 
-        private static EncryptionOptions CreateEncryptionOptions(JsonProcessor processor, CompressionOptions.CompressionAlgorithm compressionAlgorithm, CompressionLevel compressionLevel)
+    private static EncryptionOptions CreateEncryptionOptions(JsonProcessor processor)
         {
             return new EncryptionOptions()
             {
                 DataEncryptionKeyId = dekId,
                 EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
                 PathsToEncrypt = TestDoc.PathsToEncrypt,
-                JsonProcessor = processor,
-                CompressionOptions = new CompressionOptions()
-                {
-                    Algorithm = compressionAlgorithm,
-                    CompressionLevel = compressionLevel
-                }
+        JsonProcessor = processor
             };
         }
 
-        public static IEnumerable<object[]> EncryptionOptionsCombinations => new[] {
-            new object[] { CreateEncryptionOptions(JsonProcessor.Newtonsoft, CompressionOptions.CompressionAlgorithm.None, CompressionLevel.NoCompression) },
+    public static IEnumerable<object[]> EncryptionOptionsCombinations => new[] {
+        new object[] { CreateEncryptionOptions(JsonProcessor.Newtonsoft) },
 #if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
-            new object[] { CreateEncryptionOptions(JsonProcessor.Stream, CompressionOptions.CompressionAlgorithm.None, CompressionLevel.NoCompression) },
-            new object[] { CreateEncryptionOptions(JsonProcessor.Newtonsoft, CompressionOptions.CompressionAlgorithm.Brotli, CompressionLevel.Fastest) },
-            new object[] { CreateEncryptionOptions(JsonProcessor.Stream, CompressionOptions.CompressionAlgorithm.Brotli, CompressionLevel.Fastest) },
-            new object[] { CreateEncryptionOptions(JsonProcessor.Newtonsoft, CompressionOptions.CompressionAlgorithm.Brotli, CompressionLevel.NoCompression) },
-            new object[] { CreateEncryptionOptions(JsonProcessor.Stream, CompressionOptions.CompressionAlgorithm.Brotli, CompressionLevel.NoCompression) },
+        new object[] { CreateEncryptionOptions(JsonProcessor.Stream) },
 #endif
-        };
+    };
 
         public static IEnumerable<object[]> EncryptionOptionsStreamTestCombinations
         {

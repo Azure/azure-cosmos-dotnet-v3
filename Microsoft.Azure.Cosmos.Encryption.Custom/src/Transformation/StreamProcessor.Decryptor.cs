@@ -138,20 +138,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
         private static void ValidateEncryptionProperties(EncryptionProperties properties)
         {
-            switch (properties.EncryptionFormatVersion)
+            if (properties.EncryptionFormatVersion != EncryptionFormatVersion.Mde)
             {
-                case EncryptionFormatVersion.Mde:
-                case EncryptionFormatVersion.MdeWithCompression:
-                    break;
-                default:
-                    throw new NotSupportedException(
-                        $"Unknown encryption format version: {properties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
-            }
-
-            bool containsCompressed = properties.CompressedEncryptedPaths?.Count > 0;
-            if (containsCompressed && properties.CompressionAlgorithm != CompressionOptions.CompressionAlgorithm.Brotli)
-            {
-                throw new NotSupportedException($"Unknown compression algorithm {properties.CompressionAlgorithm}");
+                throw new NotSupportedException(
+                    $"Unknown encryption format version: {properties.EncryptionFormatVersion}. Only MDE format without compression is supported.");
             }
         }
 
@@ -176,7 +166,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             ctx.Diagnostics?.SetMetric("decrypt.bytesRead", ctx.BytesRead);
             ctx.Diagnostics?.SetMetric("decrypt.bytesWritten", bytesWritten);
             ctx.Diagnostics?.SetMetric("decrypt.propertiesDecrypted", ctx.PropertiesDecrypted);
-            ctx.Diagnostics?.SetMetric("decrypt.compressedPathsDecompressed", ctx.CompressedPathsDecompressed);
             ctx.Diagnostics?.SetMetric("decrypt.writerFlushes", chunkedWriter.Flushes);
             long elapsedTicks = Stopwatch.GetTimestamp() - ctx.StartTimestamp;
             long elapsedMs = (long)(elapsedTicks * 1000.0 / Stopwatch.Frequency);
@@ -230,9 +219,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             {
                 pool.Return(oneShot);
             }
-    }
+        }
 
-    // Removed ProbeNonSeekableAsync: unified streaming logic handles both seekable and non-seekable streams directly.
         private async Task<(byte[] buffer, int leftOver, bool isFinalBlock, JsonReaderState readerState, SkipState skip)> StreamProcessAsync(
             Stream inputStream,
             ProcessingContext ctx,
@@ -526,7 +514,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             }
 
             return false; // do not force loop continue beyond normal flow
-    }
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool HandleActiveSkip(ref Utf8JsonReader reader, ref SkipState skip)
@@ -571,7 +559,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             // Other tokens inside skipped metadata are ignored
             return true;
-    }
+        }
 
         private static bool IsAllWhitespace(ReadOnlySpan<byte> span)
         {
@@ -667,7 +655,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             byte[] bytes = ctx.PlainScratch;
             int processedBytes = decryptedLength;
 
-            TryDecompressIfConfigured(ctx, pathLabel, ref bytes, ref processedBytes);
             ReadOnlySpan<byte> span = bytes.AsSpan(0, processedBytes);
             WriteDecryptedPayload(marker, span, ctx.Writer, ctx.Diagnostics, pathLabel);
 
@@ -747,36 +734,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                     break;
             }
-    }
-
-        private static void TryDecompressIfConfigured(
-            ProcessingContext ctx,
-            string pathLabel,
-            ref byte[] bytes,
-            ref int length)
-        {
-            if (ctx.Decompressor == null || pathLabel == null || ctx.Properties.CompressedEncryptedPaths == null)
-            {
-                return;
-            }
-
-            if (!ctx.Properties.CompressedEncryptedPaths.TryGetValue(pathLabel, out int decompressedSize))
-            {
-                return;
-            }
-
-            int maxDecompressedSizeBytes = MaxBufferSizeBytes;
-            if (decompressedSize <= 0 || decompressedSize > maxDecompressedSizeBytes)
-            {
-                throw new InvalidOperationException(
-                    $"Invalid decompressed size {decompressedSize} for path {pathLabel}. Max allowed is {maxDecompressedSizeBytes}.");
-            }
-
-            byte[] decompressed = ctx.Pool.Rent(decompressedSize);
-            int newLen = ctx.Decompressor.Decompress(bytes, length, decompressed);
-            bytes = decompressed;
-            length = newLen;
-            ctx.CompressedPathsDecompressed++;
         }
 
         private static Span<byte> CopyStringToSpan(
@@ -862,9 +819,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 IReadOnlyCollection<string> encryptedPaths = properties.EncryptedPaths ?? Array.Empty<string>();
                 this.PathMatcher = CandidatePaths.Build(encryptedPaths);
 
-                bool containsCompressed = properties.CompressedEncryptedPaths?.Count > 0;
-                this.Decompressor = containsCompressed ? new BrotliCompressor() : null;
-
                 if (decryptor.GetType() != typeof(MdeEncryptor))
                 {
                     throw new NotSupportedException("StreamProcessor currently supports only the MDE encryption format (exact MdeEncryptor type).");
@@ -885,8 +839,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             public CandidatePaths PathMatcher { get; }
 
-            public BrotliCompressor Decompressor { get; }
-
             // Scratch buffers (pooled) with ref-return properties to preserve by-ref passing semantics
             // while complying with SA1401 (fields should be private). Ref properties allow calls like
             // EnsureCapacity(ref ctx.TempScratch, ...) without exposing mutable fields publicly.
@@ -900,23 +852,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             public ref byte[] PlainScratch => ref this.plainScratch;
 
-            // Streaming/decryption state
-            public string CurrentPropertyPath { get; set; } // current full path (only for matched properties)
+            public string CurrentPropertyPath { get; set; }
 
-            public string DecryptPropertyName { get; set; } // non-null when next value token must be decrypted
+            public string DecryptPropertyName { get; set; }
 
-            // Metrics (frequently updated)
             public long StartTimestamp { get; set; }
 
             public long BytesRead { get; set; }
 
             public long PropertiesDecrypted { get; set; }
 
-            public long CompressedPathsDecompressed { get; set; }
+            public int ExpectedDecrypted { get; set; }
 
-            public int ExpectedDecrypted { get; set; } // expected properties decrypted (capacity hint)
-
-            public List<string> PathsDecrypted { get; set; } // collects decrypted property paths
+            public List<string> PathsDecrypted { get; set; }
 
             public bool RootSeen { get; set; }
 
