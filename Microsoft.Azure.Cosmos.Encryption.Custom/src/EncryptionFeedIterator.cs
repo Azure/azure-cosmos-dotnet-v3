@@ -80,11 +80,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 throw new InvalidOperationException("Feed Response body contract was violated. Feed Response did not have an array of Documents.");
             }
 
-            List<T> decryptableItems = new(documents.Count);
+            List<T> decryptableItems = new (documents.Count);
 
             foreach (JToken value in documents)
             {
-                DecryptableItemCore item = new(
+                DecryptableItemCore item = new (
                     value,
                     this.encryptor,
                     this.cosmosSerializer);

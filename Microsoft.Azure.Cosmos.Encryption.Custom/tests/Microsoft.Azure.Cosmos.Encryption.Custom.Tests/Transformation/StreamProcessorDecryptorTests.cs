@@ -112,12 +112,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
 
             // Strong pre-decrypt verification: encrypted raw JSON must not contain sensitive plaintext values.
             string rawJson = Encoding.UTF8.GetString(encrypted.ToArray());
-            EncryptionVerificationTestHelper.AssertEncryptedRawJson(
+            EncryptionVerificationTestHelper.AssertEncryptedDocument(
                 rawJson,
-                stringPlaintextValuesEncrypted: new[] { doc.SensitiveStr },
-                numericPlaintextValuesEncrypted: new[] { doc.SensitiveInt.ToString(System.Globalization.CultureInfo.InvariantCulture) },
-                expectedPlainValues: new[] { doc.NonSensitive.ToString(System.Globalization.CultureInfo.InvariantCulture) },
-                encryptedBooleanPropertyNames: new[] { "SensitiveBoolTrue", "SensitiveBoolFalse" });
+                encryptedProperties: new Dictionary<string, object>
+                {
+                    { "SensitiveStr", doc.SensitiveStr },
+                    { "SensitiveInt", doc.SensitiveInt },
+                    { "SensitiveBoolTrue", doc.SensitiveBoolTrue },
+                    { "SensitiveBoolFalse", doc.SensitiveBoolFalse },
+                    { "SensitiveArr", doc.SensitiveArr },
+                    { "SensitiveObj", doc.SensitiveObj },
+                },
+                plainProperties: new Dictionary<string, object>
+                {
+                    { "SensitiveNull", (object)null },
+                    { "NonSensitive", doc.NonSensitive },
+                });
 
             // Act
             MemoryStream output = new();
@@ -447,10 +457,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
 
             // Strong pre-decrypt verification: ensure SensitiveStr plaintext absent, while (heuristically) expect to still see boolean literals true/false.
             string rawJson = Encoding.UTF8.GetString(encrypted.ToArray());
-            EncryptionVerificationTestHelper.AssertEncryptedRawJson(
+            EncryptionVerificationTestHelper.AssertEncryptedDocument(
                 rawJson,
-                stringPlaintextValuesEncrypted: new[] { doc.SensitiveStr },
-                expectedPlainValues: new[] { "true", "false" });
+                encryptedProperties: new Dictionary<string, object> { { "SensitiveStr", doc.SensitiveStr } },
+                plainProperties: new Dictionary<string, object>
+                {
+                    { "UnencryptedArr", doc.UnencryptedArr },
+                    { "UnencryptedBoolTrue", doc.UnencryptedBoolTrue },
+                    { "UnencryptedBoolFalse", doc.UnencryptedBoolFalse },
+                });
 
             // Act
             MemoryStream output = new();

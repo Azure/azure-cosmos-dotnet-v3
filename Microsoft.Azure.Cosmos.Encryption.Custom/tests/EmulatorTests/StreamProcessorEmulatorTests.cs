@@ -109,7 +109,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         private static async Task ValidateRawEncryptedAsync(string id, string pk, IEnumerable<string> encryptedPlaintextValues, string expectedPlainValue)
         {
             string rawJson = await GetRawJsonAsync(id, pk);
-            EncryptionVerificationTestHelper.AssertEncryptedRawJson(rawJson, encryptedPlaintextValues, string.IsNullOrEmpty(expectedPlainValue) ? null : new[] { expectedPlainValue });
+            var encryptedMap = new Dictionary<string, object>();
+            foreach (string v in encryptedPlaintextValues)
+            {
+                // Use value itself as a synthetic property key placeholder since we only know plaintext; emulator doc model known in each caller though.
+                encryptedMap[v] = v;
+            }
+            var plainMap = string.IsNullOrEmpty(expectedPlainValue) ? null : new Dictionary<string, object> { { "Plain", expectedPlainValue } };
+            EncryptionVerificationTestHelper.AssertEncryptedDocument(rawJson, encryptedMap, plainMap);
         }
 
         [TestMethod]

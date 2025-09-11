@@ -543,6 +543,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     throw new InvalidOperationException(
                         $"Base64 decoding failed for encrypted field at path {pathLabel}: {status}.");
                 }
+
                 return written;
             }
 

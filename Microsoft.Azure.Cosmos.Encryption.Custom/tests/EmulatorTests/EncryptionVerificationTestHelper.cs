@@ -13,46 +13,123 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
     /// </summary>
     public static class EncryptionVerificationTestHelper
     {
-        public static void AssertEncryptedRawJson(
+        // Mirror of unit-test helper unified verification.
+        public static void AssertEncryptedDocument(
             string rawJson,
-            IEnumerable<string> plaintextValuesEncrypted,
-            IEnumerable<string> expectedPlainValues = null,
-            IEnumerable<string> encryptedBooleanPropertyNames = null)
+            IReadOnlyDictionary<string, object> encryptedProperties,
+            IReadOnlyDictionary<string, object> plainProperties = null)
         {
             Assert.IsFalse(string.IsNullOrEmpty(rawJson), "rawJson was null/empty");
-            Assert.IsTrue(rawJson.Contains("\"_ei\""), "_ei metadata missing (encryption properties)");
+            using var doc = System.Text.Json.JsonDocument.Parse(rawJson);
+            var root = doc.RootElement;
+            Assert.IsTrue(root.TryGetProperty("_ei", out _), "_ei metadata missing (encryption properties)");
 
-            if (plaintextValuesEncrypted != null)
+            foreach (var kvp in encryptedProperties)
             {
-                foreach (string val in plaintextValuesEncrypted.Where(v => !string.IsNullOrEmpty(v)))
+                string name = kvp.Key;
+                object original = kvp.Value;
+                Assert.IsTrue(root.TryGetProperty(name, out var encElem), $"Encrypted property '{name}' missing");
+
+                if (original == null)
                 {
-                    string quoted = "\"" + val + "\""; // expected form if accidentally left in clear text
-                    Assert.IsFalse(rawJson.Contains(quoted), $"Found plaintext value '{val}' in stored JSON; expected it to be encrypted.");
+                    Assert.AreEqual(System.Text.Json.JsonValueKind.Null, encElem.ValueKind, $"Null encrypted path '{name}' expected null kind.");
+                    continue;
+                }
+
+                Assert.AreEqual(System.Text.Json.JsonValueKind.String, encElem.ValueKind, $"Encrypted property '{name}' should be base64 string.");
+                string b64 = encElem.GetString();
+                Assert.IsFalse(string.IsNullOrEmpty(b64), $"Encrypted property '{name}' empty.");
+
+                string originalSerialized = SerializeOriginalPrimitive(original);
+                Assert.AreNotEqual(originalSerialized, b64, $"Property '{name}' appears plaintext.");
+
+                byte[] decoded;
+                try { decoded = System.Convert.FromBase64String(b64); }
+                catch { Assert.Fail($"Encrypted property '{name}' invalid base64."); return; }
+                Assert.IsTrue(decoded.Length >= 1, $"Ciphertext '{name}' too short.");
+                var marker = (TypeMarker)decoded[0];
+                Assert.IsTrue(IsValidMarker(marker), $"Invalid type marker {(int)decoded[0]} for '{name}'.");
+
+                var expected = InferExpectedMarker(original);
+                if (IsPrimitiveMarker(expected))
+                {
+                    Assert.AreEqual(expected, marker, $"Type marker mismatch for '{name}'. Expected {expected} got {marker}.");
                 }
             }
 
-            if (expectedPlainValues != null)
+            if (plainProperties != null)
             {
-                foreach (string plain in expectedPlainValues.Where(v => !string.IsNullOrEmpty(v)))
+                foreach (var kvp in plainProperties)
                 {
-                    Assert.IsTrue(rawJson.Contains(plain), $"Expected plain value '{plain}' not found in JSON.");
+                    string name = kvp.Key;
+                    object original = kvp.Value;
+                    Assert.IsTrue(root.TryGetProperty(name, out var elem), $"Plain property '{name}' missing");
+                    AssertPlainEquality(name, original, elem);
                 }
             }
+        }
 
-            if (encryptedBooleanPropertyNames != null)
+        private static string SerializeOriginalPrimitive(object value)
+        {
+            if (value == null) return "null";
+            return value switch
             {
-                foreach (string name in encryptedBooleanPropertyNames.Where(v => !string.IsNullOrEmpty(v)))
-                {
-                    string[] patterns = new[]
-                    {
-                        "\"" + name + "\":true",
-                        "\"" + name + "\": true",
-                        "\"" + name + "\":false",
-                        "\"" + name + "\": false",
-                    };
-                    bool found = patterns.Any(p => rawJson.Contains(p));
-                    Assert.IsFalse(found, $"Found plaintext boolean for encrypted property '{name}' in JSON.");
-                }
+                string s => s,
+                bool b => b ? "true" : "false",
+                System.IFormattable f => f.ToString(null, System.Globalization.CultureInfo.InvariantCulture),
+                _ => value.ToString(),
+            };
+        }
+
+        private static bool IsPrimitiveMarker(TypeMarker m) => m == TypeMarker.String || m == TypeMarker.Long || m == TypeMarker.Double || m == TypeMarker.Boolean || m == TypeMarker.Null;
+        private static bool IsValidMarker(TypeMarker m) => m switch
+        {
+            TypeMarker.String or TypeMarker.Long or TypeMarker.Double or TypeMarker.Boolean or TypeMarker.Null or TypeMarker.Array or TypeMarker.Object => true,
+            _ => false,
+        };
+        private static TypeMarker InferExpectedMarker(object value)
+        {
+            if (value == null) return TypeMarker.Null;
+            return value switch
+            {
+                string => TypeMarker.String,
+                bool => TypeMarker.Boolean,
+                sbyte or byte or short or ushort or int or uint or long or ulong => TypeMarker.Long,
+                float or double or decimal => TypeMarker.Double,
+                System.Collections.IEnumerable when value is not string => TypeMarker.Array,
+                _ => TypeMarker.Object,
+            };
+        }
+        private static void AssertPlainEquality(string name, object original, System.Text.Json.JsonElement elem)
+        {
+            if (original == null)
+            {
+                Assert.AreEqual(System.Text.Json.JsonValueKind.Null, elem.ValueKind, $"Plain null '{name}' expected Null kind.");
+                return;
+            }
+            switch (original)
+            {
+                case string s:
+                    Assert.AreEqual(System.Text.Json.JsonValueKind.String, elem.ValueKind, $"Plain '{name}' expected string kind.");
+                    Assert.AreEqual(s, elem.GetString(), $"Plain string mismatch '{name}'.");
+                    break;
+                case bool b:
+                    Assert.AreEqual(b ? System.Text.Json.JsonValueKind.True : System.Text.Json.JsonValueKind.False, elem.ValueKind, $"Plain bool '{name}' mismatch.");
+                    break;
+                case sbyte or byte or short or ushort or int or uint or long or ulong:
+                    Assert.AreEqual(System.Text.Json.JsonValueKind.Number, elem.ValueKind, $"Plain number '{name}' expected numeric kind.");
+                    long expected = System.Convert.ToInt64(original);
+                    Assert.AreEqual(expected, elem.GetInt64(), $"Plain number mismatch '{name}'.");
+                    break;
+                case float or double or decimal:
+                    Assert.AreEqual(System.Text.Json.JsonValueKind.Number, elem.ValueKind, $"Plain number '{name}' expected numeric kind.");
+                    double expectedD = System.Convert.ToDouble(original, System.Globalization.CultureInfo.InvariantCulture);
+                    double actual = elem.GetDouble();
+                    Assert.IsTrue(System.Math.Abs(expectedD - actual) < 1e-9, $"Plain floating mismatch '{name}' expected {expectedD} got {actual}");
+                    break;
+                default:
+                    Assert.IsTrue(elem.ValueKind == System.Text.Json.JsonValueKind.Object || elem.ValueKind == System.Text.Json.JsonValueKind.Array, $"Plain complex '{name}' expected Object/Array kind.");
+                    break;
             }
         }
     }
