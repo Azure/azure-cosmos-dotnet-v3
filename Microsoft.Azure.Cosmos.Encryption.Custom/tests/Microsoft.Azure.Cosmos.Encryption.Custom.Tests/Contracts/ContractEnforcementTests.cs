@@ -8,7 +8,6 @@
     public class ContractEnforcementTests
     {
         [TestMethod]
-    [Ignore("Baselined: contract enforcement is temporarily ignored on feature/stream-processor-improvements; update baseline or re-enable when API stabilizes.")]
         public void ContractChanges()
         {
             // Select baseline by TFM to account for conditional members in net8 builds.
