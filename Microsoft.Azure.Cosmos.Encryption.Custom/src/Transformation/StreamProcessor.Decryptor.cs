@@ -725,9 +725,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 IReadOnlyCollection<string> encryptedPaths = properties.EncryptedPaths ?? Array.Empty<string>();
                 this.PathMatcher = CandidatePaths.Build(encryptedPaths);
 
-                if (decryptor.GetType() != typeof(MdeEncryptor))
+                if (decryptor is not MdeEncryptor)
                 {
-                    throw new NotSupportedException("StreamProcessor currently supports only the MDE encryption format (exact MdeEncryptor type).");
+                    throw new NotSupportedException("StreamProcessor currently supports only the MDE encryption format (MdeEncryptor hierarchy).");
                 }
             }
 
