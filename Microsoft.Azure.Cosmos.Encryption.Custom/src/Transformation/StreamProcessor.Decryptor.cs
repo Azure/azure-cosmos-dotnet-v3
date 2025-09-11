@@ -533,9 +533,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             Span<byte> cipher = ctx.CipherScratch.AsSpan();
             int cipherTextLength;
 
-            // Local helper to validate a single Base64 decode operation.
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            int DecodeValidated(ReadOnlySpan<byte> source, int expectedLen)
+            static int DecodeValidated(ReadOnlySpan<byte> source, Span<byte> cipher, int expectedLen, string pathLabel)
             {
                 OperationStatus status = Base64.DecodeFromUtf8(source, cipher, out int consumed, out int written);
                 if (status != OperationStatus.Done || consumed != expectedLen)
@@ -549,7 +548,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             if (!reader.HasValueSequence && !reader.ValueIsEscaped)
             {
-                cipherTextLength = DecodeValidated(reader.ValueSpan, srcLen);
+                cipherTextLength = DecodeValidated(reader.ValueSpan, cipher, srcLen, pathLabel);
             }
             else
             {
@@ -557,13 +556,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 {
                     Span<byte> local = stackalloc byte[srcLen];
                     int copied = reader.CopyString(local);
-                    cipherTextLength = DecodeValidated(local[..copied], copied);
+                    cipherTextLength = DecodeValidated(local[..copied], cipher, copied, pathLabel);
                 }
                 else
                 {
                     EnsureCapacity(ref ctx.TempScratch, Math.Max(srcLen, 64), ctx.Pool);
                     int copied = reader.CopyString(ctx.TempScratch);
-                    cipherTextLength = DecodeValidated(ctx.TempScratch.AsSpan(0, copied), copied);
+                    cipherTextLength = DecodeValidated(ctx.TempScratch.AsSpan(0, copied), cipher, copied, pathLabel);
                 }
             }
 
@@ -587,7 +586,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             ReadOnlySpan<byte> span = ctx.PlainScratch.AsSpan(0, decryptedLength);
             WriteDecryptedPayload(marker, span, ctx.Writer, ctx.Diagnostics, pathLabel);
 
-            if (!ReferenceEquals(ctx.PlainScratch, ctx.PlainScratch)) // (kept structure; condition always false)
+            if (!ReferenceEquals(ctx.PlainScratch, ctx.PlainScratch))
             {
                 ctx.Pool.Return(ctx.PlainScratch);
             }
