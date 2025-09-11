@@ -100,6 +100,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             JsonReaderState readerState = new JsonReaderState(StreamProcessor.JsonReaderOptions);
 
             EncryptionPipelineState pipelineState = new EncryptionPipelineState(
+                writer,
                 encryptionKey,
                 encryptionOptions,
                 candidatePaths,
@@ -594,6 +595,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             internal long PropertiesEncrypted { get; set; }
 
             internal EncryptionPipelineState(
+                Utf8JsonWriter writer,
                 DataEncryptionKey key,
                 EncryptionOptions options,
                 CandidatePaths candidatePaths,
@@ -602,6 +604,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 ArrayPoolManager pool,
                 JsonReaderState initialReaderState)
             {
+                this.Writer = writer ?? throw new ArgumentNullException(nameof(writer));
                 this.DataEncryptionKey = key ?? throw new ArgumentNullException(nameof(key));
                 this.EncryptionAlgorithmName = options?.EncryptionAlgorithm ?? throw new ArgumentNullException(nameof(options));
                 this.DataEncryptionKeyId = options.DataEncryptionKeyId;
