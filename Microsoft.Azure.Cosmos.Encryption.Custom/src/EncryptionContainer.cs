@@ -166,6 +166,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 streamPayload,
                 this.Encryptor,
                 encryptionItemRequestOptions.EncryptionOptions,
+                requestOptions,
                 diagnosticsContext,
                 cancellationToken);
 
@@ -181,6 +182,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     responseMessage.Content,
                     this.Encryptor,
                     diagnosticsContext,
+                    requestOptions,
                     cancellationToken);
             }
 
@@ -295,6 +297,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     responseMessage.Content,
                     this.Encryptor,
                     diagnosticsContext,
+                    requestOptions,
                     cancellationToken);
             }
 
@@ -462,6 +465,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     responseMessage.Content,
                     this.Encryptor,
                     diagnosticsContext,
+                    requestOptions,
                     cancellationToken);
             }
 
@@ -604,6 +608,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     responseMessage.Content,
                     this.Encryptor,
                     diagnosticsContext,
+                    requestOptions,
                     cancellationToken);
             }
 
