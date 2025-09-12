@@ -9,7 +9,6 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <RootNamespace>Microsoft.Azure.Cosmos.Encryption.Tests</RootNamespace>
     <LangVersion>$(LangVersion)</LangVersion>
-    <DefineConstants Condition=" '$(IsPreview)' == 'True' ">$(DefineConstants);ENCRYPTION_CUSTOM_PREVIEW</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
