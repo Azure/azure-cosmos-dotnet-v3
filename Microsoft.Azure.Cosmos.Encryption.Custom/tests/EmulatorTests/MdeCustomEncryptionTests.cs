@@ -273,6 +273,209 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             }
         }
 
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+        [TestMethod]
+        public async Task BackCompat_RoundTrip_WithAndWithoutJsonProcessorOverride()
+        {
+            // Arrange: simple POCO with one encrypted path
+            var testItem = new TestItem
+            {
+                Id = Guid.NewGuid().ToString(),
+                PK = Guid.NewGuid().ToString(),
+                NonSensitive = "hello",
+                Sensitive = "secret-value"
+            };
+
+            EncryptionOptions encryptionOptions = new()
+            {
+                DataEncryptionKeyId = dekProperties.Id,
+                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                PathsToEncrypt = new List<string> { "/Sensitive" },
+                JsonProcessor = JsonProcessor.Newtonsoft // baseline
+            };
+
+            ItemRequestOptions baselineRequestOptions = null; // no override
+            ItemRequestOptions overrideRequestOptions = new()
+            {
+                Properties = new Dictionary<string, object>
+                {
+                    { "encryption-json-processor", JsonProcessor.Stream }
+                }
+            };
+
+            Container container = encryptionContainer; // already wrapped with encryptor
+
+            // Act: create with baseline
+            ItemResponse<TestItem> baselineCreate = await container.CreateItemAsync(
+                testItem,
+                new PartitionKey(testItem.PK),
+                baselineRequestOptions,
+                cancellationToken: CancellationToken.None);
+            Assert.AreEqual(HttpStatusCode.Created, baselineCreate.StatusCode);
+
+            // Read back with no override
+            ItemResponse<TestItem> baselineRead = await container.ReadItemAsync<TestItem>(
+                testItem.Id,
+                new PartitionKey(testItem.PK),
+                baselineRequestOptions,
+                cancellationToken: CancellationToken.None);
+
+            // Read back with stream override (should still decrypt identically)
+            ItemResponse<TestItem> overrideRead = await container.ReadItemAsync<TestItem>(
+                testItem.Id,
+                new PartitionKey(testItem.PK),
+                overrideRequestOptions,
+                cancellationToken: CancellationToken.None);
+
+            // Assert decrypted values identical
+            Assert.AreEqual(testItem.NonSensitive, baselineRead.Resource.NonSensitive);
+            Assert.AreEqual(testItem.Sensitive, baselineRead.Resource.Sensitive);
+            Assert.AreEqual(testItem.NonSensitive, overrideRead.Resource.NonSensitive);
+            Assert.AreEqual(testItem.Sensitive, overrideRead.Resource.Sensitive);
+
+            // Replace item using stream override and confirm baseline path still works
+            testItem.NonSensitive = "hello-updated";
+            ItemResponse<TestItem> replaceWithOverride = await container.ReplaceItemAsync(
+                testItem,
+                testItem.Id,
+                new PartitionKey(testItem.PK),
+                overrideRequestOptions,
+                cancellationToken: CancellationToken.None);
+            Assert.AreEqual(HttpStatusCode.OK, replaceWithOverride.StatusCode);
+
+            ItemResponse<TestItem> finalReadBaseline = await container.ReadItemAsync<TestItem>(
+                testItem.Id,
+                new PartitionKey(testItem.PK),
+                baselineRequestOptions,
+                cancellationToken: CancellationToken.None);
+
+            Assert.AreEqual(testItem.NonSensitive, finalReadBaseline.Resource.NonSensitive);
+            Assert.AreEqual(testItem.Sensitive, finalReadBaseline.Resource.Sensitive);
+        }
+
+        [TestMethod]
+        public async Task StreamProcessor_EndToEnd_RoundTrip()
+        {
+            var testItem = new TestItem
+            {
+                Id = Guid.NewGuid().ToString(),
+                PK = Guid.NewGuid().ToString(),
+                NonSensitive = "plain",
+                Sensitive = "stream-secret"
+            };
+
+            EncryptionItemRequestOptions options = new()
+            {
+                EncryptionOptions = new EncryptionOptions
+                {
+                    DataEncryptionKeyId = dekProperties.Id,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                    PathsToEncrypt = new List<string> { "/Sensitive" },
+                    JsonProcessor = JsonProcessor.Stream
+                }
+            };
+
+            ItemResponse<TestItem> create = await encryptionContainer.CreateItemAsync(testItem, new PartitionKey(testItem.PK), options);
+            Assert.AreEqual(HttpStatusCode.Created, create.StatusCode);
+
+            // Read back with stream override explicit (should decrypt)
+            ItemResponse<TestItem> read = await encryptionContainer.ReadItemAsync<TestItem>(testItem.Id, new PartitionKey(testItem.PK), new ItemRequestOptions
+            {
+                Properties = new Dictionary<string, object> { { "encryption-json-processor", JsonProcessor.Stream } }
+            });
+            Assert.AreEqual(testItem.Sensitive, read.Resource.Sensitive);
+        }
+
+        [TestMethod]
+        public async Task ProvidedOutputDecrypt_StreamProcessor_SuccessAndRewinds()
+        {
+            var testItem = new TestItem
+            {
+                Id = Guid.NewGuid().ToString(),
+                PK = Guid.NewGuid().ToString(),
+                NonSensitive = "po-plain",
+                Sensitive = "po-secret"
+            };
+
+            EncryptionItemRequestOptions options = new()
+            {
+                EncryptionOptions = new EncryptionOptions
+                {
+                    DataEncryptionKeyId = dekProperties.Id,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                    PathsToEncrypt = new List<string> { "/Sensitive" },
+                    JsonProcessor = JsonProcessor.Stream
+                }
+            };
+
+            _ = await encryptionContainer.CreateItemAsync(testItem, new PartitionKey(testItem.PK), options);
+
+            using ResponseMessage readStream = await encryptionContainer.ReadItemStreamAsync(testItem.Id, new PartitionKey(testItem.PK), new ItemRequestOptions
+            {
+                Properties = new Dictionary<string, object> { { "encryption-json-processor", JsonProcessor.Stream } }
+            });
+            Assert.IsTrue(readStream.IsSuccessStatusCode);
+
+            readStream.Content.Position = 0;
+            MemoryStream output = new();
+            DecryptionContext ctx = await EncryptionProcessor.DecryptAsync(
+                readStream.Content,
+                output,
+                encryptor,
+                new CosmosDiagnosticsContext(),
+                new ItemRequestOptions { Properties = new Dictionary<string, object> { { "encryption-json-processor", JsonProcessor.Stream } } },
+                CancellationToken.None);
+            Assert.IsNotNull(ctx);
+            Assert.AreEqual(0, output.Position); // rewound for caller consumption
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(NotSupportedException))]
+        public async Task ProvidedOutputDecrypt_StreamOverrideWithLegacyAlgorithm_Throws()
+        {
+            var testItem = new TestItem
+            {
+                Id = Guid.NewGuid().ToString(),
+                PK = Guid.NewGuid().ToString(),
+                NonSensitive = "legacy-plain",
+                Sensitive = "legacy-secret"
+            };
+
+            EncryptionItemRequestOptions options = new()
+            {
+                EncryptionOptions = new EncryptionOptions
+                {
+                    DataEncryptionKeyId = dekProperties.Id,
+#pragma warning disable CS0618
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
+#pragma warning restore CS0618
+                    PathsToEncrypt = new List<string> { "/Sensitive" },
+                    JsonProcessor = JsonProcessor.Newtonsoft
+                }
+            };
+            _ = await encryptionContainer.CreateItemAsync(testItem, new PartitionKey(testItem.PK), options);
+
+            using ResponseMessage readStream = await encryptionContainer.ReadItemStreamAsync(testItem.Id, new PartitionKey(testItem.PK));
+            readStream.Content.Position = 0;
+            MemoryStream output = new();
+            _ = await EncryptionProcessor.DecryptAsync(
+                readStream.Content,
+                output,
+                encryptor,
+                new CosmosDiagnosticsContext(),
+                new ItemRequestOptions { Properties = new Dictionary<string, object> { { "encryption-json-processor", JsonProcessor.Stream } } },
+                CancellationToken.None);
+        }
+
+        private class TestItem
+        {
+            [JsonProperty("id")] public string Id { get; set; }
+            public string PK { get; set; }
+            public string NonSensitive { get; set; }
+            public string Sensitive { get; set; }
+        }
+#endif
+
         [TestMethod]
         public async Task EncryptionCreateItemWithoutEncryptionOptions()
         {

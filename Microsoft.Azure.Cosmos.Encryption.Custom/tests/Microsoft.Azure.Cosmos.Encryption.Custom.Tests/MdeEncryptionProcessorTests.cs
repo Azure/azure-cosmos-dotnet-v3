@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using Microsoft.Azure.Cosmos.Encryption.Custom.Tests;
     using System.IO.Compression;
     using System.Linq;
 #if NET8_0_OR_GREATER
@@ -198,7 +199,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 encryptedStream,
                 mockEncryptor.Object,
                 new CosmosDiagnosticsContext(),
-                JsonProcessor.Newtonsoft,
+                requestOptions: null,
                 CancellationToken.None);
 
             JObject decryptedDoc = EncryptionProcessor.BaseSerializer.FromStream<JObject>(decryptedStream);
@@ -226,7 +227,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 encryptedStream,
                 mockEncryptor.Object,
                 new CosmosDiagnosticsContext(),
-                decryptionJsonProcessor,
+                RequestOptionsOverrideHelper.Create(decryptionJsonProcessor),
                 CancellationToken.None);
 
             JObject decryptedDoc = EncryptionProcessor.BaseSerializer.FromStream<JObject>(decryptedStream);
@@ -255,7 +256,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 encryptedStream,
                 mockEncryptor.Object,
                 new CosmosDiagnosticsContext(),
-                decryptionJsonProcessor,
+                RequestOptionsOverrideHelper.Create(decryptionJsonProcessor),
                 CancellationToken.None);
 
             JsonNode decryptedDoc = JsonNode.Parse(decryptedStream);
@@ -281,7 +282,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 docStream,
                 mockEncryptor.Object,
                 new CosmosDiagnosticsContext(),
-                processor,
+                RequestOptionsOverrideHelper.Create(processor),
                 CancellationToken.None);
 
             Assert.IsTrue(decryptedStream.CanSeek);
@@ -289,6 +290,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.AreEqual(docStream.Length, decryptedStream.Length);
             Assert.IsNull(decryptionContext);
         }
+
+        // Local CreateRequestOptions helper removed in favor of shared RequestOptionsOverrideHelper.
 
         private static async Task<JObject> VerifyEncryptionSucceededNewtonsoft(TestDoc testDoc, EncryptionOptions encryptionOptions)
         {

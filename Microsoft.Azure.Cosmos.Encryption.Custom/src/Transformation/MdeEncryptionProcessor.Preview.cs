@@ -60,6 +60,51 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         {
             return await this.JObjectEncryptionProcessor.DecryptObjectAsync(document, encryptor, encryptionProperties, diagnosticsContext, cancellationToken);
         }
+
+#if NET8_0_OR_GREATER
+        public async Task EncryptAsync(
+            Stream input,
+            Stream output,
+            Encryptor encryptor,
+            EncryptionOptions encryptionOptions,
+            CancellationToken cancellationToken)
+        {
+            if (encryptionOptions.JsonProcessor != JsonProcessor.Stream)
+            {
+                throw new NotSupportedException("This overload is only supported for Stream JsonProcessor");
+            }
+
+            await this.StreamProcessor.EncryptStreamAsync(input, output, encryptor, encryptionOptions, cancellationToken);
+        }
+
+        public async Task<(Stream, DecryptionContext)> DecryptStreamAsync(
+            Stream input,
+            Encryptor encryptor,
+            EncryptionProperties properties,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            MemoryStream ms = new ();
+            DecryptionContext context = await this.StreamProcessor.DecryptStreamAsync(input, ms, encryptor, properties, diagnosticsContext, cancellationToken);
+            if (context == null)
+            {
+                return (input, null);
+            }
+
+            return (ms, context);
+        }
+
+        public async Task<DecryptionContext> DecryptStreamAsync(
+            Stream input,
+            Stream output,
+            Encryptor encryptor,
+            EncryptionProperties properties,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            return await this.StreamProcessor.DecryptStreamAsync(input, output, encryptor, properties, diagnosticsContext, cancellationToken);
+        }
+#endif
     }
 }
 #endif
