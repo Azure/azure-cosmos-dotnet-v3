@@ -1,7 +1,6 @@
 //------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-
 namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
     using System;
@@ -30,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         private static readonly MdeEncryptionProcessor MdeEncryptionProcessor = new ();
 
-    // JsonProcessorPropertyBag contains the property bag key and override parsing logic.
+        // JsonProcessorPropertyBag contains the property bag key and override parsing logic.
 
         /// <remarks>
         /// If there isn't any PathsToEncrypt, input stream will be returned without any modification.
@@ -167,19 +166,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 jsonProcessor = overrideProcessor;
             }
 #endif
-
-            // Dispatch based on selected processor. If Stream option isn't compiled, this always routes to Newtonsoft path.
-            if (jsonProcessor == JsonProcessor.Newtonsoft)
+            using (diagnosticsContext.CreateScope($"EncryptionProcessor.Decrypt.SelectProcessor.{jsonProcessor}"))
             {
-                return DecryptAsync(input, encryptor, diagnosticsContext, cancellationToken);
-            }
+                // Dispatch based on selected processor. If Stream option isn't compiled, this always routes to Newtonsoft path.
+                if (jsonProcessor == JsonProcessor.Newtonsoft)
+                {
+                    return DecryptAsync(input, encryptor, diagnosticsContext, cancellationToken);
+                }
 #if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
-            if (jsonProcessor == JsonProcessor.Stream)
-            {
-                return DecryptStreamAsync(input, encryptor, diagnosticsContext, cancellationToken);
-            }
+                if (jsonProcessor == JsonProcessor.Stream)
+                {
+                    return DecryptStreamAsync(input, encryptor, diagnosticsContext, cancellationToken);
+                }
 #endif
-            throw new InvalidOperationException("Unsupported Json Processor");
+                throw new InvalidOperationException("Unsupported Json Processor");
+            }
         }
 
 #if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
@@ -207,22 +208,25 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 jsonProcessor = overrideProcessor;
             }
 
-            if (jsonProcessor == JsonProcessor.Newtonsoft)
+            using (diagnosticsContext.CreateScope($"EncryptionProcessor.Decrypt.StreamingProvidedOutput.SelectProcessor.{jsonProcessor}"))
             {
-                // Use existing stream-returning decrypt then copy to caller-provided output.
-                (Stream decrypted, DecryptionContext ctx) = await DecryptAsync(input, encryptor, diagnosticsContext, cancellationToken);
-                if (decrypted != null)
+                if (jsonProcessor == JsonProcessor.Newtonsoft)
                 {
-                    await decrypted.CopyToAsync(output, cancellationToken);
-                    output.Position = 0;
+                    // Use existing stream-returning decrypt then copy to caller-provided output.
+                    (Stream decrypted, DecryptionContext ctx) = await DecryptAsync(input, encryptor, diagnosticsContext, cancellationToken);
+                    if (decrypted != null)
+                    {
+                        await decrypted.CopyToAsync(output, cancellationToken);
+                        output.Position = 0;
+                    }
+
+                    return ctx;
                 }
 
-                return ctx;
-            }
-
-            if (jsonProcessor != JsonProcessor.Stream)
-            {
-                throw new NotSupportedException("Unsupported Json Processor");
+                if (jsonProcessor != JsonProcessor.Stream)
+                {
+                    throw new NotSupportedException("Unsupported Json Processor");
+                }
             }
 
             Debug.Assert(input.CanSeek);
@@ -234,6 +238,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 await input.CopyToAsync(output, cancellationToken: cancellationToken);
                 output.Position = 0;
                 return null;
+            }
+
+            // Enforce that streaming decrypt mode (JsonProcessor.Stream) is only valid for MDE algorithm, mirroring streaming encrypt restrictions.
+            if (jsonProcessor == JsonProcessor.Stream &&
+                properties.EncryptionProperties.EncryptionAlgorithm != CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)
+            {
+                throw new NotSupportedException($"Streaming mode is only allowed for {nameof(CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)}");
             }
 
             DecryptionContext context;
@@ -292,15 +303,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             MemoryStream ms = new ();
 
-            DecryptionContext context = await MdeEncryptionProcessor.DecryptStreamAsync(input, ms, encryptor, properties.EncryptionProperties, diagnosticsContext, cancellationToken);
-            if (context == null)
+            using (diagnosticsContext.CreateScope("EncryptionProcessor.DecryptStreamImpl.Mde"))
             {
-                input.Position = 0;
-                return (input, null);
-            }
+                DecryptionContext context = await MdeEncryptionProcessor.DecryptStreamAsync(input, ms, encryptor, properties.EncryptionProperties, diagnosticsContext, cancellationToken);
+                if (context == null)
+                {
+                    input.Position = 0;
+                    return (input, null);
+                }
 
-            await input.DisposeAsync();
-            return (ms, context);
+                await input.DisposeAsync();
+                return (ms, context);
+            }
         }
 
 #endif

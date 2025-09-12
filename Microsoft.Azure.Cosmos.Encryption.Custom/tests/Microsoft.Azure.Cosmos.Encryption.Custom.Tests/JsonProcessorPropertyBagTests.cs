@@ -45,6 +45,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         }
 
         [TestMethod]
+        public void TryGetOverride_StringValue_ExactMatch_Succeeds()
+        {
+            RequestOptions ro = new ItemRequestOptions
+            {
+                Properties = new Dictionary<string, object>
+                {
+                    { JsonProcessorPropertyBag.JsonProcessorPropertyBagKey, "Stream" }
+                }
+            };
+
+            bool found = JsonProcessorPropertyBag.TryGetJsonProcessorOverride(ro, out JsonProcessor jp);
+            Assert.IsTrue(found);
+            Assert.AreEqual(JsonProcessor.Stream, jp);
+        }
+
+        [TestMethod]
         public void TryGetOverride_InvalidString_Ignored()
         {
             RequestOptions ro = new ItemRequestOptions
