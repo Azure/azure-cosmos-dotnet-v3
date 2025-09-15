@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
         /// The change's conflict resolution timestamp.
         /// </summary>
         [JsonProperty(PropertyName = ChangeFeedMetadataFields.ConflictResolutionTimestamp, NullValueHandling = NullValueHandling.Ignore)]
-        [JsonConverter(typeof(UnixDateTimeConverter))]
+        [JsonConverter(typeof(Documents.UnixDateTimeConverter))]
         public DateTime ConflictResolutionTimestamp { get; internal set; }
 
         /// <summary>
