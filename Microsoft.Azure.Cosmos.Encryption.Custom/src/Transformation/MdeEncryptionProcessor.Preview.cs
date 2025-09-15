@@ -3,7 +3,6 @@
 // ------------------------------------------------------------
 
 #if ENCRYPTION_CUSTOM_PREVIEW
-
 namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 {
     using System;
@@ -62,6 +61,131 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         }
 
 #if NET8_0_OR_GREATER
+        public async Task<(Stream, DecryptionContext)> DecryptAsync(
+            Stream input,
+            Encryptor encryptor,
+            CosmosDiagnosticsContext diagnosticsContext,
+            RequestOptions requestOptions,
+            CancellationToken cancellationToken)
+        {
+            if (input == null)
+            {
+                return (input, null);
+            }
+
+            JsonProcessor jsonProcessor = this.GetRequestedJsonProcessor(requestOptions);
+
+            using (diagnosticsContext.CreateScope(EncryptionDiagnostics.ScopeDecryptSelectProcessorPrefix + jsonProcessor))
+            {
+                if (jsonProcessor == JsonProcessor.Newtonsoft)
+                {
+                    return await this.HandleNewtonsoftDecryptAsync<(Stream, DecryptionContext)>(
+                        input,
+                        onMde: async item =>
+                        {
+                            DecryptionContext ctx = await this.JObjectEncryptionProcessor.DecryptObjectAsync(
+                                item.itemJObj,
+                                encryptor,
+                                item.encryptionProperties,
+                                diagnosticsContext,
+                                cancellationToken);
+                            await input.DisposeAsync();
+
+                            // Direct serialization into freshly allocated stream.
+                            MemoryStream direct = new (capacity: 1024);
+                            EncryptionProcessor.BaseSerializer.WriteToStream(item.itemJObj, direct);
+                            return (direct, ctx);
+                        },
+                        onNotEncrypted: () => Task.FromResult((input, (DecryptionContext)null)),
+                        onLegacyOther: () => Task.FromResult((input, (DecryptionContext)null)));
+                }
+
+                this.ValidateSupportedStreamProcessor(jsonProcessor);
+            }
+
+            using (diagnosticsContext.CreateScope(EncryptionDiagnostics.ScopeDecryptStreamImplMde))
+            {
+                (bool hasMde, EncryptionProperties streamingProps) = await TryReadMdeEncryptionPropertiesStreamingAsync(input, cancellationToken);
+                if (!hasMde)
+                {
+                    return (input, null);
+                }
+
+                return await this.DecryptStreamAsync(input, encryptor, streamingProps, diagnosticsContext, cancellationToken);
+            }
+        }
+
+        public async Task<DecryptionContext> DecryptAsync(
+            Stream input,
+            Stream output,
+            Encryptor encryptor,
+            CosmosDiagnosticsContext diagnosticsContext,
+            RequestOptions requestOptions,
+            CancellationToken cancellationToken)
+        {
+            if (input == null)
+            {
+                return null;
+            }
+
+            JsonProcessor jsonProcessor = this.GetRequestedJsonProcessor(requestOptions);
+
+            using (diagnosticsContext.CreateScope(EncryptionDiagnostics.ScopeDecryptStreamingProvidedOutputSelectProcessorPrefix + jsonProcessor))
+            {
+                if (jsonProcessor == JsonProcessor.Newtonsoft)
+                {
+                    return await this.HandleNewtonsoftDecryptAsync<DecryptionContext>(
+                        input,
+                        onMde: async item =>
+                        {
+                            DecryptionContext ctx = await this.JObjectEncryptionProcessor.DecryptObjectAsync(
+                                item.itemJObj,
+                                encryptor,
+                                item.encryptionProperties,
+                                diagnosticsContext,
+                                cancellationToken);
+
+                            // Serialize directly into provided output stream (no intermediate MemoryStream)
+                            output.Position = 0;
+                            EncryptionProcessor.BaseSerializer.WriteToStream(item.itemJObj, output);
+                            output.Position = 0;
+                            await input.DisposeAsync();
+                            return ctx;
+                        },
+                        onNotEncrypted: async () =>
+                        {
+                            await input.CopyToAsync(output, cancellationToken);
+                            output.Position = 0;
+                            return null; // not encrypted
+                        },
+                        onLegacyOther: () => Task.FromResult<DecryptionContext>(null));
+                }
+
+                this.ValidateSupportedStreamProcessor(jsonProcessor);
+            }
+
+            using (diagnosticsContext.CreateScope(EncryptionDiagnostics.ScopeDecryptStreamImplMde))
+            {
+                (bool hasMde, EncryptionProperties streamingProps) = await TryReadMdeEncryptionPropertiesStreamingAsync(input, cancellationToken);
+                if (!hasMde)
+                {
+                    await input.CopyToAsync(output, cancellationToken);
+                    output.Position = 0;
+                    return null;
+                }
+
+                DecryptionContext ctx = await this.DecryptStreamAsync(input, output, encryptor, streamingProps, diagnosticsContext, cancellationToken);
+                if (ctx == null)
+                {
+                    input.Position = 0;
+                    return null;
+                }
+
+                await input.DisposeAsync();
+                return ctx;
+            }
+        }
+
         public async Task EncryptAsync(
             Stream input,
             Stream output,
@@ -103,6 +227,118 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             CancellationToken cancellationToken)
         {
             return await this.StreamProcessor.DecryptStreamAsync(input, output, encryptor, properties, diagnosticsContext, cancellationToken);
+        }
+#endif
+
+        private static JObject ReadJObject(Stream input)
+        {
+            input.Position = 0;
+            using (StreamReader sr = new (input, System.Text.Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
+            using (Newtonsoft.Json.JsonTextReader jsonTextReader = new (sr))
+            {
+                jsonTextReader.ArrayPool = JsonArrayPool.Instance;
+                Newtonsoft.Json.JsonSerializerSettings settings = new () { DateParseHandling = Newtonsoft.Json.DateParseHandling.None, MaxDepth = 64 };
+                return Newtonsoft.Json.JsonSerializer.Create(settings).Deserialize<JObject>(jsonTextReader);
+            }
+        }
+
+        private static JObject RetrieveEncryptionProperties(JObject item)
+        {
+            JProperty encryptionPropertiesJProp = item.Property(Constants.EncryptedInfo);
+            if (encryptionPropertiesJProp?.Value != null && encryptionPropertiesJProp.Value.Type == JTokenType.Object)
+            {
+                return (JObject)encryptionPropertiesJProp.Value;
+            }
+
+            return null;
+        }
+
+#if NET8_0_OR_GREATER
+        private JsonProcessor GetRequestedJsonProcessor(RequestOptions requestOptions)
+        {
+            JsonProcessor jsonProcessor = JsonProcessor.Newtonsoft;
+            if (JsonProcessorPropertyBag.TryGetJsonProcessorOverride(requestOptions, out JsonProcessor overrideProcessor))
+            {
+                jsonProcessor = overrideProcessor;
+            }
+
+            return jsonProcessor;
+        }
+
+        private void ValidateSupportedStreamProcessor(JsonProcessor jsonProcessor)
+        {
+            if (jsonProcessor != JsonProcessor.Stream && jsonProcessor != JsonProcessor.Newtonsoft)
+            {
+                throw new InvalidOperationException("Unsupported Json Processor");
+            }
+        }
+
+        private enum MdePropertyStatus
+        {
+            None,
+            Mde,
+            LegacyOther,
+        }
+
+        private static (MdePropertyStatus status, JObject itemJObj, EncryptionProperties encryptionProperties) InspectNewtonsoftForMde(Stream input)
+        {
+            input.Position = 0;
+            JObject itemJObj = ReadJObject(input);
+            JObject encryptionPropertiesJObj = RetrieveEncryptionProperties(itemJObj);
+            if (encryptionPropertiesJObj == null)
+            {
+                input.Position = 0;
+                return (MdePropertyStatus.None, null, null);
+            }
+
+            EncryptionProperties encryptionProperties = encryptionPropertiesJObj.ToObject<EncryptionProperties>();
+#pragma warning disable CS0618
+            if (encryptionProperties.EncryptionAlgorithm != CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)
+            {
+                input.Position = 0; // legacy algorithm
+                return (MdePropertyStatus.LegacyOther, null, null);
+            }
+#pragma warning restore CS0618
+
+            return (MdePropertyStatus.Mde, itemJObj, encryptionProperties);
+        }
+
+        private async Task<T> HandleNewtonsoftDecryptAsync<T>(
+            Stream input,
+            Func<(JObject itemJObj, EncryptionProperties encryptionProperties), Task<T>> onMde,
+            Func<Task<T>> onNotEncrypted,
+            Func<Task<T>> onLegacyOther)
+        {
+            (MdePropertyStatus status, JObject itemJObj, EncryptionProperties encryptionProperties) = InspectNewtonsoftForMde(input);
+            return status switch
+            {
+                MdePropertyStatus.None => await onNotEncrypted(),
+                MdePropertyStatus.LegacyOther => await onLegacyOther(),
+                MdePropertyStatus.Mde => await onMde((itemJObj, encryptionProperties)),
+                _ => await onNotEncrypted(),
+            };
+        }
+
+        private static async Task<(bool hasMde, EncryptionProperties encryptionProperties)> TryReadMdeEncryptionPropertiesStreamingAsync(
+            Stream input,
+            CancellationToken cancellationToken)
+        {
+            input.Position = 0;
+            EncryptionPropertiesWrapper properties = await System.Text.Json.JsonSerializer.DeserializeAsync<EncryptionPropertiesWrapper>(input, cancellationToken: cancellationToken);
+            input.Position = 0;
+            if (properties?.EncryptionProperties == null)
+            {
+                return (false, null);
+            }
+
+#pragma warning disable CS0618 // legacy algorithm support
+            if (properties.EncryptionProperties.EncryptionAlgorithm != CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)
+            {
+                throw new NotSupportedException($"Streaming mode is only allowed for {nameof(CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)}");
+            }
+#pragma warning restore CS0618
+
+            return (true, properties.EncryptionProperties);
         }
 #endif
     }

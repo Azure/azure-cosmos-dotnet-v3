@@ -88,6 +88,44 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         }
 
         /// <summary>
+        /// Serializes an object directly into the provided output stream (which remains open) and rewinds it if seekable.
+        /// </summary>
+        /// <typeparam name="T">Type of object being serialized.</typeparam>
+        /// <param name="input">Object to serialize.</param>
+        /// <param name="output">Destination stream. Must be writable.</param>
+        public void WriteToStream<T>(T input, Stream output)
+        {
+#if NET8_0_OR_GREATER
+            ArgumentNullException.ThrowIfNull(output);
+#else
+            if (output == null)
+            {
+                throw new ArgumentNullException(nameof(output));
+            }
+#endif
+            if (!output.CanWrite)
+            {
+                throw new ArgumentException("Output stream must be writable", nameof(output));
+            }
+
+            using (StreamWriter streamWriter = new (output, encoding: CosmosJsonDotNetSerializer.DefaultEncoding, bufferSize: 1024, leaveOpen: true))
+            using (JsonTextWriter writer = new (streamWriter))
+            {
+                writer.ArrayPool = JsonArrayPool.Instance;
+                writer.Formatting = Newtonsoft.Json.Formatting.None;
+                JsonSerializer jsonSerializer = this.GetSerializer();
+                jsonSerializer.Serialize(writer, input);
+                writer.Flush();
+                streamWriter.Flush();
+            }
+
+            if (output.CanSeek)
+            {
+                output.Position = 0;
+            }
+        }
+
+        /// <summary>
         /// JsonSerializer has hit a race conditions with custom settings that cause null reference exception.
         /// To avoid the race condition a new JsonSerializer is created for each call
         /// </summary>
