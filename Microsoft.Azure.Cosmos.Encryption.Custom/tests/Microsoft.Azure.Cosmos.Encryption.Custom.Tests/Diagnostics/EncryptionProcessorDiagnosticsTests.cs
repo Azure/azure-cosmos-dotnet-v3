@@ -1,11 +1,11 @@
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
 namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
 {
+    using System;
     using System.IO;
+    using System.Linq;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using System;
     using Microsoft.Azure.Cosmos;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -36,10 +36,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
             catch (NotSupportedException)
             {
             }
-            Assert.IsTrue(System.Linq.Enumerable.Any(ctx.Scopes, s => s.StartsWith("EncryptionProcessor.Decrypt.SelectProcessor.Newtonsoft")), string.Join(";", ctx.Scopes));
+            AssertScopePresent(ctx, "EncryptionProcessor.Decrypt.SelectProcessor.Newtonsoft");
+            AssertScopeAbsent(ctx, "EncryptionProcessor.Decrypt.SelectProcessor.Stream");
+            AssertScopeAbsent(ctx, "EncryptionProcessor.DecryptStreamImpl.Mde");
         }
 
-        [TestMethod]
+    #if NET8_0_OR_GREATER
+    [TestMethod]
         public async Task DecryptAsync_ProvidedOutput_NewtonsoftScope()
         {
             string json = "{\"_ei\":null}";
@@ -54,14 +57,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
             catch (NotSupportedException)
             {
             }
-            Assert.IsTrue(System.Linq.Enumerable.Any(ctx.Scopes, s => s.StartsWith("EncryptionProcessor.Decrypt.StreamingProvidedOutput.SelectProcessor.Newtonsoft")), string.Join(";", ctx.Scopes));
+            AssertScopePresent(ctx, "EncryptionProcessor.Decrypt.StreamingProvidedOutput.SelectProcessor.Newtonsoft");
+            AssertScopeAbsent(ctx, "EncryptionProcessor.Decrypt.StreamingProvidedOutput.SelectProcessor.Stream");
+            AssertScopeAbsent(ctx, "EncryptionProcessor.DecryptStreamImpl.Mde"); // Newtonsoft path shouldn't include impl scope
         }
 
         [TestMethod]
         public async Task DecryptAsync_StreamOverride_SelectsStreamScope()
         {
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
-            // Empty object: no encryption properties => streaming decrypt returns original input but scope emitted.
             string json = "{\"_ei\":null}";
             using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(json));
             Encryptor encryptor = CreateNoopEncryptor();
@@ -74,34 +77,41 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
             catch (NotSupportedException)
             {
             }
-            Assert.IsTrue(System.Linq.Enumerable.Any(ctx.Scopes, s => s.StartsWith("EncryptionProcessor.Decrypt.SelectProcessor.Stream")), string.Join(";", ctx.Scopes));
-#else
-            Assert.Inconclusive("Stream override not compiled");
-#endif
+            AssertScopePresent(ctx, "EncryptionProcessor.Decrypt.SelectProcessor.Stream");
+            AssertScopeAbsent(ctx, "EncryptionProcessor.Decrypt.SelectProcessor.Newtonsoft");
+            AssertScopePresent(ctx, "EncryptionProcessor.DecryptStreamImpl.Mde");
         }
 
-    [TestMethod]
-    public async Task DecryptAsync_ProvidedOutput_StreamScope()
-    {
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
-    string json = "{\"_ei\":null}";
-        using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(json));
-        MemoryStream output = new MemoryStream();
-        Encryptor encryptor = CreateNoopEncryptor();
-        CosmosDiagnosticsContext ctx = CosmosDiagnosticsContext.Create(null);
+        [TestMethod]
+        public async Task DecryptAsync_ProvidedOutput_StreamScope()
+        {
+            string json = "{\"_ei\":null}";
+            using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(json));
+            MemoryStream output = new MemoryStream();
+            Encryptor encryptor = CreateNoopEncryptor();
+            CosmosDiagnosticsContext ctx = CosmosDiagnosticsContext.Create(null);
             ItemRequestOptions options = new ItemRequestOptions { Properties = new System.Collections.Generic.Dictionary<string, object>{{"encryption-json-processor", JsonProcessor.Stream}}};
-    try
-    {
-        _ = await EncryptionProcessor.DecryptAsync(input, output, encryptor, ctx, options, CancellationToken.None);
-    }
-    catch (NotSupportedException)
-    {
-    }
-        Assert.IsTrue(System.Linq.Enumerable.Any(ctx.Scopes, s => s.StartsWith("EncryptionProcessor.Decrypt.StreamingProvidedOutput.SelectProcessor.Stream")), string.Join(";", ctx.Scopes));
-#else
-        Assert.Inconclusive("Stream override not compiled");
-#endif
-    }
+            try
+            {
+                _ = await EncryptionProcessor.DecryptAsync(input, output, encryptor, ctx, options, CancellationToken.None);
+            }
+            catch (NotSupportedException)
+            {
+            }
+            AssertScopePresent(ctx, "EncryptionProcessor.Decrypt.StreamingProvidedOutput.SelectProcessor.Stream");
+            AssertScopeAbsent(ctx, "EncryptionProcessor.Decrypt.StreamingProvidedOutput.SelectProcessor.Newtonsoft");
+            AssertScopePresent(ctx, "EncryptionProcessor.DecryptStreamImpl.Mde");
+        }
+    #endif
+
+        private static void AssertScopePresent(CosmosDiagnosticsContext ctx, string prefix)
+        {
+            Assert.IsTrue(ctx.Scopes.Any(s => s.StartsWith(prefix, StringComparison.Ordinal)), $"Expected scope prefix '{prefix}' not found. Scopes: {string.Join(';', ctx.Scopes)}");
+        }
+
+        private static void AssertScopeAbsent(CosmosDiagnosticsContext ctx, string prefix)
+        {
+            Assert.IsFalse(ctx.Scopes.Any(s => s.StartsWith(prefix, StringComparison.Ordinal)), $"Did not expect scope prefix '{prefix}'. Scopes: {string.Join(';', ctx.Scopes)}");
+        }
     }
 }
-#endif

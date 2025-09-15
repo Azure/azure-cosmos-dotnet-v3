@@ -229,40 +229,43 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 }
             }
 
-            Debug.Assert(input.CanSeek);
-            input.Position = 0;
-            EncryptionPropertiesWrapper properties = await System.Text.Json.JsonSerializer.DeserializeAsync<EncryptionPropertiesWrapper>(input, cancellationToken: cancellationToken);
-            input.Position = 0;
-            if (properties?.EncryptionProperties == null)
-            {
-                await input.CopyToAsync(output, cancellationToken: cancellationToken);
-                output.Position = 0;
-                return null;
-            }
-
-            // Enforce that streaming decrypt mode (JsonProcessor.Stream) is only valid for MDE algorithm, mirroring streaming encrypt restrictions.
-            if (jsonProcessor == JsonProcessor.Stream &&
-                properties.EncryptionProperties.EncryptionAlgorithm != CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)
-            {
-                throw new NotSupportedException($"Streaming mode is only allowed for {nameof(CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)}");
-            }
-
             DecryptionContext context;
-#pragma warning disable CS0618 // Type or member is obsolete
-            if (properties.EncryptionProperties.EncryptionAlgorithm == CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)
+            using (diagnosticsContext.CreateScope("EncryptionProcessor.DecryptStreamImpl.Mde"))
             {
-                context = await MdeEncryptionProcessor.DecryptStreamAsync(input, output, encryptor, properties.EncryptionProperties, diagnosticsContext, cancellationToken);
-            }
-            else if (properties.EncryptionProperties.EncryptionAlgorithm == CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized)
-            {
-                (Stream stream, context) = await DecryptAsync(input, encryptor, diagnosticsContext, cancellationToken);
-                await stream.CopyToAsync(output, cancellationToken);
-                output.Position = 0;
-            }
-            else
-            {
+                Debug.Assert(input.CanSeek);
                 input.Position = 0;
-                throw new NotSupportedException($"Encryption Algorithm: {properties.EncryptionProperties.EncryptionAlgorithm} is not supported.");
+                EncryptionPropertiesWrapper properties = await System.Text.Json.JsonSerializer.DeserializeAsync<EncryptionPropertiesWrapper>(input, cancellationToken: cancellationToken);
+                input.Position = 0;
+                if (properties?.EncryptionProperties == null)
+                {
+                    await input.CopyToAsync(output, cancellationToken: cancellationToken);
+                    output.Position = 0;
+                    return null;
+                }
+
+                // Enforce that streaming decrypt mode (JsonProcessor.Stream) is only valid for MDE algorithm, mirroring streaming encrypt restrictions.
+                if (jsonProcessor == JsonProcessor.Stream &&
+                    properties.EncryptionProperties.EncryptionAlgorithm != CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)
+                {
+                    throw new NotSupportedException($"Streaming mode is only allowed for {nameof(CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)}");
+                }
+
+#pragma warning disable CS0618 // Type or member is obsolete
+                if (properties.EncryptionProperties.EncryptionAlgorithm == CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)
+                {
+                    context = await MdeEncryptionProcessor.DecryptStreamAsync(input, output, encryptor, properties.EncryptionProperties, diagnosticsContext, cancellationToken);
+                }
+                else if (properties.EncryptionProperties.EncryptionAlgorithm == CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized)
+                {
+                    (Stream stream, context) = await DecryptAsync(input, encryptor, diagnosticsContext, cancellationToken);
+                    await stream.CopyToAsync(output, cancellationToken);
+                    output.Position = 0;
+                }
+                else
+                {
+                    input.Position = 0;
+                    throw new NotSupportedException($"Encryption Algorithm: {properties.EncryptionProperties.EncryptionAlgorithm} is not supported.");
+                }
             }
 #pragma warning restore CS0618 // Type or member is obsolete
 
@@ -294,17 +297,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Debug.Assert(diagnosticsContext != null);
             input.Position = 0;
 
-            EncryptionPropertiesWrapper properties = await System.Text.Json.JsonSerializer.DeserializeAsync<EncryptionPropertiesWrapper>(input, cancellationToken: cancellationToken);
-            input.Position = 0;
-            if (properties?.EncryptionProperties == null)
-            {
-                return (input, null);
-            }
-
-            MemoryStream ms = new ();
-
             using (diagnosticsContext.CreateScope("EncryptionProcessor.DecryptStreamImpl.Mde"))
             {
+                EncryptionPropertiesWrapper properties = await System.Text.Json.JsonSerializer.DeserializeAsync<EncryptionPropertiesWrapper>(input, cancellationToken: cancellationToken);
+                input.Position = 0;
+                if (properties?.EncryptionProperties == null)
+                {
+                    return (input, null);
+                }
+
+                MemoryStream ms = new ();
+
                 DecryptionContext context = await MdeEncryptionProcessor.DecryptStreamAsync(input, ms, encryptor, properties.EncryptionProperties, diagnosticsContext, cancellationToken);
                 if (context == null)
                 {
