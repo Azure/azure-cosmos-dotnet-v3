@@ -134,31 +134,39 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             {
                 if (jsonProcessor == JsonProcessor.Newtonsoft)
                 {
+                    Func<(JObject itemJObj, EncryptionProperties encryptionProperties), Task<DecryptionContext>> onMde = async item =>
+                    {
+                        DecryptionContext ctx = await this.JObjectEncryptionProcessor.DecryptObjectAsync(
+                            item.itemJObj,
+                            encryptor,
+                            item.encryptionProperties,
+                            diagnosticsContext,
+                            cancellationToken);
+
+                        output.Position = 0;
+                        EncryptionProcessor.BaseSerializer.WriteToStream(item.itemJObj, output);
+                        output.Position = 0;
+                        await input.DisposeAsync();
+                        return ctx;
+                    };
+
+                    Func<Task<DecryptionContext>> onNotEncrypted = () =>
+                    {
+                        if (input.CanSeek)
+                        {
+                            input.Position = 0;
+                        }
+
+                        return Task.FromResult<DecryptionContext>(null); // not encrypted (no MDE properties)
+                    };
+
+                    Func<Task<DecryptionContext>> onLegacyOther = () => Task.FromResult<DecryptionContext>(null);
+
                     return await this.HandleNewtonsoftDecryptAsync<DecryptionContext>(
                         input,
-                        onMde: async item =>
-                        {
-                            DecryptionContext ctx = await this.JObjectEncryptionProcessor.DecryptObjectAsync(
-                                item.itemJObj,
-                                encryptor,
-                                item.encryptionProperties,
-                                diagnosticsContext,
-                                cancellationToken);
-
-                            // Serialize directly into provided output stream (no intermediate MemoryStream)
-                            output.Position = 0;
-                            EncryptionProcessor.BaseSerializer.WriteToStream(item.itemJObj, output);
-                            output.Position = 0;
-                            await input.DisposeAsync();
-                            return ctx;
-                        },
-                        onNotEncrypted: async () =>
-                        {
-                            await input.CopyToAsync(output, cancellationToken);
-                            output.Position = 0;
-                            return null; // not encrypted
-                        },
-                        onLegacyOther: () => Task.FromResult<DecryptionContext>(null));
+                        onMde,
+                        onNotEncrypted,
+                        onLegacyOther);
                 }
 
                 this.ValidateSupportedStreamProcessor(jsonProcessor);
@@ -169,9 +177,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 (bool hasMde, EncryptionProperties streamingProps) = await TryReadMdeEncryptionPropertiesStreamingAsync(input, cancellationToken);
                 if (!hasMde)
                 {
-                    await input.CopyToAsync(output, cancellationToken);
-                    output.Position = 0;
-                    return null;
+                    if (input.CanSeek)
+                    {
+                        input.Position = 0; // allow fallback to read
+                    }
+
+                    return null; // legacy or unencrypted fallback
                 }
 
                 DecryptionContext ctx = await this.DecryptStreamAsync(input, output, encryptor, streamingProps, diagnosticsContext, cancellationToken);
@@ -334,7 +345,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 #pragma warning disable CS0618 // legacy algorithm support
             if (properties.EncryptionProperties.EncryptionAlgorithm != CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)
             {
-                throw new NotSupportedException($"Streaming mode is only allowed for {nameof(CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)}");
+                // Gracefully signal no MDE so caller can fall back to legacy Newtonsoft path.
+                return (false, null);
             }
 #pragma warning restore CS0618
 
