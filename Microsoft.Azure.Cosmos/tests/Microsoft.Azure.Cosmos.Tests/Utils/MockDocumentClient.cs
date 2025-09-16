@@ -249,7 +249,7 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
                             It.IsAny<bool>()
                         )
                 ).Returns(
-                (string collectionRid, Documents.Routing.Range<string> range, ITrace trace, bool forceRefresh, PartitionKeyDefinition partitionKeyDefinition)
+                (string collectionRid, Documents.Routing.Range<string> range, ITrace trace, PartitionKeyDefinition partitionKeyDefinition, bool forceRefresh)
                     => Task.FromResult<IReadOnlyList<PartitionKeyRange>>(
                         this.ResolveOverlapingPartitionKeyRanges(collectionRid, range, forceRefresh)));
 
@@ -261,7 +261,7 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
                         It.IsAny<PartitionKeyDefinition>(),
                         It.IsAny<bool>()
                     )
-            ).Returns((string collectionRid, string pkRangeId, ITrace trace, bool forceRefresh) =>
+            ).Returns((string collectionRid, string pkRangeId, ITrace trace,PartitionKeyDefinition partitionKeyDefinition, bool forceRefresh) =>
             Task.FromResult<PartitionKeyRange>(this.ResolvePartitionKeyRangeById(collectionRid, pkRangeId, forceRefresh)));
 
             this.MockGlobalEndpointManager = new Mock<GlobalEndpointManager>(this, new ConnectionPolicy(), false);

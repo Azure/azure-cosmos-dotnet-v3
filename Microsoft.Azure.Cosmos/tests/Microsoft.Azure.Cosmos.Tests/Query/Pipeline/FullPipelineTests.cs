@@ -368,7 +368,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 It.IsAny<bool>(),
                 It.IsAny<ITrace>(),
                 It.IsAny<PartitionKeyDefinition>()))
-                .Returns((string resourceLink, string collectionResourceId, IReadOnlyList<Documents.Routing.Range<string>> providedRanges, bool forceRefresh, ITrace trace) => Task.FromResult(partitionKeyRanges));
+                .Returns((string resourceLink, string collectionResourceId, IReadOnlyList<Documents.Routing.Range<string>> providedRanges, bool forceRefresh, ITrace trace, PartitionKeyDefinition partitionKeyDefinition) => Task.FromResult(partitionKeyRanges));
 
             mockClient.Setup(x => x.TryGetPartitionedQueryExecutionInfoAsync(
                 It.IsAny<SqlQuerySpec>(),
