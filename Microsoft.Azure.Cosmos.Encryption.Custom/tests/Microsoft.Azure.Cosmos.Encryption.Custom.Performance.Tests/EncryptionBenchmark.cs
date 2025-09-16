@@ -11,7 +11,28 @@
     [RPlotExporter]
     public partial class EncryptionBenchmark
     {
-        private static readonly byte[] DekData = Enumerable.Repeat((byte)0, 32).ToArray();
+        private static class RequestOptionsOverrideHelper
+        {
+            public static RequestOptions? Create(JsonProcessor processor)
+            {
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+                if (processor == JsonProcessor.Newtonsoft)
+                {
+                    return null;
+                }
+                return new ItemRequestOptions
+                {
+                    Properties = new System.Collections.Generic.Dictionary<string, object>
+                    {
+                        { "encryption-json-processor", processor }
+                    }
+                };
+#else
+                return null;
+#endif
+            }
+        }
+    private static readonly byte[] DekData = Enumerable.Repeat((byte)0, 32).ToArray();
         private static readonly DataEncryptionKeyProperties DekProperties = new(
                 "id",
                 CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
@@ -104,7 +125,7 @@
                 new MemoryStream(this.encryptedData!),
                 this.encryptor,
                 new CosmosDiagnosticsContext(),
-                this.JsonProcessor,
+                RequestOptionsOverrideHelper.Create(this.JsonProcessor),
                 CancellationToken.None);
         }
 
@@ -118,10 +139,11 @@
                 rms,
                 this.encryptor,
                 new CosmosDiagnosticsContext(),
-                this.JsonProcessor,
+                RequestOptionsOverrideHelper.Create(this.JsonProcessor),
                 CancellationToken.None);
         }
 #endif
+        // Local CreateRequestOptions removed in favor of shared RequestOptionsOverrideHelper.
 
         private EncryptionOptions CreateEncryptionOptions()
         {

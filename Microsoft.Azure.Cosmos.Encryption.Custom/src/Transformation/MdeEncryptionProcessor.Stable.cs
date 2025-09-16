@@ -78,7 +78,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 #else
             input.Dispose();
 #endif
-            return EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
+            // Direct serialize to a new recyclable MemoryStream to avoid intermediate large object allocations.
+            MemoryStream result = new (capacity: 1024);
+            EncryptionProcessor.BaseSerializer.WriteToStream(itemJObj, result);
+            return result;
         }
 
         internal async Task<DecryptionContext> DecryptObjectAsync(
