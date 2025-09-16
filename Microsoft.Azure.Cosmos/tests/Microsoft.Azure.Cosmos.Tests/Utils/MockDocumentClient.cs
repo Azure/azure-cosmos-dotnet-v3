@@ -236,7 +236,8 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
                             It.IsAny<string>(),
                             It.IsAny<CollectionRoutingMap>(),
                             It.IsAny<DocumentServiceRequest>(),
-                            It.IsAny<ITrace>()
+                            It.IsAny<ITrace>(),
+                            It.IsAny<PartitionKeyDefinition>()
                         )
                 ).Returns(Task.FromResult<CollectionRoutingMap>(null));
             this.partitionKeyRangeCache.Setup(
@@ -244,10 +245,11 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
                             It.IsAny<string>(),
                             It.IsAny<Documents.Routing.Range<string>>(),
                             It.IsAny<ITrace>(),
+                            It.IsAny<PartitionKeyDefinition>(),
                             It.IsAny<bool>()
                         )
                 ).Returns(
-                (string collectionRid, Documents.Routing.Range<string> range, ITrace trace, bool forceRefresh)
+                (string collectionRid, Documents.Routing.Range<string> range, ITrace trace, bool forceRefresh, PartitionKeyDefinition partitionKeyDefinition)
                     => Task.FromResult<IReadOnlyList<PartitionKeyRange>>(
                         this.ResolveOverlapingPartitionKeyRanges(collectionRid, range, forceRefresh)));
 
@@ -256,6 +258,7 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
                         It.IsAny<string>(),
                         It.IsAny<string>(),
                         It.IsAny<ITrace>(),
+                        It.IsAny<PartitionKeyDefinition>(),
                         It.IsAny<bool>()
                     )
             ).Returns((string collectionRid, string pkRangeId, ITrace trace, bool forceRefresh) =>

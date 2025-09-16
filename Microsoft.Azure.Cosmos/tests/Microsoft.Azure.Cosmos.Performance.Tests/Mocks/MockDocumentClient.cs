@@ -180,7 +180,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                     {
                         Tuple.Create(new PartitionKeyRange{ Id = "0", MinInclusive = "", MaxExclusive = "FF"}, (ServiceIdentity)null)
                     },
-                string.Empty);
+                string.Empty, null);
 
             this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null, null, false);
             this.partitionKeyRangeCache.Setup(
@@ -188,7 +188,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                             It.IsAny<string>(),
                             It.IsAny<CollectionRoutingMap>(),
                             It.IsAny<DocumentServiceRequest>(),
-                            It.IsAny<ITrace>()
+                            It.IsAny<ITrace>(),
+                            It.IsAny<PartitionKeyDefinition>()
                         )
                 ).Returns(Task.FromResult<CollectionRoutingMap>(routingMap));
 
@@ -207,6 +208,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                     It.IsAny<string>(),
                     It.IsAny<Documents.Routing.Range<string>>(),
                     It.IsAny<ITrace>(),
+                    It.IsAny<PartitionKeyDefinition>(),
                     It.IsAny<bool>()))
                 .Returns(Task.FromResult((IReadOnlyList<PartitionKeyRange>)result));
 

@@ -348,12 +348,12 @@
                 throw new NotImplementedException();
             }
 
-            public override Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(string resourceLink, string collectionResourceId, IReadOnlyList<Documents.Routing.Range<string>> providedRanges, bool forceRefresh, ITrace trace)
+            public override Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(string resourceLink, string collectionResourceId, IReadOnlyList<Documents.Routing.Range<string>> providedRanges, bool forceRefresh, ITrace trace, PartitionKeyDefinition partitionKeyDefinition)
             {
                 return Task.FromResult(this.targetPartitionKeyRanges.ToList());
             }
 
-            public override Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(string collectionResourceId, Documents.Routing.Range<string> range, bool forceRefresh = false)
+            public override Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(string collectionResourceId, Documents.Routing.Range<string> range, PartitionKeyDefinition partitionKeyDefinition, bool forceRefresh = false)
             {
                 throw new NotImplementedException();
             }

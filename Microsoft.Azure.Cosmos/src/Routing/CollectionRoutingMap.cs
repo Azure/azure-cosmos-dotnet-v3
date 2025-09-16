@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     /// </summary>
     internal sealed class CollectionRoutingMap
     {
+        private const string useLengthAwareComparatorEnvVar = "UseLengthAwareRangeComparator";
         /// <summary>
         /// Partition key range id to partition address and range.
         /// </summary>
@@ -29,6 +30,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly List<Range<string>> orderedRanges;
         private readonly HashSet<string> goneRanges;
         private readonly static int InvalidPkRangeId = -1;
+        private readonly PartitionKeyDefinition partitionKeyDefinition;
 
         internal int HighestNonOfflinePkRangeId { get; private set; }
 
@@ -49,7 +51,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             Dictionary<string, Tuple<PartitionKeyRange, ServiceIdentity>> rangeById,
             List<PartitionKeyRange> orderedPartitionKeyRanges,
             string collectionUniqueId,
-            string changeFeedNextIfNoneMatch)
+            string changeFeedNextIfNoneMatch,
+            PartitionKeyDefinition partitionKeyDefinition)
         {
             this.rangeById = rangeById;
             this.orderedPartitionKeyRanges = orderedPartitionKeyRanges;
@@ -82,11 +85,13 @@ namespace Microsoft.Azure.Cosmos.Routing
                     }
                     return range.Status == PartitionKeyRangeStatus.Offline ? CollectionRoutingMap.InvalidPkRangeId : pkId;
                 });
+            this.partitionKeyDefinition = partitionKeyDefinition;
         }
 
         public static CollectionRoutingMap TryCreateCompleteRoutingMap(
             IEnumerable<Tuple<PartitionKeyRange, ServiceIdentity>> ranges,
             string collectionUniqueId,
+            PartitionKeyDefinition partitionKeyDefinition,
             string changeFeedNextIfNoneMatch = null)
         {
             Dictionary<string, Tuple<PartitionKeyRange, ServiceIdentity>> rangeById =
@@ -106,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return null;
             }
 
-            return new CollectionRoutingMap(rangeById, orderedRanges, collectionUniqueId, changeFeedNextIfNoneMatch);
+            return new CollectionRoutingMap(rangeById, orderedRanges, collectionUniqueId, changeFeedNextIfNoneMatch, partitionKeyDefinition);
         }
 
         public string CollectionUniqueId { get; private set; }
@@ -138,17 +143,39 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             SortedList<string, PartitionKeyRange> partitionRanges = new SortedList<string, PartitionKeyRange>();
 
+            string useLengthAwareRangeComparator = Environment.GetEnvironmentVariable(useLengthAwareComparatorEnvVar);
+            bool lengthAwareComparison = !string.IsNullOrEmpty(useLengthAwareRangeComparator) && useLengthAwareRangeComparator.Equals(bool.FalseString, StringComparison.OrdinalIgnoreCase);
+
+            bool useLengthAwareComparison = false;
+            // Enable length-aware comparison for provided partition EPK ranges only when the container uses a hierarchical partition key (MultiHash).
+            if (!lengthAwareComparison && this.partitionKeyDefinition != null && this.partitionKeyDefinition.Kind == PartitionKind.MultiHash)
+            {
+                useLengthAwareComparison = true;
+            }
+
             // Algorithm: Use binary search to find the positions of the min key and max key in the routing map
             // Then within that two positions, check for overlapping partition key ranges
             foreach (Range<string> providedRange in providedPartitionKeyRanges)
             {
-                int minIndex = this.orderedRanges.BinarySearch(providedRange, Range<string>.MinComparer.Instance);
+                IComparer<Range<string>> minComparer = Range<string>.MinComparer.Instance;
+                if (useLengthAwareComparison)
+                {
+                    minComparer = Range<string>.LengthAwareMinComparer.Instance;
+                }
+
+                int minIndex = this.orderedRanges.BinarySearch(providedRange, minComparer);
                 if (minIndex < 0)
                 {
                     minIndex = Math.Max(0, (~minIndex) - 1);
                 }
 
-                int maxIndex = this.orderedRanges.BinarySearch(providedRange, Range<string>.MaxComparer.Instance);
+                IComparer<Range<string>> maxComparer = Range<string>.MaxComparer.Instance;
+                if (useLengthAwareComparison)
+                {
+                    maxComparer = Range<string>.LengthAwareMaxComparer.Instance;
+                }
+
+                int maxIndex = this.orderedRanges.BinarySearch(providedRange, maxComparer);
                 if (maxIndex < 0)
                 {
                     maxIndex = Math.Min(this.OrderedPartitionKeyRanges.Count - 1, ~maxIndex);
@@ -216,7 +243,8 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public CollectionRoutingMap TryCombine(
             IEnumerable<Tuple<PartitionKeyRange, ServiceIdentity>> ranges,
-            string changeFeedNextIfNoneMatch)
+            string changeFeedNextIfNoneMatch,
+            PartitionKeyDefinition partitionKeyDefinition)
         {
             HashSet<string> newGoneRanges = new HashSet<string>(ranges.SelectMany(tuple => tuple.Item1.Parents ?? Enumerable.Empty<string>()));
             newGoneRanges.UnionWith(this.goneRanges);
@@ -243,7 +271,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return null;
             }
 
-            return new CollectionRoutingMap(newRangeById, newOrderedRanges, this.CollectionUniqueId, changeFeedNextIfNoneMatch);
+            return new CollectionRoutingMap(newRangeById, newOrderedRanges, this.CollectionUniqueId, changeFeedNextIfNoneMatch, partitionKeyDefinition);
         }
 
         private class MinPartitionKeyTupleComparer : IComparer<Tuple<PartitionKeyRange, ServiceIdentity>>

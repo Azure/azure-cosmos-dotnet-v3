@@ -103,6 +103,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     containerRId,
                     FeedRangeEpk.FullRange.Range,
                     trace,
+                    null,
                     forceRefresh: true);
 
                 // Assert.
@@ -216,6 +217,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         containerRId,
                         FeedRangeEpk.FullRange.Range,
                         trace,
+                        null,
                         forceRefresh: true);
 
                     // Assert.
@@ -245,6 +247,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         containerRId,
                         FeedRangeEpk.FullRange.Range,
                         trace,
+                        null,
                         forceRefresh: true));
 
                     // Assert.
