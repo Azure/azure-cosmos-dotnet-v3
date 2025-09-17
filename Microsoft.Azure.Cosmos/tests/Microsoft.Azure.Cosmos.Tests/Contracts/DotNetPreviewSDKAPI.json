@@ -87,11 +87,9 @@
           ],
           "MethodInfo": "Boolean get_IsTimeToLiveExpired();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Boolean IsTimeToLiveExpired[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"timeToLiveExpired\")]": {
+        "Boolean IsTimeToLiveExpired": {
           "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "Boolean IsTimeToLiveExpired;CanRead:True;CanWrite:True;Boolean get_IsTimeToLiveExpired();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Int64 get_Lsn()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -108,18 +106,14 @@
           ],
           "MethodInfo": "Int64 get_PreviousLsn();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Int64 Lsn[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"lsn\")]": {
+        "Int64 Lsn": {
           "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "Int64 Lsn;CanRead:True;CanWrite:True;Int64 get_Lsn();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Int64 PreviousLsn[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"previousImageLSN\")]": {
+        "Int64 PreviousLsn": {
           "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "Int64 PreviousLsn;CanRead:True;CanWrite:True;Int64 get_PreviousLsn();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.ChangeFeedOperationType get_OperationType()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -129,12 +123,9 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedOperationType get_OperationType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.ChangeFeedOperationType OperationType[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"operationType\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]": {
+        "Microsoft.Azure.Cosmos.ChangeFeedOperationType OperationType": {
           "Type": "Property",
-          "Attributes": [
-            "JsonConverterAttribute",
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedOperationType OperationType;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.ChangeFeedOperationType get_OperationType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.Collections.Generic.List`1[System.ValueTuple`2[System.String,System.Object]] get_PartitionKey()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -144,19 +135,14 @@
           ],
           "MethodInfo": "System.Collections.Generic.List`1[System.ValueTuple`2[System.String,System.Object]] get_PartitionKey();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Collections.Generic.List`1[System.ValueTuple`2[System.String,System.Object]] PartitionKey[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"partitionKey\")]": {
+        "System.Collections.Generic.List`1[System.ValueTuple`2[System.String,System.Object]] PartitionKey": {
           "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "System.Collections.Generic.List`1[System.ValueTuple`2[System.String,System.Object]] PartitionKey;CanRead:True;CanWrite:True;System.Collections.Generic.List`1[System.ValueTuple`2[System.String,System.Object]] get_PartitionKey();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.DateTime ConflictResolutionTimestamp[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"crts\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]": {
+        "System.DateTime ConflictResolutionTimestamp": {
           "Type": "Property",
-          "Attributes": [
-            "JsonConverterAttribute",
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "System.DateTime ConflictResolutionTimestamp;CanRead:True;CanWrite:True;System.DateTime get_ConflictResolutionTimestamp();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.DateTime get_ConflictResolutionTimestamp()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -173,11 +159,9 @@
           ],
           "MethodInfo": "System.String get_Id();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String Id[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"id\")]": {
+        "System.String Id": {
           "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "System.String Id;CanRead:True;CanWrite:True;System.String get_Id();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void .ctor()": {
