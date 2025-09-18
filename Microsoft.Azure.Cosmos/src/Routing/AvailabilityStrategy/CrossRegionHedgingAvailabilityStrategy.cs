@@ -239,7 +239,6 @@ namespace Microsoft.Azure.Cosmos
                             ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
                                 HedgeContext,
                                 hedgeRegions);
-                            // Note that the target region can be seperate than the actual region that serviced the request depending on the scenario
                             ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
                                 ResponseRegion,
                                 hedgeResponse.TargetRegionName);
