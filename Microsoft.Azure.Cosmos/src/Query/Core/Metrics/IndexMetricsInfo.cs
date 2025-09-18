@@ -3,13 +3,9 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
     using System.Text;
-    using Microsoft.Azure.Cosmos.Core;
-    using Microsoft.Azure.Cosmos.Core.Utf8;
-    using Newtonsoft.Json;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
 
     /// <summary>
     /// Query index utilization data for composite indexes (sub-structure of the Index Metrics class) in the Azure Cosmos database service.
@@ -37,10 +33,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             this.PotentialEntity = potentialEntity;
         }
 
-        [JsonProperty("Utilized")]
+        [JsonPropertyName("Utilized")]
         public IndexMetricsInfoEntity UtilizedEntity { get; }
 
-        [JsonProperty("Potential")]
+        [JsonPropertyName("Potential")]
         public IndexMetricsInfoEntity PotentialEntity { get; }
 
         /// <summary>
@@ -62,13 +58,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 // Decode and deserialize the response string
                 string decodedString = System.Web.HttpUtility.UrlDecode(delimitedString, Encoding.UTF8);
 
-                result = JsonConvert.DeserializeObject<IndexMetricsInfo>(decodedString, new JsonSerializerSettings()
+                result = JsonSerializer.Deserialize<IndexMetricsInfo>(decodedString, new JsonSerializerOptions()
                     {
                         // Allowing null values to be resilient to Json structure change
-                        MissingMemberHandling = MissingMemberHandling.Ignore,
-                        NullValueHandling = NullValueHandling.Ignore,
-                        // Ignore parsing error encountered in deserialization
-                        Error = (sender, parsingErrorEvent) => parsingErrorEvent.ErrorContext.Handled = true
+                        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
                     }) ?? null;
 
                 return true;

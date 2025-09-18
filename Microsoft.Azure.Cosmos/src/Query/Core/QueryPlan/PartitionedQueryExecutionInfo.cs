@@ -6,7 +6,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 {
     using System;
     using System.Collections.Generic;
-    using Newtonsoft.Json;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
     using Constants = Documents.Constants;
 
     internal sealed class PartitionedQueryExecutionInfo
@@ -16,21 +17,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             this.Version = Constants.PartitionedQueryExecutionInfo.CurrentVersion;
         }
 
-        [JsonProperty(Constants.Properties.PartitionedQueryExecutionInfoVersion)]
+        [JsonPropertyName(Constants.Properties.PartitionedQueryExecutionInfoVersion)]
         public int Version
         {
             get;
             private set;
         }
 
-        [JsonProperty(Constants.Properties.QueryInfo)]
+        [JsonPropertyName(Constants.Properties.QueryInfo)]
         public QueryInfo QueryInfo
         {
             get;
             set;
         }
 
-        [JsonProperty(Constants.Properties.QueryRanges)]
+        [JsonPropertyName(Constants.Properties.QueryRanges)]
         public List<Documents.Routing.Range<string>> QueryRanges
         {
             get;
@@ -39,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
         // Change to the below after Direct package upgrade
         // [JsonProperty(Constants.Properties.HybridSearchQueryInfo)]
-        [JsonProperty("hybridSearchQueryInfo")]
+        [JsonPropertyName("hybridSearchQueryInfo")]
         public HybridSearchQueryInfo HybridSearchQueryInfo
         {
             get;
@@ -48,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
         public override string ToString()
         {
-            return JsonConvert.SerializeObject(this);
+            return JsonSerializer.Serialize(this);
         }
 
         public static bool TryParse(string serializedQueryPlan, out PartitionedQueryExecutionInfo partitionedQueryExecutionInfo)
@@ -60,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
             try
             {
-                partitionedQueryExecutionInfo = JsonConvert.DeserializeObject<PartitionedQueryExecutionInfo>(serializedQueryPlan);
+                partitionedQueryExecutionInfo = JsonSerializer.Deserialize<PartitionedQueryExecutionInfo>(serializedQueryPlan);
                 return true;
             }
             catch (JsonException)

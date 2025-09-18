@@ -6,108 +6,105 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 {
     using System.Collections.Generic;
     using System.Linq;
+    using System.Text.Json.Serialization;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
 
-    [JsonObject(MemberSerialization.OptIn)]
     internal sealed class QueryInfo
     {
-        [JsonProperty("distinctType")]
-        [JsonConverter(typeof(StringEnumConverter))]
+        [JsonPropertyName("distinctType")]
         public DistinctQueryType DistinctType
         {
             get;
             set;
         }
 
-        [JsonProperty("top")]
+        [JsonPropertyName("top")]
         public uint? Top
         {
             get;
             set;
         }
 
-        [JsonProperty("offset")]
+        [JsonPropertyName("offset")]
         public uint? Offset
         {
             get;
             set;
         }
 
-        [JsonProperty("limit")]
+        [JsonPropertyName("limit")]
         public uint? Limit
         {
             get;
             set;
         }
 
-        [JsonProperty("orderBy", ItemConverterType = typeof(StringEnumConverter))]
+        [JsonPropertyName("orderBy")]
         public IReadOnlyList<SortOrder> OrderBy
         {
             get;
             set;
         }
 
-        [JsonProperty("orderByExpressions")]
+        [JsonPropertyName("orderByExpressions")]
         public IReadOnlyList<string> OrderByExpressions
         {
             get;
             set;
         }
 
-        [JsonProperty("groupByExpressions")]
+        [JsonPropertyName("groupByExpressions")]
         public IReadOnlyList<string> GroupByExpressions
         {
             get;
             set;
         }
 
-        [JsonProperty("groupByAliases")]
+        [JsonPropertyName("groupByAliases")]
         public IReadOnlyList<string> GroupByAliases
         {
             get;
             set;
         }
 
-        [JsonProperty("aggregates", ItemConverterType = typeof(StringEnumConverter))]
+        [JsonPropertyName("aggregates")]
         public IReadOnlyList<AggregateOperator> Aggregates
         {
             get;
             set;
         }
 
-        [JsonProperty("groupByAliasToAggregateType", ItemConverterType = typeof(StringEnumConverter))]
+        [JsonPropertyName("groupByAliasToAggregateType")]
         public IReadOnlyDictionary<string, AggregateOperator?> GroupByAliasToAggregateType
         {
             get;
             set;
         }
 
-        [JsonProperty("rewrittenQuery")]
+        [JsonPropertyName("rewrittenQuery")]
         public string RewrittenQuery
         {
             get;
             set;
         }
 
-        [JsonProperty("hasSelectValue")]
+        [JsonPropertyName("hasSelectValue")]
         public bool HasSelectValue
         {
             get;
             set;
         }
 
-        [JsonProperty("dCountInfo")]
+        [JsonPropertyName("dCountInfo")]
         public DCountInfo DCountInfo
         {
             get;
             set;
         }
 
-        [JsonProperty("hasNonStreamingOrderBy")]
+        [JsonPropertyName("hasNonStreamingOrderBy")]
         public bool HasNonStreamingOrderBy
         {
             get;

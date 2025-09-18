@@ -7,6 +7,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -14,7 +16,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
-    using Newtonsoft.Json;
 
     internal abstract partial class TakeQueryPipelineStage : QueryPipelineStageBase
     {
@@ -269,7 +270,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                 /// <summary>
                 /// Gets the limit to the number of document drained for the remainder of the query.
                 /// </summary>
-                [JsonProperty("limit")]
+                [JsonPropertyName("limit")]
                 public int Limit
                 {
                     get;
@@ -278,7 +279,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                 /// <summary>
                 /// Gets the continuation token for the source component of the query.
                 /// </summary>
-                [JsonProperty("sourceToken")]
+                [JsonPropertyName("sourceToken")]
                 public string SourceToken
                 {
                     get;
@@ -300,7 +301,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
 
                     try
                     {
-                        limitContinuationToken = JsonConvert.DeserializeObject<LimitContinuationToken>(value);
+                        limitContinuationToken = JsonSerializer.Deserialize<LimitContinuationToken>(value);
                         return true;
                     }
                     catch (JsonException)
@@ -315,7 +316,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                 /// <returns>The string version of the continuation token that can be passed in a response header.</returns>
                 public override string ToString()
                 {
-                    return JsonConvert.SerializeObject(this);
+                    return JsonSerializer.Serialize(this);
                 }
             }
 
@@ -338,7 +339,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                 /// <summary>
                 /// Gets the limit to the number of document drained for the remainder of the query.
                 /// </summary>
-                [JsonProperty("top")]
+                [JsonPropertyName("top")]
                 public int Top
                 {
                     get;
@@ -347,7 +348,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                 /// <summary>
                 /// Gets the continuation token for the source component of the query.
                 /// </summary>
-                [JsonProperty("sourceToken")]
+                [JsonPropertyName("sourceToken")]
                 public string SourceToken
                 {
                     get;
@@ -369,7 +370,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
 
                     try
                     {
-                        topContinuationToken = JsonConvert.DeserializeObject<TopContinuationToken>(value);
+                        topContinuationToken = JsonSerializer.Deserialize<TopContinuationToken>(value);
                         return true;
                     }
                     catch (JsonException)
@@ -384,7 +385,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                 /// <returns>The string version of the continuation token that can be passed in a response header.</returns>
                 public override string ToString()
                 {
-                    return JsonConvert.SerializeObject(this);
+                    return JsonSerializer.Serialize(this);
                 }
             }
         }

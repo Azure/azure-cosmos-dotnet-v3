@@ -8,6 +8,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -15,7 +17,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
-    using Newtonsoft.Json;
 
     internal abstract partial class SkipQueryPipelineStage : QueryPipelineStageBase
     {
@@ -177,13 +178,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip
                 /// <summary>
                 /// The number of items to skip in the query.
                 /// </summary>
-                [JsonProperty("offset")]
+                [JsonPropertyName("offset")]
                 public int Offset { get; }
 
                 /// <summary>
                 /// Gets the continuation token for the source component of the query.
                 /// </summary>
-                [JsonProperty("sourceToken")]
+                [JsonPropertyName("sourceToken")]
                 public string SourceToken { get; }
 
                 /// <summary>
@@ -202,7 +203,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip
 
                     try
                     {
-                        offsetContinuationToken = JsonConvert.DeserializeObject<OffsetContinuationToken>(value);
+                        offsetContinuationToken = JsonSerializer.Deserialize<OffsetContinuationToken>(value);
                         return true;
                     }
                     catch (JsonException)
@@ -217,7 +218,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip
                 /// <returns>The string version of the continuation token that can be passed in a response header.</returns>
                 public override string ToString()
                 {
-                    return JsonConvert.SerializeObject(this);
+                    return JsonSerializer.Serialize(this);
                 }
             }
         }

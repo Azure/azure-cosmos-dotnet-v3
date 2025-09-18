@@ -3,14 +3,13 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 {
-    using System;
     using System.Collections.Generic;
-    using Newtonsoft.Json;
+    using System.Text.Json.Serialization;
 
     /// <summary>
     /// Query index utilization data for composite indexes (sub-structure of the Index Metrics class) in the Azure Cosmos database service.
     /// </summary>
-    #if INTERNAL
+#if INTERNAL
 #pragma warning disable SA1600
 #pragma warning disable CS1591
     public
@@ -25,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// <param name="indexDocumentExpressions">The string list representation of the composite index.</param>
         /// <param name="indexImpactScore">The index impact score.</param>
         [JsonConstructor]
-        private CompositeIndexIndexMetrics(
+        public CompositeIndexIndexMetrics(
             IReadOnlyList<string> indexDocumentExpressions,
             string indexImpactScore)
         {
@@ -36,13 +35,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// <summary>
         /// String list representation of index paths of a composite index.
         /// </summary>
-        [JsonProperty(PropertyName = "IndexSpecs")]
+        [JsonPropertyName("IndexSpecs")]
         public IReadOnlyList<string> IndexSpecs { get; }
 
         /// <summary>
         /// The index impact score of the composite index.
         /// </summary>
-        [JsonProperty(PropertyName = "IndexImpactScore")]
+        [JsonPropertyName("IndexImpactScore")]
         public string IndexImpactScore { get; }
     }
 }

@@ -6,10 +6,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Text;
-    using Microsoft.Azure.Cosmos.Core;
-    using Microsoft.Azure.Cosmos.Core.Utf8;
-    using Newtonsoft.Json;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
 
     /// <summary>
     /// Query index utilization metrics in the Azure Cosmos database service.
@@ -76,13 +74,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             {
                 string decodedString = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(delimitedString));
 
-                result = JsonConvert.DeserializeObject<IndexUtilizationInfo>(decodedString, new JsonSerializerSettings()
+                result = JsonSerializer.Deserialize<IndexUtilizationInfo>(decodedString, new JsonSerializerOptions()
                 {
-                    // Allowing null values to be resilient to Json structure change
-                    MissingMemberHandling = MissingMemberHandling.Ignore,
-                    NullValueHandling = NullValueHandling.Ignore,
-                    // Ignore parsing error encountered in desrialization
-                    Error = (sender, parsingErrorEvent) => parsingErrorEvent.ErrorContext.Handled = true
+                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
                 }) ?? IndexUtilizationInfo.Empty;
 
                 return true;

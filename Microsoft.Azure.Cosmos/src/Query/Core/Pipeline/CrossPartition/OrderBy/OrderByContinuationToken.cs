@@ -7,13 +7,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Text.Json.Serialization;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
     using Microsoft.Azure.Documents.Routing;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// <para>
@@ -133,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         ///  {"compositeToken":{"token":"+RID:OpY0AN-mFAACAAAAAAAABA==#RT:1#TRC:1#RTD:qdTAEA==","range":{"min":"05C1D9CD673398","max":"05C1E399CD6732"}}
         /// ]]>
         /// </example>
-        [JsonProperty(PropertyNames.CompositeToken)]
+        [JsonPropertyName(PropertyNames.CompositeToken)]
         public ParallelContinuationToken ParallelContinuationToken
         {
             get;
@@ -153,7 +153,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         /// <remarks>
         /// This is an array to support multi item orderby.
         /// </remarks>>
-        [JsonProperty(PropertyNames.OrderByItems)]
+        [JsonPropertyName(PropertyNames.OrderByItems)]
         public IReadOnlyList<OrderByItem> OrderByItems
         {
             get;
@@ -172,7 +172,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         /// <remarks>
         /// This is an array to support multi item orderby.
         /// </remarks>>
-        [JsonProperty(PropertyNames.ResumeValues)]
+        [JsonPropertyName(PropertyNames.ResumeValues)]
         public IReadOnlyList<SqlQueryResumeValue> ResumeValues
         {
             get;
@@ -193,7 +193,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         ///  "rid":"OpY0AN-mFAACAAAAAAAABA=="
         /// ]]>
         /// </example>
-        [JsonProperty(PropertyNames.Rid)]
+        [JsonPropertyName(PropertyNames.Rid)]
         public string Rid
         {
             get;
@@ -219,7 +219,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         /// </para>
         /// The skip count keeps track of that information. 
         /// </summary> 
-        [JsonProperty(PropertyNames.SkipCount)]
+        [JsonPropertyName(PropertyNames.SkipCount)]
         public int SkipCount
         {
             get;
@@ -242,7 +242,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         /// ]]>
         /// </para>
         /// </example>
-        [JsonProperty(PropertyNames.Filter)]
+        [JsonPropertyName(PropertyNames.Filter)]
         public string Filter
         {
             get;

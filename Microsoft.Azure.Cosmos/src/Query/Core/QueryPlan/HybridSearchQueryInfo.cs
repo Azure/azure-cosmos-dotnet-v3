@@ -5,60 +5,60 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 {
     using System.Collections.Generic;
-    using Newtonsoft.Json;
+    using System.Text.Json.Serialization;
 
     internal sealed class HybridSearchQueryInfo
     {
-        [JsonProperty("globalStatisticsQuery")]
+        [JsonPropertyName("globalStatisticsQuery")]
         public string GlobalStatisticsQuery
         {
             get;
             set;
         }
 
-        [JsonProperty("componentQueryInfos")]
+        [JsonPropertyName("componentQueryInfos")]
         public List<QueryInfo> ComponentQueryInfos
         {
             get;
             set;
         }
 
-        [JsonProperty("componentWithoutPayloadQueryInfos")]
+        [JsonPropertyName("componentWithoutPayloadQueryInfos")]
         public List<QueryInfo> ComponentWithoutPayloadQueryInfos
         {
             get;
             set;
         }
 
-        [JsonProperty("projectionQueryInfo")]
+        [JsonPropertyName("projectionQueryInfo")]
         public QueryInfo ProjectionQueryInfo
         {
             get;
             set;
         }
 
-        [JsonProperty("componentWeights")]
+        [JsonPropertyName("componentWeights")]
         public List<double> ComponentWeights
         {
             get;
             set;
         }
 
-        [JsonProperty("skip")]
+        [JsonPropertyName("skip")]
         public uint? Skip
         {
             get;
             set;
         }
 
-        [JsonProperty("take")]
+        [JsonPropertyName("take")]
         public uint? Take
         {
             get;
             set;
         }
 
-        [JsonProperty("requiresGlobalStatistics")]
+        [JsonPropertyName("requiresGlobalStatistics")]
         public bool RequiresGlobalStatistics
         {
             get;
