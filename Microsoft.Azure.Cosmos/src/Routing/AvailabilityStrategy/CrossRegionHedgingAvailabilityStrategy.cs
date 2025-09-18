@@ -25,6 +25,7 @@ namespace Microsoft.Azure.Cosmos
     {
         private const string HedgeContext = "Hedge Context";
         private const string HedgeConfig = "Hedge Config";
+        private const string ResponseRegion = "Response Region";
 
         /// <summary>
         /// Latency threshold which activates the first region hedging 
@@ -206,6 +207,10 @@ namespace Microsoft.Azure.Cosmos
                                     ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
                                         HedgeContext,
                                         hedgeRegions.Take(requestNumber + 1));
+                                    // Note that the target region can be seperate than the actual region that serviced the request depending on the scenario
+                                    ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
+                                        ResponseRegion,
+                                        hedgeResponse.TargetRegionName);
                                     return hedgeResponse.ResponseMessage;
                                 }
                             }
@@ -234,6 +239,9 @@ namespace Microsoft.Azure.Cosmos
                             ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
                                 HedgeContext,
                                 hedgeRegions);
+                            ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
+                                ResponseRegion,
+                                hedgeResponse.TargetRegionName);
                             return hedgeResponse.ResponseMessage;
                         }
                     }
@@ -278,6 +286,7 @@ namespace Microsoft.Azure.Cosmos
                 return await this.RequestSenderAndResultCheckAsync(
                     sender,
                     clonedRequest,
+                    hedgeRegions.ElementAt(requestNumber),
                     cancellationToken,
                     cancellationTokenSource, 
                     trace);
@@ -287,6 +296,7 @@ namespace Microsoft.Azure.Cosmos
         private async Task<HedgingResponse> RequestSenderAndResultCheckAsync(
             Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender,
             RequestMessage request,
+            string targetRegionName,
             CancellationToken cancellationToken,
             CancellationTokenSource cancellationTokenSource,
             ITrace trace)
@@ -301,10 +311,10 @@ namespace Microsoft.Azure.Cosmos
                         cancellationTokenSource.Cancel();
                     }
 
-                    return new HedgingResponse(true, response);
+                    return new HedgingResponse(true, response, targetRegionName);
                 }
 
-                return new HedgingResponse(false, response);
+                return new HedgingResponse(false, response, targetRegionName);
             }
             catch (OperationCanceledException oce) when (cancellationTokenSource.IsCancellationRequested)
             {
@@ -346,11 +356,13 @@ namespace Microsoft.Azure.Cosmos
         {
             public readonly bool IsNonTransient;
             public readonly ResponseMessage ResponseMessage;
+            public readonly string TargetRegionName;
 
-            public HedgingResponse(bool isNonTransient, ResponseMessage responseMessage)
+            public HedgingResponse(bool isNonTransient, ResponseMessage responseMessage, string targetRegionName)
             {
                 this.IsNonTransient = isNonTransient;
                 this.ResponseMessage = responseMessage;
+                this.TargetRegionName = targetRegionName;
             }
         }
     }
