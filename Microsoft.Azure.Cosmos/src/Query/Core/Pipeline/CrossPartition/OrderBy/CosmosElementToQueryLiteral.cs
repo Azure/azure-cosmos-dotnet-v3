@@ -7,10 +7,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
     using System;
     using System.Collections.Generic;
     using System.Text;
+    using System.Text.Json;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Documents.Routing;
-    using Newtonsoft.Json;
 
     internal sealed class CosmosElementToQueryLiteral : ICosmosElementVisitor
     {
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
         public void Visit(CosmosString cosmosString)
         {
-            this.stringBuilder.Append(JsonConvert.SerializeObject(cosmosString.Value.ToString(), DefaultJsonSerializationSettings.Value));
+            this.stringBuilder.Append(JsonSerializer.Serialize(cosmosString.Value.ToString()));
         }
 
         private sealed class CosmosNumberToQueryLiteral : ICosmosNumberVisitor
