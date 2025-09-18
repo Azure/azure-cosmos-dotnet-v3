@@ -1680,6 +1680,22 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedStreamHandlerWithManualCheckpoint onChangesDelegate);
 
         /// <summary>
+        /// Rerank a list of documents using semantic reranking.
+        /// This method uses a semantic reranker to score and reorder the provided documents
+        /// based on their relevance to the given reranking context.
+        /// </summary>
+        /// <typeparam name="TKey">The type of the key in the reranked results.</typeparam>
+        /// <typeparam name="TValue">The type of the value in the reranked results.</typeparam>
+        /// <param name="renrankContext"> The context or query string to use for reranking the documents.</param>
+        /// <param name="documents"> A list of documents to be reranked</param>
+        /// <param name="options"> (Optional) The options for the semantic reranking request.</param>
+        /// <returns> The reranking results, typically including the reranked documents and their scores. </returns>
+        public abstract Task<IReadOnlyDictionary<TKey, TValue>> SemanticRerankAsync<TKey, TValue>(
+            string renrankContext,
+            IEnumerable<string> documents,
+            SemanticRerankRequestOptions options = null);
+
+        /// <summary>
         /// Deletes all items in the Container with the specified <see cref="PartitionKey"/> value.
         /// Starts an asynchronous Cosmos DB background operation which deletes all items in the Container with the specified value. 
         /// The asynchronous Cosmos DB background operation runs using a percentage of user RUs.
