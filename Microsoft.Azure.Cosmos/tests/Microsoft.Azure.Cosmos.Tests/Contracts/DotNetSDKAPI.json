@@ -8029,6 +8029,11 @@
           "Attributes": [],
           "MethodInfo": "System.String GermanyWestCentral;IsInitOnly:False;IsStatic:True;"
         },
+        "System.String IndiaSouthCentral": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String IndiaSouthCentral;IsInitOnly:False;IsStatic:True;"
+        },
         "System.String IndonesiaCentral": {
           "Type": "Field",
           "Attributes": [],
@@ -8104,6 +8109,11 @@
           "Attributes": [],
           "MethodInfo": "System.String NorthCentralUS;IsInitOnly:False;IsStatic:True;"
         },
+        "System.String NortheastUS5": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String NortheastUS5;IsInitOnly:False;IsStatic:True;"
+        },
         "System.String NorthEurope": {
           "Type": "Field",
           "Attributes": [],
@@ -8128,6 +8138,16 @@
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "System.String QatarCentral;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String SingaporeCentral": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String SingaporeCentral;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String SingaporeNorth": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String SingaporeNorth;IsInitOnly:False;IsStatic:True;"
         },
         "System.String SouthAfricaNorth": {
           "Type": "Field",
