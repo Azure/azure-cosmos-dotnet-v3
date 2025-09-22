@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             Dictionary<string, int> compressedPaths = new ();
 
-            using Utf8JsonWriter writer = new (outputStream);
+            await using Utf8JsonWriter writer = new (outputStream);
 
             using PooledBufferWriter<byte> staging = new (InitialBufferSize);
 
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             JsonSerializer.Serialize(writer, encryptionProperties);
             writer.WriteEndObject();
 
-            writer.Flush();
+            await writer.FlushAsync(cancellationToken);
             outputStream.Position = 0;
 
             long TransformEncryptBuffer(ReadOnlySpan<byte> buffer)
