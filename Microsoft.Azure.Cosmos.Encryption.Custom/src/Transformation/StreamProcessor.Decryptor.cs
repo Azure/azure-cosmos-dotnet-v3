@@ -66,7 +66,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             HashSet<string> encryptedPaths = properties.EncryptedPaths as HashSet<string> ?? new (properties.EncryptedPaths, StringComparer.Ordinal);
 
-            bool isFinalBlock = false; // Matches previous semantics: final iteration is empty read with no leftover.
+            bool inputCompleted = false;    // Physical end-of-stream observed
+            bool isFinalBlock = false;      // Logical final block (EOF and no buffered data)
             bool isIgnoredBlock = false;
 
             string decryptPropertyName = null;
@@ -83,9 +84,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 {
                     stagingBuffer.Advance(read);
                 }
+                else
+                {
+                    inputCompleted = true; // EOF
+                }
 
                 int dataSize = stagingBuffer.Count;
-                isFinalBlock = dataSize == 0; // empty read with no leftover
+                isFinalBlock = inputCompleted && dataSize == 0;
 
                 long bytesConsumed = TransformDecryptBuffer(stagingBuffer.WrittenSpan.Slice(0, dataSize));
                 int consumed = (int)bytesConsumed;
@@ -96,7 +101,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     stagingBuffer.ConsumePrefix(consumed);
                 }
 
-                if ((remaining == dataSize) && !isFinalBlock)
+                // Truncated / incomplete JSON detection: EOF reached, buffer has data, but no forward progress.
+                if (remaining == dataSize && inputCompleted && dataSize > 0)
+                {
+                    throw new InvalidOperationException("Incomplete or truncated JSON input.");
+                }
+
+                if ((remaining == dataSize) && !inputCompleted)
                 {
                     stagingBuffer.EnsureCapacity((stagingBuffer.Count * 2) + 1);
                 }
