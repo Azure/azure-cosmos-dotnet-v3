@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             JsonReaderState state = new (StreamProcessor.JsonReaderOptions);
 
-            bool isFinalBlock = false; // Matches previous semantics: becomes true only after empty read with no leftover.
+            bool isFinalBlock = false;
 
             Utf8JsonWriter encryptionPayloadWriter = null;
             string encryptPropertyName = null;
@@ -54,13 +54,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             while (!isFinalBlock)
             {
-                // Ensure at least 1 byte of free capacity to attempt a read.
-                if (staging.FreeCapacity == 0)
-                {
-                    staging.EnsureCapacity(staging.Count == 0 ? InitialBufferSize : staging.Count * 2);
-                }
-
-                int read = await inputStream.ReadAsync(staging.GetInternalArray().AsMemory(staging.Count, staging.FreeCapacity), cancellationToken);
+                // Request at least 1 byte of writable space; writer auto-grows as needed.
+                int read = await inputStream.ReadAsync(staging.GetMemory(1), cancellationToken);
                 if (read > 0)
                 {
                     staging.Advance(read);
@@ -69,20 +64,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 int dataSize = staging.Count;
                 isFinalBlock = dataSize == 0; // empty read with no leftover
 
-                long bytesConsumed = TransformEncryptBuffer(staging.WrittenSpan.Slice(0, dataSize));
-
-                int consumed = (int)bytesConsumed;
-                int remaining = dataSize - consumed;
-
-                if (consumed > 0)
+                if (dataSize > 0)
                 {
-                    staging.ConsumePrefix(consumed);
-                }
-
-                // If no progress was made (remaining == dataSize) and not final, grow to read more.
-                if ((remaining == dataSize) && !isFinalBlock)
-                {
-                    staging.EnsureCapacity((staging.Count * 2) + 1);
+                    long bytesConsumed = TransformEncryptBuffer(staging.WrittenSpan[..dataSize]);
+                    int consumed = (int)bytesConsumed;
+                    if (consumed > 0)
+                    {
+                        staging.ConsumePrefix(consumed);
+                    }
                 }
             }
 
