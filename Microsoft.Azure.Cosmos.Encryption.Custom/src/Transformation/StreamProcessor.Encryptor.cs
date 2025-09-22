@@ -46,48 +46,53 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             JsonReaderState state = new (StreamProcessor.JsonReaderOptions);
 
-            bool inputCompleted = false; // Reached physical end of input stream
-            bool isFinalBlock = false;   // Passed to Utf8JsonReader (input completed OR no more data expected)
+            // Master-like loop structure (similar to decryptor) with pooled writer usage and truncated JSON detection retained.
+            bool isFinalBlock = false;      // Final iteration: EOF reached and no buffered data remains
+            bool inputCompleted = false;    // Physical end-of-stream observed (ReadAsync returned 0)
 
             Utf8JsonWriter encryptionPayloadWriter = null;
             string encryptPropertyName = null;
             PooledBufferWriter<byte> payloadBuffer = null;
 
-            while (!inputCompleted || stagingBuffer.Count > 0)
+            while (!isFinalBlock)
             {
-                // If input not yet exhausted, attempt to read more.
-                if (!inputCompleted)
+                if (stagingBuffer.FreeCapacity == 0)
                 {
-                    int read = await inputStream.ReadAsync(stagingBuffer.GetMemory(1), cancellationToken);
-                    if (read > 0)
-                    {
-                        stagingBuffer.Advance(read);
-                    }
-                    else
-                    {
-                        inputCompleted = true; // No further bytes will arrive.
-                    }
+                    stagingBuffer.EnsureCapacity(stagingBuffer.Count == 0 ? InitialBufferSize : stagingBuffer.Count * 2);
+                }
+
+                int read = await inputStream.ReadAsync(stagingBuffer.GetInternalArray().AsMemory(stagingBuffer.Count, stagingBuffer.FreeCapacity), cancellationToken);
+                if (read > 0)
+                {
+                    stagingBuffer.Advance(read);
+                }
+                else
+                {
+                    inputCompleted = true; // EOF reached
                 }
 
                 int dataSize = stagingBuffer.Count;
-                isFinalBlock = inputCompleted; // When input is exhausted, remaining buffer is the final block.
+                isFinalBlock = inputCompleted && dataSize == 0; // Empty buffer after EOF => final block
 
-                if (dataSize == 0)
-                {
-                    // Nothing left to process; exit.
-                    break;
-                }
-
-                long bytesConsumed = TransformEncryptBuffer(stagingBuffer.WrittenSpan[..dataSize]);
+                long bytesConsumed = TransformEncryptBuffer(stagingBuffer.WrittenSpan.Slice(0, dataSize));
                 int consumed = (int)bytesConsumed;
+                int remaining = dataSize - consumed;
+
                 if (consumed > 0)
                 {
                     stagingBuffer.ConsumePrefix(consumed);
                 }
-                else if (inputCompleted)
+
+                // Truncated / incomplete JSON detection: EOF observed, bytes remain, but no forward progress.
+                if (remaining == dataSize && inputCompleted && dataSize > 0)
                 {
-                    // No progress and no more data will arrive -> truncated / invalid JSON.
                     throw new InvalidOperationException("Incomplete or truncated JSON input.");
+                }
+
+                if ((remaining == dataSize) && !inputCompleted)
+                {
+                    // No progress yet, attempt to read more by growing buffer.
+                    stagingBuffer.EnsureCapacity((stagingBuffer.Count * 2) + 1);
                 }
             }
 

@@ -93,12 +93,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Transformation
             // We need the encryption properties to call DecryptStreamAsync.
             // Simplest: parse once, locate the property name matching Constants.EncryptedInfo, and deserialize via System.Text.Json into a dynamic then manual construction is not available.
             // For brevity/low risk: reuse Newtonsoft if available, else quick STJ scan.
-            using var reader = new StreamReader(encrypted, Encoding.UTF8, detectEncodingFromByteOrderMarks: false, bufferSize: 1024, leaveOpen: true);
-            string encryptedText = reader.ReadToEnd();
-            int idx = encryptedText.LastIndexOf("\"__ei\""); // Constants.EncryptedInfo is likely "__ei"; adjust if different.
-            Assert.IsTrue(idx > 0, "Encrypted info property not found");
-            // Reset again for streaming decrypt
-            encrypted.Position = 0;
+            // Validate that encryption properties were appended (property name Constants.EncryptedInfo present at root)
+            using (JsonDocument verifyDoc = JsonDocument.Parse(encrypted, new JsonDocumentOptions { AllowTrailingCommas = true }))
+            {
+                Assert.IsTrue(verifyDoc.RootElement.TryGetProperty(Constants.EncryptedInfo, out _), "Encrypted info property not found");
+            }
+
+            encrypted.Position = 0; // Reset again for streaming decrypt
 
             EncryptionProperties props = new EncryptionProperties(
                 encryptionFormatVersion: 3,
