@@ -2,13 +2,11 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-#if NET8_0_OR_GREATER
-#pragma warning disable SA1514, SA1516, SA1214, SA1513, SA1515, SA1401
+﻿#if NET8_0_OR_GREATER
 namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
     using System;
     using System.Buffers;
-    using System.Diagnostics;
     using System.Runtime.CompilerServices;
 
     /// <summary>
@@ -22,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         ClearOnDispose = 1,
         ClearOnExpand = 2,
         ClearOnReset = 4,
+
         /// <summary>
         /// Convenience mask for full clearing lifecycle.
         /// </summary>
@@ -31,11 +30,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     internal class PooledBufferWriter<T> : IBufferWriter<T>, IDisposable
     {
         private const int DefaultInitialCapacity = 256;
+        private readonly ArrayPool<T> pool;
+        private readonly PooledBufferWriterOptions options;
         private T[] buffer;
         private int count;
         private bool disposed;
-        private readonly ArrayPool<T> pool;
-        private readonly PooledBufferWriterOptions options;
 
         public PooledBufferWriter(
             int initialCapacity = DefaultInitialCapacity,
@@ -87,12 +86,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
             }
+
             if (this.count > this.buffer.Length - count)
             {
                 throw new InvalidOperationException("Cannot advance past the end of the buffer.");
             }
+
             this.count += count;
-        }
+    }
 
         public Memory<T> GetMemory(int sizeHint = 0)
         {
@@ -101,9 +102,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 throw new ArgumentOutOfRangeException(nameof(sizeHint));
             }
+
             this.EnsureCapacityForAdditional(sizeHint);
             return this.buffer.AsMemory(this.count);
-        }
+    }
 
         public Span<T> GetSpan(int sizeHint = 0)
         {
@@ -112,9 +114,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 throw new ArgumentOutOfRangeException(nameof(sizeHint));
             }
+
             this.EnsureCapacityForAdditional(sizeHint);
             return this.buffer.AsSpan(this.count);
-        }
+    }
 
         /// <summary>
         /// Ensures the underlying array can contain at least <paramref name="capacity"/> elements total.
@@ -126,12 +129,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 throw new ArgumentOutOfRangeException(nameof(capacity));
             }
+
             if (capacity <= this.buffer.Length)
             {
                 return;
             }
+
             this.Grow(capacity);
-        }
+    }
 
         /// <summary>
         /// Resets the logical length to zero. Optionally clears content if requested by options.
@@ -143,8 +148,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 Array.Clear(this.buffer, 0, this.count);
             }
+
             this.count = 0;
-        }
+    }
 
         public T[] ToArray()
         {
@@ -153,10 +159,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 return Array.Empty<T>();
             }
+
             T[] copy = new T[this.count];
             Array.Copy(this.buffer, 0, copy, 0, this.count);
             return copy;
-        }
+    }
 
         /// <summary>
         /// Shifts the first <paramref name="bytes"/> elements out of the written region, keeping any remaining bytes.
@@ -170,17 +177,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 throw new ArgumentOutOfRangeException(nameof(bytes));
             }
+
             if (bytes == 0)
             {
                 return; // Nothing consumed.
             }
+
             int remaining = this.count - bytes;
             if (remaining != 0)
             {
                 Array.Copy(this.buffer, bytes, this.buffer, 0, remaining);
             }
+
             this.count = remaining;
-        }
+    }
 
         protected void EnsureCapacityForAdditional(int sizeHint)
         {
@@ -190,8 +200,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 return;
             }
+
             this.Grow(required);
-        }
+    }
 
         private void Grow(int requiredCapacity)
         {
@@ -200,6 +211,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 newCapacity = requiredCapacity;
             }
+
             if ((uint)newCapacity > Array.MaxLength)
             {
                 newCapacity = Array.MaxLength;
@@ -211,18 +223,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 Array.Copy(old, 0, newBuffer, 0, this.count);
             }
+
             if (old.Length != 0)
             {
                 bool clear = (this.options & PooledBufferWriterOptions.ClearOnExpand) != 0 && RuntimeHelpers.IsReferenceOrContainsReferences<T>();
                 this.pool.Return(old, clearArray: clear);
             }
+
             this.buffer = newBuffer;
-        }
+    }
 
         private void ThrowIfDisposed()
         {
             ObjectDisposedException.ThrowIf(this.disposed, this);
-        }
+    }
 
         public void Dispose()
         {
@@ -230,19 +244,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 return;
             }
+
             this.disposed = true;
             if (this.buffer.Length != 0)
             {
                 bool clear = (this.options & PooledBufferWriterOptions.ClearOnDispose) != 0 && RuntimeHelpers.IsReferenceOrContainsReferences<T>();
                 this.pool.Return(this.buffer, clearArray: clear);
             }
+
             this.buffer = Array.Empty<T>();
             this.count = 0;
-        }
-        internal T[] GetInternalArray()
-        {
-            return this.buffer;
-        }
+    }
+
+        internal T[] GetInternalArray() => this.buffer;
 
         /// <summary>
         /// Gets the remaining free capacity in the current underlying buffer.
@@ -250,5 +264,4 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         internal int FreeCapacity => this.buffer.Length - this.count;
     }
 }
-#pragma warning restore SA1514, SA1516, SA1214, SA1513, SA1515, SA1401
 #endif

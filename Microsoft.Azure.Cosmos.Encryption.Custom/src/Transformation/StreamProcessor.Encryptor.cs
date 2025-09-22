@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             Utf8JsonWriter encryptionPayloadWriter = null;
             string encryptPropertyName = null;
-            RentArrayBufferWriter bufferWriter = null;
+            PooledBufferWriter<byte> bufferWriter = null;
 
             while (!isFinalBlock)
             {
@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                         case JsonTokenType.StartObject:
                             if (encryptPropertyName != null && encryptionPayloadWriter == null)
                             {
-                                bufferWriter = new RentArrayBufferWriter();
+                                bufferWriter = new PooledBufferWriter<byte>();
                                 encryptionPayloadWriter = new Utf8JsonWriter(bufferWriter);
                                 encryptionPayloadWriter.WriteStartObject();
                             }
@@ -141,7 +141,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             if (reader.CurrentDepth == 1 && encryptionPayloadWriter != null)
                             {
                                 currentWriter.Flush();
-                                (byte[] bytes, int length) = bufferWriter.WrittenBuffer;
+                                byte[] bytes = bufferWriter.GetInternalArray();
+                                int length = bufferWriter.Count;
                                 ReadOnlySpan<byte> encryptedBytes = TransformEncryptPayload(bytes, length, TypeMarker.Object);
                                 writer.WriteBase64StringValue(encryptedBytes);
 
@@ -158,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                         case JsonTokenType.StartArray:
                             if (encryptPropertyName != null && encryptionPayloadWriter == null)
                             {
-                                bufferWriter = new RentArrayBufferWriter();
+                                bufferWriter = new PooledBufferWriter<byte>();
                                 encryptionPayloadWriter = new Utf8JsonWriter(bufferWriter);
                                 encryptionPayloadWriter.WriteStartArray();
                             }
@@ -173,7 +174,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             if (reader.CurrentDepth == 1 && encryptionPayloadWriter != null)
                             {
                                 currentWriter.Flush();
-                                (byte[] bytes, int length) = bufferWriter.WrittenBuffer;
+                                byte[] bytes = bufferWriter.GetInternalArray();
+                                int length = bufferWriter.Count;
                                 ReadOnlySpan<byte> encryptedBytes = TransformEncryptPayload(bytes, length, TypeMarker.Array);
                                 writer.WriteBase64StringValue(encryptedBytes);
 

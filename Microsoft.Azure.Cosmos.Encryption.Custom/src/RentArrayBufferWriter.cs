@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Encryption.Custom;
 
 #if NET8_0_OR_GREATER
-#pragma warning disable SA1513, SA1515
 using System;
 using System.Buffers;
 using System.IO;
@@ -27,6 +26,7 @@ internal sealed class RentArrayBufferWriter : IBufferWriter<byte>, IDisposable
         {
             throw new ArgumentOutOfRangeException(nameof(initialCapacity));
         }
+
         // Always clear on dispose & expand for safety (encryption scenarios handle sensitive data)
         this.inner = new PooledBufferWriter<byte>(initialCapacity, options: PooledBufferWriterOptions.ClearOnDispose | PooledBufferWriterOptions.ClearOnExpand | PooledBufferWriterOptions.ClearOnReset);
         this.committed = 0;
@@ -68,5 +68,4 @@ internal sealed class RentArrayBufferWriter : IBufferWriter<byte>, IDisposable
 
     public void Dispose() => this.inner.Dispose();
 }
-#pragma warning restore SA1513, SA1515
 #endif

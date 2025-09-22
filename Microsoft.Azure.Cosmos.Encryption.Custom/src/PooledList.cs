@@ -2,8 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-#if NET8_0_OR_GREATER
-#pragma warning disable SA1514, SA1516, SA1214, SA1513, SA1515, SA1401
+﻿#if NET8_0_OR_GREATER
 namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
     using System;
@@ -36,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 this.ThrowIfDisposed();
                 return this.writer.Count;
             }
-        }
+    }
 
         public T this[int index]
         {
@@ -47,8 +46,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 {
                     throw new ArgumentOutOfRangeException(nameof(index));
                 }
+
                 return this.writer.GetInternalArray()[index];
             }
+
             set
             {
                 this.ThrowIfDisposed();
@@ -56,9 +57,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 {
                     throw new ArgumentOutOfRangeException(nameof(index));
                 }
+
                 this.writer.GetInternalArray()[index] = value;
             }
-        }
+    }
 
         public void Add(T item)
         {
@@ -66,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Span<T> span = this.writer.GetSpan(1);
             span[0] = item;
             this.writer.Advance(1);
-        }
+    }
 
         public void AddRange(ReadOnlySpan<T> items)
         {
@@ -75,10 +77,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 return;
             }
+
             this.writer.EnsureCapacity(this.writer.Count + items.Length);
             items.CopyTo(this.writer.GetInternalArray().AsSpan(this.writer.Count));
             this.writer.Advance(items.Length);
-        }
+    }
 
         public void Clear() => this.writer.Clear();
 
@@ -88,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             this.ThrowIfDisposed();
             return new Enumerator(this.writer.GetInternalArray(), this.writer.Count);
-        }
+    }
 
         IEnumerator<T> IEnumerable<T>.GetEnumerator() => this.GetEnumerator();
 
@@ -100,14 +103,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 return;
             }
+
             this.disposed = true;
+
             this.writer.Dispose();
         }
 
-        private void ThrowIfDisposed()
-        {
-            ObjectDisposedException.ThrowIf(this.disposed, this);
-        }
+        private void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(this.disposed, this);
 
         internal struct Enumerator : IEnumerator<T>
         {
@@ -134,6 +136,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     this.index = next;
                     return true;
                 }
+
                 return false;
             }
 
@@ -145,5 +148,4 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         }
     }
 }
-#pragma warning restore SA1514, SA1516, SA1214, SA1513, SA1515, SA1401
 #endif
