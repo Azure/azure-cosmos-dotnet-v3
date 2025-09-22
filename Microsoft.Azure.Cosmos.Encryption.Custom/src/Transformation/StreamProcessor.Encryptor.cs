@@ -297,14 +297,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             return (buffer, length);
         }
 
-        private static (TypeMarker typeMarker, byte[] buffer, int length) SerializeNumber(ReadOnlySpan<byte> utf8bytes, ArrayPoolManager arrayPoolManager)
+        private static (TypeMarker typeMarker, byte[] buffer, int length) SerializeNumber(ReadOnlySpan<byte> utf8Bytes, ArrayPoolManager arrayPoolManager)
         {
-            if (System.Buffers.Text.Utf8Parser.TryParse(utf8bytes, out long longValue, out int consumedLong) && consumedLong == utf8bytes.Length)
+            if (System.Buffers.Text.Utf8Parser.TryParse(utf8Bytes, out long longValue, out int consumedLong) && consumedLong == utf8Bytes.Length)
             {
                 return Serialize(longValue, arrayPoolManager);
             }
 
-            if (System.Buffers.Text.Utf8Parser.TryParse(utf8bytes, out double doubleValue, out int consumedDouble) && consumedDouble == utf8bytes.Length)
+            if (System.Buffers.Text.Utf8Parser.TryParse(utf8Bytes, out double doubleValue, out int consumedDouble) && consumedDouble == utf8Bytes.Length)
             {
                 // Reject non-finite numbers to keep JSON contract compatibility
                 if (double.IsFinite(doubleValue))
