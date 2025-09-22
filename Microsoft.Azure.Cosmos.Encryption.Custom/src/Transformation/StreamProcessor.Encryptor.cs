@@ -42,36 +42,52 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             await using Utf8JsonWriter writer = new (outputStream);
 
-            using PooledBufferWriter<byte> staging = new (InitialBufferSize);
+            using PooledBufferWriter<byte> stagingBuffer = new (InitialBufferSize);
 
             JsonReaderState state = new (StreamProcessor.JsonReaderOptions);
 
-            bool isFinalBlock = false;
+            bool inputCompleted = false; // Reached physical end of input stream
+            bool isFinalBlock = false;   // Passed to Utf8JsonReader (input completed OR no more data expected)
 
             Utf8JsonWriter encryptionPayloadWriter = null;
             string encryptPropertyName = null;
-            PooledBufferWriter<byte> bufferWriter = null;
+            PooledBufferWriter<byte> payloadBuffer = null;
 
-            while (!isFinalBlock)
+            while (!inputCompleted || stagingBuffer.Count > 0)
             {
-                // Request at least 1 byte of writable space; writer auto-grows as needed.
-                int read = await inputStream.ReadAsync(staging.GetMemory(1), cancellationToken);
-                if (read > 0)
+                // If input not yet exhausted, attempt to read more.
+                if (!inputCompleted)
                 {
-                    staging.Advance(read);
+                    int read = await inputStream.ReadAsync(stagingBuffer.GetMemory(1), cancellationToken);
+                    if (read > 0)
+                    {
+                        stagingBuffer.Advance(read);
+                    }
+                    else
+                    {
+                        inputCompleted = true; // No further bytes will arrive.
+                    }
                 }
 
-                int dataSize = staging.Count;
-                isFinalBlock = dataSize == 0; // empty read with no leftover
+                int dataSize = stagingBuffer.Count;
+                isFinalBlock = inputCompleted; // When input is exhausted, remaining buffer is the final block.
 
-                if (dataSize > 0)
+                if (dataSize == 0)
                 {
-                    long bytesConsumed = TransformEncryptBuffer(staging.WrittenSpan[..dataSize]);
-                    int consumed = (int)bytesConsumed;
-                    if (consumed > 0)
-                    {
-                        staging.ConsumePrefix(consumed);
-                    }
+                    // Nothing left to process; exit.
+                    break;
+                }
+
+                long bytesConsumed = TransformEncryptBuffer(stagingBuffer.WrittenSpan[..dataSize]);
+                int consumed = (int)bytesConsumed;
+                if (consumed > 0)
+                {
+                    stagingBuffer.ConsumePrefix(consumed);
+                }
+                else if (inputCompleted)
+                {
+                    // No progress and no more data will arrive -> truncated / invalid JSON.
+                    throw new InvalidOperationException("Incomplete or truncated JSON input.");
                 }
             }
 
@@ -110,8 +126,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                         case JsonTokenType.StartObject:
                             if (encryptPropertyName != null && encryptionPayloadWriter == null)
                             {
-                                bufferWriter = new PooledBufferWriter<byte>();
-                                encryptionPayloadWriter = new Utf8JsonWriter(bufferWriter);
+                                payloadBuffer = new PooledBufferWriter<byte>();
+                                encryptionPayloadWriter = new Utf8JsonWriter(payloadBuffer);
                                 encryptionPayloadWriter.WriteStartObject();
                             }
                             else
@@ -130,8 +146,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             if (reader.CurrentDepth == 1 && encryptionPayloadWriter != null)
                             {
                                 currentWriter.Flush();
-                                byte[] bytes = bufferWriter.GetInternalArray();
-                                int length = bufferWriter.Count;
+                                byte[] bytes = payloadBuffer.GetInternalArray();
+                                int length = payloadBuffer.Count;
                                 ReadOnlySpan<byte> encryptedBytes = TransformEncryptPayload(bytes, length, TypeMarker.Object);
                                 writer.WriteBase64StringValue(encryptedBytes);
 
@@ -140,16 +156,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                 encryptionPayloadWriter.Dispose();
 #pragma warning restore VSTHRD103 // Call async methods when in an async method
                                 encryptionPayloadWriter = null;
-                                bufferWriter.Dispose();
-                                bufferWriter = null;
+                                payloadBuffer.Dispose();
+                                payloadBuffer = null;
                             }
 
                             break;
                         case JsonTokenType.StartArray:
                             if (encryptPropertyName != null && encryptionPayloadWriter == null)
                             {
-                                bufferWriter = new PooledBufferWriter<byte>();
-                                encryptionPayloadWriter = new Utf8JsonWriter(bufferWriter);
+                                payloadBuffer = new PooledBufferWriter<byte>();
+                                encryptionPayloadWriter = new Utf8JsonWriter(payloadBuffer);
                                 encryptionPayloadWriter.WriteStartArray();
                             }
                             else
@@ -163,8 +179,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             if (reader.CurrentDepth == 1 && encryptionPayloadWriter != null)
                             {
                                 currentWriter.Flush();
-                                byte[] bytes = bufferWriter.GetInternalArray();
-                                int length = bufferWriter.Count;
+                                byte[] bytes = payloadBuffer.GetInternalArray();
+                                int length = payloadBuffer.Count;
                                 ReadOnlySpan<byte> encryptedBytes = TransformEncryptPayload(bytes, length, TypeMarker.Array);
                                 writer.WriteBase64StringValue(encryptedBytes);
 
@@ -173,8 +189,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                 encryptionPayloadWriter.Dispose();
 #pragma warning restore VSTHRD103 // Call async methods when in an async method
                                 encryptionPayloadWriter = null;
-                                bufferWriter.Dispose();
-                                bufferWriter = null;
+                                payloadBuffer.Dispose();
+                                payloadBuffer = null;
                             }
 
                             break;

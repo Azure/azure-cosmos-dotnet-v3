@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             using Utf8JsonWriter writer = new (outputStream);
 
-            using PooledBufferWriter<byte> staging = new (InitialBufferSize);
+            using PooledBufferWriter<byte> stagingBuffer = new (InitialBufferSize);
 
             JsonReaderState state = new (StreamProcessor.JsonReaderOptions);
 
@@ -73,32 +73,32 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             while (!isFinalBlock)
             {
-                if (staging.FreeCapacity == 0)
+                if (stagingBuffer.FreeCapacity == 0)
                 {
-                    staging.EnsureCapacity(staging.Count == 0 ? InitialBufferSize : staging.Count * 2);
+                    stagingBuffer.EnsureCapacity(stagingBuffer.Count == 0 ? InitialBufferSize : stagingBuffer.Count * 2);
                 }
 
-                int read = await inputStream.ReadAsync(staging.GetInternalArray().AsMemory(staging.Count, staging.FreeCapacity), cancellationToken);
+                int read = await inputStream.ReadAsync(stagingBuffer.GetInternalArray().AsMemory(stagingBuffer.Count, stagingBuffer.FreeCapacity), cancellationToken);
                 if (read > 0)
                 {
-                    staging.Advance(read);
+                    stagingBuffer.Advance(read);
                 }
 
-                int dataSize = staging.Count;
+                int dataSize = stagingBuffer.Count;
                 isFinalBlock = dataSize == 0; // empty read with no leftover
 
-                long bytesConsumed = TransformDecryptBuffer(staging.WrittenSpan.Slice(0, dataSize));
+                long bytesConsumed = TransformDecryptBuffer(stagingBuffer.WrittenSpan.Slice(0, dataSize));
                 int consumed = (int)bytesConsumed;
                 int remaining = dataSize - consumed;
 
                 if (consumed > 0)
                 {
-                    staging.ConsumePrefix(consumed);
+                    stagingBuffer.ConsumePrefix(consumed);
                 }
 
                 if ((remaining == dataSize) && !isFinalBlock)
                 {
-                    staging.EnsureCapacity((staging.Count * 2) + 1);
+                    stagingBuffer.EnsureCapacity((stagingBuffer.Count * 2) + 1);
                 }
             }
 
