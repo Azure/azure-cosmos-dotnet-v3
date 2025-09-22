@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
     using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Encryption.Custom; // For PooledBufferWriter
     using Microsoft.Data.Encryption.Cryptography.Serializers;
 
     internal partial class StreamProcessor
@@ -59,41 +60,45 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             using Utf8JsonWriter writer = new (outputStream);
 
-            byte[] buffer = arrayPoolManager.Rent(InitialBufferSize);
+            using PooledBufferWriter<byte> staging = new (InitialBufferSize);
 
             JsonReaderState state = new (StreamProcessor.JsonReaderOptions);
 
             HashSet<string> encryptedPaths = properties.EncryptedPaths as HashSet<string> ?? new (properties.EncryptedPaths, StringComparer.Ordinal);
 
-            int leftOver = 0;
-
-            bool isFinalBlock = false;
+            bool isFinalBlock = false; // Matches previous semantics: final iteration is empty read with no leftover.
             bool isIgnoredBlock = false;
 
             string decryptPropertyName = null;
 
             while (!isFinalBlock)
             {
-                int dataLength = await inputStream.ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), cancellationToken);
-                int dataSize = dataLength + leftOver;
-                isFinalBlock = dataSize == 0;
-                long bytesConsumed = 0;
-
-                // processing itself here
-                bytesConsumed = TransformDecryptBuffer(buffer.AsSpan(0, dataSize));
-
-                leftOver = dataSize - (int)bytesConsumed;
-
-                // we need to scale out buffer
-                if (leftOver == dataSize)
+                if (staging.FreeCapacity == 0)
                 {
-                    byte[] newBuffer = arrayPoolManager.Rent(buffer.Length * 2);
-                    buffer.AsSpan().CopyTo(newBuffer);
-                    buffer = newBuffer;
+                    staging.EnsureCapacity(staging.Count == 0 ? InitialBufferSize : staging.Count * 2);
                 }
-                else if (leftOver != 0)
+
+                int read = await inputStream.ReadAsync(staging.GetInternalArray().AsMemory(staging.Count, staging.FreeCapacity), cancellationToken);
+                if (read > 0)
                 {
-                    buffer.AsSpan(dataSize - leftOver, leftOver).CopyTo(buffer);
+                    staging.Advance(read);
+                }
+
+                int dataSize = staging.Count;
+                isFinalBlock = dataSize == 0; // empty read with no leftover
+
+                long bytesConsumed = TransformDecryptBuffer(staging.WrittenSpan.Slice(0, dataSize));
+                int consumed = (int)bytesConsumed;
+                int remaining = dataSize - consumed;
+
+                if (consumed > 0)
+                {
+                    staging.ConsumePrefix(consumed);
+                }
+
+                if ((remaining == dataSize) && !isFinalBlock)
+                {
+                    staging.EnsureCapacity((staging.Count * 2) + 1);
                 }
             }
 
