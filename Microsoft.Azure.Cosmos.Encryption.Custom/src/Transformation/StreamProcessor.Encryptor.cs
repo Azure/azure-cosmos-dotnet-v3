@@ -48,6 +48,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             int leftOver = 0;
 
             bool isFinalBlock = false;
+            bool rootValidated = false;
 
             Utf8JsonWriter encryptionPayloadWriter = null;
             string encryptPropertyName = null;
@@ -59,6 +60,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 int dataSize = dataLength + leftOver;
                 isFinalBlock = dataSize == 0;
                 long bytesConsumed = 0;
+
+                // Root validation (only once). Require first structural token to be StartObject; reject StartArray.
+                if (!rootValidated && dataSize > 0)
+                {
+                    rootValidated = ValidateRoot(buffer.AsSpan(0, dataSize), isFinalBlock);
+                    if (isFinalBlock && !rootValidated)
+                    {
+                        throw new NotSupportedException("Streaming encryption requires a non-empty JSON object root.");
+                    }
+                }
 
                 bytesConsumed = TransformEncryptBuffer(buffer.AsSpan(0, dataSize));
 
@@ -277,6 +288,32 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             }
         }
 
+        private static bool ValidateRoot(ReadOnlySpan<byte> buffer, bool isFinalBlock)
+        {
+            Utf8JsonReader probe = new Utf8JsonReader(buffer, isFinalBlock, new JsonReaderState(StreamProcessor.JsonReaderOptions));
+            while (probe.Read())
+            {
+                JsonTokenType t = probe.TokenType;
+                if (t == JsonTokenType.StartObject)
+                {
+                    return true;
+                }
+                if (t == JsonTokenType.StartArray)
+                {
+                    throw new NotSupportedException("Streaming encryption requires the JSON document root to be an object. Root arrays are not supported.");
+                }
+                if (t == JsonTokenType.Comment || t == JsonTokenType.None)
+                {
+                    continue; // Skip non-structural tokens at start
+                }
+
+                // Any other first structural token is invalid for this encryption contract.
+                throw new NotSupportedException("Streaming encryption requires a JSON object as the root element.");
+            }
+
+            return false; // Not enough data yet to decide.
+        }
+
         private static (byte[] buffer, int length) Serialize(bool value, ArrayPoolManager arrayPoolManager)
         {
             int byteCount = StreamProcessor.SqlBoolSerializer.GetSerializedMaxByteCount();
@@ -305,6 +342,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             throw new InvalidOperationException("Unsupported Number type");
         }
 
+
         private static (TypeMarker typeMarker, byte[] buffer, int length) Serialize(long value, ArrayPoolManager arrayPoolManager)
         {
             int byteCount = StreamProcessor.SqlLongSerializer.GetSerializedMaxByteCount();
@@ -313,6 +351,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             return (TypeMarker.Long, buffer, length);
         }
+
 
         private static (TypeMarker typeMarker, byte[] buffer, int length) Serialize(double value, ArrayPoolManager arrayPoolManager)
         {
