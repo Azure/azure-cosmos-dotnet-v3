@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             JsonProcessor jsonProcessor = this.GetRequestedJsonProcessor(requestOptions);
 
-            using (diagnosticsContext.CreateScope(EncryptionDiagnostics.ScopeDecryptSelectProcessorPrefix + jsonProcessor))
+            using (diagnosticsContext.CreateScope(EncryptionDiagnostics.ScopeDecryptModeSelectionPrefix + jsonProcessor))
             {
                 if (jsonProcessor == JsonProcessor.Newtonsoft)
                 {
@@ -130,7 +130,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             JsonProcessor jsonProcessor = this.GetRequestedJsonProcessor(requestOptions);
 
-            using (diagnosticsContext.CreateScope(EncryptionDiagnostics.ScopeDecryptStreamingProvidedOutputSelectProcessorPrefix + jsonProcessor))
+            using (diagnosticsContext.CreateScope(EncryptionDiagnostics.ScopeDecryptModeSelectionPrefix + jsonProcessor))
             {
                 if (jsonProcessor == JsonProcessor.Newtonsoft)
                 {

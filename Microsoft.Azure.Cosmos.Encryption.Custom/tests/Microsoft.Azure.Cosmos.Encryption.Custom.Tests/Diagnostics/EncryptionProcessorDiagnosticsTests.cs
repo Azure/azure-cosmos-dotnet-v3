@@ -36,8 +36,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
             catch (NotSupportedException)
             {
             }
-            AssertScopePresent(ctx, "EncryptionProcessor.Decrypt.SelectProcessor.Newtonsoft");
-            AssertScopeAbsent(ctx, "EncryptionProcessor.Decrypt.SelectProcessor.Stream");
+            AssertScopePresent(ctx, "EncryptionProcessor.Decrypt.Newtonsoft");
+            AssertScopeAbsent(ctx, "EncryptionProcessor.Decrypt.Stream");
             AssertScopeAbsent(ctx, "EncryptionProcessor.DecryptStreamImpl.Mde");
         }
 
@@ -57,8 +57,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
             catch (NotSupportedException)
             {
             }
-            AssertScopePresent(ctx, "EncryptionProcessor.Decrypt.StreamingProvidedOutput.SelectProcessor.Newtonsoft");
-            AssertScopeAbsent(ctx, "EncryptionProcessor.Decrypt.StreamingProvidedOutput.SelectProcessor.Stream");
+            AssertScopePresent(ctx, "EncryptionProcessor.Decrypt.Newtonsoft");
+            AssertScopeAbsent(ctx, "EncryptionProcessor.Decrypt.Stream");
             AssertScopeAbsent(ctx, "EncryptionProcessor.DecryptStreamImpl.Mde"); // Newtonsoft path shouldn't include impl scope
         }
 
@@ -77,8 +77,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
             catch (NotSupportedException)
             {
             }
-            AssertScopePresent(ctx, "EncryptionProcessor.Decrypt.SelectProcessor.Stream");
-            AssertScopeAbsent(ctx, "EncryptionProcessor.Decrypt.SelectProcessor.Newtonsoft");
+            AssertScopePresent(ctx, "EncryptionProcessor.Decrypt.Stream");
+            AssertScopeAbsent(ctx, "EncryptionProcessor.Decrypt.Newtonsoft");
             AssertScopePresent(ctx, "EncryptionProcessor.DecryptStreamImpl.Mde");
         }
 
@@ -98,8 +98,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
             catch (NotSupportedException)
             {
             }
-            AssertScopePresent(ctx, "EncryptionProcessor.Decrypt.StreamingProvidedOutput.SelectProcessor.Stream");
-            AssertScopeAbsent(ctx, "EncryptionProcessor.Decrypt.StreamingProvidedOutput.SelectProcessor.Newtonsoft");
+            AssertScopePresent(ctx, "EncryptionProcessor.Decrypt.Stream");
+            AssertScopeAbsent(ctx, "EncryptionProcessor.Decrypt.Newtonsoft");
             AssertScopePresent(ctx, "EncryptionProcessor.DecryptStreamImpl.Mde");
         }
     #endif

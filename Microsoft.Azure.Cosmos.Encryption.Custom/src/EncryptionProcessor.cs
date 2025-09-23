@@ -29,8 +29,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         private static readonly MdeEncryptionProcessor MdeEncryptionProcessor = new ();
 
-        // JsonProcessorPropertyBag contains the property bag key and override parsing logic.
-
         /// <remarks>
         /// If there isn't any PathsToEncrypt, input stream will be returned without any modification.
         /// Else input stream will be disposed, and a new stream is returned.

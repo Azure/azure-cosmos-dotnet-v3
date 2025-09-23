@@ -5,8 +5,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
     internal static class EncryptionDiagnostics
     {
-        internal const string ScopeDecryptSelectProcessorPrefix = "EncryptionProcessor.Decrypt.SelectProcessor.";
-        internal const string ScopeDecryptStreamingProvidedOutputSelectProcessorPrefix = "EncryptionProcessor.Decrypt.StreamingProvidedOutput.SelectProcessor.";
+        // Unified (preview) diagnostic prefix for selecting the JSON processing mode (Newtonsoft vs Stream)
+        internal const string ScopeDecryptModeSelectionPrefix = "EncryptionProcessor.Decrypt.";
         internal const string ScopeDecryptStreamImplMde = "EncryptionProcessor.DecryptStreamImpl.Mde";
         internal const string ScopeDeserializeAndDecryptResponseAsync = "EncryptionProcessor.DeserializeAndDecryptResponseAsync";
     }

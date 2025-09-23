@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.IsNull(decryptedObj.Property(Constants.EncryptedInfo));
             Assert.IsNotNull(ctx);
             Assert.IsTrue(ctx.DecryptionInfoList.First().PathsDecrypted.All(p => TestDoc.PathsToEncrypt.Contains(p)));
-            Assert.IsTrue(diagDecrypt.Scopes.Any(s => s.StartsWith(EncryptionDiagnostics.ScopeDecryptStreamingProvidedOutputSelectProcessorPrefix + JsonProcessor.Stream)));
+            Assert.IsTrue(diagDecrypt.Scopes.Any(s => s.StartsWith(EncryptionDiagnostics.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream)));
             Assert.IsTrue(diagDecrypt.Scopes.Contains(EncryptionDiagnostics.ScopeDecryptStreamImplMde));
         }
 
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             (Stream result, DecryptionContext ctxDec) = await EncryptionProcessor.DecryptAsync(input, mockEncryptor.Object, ctxDiag, opts, CancellationToken.None);
             Assert.IsNull(ctxDec);
             Assert.AreEqual(0, result.Position);
-            Assert.IsTrue(ctxDiag.Scopes.Any(s => s.StartsWith(EncryptionDiagnostics.ScopeDecryptSelectProcessorPrefix + JsonProcessor.Stream)));
+            Assert.IsTrue(ctxDiag.Scopes.Any(s => s.StartsWith(EncryptionDiagnostics.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream)));
             Assert.IsTrue(ctxDiag.Scopes.Contains(EncryptionDiagnostics.ScopeDecryptStreamImplMde));
         }
 
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             JObject obj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(decrypted);
             Assert.AreEqual(doc.SensitiveStr, obj.Property(nameof(TestDoc.SensitiveStr)).Value.Value<string>());
             Assert.IsNotNull(ctxDec);
-            Assert.IsTrue(diag.Scopes.Any(s => s.StartsWith(EncryptionDiagnostics.ScopeDecryptSelectProcessorPrefix + JsonProcessor.Newtonsoft)));
+            Assert.IsTrue(diag.Scopes.Any(s => s.StartsWith(EncryptionDiagnostics.ScopeDecryptModeSelectionPrefix + JsonProcessor.Newtonsoft)));
         }
 
         [TestMethod]
@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.IsNull(obj.Property(Constants.EncryptedInfo));
             Assert.IsNotNull(ctxDec);
             Assert.IsTrue(ctxDec.DecryptionInfoList.First().PathsDecrypted.All(p => TestDoc.PathsToEncrypt.Contains(p)));
-            Assert.IsTrue(diag.Scopes.Any(s => s.StartsWith(EncryptionDiagnostics.ScopeDecryptSelectProcessorPrefix + JsonProcessor.Stream)));
+            Assert.IsTrue(diag.Scopes.Any(s => s.StartsWith(EncryptionDiagnostics.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream)));
             Assert.IsTrue(diag.Scopes.Contains(EncryptionDiagnostics.ScopeDecryptStreamImplMde));
         }
 
@@ -155,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             JObject obj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(output);
             Assert.AreEqual(doc.SensitiveStr, obj.Property(nameof(TestDoc.SensitiveStr)).Value.Value<string>());
             Assert.IsNotNull(ctxDec);
-            Assert.IsTrue(diag.Scopes.Any(s => s.StartsWith(EncryptionDiagnostics.ScopeDecryptStreamingProvidedOutputSelectProcessorPrefix + JsonProcessor.Stream)));
+            Assert.IsTrue(diag.Scopes.Any(s => s.StartsWith(EncryptionDiagnostics.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream)));
             Assert.IsTrue(diag.Scopes.Contains(EncryptionDiagnostics.ScopeDecryptStreamImplMde));
         }
 
