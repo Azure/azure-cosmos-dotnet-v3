@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #endif
         }
 
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        public override object ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
         {
             JToken token = JToken.Load(reader);
             string json = JsonConvert.SerializeObject(token);
@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return CosmosElement.CreateFromBuffer(buffer);
         }
 
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
         {
             NewtonsoftToCosmosDBWriter writerInterop = NewtonsoftToCosmosDBWriter.CreateFromWriter(writer);
 
