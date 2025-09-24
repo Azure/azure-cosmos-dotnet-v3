@@ -24,8 +24,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             Stream input,
             Encryptor encryptor,
             EncryptionOptions encryptionOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken token)
         {
+            _ = diagnosticsContext;
             JObject itemJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(input);
             List<string> pathsEncrypted = new ();
             TypeMarker typeMarker;

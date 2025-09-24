@@ -52,6 +52,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             MemoryStream encrypted = new();
             await EncryptionProcessor.EncryptAsync(doc.ToStream(), encrypted, mockEncryptor.Object, opts, diagEncrypt, CancellationToken.None);
             encrypted.Position = 0;
+            Assert.IsTrue(diagEncrypt.Scopes.Any(s => s.StartsWith(EncryptionDiagnostics.ScopeEncryptModeSelectionPrefix + JsonProcessor.Stream)));
 
             CosmosDiagnosticsContext diagDecrypt = CosmosDiagnosticsContext.Create(null);
             MemoryStream decryptedOut = new();
@@ -67,6 +68,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.IsTrue(diagDecrypt.Scopes.Any(s => s.StartsWith(EncryptionDiagnostics.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream)));
             Assert.IsTrue(diagDecrypt.Scopes.Contains(EncryptionDiagnostics.ScopeDecryptStreamImplMde));
         }
+
+    [TestMethod]
+    public async Task Encrypt_NewtonsoftProcessor_TracksScope()
+    {
+        TestDoc doc = TestDoc.Create();
+        EncryptionOptions opts = CreateMdeOptions(JsonProcessor.Newtonsoft);
+        CosmosDiagnosticsContext diagEncrypt = CosmosDiagnosticsContext.Create(null);
+        Stream encrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, opts, diagEncrypt, CancellationToken.None);
+
+        Assert.IsTrue(diagEncrypt.Scopes.Any(s => s.StartsWith(EncryptionDiagnostics.ScopeEncryptModeSelectionPrefix + JsonProcessor.Newtonsoft)));
+
+        encrypted.Dispose();
+    }
 
         [TestMethod]
         public async Task Decrypt_StreamSelection_FallbackWhenUnencrypted()

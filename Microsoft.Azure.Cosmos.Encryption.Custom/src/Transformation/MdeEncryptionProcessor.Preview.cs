@@ -7,57 +7,60 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 {
     using System;
     using System.IO;
-#if NET8_0_OR_GREATER
-    using System.Text.Json.Nodes;
-#endif
     using System.Threading;
     using System.Threading.Tasks;
     using Newtonsoft.Json.Linq;
 
     internal class MdeEncryptionProcessor
     {
-        internal MdeJObjectEncryptionProcessor JObjectEncryptionProcessor { get; set; } = new MdeJObjectEncryptionProcessor();
+        internal MdeJObjectEncryptionProcessor JObjectEncryptionProcessor { get; set; } =
+            new MdeJObjectEncryptionProcessor();
 
 #if NET8_0_OR_GREATER
         internal StreamProcessor StreamProcessor { get; set; } = new StreamProcessor();
 #endif
 
+        private IMdeJsonProcessorAdapter GetAdapter(JsonProcessor jsonProcessor)
+        {
+            return jsonProcessor switch
+            {
+                JsonProcessor.Newtonsoft => new NewtonsoftAdapter(this.JObjectEncryptionProcessor),
+#if NET8_0_OR_GREATER
+                JsonProcessor.Stream => new StreamAdapter(this.StreamProcessor),
+#endif
+                _ => throw new InvalidOperationException("Unsupported Json Processor"),
+            };
+        }
+
         public async Task<Stream> EncryptAsync(
             Stream input,
             Encryptor encryptor,
             EncryptionOptions encryptionOptions,
-            CancellationToken token)
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
         {
-#if NET8_0_OR_GREATER
-            switch (encryptionOptions.JsonProcessor)
-            {
-                case JsonProcessor.Newtonsoft:
-                    return await this.JObjectEncryptionProcessor.EncryptAsync(input, encryptor, encryptionOptions, token);
-                case JsonProcessor.Stream:
-                    MemoryStream ms = new ();
-                    await this.StreamProcessor.EncryptStreamAsync(input, ms, encryptor, encryptionOptions, token);
-                    return ms;
+            JsonProcessor jsonProcessor = encryptionOptions.JsonProcessor;
+            IMdeJsonProcessorAdapter adapter = this.GetAdapter(jsonProcessor);
 
-                default:
-                    throw new InvalidOperationException("Unsupported JsonProcessor");
-            }
-#else
-            return encryptionOptions.JsonProcessor switch
+            if (diagnosticsContext != null)
             {
-                JsonProcessor.Newtonsoft => await this.JObjectEncryptionProcessor.EncryptAsync(input, encryptor, encryptionOptions, token),
-                _ => throw new InvalidOperationException("Unsupported JsonProcessor"),
-            };
-#endif
+                using (diagnosticsContext.CreateScope(EncryptionDiagnostics.ScopeEncryptModeSelectionPrefix + jsonProcessor))
+                {
+                    return await adapter.EncryptAsync(input, encryptor, encryptionOptions, cancellationToken);
+                }
+            }
+
+            return await adapter.EncryptAsync(input, encryptor, encryptionOptions, cancellationToken);
         }
 
-        internal async Task<DecryptionContext> DecryptObjectAsync(
+        internal Task<DecryptionContext> DecryptObjectAsync(
             JObject document,
             Encryptor encryptor,
             EncryptionProperties encryptionProperties,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            return await this.JObjectEncryptionProcessor.DecryptObjectAsync(document, encryptor, encryptionProperties, diagnosticsContext, cancellationToken);
+            return this.JObjectEncryptionProcessor.DecryptObjectAsync(document, encryptor, encryptionProperties, diagnosticsContext, cancellationToken);
         }
 
 #if NET8_0_OR_GREATER
@@ -74,44 +77,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             }
 
             JsonProcessor jsonProcessor = this.GetRequestedJsonProcessor(requestOptions);
-
             using (diagnosticsContext.CreateScope(EncryptionDiagnostics.ScopeDecryptModeSelectionPrefix + jsonProcessor))
             {
-                if (jsonProcessor == JsonProcessor.Newtonsoft)
-                {
-                    return await this.HandleNewtonsoftDecryptAsync<(Stream, DecryptionContext)>(
-                        input,
-                        onMde: async item =>
-                        {
-                            DecryptionContext ctx = await this.JObjectEncryptionProcessor.DecryptObjectAsync(
-                                item.itemJObj,
-                                encryptor,
-                                item.encryptionProperties,
-                                diagnosticsContext,
-                                cancellationToken);
-                            await input.DisposeAsync();
-
-                            // Direct serialization into freshly allocated stream.
-                            MemoryStream direct = new (capacity: 1024);
-                            EncryptionProcessor.BaseSerializer.WriteToStream(item.itemJObj, direct);
-                            return (direct, ctx);
-                        },
-                        onNotEncrypted: () => Task.FromResult((input, (DecryptionContext)null)),
-                        onLegacyOther: () => Task.FromResult((input, (DecryptionContext)null)));
-                }
-
-                this.ValidateSupportedStreamProcessor(jsonProcessor);
-            }
-
-            using (diagnosticsContext.CreateScope(EncryptionDiagnostics.ScopeDecryptStreamImplMde))
-            {
-                (bool hasMde, EncryptionProperties streamingProps) = await TryReadMdeEncryptionPropertiesStreamingAsync(input, cancellationToken);
-                if (!hasMde)
-                {
-                    return (input, null);
-                }
-
-                return await this.DecryptStreamAsync(input, encryptor, streamingProps, diagnosticsContext, cancellationToken);
+                IMdeJsonProcessorAdapter adapter = this.GetAdapter(jsonProcessor);
+                return await adapter.DecryptAsync(input, encryptor, diagnosticsContext, cancellationToken);
             }
         }
 
@@ -129,71 +98,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             }
 
             JsonProcessor jsonProcessor = this.GetRequestedJsonProcessor(requestOptions);
-
             using (diagnosticsContext.CreateScope(EncryptionDiagnostics.ScopeDecryptModeSelectionPrefix + jsonProcessor))
             {
-                if (jsonProcessor == JsonProcessor.Newtonsoft)
-                {
-                    Func<(JObject itemJObj, EncryptionProperties encryptionProperties), Task<DecryptionContext>> onMde = async item =>
-                    {
-                        DecryptionContext ctx = await this.JObjectEncryptionProcessor.DecryptObjectAsync(
-                            item.itemJObj,
-                            encryptor,
-                            item.encryptionProperties,
-                            diagnosticsContext,
-                            cancellationToken);
-
-                        output.Position = 0;
-                        EncryptionProcessor.BaseSerializer.WriteToStream(item.itemJObj, output);
-                        output.Position = 0;
-                        await input.DisposeAsync();
-                        return ctx;
-                    };
-
-                    Func<Task<DecryptionContext>> onNotEncrypted = () =>
-                    {
-                        if (input.CanSeek)
-                        {
-                            input.Position = 0;
-                        }
-
-                        return Task.FromResult<DecryptionContext>(null); // not encrypted (no MDE properties)
-                    };
-
-                    Func<Task<DecryptionContext>> onLegacyOther = () => Task.FromResult<DecryptionContext>(null);
-
-                    return await this.HandleNewtonsoftDecryptAsync<DecryptionContext>(
-                        input,
-                        onMde,
-                        onNotEncrypted,
-                        onLegacyOther);
-                }
-
-                this.ValidateSupportedStreamProcessor(jsonProcessor);
-            }
-
-            using (diagnosticsContext.CreateScope(EncryptionDiagnostics.ScopeDecryptStreamImplMde))
-            {
-                (bool hasMde, EncryptionProperties streamingProps) = await TryReadMdeEncryptionPropertiesStreamingAsync(input, cancellationToken);
-                if (!hasMde)
-                {
-                    if (input.CanSeek)
-                    {
-                        input.Position = 0; // allow fallback to read
-                    }
-
-                    return null; // legacy or unencrypted fallback
-                }
-
-                DecryptionContext ctx = await this.DecryptStreamAsync(input, output, encryptor, streamingProps, diagnosticsContext, cancellationToken);
-                if (ctx == null)
-                {
-                    input.Position = 0;
-                    return null;
-                }
-
-                await input.DisposeAsync();
-                return ctx;
+                IMdeJsonProcessorAdapter adapter = this.GetAdapter(jsonProcessor);
+                return await adapter.DecryptAsync(input, output, encryptor, diagnosticsContext, cancellationToken);
             }
         }
 
@@ -202,14 +110,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             Stream output,
             Encryptor encryptor,
             EncryptionOptions encryptionOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            if (encryptionOptions.JsonProcessor != JsonProcessor.Stream)
+            JsonProcessor jsonProcessor = encryptionOptions.JsonProcessor;
+            IMdeJsonProcessorAdapter adapter = this.GetAdapter(jsonProcessor);
+
+            if (diagnosticsContext != null)
             {
-                throw new NotSupportedException("This overload is only supported for Stream JsonProcessor");
+                using (diagnosticsContext.CreateScope(EncryptionDiagnostics.ScopeEncryptModeSelectionPrefix + jsonProcessor))
+                {
+                    await adapter.EncryptAsync(input, output, encryptor, encryptionOptions, cancellationToken);
+                    return;
+                }
             }
 
-            await this.StreamProcessor.EncryptStreamAsync(input, output, encryptor, encryptionOptions, cancellationToken);
+            await adapter.EncryptAsync(input, output, encryptor, encryptionOptions, cancellationToken);
         }
 
         public async Task<(Stream, DecryptionContext)> DecryptStreamAsync(
@@ -229,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             return (ms, context);
         }
 
-        public async Task<DecryptionContext> DecryptStreamAsync(
+        public Task<DecryptionContext> DecryptStreamAsync(
             Stream input,
             Stream output,
             Encryptor encryptor,
@@ -237,34 +153,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            return await this.StreamProcessor.DecryptStreamAsync(input, output, encryptor, properties, diagnosticsContext, cancellationToken);
-        }
-#endif
-
-        private static JObject ReadJObject(Stream input)
-        {
-            input.Position = 0;
-            using (StreamReader sr = new (input, System.Text.Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
-            using (Newtonsoft.Json.JsonTextReader jsonTextReader = new (sr))
-            {
-                jsonTextReader.ArrayPool = JsonArrayPool.Instance;
-                Newtonsoft.Json.JsonSerializerSettings settings = new () { DateParseHandling = Newtonsoft.Json.DateParseHandling.None, MaxDepth = 64 };
-                return Newtonsoft.Json.JsonSerializer.Create(settings).Deserialize<JObject>(jsonTextReader);
-            }
+            return this.StreamProcessor.DecryptStreamAsync(input, output, encryptor, properties, diagnosticsContext, cancellationToken);
         }
 
-        private static JObject RetrieveEncryptionProperties(JObject item)
-        {
-            JProperty encryptionPropertiesJProp = item.Property(Constants.EncryptedInfo);
-            if (encryptionPropertiesJProp?.Value != null && encryptionPropertiesJProp.Value.Type == JTokenType.Object)
-            {
-                return (JObject)encryptionPropertiesJProp.Value;
-            }
-
-            return null;
-        }
-
-#if NET8_0_OR_GREATER
         private JsonProcessor GetRequestedJsonProcessor(RequestOptions requestOptions)
         {
             JsonProcessor jsonProcessor = JsonProcessor.Newtonsoft;
@@ -274,83 +165,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             }
 
             return jsonProcessor;
-        }
-
-        private void ValidateSupportedStreamProcessor(JsonProcessor jsonProcessor)
-        {
-            if (jsonProcessor != JsonProcessor.Stream && jsonProcessor != JsonProcessor.Newtonsoft)
-            {
-                throw new InvalidOperationException("Unsupported Json Processor");
-            }
-        }
-
-        private enum MdePropertyStatus
-        {
-            None,
-            Mde,
-            LegacyOther,
-        }
-
-        private static (MdePropertyStatus status, JObject itemJObj, EncryptionProperties encryptionProperties) InspectNewtonsoftForMde(Stream input)
-        {
-            input.Position = 0;
-            JObject itemJObj = ReadJObject(input);
-            JObject encryptionPropertiesJObj = RetrieveEncryptionProperties(itemJObj);
-            if (encryptionPropertiesJObj == null)
-            {
-                input.Position = 0;
-                return (MdePropertyStatus.None, null, null);
-            }
-
-            EncryptionProperties encryptionProperties = encryptionPropertiesJObj.ToObject<EncryptionProperties>();
-#pragma warning disable CS0618
-            if (encryptionProperties.EncryptionAlgorithm != CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)
-            {
-                input.Position = 0; // legacy algorithm
-                return (MdePropertyStatus.LegacyOther, null, null);
-            }
-#pragma warning restore CS0618
-
-            return (MdePropertyStatus.Mde, itemJObj, encryptionProperties);
-        }
-
-        private async Task<T> HandleNewtonsoftDecryptAsync<T>(
-            Stream input,
-            Func<(JObject itemJObj, EncryptionProperties encryptionProperties), Task<T>> onMde,
-            Func<Task<T>> onNotEncrypted,
-            Func<Task<T>> onLegacyOther)
-        {
-            (MdePropertyStatus status, JObject itemJObj, EncryptionProperties encryptionProperties) = InspectNewtonsoftForMde(input);
-            return status switch
-            {
-                MdePropertyStatus.None => await onNotEncrypted(),
-                MdePropertyStatus.LegacyOther => await onLegacyOther(),
-                MdePropertyStatus.Mde => await onMde((itemJObj, encryptionProperties)),
-                _ => await onNotEncrypted(),
-            };
-        }
-
-        private static async Task<(bool hasMde, EncryptionProperties encryptionProperties)> TryReadMdeEncryptionPropertiesStreamingAsync(
-            Stream input,
-            CancellationToken cancellationToken)
-        {
-            input.Position = 0;
-            EncryptionPropertiesWrapper properties = await System.Text.Json.JsonSerializer.DeserializeAsync<EncryptionPropertiesWrapper>(input, cancellationToken: cancellationToken);
-            input.Position = 0;
-            if (properties?.EncryptionProperties == null)
-            {
-                return (false, null);
-            }
-
-#pragma warning disable CS0618 // legacy algorithm support
-            if (properties.EncryptionProperties.EncryptionAlgorithm != CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)
-            {
-                // Gracefully signal no MDE so caller can fall back to legacy Newtonsoft path.
-                return (false, null);
-            }
-#pragma warning restore CS0618
-
-            return (true, properties.EncryptionProperties);
         }
 #endif
     }
