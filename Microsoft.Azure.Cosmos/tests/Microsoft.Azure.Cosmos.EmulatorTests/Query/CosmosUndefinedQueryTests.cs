@@ -76,42 +76,42 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 MakeUndefinedProjectionTest(
                     query:  "SELECT c.AlwaysUndefinedField " +
                             "FROM c " +
-                            "ORDER BY RANK FullTextScore(c.AlwaysUndefinedField, ['needle'])",
+                            "ORDER BY RANK FullTextScore(c.AlwaysUndefinedField, 'needle')",
                     expectedCount: DocumentCount),
                 MakeUndefinedProjectionTest(
                     query:  "SELECT VALUE c.AlwaysUndefinedField " +
                             "FROM c " +
-                            "ORDER BY RANK FullTextScore(c.AlwaysUndefinedField, ['needle'])",
+                            "ORDER BY RANK FullTextScore(c.AlwaysUndefinedField, 'needle')",
                     expectedCount: 0),
                 MakeUndefinedProjectionTest(
                     query:  "SELECT c.AlwaysUndefinedField " +
                             "FROM c " +
-                            "ORDER BY RANK RRF(FullTextScore(c.AlwaysUndefinedField, ['needle']), FullTextScore(c.AnotherUndefinedField, ['needle']))",
+                            "ORDER BY RANK RRF(FullTextScore(c.AlwaysUndefinedField, 'needle'), FullTextScore(c.AnotherUndefinedField, 'needle'))",
                     expectedCount: DocumentCount),
                 MakeUndefinedProjectionTest(
                     query:  "SELECT VALUE c.AlwaysUndefinedField " +
                             "FROM c " +
-                            "ORDER BY RANK RRF(FullTextScore(c.AlwaysUndefinedField, ['needle']), FullTextScore(c.AnotherUndefinedField, ['needle']))",
+                            "ORDER BY RANK RRF(FullTextScore(c.AlwaysUndefinedField, 'needle'), FullTextScore(c.AnotherUndefinedField, 'needle'))",
                     expectedCount: 0),
                 MakeUndefinedProjectionTest(
                     query:  $"SELECT c.AlwaysUndefinedField " +
                             $"FROM c " +
-                            $"ORDER BY RANK FullTextScore(c.{nameof(MixedTypeDocument.MixedTypeField)}, ['needle'])",
+                            $"ORDER BY RANK FullTextScore(c.{nameof(MixedTypeDocument.MixedTypeField)}, 'needle')",
                     expectedCount: DocumentCount),
                 MakeUndefinedProjectionTest(
                     query:  $"SELECT VALUE c.AlwaysUndefinedField " +
                             $"FROM c " +
-                            $"ORDER BY RANK FullTextScore(c.{nameof(MixedTypeDocument.MixedTypeField)}, ['needle'])",
+                            $"ORDER BY RANK FullTextScore(c.{nameof(MixedTypeDocument.MixedTypeField)}, 'needle')",
                     expectedCount: 0),
                 MakeUndefinedProjectionTest(
                     query:  $"SELECT c.AlwaysUndefinedField " +
                             $"FROM c " +
-                            $"ORDER BY RANK RRF(FullTextScore(c.{nameof(MixedTypeDocument.MixedTypeField)}, ['needle']),FullTextScore(c.{nameof(MixedTypeDocument.Index)}, ['needle']))",
+                            $"ORDER BY RANK RRF(FullTextScore(c.{nameof(MixedTypeDocument.MixedTypeField)}, 'needle'),FullTextScore(c.{nameof(MixedTypeDocument.Index)}, 'needle'))",
                     expectedCount: DocumentCount),
                 MakeUndefinedProjectionTest(
                     query:  $"SELECT VALUE c.AlwaysUndefinedField " +
                             $"FROM c " +
-                            $"ORDER BY RANK RRF(FullTextScore(c.{nameof(MixedTypeDocument.MixedTypeField)}, ['needle']),FullTextScore(c.{nameof(MixedTypeDocument.Index)}, ['needle']))",
+                            $"ORDER BY RANK RRF(FullTextScore(c.{nameof(MixedTypeDocument.MixedTypeField)}, 'needle'),FullTextScore(c.{nameof(MixedTypeDocument.Index)}, 'needle'))",
                     expectedCount: 0),
             };
 
