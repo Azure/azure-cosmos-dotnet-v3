@@ -20,10 +20,12 @@ namespace Microsoft.Azure.Cosmos
     [Serializable]
     public class CosmosOperationCanceledException : OperationCanceledException, ICloneable
     {
+        private readonly Object thisLock = new object();
         private readonly OperationCanceledException originalException;
-        private readonly Lazy<string> lazyMessage;
-        private readonly Lazy<string> toStringMessage;
         private readonly bool tokenCancellationRequested;
+
+        private string lazyMessage;
+        private string toStringMessage;
 
         /// <summary>
         /// Create an instance of CosmosOperationCanceledException
@@ -38,8 +40,8 @@ namespace Microsoft.Azure.Cosmos
             this.originalException = originalException ?? throw new ArgumentNullException(nameof(originalException));
             this.Diagnostics = diagnostics ?? throw new ArgumentNullException(nameof(diagnostics));
             this.tokenCancellationRequested = originalException.CancellationToken.IsCancellationRequested;
-            this.toStringMessage = this.CreateToStringMessage();
-            this.lazyMessage = this.CreateLazyMessage();
+            this.toStringMessage = null;
+            this.lazyMessage = null;
         }
 
         internal CosmosOperationCanceledException(
@@ -61,8 +63,8 @@ namespace Microsoft.Azure.Cosmos
             }
             this.Diagnostics = new CosmosTraceDiagnostics(trace);
             this.tokenCancellationRequested = originalException.CancellationToken.IsCancellationRequested;
-            this.toStringMessage = this.CreateToStringMessage();
-            this.lazyMessage = this.CreateLazyMessage();
+            this.toStringMessage = null;
+            this.lazyMessage = null;
         }
 
         /// <summary>
@@ -75,8 +77,8 @@ namespace Microsoft.Azure.Cosmos
         {
             this.originalException = (OperationCanceledException)info.GetValue("originalException", typeof(OperationCanceledException));
             this.tokenCancellationRequested = (bool)info.GetValue("tokenCancellationRequested", typeof(bool));
-            this.lazyMessage = new Lazy<string>(() => (string)info.GetValue("lazyMessage", typeof(string)));
-            this.toStringMessage = new Lazy<string>(() => (string)info.GetValue("toStringMessage", typeof(string)));
+            this.lazyMessage = null;
+            this.toStringMessage = null;
             //Diagnostics cannot be serialized
             this.Diagnostics = new CosmosTraceDiagnostics(NoOpTrace.Singleton);
         }
@@ -89,7 +91,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <inheritdoc/>
-        public override string Message => this.lazyMessage.Value;
+        public override string Message => this.EnsureLazyMessage();
 
         /// <inheritdoc/>
 #pragma warning disable CDX1002 // DontUseExceptionStackTrace
@@ -120,18 +122,42 @@ namespace Microsoft.Azure.Cosmos
         /// <inheritdoc/>
         public override string ToString()
         {
-            return this.toStringMessage.Value;
+            return this.EnsureToStringMessage(false);
         }
 
-        private Lazy<string> CreateLazyMessage()
+        private string EnsureLazyMessage()
         {
-            return new Lazy<string>(() => $"{this.originalException.Message}{Environment.NewLine}Cancellation Token has expired: {this.tokenCancellationRequested}. Learn more at: https://aka.ms/cosmosdb-tsg-request-timeout{Environment.NewLine}CosmosDiagnostics: {this.Diagnostics}");
+            if (this.lazyMessage != null)
+            {
+                return this.lazyMessage;
+            }
+
+            lock (this.thisLock)
+            {
+                return this.lazyMessage ??=
+                     $"{this.originalException.Message}{Environment.NewLine}Cancellation Token has expired: {this.tokenCancellationRequested}. Learn more at: https://aka.ms/cosmosdb-tsg-request-timeout{Environment.NewLine}";
+            }
         }
-        private Lazy<string> CreateToStringMessage()
+
+        internal string EnsureToStringMessage(Boolean skipDiagnostics)
         {
-            return new Lazy<string>(() => $"{this.originalException}{Environment.NewLine}Cancellation Token has expired: {this.tokenCancellationRequested}. Learn more at: https://aka.ms/cosmosdb-tsg-request-timeout{Environment.NewLine}CosmosDiagnostics: {this.Diagnostics}");
+            if (this.toStringMessage != null)
+            {
+                return this.toStringMessage;
+            }
+
+            lock (this.thisLock)
+            {
+                if (skipDiagnostics)
+                {
+                    return this.toStringMessage ??=
+                                         $"{this.originalException}{Environment.NewLine}Cancellation Token has expired: {this.tokenCancellationRequested}. Learn more at: https://aka.ms/cosmosdb-tsg-request-timeout";
+                }
+                return this.toStringMessage ??=
+                     $"{this.originalException}{Environment.NewLine}Cancellation Token has expired: {this.tokenCancellationRequested}. Learn more at: https://aka.ms/cosmosdb-tsg-request-timeout{Environment.NewLine}CosmosDiagnostics: {this.Diagnostics}";
+            }
         }
-         
+
         /// <summary>
         /// RecordOtelAttributes
         /// </summary>
@@ -159,8 +185,8 @@ namespace Microsoft.Azure.Cosmos
             info.AddValue("originalException", this.originalException);
 #pragma warning restore CDX1000 // DontConvertExceptionToObject
             info.AddValue("tokenCancellationRequested", this.tokenCancellationRequested);
-            info.AddValue("lazyMessage", this.lazyMessage.Value);
-            info.AddValue("toStringMessage", this.toStringMessage.Value);
+            info.AddValue("lazyMessage", this.EnsureLazyMessage());
+            info.AddValue("toStringMessage", this.EnsureToStringMessage(false));
         }
 
         /// <summary>

@@ -7,6 +7,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -76,6 +78,32 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await this.CheckCancellationTokenTestAsync(this.Container, cancellationTokenSource.Token);
         }
 
+        [TestMethod]
+        public void CheckToJsonStringConversion()
+        {
+            // This test is reproducing an issue that an internal customer faced after enabling
+            // cross region hedging 
+            // In their scenario they occassionally hit e2e timeouts as CosmosOperationCancelledException
+            // The JSON transformation of the CosmosOperationCancelledException in this case could run into
+            // an issue (InvalidOperationException due to Lazy<T> factory hitting a cyclic dependency
+            // when neither the diagnostics nor the exception had materialized the json string yet
+            // because the CosmosOperationCancelledException ias added as a trace datum to the ITrace of
+            // the CosmosTraceDiagnostics instance.
+            // The test below reproduced the issue - and is kept here to validate the fix and
+            // as a regression test
+            using ITrace outerTrace = Trace.GetRootTrace("cyclicDependencyReproOuter");
+            using ITrace innerTrace = outerTrace.StartChild("cyclicDependencyReproInner");
+
+            OperationCanceledException innerTimeout = new OperationCanceledException();
+            CosmosOperationCanceledException innerCosmosTimeoutException = new CosmosOperationCanceledException(
+                innerTimeout,
+                innerTrace);
+            CosmosOperationCanceledException outerCosmosTimeoutException = new CosmosOperationCanceledException(
+                innerCosmosTimeoutException,
+                outerTrace);
+
+            Console.WriteLine(outerCosmosTimeoutException.ToString());
+        }
 
         private async Task CheckCancellationTokenTestAsync(
             Container container,
