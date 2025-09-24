@@ -542,6 +542,44 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             byte[] cipher = Convert.FromBase64String(base64);
             Assert.AreEqual((byte)TypeMarker.Long, cipher[0]);
         }
+
+        [TestMethod]
+        public async Task Encrypt_RootArray_Rejected()
+        {
+            string json = "[ { \"id\": \"1\", \"Secret\": \"abc\" } ]";
+            using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(json));
+            MemoryStream output = new();
+            EncryptionOptions options = CreateOptions(Array.Empty<string>());
+            try
+            {
+                await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
+                Assert.Fail("Expected NotSupportedException for root array.");
+            }
+            catch (NotSupportedException ex)
+            {
+                StringAssert.Contains(ex.Message.ToLowerInvariant(), "object root");
+            }
+        }
+
+        [TestMethod]
+        public async Task Encrypt_PrimitiveRoot_Rejected()
+        {
+            foreach (string json in new[] { "123", "\"str\"", "true", "false", "null" })
+            {
+                using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(json));
+                MemoryStream output = new();
+                EncryptionOptions options = CreateOptions(Array.Empty<string>());
+                try
+                {
+                    await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
+                    Assert.Fail($"Expected NotSupportedException for primitive root: {json}");
+                }
+                catch (NotSupportedException ex)
+                {
+                    StringAssert.Contains(ex.Message.ToLowerInvariant(), "object root");
+                }
+            }
+        }
     }
 }
 #endif
