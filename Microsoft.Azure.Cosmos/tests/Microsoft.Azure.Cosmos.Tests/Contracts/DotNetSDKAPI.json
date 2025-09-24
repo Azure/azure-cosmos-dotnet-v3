@@ -6366,6 +6366,11 @@
           ],
           "MethodInfo": "Double FullTextScore[TSource](TSource, System.String[]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
         },
+        "Double RRF(Double[], Double[])": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Double RRF(Double[], Double[]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Double RRF(Double[])": {
           "Type": "Method",
           "Attributes": [],
@@ -6431,6 +6436,13 @@
             "ExtensionAttribute"
           ],
           "MethodInfo": "System.Linq.IOrderedQueryable`1[TSource] OrderByRank[TSource,TKey](System.Linq.IQueryable`1[TSource], System.Linq.Expressions.Expression`1[System.Func`2[TSource,TKey]]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String GetIndexMetrics[T](Microsoft.Azure.Cosmos.Response`1[T])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "ExtensionAttribute"
+          ],
+          "MethodInfo": "System.String GetIndexMetrics[T](Microsoft.Azure.Cosmos.Response`1[T]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
         },
         "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Decimal]] AverageAsync(System.Linq.IQueryable`1[System.Decimal], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
@@ -8017,6 +8029,11 @@
           "Attributes": [],
           "MethodInfo": "System.String GermanyWestCentral;IsInitOnly:False;IsStatic:True;"
         },
+        "System.String IndiaSouthCentral": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String IndiaSouthCentral;IsInitOnly:False;IsStatic:True;"
+        },
         "System.String IndonesiaCentral": {
           "Type": "Field",
           "Attributes": [],
@@ -8092,6 +8109,11 @@
           "Attributes": [],
           "MethodInfo": "System.String NorthCentralUS;IsInitOnly:False;IsStatic:True;"
         },
+        "System.String NortheastUS5": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String NortheastUS5;IsInitOnly:False;IsStatic:True;"
+        },
         "System.String NorthEurope": {
           "Type": "Field",
           "Attributes": [],
@@ -8116,6 +8138,16 @@
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "System.String QatarCentral;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String SingaporeCentral": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String SingaporeCentral;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String SingaporeNorth": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String SingaporeNorth;IsInitOnly:False;IsStatic:True;"
         },
         "System.String SouthAfricaNorth": {
           "Type": "Field",
@@ -9249,6 +9281,18 @@
         }
       },
       "Members": {
+        "Microsoft.Azure.Cosmos.AvailabilityStrategy AvailabilityStrategy": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.AvailabilityStrategy AvailabilityStrategy;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.AvailabilityStrategy get_AvailabilityStrategy();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_AvailabilityStrategy(Microsoft.Azure.Cosmos.AvailabilityStrategy);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.AvailabilityStrategy get_AvailabilityStrategy()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.AvailabilityStrategy get_AvailabilityStrategy();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Microsoft.Azure.Cosmos.CosmosThresholdOptions CosmosThresholdOptions": {
           "Type": "Property",
           "Attributes": [],
@@ -9349,6 +9393,13 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_AddRequestHeaders(System.Action`1[Microsoft.Azure.Cosmos.Headers]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_AvailabilityStrategy(Microsoft.Azure.Cosmos.AvailabilityStrategy)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_AvailabilityStrategy(Microsoft.Azure.Cosmos.AvailabilityStrategy);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_CosmosThresholdOptions(Microsoft.Azure.Cosmos.CosmosThresholdOptions)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -13013,6 +13064,13 @@
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "Int32 value__;IsInitOnly:False;IsStatic:False;"
+        },
+        "Microsoft.Azure.Cosmos.VectorDataType Float16[System.Runtime.Serialization.EnumMemberAttribute(Value = \"float16\")]": {
+          "Type": "Field",
+          "Attributes": [
+            "EnumMemberAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.VectorDataType Float16;IsInitOnly:False;IsStatic:True;"
         },
         "Microsoft.Azure.Cosmos.VectorDataType Float32[System.Runtime.Serialization.EnumMemberAttribute(Value = \"float32\")]": {
           "Type": "Field",

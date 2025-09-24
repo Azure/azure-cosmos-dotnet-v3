@@ -180,6 +180,74 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         }
 
         [TestMethod]
+        public void TestBypassQueryParsing()
+        {
+            Assert.IsFalse(QueryPlanRetriever.BypassQueryParsing());
+
+            foreach ((string name, string value, bool expectedValue) in new[]
+                {
+                    // Environment variables are case insensitive in windows
+                    ("AZURE_COSMOS_BYPASS_QUERY_PARSING", "true", true),
+                    ("AZURE_COSMOS_bypass_query_parsing", "True", true),
+                    ("azure_cosmos_bypass_query_parsing", "TRUE", true),
+                    ("Azure_Cosmos_Bypass_Query_Parsing", "truE", true),
+
+                    ("AZURE_COSMOS_BYPASS_QUERY_PARSING", "false", false),
+                    ("AZURE_COSMOS_bypass_query_parsing", "False", false),
+                    ("azure_cosmos_bypass_query_parsing", "FALSE", false),
+                    ("Azure_Cosmos_Bypass_Query_Parsing", "falsE", false),
+
+                    ("AZURE_COSMOS_BYPASS_QUERY_PARSING", string.Empty, false)
+                })
+            {
+                try
+                {
+                    // Test new value
+                    Environment.SetEnvironmentVariable(name, value);
+                    Assert.AreEqual(
+                        expectedValue,
+                        QueryPlanRetriever.BypassQueryParsing(),
+                        $"EnvironmentVariable:'{name}', value:'{value}', expected:'{expectedValue}', actual:'{QueryPlanRetriever.BypassQueryParsing()}'");
+                }
+                finally
+                {
+                    // Remove side effects.
+                    Environment.SetEnvironmentVariable(name, null);
+                }
+            }
+
+            foreach (string value in new[]
+                {
+                    "'",
+                    "-",
+                    "asdf",
+                    "'true'",
+                    "'false'"
+                })
+            {
+                bool receivedException = false;
+                try
+                {
+                    // Test new value
+                    Environment.SetEnvironmentVariable("AZURE_COSMOS_BYPASS_QUERY_PARSING", value);
+                    bool _ = QueryPlanRetriever.BypassQueryParsing();
+                }
+                catch (FormatException fe)
+                {
+                    Assert.IsTrue(fe.ToString().Contains($@"String '{value}' was not recognized as a valid Boolean."));
+                    receivedException = true;
+                }
+                finally
+                {
+                    // Remove side effects.
+                    Environment.SetEnvironmentVariable("AZURE_COSMOS_BYPASS_QUERY_PARSING", null);
+                }
+
+                Assert.IsTrue(receivedException, $"Expected exception was not received for value '{value}'");
+            }
+        }
+
+        [TestMethod]
         public async Task SanityTests()
         {
             TestCase[] testCases = new TestCase[]
@@ -306,10 +374,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                     query: "SELECT c.zipcode, COUNTIF(c.valid) AS valid_count FROM c GROUP BY c.zipcode",
                     expected: @"{""distinctType"":""None"",""top"":null,""offset"":null,""limit"":null,""orderBy"":[],""orderByExpressions"":[],""groupByExpressions"":[""c.zipcode""],""groupByAliases"":[""zipcode"",""valid_count""],""aggregates"":[],""groupByAliasToAggregateType"":{""zipcode"":null,""valid_count"":""CountIf""},""rewrittenQuery"":""SELECT [{\""item\"": c.zipcode}] AS groupByItems, {\""zipcode\"": c.zipcode, \""valid_count\"": {\""item\"": COUNTIF(c.valid)}} AS payload\nFROM c\nGROUP BY c.zipcode"",""hasSelectValue"":false,""dCountInfo"":null,""hasNonStreamingOrderBy"":false}"),
                 MakeTest(
-                    query: "SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c.text, ['swim', 'run'])",
+                    query: "SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c.text, \"swim\", \"run\")",
                     expected: @"{""globalStatisticsQuery"":""SELECT COUNT(1) AS documentCount, [{\""totalWordCount\"": SUM(_FullTextWordCount(c.text)), \""hitCounts\"": [COUNTIF(FullTextContains(c.text, \""swim\"")), COUNTIF(FullTextContains(c.text, \""run\""))]}] AS fullTextStatistics\nFROM c"",""componentQueryInfos"":[{""distinctType"":""None"",""top"":120,""offset"":null,""limit"":null,""orderBy"":[""Descending""],""orderByExpressions"":[""_FullTextScore(c.text, [\""swim\"", \""run\""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0})""],""groupByExpressions"":[],""groupByAliases"":[],""aggregates"":[],""groupByAliasToAggregateType"":{},""rewrittenQuery"":""SELECT TOP 120 c._rid, [{\""item\"": _FullTextScore(c.text, [\""swim\"", \""run\""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0})}] AS orderByItems, {\""payload\"": c, \""componentScores\"": [(_FullTextScore(c.text, [\""swim\"", \""run\""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) ?? -1)]} AS payload\nFROM c\nWHERE ({documentdb-formattableorderbyquery-filter})\nORDER BY _FullTextScore(c.text, [\""swim\"", \""run\""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) DESC"",""hasSelectValue"":false,""dCountInfo"":null,""hasNonStreamingOrderBy"":true}],""componentWithoutPayloadQueryInfos"":[],""projectionQueryInfo"":null,""componentWeights"":[],""skip"":null,""take"":10,""requiresGlobalStatistics"":true}"),
                 MakeTest(
-                    query: "SELECT TOP 10 * FROM c ORDER BY RANK RRF(FullTextScore(c.text, ['swim', 'run']), VectorDistance(c.image, [1, 2, 3]))",
+                    query: "SELECT TOP 10 * FROM c ORDER BY RANK RRF(FullTextScore(c.text,  \"swim\", \"run\"), VectorDistance(c.image, [1, 2, 3]))",
                     expected: @"{""globalStatisticsQuery"":""SELECT COUNT(1) AS documentCount, [{\""totalWordCount\"": SUM(_FullTextWordCount(c.text)), \""hitCounts\"": [COUNTIF(FullTextContains(c.text, \""swim\"")), COUNTIF(FullTextContains(c.text, \""run\""))]}] AS fullTextStatistics\nFROM c"",""componentQueryInfos"":[{""distinctType"":""None"",""top"":120,""offset"":null,""limit"":null,""orderBy"":[""Descending""],""orderByExpressions"":[""_FullTextScore(c.text, [\""swim\"", \""run\""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0})""],""groupByExpressions"":[],""groupByAliases"":[],""aggregates"":[],""groupByAliasToAggregateType"":{},""rewrittenQuery"":""SELECT TOP 120 c._rid, [{\""item\"": _FullTextScore(c.text, [\""swim\"", \""run\""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0})}] AS orderByItems, {\""payload\"": c, \""componentScores\"": [(_FullTextScore(c.text, [\""swim\"", \""run\""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) ?? -1), (_VectorScore(c.image, [1, 2, 3]) ?? -1.79769e+308)]} AS payload\nFROM c\nWHERE ({documentdb-formattableorderbyquery-filter})\nORDER BY _FullTextScore(c.text, [\""swim\"", \""run\""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) DESC"",""hasSelectValue"":false,""dCountInfo"":null,""hasNonStreamingOrderBy"":true},{""distinctType"":""None"",""top"":120,""offset"":null,""limit"":null,""orderBy"":[""Descending""],""orderByExpressions"":[""_VectorScore(c.image, [1, 2, 3])""],""groupByExpressions"":[],""groupByAliases"":[],""aggregates"":[],""groupByAliasToAggregateType"":{},""rewrittenQuery"":""SELECT TOP 120 c._rid, [{\""item\"": _VectorScore(c.image, [1, 2, 3])}] AS orderByItems, {\""payload\"": c, \""componentScores\"": [(_FullTextScore(c.text, [\""swim\"", \""run\""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) ?? -1), (_VectorScore(c.image, [1, 2, 3]) ?? -1.79769e+308)]} AS payload\nFROM c\nWHERE ({documentdb-formattableorderbyquery-filter})\nORDER BY _VectorScore(c.image, [1, 2, 3])"",""hasSelectValue"":false,""dCountInfo"":null,""hasNonStreamingOrderBy"":true}],""componentWithoutPayloadQueryInfos"":[],""projectionQueryInfo"":null,""componentWeights"":[],""skip"":null,""take"":10,""requiresGlobalStatistics"":true}"),
                 MakeTest(
                     query: "SELECT TOP 10 * FROM c ORDER BY RANK RRF(VectorDistance(c.backup_image, [0.5, 0.2, 0.33]), VectorDistance(c.image, [1, 2, 3]))",
@@ -321,17 +389,17 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                     query: "SELECT COUNTIF(_FullTextWordCount(c.abstract) > 10), COUNTIF(FullTextContains(c.abstract, 'inspiration')) FROM c",
                     expected: @"{""distinctType"":""None"",""top"":null,""offset"":null,""limit"":null,""orderBy"":[],""orderByExpressions"":[],""groupByExpressions"":[],""groupByAliases"":[""$1"",""$2""],""aggregates"":[],""groupByAliasToAggregateType"":{""$1"":""CountIf"",""$2"":""CountIf""},""rewrittenQuery"":""SELECT {\""$1\"": {\""item\"": COUNTIF((_FullTextWordCount(c.abstract) > 10))}, \""$2\"": {\""item\"": COUNTIF(FullTextContains(c.abstract, \""inspiration\""))}} AS payload\nFROM c"",""hasSelectValue"":false,""dCountInfo"":null,""hasNonStreamingOrderBy"":false}"),
                 MakeHybridSearchOptimizationTest(
-                    query: "SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c.text, 'swim', 'run')",
+                    query: "SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c.text, \"swim\", \"run\")",
                     expected: @"{""globalStatisticsQuery"":""SELECT COUNT(1) AS documentCount, [{\""totalWordCount\"": SUM(_FullTextWordCount(c.text)), \""hitCounts\"": [COUNTIF(FullTextContains(c.text, \""swim\"")), COUNTIF(FullTextContains(c.text, \""run\""))]}] AS fullTextStatistics\nFROM c"",""componentQueryInfos"":[{""distinctType"":""None"",""top"":120,""offset"":null,""limit"":null,""orderBy"":[""Descending""],""orderByExpressions"":[""_FullTextScore(c.text, [\""swim\"", \""run\""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0})""],""groupByExpressions"":[],""groupByAliases"":[],""aggregates"":[],""groupByAliasToAggregateType"":{},""rewrittenQuery"":""SELECT TOP 120 c._rid, [{\""item\"": _FullTextScore(c.text, [\""swim\"", \""run\""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0})}] AS orderByItems, {\""payload\"": c, \""componentScores\"": []} AS payload\nFROM c\nWHERE ({documentdb-formattableorderbyquery-filter})\nORDER BY _FullTextScore(c.text, [\""swim\"", \""run\""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) DESC"",""hasSelectValue"":false,""dCountInfo"":null,""hasNonStreamingOrderBy"":true}],""componentWithoutPayloadQueryInfos"":[],""projectionQueryInfo"":null,""componentWeights"":[],""skip"":null,""take"":10,""requiresGlobalStatistics"":true}"),
                 MakeHybridSearchOptimizationTest(
-                    query: "SELECT TOP 10 * FROM c ORDER BY RANK RRF(FullTextScore(c.text, 'swim', 'run'), VectorDistance(c.image, [1, 2, 3]))",
-                    expected: @"{""globalStatisticsQuery"":""SELECT COUNT(1) AS documentCount, [{\""totalWordCount\"": SUM(_FullTextWordCount(c.text)), \""hitCounts\"": [COUNTIF(FullTextContains(c.text, \""swim\"")), COUNTIF(FullTextContains(c.text, \""run\""))]}] AS fullTextStatistics\nFROM c"",""componentQueryInfos"":[{""distinctType"":""None"",""top"":120,""offset"":null,""limit"":null,""orderBy"":[],""orderByExpressions"":[],""groupByExpressions"":[],""groupByAliases"":[],""aggregates"":[],""groupByAliasToAggregateType"":{},""rewrittenQuery"":""SELECT TOP 120 c._rid, c AS payload, [(_FullTextScore(c.text, [\""swim\"", \""run\""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) ?? -1), (_VectorScore(c.image, [1, 2, 3]) ?? -1.79769e+308)] AS componentScores\nFROM c\nORDER BY _FullTextScore(c.text, [\""swim\"", \""run\""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) DESC"",""hasSelectValue"":false,""dCountInfo"":null,""hasNonStreamingOrderBy"":false},{""distinctType"":""None"",""top"":120,""offset"":null,""limit"":null,""orderBy"":[],""orderByExpressions"":[],""groupByExpressions"":[],""groupByAliases"":[],""aggregates"":[],""groupByAliasToAggregateType"":{},""rewrittenQuery"":""SELECT TOP 120 c._rid, c AS payload, [(_FullTextScore(c.text, [\""swim\"", \""run\""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) ?? -1), (_VectorScore(c.image, [1, 2, 3]) ?? -1.79769e+308)] AS componentScores\nFROM c\nORDER BY _VectorScore(c.image, [1, 2, 3])"",""hasSelectValue"":false,""dCountInfo"":null,""hasNonStreamingOrderBy"":false}],""componentWithoutPayloadQueryInfos"":[],""projectionQueryInfo"":null,""componentWeights"":[],""skip"":null,""take"":10,""requiresGlobalStatistics"":true}"),
+                    query: "SELECT TOP 10 * FROM c ORDER BY RANK RRF(FullTextScore(c.text, \"swim\", \"run\"), VectorDistance(c.image, [1, 2, 3]))",
+                    expected: @"{""globalStatisticsQuery"":""SELECT COUNT(1) AS documentCount, [{\""totalWordCount\"": SUM(_FullTextWordCount(c.text)), \""hitCounts\"": [COUNTIF(FullTextContains(c.text, \""swim\"")), COUNTIF(FullTextContains(c.text, \""run\""))]}] AS fullTextStatistics\nFROM c"",""componentQueryInfos"":[{""distinctType"":""None"",""top"":null,""offset"":null,""limit"":null,""orderBy"":[],""orderByExpressions"":[],""groupByExpressions"":[],""groupByAliases"":[],""aggregates"":[],""groupByAliasToAggregateType"":{},""rewrittenQuery"":""SELECT TOP 120 c._rid, c AS payload, [(_FullTextScore(c.text, [\""swim\"", \""run\""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) ?? -1), (_VectorScore(c.image, [1, 2, 3]) ?? -1.79769e+308)] AS componentScores\nFROM c\nORDER BY _FullTextScore(c.text, [\""swim\"", \""run\""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) DESC"",""hasSelectValue"":false,""dCountInfo"":null,""hasNonStreamingOrderBy"":false},{""distinctType"":""None"",""top"":null,""offset"":null,""limit"":null,""orderBy"":[],""orderByExpressions"":[],""groupByExpressions"":[],""groupByAliases"":[],""aggregates"":[],""groupByAliasToAggregateType"":{},""rewrittenQuery"":""SELECT TOP 120 c._rid, c AS payload, [(_FullTextScore(c.text, [\""swim\"", \""run\""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) ?? -1), (_VectorScore(c.image, [1, 2, 3]) ?? -1.79769e+308)] AS componentScores\nFROM c\nORDER BY _VectorScore(c.image, [1, 2, 3])"",""hasSelectValue"":false,""dCountInfo"":null,""hasNonStreamingOrderBy"":false}],""componentWithoutPayloadQueryInfos"":[],""projectionQueryInfo"":null,""componentWeights"":[],""skip"":null,""take"":10,""requiresGlobalStatistics"":true}"),
                 MakeTest(
                     query: "SELECT TOP 10 * FROM c ORDER BY RANK RRF(VectorDistance(c.backup_image, [0.5, 0.2, 0.33]), VectorDistance(c.image, [1, 2, 3]), [1, -0.3])",
                     expected: @"{""globalStatisticsQuery"":""SELECT COUNT(1) AS documentCount, [] AS fullTextStatistics\nFROM c"",""componentQueryInfos"":[{""distinctType"":""None"",""top"":120,""offset"":null,""limit"":null,""orderBy"":[""Descending""],""orderByExpressions"":[""_VectorScore(c.backup_image, [0.5, 0.2, 0.33])""],""groupByExpressions"":[],""groupByAliases"":[],""aggregates"":[],""groupByAliasToAggregateType"":{},""rewrittenQuery"":""SELECT TOP 120 c._rid, [{\""item\"": _VectorScore(c.backup_image, [0.5, 0.2, 0.33])}] AS orderByItems, {\""payload\"": c, \""componentScores\"": [(_VectorScore(c.backup_image, [0.5, 0.2, 0.33]) ?? -1.79769e+308), (_VectorScore(c.image, [1, 2, 3]) ?? 1.79769e+308)]} AS payload\nFROM c\nWHERE ({documentdb-formattableorderbyquery-filter})\nORDER BY _VectorScore(c.backup_image, [0.5, 0.2, 0.33])"",""hasSelectValue"":false,""dCountInfo"":null,""hasNonStreamingOrderBy"":true},{""distinctType"":""None"",""top"":120,""offset"":null,""limit"":null,""orderBy"":[""Ascending""],""orderByExpressions"":[""_VectorScore(c.image, [1, 2, 3])""],""groupByExpressions"":[],""groupByAliases"":[],""aggregates"":[],""groupByAliasToAggregateType"":{},""rewrittenQuery"":""SELECT TOP 120 c._rid, [{\""item\"": _VectorScore(c.image, [1, 2, 3])}] AS orderByItems, {\""payload\"": c, \""componentScores\"": [(_VectorScore(c.backup_image, [0.5, 0.2, 0.33]) ?? -1.79769e+308), (_VectorScore(c.image, [1, 2, 3]) ?? 1.79769e+308)]} AS payload\nFROM c\nWHERE ({documentdb-formattableorderbyquery-filter})\nORDER BY _VectorScore(c.image, [1, 2, 3]) ASC"",""hasSelectValue"":false,""dCountInfo"":null,""hasNonStreamingOrderBy"":true}],""componentWithoutPayloadQueryInfos"":[],""projectionQueryInfo"":null,""componentWeights"":[1.0,0.3],""skip"":null,""take"":10,""requiresGlobalStatistics"":false}"),
                 MakeHybridSearchOptimizationTest(
                     query: "SELECT TOP 10 * FROM c ORDER BY RANK RRF(VectorDistance(c.backup_image, [0.5, 0.2, 0.33]), VectorDistance(c.image, [1, 2, 3]), [1, -0.3])",
-                    expected: @"{""globalStatisticsQuery"":""SELECT COUNT(1) AS documentCount, [] AS fullTextStatistics\nFROM c"",""componentQueryInfos"":[{""distinctType"":""None"",""top"":120,""offset"":null,""limit"":null,""orderBy"":[],""orderByExpressions"":[],""groupByExpressions"":[],""groupByAliases"":[],""aggregates"":[],""groupByAliasToAggregateType"":{},""rewrittenQuery"":""SELECT TOP 120 c._rid, c AS payload, [(_VectorScore(c.backup_image, [0.5, 0.2, 0.33]) ?? -1.79769e+308), (-1 * (_VectorScore(c.image, [1, 2, 3]) ?? 1.79769e+308))] AS componentScores\nFROM c\nORDER BY _VectorScore(c.backup_image, [0.5, 0.2, 0.33])"",""hasSelectValue"":false,""dCountInfo"":null,""hasNonStreamingOrderBy"":false},{""distinctType"":""None"",""top"":120,""offset"":null,""limit"":null,""orderBy"":[],""orderByExpressions"":[],""groupByExpressions"":[],""groupByAliases"":[],""aggregates"":[],""groupByAliasToAggregateType"":{},""rewrittenQuery"":""SELECT TOP 120 c._rid, c AS payload, [(_VectorScore(c.backup_image, [0.5, 0.2, 0.33]) ?? -1.79769e+308), (-1 * (_VectorScore(c.image, [1, 2, 3]) ?? 1.79769e+308))] AS componentScores\nFROM c\nORDER BY _VectorScore(c.image, [1, 2, 3]) ASC"",""hasSelectValue"":false,""dCountInfo"":null,""hasNonStreamingOrderBy"":false}],""componentWithoutPayloadQueryInfos"":[],""projectionQueryInfo"":null,""componentWeights"":[1.0,0.3],""skip"":null,""take"":10,""requiresGlobalStatistics"":false}"),
+                    expected: @"{""globalStatisticsQuery"":""SELECT COUNT(1) AS documentCount, [] AS fullTextStatistics\nFROM c"",""componentQueryInfos"":[{""distinctType"":""None"",""top"":null,""offset"":null,""limit"":null,""orderBy"":[],""orderByExpressions"":[],""groupByExpressions"":[],""groupByAliases"":[],""aggregates"":[],""groupByAliasToAggregateType"":{},""rewrittenQuery"":""SELECT TOP 120 c._rid, c AS payload, [(_VectorScore(c.backup_image, [0.5, 0.2, 0.33]) ?? -1.79769e+308), (-1 * (_VectorScore(c.image, [1, 2, 3]) ?? 1.79769e+308))] AS componentScores\nFROM c\nORDER BY _VectorScore(c.backup_image, [0.5, 0.2, 0.33])"",""hasSelectValue"":false,""dCountInfo"":null,""hasNonStreamingOrderBy"":false},{""distinctType"":""None"",""top"":null,""offset"":null,""limit"":null,""orderBy"":[],""orderByExpressions"":[],""groupByExpressions"":[],""groupByAliases"":[],""aggregates"":[],""groupByAliasToAggregateType"":{},""rewrittenQuery"":""SELECT TOP 120 c._rid, c AS payload, [(_VectorScore(c.backup_image, [0.5, 0.2, 0.33]) ?? -1.79769e+308), (-1 * (_VectorScore(c.image, [1, 2, 3]) ?? 1.79769e+308))] AS componentScores\nFROM c\nORDER BY _VectorScore(c.image, [1, 2, 3]) ASC"",""hasSelectValue"":false,""dCountInfo"":null,""hasNonStreamingOrderBy"":false}],""componentWithoutPayloadQueryInfos"":[],""projectionQueryInfo"":null,""componentWeights"":[1.0,0.3],""skip"":null,""take"":10,""requiresGlobalStatistics"":false}"),
             };
 
             QueryPartitionProvider queryPartitionProvider = new QueryPartitionProvider(DefaultQueryEngineConfiguration);

@@ -7,7 +7,9 @@ parameters:
   OS: 'Windows'
   EmulatorPipeline5Arguments: ' --filter "TestCategory=ThinClient" --verbosity normal '
   EmulatorPipeline5CategoryListName: ' ThinClient '
+  ThinClientStrongConsistencyString: ''
   ThinClientConnectionString: ''
+  MultiRegionConnectionString : ''
   IncludeEncryption: true
   IncludePerformance: true
   IncludeCoverage: true
@@ -49,5 +51,7 @@ jobs:
       testRunTitle: Microsoft.Azure.Cosmos.EmulatorTests - ${{ parameters.EmulatorPipeline5CategoryListName }}
     env:
       COSMOSDB_THINCLIENT: ${{ parameters.ThinClientConnectionString }}
+      COSMOSDB_THINCLIENTSTRONG: ${{ parameters.ThinClientStrongConsistencyString }}
+      COSMOSDB_MULTI_REGION: ${{ parameters.MultiRegionConnectionString }}
       AZURE_COSMOS_THIN_CLIENT_ENABLED: 'True'
       AZURE_COSMOS_NON_STREAMING_ORDER_BY_FLAG_DISABLED: 'true'

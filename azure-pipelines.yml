@@ -6,7 +6,6 @@ pr:
     include:
     - master
     - releases/*
-    - msdata/direct*
   paths:
     include:
     - '*'
@@ -80,5 +79,7 @@ jobs:
     Arguments: $(ReleaseArguments)
     VmImage: $(VmImage)
     ThinClientConnectionString: $(COSMOSDB_THINCLIENT)
+    ThinClientStrongConsistencyString: $(COSMOSDB_THINCLIENTSTRONG)
+    MultiRegionConnectionString: $(COSMOSDB_MULTI_REGION)
     IncludePerformance: true
     IncludeCoverage: true

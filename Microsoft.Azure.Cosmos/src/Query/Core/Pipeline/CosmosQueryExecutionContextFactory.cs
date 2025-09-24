@@ -191,7 +191,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     // then try seeing if we can execute as a passthrough using client side only logic.
                     // This is to short circuit the need to go to the gateway to get the query plan.
                     if (cosmosQueryContext.QueryClient.BypassQueryParsing()
-                        && inputParameters.PartitionKey.HasValue)
+                        && inputParameters.PartitionKey.HasValue && containerQueryProperties.PartitionKeyDefinition.Paths.Count <= 1)
                     {
                         bool parsed;
                         SqlQuery sqlQuery;
@@ -205,7 +205,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                             bool hasDistinct = sqlQuery.SelectClause.HasDistinct;
                             bool hasGroupBy = sqlQuery.GroupByClause != default;
                             bool hasAggregates = AggregateProjectionDetector.HasAggregate(sqlQuery.SelectClause.SelectSpec);
-                            bool createPassthroughQuery = !hasAggregates && !hasDistinct && !hasGroupBy;
+                            bool hasOrderBy = sqlQuery.OrderByClause != default;
+                            bool createPassthroughQuery = !hasAggregates && !hasDistinct && !hasGroupBy && !hasOrderBy;
 
                             if (createPassthroughQuery)
                             {
@@ -300,11 +301,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 }
                 else
                 {
-                    bool singleLogicalPartitionKeyQuery = (inputParameters.PartitionKey.HasValue && targetRanges.Count == 1)
+                    bool singleLogicalPartitionKeyQuery = ((inputParameters.PartitionKey.HasValue && targetRanges.Count == 1)
                         || ((partitionedQueryExecutionInfo.QueryRanges.Count == 1)
-                        && partitionedQueryExecutionInfo.QueryRanges[0].IsSingleValue);
+                        && partitionedQueryExecutionInfo.QueryRanges[0].IsSingleValue))
+                        && containerQueryProperties.PartitionKeyDefinition.Paths.Count <= 1;
                     bool serverStreamingQuery = !partitionedQueryExecutionInfo.QueryInfo.HasAggregates
                         && !partitionedQueryExecutionInfo.QueryInfo.HasDistinct
+                        && !partitionedQueryExecutionInfo.QueryInfo.HasNonStreamingOrderBy
                         && !partitionedQueryExecutionInfo.QueryInfo.HasGroupBy;
                     bool streamingSinglePartitionQuery = singleLogicalPartitionKeyQuery && serverStreamingQuery;
 
