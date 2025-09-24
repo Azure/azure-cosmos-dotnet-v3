@@ -22,8 +22,8 @@ namespace Microsoft.Azure.Cosmos
 
     internal class GatewayStoreClient : TransportClient
     {
-        private readonly bool isPartitionLevelFailoverEnabled;
         private readonly ICommunicationEventSource eventSource;
+        private readonly GlobalPartitionEndpointManager globalPartitionEndpointManager;
         protected readonly CosmosHttpClient httpClient;
         protected readonly JsonSerializerSettings SerializerSettings;
 
@@ -32,13 +32,13 @@ namespace Microsoft.Azure.Cosmos
         public GatewayStoreClient(
             CosmosHttpClient httpClient,
             ICommunicationEventSource eventSource,
-            JsonSerializerSettings serializerSettings = null,
-            bool isPartitionLevelFailoverEnabled = false)
+            GlobalPartitionEndpointManager globalPartitionEndpointManager,
+            JsonSerializerSettings serializerSettings = null)
         {
             this.httpClient = httpClient;
             this.SerializerSettings = serializerSettings;
             this.eventSource = eventSource;
-            this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
+            this.globalPartitionEndpointManager = globalPartitionEndpointManager;
         }
 
         public async Task<DocumentServiceResponse> InvokeAsync(
@@ -168,23 +168,28 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // If service rejects the initial payload like header is to large it will return an HTML error instead of JSON.
+            string contentString = null;
             if (string.Equals(responseMessage.Content?.Headers?.ContentType?.MediaType, "application/json", StringComparison.OrdinalIgnoreCase) &&
                 responseMessage.Content?.Headers.ContentLength > 0)
             {
                 try
                 {
-                    Stream contentAsStream = await responseMessage.Content.ReadAsStreamAsync();
-                    Error error = JsonSerializable.LoadFrom<Error>(stream: contentAsStream);
-
-                    return new DocumentClientException(
-                        errorResource: error,
-                        responseHeaders: responseMessage.Headers,
-                        statusCode: responseMessage.StatusCode)
+                    // Buffer the content once to avoid "stream already consumed" issue
+                    contentString = await responseMessage.Content.ReadAsStringAsync();
+                    using (MemoryStream contentStream = new MemoryStream(Encoding.UTF8.GetBytes(contentString)))
                     {
-                        StatusDescription = responseMessage.ReasonPhrase,
-                        ResourceAddress = resourceIdOrFullName,
-                        RequestStatistics = requestStatistics
-                    };
+                        Error error = JsonSerializable.LoadFrom<Error>(stream: contentStream);
+
+                        return new DocumentClientException(
+                            errorResource: error,
+                            responseHeaders: responseMessage.Headers,
+                            statusCode: responseMessage.StatusCode)
+                        {
+                            StatusDescription = responseMessage.ReasonPhrase,
+                            ResourceAddress = resourceIdOrFullName,
+                            RequestStatistics = requestStatistics
+                        };
+                    }
                 }
                 catch
                 {
@@ -192,7 +197,8 @@ namespace Microsoft.Azure.Cosmos
             }
 
             StringBuilder contextBuilder = new StringBuilder();
-            contextBuilder.AppendLine(await responseMessage.Content.ReadAsStringAsync());
+            // Reuse the already buffered content if available, otherwise read it now
+            contextBuilder.AppendLine(contentString ?? await responseMessage.Content.ReadAsStringAsync());
 
             HttpRequestMessage requestMessage = responseMessage.RequestMessage;
 
@@ -380,10 +386,16 @@ namespace Microsoft.Azure.Cosmos
                 resourceType,
                 HttpTimeoutPolicy.GetTimeoutPolicy(
                     request,
-                    this.isPartitionLevelFailoverEnabled),
+                    this.IsPartitionLevelFailoverEnabled()),
                 request.RequestContext.ClientRequestStatistics,
                 cancellationToken,
                 request);
+        }
+
+        private bool IsPartitionLevelFailoverEnabled()
+        {
+            return this.globalPartitionEndpointManager.IsPartitionLevelCircuitBreakerEnabled()
+                || this.globalPartitionEndpointManager.IsPartitionLevelAutomaticFailoverEnabled();
         }
     }
 }

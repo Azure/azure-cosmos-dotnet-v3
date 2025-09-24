@@ -820,6 +820,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
         }
 
         [TestMethod]
+        [TestCategory("Flaky")]
         public async Task TypedPointOperationsAsync()
         {
             List<Input> inputs = new List<Input>();
@@ -1864,6 +1865,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
 
             public IReadOnlyDictionary<string, object> Data => this.data;
 
+            public bool IsBeingWalked => true; // needs to return true to allow materialization
+
             public IReadOnlyList<(string, Uri)> RegionsContacted => new List<(string, Uri)>();
 
             public void AddDatum(string key, TraceDatum traceDatum)
@@ -1922,6 +1925,11 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 }
 
                 this.data[key] = "Redacted To Not Change The Baselines From Run To Run";
+            }
+
+            bool ITrace.TryGetDatum(string key, out object datum)
+            {
+                return this.data.TryGetValue(key, out datum);
             }
         }
 

@@ -15,6 +15,38 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.54.0-preview.1"/> [3.54.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.54.0-preview.1) - 2025-8-27
+
+### <a name="3.53.1"/> [3.53.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.53.1) - 2025-8-27
+
+#### Added
+- [5364](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5364) TokenCredentialCache: Adds a fallback mechanism to AAD scope override.
+- [5361](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5361) Trace: Fixes thread safety issue in Trace class causing high CPU usage and InvalidOperationException
+
+### <a name="3.54.0-preview.0"/> [3.54.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.54.0-preview.0) - 2025-8-13
+
+### <a name="3.53.0"/> [3.53.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.53.0) - 2025-8-13
+
+#### Added
+
+- [5253](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5253) License: Adds new license expression
+- [5252](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5252) TokenCredentialCache: Adds an options to override AAD audience scope
+- [5308](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5308) Query: Adds Weighted RRF capability to LINQ
+- [5213](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5213) Query: Adds GetIndexMetrics LINQ extension method
+
+#### Fixed
+
+- [5273](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5273) Query: Fixes non streaming order by queries to not be tagged as passthrough queries
+- [5291](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5291) GatewayStoreClient: Fixes stream consumption bug in GatewayStoreClient.CreateDocumentClientExceptionAsync
+- [5317](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5317) Query: Fixes HybridSearchQueryTests to account for backend changes in phrase search
+
+### <a name="3.53.0-preview.1"/> [3.53.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.53.0-preview.1) - 2025-7-10
+
+### <a name="3.52.1"/> [3.52.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.52.1) - 2025-7-10
+
+#### Fixed
+- [5257](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5257) QueryPlan: Fixes 410 Gone exception on query plan calls in Non-X64 windows platforms
+
 ### <a name="3.53.0-preview.0"/> [3.53.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.53.0-preview.0) - 2025-6-13
 
 ### <a name="3.52.0"/> [3.52.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.52.0) - 2025-6-13

@@ -116,8 +116,8 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Default thresholds for PPAF request hedging.
         /// </summary>
-        private const int DefaultHedgingThresholdInMilliseconds = 1000;
-        private const int DefaultHedgingThresholdStepInMilliseconds = 500;
+        internal const int DefaultHedgingThresholdInMilliseconds = 1000;
+        internal const int DefaultHedgingThresholdStepInMilliseconds = 500;
 
         private static readonly char[] resourceIdOrFullNameSeparators = new char[] { '/' };
         private static readonly char[] resourceIdSeparators = new char[] { '/', '\\', '?', '#' };
@@ -125,8 +125,6 @@ namespace Microsoft.Azure.Cosmos
         private readonly bool IsLocalQuorumConsistency = false;
         private readonly bool isReplicaAddressValidationEnabled;
         private readonly bool enableAsyncCacheExceptionNoSharing;
-
-        private readonly bool isThinClientEnabled;
 
         //Fault Injection
         private readonly IChaosInterceptorFactory chaosInterceptorFactory;
@@ -136,6 +134,8 @@ namespace Microsoft.Azure.Cosmos
 
         //Auth
         internal readonly AuthorizationTokenProvider cosmosAuthorization;
+
+        private bool isThinClientEnabled = ConfigurationManager.IsThinClientEnabled(defaultValue: false);
 
         // Gateway has backoff/retry logic to hide transient errors.
         private RetryPolicy retryPolicy;
@@ -256,7 +256,6 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: this.cancellationTokenSource.Token,
                 enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
             this.isReplicaAddressValidationEnabled = ConfigurationManager.IsReplicaAddressValidationEnabled(connectionPolicy);
-            this.isThinClientEnabled = ConfigurationManager.IsThinClientEnabled(defaultValue: false);
         }
 
         /// <summary>
@@ -514,7 +513,6 @@ namespace Microsoft.Azure.Cosmos
                 enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
             this.chaosInterceptorFactory = chaosInterceptorFactory;
             this.chaosInterceptor = chaosInterceptorFactory?.CreateInterceptor(this);
-            this.isThinClientEnabled = ConfigurationManager.IsThinClientEnabled(defaultValue: false);
 
             this.Initialize(
                 serviceEndpoint: serviceEndpoint,
@@ -526,8 +524,7 @@ namespace Microsoft.Azure.Cosmos
                 storeClientFactory: storeClientFactory,
                 cosmosClientId: cosmosClientId,
                 remoteCertificateValidationCallback: remoteCertificateValidationCallback,
-                cosmosClientTelemetryOptions: cosmosClientTelemetryOptions,
-                enableThinClientMode: this.isThinClientEnabled);
+                cosmosClientTelemetryOptions: cosmosClientTelemetryOptions);
         }
 
         /// <summary>
@@ -712,8 +709,7 @@ namespace Microsoft.Azure.Cosmos
             TokenCredential tokenCredential = null,
             string cosmosClientId = null,
             RemoteCertificateValidationCallback remoteCertificateValidationCallback = null,
-            CosmosClientTelemetryOptions cosmosClientTelemetryOptions = null,
-            bool enableThinClientMode = false)
+            CosmosClientTelemetryOptions cosmosClientTelemetryOptions = null)
         {
             if (serviceEndpoint == null)
             {
@@ -1056,42 +1052,44 @@ namespace Microsoft.Azure.Cosmos
                 this.EnsureValidOverwrite(this.desiredConsistencyLevel.Value);
             }
 
-            bool isPPafEnabled = ConfigurationManager.IsPartitionLevelFailoverEnabled(defaultValue: false);
-            if (this.accountServiceConfiguration != null && this.accountServiceConfiguration.AccountProperties.EnablePartitionLevelFailover.HasValue)
+            if (!this.ConnectionPolicy.DisablePartitionLevelFailoverClientLevelOverride
+                && this.accountServiceConfiguration != null && this.accountServiceConfiguration.AccountProperties.EnablePartitionLevelFailover.HasValue)
             {
-                isPPafEnabled = this.accountServiceConfiguration.AccountProperties.EnablePartitionLevelFailover.Value;
+                this.ConnectionPolicy.EnablePartitionLevelFailover = this.accountServiceConfiguration.AccountProperties.EnablePartitionLevelFailover.Value;
             }
 
-            this.ConnectionPolicy.EnablePartitionLevelFailover = isPPafEnabled;
+            this.isThinClientEnabled = (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway) &&
+                (this.accountServiceConfiguration.AccountProperties?.ThinClientWritableLocationsInternal?.Count ?? 0) > 0;
             this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker |= this.ConnectionPolicy.EnablePartitionLevelFailover;
             this.ConnectionPolicy.UserAgentContainer.AppendFeatures(this.GetUserAgentFeatures());
             this.InitializePartitionLevelFailoverWithDefaultHedging();
 
-            this.PartitionKeyRangeLocation = 
-                this.ConnectionPolicy.EnablePartitionLevelFailover 
-                || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker
-                    ? new GlobalPartitionEndpointManagerCore(
+            this.PartitionKeyRangeLocation =
+                new GlobalPartitionEndpointManagerCore(
                         this.GlobalEndpointManager,
                         this.ConnectionPolicy.EnablePartitionLevelFailover,
-                        this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker)
-                    : GlobalPartitionEndpointManagerNoOp.Instance;
+                        this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker,
+                        this.isThinClientEnabled);
 
             this.retryPolicy = new RetryPolicy(
                 globalEndpointManager: this.GlobalEndpointManager,
                 connectionPolicy: this.ConnectionPolicy,
-                partitionKeyRangeLocationCache: this.PartitionKeyRangeLocation);
+                partitionKeyRangeLocationCache: this.PartitionKeyRangeLocation,
+                isThinClientEnabled: this.isThinClientEnabled);
 
             this.ResetSessionTokenRetryPolicy = this.retryPolicy;
 
             GatewayStoreModel gatewayStoreModel = new GatewayStoreModel(
-                    this.GlobalEndpointManager,
-                    this.sessionContainer,
-                    (Cosmos.ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel,
-                    this.eventSource,
-                    this.serializerSettings,
-                    this.httpClient,
-                    this.PartitionKeyRangeLocation,
-                    isPartitionLevelFailoverEnabled: this.ConnectionPolicy.EnablePartitionLevelFailover || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker);
+                endpointManager: this.GlobalEndpointManager,
+                sessionContainer: this.sessionContainer,
+                defaultConsistencyLevel: (Cosmos.ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel,
+                eventSource: this.eventSource,
+                serializerSettings: this.serializerSettings,
+                httpClient: this.httpClient,
+                globalPartitionEndpointManager: this.PartitionKeyRangeLocation,
+                isThinClientEnabled: this.isThinClientEnabled,
+                userAgentContainer: this.ConnectionPolicy.UserAgentContainer,
+                this.chaosInterceptor);
 
             this.GatewayStoreModel = gatewayStoreModel;
 
@@ -1107,22 +1105,7 @@ namespace Microsoft.Azure.Cosmos
 
             gatewayStoreModel.SetCaches(this.partitionKeyRangeCache, this.collectionCache);
 
-            if (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway && this.isThinClientEnabled)
-            {
-                ThinClientStoreModel thinClientStoreModel = new (
-                    endpointManager: this.GlobalEndpointManager,
-                    this.PartitionKeyRangeLocation,
-                    this.sessionContainer,
-                    (Cosmos.ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel,
-                    this.eventSource,
-                    this.serializerSettings,
-                    this.httpClient);
-
-                thinClientStoreModel.SetCaches(this.partitionKeyRangeCache, this.collectionCache);
-
-                this.StoreModel = thinClientStoreModel;
-            }
-            else if (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway)
+            if (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway)
             {
                 this.StoreModel = this.GatewayStoreModel;
             }
@@ -1412,6 +1395,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.GlobalEndpointManager != null)
             {
+                this.GlobalEndpointManager.OnEnablePartitionLevelFailoverConfigChanged -= this.UpdatePartitionLevelFailoverConfigWithAccountRefresh;
                 this.GlobalEndpointManager.Dispose();
                 this.GlobalEndpointManager = null;
             }
@@ -6843,6 +6827,7 @@ namespace Microsoft.Azure.Cosmos
             AccountProperties accountProperties = this.accountServiceConfiguration.AccountProperties;
             this.UseMultipleWriteLocations = this.ConnectionPolicy.UseMultipleWriteLocations && accountProperties.EnableMultipleWriteLocations;
             this.GlobalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);
+            this.GlobalEndpointManager.OnEnablePartitionLevelFailoverConfigChanged += this.UpdatePartitionLevelFailoverConfigWithAccountRefresh;
         }
 
         internal string GetUserAgentFeatures()
@@ -6882,10 +6867,52 @@ namespace Microsoft.Azure.Cosmos
                     DocumentClient.DefaultHedgingThresholdInMilliseconds,
                     this.ConnectionPolicy.RequestTimeout.TotalMilliseconds / 2);
 
-                this.ConnectionPolicy.AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
+                this.ConnectionPolicy.AvailabilityStrategy = AvailabilityStrategy.SDKDefaultCrossRegionHedgingStrategyForPPAF(
                     threshold: TimeSpan.FromMilliseconds(defaultThresholdInMillis),
                     thresholdStep: TimeSpan.FromMilliseconds(DocumentClient.DefaultHedgingThresholdStepInMilliseconds));
             }
+        }
+
+        private void UpdatePartitionLevelFailoverConfigWithAccountRefresh(
+            bool isEnabled)
+        {
+            // Only update if client-level override is not disabled
+            if (this.ConnectionPolicy.DisablePartitionLevelFailoverClientLevelOverride)
+            {
+                DefaultTrace.TraceInformation("DocumentClient: PPAF change ignored due to client-level override disabled");
+                return;
+            }
+
+            DefaultTrace.TraceInformation(
+                "DocumentClient: PPAF Account Level Config Updated. Updating EnablePartitionLevelFailover to {0}",
+                isEnabled);
+
+            // Step 1: Enable partition level failover.
+            this.PartitionKeyRangeLocation.SetIsPPAFEnabled(isEnabled);
+            this.ConnectionPolicy.EnablePartitionLevelFailover = isEnabled;
+
+            // Step 2: Enable partition level circuit breaker.
+            this.PartitionKeyRangeLocation.SetIsPPCBEnabled(isEnabled);
+            this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker = isEnabled;
+
+            // Step 3: Enable default hedging strategy if partition level failover is enabled.
+            if (isEnabled && this.ConnectionPolicy.AvailabilityStrategy == null)
+            {
+                this.InitializePartitionLevelFailoverWithDefaultHedging();
+            }
+            else
+            {
+                if (this.ConnectionPolicy.AvailabilityStrategy is CrossRegionHedgingAvailabilityStrategy strategy && strategy.IsSDKDefaultStrategyForPPAF)
+                {
+                    // If the user has not set a custom availability strategy, then we will reset it to null.
+                    this.ConnectionPolicy.AvailabilityStrategy = null;
+                }
+            }
+
+            // Step 4: Update the user agent features.
+            this.ConnectionPolicy.UserAgentContainer.AppendFeatures(this.GetUserAgentFeatures());
+
+            DefaultTrace.TraceInformation("DocumentClient: Successfully updated PPAF configuration dynamically");
         }
 
         internal void CaptureSessionToken(DocumentServiceRequest request, DocumentServiceResponse response)
