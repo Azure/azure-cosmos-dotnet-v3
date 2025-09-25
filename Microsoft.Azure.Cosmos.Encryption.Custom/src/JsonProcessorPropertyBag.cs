@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
 #if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
     using System;
+    using System.Collections.Generic;
 
     /// <summary>
     /// Centralizes handling of the JsonProcessor override communicated via <see cref="RequestOptions.Properties"/>.
@@ -24,7 +25,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 return;
             }
 
-            if (TryGetJsonProcessorOverride(requestOptions, out JsonProcessor overrideProcessor))
+            bool hasOverride = TryGetJsonProcessorOverride(requestOptions, out JsonProcessor overrideProcessor);
+            if (hasOverride)
             {
                 encryptionOptions.JsonProcessor = overrideProcessor;
             }
@@ -35,6 +37,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 throw new NotSupportedException("JsonProcessor.Stream is not supported for AE AES encryption algorithm.");
             }
+
+            EnsureRequestOptionsReflectProcessor(requestOptions, encryptionOptions.JsonProcessor, hasOverride);
 #pragma warning restore CS0618
         }
 
@@ -57,6 +61,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
 
             return false;
+        }
+
+        private static void EnsureRequestOptionsReflectProcessor(RequestOptions requestOptions, JsonProcessor selectedProcessor, bool hasOverride)
+        {
+            if (requestOptions == null)
+            {
+                return;
+            }
+
+            if (!hasOverride && selectedProcessor == JsonProcessor.Newtonsoft)
+            {
+                return;
+            }
+
+            Dictionary<string, object> properties = requestOptions.Properties != null
+                ? new Dictionary<string, object>(requestOptions.Properties)
+                : new Dictionary<string, object>();
+
+            properties[JsonProcessorPropertyBagKey] = selectedProcessor;
+            requestOptions.Properties = properties;
         }
     }
 #endif

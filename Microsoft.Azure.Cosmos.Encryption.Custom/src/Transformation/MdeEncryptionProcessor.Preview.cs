@@ -128,6 +128,27 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             using IDisposable selectionScope = diagnosticsContext?.CreateScope(EncryptionDiagnostics.ScopeDecryptModeSelectionPrefix + jsonProcessor);
             if (jsonProcessor == JsonProcessor.Newtonsoft)
             {
+                // If caller explicitly asked for Stream via property bag but encryption algorithm is legacy,
+                // surface a clear NotSupportedException to align with test expectations.
+                // Detect legacy algorithm presence for this decrypt attempt.
+                if (requestOptions != null && JsonProcessorPropertyBag.TryGetJsonProcessorOverride(requestOptions, out JsonProcessor overrideProc) && overrideProc == JsonProcessor.Stream)
+                {
+                    // Peek to determine if payload is legacy (non-MDE) – reuse existing inspection helper.
+                    if (input != null)
+                    {
+                        (bool isMde, _) = await TryReadMdeEncryptionPropertiesStreamingAsync(input, cancellationToken);
+                        if (!isMde)
+                        {
+                            throw new NotSupportedException("JsonProcessor.Stream override is not supported for legacy/unencrypted documents when using provided output stream.");
+                        }
+
+                        if (input.CanSeek)
+                        {
+                            input.Position = 0; // reset for JObject path below
+                        }
+                    }
+                }
+
                 Func<(JObject itemJObj, EncryptionProperties encryptionProperties), Task<DecryptionContext>> onMde = async item =>
                 {
                     DecryptionContext ctx = await this.JObjectEncryptionProcessor.DecryptObjectAsync(
@@ -168,12 +189,44 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             (bool hasMde, EncryptionProperties streamingProps) = await TryReadMdeEncryptionPropertiesStreamingAsync(input, cancellationToken);
             if (!hasMde)
             {
+                // Need to determine if this is legacy-encrypted, MDE (but wrapper parse failed), or unencrypted.
                 if (input.CanSeek)
                 {
-                    input.Position = 0; // allow fallback to read
+                    input.Position = 0;
                 }
 
-                return null; // legacy or unencrypted fallback
+                JObject jObj = ReadJObject(input);
+                JObject encryptionPropsJObj = RetrieveEncryptionProperties(jObj);
+                if (encryptionPropsJObj == null)
+                {
+                    // Unencrypted – rewind and return null.
+                    if (input.CanSeek)
+                    {
+                        input.Position = 0;
+                    }
+
+                    return null;
+                }
+
+                EncryptionProperties ep = encryptionPropsJObj.ToObject<EncryptionProperties>();
+#pragma warning disable CS0618
+                if (ep.EncryptionAlgorithm != CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)
+                {
+                    throw new NotSupportedException("JsonProcessor.Stream override is not supported for legacy encryption algorithms when using provided output stream.");
+                }
+#pragma warning restore CS0618
+
+                // It is MDE, just not efficiently detectable by the streaming peek logic (e.g., format mismatch). Use JObject decrypt fallback.
+                DecryptionContext jCtx = await this.JObjectEncryptionProcessor.DecryptObjectAsync(jObj, encryptor, ep, diagnosticsContext, cancellationToken);
+                output.Position = 0;
+                EncryptionProcessor.BaseSerializer.WriteToStream(jObj, output);
+                output.Position = 0;
+                if (input.CanSeek)
+                {
+                    input.Position = 0; // already consumed but reset for completeness
+                }
+
+                return jCtx;
             }
 
             DecryptionContext ctx = await this.DecryptStreamAsync(input, output, encryptor, streamingProps, diagnosticsContext, cancellationToken);

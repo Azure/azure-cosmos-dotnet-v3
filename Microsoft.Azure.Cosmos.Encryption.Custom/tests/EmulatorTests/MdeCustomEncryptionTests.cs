@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Net;
@@ -278,20 +279,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         public async Task BackCompat_RoundTrip_WithAndWithoutJsonProcessorOverride()
         {
             // Arrange: simple POCO with one encrypted path
-            var testItem = new TestItem
+            TestItem testItem = new TestItem
             {
                 Id = Guid.NewGuid().ToString(),
                 PK = Guid.NewGuid().ToString(),
                 NonSensitive = "hello",
                 Sensitive = "secret-value"
-            };
-
-            EncryptionOptions encryptionOptions = new()
-            {
-                DataEncryptionKeyId = dekProperties.Id,
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
-                PathsToEncrypt = new List<string> { "/Sensitive" },
-                JsonProcessor = JsonProcessor.Newtonsoft // baseline
             };
 
             ItemRequestOptions baselineRequestOptions = null; // no override
@@ -356,7 +349,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         [TestMethod]
         public async Task StreamProcessor_EndToEnd_RoundTrip()
         {
-            var testItem = new TestItem
+            TestItem testItem = new TestItem
             {
                 Id = Guid.NewGuid().ToString(),
                 PK = Guid.NewGuid().ToString(),
@@ -387,9 +380,203 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         }
 
         [TestMethod]
+        public async Task StreamProcessor_ScopesReflectStreamOptIn()
+        {
+            List<string> scopes = await CaptureEncryptionScopesAsync(async () =>
+            {
+                TestItem testItem = new TestItem
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    PK = Guid.NewGuid().ToString(),
+                    NonSensitive = "diag-plain",
+                    Sensitive = "diag-secret"
+                };
+
+                EncryptionItemRequestOptions createOptions = new()
+                {
+                    EncryptionOptions = new EncryptionOptions
+                    {
+                        DataEncryptionKeyId = dekProperties.Id,
+                        EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                        PathsToEncrypt = new List<string> { "/Sensitive" },
+                        JsonProcessor = JsonProcessor.Stream
+                    }
+                };
+
+                bool created = false;
+                try
+                {
+                    ItemResponse<TestItem> createResponse = await encryptionContainer.CreateItemAsync(
+                        testItem,
+                        new PartitionKey(testItem.PK),
+                        createOptions);
+                    Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+                    created = true;
+
+                    ItemResponse<TestItem> readResponse = await encryptionContainer.ReadItemAsync<TestItem>(
+                        testItem.Id,
+                        new PartitionKey(testItem.PK),
+                        new ItemRequestOptions
+                        {
+                            Properties = new Dictionary<string, object>
+                            {
+                                { "encryption-json-processor", JsonProcessor.Stream }
+                            }
+                        });
+
+                    Assert.AreEqual(testItem.Sensitive, readResponse.Resource.Sensitive);
+                }
+                finally
+                {
+                    if (created)
+                    {
+                        await encryptionContainer.DeleteItemAsync<TestItem>(
+                            testItem.Id,
+                            new PartitionKey(testItem.PK));
+                    }
+                }
+            });
+
+            (int streamEncrypt, int streamDecrypt, int newtonsoftEncrypt, int newtonsoftDecrypt) = CountJsonProcessorScopes(scopes);
+
+            Assert.IsTrue(
+                streamEncrypt >= 1,
+                $"Expected to capture stream encrypt scope. Scopes: {string.Join(", ", scopes)}");
+            Assert.IsTrue(
+                streamDecrypt >= 1,
+                $"Expected to capture stream decrypt scope. Scopes: {string.Join(", ", scopes)}");
+            Assert.AreEqual(
+                0,
+                newtonsoftEncrypt,
+                $"Did not expect newtonsoft encrypt scope when opting into stream. Scopes: {string.Join(", ", scopes)}");
+            Assert.AreEqual(
+                0,
+                newtonsoftDecrypt,
+                $"Did not expect newtonsoft decrypt scope when opting into stream. Scopes: {string.Join(", ", scopes)}");
+        }
+
+        [TestMethod]
+        public async Task StreamProcessor_DefaultsToNewtonsoftWhenNoOptIn()
+        {
+            List<string> scopes = await CaptureEncryptionScopesAsync(async () =>
+            {
+                TestItem testItem = new TestItem
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    PK = Guid.NewGuid().ToString(),
+                    NonSensitive = "default-plain",
+                    Sensitive = "default-secret"
+                };
+
+                EncryptionItemRequestOptions createOptions = new()
+                {
+                    EncryptionOptions = new EncryptionOptions
+                    {
+                        DataEncryptionKeyId = dekProperties.Id,
+                        EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                        PathsToEncrypt = new List<string> { "/Sensitive" }
+                    }
+                };
+
+                bool created = false;
+                try
+                {
+                    ItemResponse<TestItem> createResponse = await encryptionContainer.CreateItemAsync(
+                        testItem,
+                        new PartitionKey(testItem.PK),
+                        createOptions);
+                    Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+                    created = true;
+
+                    ItemResponse<TestItem> readResponse = await encryptionContainer.ReadItemAsync<TestItem>(
+                        testItem.Id,
+                        new PartitionKey(testItem.PK));
+
+                    Assert.AreEqual(testItem.Sensitive, readResponse.Resource.Sensitive);
+                }
+                finally
+                {
+                    if (created)
+                    {
+                        await encryptionContainer.DeleteItemAsync<TestItem>(
+                            testItem.Id,
+                            new PartitionKey(testItem.PK));
+                    }
+                }
+            });
+
+            (int streamEncrypt, int streamDecrypt, int newtonsoftEncrypt, int newtonsoftDecrypt) = CountJsonProcessorScopes(scopes);
+
+            Assert.AreEqual(
+                0,
+                streamEncrypt,
+                $"Did not expect stream encrypt scope without opting in. Scopes: {string.Join(", ", scopes)}");
+            Assert.AreEqual(
+                0,
+                streamDecrypt,
+                $"Did not expect stream decrypt scope without opting in. Scopes: {string.Join(", ", scopes)}");
+            Assert.IsTrue(
+                newtonsoftEncrypt >= 1,
+                $"Expected to capture newtonsoft encrypt scope. Scopes: {string.Join(", ", scopes)}");
+            Assert.IsTrue(
+                newtonsoftDecrypt >= 1,
+                $"Expected to capture newtonsoft decrypt scope. Scopes: {string.Join(", ", scopes)}");
+        }
+
+        private static async Task<List<string>> CaptureEncryptionScopesAsync(Func<Task> action)
+        {
+            List<string> scopes = new List<string>();
+            using ActivityListener listener = new ActivityListener
+            {
+                ShouldListenTo = source => string.Equals(source.Name, "Microsoft.Azure.Cosmos.Encryption.Custom", StringComparison.Ordinal),
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+                ActivityStopped = activity =>
+                {
+                    if (!string.IsNullOrEmpty(activity?.OperationName))
+                    {
+                        lock (scopes)
+                        {
+                            scopes.Add(activity.OperationName);
+                        }
+                    }
+                }
+            };
+
+            ActivitySource.AddActivityListener(listener);
+            try
+            {
+                await action();
+            }
+            finally
+            {
+                listener.Dispose();
+            }
+
+            lock (scopes)
+            {
+                return scopes.ToList();
+            }
+        }
+
+        private static (int StreamEncrypt, int StreamDecrypt, int NewtonsoftEncrypt, int NewtonsoftDecrypt) CountJsonProcessorScopes(IEnumerable<string> scopes)
+        {
+            string encryptStreamScope = EncryptionDiagnostics.ScopeEncryptModeSelectionPrefix + JsonProcessor.Stream;
+            string decryptStreamScope = EncryptionDiagnostics.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream;
+            string encryptNewtonsoftScope = EncryptionDiagnostics.ScopeEncryptModeSelectionPrefix + JsonProcessor.Newtonsoft;
+            string decryptNewtonsoftScope = EncryptionDiagnostics.ScopeDecryptModeSelectionPrefix + JsonProcessor.Newtonsoft;
+
+            int streamEncrypt = scopes.Count(scope => string.Equals(scope, encryptStreamScope, StringComparison.Ordinal));
+            int streamDecrypt = scopes.Count(scope => string.Equals(scope, decryptStreamScope, StringComparison.Ordinal));
+            int newtonsoftEncrypt = scopes.Count(scope => string.Equals(scope, encryptNewtonsoftScope, StringComparison.Ordinal));
+            int newtonsoftDecrypt = scopes.Count(scope => string.Equals(scope, decryptNewtonsoftScope, StringComparison.Ordinal));
+
+            return (streamEncrypt, streamDecrypt, newtonsoftEncrypt, newtonsoftDecrypt);
+        }
+
+        [TestMethod]
         public async Task ProvidedOutputDecrypt_StreamProcessor_SuccessAndRewinds()
         {
-            var testItem = new TestItem
+            TestItem testItem = new TestItem
             {
                 Id = Guid.NewGuid().ToString(),
                 PK = Guid.NewGuid().ToString(),
@@ -410,10 +597,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
 
             _ = await encryptionContainer.CreateItemAsync(testItem, new PartitionKey(testItem.PK), options);
 
-            using ResponseMessage readStream = await encryptionContainer.ReadItemStreamAsync(testItem.Id, new PartitionKey(testItem.PK), new ItemRequestOptions
-            {
-                Properties = new Dictionary<string, object> { { "encryption-json-processor", JsonProcessor.Stream } }
-            });
+            // IMPORTANT: use the base container to get the raw encrypted payload (_ei present). The encryption container would auto-decrypt.
+            using ResponseMessage readStream = await itemContainer.ReadItemStreamAsync(testItem.Id, new PartitionKey(testItem.PK));
             Assert.IsTrue(readStream.IsSuccessStatusCode);
 
             readStream.Content.Position = 0;
@@ -433,7 +618,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         [ExpectedException(typeof(NotSupportedException))]
         public async Task ProvidedOutputDecrypt_StreamOverrideWithLegacyAlgorithm_Throws()
         {
-            var testItem = new TestItem
+            TestItem testItem = new TestItem
             {
                 Id = Guid.NewGuid().ToString(),
                 PK = Guid.NewGuid().ToString(),
@@ -455,7 +640,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             };
             _ = await encryptionContainer.CreateItemAsync(testItem, new PartitionKey(testItem.PK), options);
 
-            using ResponseMessage readStream = await encryptionContainer.ReadItemStreamAsync(testItem.Id, new PartitionKey(testItem.PK));
+            // Get raw encrypted (legacy algorithm) payload without automatic decrypt.
+            using ResponseMessage readStream = await itemContainer.ReadItemStreamAsync(testItem.Id, new PartitionKey(testItem.PK));
             readStream.Content.Position = 0;
             MemoryStream output = new();
             _ = await EncryptionProcessor.DecryptAsync(
