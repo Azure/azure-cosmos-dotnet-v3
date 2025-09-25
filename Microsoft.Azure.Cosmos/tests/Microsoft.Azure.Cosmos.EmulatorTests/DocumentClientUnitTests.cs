@@ -277,8 +277,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [DataRow(false)]
-        [DataRow(true)]
+        [DataRow(false, DisplayName = "NRegion Synchronous commit is disabled for the account")]
+        [DataRow(true, DisplayName = "NRegion Synchronous commit is enabled for the account")]
         public void EnableNRegionSynchronousCommit_PassedToStoreClient(bool nRegionCommitEnabled)
         {
 

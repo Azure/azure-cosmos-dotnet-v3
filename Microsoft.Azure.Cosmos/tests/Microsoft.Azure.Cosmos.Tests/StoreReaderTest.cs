@@ -911,7 +911,7 @@ namespace Microsoft.Azure.Cosmos
         Sequence of steps:
         1. After receiving response from primary of write region, look at GlobalNRegionCommittedGLSN and LSN headers.
         2. If GlobalNRegionCommittedGLSN == LSN, return response to caller
-        3. If GlobalNRegionCommittedGLSN < LSN && storeResponse.NumberOFReadRegions > 0 , cache LSN in request as SelectedGlobalNRegionCommittedGLSN, and issue barrier requests against any/all replicas.
+        3. If GlobalNRegionCommittedGLSN < LSN && storeResponse.NumberOfReadRegions > 0 , cache LSN in request as SelectedGlobalNRegionCommittedGLSN, and issue barrier requests against any/all replicas.
         4. Each barrier response will contain its own LSN and GlobalNRegionCommittedGLSN, check for any response that satisfies GlobalNRegionCommittedGLSN >= SelectedGlobalNRegionCommittedGLSN
         5. Return to caller on success.
         </summary>
@@ -992,7 +992,7 @@ namespace Microsoft.Azure.Cosmos
                 if (ex.InnerException is DocumentClientException goneEx)
                 {
                     DefaultTrace.TraceInformation("Gone exception expected!");
-                    //Assert.AreEqual(SubStatusCodes.Server_NRegionCommitWriteBarrierNotMet, goneEx.GetSubStatusCode());
+                    Assert.AreEqual(SubStatusCodes.Server_NRegionCommitWriteBarrierNotMet, goneEx.GetSubStatusCode());
                 }
             }
         }

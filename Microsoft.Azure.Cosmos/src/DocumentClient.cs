@@ -6778,10 +6778,7 @@ namespace Microsoft.Azure.Cosmos
 
         private void CreateStoreModel(bool subscribeRntbdStatus)
         {
-            AccountProperties accountProperties = this.accountServiceConfiguration.AccountProperties;
-
-            bool enableNRegionSynchronousCommit = accountProperties.EnableNRegionSynchronousCommit;
-            AccountConfigurationProperties accountConfigurationProperties = new (EnableNRegionSynchronousCommit: enableNRegionSynchronousCommit);
+            AccountConfigurationProperties accountConfigurationProperties = new (EnableNRegionSynchronousCommit: this.accountServiceConfiguration.AccountProperties.EnableNRegionSynchronousCommit);
 
             //EnableReadRequestsFallback, if not explicity set on the connection policy,
             //is false if the account's consistency is bounded staleness,
