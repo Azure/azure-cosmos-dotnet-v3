@@ -215,27 +215,24 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Debug.Assert(diagnosticsContext != null);
             input.Position = 0;
 
-            using (diagnosticsContext.CreateScope(EncryptionDiagnostics.ScopeDecryptStreamImplMde))
+            EncryptionPropertiesWrapper properties = await System.Text.Json.JsonSerializer.DeserializeAsync<EncryptionPropertiesWrapper>(input, cancellationToken: cancellationToken);
+            input.Position = 0;
+            if (properties?.EncryptionProperties == null)
             {
-                EncryptionPropertiesWrapper properties = await System.Text.Json.JsonSerializer.DeserializeAsync<EncryptionPropertiesWrapper>(input, cancellationToken: cancellationToken);
-                input.Position = 0;
-                if (properties?.EncryptionProperties == null)
-                {
-                    return (input, null);
-                }
-
-                MemoryStream ms = new ();
-
-                DecryptionContext context = await MdeEncryptionProcessor.DecryptStreamAsync(input, ms, encryptor, properties.EncryptionProperties, diagnosticsContext, cancellationToken);
-                if (context == null)
-                {
-                    input.Position = 0;
-                    return (input, null);
-                }
-
-                await input.DisposeAsync();
-                return (ms, context);
+                return (input, null);
             }
+
+            MemoryStream ms = new ();
+
+            DecryptionContext context = await MdeEncryptionProcessor.DecryptStreamAsync(input, ms, encryptor, properties.EncryptionProperties, diagnosticsContext, cancellationToken);
+            if (context == null)
+            {
+                input.Position = 0;
+                return (input, null);
+            }
+
+            await input.DisposeAsync();
+            return (ms, context);
         }
 
 #endif
@@ -388,14 +385,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 }
 
                 CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(null);
-                using (diagnosticsContext.CreateScope(EncryptionDiagnostics.ScopeDeserializeAndDecryptResponseAsync))
-                {
-                    await DecryptAsync(
-                        document,
-                        encryptor,
-                        diagnosticsContext,
-                        cancellationToken);
-                }
+                await DecryptAsync(
+                    document,
+                    encryptor,
+                    diagnosticsContext,
+                    cancellationToken);
             }
 
             // the contents of contentJObj get decrypted in place for MDE algorithm model, and for legacy model _ei property is removed

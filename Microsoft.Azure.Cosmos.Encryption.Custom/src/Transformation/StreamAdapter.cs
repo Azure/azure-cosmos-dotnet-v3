@@ -40,54 +40,48 @@ internal sealed class StreamAdapter : IMdeJsonProcessorAdapter
 
     public async Task<(Stream, DecryptionContext)> DecryptAsync(Stream input, Encryptor encryptor, CosmosDiagnosticsContext diagnosticsContext, CancellationToken cancellationToken)
     {
-        using (diagnosticsContext.CreateScope(EncryptionDiagnostics.ScopeDecryptStreamImplMde))
+        (bool hasMde, EncryptionProperties properties) = await this.TryReadMdeEncryptionPropertiesStreamingAsync(input, cancellationToken);
+        if (!hasMde)
         {
-            (bool hasMde, EncryptionProperties properties) = await this.TryReadMdeEncryptionPropertiesStreamingAsync(input, cancellationToken);
-            if (!hasMde)
-            {
-                return (input, null);
-            }
-
-            MemoryStream ms = new ();
-            DecryptionContext context = await this.streamProcessor.DecryptStreamAsync(input, ms, encryptor, properties, diagnosticsContext, cancellationToken);
-            if (context == null)
-            {
-                return (input, null);
-            }
-
-            return (ms, context);
+            return (input, null);
         }
+
+        MemoryStream ms = new ();
+        DecryptionContext context = await this.streamProcessor.DecryptStreamAsync(input, ms, encryptor, properties, diagnosticsContext, cancellationToken);
+        if (context == null)
+        {
+            return (input, null);
+        }
+
+        return (ms, context);
     }
 
     public async Task<DecryptionContext> DecryptAsync(Stream input, Stream output, Encryptor encryptor, CosmosDiagnosticsContext diagnosticsContext, CancellationToken cancellationToken)
     {
-        using (diagnosticsContext.CreateScope(EncryptionDiagnostics.ScopeDecryptStreamImplMde))
+        (bool hasMde, EncryptionProperties properties) = await this.TryReadMdeEncryptionPropertiesStreamingAsync(input, cancellationToken);
+        if (!hasMde)
         {
-            (bool hasMde, EncryptionProperties properties) = await this.TryReadMdeEncryptionPropertiesStreamingAsync(input, cancellationToken);
-            if (!hasMde)
+            if (input.CanSeek)
             {
-                if (input.CanSeek)
-                {
-                    input.Position = 0;
-                }
-
-                return null;
+                input.Position = 0;
             }
 
-            DecryptionContext context = await this.streamProcessor.DecryptStreamAsync(input, output, encryptor, properties, diagnosticsContext, cancellationToken);
-            if (context == null)
-            {
-                if (input.CanSeek)
-                {
-                    input.Position = 0;
-                }
-
-                return null;
-            }
-
-            await input.DisposeAsync();
-            return context;
+            return null;
         }
+
+        DecryptionContext context = await this.streamProcessor.DecryptStreamAsync(input, output, encryptor, properties, diagnosticsContext, cancellationToken);
+        if (context == null)
+        {
+            if (input.CanSeek)
+            {
+                input.Position = 0;
+            }
+
+            return null;
+        }
+
+        await input.DisposeAsync();
+        return context;
     }
 
     private async Task<(bool hasMde, EncryptionProperties properties)> TryReadMdeEncryptionPropertiesStreamingAsync(Stream input, CancellationToken cancellationToken)

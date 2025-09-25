@@ -78,8 +78,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
             {
             }
 #if NET8_0_OR_GREATER && ENCRYPTION_CUSTOM_PREVIEW
-            AssertScopePresent(ctx, "EncryptionProcessor.Decrypt.Newtonsoft");
-            AssertScopeAbsent(ctx, "EncryptionProcessor.Decrypt.Stream");
+            AssertScopePresent(ctx, "EncryptionProcessor.Decrypt.Mde.Newtonsoft");
+            AssertScopeAbsent(ctx, "EncryptionProcessor.Decrypt.Mde.Stream");
             AssertScopeAbsent(ctx, "EncryptionProcessor.DecryptStreamImpl.Mde");
 #else
             // Legacy (non NET8 preview) path emits no selection scopes.
@@ -104,8 +104,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
             catch (NotSupportedException)
             {
             }
-            AssertScopePresent(ctx, "EncryptionProcessor.Decrypt.Newtonsoft");
-            AssertScopeAbsent(ctx, "EncryptionProcessor.Decrypt.Stream");
+            AssertScopePresent(ctx, "EncryptionProcessor.Decrypt.Mde.Newtonsoft");
+            AssertScopeAbsent(ctx, "EncryptionProcessor.Decrypt.Mde.Stream");
             AssertScopeAbsent(ctx, "EncryptionProcessor.DecryptStreamImpl.Mde"); // Newtonsoft path shouldn't include impl scope
 #else
             Assert.Inconclusive("Provided-output decrypt path only available in NET8 preview build.");
@@ -128,9 +128,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
             catch (NotSupportedException)
             {
             }
-            AssertScopePresent(ctx, "EncryptionProcessor.Decrypt.Stream");
-            AssertScopeAbsent(ctx, "EncryptionProcessor.Decrypt.Newtonsoft");
-            AssertScopePresent(ctx, "EncryptionProcessor.DecryptStreamImpl.Mde");
+            AssertScopePresent(ctx, "EncryptionProcessor.Decrypt.Mde.Stream");
+            AssertScopeAbsent(ctx, "EncryptionProcessor.Decrypt.Mde.Newtonsoft");
+            AssertScopeAbsent(ctx, "EncryptionProcessor.DecryptStreamImpl.Mde");
 #else
             Assert.Inconclusive("Stream override only validated in NET8 preview build.");
 #endif
@@ -153,9 +153,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
             catch (NotSupportedException)
             {
             }
-            AssertScopePresent(ctx, "EncryptionProcessor.Decrypt.Stream");
-            AssertScopeAbsent(ctx, "EncryptionProcessor.Decrypt.Newtonsoft");
-            AssertScopePresent(ctx, "EncryptionProcessor.DecryptStreamImpl.Mde");
+            AssertScopePresent(ctx, "EncryptionProcessor.Decrypt.Mde.Stream");
+            AssertScopeAbsent(ctx, "EncryptionProcessor.Decrypt.Mde.Newtonsoft");
+            AssertScopeAbsent(ctx, "EncryptionProcessor.DecryptStreamImpl.Mde");
 #else
             Assert.Inconclusive("Provided-output stream path only available in NET8 preview build.");
 #endif
@@ -185,11 +185,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
             CosmosDiagnosticsContext decryptDiag = CosmosDiagnosticsContext.Create(null);
             (Stream decrypted, DecryptionContext decCtx) = await EncryptionProcessor.DecryptAsync(encrypted, encryptor, decryptDiag, requestOptions: null, CancellationToken.None);
             Assert.IsNotNull(decCtx); // Should decrypt
-            AssertScopePresent(decryptDiag, "EncryptionProcessor.Decrypt.Newtonsoft");
-            AssertScopeAbsent(decryptDiag, "EncryptionProcessor.Decrypt.Stream");
+            AssertScopePresent(decryptDiag, "EncryptionProcessor.Decrypt.Mde.Newtonsoft");
+            AssertScopeAbsent(decryptDiag, "EncryptionProcessor.Decrypt.Mde.Stream");
             AssertScopeAbsent(decryptDiag, "EncryptionProcessor.DecryptStreamImpl.Mde"); // Newtonsoft path
             // Ensure no duplicate selection scopes
-            Assert.AreEqual(1, decryptDiag.Scopes.Count(s => s.StartsWith("EncryptionProcessor.Decrypt.Newtonsoft", StringComparison.Ordinal)));
+            Assert.AreEqual(1, decryptDiag.Scopes.Count(s => s.StartsWith("EncryptionProcessor.Decrypt.Mde.Newtonsoft", StringComparison.Ordinal)));
         #else
             Assert.Inconclusive("MDE payload diagnostic selection test only valid in NET8 preview.");
         #endif
@@ -218,10 +218,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
             MemoryStream output = new();
             DecryptionContext decCtx = await EncryptionProcessor.DecryptAsync(encrypted, output, encryptor, decryptDiag, requestOptions: null, CancellationToken.None);
             Assert.IsNotNull(decCtx);
-            AssertScopePresent(decryptDiag, "EncryptionProcessor.Decrypt.Newtonsoft");
-            AssertScopeAbsent(decryptDiag, "EncryptionProcessor.Decrypt.Stream");
+            AssertScopePresent(decryptDiag, "EncryptionProcessor.Decrypt.Mde.Newtonsoft");
+            AssertScopeAbsent(decryptDiag, "EncryptionProcessor.Decrypt.Mde.Stream");
             AssertScopeAbsent(decryptDiag, "EncryptionProcessor.DecryptStreamImpl.Mde");
-            Assert.AreEqual(1, decryptDiag.Scopes.Count(s => s.StartsWith("EncryptionProcessor.Decrypt.Newtonsoft", StringComparison.Ordinal)));
+            Assert.AreEqual(1, decryptDiag.Scopes.Count(s => s.StartsWith("EncryptionProcessor.Decrypt.Mde.Newtonsoft", StringComparison.Ordinal)));
         #else
             Assert.Inconclusive("Provided-output MDE newtonsoft selection test only valid in NET8 preview.");
         #endif
@@ -260,10 +260,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
             {
                 // Swallow; focus on scopes
             }
-            AssertScopePresent(ctx, "EncryptionProcessor.Decrypt.Stream");
+            AssertScopePresent(ctx, "EncryptionProcessor.Decrypt.Mde.Stream");
             // Impl scope may appear if the code reached MDE stream impl before failing; assert at most one.
-            Assert.IsTrue(ctx.Scopes.Count(s => s == "EncryptionProcessor.DecryptStreamImpl.Mde") <= 1);
-            Assert.AreEqual(1, ctx.Scopes.Count(s => s.StartsWith("EncryptionProcessor.Decrypt.Stream", StringComparison.Ordinal)));
+            Assert.IsTrue(ctx.Scopes.Count(s => s == "EncryptionProcessor.DecryptStreamImpl.Mde") == 0);
+            Assert.AreEqual(1, ctx.Scopes.Count(s => s.StartsWith("EncryptionProcessor.Decrypt.Mde.Stream", StringComparison.Ordinal)));
             #else
             Assert.Inconclusive("Malformed JSON stream override test only valid in NET8 preview.");
             #endif
@@ -293,15 +293,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
             ItemRequestOptions options = new ItemRequestOptions { Properties = new System.Collections.Generic.Dictionary<string, object>{{"encryption-json-processor", JsonProcessor.Stream}}};
             (Stream decrypted, DecryptionContext ctxDec) = await EncryptionProcessor.DecryptAsync(encrypted, encryptor, decryptDiag, options, CancellationToken.None);
             Assert.IsNotNull(ctxDec);
-            Assert.AreEqual(1, decryptDiag.Scopes.Count(s => s.StartsWith("EncryptionProcessor.Decrypt.Stream", StringComparison.Ordinal)));
-            Assert.AreEqual(1, decryptDiag.Scopes.Count(s => s == "EncryptionProcessor.DecryptStreamImpl.Mde"));
+            Assert.AreEqual(1, decryptDiag.Scopes.Count(s => s.StartsWith("EncryptionProcessor.Decrypt.Mde.Stream", StringComparison.Ordinal)));
+            Assert.AreEqual(0, decryptDiag.Scopes.Count(s => s == "EncryptionProcessor.DecryptStreamImpl.Mde"));
         #else
             Assert.Inconclusive("Duplicate scope prevention test only valid in NET8 preview.");
         #endif
         }
 
         [TestMethod]
-    public async Task EncryptAsync_DoesNotEmitScopes()
+        public async Task EncryptAsync_EmitsNewtonsoftSelectionScope()
         {
 #if NET8_0_OR_GREATER && ENCRYPTION_CUSTOM_PREVIEW
             var testDoc = new { id = "id1", pk = "pk1", P = "v" };
@@ -317,9 +317,39 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
             CosmosDiagnosticsContext encryptDiag = CosmosDiagnosticsContext.Create(null);
             Encryptor encryptor = CreateNoopEncryptor();
             _ = await EncryptionProcessor.EncryptAsync(TestCommon.ToStream(testDoc), encryptor, opts, encryptDiag, CancellationToken.None);
-            Assert.AreEqual(0, encryptDiag.Scopes.Count, $"Expected no scopes during Encrypt but found: {string.Join(';', encryptDiag.Scopes)}");
+
+            AssertScopePresent(encryptDiag, "EncryptionProcessor.Encrypt.Mde.Newtonsoft");
+            AssertScopeAbsent(encryptDiag, "EncryptionProcessor.Encrypt.Mde.Stream");
+            Assert.AreEqual(1, encryptDiag.Scopes.Count(s => s.StartsWith("EncryptionProcessor.Encrypt.Mde.Newtonsoft", StringComparison.Ordinal)));
 #else
             Assert.Inconclusive("Encrypt telemetry contract test only relevant for NET8 preview.");
+#endif
+        }
+
+        [TestMethod]
+        public async Task EncryptAsync_StreamProcessor_EmitsStreamSelectionScope()
+        {
+#if NET8_0_OR_GREATER && ENCRYPTION_CUSTOM_PREVIEW
+            var testDoc = new { id = "id1", pk = "pk1", P = "v" };
+            EncryptionOptions opts = new()
+            {
+                DataEncryptionKeyId = "dekId",
+#pragma warning disable CS0618
+                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+#pragma warning restore CS0618
+                PathsToEncrypt = new System.Collections.Generic.List<string> { "/P" },
+                JsonProcessor = JsonProcessor.Stream,
+            };
+            CosmosDiagnosticsContext encryptDiag = CosmosDiagnosticsContext.Create(null);
+            Encryptor encryptor = CreateNoopEncryptor();
+            using MemoryStream input = (MemoryStream)TestCommon.ToStream(testDoc);
+            MemoryStream output = new();
+            await EncryptionProcessor.EncryptAsync(input, output, encryptor, opts, encryptDiag, CancellationToken.None);
+
+            AssertScopePresent(encryptDiag, "EncryptionProcessor.Encrypt.Mde.Stream");
+            Assert.AreEqual(1, encryptDiag.Scopes.Count(s => s.StartsWith("EncryptionProcessor.Encrypt.Mde.Stream", StringComparison.Ordinal)));
+#else
+            Assert.Inconclusive("Stream encrypt telemetry test only relevant for NET8 preview.");
 #endif
         }
 
@@ -359,9 +389,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
             {
                 // expected
             }
-            Assert.IsTrue(decDiag.Scopes.Count(s => s.StartsWith("EncryptionProcessor.Decrypt.Stream", StringComparison.Ordinal)) >= 1);
+            Assert.IsTrue(decDiag.Scopes.Count(s => s.StartsWith("EncryptionProcessor.Decrypt.Mde.Stream", StringComparison.Ordinal)) >= 1);
             // Impl may or may not appear depending on timing; assert at most one.
-            Assert.IsTrue(decDiag.Scopes.Count(s => s == "EncryptionProcessor.DecryptStreamImpl.Mde") <= 1, "Impl scope duplicated");
+            Assert.IsTrue(decDiag.Scopes.Count(s => s == "EncryptionProcessor.DecryptStreamImpl.Mde") == 0, "Impl scope unexpectedly present");
             #else
             Assert.Inconclusive("Cancellation telemetry test only valid in NET8 preview.");
             #endif

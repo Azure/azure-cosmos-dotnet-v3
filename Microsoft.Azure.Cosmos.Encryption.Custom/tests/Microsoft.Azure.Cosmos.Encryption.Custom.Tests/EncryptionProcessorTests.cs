@@ -52,7 +52,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             MemoryStream encrypted = new();
             await EncryptionProcessor.EncryptAsync(doc.ToStream(), encrypted, mockEncryptor.Object, opts, diagEncrypt, CancellationToken.None);
             encrypted.Position = 0;
-            Assert.IsTrue(diagEncrypt.Scopes.Any(s => s.StartsWith(EncryptionDiagnostics.ScopeEncryptModeSelectionPrefix + JsonProcessor.Stream)));
+            Assert.AreEqual(1, diagEncrypt.Scopes.Count(s => s.StartsWith(EncryptionDiagnostics.ScopeEncryptModeSelectionPrefix + JsonProcessor.Stream)), "Expected a single Stream selection scope for encrypt");
+            Assert.IsFalse(diagEncrypt.Scopes.Any(s => s.StartsWith(EncryptionDiagnostics.ScopeEncryptModeSelectionPrefix + JsonProcessor.Newtonsoft)));
 
             CosmosDiagnosticsContext diagDecrypt = CosmosDiagnosticsContext.Create(null);
             MemoryStream decryptedOut = new();
@@ -65,8 +66,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.IsNull(decryptedObj.Property(Constants.EncryptedInfo));
             Assert.IsNotNull(ctx);
             Assert.IsTrue(ctx.DecryptionInfoList.First().PathsDecrypted.All(p => TestDoc.PathsToEncrypt.Contains(p)));
-            Assert.IsTrue(diagDecrypt.Scopes.Any(s => s.StartsWith(EncryptionDiagnostics.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream)));
-            Assert.IsTrue(diagDecrypt.Scopes.Contains(EncryptionDiagnostics.ScopeDecryptStreamImplMde));
+            Assert.AreEqual(1, diagDecrypt.Scopes.Count(s => s.StartsWith(EncryptionDiagnostics.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream)), "Expected a single Stream selection scope for decrypt");
+            Assert.IsFalse(diagDecrypt.Scopes.Any(s => s.StartsWith(EncryptionDiagnostics.ScopeDecryptModeSelectionPrefix + JsonProcessor.Newtonsoft)));
         }
 
     [TestMethod]
@@ -77,7 +78,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         CosmosDiagnosticsContext diagEncrypt = CosmosDiagnosticsContext.Create(null);
         Stream encrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, opts, diagEncrypt, CancellationToken.None);
 
-        Assert.IsTrue(diagEncrypt.Scopes.Any(s => s.StartsWith(EncryptionDiagnostics.ScopeEncryptModeSelectionPrefix + JsonProcessor.Newtonsoft)));
+    Assert.AreEqual(1, diagEncrypt.Scopes.Count(s => s.StartsWith(EncryptionDiagnostics.ScopeEncryptModeSelectionPrefix + JsonProcessor.Newtonsoft)), "Expected a single Newtonsoft selection scope for encrypt");
+    Assert.IsFalse(diagEncrypt.Scopes.Any(s => s.StartsWith(EncryptionDiagnostics.ScopeEncryptModeSelectionPrefix + JsonProcessor.Stream)));
 
         encrypted.Dispose();
     }
@@ -92,8 +94,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             (Stream result, DecryptionContext ctxDec) = await EncryptionProcessor.DecryptAsync(input, mockEncryptor.Object, ctxDiag, opts, CancellationToken.None);
             Assert.IsNull(ctxDec);
             Assert.AreEqual(0, result.Position);
-            Assert.IsTrue(ctxDiag.Scopes.Any(s => s.StartsWith(EncryptionDiagnostics.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream)));
-            Assert.IsTrue(ctxDiag.Scopes.Contains(EncryptionDiagnostics.ScopeDecryptStreamImplMde));
+            Assert.AreEqual(1, ctxDiag.Scopes.Count(s => s.StartsWith(EncryptionDiagnostics.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream)), "Expected a single Stream selection scope when falling back for unencrypted payload");
+            Assert.IsFalse(ctxDiag.Scopes.Any(s => s.StartsWith(EncryptionDiagnostics.ScopeDecryptModeSelectionPrefix + JsonProcessor.Newtonsoft)));
         }
 
         [TestMethod]
@@ -142,8 +144,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.IsNull(obj.Property(Constants.EncryptedInfo));
             Assert.IsNotNull(ctxDec);
             Assert.IsTrue(ctxDec.DecryptionInfoList.First().PathsDecrypted.All(p => TestDoc.PathsToEncrypt.Contains(p)));
-            Assert.IsTrue(diag.Scopes.Any(s => s.StartsWith(EncryptionDiagnostics.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream)));
-            Assert.IsTrue(diag.Scopes.Contains(EncryptionDiagnostics.ScopeDecryptStreamImplMde));
+            Assert.AreEqual(1, diag.Scopes.Count(s => s.StartsWith(EncryptionDiagnostics.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream)), "Expected a single Stream selection scope during legacy fallback");
+            Assert.IsFalse(diag.Scopes.Any(s => s.StartsWith(EncryptionDiagnostics.ScopeDecryptModeSelectionPrefix + JsonProcessor.Newtonsoft)));
         }
 
         [TestMethod]
@@ -169,8 +171,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             JObject obj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(output);
             Assert.AreEqual(doc.SensitiveStr, obj.Property(nameof(TestDoc.SensitiveStr)).Value.Value<string>());
             Assert.IsNotNull(ctxDec);
-            Assert.IsTrue(diag.Scopes.Any(s => s.StartsWith(EncryptionDiagnostics.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream)));
-            Assert.IsTrue(diag.Scopes.Contains(EncryptionDiagnostics.ScopeDecryptStreamImplMde));
+            Assert.AreEqual(1, diag.Scopes.Count(s => s.StartsWith(EncryptionDiagnostics.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream)), "Expected a single Stream selection scope for legacy fallback with provided output");
+            Assert.IsFalse(diag.Scopes.Any(s => s.StartsWith(EncryptionDiagnostics.ScopeDecryptModeSelectionPrefix + JsonProcessor.Newtonsoft)));
         }
 
         [TestMethod]
