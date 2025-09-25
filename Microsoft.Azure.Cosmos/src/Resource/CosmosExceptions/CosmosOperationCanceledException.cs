@@ -135,11 +135,11 @@ namespace Microsoft.Azure.Cosmos
             lock (this.thisLock)
             {
                 return this.lazyMessage ??=
-                     $"{this.originalException.Message}{Environment.NewLine}Cancellation Token has expired: {this.tokenCancellationRequested}. Learn more at: https://aka.ms/cosmosdb-tsg-request-timeout{Environment.NewLine}";
+                     $"{this.originalException.Message}{Environment.NewLine}Cancellation Token has expired: {this.tokenCancellationRequested}. Learn more at: https://aka.ms/cosmosdb-tsg-request-timeout{Environment.NewLine}CosmosDiagnostics: {this.Diagnostics}";
             }
         }
 
-        internal string EnsureToStringMessage(Boolean skipDiagnostics)
+        internal string EnsureToStringMessage(bool skipDiagnostics)
         {
             if (this.toStringMessage != null)
             {
