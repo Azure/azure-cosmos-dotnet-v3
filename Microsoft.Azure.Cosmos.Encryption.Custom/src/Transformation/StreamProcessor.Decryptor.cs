@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
     using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Encryption.Custom; // For PooledBufferWriter
     using Microsoft.Data.Encryption.Cryptography.Serializers;
 
     internal partial class StreamProcessor
@@ -59,41 +60,56 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             using Utf8JsonWriter writer = new (outputStream);
 
-            byte[] buffer = arrayPoolManager.Rent(InitialBufferSize);
+            using PooledBufferWriter<byte> stagingBuffer = new (InitialBufferSize);
 
             JsonReaderState state = new (StreamProcessor.JsonReaderOptions);
 
             HashSet<string> encryptedPaths = properties.EncryptedPaths as HashSet<string> ?? new (properties.EncryptedPaths, StringComparer.Ordinal);
 
-            int leftOver = 0;
-
-            bool isFinalBlock = false;
+            bool inputCompleted = false;    // Physical end-of-stream observed
+            bool isFinalBlock = false;      // Logical final block (EOF and no buffered data)
             bool isIgnoredBlock = false;
 
             string decryptPropertyName = null;
 
             while (!isFinalBlock)
             {
-                int dataLength = await inputStream.ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), cancellationToken);
-                int dataSize = dataLength + leftOver;
-                isFinalBlock = dataSize == 0;
-                long bytesConsumed = 0;
-
-                // processing itself here
-                bytesConsumed = TransformDecryptBuffer(buffer.AsSpan(0, dataSize));
-
-                leftOver = dataSize - (int)bytesConsumed;
-
-                // we need to scale out buffer
-                if (leftOver == dataSize)
+                if (stagingBuffer.FreeCapacity == 0)
                 {
-                    byte[] newBuffer = arrayPoolManager.Rent(buffer.Length * 2);
-                    buffer.AsSpan().CopyTo(newBuffer);
-                    buffer = newBuffer;
+                    stagingBuffer.EnsureCapacity(stagingBuffer.Count == 0 ? InitialBufferSize : stagingBuffer.Count * 2);
                 }
-                else if (leftOver != 0)
+
+                int read = await inputStream.ReadAsync(stagingBuffer.GetInternalArray().AsMemory(stagingBuffer.Count, stagingBuffer.FreeCapacity), cancellationToken);
+                if (read > 0)
                 {
-                    buffer.AsSpan(dataSize - leftOver, leftOver).CopyTo(buffer);
+                    stagingBuffer.Advance(read);
+                }
+                else
+                {
+                    inputCompleted = true; // EOF
+                }
+
+                int dataSize = stagingBuffer.Count;
+                isFinalBlock = inputCompleted && dataSize == 0;
+
+                long bytesConsumed = TransformDecryptBuffer(stagingBuffer.WrittenSpan.Slice(0, dataSize));
+                int consumed = (int)bytesConsumed;
+                int remaining = dataSize - consumed;
+
+                if (consumed > 0)
+                {
+                    stagingBuffer.ConsumePrefix(consumed);
+                }
+
+                // Truncated / incomplete JSON detection: EOF reached, buffer has data, but no forward progress.
+                if (remaining == dataSize && inputCompleted && dataSize > 0)
+                {
+                    throw new InvalidOperationException("Incomplete or truncated JSON input.");
+                }
+
+                if ((remaining == dataSize) && !inputCompleted)
+                {
+                    stagingBuffer.EnsureCapacity((stagingBuffer.Count * 2) + 1);
                 }
             }
 
