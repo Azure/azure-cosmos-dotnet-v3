@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -21,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     /// </remarks>
     internal class StandByFeedContinuationToken
     {
-        internal delegate Task<IReadOnlyList<Documents.PartitionKeyRange>> PartitionKeyRangeCacheDelegate(string containerRid, Documents.Routing.Range<string> ranges, ITrace trace, bool forceRefresh);
+        internal delegate Task<IReadOnlyList<Documents.PartitionKeyRange>> PartitionKeyRangeCacheDelegate(string containerRid, Documents.Routing.Range<string> ranges, ITrace trace, PartitionKeyDefinition partitionKeyDefinition, bool forceRefresh);
 
         private readonly string containerRid;
         private readonly PartitionKeyRangeCacheDelegate pkRangeCacheDelegate;
@@ -93,10 +94,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             this.inputContinuationToken = initialStandByFeedContinuationToken;
         }
 
-        public async Task<Tuple<CompositeContinuationToken, string>> GetCurrentTokenAsync(bool forceRefresh = false)
+        public async Task<Tuple<CompositeContinuationToken, string>> GetCurrentTokenAsync(PartitionKeyDefinition partitionKeyDefinition, bool forceRefresh = false)
         {
             Debug.Assert(this.compositeContinuationTokens != null);
-            IReadOnlyList<Documents.PartitionKeyRange> resolvedRanges = await this.TryGetOverlappingRangesAsync(this.currentToken.Range, forceRefresh: forceRefresh);
+            IReadOnlyList<Documents.PartitionKeyRange> resolvedRanges = await this.TryGetOverlappingRangesAsync(this.currentToken.Range, partitionKeyDefinition: partitionKeyDefinition, forceRefresh: forceRefresh);
             if (resolvedRanges.Count > 1)
             {
                 this.HandleSplit(resolvedRanges);
@@ -177,6 +178,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                             isMinInclusive: true,
                             isMaxInclusive: false),
                         trace: NoOpTrace.Singleton,
+                        null,
                         forceRefresh: false);
 
                 Debug.Assert(allRanges.Count != 0);
@@ -210,6 +212,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         private async Task<IReadOnlyList<Documents.PartitionKeyRange>> TryGetOverlappingRangesAsync(
             Documents.Routing.Range<string> targetRange,
+            PartitionKeyDefinition partitionKeyDefinition,
             bool forceRefresh = false)
         {
             Debug.Assert(targetRange != null);
@@ -222,6 +225,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     isMaxInclusive: false,
                     isMinInclusive: true),
                 NoOpTrace.Singleton,
+                partitionKeyDefinition,
                 forceRefresh);
 
             if (keyRanges.Count == 0)

@@ -56,6 +56,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IReadOnlyList<Documents.PartitionKeyRange> pkRange = await this.queryClientCore.TryGetOverlappingRangesAsync(
                 collectionResourceId: containerProperties.ResourceId,
                 range: new Documents.Routing.Range<string>("AA", "AB", true, false),
+                partitionKeyDefinition: containerProperties.PartitionKeyDefinition,
                 forceRefresh: false);
 
             Assert.IsNotNull(pkRange);
@@ -64,6 +65,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IReadOnlyList<Documents.PartitionKeyRange> pkRangeAll = await this.queryClientCore.TryGetOverlappingRangesAsync(
                 collectionResourceId: containerProperties.ResourceId,
                 range: new Documents.Routing.Range<string>("00", "FF", true, false),
+                partitionKeyDefinition: containerProperties.PartitionKeyDefinition,
                 forceRefresh: false);
 
             Assert.IsNotNull(pkRangeAll);

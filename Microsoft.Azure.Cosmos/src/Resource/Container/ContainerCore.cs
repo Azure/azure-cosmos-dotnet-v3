@@ -272,10 +272,13 @@ namespace Microsoft.Azure.Cosmos
 
             try
             {
+                Documents.PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync(cancellationToken);
+
                 IReadOnlyList<PartitionKeyRange> partitionKeyRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
                         containerRId,
                         ContainerCore.allRanges,
                         trace,
+                        partitionKeyDefinition,
                         forceRefresh: true);
 
                 if (partitionKeyRanges == null)
@@ -298,6 +301,7 @@ namespace Microsoft.Azure.Cosmos
                         refreshedContainerRId,
                         ContainerCore.allRanges,
                         trace,
+                        partitionKeyDefinition,
                         forceRefresh: true);
 
                     if (partitionKeyRanges == null)
@@ -513,13 +517,15 @@ namespace Microsoft.Azure.Cosmos
                 forceRefresh: false,
                 trace: NoOpTrace.Singleton,
                 cancellationToken);
+            PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync(cancellationToken);
 
             PartitionKeyRangeCache partitionKeyRangeCache = await this.ClientContext.Client.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
             CollectionRoutingMap collectionRoutingMap = await partitionKeyRangeCache.TryLookupAsync(
                 collectionRid,
                 previousValue: null,
                 request: null,
-                NoOpTrace.Singleton);
+                NoOpTrace.Singleton,
+                partitionKeyDefinition);
 
             // Not found.
             if (collectionRoutingMap == null)
@@ -533,7 +539,8 @@ namespace Microsoft.Azure.Cosmos
                     collectionRid,
                     previousValue: null,
                     request: null,
-                    NoOpTrace.Singleton);
+                    NoOpTrace.Singleton,
+                    partitionKeyDefinition);
             }
 
             return collectionRoutingMap;

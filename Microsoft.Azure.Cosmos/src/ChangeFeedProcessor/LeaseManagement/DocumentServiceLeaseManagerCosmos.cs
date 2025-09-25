@@ -70,10 +70,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                     this.partitionKeyRangeCache = await this.monitoredContainer.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
                 }
 
+                //Passing null for partitionKeyDefinition as are using the existing lease's partition key range id to lookup the PKRange and
+                //we don't need the CollectionRoutingMap (which is backed by PartitionKeyRangeCache) to use the new Range Length aware range comparison and setting PartitionKey to Null
+                //defaults to simple ordinal range comparison for backward compatibility.
                 PartitionKeyRange partitionKeyRange = await this.partitionKeyRangeCache.TryGetPartitionKeyRangeByIdAsync(
                     this.lazyContainerRid.Result.Result, 
                     lease.CurrentLeaseToken,
-                    NoOpTrace.Singleton);
+                    NoOpTrace.Singleton, null);
 
                 if (partitionKeyRange != null)
                 {
