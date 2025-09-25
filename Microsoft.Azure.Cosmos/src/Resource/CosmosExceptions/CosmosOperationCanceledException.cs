@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos
         /// <inheritdoc/>
         public override string ToString()
         {
-            return this.EnsureToStringMessage(false);
+            return this.EnsureToStringMessage(skipDiagnostics: false);
         }
 
         private string EnsureLazyMessage()
@@ -186,7 +186,7 @@ namespace Microsoft.Azure.Cosmos
 #pragma warning restore CDX1000 // DontConvertExceptionToObject
             info.AddValue("tokenCancellationRequested", this.tokenCancellationRequested);
             info.AddValue("lazyMessage", this.EnsureLazyMessage());
-            info.AddValue("toStringMessage", this.EnsureToStringMessage(false));
+            info.AddValue("toStringMessage", this.EnsureToStringMessage(skipDiagnostics: false));
         }
 
         /// <summary>
