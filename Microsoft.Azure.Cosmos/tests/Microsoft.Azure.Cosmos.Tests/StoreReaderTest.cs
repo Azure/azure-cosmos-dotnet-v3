@@ -992,7 +992,7 @@ namespace Microsoft.Azure.Cosmos
                 if (ex.InnerException is DocumentClientException goneEx)
                 {
                     DefaultTrace.TraceInformation("Gone exception expected!");
-                    //Assert.AreEqual(SubStatusCodes.Server_NRegionCommitWriteBarrierNotMet, goneEx.GetSubStatusCode());
+                    Assert.AreEqual(SubStatusCodes.Server_NRegionCommitWriteBarrierNotMet, goneEx.GetSubStatusCode());
                 }
             }
         }
