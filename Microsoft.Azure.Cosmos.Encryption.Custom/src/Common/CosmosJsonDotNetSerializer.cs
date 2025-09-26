@@ -40,14 +40,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <returns>The object representing the deserialized stream</returns>
         public T FromStream<T>(Stream stream)
         {
-#if NET8_0_OR_GREATER
-            ArgumentNullException.ThrowIfNull(stream);
-#else
             if (stream == null)
             {
                 throw new ArgumentNullException(nameof(stream));
             }
-#endif
 
             if (typeof(Stream).IsAssignableFrom(typeof(T)))
             {
@@ -85,6 +81,41 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             streamPayload.Position = 0;
             return streamPayload;
+        }
+
+        /// <summary>
+        /// Serializes an object directly into the provided output stream (which remains open) and rewinds it if seekable.
+        /// </summary>
+        /// <typeparam name="T">Type of object being serialized.</typeparam>
+        /// <param name="input">Object to serialize.</param>
+        /// <param name="output">Destination stream. Must be writable.</param>
+        public void WriteToStream<T>(T input, Stream output)
+        {
+            if (output == null)
+            {
+                throw new ArgumentNullException(nameof(output));
+            }
+
+            if (!output.CanWrite)
+            {
+                throw new ArgumentException("Output stream must be writable", nameof(output));
+            }
+
+            using (StreamWriter streamWriter = new (output, encoding: CosmosJsonDotNetSerializer.DefaultEncoding, bufferSize: 1024, leaveOpen: true))
+            using (JsonTextWriter writer = new (streamWriter))
+            {
+                writer.ArrayPool = JsonArrayPool.Instance;
+                writer.Formatting = Newtonsoft.Json.Formatting.None;
+                JsonSerializer jsonSerializer = this.GetSerializer();
+                jsonSerializer.Serialize(writer, input);
+                writer.Flush();
+                streamWriter.Flush();
+            }
+
+            if (output.CanSeek)
+            {
+                output.Position = 0;
+            }
         }
 
         /// <summary>
