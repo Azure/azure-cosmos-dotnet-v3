@@ -72,10 +72,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             itemJObj.Add(Constants.EncryptedInfo, JObject.FromObject(encryptionProperties));
             await input.DisposeCompatAsync();
-            // Direct serialize to a new recyclable MemoryStream to avoid intermediate large object allocations.
-            MemoryStream result = new (capacity: 1024);
-            EncryptionProcessor.BaseSerializer.WriteToStream(itemJObj, result);
-            return result;
+            return EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
         }
 
         internal async Task<DecryptionContext> DecryptObjectAsync(
