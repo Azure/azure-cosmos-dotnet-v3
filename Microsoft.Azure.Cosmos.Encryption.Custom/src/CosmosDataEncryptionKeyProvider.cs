@@ -143,10 +143,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             string containerId,
             CancellationToken cancellationToken = default)
         {
-            if (this.container != null)
-            {
-                throw new InvalidOperationException($"{nameof(CosmosDataEncryptionKeyProvider)} has already been initialized.");
-            }
+            this.ThrowIfAlreadyInitialized();
 
 #if NET8_0_OR_GREATER
             ArgumentNullException.ThrowIfNull(database);
@@ -171,6 +168,25 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
 
             this.container = containerResponse.Container;
+        }
+
+        /// <summary>
+        /// Initialize using an existing Cosmos DB container for storing wrapped DEKs.
+        /// </summary>
+        /// <param name="container">Existing Cosmos DB container.</param>
+        public void Initialize(Container container)
+        {
+            this.ThrowIfAlreadyInitialized();
+
+            this.container = container ?? throw new ArgumentNullException(nameof(container));
+        }
+
+        private void ThrowIfAlreadyInitialized()
+        {
+            if (this.container != null)
+            {
+                throw new InvalidOperationException($"{nameof(CosmosDataEncryptionKeyProvider)} has already been initialized.");
+            }
         }
 
         /// <inheritdoc/>
