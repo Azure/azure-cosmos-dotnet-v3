@@ -45,11 +45,7 @@ internal sealed class NewtonsoftAdapter : IMdeJsonProcessorAdapter
             case MdePropertyStatus.Mde:
                 {
                     DecryptionContext context = await this.jObjectProcessor.DecryptObjectAsync(itemJObj, encryptor, encryptionProperties, diagnosticsContext, cancellationToken);
-#if NET8_0_OR_GREATER
-                    await input.DisposeAsync();
-#else
-                    input.Dispose();
-#endif
+                    await input.DisposeCompatAsync();
 
                     MemoryStream direct = new (capacity: 1024);
                     EncryptionProcessor.BaseSerializer.WriteToStream(itemJObj, direct);
@@ -74,11 +70,7 @@ internal sealed class NewtonsoftAdapter : IMdeJsonProcessorAdapter
                     output.Position = 0;
                     EncryptionProcessor.BaseSerializer.WriteToStream(itemJObj, output);
                     output.Position = 0;
-#if NET8_0_OR_GREATER
-                    await input.DisposeAsync();
-#else
-                    input.Dispose();
-#endif
+                    await input.DisposeCompatAsync();
                     return context;
                 }
 

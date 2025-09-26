@@ -71,12 +71,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
         public override int Read(char[] buffer, int index, int count)
         {
-#if NET8_0_OR_GREATER
-            ArgumentNullException.ThrowIfNull(buffer);
-            ArgumentOutOfRangeException.ThrowIfNegative(index);
-            ArgumentOutOfRangeException.ThrowIfNegative(count);
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - index);
-#else
             if (buffer == null)
             {
                 throw new ArgumentNullException(nameof(buffer));
@@ -96,7 +90,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             {
                 throw new ArgumentOutOfRangeException();
             }
-#endif
 
             if (this.closed)
             {
@@ -126,11 +119,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             }
 
             this.pos = this.length;
-#if NET8_0_OR_GREATER
-            return new string(this.chars[this.pos..this.length].Span);
-#else
-            return new string(this.chars.Slice(this.pos, this.length - this.pos).ToArray());
-#endif
+            Memory<char> remaining = this.chars.Slice(this.pos, this.length - this.pos);
+            return new string(remaining.ToArray());
         }
 
         public override string ReadLine()
@@ -146,11 +136,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 char ch = this.chars.Span[i];
                 if (ch == '\r' || ch == '\n')
                 {
-#if NET8_0_OR_GREATER
-                    string result = new (this.chars[this.pos..i].Span);
-#else
                     string result = new (this.chars.Slice(this.pos, i - this.pos).ToArray());
-#endif
                     this.pos = i + 1;
                     if (ch == '\r' && this.pos < this.length && this.chars.Span[this.pos] == '\n')
                     {
@@ -165,11 +151,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             if (i > this.pos)
             {
-#if NET8_0_OR_GREATER
-                string result = new (this.chars[this.pos..i].Span);
-#else
                 string result = new (this.chars.Slice(this.pos, i - this.pos).ToArray());
-#endif
                 this.pos = i;
                 return result;
             }

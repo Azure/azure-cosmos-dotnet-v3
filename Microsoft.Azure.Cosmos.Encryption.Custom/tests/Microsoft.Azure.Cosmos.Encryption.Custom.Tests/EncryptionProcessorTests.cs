@@ -149,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         [TestMethod]
-        public async Task DecryptProvidedOutput_StreamSelection_LegacyFallback()
+        public async Task DecryptProvidedOutput_StreamSelection_Legacy_Throws()
         {
             TestDoc doc = TestDoc.Create();
             EncryptionOptions legacy = new()
@@ -166,13 +166,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             ItemRequestOptions opts = new() { Properties = new Dictionary<string, object> { { JsonProcessorPropertyBag.JsonProcessorPropertyBagKey, JsonProcessor.Stream } } };
             CosmosDiagnosticsContext diag = CosmosDiagnosticsContext.Create(null);
             MemoryStream output = new();
-            DecryptionContext ctxDec = await EncryptionProcessor.DecryptAsync(legacyEncrypted, output, mockEncryptor.Object, diag, opts, CancellationToken.None);
-            output.Position = 0;
-            JObject obj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(output);
-            Assert.AreEqual(doc.SensitiveStr, obj.Property(nameof(TestDoc.SensitiveStr)).Value.Value<string>());
-            Assert.IsNotNull(ctxDec);
-            Assert.AreEqual(1, diag.Scopes.Count(s => s.StartsWith(EncryptionDiagnostics.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream)), "Expected a single Stream selection scope for legacy fallback with provided output");
-            Assert.IsFalse(diag.Scopes.Any(s => s.StartsWith(EncryptionDiagnostics.ScopeDecryptModeSelectionPrefix + JsonProcessor.Newtonsoft)));
+
+            try
+            {
+                await EncryptionProcessor.DecryptAsync(legacyEncrypted, output, mockEncryptor.Object, diag, opts, CancellationToken.None);
+                Assert.Fail("Expected NotSupportedException for legacy algorithm when using stream override with provided output.");
+            }
+            catch (NotSupportedException ex)
+            {
+                Assert.IsTrue(ex.Message.IndexOf("not supported", StringComparison.OrdinalIgnoreCase) >= 0, $"Unexpected message: {ex.Message}");
+            }
+
+            Assert.AreEqual(1, diag.Scopes.Count(s => s.StartsWith(EncryptionDiagnostics.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream)), "Expected a single Stream selection scope attempted before throwing for legacy payload");
         }
 
         [TestMethod]

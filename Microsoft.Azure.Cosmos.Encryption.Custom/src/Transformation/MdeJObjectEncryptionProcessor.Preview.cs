@@ -30,11 +30,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             Stream result = await this.EncryptAsync(itemJObj, encryptor, encryptionOptions, token);
 
-#if NET8_0_OR_GREATER
-            await input.DisposeAsync();
-#else
-            input.Dispose();
-#endif
+            await input.DisposeCompatAsync();
 
             return result;
         }
@@ -62,11 +58,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             foreach (string pathToEncrypt in encryptionOptions.PathsToEncrypt)
             {
-#if NET8_0_OR_GREATER
-                string propertyName = pathToEncrypt[1..];
-#else
                 string propertyName = pathToEncrypt.Substring(1);
-#endif
                 if (!input.TryGetValue(propertyName, out JToken propertyValue))
                 {
                     continue;
@@ -158,11 +150,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             foreach (string path in encryptionProperties.EncryptedPaths)
             {
-#if NET8_0_OR_GREATER
-                string propertyName = path[1..];
-#else
                 string propertyName = path.Substring(1);
-#endif
 
                 if (!document.TryGetValue(propertyName, out JToken propertyValue))
                 {

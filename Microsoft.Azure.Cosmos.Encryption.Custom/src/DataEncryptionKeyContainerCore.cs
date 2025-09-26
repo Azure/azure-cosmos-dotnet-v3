@@ -67,14 +67,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 throw new ArgumentException(string.Format("Unsupported Encryption Algorithm {0}", encryptionAlgorithm), nameof(encryptionAlgorithm));
             }
 
-#if NET8_0_OR_GREATER
-            ArgumentNullException.ThrowIfNull(encryptionKeyWrapMetadata);
-#else
             if (encryptionKeyWrapMetadata == null)
             {
                 throw new ArgumentNullException(nameof(encryptionKeyWrapMetadata));
             }
-#endif
 
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
 
@@ -159,14 +155,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
            ItemRequestOptions requestOptions = null,
            CancellationToken cancellationToken = default)
         {
-#if NET8_0_OR_GREATER
-            ArgumentNullException.ThrowIfNull(newWrapMetadata);
-#else
             if (newWrapMetadata == null)
             {
                 throw new ArgumentNullException(nameof(newWrapMetadata));
             }
-#endif
 
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
 

@@ -138,11 +138,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
 
             DecryptionContext decryptionContext = await DecryptInternalAsync(encryptor, diagnosticsContext, itemJObj, encryptionPropertiesJObj, cancellationToken);
-#if NET8_0_OR_GREATER
-            await input.DisposeAsync();
-#else
-            input.Dispose();
-#endif
+            await input.DisposeCompatAsync();
 
             // Avoid unnecessary intermediate copy by using direct serialization helper.
             MemoryStream result = new (capacity: 1024);
@@ -302,11 +298,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Encryptor encryptor,
             EncryptionOptions encryptionOptions)
         {
-#if NET8_0_OR_GREATER
-            ArgumentNullException.ThrowIfNull(input);
-            ArgumentNullException.ThrowIfNull(encryptor);
-            ArgumentNullException.ThrowIfNull(encryptionOptions);
-#else
             if (input == null)
             {
                 throw new ArgumentNullException(nameof(input));
@@ -321,7 +312,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 throw new ArgumentNullException(nameof(encryptionOptions));
             }
-#endif
 
             encryptionOptions.Validate();
         }

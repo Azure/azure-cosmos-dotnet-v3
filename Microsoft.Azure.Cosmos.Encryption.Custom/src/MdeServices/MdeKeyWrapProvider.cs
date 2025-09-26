@@ -28,14 +28,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             EncryptionKeyWrapMetadata metadata,
             CancellationToken cancellationToken)
         {
-#if NET8_0_OR_GREATER
-            ArgumentNullException.ThrowIfNull(metadata);
-#else
             if (metadata == null)
             {
                 throw new ArgumentNullException(nameof(metadata));
             }
-#endif
 
             KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
                 metadata.Name,
@@ -51,14 +47,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             EncryptionKeyWrapMetadata metadata,
             CancellationToken cancellationToken)
         {
-#if NET8_0_OR_GREATER
-            ArgumentNullException.ThrowIfNull(metadata);
-#else
             if (metadata == null)
             {
                 throw new ArgumentNullException(nameof(metadata));
             }
-#endif
 
             KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
                 metadata.Name,
