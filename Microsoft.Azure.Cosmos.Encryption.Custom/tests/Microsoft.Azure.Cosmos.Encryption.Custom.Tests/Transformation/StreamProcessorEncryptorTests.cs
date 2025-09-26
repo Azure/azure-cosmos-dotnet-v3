@@ -544,40 +544,36 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         }
 
         [TestMethod]
-        public async Task Encrypt_RootArray_Rejected()
+        public async Task Encrypt_RootArray_NoOpWhenNoPaths()
         {
             string json = "[ { \"id\": \"1\", \"Secret\": \"abc\" } ]";
             using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(json));
             MemoryStream output = new();
             EncryptionOptions options = CreateOptions(Array.Empty<string>());
-            try
-            {
-                await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
-                Assert.Fail("Expected NotSupportedException for root array.");
-            }
-            catch (NotSupportedException ex)
-            {
-                StringAssert.Contains(ex.Message.ToLowerInvariant(), "object root");
-            }
+            await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
+
+            output.Position = 0;
+            using JsonDocument jd = JsonDocument.Parse(output, new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip });
+            Assert.AreEqual(JsonValueKind.Array, jd.RootElement.ValueKind);
+            string roundTripped = jd.RootElement.GetRawText();
+            using JsonDocument expected = JsonDocument.Parse(json);
+            Assert.AreEqual(expected.RootElement.GetRawText(), roundTripped, "Root array should be preserved when no paths are encrypted.");
         }
 
         [TestMethod]
-        public async Task Encrypt_PrimitiveRoot_Rejected()
+        public async Task Encrypt_PrimitiveRoot_NoOpWhenNoPaths()
         {
             foreach (string json in new[] { "123", "\"str\"", "true", "false", "null" })
             {
                 using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(json));
                 MemoryStream output = new();
                 EncryptionOptions options = CreateOptions(Array.Empty<string>());
-                try
-                {
-                    await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
-                    Assert.Fail($"Expected NotSupportedException for primitive root: {json}");
-                }
-                catch (NotSupportedException ex)
-                {
-                    StringAssert.Contains(ex.Message.ToLowerInvariant(), "object root");
-                }
+                await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
+
+                output.Position = 0;
+                using JsonDocument jd = JsonDocument.Parse(output);
+                using JsonDocument expected = JsonDocument.Parse(json);
+                Assert.AreEqual(expected.RootElement.ValueKind, jd.RootElement.ValueKind, $"Primitive root {json} should be preserved.");
             }
         }
     }
