@@ -143,7 +143,6 @@
                 CancellationToken.None);
         }
 #endif
-        // Local CreateRequestOptions removed in favor of shared RequestOptionsOverrideHelper.
 
         private EncryptionOptions CreateEncryptionOptions()
         {
