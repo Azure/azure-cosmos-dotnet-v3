@@ -3,8 +3,8 @@
 #nullable enable
 namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 {
-    using System.Collections.Generic;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Encryption.Custom;
     internal static class RequestOptionsOverrideHelper
     {
         internal static RequestOptions? Create(JsonProcessor processor)
@@ -14,13 +14,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             {
                 return null; // default path
             }
-            return new ItemRequestOptions
-            {
-                Properties = new Dictionary<string, object>
-                {
-                    { "encryption-json-processor", processor }
-                }
-            };
+
+            return EncryptionRequestOptionsExperimental.CreateRequestOptions(processor);
 #else
             return null;
 #endif

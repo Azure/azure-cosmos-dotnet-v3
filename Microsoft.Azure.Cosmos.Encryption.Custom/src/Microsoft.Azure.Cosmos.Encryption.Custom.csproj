@@ -49,10 +49,10 @@
   </ItemGroup>  
     
   <ItemGroup>
-     <PackageReference Include="Azure.Identity" Version="1.11.4" />
-     <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
-     <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />
-     <PackageReference Include="Newtonsoft.Json" Version="10.0.2" NoWarn="NU1903" PrivateAssets="All" />
+    <PackageReference Include="Azure.Identity" Version="1.11.4" />
+    <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />
+    <PackageReference Include="Newtonsoft.Json" Version="10.0.2" NoWarn="NU1903" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>

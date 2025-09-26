@@ -4,9 +4,9 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
     using System;
     using System.Collections.Generic;
+    using Microsoft.Azure.Cosmos;
 
     /// <summary>
     /// Centralizes handling of the JsonProcessor override communicated via <see cref="RequestOptions.Properties"/>.
@@ -75,13 +75,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 return;
             }
 
-            Dictionary<string, object> properties = requestOptions.Properties != null
-                ? new Dictionary<string, object>(requestOptions.Properties)
-                : new Dictionary<string, object>();
+            Dictionary<string, object> properties;
+            if (requestOptions.Properties != null)
+            {
+                properties = new Dictionary<string, object>(capacity: requestOptions.Properties.Count);
+                foreach (KeyValuePair<string, object> kvp in requestOptions.Properties)
+                {
+                    properties[kvp.Key] = kvp.Value;
+                }
+            }
+            else
+            {
+                properties = new Dictionary<string, object>();
+            }
 
             properties[JsonProcessorPropertyBagKey] = selectedProcessor;
             requestOptions.Properties = properties;
         }
     }
-#endif
 }
