@@ -326,10 +326,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             encryptionOptions.Validate();
         }
 
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
-        // Property bag parsing helpers relocated to JsonProcessorPropertyBag.
-#endif
-
         private static JObject RetrieveItem(
             Stream input)
         {
