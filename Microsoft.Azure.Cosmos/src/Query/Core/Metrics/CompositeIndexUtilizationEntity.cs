@@ -5,7 +5,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 {
     using System;
     using System.Collections.Generic;
-    using Newtonsoft.Json;
+    using System.Text.Json.Serialization;
 
     /// <summary>
     /// Query index utilization data for composite indexes (sub-structure of the Index Utilization metrics) in the Azure Cosmos database service.
@@ -36,13 +36,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             this.IndexImpactScore = indexImpactScore;
         }
 
-        [JsonProperty(PropertyName = "IndexSpecs")]
+        [JsonPropertyName("IndexSpecs")]
         public IReadOnlyList<string> IndexDocumentExpressions { get; }
 
-        [JsonProperty(PropertyName = "IndexPreciseSet")]
+        [JsonPropertyName("IndexPreciseSet")]
         public bool IndexPlanFullFidelity { get; }
 
-        [JsonProperty(PropertyName = "IndexImpactScore")]
+        [JsonPropertyName("IndexImpactScore")]
         public string IndexImpactScore { get; }
     }
 }

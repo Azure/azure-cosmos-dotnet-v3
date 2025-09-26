@@ -4,7 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
 {
-    using Newtonsoft.Json;
+    using System.Text.Json.Serialization;
 
     internal sealed class CosmosQueryExecutionInfo
     {
@@ -18,13 +18,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
         /// <summary>
         /// Whether or not the backend has the reverseRid feature enabled.
         /// </summary>
-        [JsonProperty("reverseRidEnabled")]
+        [JsonPropertyName("reverseRidEnabled")]
         public bool ReverseRidEnabled { get; }
 
         /// <summary>
         /// Indicates the direction of the index scan.
         /// </summary>
-        [JsonProperty("reverseIndexScan")]
+        [JsonPropertyName("reverseIndexScan")]
         public bool ReverseIndexScan { get; }
     }
 }
