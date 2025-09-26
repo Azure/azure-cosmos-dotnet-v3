@@ -68,9 +68,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
             JsonProcessorPropertyBag.DetermineAndNormalizeJsonProcessor(encryptionOptions, requestOptions);
-#endif
             return EncryptAsync(input, encryptor, encryptionOptions, diagnosticsContext, cancellationToken);
         }
 
