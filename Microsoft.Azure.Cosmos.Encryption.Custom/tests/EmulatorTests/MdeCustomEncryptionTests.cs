@@ -547,7 +547,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                     },
                     Properties = new Dictionary<string, object>
                     {
-                        { JsonProcessorPropertyBag.JsonProcessorPropertyBagKey, JsonProcessor.Newtonsoft }
+                        { RequestOptionsPropertiesExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Newtonsoft }
                     }
                 };
 
@@ -568,7 +568,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                         {
                             Properties = new Dictionary<string, object>
                             {
-                                { JsonProcessorPropertyBag.JsonProcessorPropertyBagKey, JsonProcessor.Newtonsoft }
+                                { RequestOptionsPropertiesExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Newtonsoft }
                             }
                         });
 
@@ -585,7 +585,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                             {
                                 Properties = new Dictionary<string, object>
                                 {
-                                    { JsonProcessorPropertyBag.JsonProcessorPropertyBagKey, JsonProcessor.Newtonsoft }
+                                    { RequestOptionsPropertiesExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Newtonsoft }
                                 }
                             });
                     }

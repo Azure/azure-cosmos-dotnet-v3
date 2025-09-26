@@ -10,74 +10,74 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public class JsonProcessorPropertyBagTests
+    public class RequestOptionsPropertiesExtensionsTests
     {
         [TestMethod]
-        public void TryGetOverride_EnumValue_Succeeds()
+    public void TryReadOverride_EnumValue_Succeeds()
         {
             RequestOptions ro = new ItemRequestOptions
             {
                 Properties = new Dictionary<string, object>
                 {
-                    { JsonProcessorPropertyBag.JsonProcessorPropertyBagKey, JsonProcessor.Stream }
+                    { RequestOptionsPropertiesExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Stream }
                 }
             };
 
-            bool found = JsonProcessorPropertyBag.TryGetJsonProcessorOverride(ro, out JsonProcessor jp);
+            bool found = RequestOptionsPropertiesExtensions.TryReadJsonProcessorOverride(ro, out JsonProcessor jp);
             Assert.IsTrue(found);
             Assert.AreEqual(JsonProcessor.Stream, jp);
         }
 
         [TestMethod]
-        public void TryGetOverride_StringValue_CaseInsensitive_Succeeds()
+    public void TryReadOverride_StringValue_CaseInsensitive_Succeeds()
         {
             RequestOptions ro = new ItemRequestOptions
             {
                 Properties = new Dictionary<string, object>
                 {
-                    { JsonProcessorPropertyBag.JsonProcessorPropertyBagKey, "sTrEaM" }
+                    { RequestOptionsPropertiesExtensions.JsonProcessorPropertyBagKey, "sTrEaM" }
                 }
             };
 
-            bool found = JsonProcessorPropertyBag.TryGetJsonProcessorOverride(ro, out JsonProcessor jp);
+            bool found = RequestOptionsPropertiesExtensions.TryReadJsonProcessorOverride(ro, out JsonProcessor jp);
             Assert.IsTrue(found);
             Assert.AreEqual(JsonProcessor.Stream, jp);
         }
 
         [TestMethod]
-        public void TryGetOverride_StringValue_ExactMatch_Succeeds()
+    public void TryReadOverride_StringValue_ExactMatch_Succeeds()
         {
             RequestOptions ro = new ItemRequestOptions
             {
                 Properties = new Dictionary<string, object>
                 {
-                    { JsonProcessorPropertyBag.JsonProcessorPropertyBagKey, "Stream" }
+                    { RequestOptionsPropertiesExtensions.JsonProcessorPropertyBagKey, "Stream" }
                 }
             };
 
-            bool found = JsonProcessorPropertyBag.TryGetJsonProcessorOverride(ro, out JsonProcessor jp);
+            bool found = RequestOptionsPropertiesExtensions.TryReadJsonProcessorOverride(ro, out JsonProcessor jp);
             Assert.IsTrue(found);
             Assert.AreEqual(JsonProcessor.Stream, jp);
         }
 
         [TestMethod]
-        public void TryGetOverride_InvalidString_Ignored()
+    public void TryReadOverride_InvalidString_Ignored()
         {
             RequestOptions ro = new ItemRequestOptions
             {
                 Properties = new Dictionary<string, object>
                 {
-                    { JsonProcessorPropertyBag.JsonProcessorPropertyBagKey, "invalid" }
+                    { RequestOptionsPropertiesExtensions.JsonProcessorPropertyBagKey, "invalid" }
                 }
             };
 
-            bool found = JsonProcessorPropertyBag.TryGetJsonProcessorOverride(ro, out JsonProcessor jp);
+            bool found = RequestOptionsPropertiesExtensions.TryReadJsonProcessorOverride(ro, out JsonProcessor jp);
             Assert.IsFalse(found);
             Assert.AreEqual(JsonProcessor.Newtonsoft, jp);
         }
 
         [TestMethod]
-        public void DetermineAndNormalize_UnsupportedCombination_Throws()
+    public void ResolveSelection_UnsupportedCombination_Throws()
         {
 #pragma warning disable CS0618 // testing legacy path rejection for Stream processor
             EncryptionOptions opts = new()
@@ -88,11 +88,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 #pragma warning restore CS0618
             RequestOptions ro = new ItemRequestOptions();
 
-            Assert.ThrowsException<NotSupportedException>(() => JsonProcessorPropertyBag.DetermineAndNormalizeJsonProcessor(opts, ro));
+            Assert.ThrowsException<NotSupportedException>(() => RequestOptionsPropertiesExtensions.ResolveJsonProcessorSelection(ro, opts));
         }
 
         [TestMethod]
-        public void DetermineAndNormalize_OverrideApplied()
+    public void ResolveSelection_OverrideApplied()
         {
             EncryptionOptions opts = new()
             {
@@ -103,16 +103,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             {
                 Properties = new Dictionary<string, object>
                 {
-                    { JsonProcessorPropertyBag.JsonProcessorPropertyBagKey, JsonProcessor.Stream }
+                    { RequestOptionsPropertiesExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Stream }
                 }
             };
 
-            JsonProcessorPropertyBag.DetermineAndNormalizeJsonProcessor(opts, ro);
+            RequestOptionsPropertiesExtensions.ResolveJsonProcessorSelection(ro, opts);
             Assert.AreEqual(JsonProcessor.Stream, opts.JsonProcessor);
         }
 
         [TestMethod]
-        public void DetermineAndNormalize_NoOverride_NoChange()
+    public void ResolveSelection_NoOverride_NoChange()
         {
             EncryptionOptions opts = new()
             {
@@ -121,29 +121,29 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             };
             RequestOptions ro = new ItemRequestOptions();
 
-            JsonProcessorPropertyBag.DetermineAndNormalizeJsonProcessor(opts, ro);
+            RequestOptionsPropertiesExtensions.ResolveJsonProcessorSelection(ro, opts);
             Assert.AreEqual(JsonProcessor.Newtonsoft, opts.JsonProcessor);
         }
 
         [TestMethod]
-        public void TryGetOverride_NullRequestOptions_Default()
+        public void TryReadOverride_NullRequestOptions_Default()
         {
-            bool found = JsonProcessorPropertyBag.TryGetJsonProcessorOverride(null, out JsonProcessor jp);
+            bool found = RequestOptionsPropertiesExtensions.TryReadJsonProcessorOverride(null, out JsonProcessor jp);
             Assert.IsFalse(found);
             Assert.AreEqual(JsonProcessor.Newtonsoft, jp);
         }
 
         [TestMethod]
-        public void TryGetOverride_NoPropertiesDictionary_Default()
+        public void TryReadOverride_NoPropertiesDictionary_Default()
         {
             RequestOptions ro = new ItemRequestOptions(); // Properties remains null
-            bool found = JsonProcessorPropertyBag.TryGetJsonProcessorOverride(ro, out JsonProcessor jp);
+            bool found = RequestOptionsPropertiesExtensions.TryReadJsonProcessorOverride(ro, out JsonProcessor jp);
             Assert.IsFalse(found);
             Assert.AreEqual(JsonProcessor.Newtonsoft, jp);
         }
 
         [TestMethod]
-        public void TryGetOverride_MixedCaseKey_NotRecognized()
+    public void TryReadOverride_MixedCaseKey_NotRecognized()
         {
             RequestOptions ro = new ItemRequestOptions
             {
@@ -154,23 +154,23 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 }
             };
 
-            bool found = JsonProcessorPropertyBag.TryGetJsonProcessorOverride(ro, out JsonProcessor jp);
+            bool found = RequestOptionsPropertiesExtensions.TryReadJsonProcessorOverride(ro, out JsonProcessor jp);
             Assert.IsFalse(found);
             Assert.AreEqual(JsonProcessor.Newtonsoft, jp);
         }
 
         [TestMethod]
-        public void TryGetOverride_MismatchedKey_NotRecognized()
+    public void TryReadOverride_MismatchedKey_NotRecognized()
         {
             RequestOptions ro = new ItemRequestOptions
             {
                 Properties = new Dictionary<string, object>
                 {
-                    { JsonProcessorPropertyBag.JsonProcessorPropertyBagKey + "-extra", JsonProcessor.Stream }
+                    { RequestOptionsPropertiesExtensions.JsonProcessorPropertyBagKey + "-extra", JsonProcessor.Stream }
                 }
             };
 
-            bool found = JsonProcessorPropertyBag.TryGetJsonProcessorOverride(ro, out JsonProcessor jp);
+            bool found = RequestOptionsPropertiesExtensions.TryReadJsonProcessorOverride(ro, out JsonProcessor jp);
             Assert.IsFalse(found);
             Assert.AreEqual(JsonProcessor.Newtonsoft, jp);
         }

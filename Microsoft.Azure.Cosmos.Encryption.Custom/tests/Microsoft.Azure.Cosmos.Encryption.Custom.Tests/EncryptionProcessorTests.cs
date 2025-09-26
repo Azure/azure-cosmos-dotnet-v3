@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             CosmosDiagnosticsContext diagDecrypt = CosmosDiagnosticsContext.Create(null);
             MemoryStream decryptedOut = new();
-            ItemRequestOptions requestOptions = new() { Properties = new Dictionary<string, object> { { JsonProcessorPropertyBag.JsonProcessorPropertyBagKey, JsonProcessor.Stream } } };
+            ItemRequestOptions requestOptions = new() { Properties = new Dictionary<string, object> { { RequestOptionsPropertiesExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Stream } } };
             DecryptionContext ctx = await EncryptionProcessor.DecryptAsync(encrypted, decryptedOut, mockEncryptor.Object, diagDecrypt, requestOptions, CancellationToken.None);
 
             decryptedOut.Position = 0;
@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             string json = "{\"id\":\"id1\",\"pk\":\"pk1\",\"NonSensitive\":\"v\"}"; // no _ei
             MemoryStream input = new(System.Text.Encoding.UTF8.GetBytes(json));
             CosmosDiagnosticsContext ctxDiag = CosmosDiagnosticsContext.Create(null);
-            ItemRequestOptions opts = new() { Properties = new Dictionary<string, object> { { JsonProcessorPropertyBag.JsonProcessorPropertyBagKey, JsonProcessor.Stream } } };
+            ItemRequestOptions opts = new() { Properties = new Dictionary<string, object> { { RequestOptionsPropertiesExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Stream } } };
             (Stream result, DecryptionContext ctxDec) = await EncryptionProcessor.DecryptAsync(input, mockEncryptor.Object, ctxDiag, opts, CancellationToken.None);
             Assert.IsNull(ctxDec);
             Assert.AreEqual(0, result.Position);
@@ -135,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Stream legacyEncrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, legacy, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
             legacyEncrypted.Position = 0;
 
-            ItemRequestOptions opts = new() { Properties = new Dictionary<string, object> { { JsonProcessorPropertyBag.JsonProcessorPropertyBagKey, JsonProcessor.Stream } } };
+            ItemRequestOptions opts = new() { Properties = new Dictionary<string, object> { { RequestOptionsPropertiesExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Stream } } };
             CosmosDiagnosticsContext diag = CosmosDiagnosticsContext.Create(null);
             (Stream decrypted, DecryptionContext ctxDec) = await EncryptionProcessor.DecryptAsync(legacyEncrypted, mockEncryptor.Object, diag, opts, CancellationToken.None);
 
@@ -163,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Stream legacyEncrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, legacy, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
             legacyEncrypted.Position = 0;
 
-            ItemRequestOptions opts = new() { Properties = new Dictionary<string, object> { { JsonProcessorPropertyBag.JsonProcessorPropertyBagKey, JsonProcessor.Stream } } };
+            ItemRequestOptions opts = new() { Properties = new Dictionary<string, object> { { RequestOptionsPropertiesExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Stream } } };
             CosmosDiagnosticsContext diag = CosmosDiagnosticsContext.Create(null);
             MemoryStream output = new();
 
@@ -192,7 +192,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 #pragma warning restore CS0618
                 PathsToEncrypt = TestDoc.PathsToEncrypt,
             };
-            ItemRequestOptions ro = new() { Properties = new Dictionary<string, object> { { JsonProcessorPropertyBag.JsonProcessorPropertyBagKey, JsonProcessor.Stream } } };
+            ItemRequestOptions ro = new() { Properties = new Dictionary<string, object> { { RequestOptionsPropertiesExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Stream } } };
             CosmosDiagnosticsContext diag = CosmosDiagnosticsContext.Create(null);
             try
             {

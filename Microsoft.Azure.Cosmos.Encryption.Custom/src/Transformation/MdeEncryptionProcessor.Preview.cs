@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 // If caller explicitly asked for Stream via property bag but encryption algorithm is legacy,
                 // surface a clear NotSupportedException to align with test expectations.
                 // Detect legacy algorithm presence for this decrypt attempt.
-                if (requestOptions != null && JsonProcessorPropertyBag.TryGetJsonProcessorOverride(requestOptions, out JsonProcessor overrideProc) && overrideProc == JsonProcessor.Stream)
+                if (requestOptions != null && RequestOptionsPropertiesExtensions.TryReadJsonProcessorOverride(requestOptions, out JsonProcessor overrideProc) && overrideProc == JsonProcessor.Stream)
                 {
                     // Peek to determine if payload is legacy (non-MDE) – reuse existing inspection helper.
                     if (input != null)
@@ -313,7 +313,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         private JsonProcessor GetRequestedJsonProcessor(RequestOptions requestOptions)
         {
             JsonProcessor jsonProcessor = JsonProcessor.Newtonsoft;
-            if (JsonProcessorPropertyBag.TryGetJsonProcessorOverride(requestOptions, out JsonProcessor overrideProcessor))
+            if (RequestOptionsPropertiesExtensions.TryReadJsonProcessorOverride(requestOptions, out JsonProcessor overrideProcessor))
             {
                 jsonProcessor = overrideProcessor;
             }

@@ -47,12 +47,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             if (jsonProcessor == JsonProcessor.Newtonsoft)
             {
-                properties.Remove(JsonProcessorPropertyBag.JsonProcessorPropertyBagKey);
+                properties.Remove(RequestOptionsPropertiesExtensions.JsonProcessorPropertyBagKey);
                 requestOptions.Properties = properties.Count > 0 ? properties : null;
                 return requestOptions;
             }
 
-            properties[JsonProcessorPropertyBag.JsonProcessorPropertyBagKey] = jsonProcessor;
+            properties[RequestOptionsPropertiesExtensions.JsonProcessorPropertyBagKey] = jsonProcessor;
             requestOptions.Properties = properties;
 
             return requestOptions;
