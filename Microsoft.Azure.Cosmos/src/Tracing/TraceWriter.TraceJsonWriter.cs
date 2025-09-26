@@ -130,6 +130,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
             {
                 writer.WriteStringValue(stringValue);
             }
+            else if (value is CosmosOperationCanceledException cosmosTimeoutException)
+            {
+                writer.WriteStringValue(
+                    cosmosTimeoutException.EnsureToStringMessage(skipDiagnostics: true));
+            }
             else
             {
                 writer.WriteStringValue(value.ToString());
