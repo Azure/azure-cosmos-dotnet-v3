@@ -140,10 +140,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             DecryptionContext decryptionContext = await DecryptInternalAsync(encryptor, diagnosticsContext, itemJObj, encryptionPropertiesJObj, cancellationToken);
             await input.DisposeCompatAsync();
 
-            // Avoid unnecessary intermediate copy by using direct serialization helper.
-            MemoryStream result = new (capacity: 1024);
-            BaseSerializer.WriteToStream(itemJObj, result);
-            return (result, decryptionContext);
+            return (BaseSerializer.ToStream(itemJObj), decryptionContext);
         }
 
         public static async Task<(Stream, DecryptionContext)> DecryptAsync(
@@ -380,9 +377,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             // the contents of contentJObj get decrypted in place for MDE algorithm model, and for legacy model _ei property is removed
             // and corresponding decrypted properties are added back in the documents.
-            MemoryStream feedResult = new (capacity: 4096);
-            BaseSerializer.WriteToStream(contentJObj, feedResult);
-            return feedResult;
+            return BaseSerializer.ToStream(contentJObj);
         }
     }
 }
