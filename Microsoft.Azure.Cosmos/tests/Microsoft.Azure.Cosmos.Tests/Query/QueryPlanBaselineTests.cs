@@ -1173,27 +1173,27 @@
 
                 Hash(
                 @"TOP value beyond lower range - hybrid search",
-                @"SELECT TOP -1 c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) ",
+                @"SELECT TOP -1 c.name FROM c ORDER BY RANK FullTextScore(c.text, 'swim') ",
                 @"/key"),
 
                 Hash(
                 @"TOP value at lower range - hybrid search",
-                @"SELECT TOP 0 c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) ",
+                @"SELECT TOP 0 c.name FROM c ORDER BY RANK FullTextScore(c.text, 'swim') ",
                 @"/key"),
 
                 Hash(
                 @"TOP value at upper range (client) - hybrid search",
-                @"SELECT TOP 2147483647 c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) ",
+                @"SELECT TOP 2147483647 c.name FROM c ORDER BY RANK FullTextScore(c.text, 'swim') ",
                 @"/key"),
 
                 Hash(
                 @"TOP value beyond upper range (client) - hybrid search",
-                @"SELECT TOP 2147483648 c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) ",
+                @"SELECT TOP 2147483648 c.name FROM c ORDER BY RANK FullTextScore(c.text, 'swim') ",
                 @"/key"),
 
                 Hash(
                 @"TOP value beyond upper range (Interop) - hybrid search",
-                @"SELECT TOP 4294967296 c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) ",
+                @"SELECT TOP 4294967296 c.name FROM c ORDER BY RANK FullTextScore(c.text, 'swim') ",
                 @"/key")
             };
 
@@ -1285,27 +1285,27 @@
 
                 Hash(
                     @"OFFSET value beyond lower range - hybrid search",
-                    @"SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) OFFSET -1 LIMIT 10",
+                    @"SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, 'swim') OFFSET -1 LIMIT 10",
                     @"/key"),
 
                 Hash(
                     @"OFFSET value at lower range - hybrid search",
-                    @"SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) OFFSET 0 LIMIT 10",
+                    @"SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, 'swim') OFFSET 0 LIMIT 10",
                     @"/key"),
 
                 Hash(
                     @"OFFSET value at upper range (client) - hybrid search",
-                    @"SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) OFFSET 2147483647 LIMIT 10",
+                    @"SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, 'swim') OFFSET 2147483647 LIMIT 10",
                     @"/key"),
 
                 Hash(
                     @"OFFSET value beyond upper range (client) - hybrid search",
-                    @"SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) OFFSET 2147483648 LIMIT 10",
+                    @"SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, 'swim') OFFSET 2147483648 LIMIT 10",
                     @"/key"),
 
                 Hash(
                     @"OFFSET value beyond upper range (Interop) - hybrid search",
-                    @"SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) OFFSET 4294967296 LIMIT 10",
+                    @"SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, 'swim') OFFSET 4294967296 LIMIT 10",
                     @"/key"),
 
                 Hash(
@@ -1335,27 +1335,27 @@
 
                 Hash(
                     @"LIMIT value beyond lower range - hybrid search",
-                    @"SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) OFFSET 10 LIMIT -1",
+                    @"SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, 'swim') OFFSET 10 LIMIT -1",
                     @"/key"),
 
                 Hash(
                     @"LIMIT value at lower range - hybrid search",
-                    @"SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) OFFSET 10 LIMIT 0",
+                    @"SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, 'swim') OFFSET 10 LIMIT 0",
                     @"/key"),
 
                 Hash(
                     @"LIMIT value at upper range (client) - hybrid search",
-                    @"SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) OFFSET 10 LIMIT 2147483647",
+                    @"SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, 'swim') OFFSET 10 LIMIT 2147483647",
                     @"/key"),
 
                 Hash(
                     @"LIMIT value beyond upper range (client) - hybrid search",
-                    @"SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) OFFSET 10 LIMIT 2147483648",
+                    @"SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, 'swim') OFFSET 10 LIMIT 2147483648",
                     @"/key"),
 
                 Hash(
                     @"LIMIT value beyond upper range (Interop) - hybrid search",
-                    @"SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) OFFSET 10 LIMIT 4294967296",
+                    @"SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, 'swim') OFFSET 10 LIMIT 4294967296",
                     @"/key"),
             };
 
