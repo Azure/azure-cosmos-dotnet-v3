@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             string id = "testId";
             this.TestProperty<AccountProperties>(
                 id,
-                $@"{{""id"":""{id}"",""writableLocations"":[],""readableLocations"":[],""userConsistencyPolicy"":null,""addresses"":null,""userReplicationPolicy"":null,""systemReplicationPolicy"":null,""readPolicy"":null,""queryEngineConfiguration"":null,""enableMultipleWriteLocations"":false,""enablePerPartitionFailoverBehavior"":null}}");
+                $@"{{""id"":""{id}"",""writableLocations"":[],""readableLocations"":[],""userConsistencyPolicy"":null,""addresses"":null,""userReplicationPolicy"":null,""systemReplicationPolicy"":null,""readPolicy"":null,""queryEngineConfiguration"":null,""enableMultipleWriteLocations"":false,""enablePerPartitionFailoverBehavior"":null,""enableNRegionSynchronousCommit"":false}}");
 
             this.TestProperty<DatabaseProperties>(
                 id,

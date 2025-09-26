@@ -455,6 +455,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 TransportException transportException = storeResult.Exception?.InnerException as TransportException;
                 this.WriteStringValueOrNull(transportException?.Message);
 
+                this.jsonWriter.WriteFieldName(nameof(storeResult.GlobalNRegionCommittedGLSN));
+                this.jsonWriter.WriteNumberValue(storeResult.GlobalNRegionCommittedGLSN);
+
                 this.jsonWriter.WriteObjectEnd();
             }
 
