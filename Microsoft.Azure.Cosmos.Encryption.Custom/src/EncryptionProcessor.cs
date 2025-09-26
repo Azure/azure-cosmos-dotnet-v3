@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            RequestOptionsPropertiesExtensions.ResolveJsonProcessorSelection(requestOptions, encryptionOptions);
+            requestOptions.ResolveJsonProcessorSelection(encryptionOptions);
             return EncryptAsync(input, encryptor, encryptionOptions, diagnosticsContext, cancellationToken);
         }
 

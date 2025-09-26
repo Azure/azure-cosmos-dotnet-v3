@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
     public class RequestOptionsPropertiesExtensionsTests
     {
         [TestMethod]
-    public void TryReadOverride_EnumValue_Succeeds()
+        public void TryReadOverride_EnumValue_Succeeds()
         {
             RequestOptions ro = new ItemRequestOptions
             {
@@ -23,13 +23,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 }
             };
 
-            bool found = RequestOptionsPropertiesExtensions.TryReadJsonProcessorOverride(ro, out JsonProcessor jp);
+            bool found = ro.TryReadJsonProcessorOverride(out JsonProcessor jp);
             Assert.IsTrue(found);
             Assert.AreEqual(JsonProcessor.Stream, jp);
         }
 
         [TestMethod]
-    public void TryReadOverride_StringValue_CaseInsensitive_Succeeds()
+        public void TryReadOverride_StringValue_CaseInsensitive_Succeeds()
         {
             RequestOptions ro = new ItemRequestOptions
             {
@@ -39,13 +39,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 }
             };
 
-            bool found = RequestOptionsPropertiesExtensions.TryReadJsonProcessorOverride(ro, out JsonProcessor jp);
+            bool found = ro.TryReadJsonProcessorOverride(out JsonProcessor jp);
             Assert.IsTrue(found);
             Assert.AreEqual(JsonProcessor.Stream, jp);
         }
 
         [TestMethod]
-    public void TryReadOverride_StringValue_ExactMatch_Succeeds()
+        public void TryReadOverride_StringValue_ExactMatch_Succeeds()
         {
             RequestOptions ro = new ItemRequestOptions
             {
@@ -55,13 +55,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 }
             };
 
-            bool found = RequestOptionsPropertiesExtensions.TryReadJsonProcessorOverride(ro, out JsonProcessor jp);
+            bool found = ro.TryReadJsonProcessorOverride(out JsonProcessor jp);
             Assert.IsTrue(found);
             Assert.AreEqual(JsonProcessor.Stream, jp);
         }
 
         [TestMethod]
-    public void TryReadOverride_InvalidString_Ignored()
+        public void TryReadOverride_InvalidString_Ignored()
         {
             RequestOptions ro = new ItemRequestOptions
             {
@@ -71,13 +71,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 }
             };
 
-            bool found = RequestOptionsPropertiesExtensions.TryReadJsonProcessorOverride(ro, out JsonProcessor jp);
+            bool found = ro.TryReadJsonProcessorOverride(out JsonProcessor jp);
             Assert.IsFalse(found);
             Assert.AreEqual(JsonProcessor.Newtonsoft, jp);
         }
 
         [TestMethod]
-    public void ResolveSelection_UnsupportedCombination_Throws()
+        public void ResolveSelection_UnsupportedCombination_Throws()
         {
 #pragma warning disable CS0618 // testing legacy path rejection for Stream processor
             EncryptionOptions opts = new()
@@ -88,11 +88,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 #pragma warning restore CS0618
             RequestOptions ro = new ItemRequestOptions();
 
-            Assert.ThrowsException<NotSupportedException>(() => RequestOptionsPropertiesExtensions.ResolveJsonProcessorSelection(ro, opts));
+            Assert.ThrowsException<NotSupportedException>(() => ro.ResolveJsonProcessorSelection(opts));
         }
 
         [TestMethod]
-    public void ResolveSelection_OverrideApplied()
+        public void ResolveSelection_OverrideApplied()
         {
             EncryptionOptions opts = new()
             {
@@ -107,12 +107,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 }
             };
 
-            RequestOptionsPropertiesExtensions.ResolveJsonProcessorSelection(ro, opts);
+            ro.ResolveJsonProcessorSelection(opts);
             Assert.AreEqual(JsonProcessor.Stream, opts.JsonProcessor);
         }
 
         [TestMethod]
-    public void ResolveSelection_NoOverride_NoChange()
+        public void ResolveSelection_NoOverride_NoChange()
         {
             EncryptionOptions opts = new()
             {
@@ -121,14 +121,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             };
             RequestOptions ro = new ItemRequestOptions();
 
-            RequestOptionsPropertiesExtensions.ResolveJsonProcessorSelection(ro, opts);
+            ro.ResolveJsonProcessorSelection(opts);
             Assert.AreEqual(JsonProcessor.Newtonsoft, opts.JsonProcessor);
         }
 
         [TestMethod]
         public void TryReadOverride_NullRequestOptions_Default()
         {
-            bool found = RequestOptionsPropertiesExtensions.TryReadJsonProcessorOverride(null, out JsonProcessor jp);
+            RequestOptions roNull = null;
+            bool found = roNull.TryReadJsonProcessorOverride(out JsonProcessor jp);
             Assert.IsFalse(found);
             Assert.AreEqual(JsonProcessor.Newtonsoft, jp);
         }
@@ -137,13 +138,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         public void TryReadOverride_NoPropertiesDictionary_Default()
         {
             RequestOptions ro = new ItemRequestOptions(); // Properties remains null
-            bool found = RequestOptionsPropertiesExtensions.TryReadJsonProcessorOverride(ro, out JsonProcessor jp);
+            bool found = ro.TryReadJsonProcessorOverride(out JsonProcessor jp);
             Assert.IsFalse(found);
             Assert.AreEqual(JsonProcessor.Newtonsoft, jp);
         }
 
         [TestMethod]
-    public void TryReadOverride_MixedCaseKey_NotRecognized()
+        public void TryReadOverride_MixedCaseKey_NotRecognized()
         {
             RequestOptions ro = new ItemRequestOptions
             {
@@ -154,13 +155,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 }
             };
 
-            bool found = RequestOptionsPropertiesExtensions.TryReadJsonProcessorOverride(ro, out JsonProcessor jp);
+            bool found = ro.TryReadJsonProcessorOverride(out JsonProcessor jp);
             Assert.IsFalse(found);
             Assert.AreEqual(JsonProcessor.Newtonsoft, jp);
         }
 
         [TestMethod]
-    public void TryReadOverride_MismatchedKey_NotRecognized()
+        public void TryReadOverride_MismatchedKey_NotRecognized()
         {
             RequestOptions ro = new ItemRequestOptions
             {
@@ -170,7 +171,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 }
             };
 
-            bool found = RequestOptionsPropertiesExtensions.TryReadJsonProcessorOverride(ro, out JsonProcessor jp);
+            bool found = ro.TryReadJsonProcessorOverride(out JsonProcessor jp);
             Assert.IsFalse(found);
             Assert.AreEqual(JsonProcessor.Newtonsoft, jp);
         }
