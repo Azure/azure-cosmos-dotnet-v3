@@ -160,21 +160,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             RequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
-            DecryptionContext ctx = await MdeEncryptionProcessor.DecryptAsync(input, output, encryptor, diagnosticsContext, requestOptions, cancellationToken);
-            if (ctx != null)
-            {
-                return ctx;
-            }
-
-            // Legacy or unencrypted fallback: use existing JObject path then copy to provided output.
-            (Stream decrypted, DecryptionContext legacyCtx) = await DecryptAsync(input, encryptor, diagnosticsContext, cancellationToken);
-            if (decrypted != null)
-            {
-                await decrypted.CopyToAsync(output, cancellationToken);
-                output.Position = 0;
-            }
-
-            return legacyCtx;
+            return await MdeEncryptionProcessor.DecryptAsync(input, output, encryptor, diagnosticsContext, requestOptions, cancellationToken);
         }
 #endif
 
