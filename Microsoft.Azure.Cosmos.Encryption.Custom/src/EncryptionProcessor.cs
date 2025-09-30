@@ -291,21 +291,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             Debug.Assert(input != null);
 
-            JObject itemJObj;
-            using (StreamReader sr = new (input, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
-            using (JsonTextReader jsonTextReader = new (sr))
+            using StreamReader sr = new (input, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
+            using JsonTextReader jsonTextReader = new (sr);
+            jsonTextReader.ArrayPool = JsonArrayPool.Instance;
+            JsonSerializerSettings jsonSerializerSettings = new ()
             {
-                jsonTextReader.ArrayPool = JsonArrayPool.Instance;
-                JsonSerializerSettings jsonSerializerSettings = new ()
-                {
-                    DateParseHandling = DateParseHandling.None,
-                    MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
-                };
+                DateParseHandling = DateParseHandling.None,
+                MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
+            };
 
-                itemJObj = Newtonsoft.Json.JsonSerializer.Create(jsonSerializerSettings).Deserialize<JObject>(jsonTextReader);
-            }
-
-            return itemJObj;
+            return Newtonsoft.Json.JsonSerializer.Create(jsonSerializerSettings).Deserialize<JObject>(jsonTextReader);
         }
 
         private static JObject RetrieveEncryptionProperties(
