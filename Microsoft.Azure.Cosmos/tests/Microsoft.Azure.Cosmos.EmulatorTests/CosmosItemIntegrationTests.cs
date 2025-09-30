@@ -2196,6 +2196,64 @@
             }
         }
 
+        [TestMethod]
+        [Owner("ntripician")]
+        [TestCategory("MultiRegion")]
+        [Timeout(70000)]
+        public void ClinetOverrides0msRequestTimeoutValueForPPAF()
+        {
+            // Arrange.
+            
+            // Now that the ppaf enablement flag is returned from gateway, we need to intercept the response and remove the flag from the response, so that
+            // the environment variable set above is honored.
+            HttpClientHandlerHelper httpClientHandlerHelper = new HttpClientHandlerHelper()
+            {
+                ResponseIntercepter = async (response, request) =>
+                {
+                    string json = await response?.Content?.ReadAsStringAsync();
+                    if (json.Length > 0 && json.Contains("enablePerPartitionFailoverBehavior"))
+                    {
+                        JObject parsedDatabaseAccountResponse = JObject.Parse(json);
+                        parsedDatabaseAccountResponse.Property("enablePerPartitionFailoverBehavior").Value = "true";
+
+                        HttpResponseMessage interceptedResponse = new()
+                        {
+                            StatusCode = response.StatusCode,
+                            Content = new StringContent(parsedDatabaseAccountResponse.ToString()),
+                            Version = response.Version,
+                            ReasonPhrase = response.ReasonPhrase,
+                            RequestMessage = response.RequestMessage,
+                        };
+
+                        return interceptedResponse;
+                    }
+
+                    return response;
+                },
+            };
+
+            List<string> preferredRegions = new List<string> { region1, region2, region3 };
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+            {
+                ConsistencyLevel = ConsistencyLevel.Session,
+                RequestTimeout = TimeSpan.FromSeconds(0),
+                ApplicationPreferredRegions = preferredRegions,
+                HttpClientFactory = () => new HttpClient(httpClientHandlerHelper),
+            };
+
+
+            using CosmosClient cosmosClient = new(connectionString: this.connectionString, clientOptions: cosmosClientOptions);
+            Database database = cosmosClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+            Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
+
+            // Act and Assert.
+
+            CrossRegionHedgingAvailabilityStrategy strat = cosmosClient.DocumentClient.ConnectionPolicy.AvailabilityStrategy as CrossRegionHedgingAvailabilityStrategy;
+            Assert.IsNotNull(strat);
+            Assert.AreNotEqual(0, strat.Threshold);
+
+        }
+
         private async Task TryCreateItems(List<CosmosIntegrationTestObject> testItems)
         {
             foreach (CosmosIntegrationTestObject item in testItems)
