@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         [TestMethod]
-        public async Task Decrypt_StreamSelection_LegacyFallback()
+        public async Task Decrypt_StreamSelection_LegacyAlgorithm_Throws()
         {
             TestDoc doc = TestDoc.Create();
             EncryptionOptions legacy = new()
@@ -137,19 +137,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             ItemRequestOptions opts = new() { Properties = new Dictionary<string, object> { { RequestOptionsPropertiesExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Stream } } };
             CosmosDiagnosticsContext diag = CosmosDiagnosticsContext.Create(null);
-            (Stream decrypted, DecryptionContext ctxDec) = await EncryptionProcessor.DecryptAsync(legacyEncrypted, mockEncryptor.Object, diag, opts, CancellationToken.None);
 
-            JObject obj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(decrypted);
-            Assert.AreEqual(doc.SensitiveStr, obj.Property(nameof(TestDoc.SensitiveStr)).Value.Value<string>());
-            Assert.IsNull(obj.Property(Constants.EncryptedInfo));
-            Assert.IsNotNull(ctxDec);
-            Assert.IsTrue(ctxDec.DecryptionInfoList.First().PathsDecrypted.All(p => TestDoc.PathsToEncrypt.Contains(p)));
-            Assert.AreEqual(1, diag.Scopes.Count(s => s.StartsWith(EncryptionDiagnostics.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream)), "Expected a single Stream selection scope during legacy fallback");
-            Assert.IsFalse(diag.Scopes.Any(s => s.StartsWith(EncryptionDiagnostics.ScopeDecryptModeSelectionPrefix + JsonProcessor.Newtonsoft)));
+            NotSupportedException exception = await Assert.ThrowsExceptionAsync<NotSupportedException>(async () =>
+            {
+                await EncryptionProcessor.DecryptAsync(legacyEncrypted, mockEncryptor.Object, diag, opts, CancellationToken.None);
+            });
+
+            Assert.IsTrue(exception.Message.Contains("not supported"), $"Unexpected exception message: {exception.Message}");
+#pragma warning disable CS0618
+            Assert.IsTrue(exception.Message.Contains(CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized), $"Exception should mention the unsupported algorithm");
+#pragma warning restore CS0618
         }
 
         [TestMethod]
-        public async Task DecryptProvidedOutput_StreamSelection_Legacy_Throws()
+        public async Task DecryptProvidedOutput_StreamSelection_LegacyAlgorithm_Throws()
         {
             TestDoc doc = TestDoc.Create();
             EncryptionOptions legacy = new()
@@ -167,17 +168,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             CosmosDiagnosticsContext diag = CosmosDiagnosticsContext.Create(null);
             MemoryStream output = new();
 
-            try
+            NotSupportedException exception = await Assert.ThrowsExceptionAsync<NotSupportedException>(async () =>
             {
                 await EncryptionProcessor.DecryptAsync(legacyEncrypted, output, mockEncryptor.Object, diag, opts, CancellationToken.None);
-                Assert.Fail("Expected NotSupportedException for legacy algorithm when using stream override with provided output.");
-            }
-            catch (NotSupportedException ex)
-            {
-                Assert.IsTrue(ex.Message.IndexOf("not supported", StringComparison.OrdinalIgnoreCase) >= 0, $"Unexpected message: {ex.Message}");
-            }
+            });
 
-            Assert.AreEqual(1, diag.Scopes.Count(s => s.StartsWith(EncryptionDiagnostics.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream)), "Expected a single Stream selection scope attempted before throwing for legacy payload");
+            Assert.IsTrue(exception.Message.Contains("not supported"), $"Unexpected exception message: {exception.Message}");
+#pragma warning disable CS0618
+            Assert.IsTrue(exception.Message.Contains(CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized), $"Exception should mention the unsupported algorithm");
+#pragma warning restore CS0618
         }
 
         [TestMethod]

@@ -153,7 +153,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
         }
 
         [TestMethod]
-        public async Task DecryptAsync_WithLegacyAlgorithm_ReturnsOriginalStream()
+        public async Task DecryptAsync_WithLegacyAlgorithm_Throws()
         {
             StreamAdapter adapter = new (new StreamProcessor());
             EncryptionProperties legacyProps = CreateLegacyEncryptionProperties();
@@ -162,12 +162,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
             using MemoryStream input = new (payload);
             CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContext();
 
-            (Stream result, DecryptionContext context) = await adapter.DecryptAsync(input, mockEncryptor.Object, diagnostics, CancellationToken.None);
+            NotSupportedException exception = await Assert.ThrowsExceptionAsync<NotSupportedException>(async () =>
+            {
+                await adapter.DecryptAsync(input, mockEncryptor.Object, diagnostics, CancellationToken.None);
+            });
 
-            Assert.AreSame(input, result);
-            Assert.IsNull(context);
-            Assert.AreEqual(0, diagnostics.Scopes.Count);
-            Assert.AreEqual(0, result.Position);
+            Assert.IsTrue(exception.Message.Contains("not supported"), $"Unexpected exception message: {exception.Message}");
+#pragma warning disable CS0618
+            Assert.IsTrue(exception.Message.Contains(CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized), $"Exception should mention the unsupported algorithm");
+#pragma warning restore CS0618
         }
 
         private static async Task<Stream> CreateEncryptedPayloadAsync(StreamAdapter adapter)

@@ -40,8 +40,8 @@ internal sealed class StreamAdapter : IMdeJsonProcessorAdapter
 
     public async Task<(Stream, DecryptionContext)> DecryptAsync(Stream input, Encryptor encryptor, CosmosDiagnosticsContext diagnosticsContext, CancellationToken cancellationToken)
     {
-        (bool hasMde, EncryptionProperties properties) = await this.TryReadMdeEncryptionPropertiesStreamingAsync(input, cancellationToken);
-        if (!hasMde)
+        EncryptionProperties properties = await this.ReadMdeEncryptionPropertiesStreamingAsync(input, cancellationToken);
+        if (properties == null)
         {
             return (input, null);
         }
@@ -58,8 +58,8 @@ internal sealed class StreamAdapter : IMdeJsonProcessorAdapter
 
     public async Task<DecryptionContext> DecryptAsync(Stream input, Stream output, Encryptor encryptor, CosmosDiagnosticsContext diagnosticsContext, CancellationToken cancellationToken)
     {
-        (bool hasMde, EncryptionProperties properties) = await this.TryReadMdeEncryptionPropertiesStreamingAsync(input, cancellationToken);
-        if (!hasMde)
+        EncryptionProperties properties = await this.ReadMdeEncryptionPropertiesStreamingAsync(input, cancellationToken);
+        if (properties == null)
         {
             if (input.CanSeek)
             {
@@ -84,24 +84,29 @@ internal sealed class StreamAdapter : IMdeJsonProcessorAdapter
         return context;
     }
 
-    private async Task<(bool hasMde, EncryptionProperties properties)> TryReadMdeEncryptionPropertiesStreamingAsync(Stream input, CancellationToken cancellationToken)
+    /// <summary>
+    /// Reads encryption properties from the stream using System.Text.Json streaming API.
+    /// Returns null if no encryption properties are found.
+    /// Throws NotSupportedException if legacy encryption algorithm is detected.
+    /// </summary>
+    private async Task<EncryptionProperties> ReadMdeEncryptionPropertiesStreamingAsync(Stream input, CancellationToken cancellationToken)
     {
         input.Position = 0;
         EncryptionPropertiesWrapper properties = await JsonSerializer.DeserializeAsync<EncryptionPropertiesWrapper>(input, cancellationToken: cancellationToken);
         input.Position = 0;
         if (properties?.EncryptionProperties == null)
         {
-            return (false, null);
+            return null;
         }
 
 #pragma warning disable CS0618
         if (properties.EncryptionProperties.EncryptionAlgorithm != CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)
         {
-            return (false, null);
+            throw new NotSupportedException($"JsonProcessor.Stream is not supported for encryption algorithm '{properties.EncryptionProperties.EncryptionAlgorithm}'. Only '{CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized}' is supported with the Stream processor.");
         }
 #pragma warning restore CS0618
 
-        return (true, properties.EncryptionProperties);
+        return properties.EncryptionProperties;
     }
 }
 #endif

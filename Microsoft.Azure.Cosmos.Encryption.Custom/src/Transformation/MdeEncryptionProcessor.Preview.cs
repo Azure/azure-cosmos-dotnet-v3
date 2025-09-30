@@ -134,16 +134,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            (bool hasMde, EncryptionProperties streamingProps) = await TryReadMdeEncryptionPropertiesStreamingAsync(input, cancellationToken);
-            if (!hasMde)
+            EncryptionProperties streamingProps = await ReadMdeEncryptionPropertiesStreamingAsync(input, cancellationToken);
+            if (streamingProps == null)
             {
+                // No encryption properties found - return original stream
                 ResetStreamPosition(input);
-
-                return await this.DecryptNewtonsoftAsync(
-                    input,
-                    encryptor,
-                    diagnosticsContext,
-                    cancellationToken);
+                return (input, null);
             }
 
             return await this.DecryptStreamAsync(input, encryptor, streamingProps, diagnosticsContext, cancellationToken);
@@ -156,15 +152,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            (bool hasMde, EncryptionProperties streamingProps) = await TryReadMdeEncryptionPropertiesStreamingAsync(input, cancellationToken);
-            if (!hasMde)
+            EncryptionProperties streamingProps = await ReadMdeEncryptionPropertiesStreamingAsync(input, cancellationToken);
+            if (streamingProps == null)
             {
-                return await this.DecryptWithNewtonsoftFallbackAsync(
-                    input,
-                    output,
-                    encryptor,
-                    diagnosticsContext,
-                    cancellationToken);
+                // No encryption properties found - no-op
+                ResetStreamPosition(input);
+                return null;
             }
 
             DecryptionContext context = await this.DecryptStreamAsync(input, output, encryptor, streamingProps, diagnosticsContext, cancellationToken);
@@ -175,40 +168,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             }
 
             await input.DisposeCompatAsync();
-            return context;
-        }
-
-        private async Task<DecryptionContext> DecryptWithNewtonsoftFallbackAsync(
-            Stream input,
-            Stream output,
-            Encryptor encryptor,
-            CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken)
-        {
-            ResetStreamPosition(input);
-
-            JObject jObj = ReadJObject(input);
-            JObject encryptionPropsJObj = RetrieveEncryptionProperties(jObj);
-            if (encryptionPropsJObj == null)
-            {
-                ResetStreamPosition(input);
-                return null;
-            }
-
-            EncryptionProperties encryptionProperties = encryptionPropsJObj.ToObject<EncryptionProperties>();
-#pragma warning disable CS0618
-            if (encryptionProperties.EncryptionAlgorithm != CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)
-            {
-                throw new NotSupportedException("JsonProcessor.Stream override is not supported for legacy encryption algorithms when using provided output stream.");
-            }
-#pragma warning restore CS0618
-
-            DecryptionContext context = await this.JObjectEncryptionProcessor.DecryptObjectAsync(jObj, encryptor, encryptionProperties, diagnosticsContext, cancellationToken);
-            output.Position = 0;
-            EncryptionProcessor.BaseSerializer.WriteToStream(jObj, output);
-            output.Position = 0;
-            ResetStreamPosition(input);
-
             return context;
         }
 
@@ -426,7 +385,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         }
 
 #if NET8_0_OR_GREATER
-        private static async Task<(bool hasMde, EncryptionProperties encryptionProperties)> TryReadMdeEncryptionPropertiesStreamingAsync(
+        /// <summary>
+        /// Reads encryption properties from the stream using System.Text.Json streaming API.
+        /// Returns null if no encryption properties are found.
+        /// Throws NotSupportedException if legacy encryption algorithm is detected.
+        /// </summary>
+        private static async Task<EncryptionProperties> ReadMdeEncryptionPropertiesStreamingAsync(
             Stream input,
             CancellationToken cancellationToken)
         {
@@ -435,18 +399,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             input.Position = 0;
             if (properties?.EncryptionProperties == null)
             {
-                return (false, null);
+                return null;
             }
 
-#pragma warning disable CS0618 // legacy algorithm support
+#pragma warning disable CS0618 // legacy algorithm check
             if (properties.EncryptionProperties.EncryptionAlgorithm != CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)
             {
-                // Gracefully signal no MDE so caller can fall back to legacy Newtonsoft path.
-                return (false, null);
+                throw new NotSupportedException($"JsonProcessor.Stream is not supported for encryption algorithm '{properties.EncryptionProperties.EncryptionAlgorithm}'. Only '{CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized}' is supported with the Stream processor.");
             }
 #pragma warning restore CS0618
 
-            return (true, properties.EncryptionProperties);
+            return properties.EncryptionProperties;
         }
 #endif
     }
