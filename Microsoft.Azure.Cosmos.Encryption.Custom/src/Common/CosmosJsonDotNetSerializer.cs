@@ -40,14 +40,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <returns>The object representing the deserialized stream</returns>
         public T FromStream<T>(Stream stream)
         {
-#if NET8_0_OR_GREATER
-            ArgumentNullException.ThrowIfNull(stream);
-#else
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
-#endif
+            ArgumentValidation.ThrowIfNull(stream);
 
             if (typeof(Stream).IsAssignableFrom(typeof(T)))
             {
@@ -101,14 +94,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// </remarks>
         public void WriteToStream<T>(T input, Stream output)
         {
-#if NET8_0_OR_GREATER
-            ArgumentNullException.ThrowIfNull(output);
-#else
-            if (output == null)
-            {
-                throw new ArgumentNullException(nameof(output));
-            }
-#endif
+            ArgumentValidation.ThrowIfNull(output);
 
             if (!output.CanWrite)
             {

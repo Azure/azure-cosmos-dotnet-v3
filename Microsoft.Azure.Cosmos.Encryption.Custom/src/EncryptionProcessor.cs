@@ -268,26 +268,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Encryptor encryptor,
             EncryptionOptions encryptionOptions)
         {
-#if NET8_0_OR_GREATER
-            ArgumentNullException.ThrowIfNull(input);
-            ArgumentNullException.ThrowIfNull(encryptor);
-            ArgumentNullException.ThrowIfNull(encryptionOptions);
-#else
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
-
-            if (encryptor == null)
-            {
-                throw new ArgumentNullException(nameof(encryptor));
-            }
-
-            if (encryptionOptions == null)
-            {
-                throw new ArgumentNullException(nameof(encryptionOptions));
-            }
-#endif
+            ArgumentValidation.ThrowIfNull(input);
+            ArgumentValidation.ThrowIfNull(encryptor);
+            ArgumentValidation.ThrowIfNull(encryptionOptions);
 
             encryptionOptions.Validate();
         }
