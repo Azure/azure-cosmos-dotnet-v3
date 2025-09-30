@@ -217,6 +217,28 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         }
 #endif
 
+        private async Task<(Stream, DecryptionContext)> DecryptLegacyNewtonsoftAsync(
+            Stream input,
+            JObject itemJObj,
+            EncryptionProperties encryptionProperties,
+            Encryptor encryptor,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            _ = itemJObj; // Inspected in InspectNewtonsoftForMde but not needed here
+            _ = encryptionProperties; // Inspected in InspectNewtonsoftForMde but not needed here
+
+            // Route to the EncryptionProcessor.DecryptAsync which handles legacy algorithm routing
+            input.Position = 0;
+            (Stream decryptedStream, DecryptionContext context) = await EncryptionProcessor.DecryptAsync(
+                input,
+                encryptor,
+                diagnosticsContext,
+                cancellationToken);
+
+            return (decryptedStream, context);
+        }
+
         private static JObject ReadJObject(Stream input)
         {
             input.Position = 0;
@@ -249,7 +271,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             return status switch
             {
-                MdePropertyStatus.Mde or MdePropertyStatus.LegacyOther => await this.WriteNewtonsoftResultAsync(
+                MdePropertyStatus.Mde => await this.WriteNewtonsoftResultAsync(
+                    input,
+                    itemJObj,
+                    encryptionProperties,
+                    encryptor,
+                    diagnosticsContext,
+                    cancellationToken),
+                MdePropertyStatus.LegacyOther => await this.DecryptLegacyNewtonsoftAsync(
                     input,
                     itemJObj,
                     encryptionProperties,

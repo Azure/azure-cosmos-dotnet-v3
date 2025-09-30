@@ -15,8 +15,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// </summary>
     internal static class RequestOptionsPropertiesExtensions
     {
+        /// <summary>
+        /// The property bag key used to store the JsonProcessor override in RequestOptions.Properties.
+        /// </summary>
         internal const string JsonProcessorPropertyBagKey = "encryption-json-processor";
 
+        /// <summary>
+        /// Resolves and validates the JsonProcessor selection for the given encryption options.
+        /// Applies any override from RequestOptions.Properties and validates compatibility with the encryption algorithm.
+        /// </summary>
+        /// <param name="requestOptions">The request options that may contain a JsonProcessor override.</param>
+        /// <param name="encryptionOptions">The encryption options to configure.</param>
+        /// <exception cref="NotSupportedException">Thrown when an unsupported combination of algorithm and processor is detected.</exception>
         internal static void ResolveJsonProcessorSelection(this RequestOptions requestOptions, EncryptionOptions encryptionOptions)
         {
 #pragma warning disable CS0618 // legacy algorithm still supported
@@ -42,6 +52,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 #pragma warning restore CS0618
         }
 
+        /// <summary>
+        /// Attempts to read a JsonProcessor override from the RequestOptions.Properties dictionary.
+        /// Supports both JsonProcessor enum values and string representations (case-insensitive).
+        /// </summary>
+        /// <param name="requestOptions">The request options to read from.</param>
+        /// <param name="jsonProcessor">When this method returns, contains the JsonProcessor value if found; otherwise, JsonProcessor.Newtonsoft.</param>
+        /// <returns><c>true</c> if a valid JsonProcessor override was found; otherwise, <c>false</c>.</returns>
         internal static bool TryReadJsonProcessorOverride(this RequestOptions requestOptions, out JsonProcessor jsonProcessor)
         {
             jsonProcessor = JsonProcessor.Newtonsoft;

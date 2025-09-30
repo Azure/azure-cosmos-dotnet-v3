@@ -40,10 +40,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <returns>The object representing the deserialized stream</returns>
         public T FromStream<T>(Stream stream)
         {
+#if NET8_0_OR_GREATER
+            ArgumentNullException.ThrowIfNull(stream);
+#else
             if (stream == null)
             {
                 throw new ArgumentNullException(nameof(stream));
             }
+#endif
 
             if (typeof(Stream).IsAssignableFrom(typeof(T)))
             {
@@ -88,13 +92,23 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// </summary>
         /// <typeparam name="T">Type of object being serialized.</typeparam>
         /// <param name="input">Object to serialize.</param>
-        /// <param name="output">Destination stream. Must be writable.</param>
+        /// <param name="output">Destination stream. Must be writable. The stream is not disposed by this method.</param>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="output"/> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="output"/> is not writable.</exception>
+        /// <remarks>
+        /// This method serializes the object directly to the provided stream without creating an intermediate MemoryStream,
+        /// reducing memory allocations for large objects. If the output stream is seekable, its position is reset to 0 after writing.
+        /// </remarks>
         public void WriteToStream<T>(T input, Stream output)
         {
+#if NET8_0_OR_GREATER
+            ArgumentNullException.ThrowIfNull(output);
+#else
             if (output == null)
             {
                 throw new ArgumentNullException(nameof(output));
             }
+#endif
 
             if (!output.CanWrite)
             {
