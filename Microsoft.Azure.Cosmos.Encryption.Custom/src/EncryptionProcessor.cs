@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return EncryptAsync(input, encryptor, encryptionOptions, diagnosticsContext, cancellationToken);
         }
 
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
         public static async Task EncryptAsync(
             Stream input,
             Stream output,
@@ -151,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return await MdeEncryptionProcessor.DecryptAsync(input, encryptor, diagnosticsContext, requestOptions, cancellationToken);
         }
 
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
         public static async Task<DecryptionContext> DecryptAsync(
             Stream input,
             Stream output,
@@ -178,7 +178,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         }
 #endif
 
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
         public static async Task<(Stream, DecryptionContext)> DecryptStreamAsync(
             Stream input,
             Encryptor encryptor,
