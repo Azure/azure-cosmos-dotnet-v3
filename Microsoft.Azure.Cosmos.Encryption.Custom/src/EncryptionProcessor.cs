@@ -148,18 +148,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             RequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
-            (Stream selectedStream, DecryptionContext ctx) = await MdeEncryptionProcessor.DecryptAsync(input, encryptor, diagnosticsContext, requestOptions, cancellationToken);
-            if (ctx != null || selectedStream != input)
-            {
-                return (selectedStream, ctx);
-            }
-
-            return await DecryptAsync(selectedStream, encryptor, diagnosticsContext, cancellationToken);
-#else
-            // In non-preview builds only Newtonsoft is available.
-            return await DecryptAsync(input, encryptor, diagnosticsContext, cancellationToken);
-#endif
+            return await MdeEncryptionProcessor.DecryptAsync(input, encryptor, diagnosticsContext, requestOptions, cancellationToken);
         }
 
 #if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
