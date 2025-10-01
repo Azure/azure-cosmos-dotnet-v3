@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         public static TRequestOptions ConfigureJsonProcessor<TRequestOptions>(this TRequestOptions requestOptions, JsonProcessor jsonProcessor)
             where TRequestOptions : RequestOptions
         {
-            ArgumentNullException.ThrowIfNull(requestOptions);
+            ArgumentValidation.ThrowIfNull(requestOptions);
 
             if (!Enum.IsDefined(typeof(JsonProcessor), jsonProcessor))
             {
