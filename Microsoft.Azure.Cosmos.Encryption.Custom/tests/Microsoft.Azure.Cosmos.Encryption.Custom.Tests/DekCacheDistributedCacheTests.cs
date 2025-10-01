@@ -82,8 +82,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 CosmosDiagnosticsContext.Create(null),
                 CancellationToken.None);
 
-            // Clear memory cache to test distributed cache
-            await cache.RemoveAsync("testDek");
+            // Clear only memory cache to test distributed cache
+            // Use internal property to clear memory cache without affecting distributed cache
+            await cache.DekPropertiesCache.RemoveAsync("testDek");
 
             // Act - Second fetch (should use distributed cache)
             DataEncryptionKeyProperties result2 = await cache.GetOrAddDekPropertiesAsync(
