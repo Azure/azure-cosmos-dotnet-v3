@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
     using System;
+    using System.Diagnostics;
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
@@ -96,8 +97,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             // Update memory cache
             this.DekPropertiesCache.Set(dekId, cachedDekProperties);
 
-            // Update distributed cache if available
-            this.UpdateDistributedCacheAsync(dekId, cachedDekProperties, CancellationToken.None).ConfigureAwait(false);
+            // Update distributed cache if available (fire-and-forget)
+            if (this.distributedCache != null)
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await this.UpdateDistributedCacheAsync(dekId, cachedDekProperties, CancellationToken.None).ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log the failure but don't fail the operation
+                        Debug.WriteLine($"Failed to update distributed cache for DEK '{dekId}': {ex.Message}");
+                    }
+                });
+            }
         }
 
         public void SetRawDek(string dekId, InMemoryRawDek inMemoryRawDek)
@@ -119,9 +134,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     {
                         await this.distributedCache.RemoveAsync(this.GetDistributedCacheKey(dekId));
                     }
-                    catch
+                    catch (Exception ex)
                     {
                         // Don't fail the operation if distributed cache removal fails
+                        Debug.WriteLine($"Failed to remove DEK '{dekId}' from distributed cache: {ex.Message}");
                     }
                 }
             }
@@ -176,10 +192,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
                 // If distributed cache fails, fall back to source
                 // Don't throw - this is an optimization layer
+                Debug.WriteLine($"Failed to retrieve DEK '{dekId}' from distributed cache: {ex.Message}");
             }
 
             return null;
@@ -231,10 +248,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     },
                     cancellationToken);
             }
-            catch
+            catch (Exception ex)
             {
                 // Don't fail the operation if distributed cache write fails
                 // The memory cache still has the value, and we'll try again on next fetch
+                Debug.WriteLine($"Failed to write DEK '{dekId}' to distributed cache: {ex.Message}");
             }
         }
 
@@ -271,6 +289,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             string json = System.Text.Encoding.UTF8.GetString(bytes);
             CachedDekPropertiesDto dto = JsonConvert.DeserializeObject<CachedDekPropertiesDto>(json);
+
+            if (dto?.ServerProperties == null)
+            {
+                throw new InvalidOperationException("Failed to deserialize cached DEK properties or properties are null.");
+            }
 
             return new CachedDekProperties(
                 dto.ServerProperties,
