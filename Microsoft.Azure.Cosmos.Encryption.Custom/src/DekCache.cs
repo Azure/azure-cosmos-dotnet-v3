@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             CachedDekProperties cachedDekProperties = await this.DekPropertiesCache.GetAsync(
                     dekId,
                     null,
-                    () => this.FetchFromDistributedCacheOrSourceAsync(dekId, fetcher, diagnosticsContext, cancellationToken),
+                    () => this.FetchDekPropertiesAsync(dekId, fetcher, diagnosticsContext, cancellationToken),
                     cancellationToken);
 
             if (cachedDekProperties.ServerPropertiesExpiryUtc <= DateTime.UtcNow)
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 cachedDekProperties = await this.DekPropertiesCache.GetAsync(
                     dekId,
                     null,
-                    () => this.FetchFromDistributedCacheOrSourceAsync(dekId, fetcher, diagnosticsContext, cancellationToken, forceSource: true),
+                    () => this.FetchFromSourceAndUpdateCachesAsync(dekId, fetcher, diagnosticsContext, cancellationToken),
                     cancellationToken,
                     forceRefresh: true);
             }
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 // Trigger background refresh without blocking caller
                 this.DekPropertiesCache.BackgroundRefreshNonBlocking(
                     dekId,
-                    () => this.FetchFromDistributedCacheOrSourceAsync(dekId, fetcher, diagnosticsContext, cancellationToken, forceSource: true));
+                    () => this.FetchFromSourceAndUpdateCachesAsync(dekId, fetcher, diagnosticsContext, cancellationToken));
             }
 
             return cachedDekProperties.ServerProperties;
@@ -92,7 +92,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         public void SetDekProperties(string dekId, DataEncryptionKeyProperties dekProperties)
         {
             CachedDekProperties cachedDekProperties = new (dekProperties, DateTime.UtcNow + this.dekPropertiesTimeToLive);
+
+            // Update memory cache
             this.DekPropertiesCache.Set(dekId, cachedDekProperties);
+
+            // Update distributed cache if available
+            this.UpdateDistributedCacheAsync(dekId, cachedDekProperties, CancellationToken.None).ConfigureAwait(false);
         }
 
         public void SetRawDek(string dekId, InMemoryRawDek inMemoryRawDek)
@@ -106,68 +111,131 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             if (cachedDekProperties != null)
             {
                 this.RawDekCache.Remove(dekId);
+
+                // Remove from distributed cache if available
+                if (this.distributedCache != null)
+                {
+                    try
+                    {
+                        await this.distributedCache.RemoveAsync(this.GetDistributedCacheKey(dekId));
+                    }
+                    catch
+                    {
+                        // Don't fail the operation if distributed cache removal fails
+                    }
+                }
             }
         }
 
-        private async Task<CachedDekProperties> FetchAsync(
+        /// <summary>
+        /// Fetches DEK properties with cache hierarchy: Memory Cache -> Distributed Cache -> Source (Cosmos DB)
+        /// </summary>
+        private async Task<CachedDekProperties> FetchDekPropertiesAsync(
             string dekId,
             Func<string, CosmosDiagnosticsContext, CancellationToken, Task<DataEncryptionKeyProperties>> fetcher,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            DataEncryptionKeyProperties serverProperties = await fetcher(dekId, diagnosticsContext, cancellationToken);
-            return new CachedDekProperties(serverProperties, DateTime.UtcNow + this.dekPropertiesTimeToLive);
+            // Try distributed cache first if available
+            CachedDekProperties cachedProperties = await this.TryGetFromDistributedCacheAsync(dekId, cancellationToken);
+            if (cachedProperties != null)
+            {
+                return cachedProperties;
+            }
+
+            // Cache miss - fetch from source and update all caches
+            return await this.FetchFromSourceAndUpdateCachesAsync(dekId, fetcher, diagnosticsContext, cancellationToken);
         }
 
-        private async Task<CachedDekProperties> FetchFromDistributedCacheOrSourceAsync(
+        /// <summary>
+        /// Attempts to retrieve DEK properties from distributed cache
+        /// </summary>
+        private async Task<CachedDekProperties> TryGetFromDistributedCacheAsync(
             string dekId,
-            Func<string, CosmosDiagnosticsContext, CancellationToken, Task<DataEncryptionKeyProperties>> fetcher,
-            CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken,
-            bool forceSource = false)
+            CancellationToken cancellationToken)
         {
-            // Try distributed cache if available and not forcing source refresh
-            if (!forceSource && this.distributedCache != null)
+            if (this.distributedCache == null)
             {
-                byte[] cachedBytes = await this.distributedCache.GetAsync(this.GetDistributedCacheKey(dekId), cancellationToken);
+                return null;
+            }
+
+            try
+            {
+                byte[] cachedBytes = await this.distributedCache.GetAsync(
+                    this.GetDistributedCacheKey(dekId),
+                    cancellationToken);
+
                 if (cachedBytes != null)
                 {
                     CachedDekProperties cachedProps = DeserializeCachedDekProperties(cachedBytes);
 
-                    // Check if still valid
+                    // Validate the cached entry is still valid
                     if (cachedProps.ServerPropertiesExpiryUtc > DateTime.UtcNow)
                     {
                         return cachedProps;
                     }
                 }
             }
-
-            // Fetch from source (Cosmos DB)
-            CachedDekProperties result = await this.FetchAsync(dekId, fetcher, diagnosticsContext, cancellationToken);
-
-            // Update distributed cache if available
-            if (this.distributedCache != null)
+            catch
             {
-                try
-                {
-                    byte[] serialized = SerializeCachedDekProperties(result);
-                    await this.distributedCache.SetAsync(
-                        this.GetDistributedCacheKey(dekId),
-                        serialized,
-                        new DistributedCacheEntryOptions
-                        {
-                            AbsoluteExpiration = result.ServerPropertiesExpiryUtc,
-                        },
-                        cancellationToken);
-                }
-                catch
-                {
-                    // Don't fail the operation if distributed cache write fails
-                    // The memory cache still has the value
-                }
+                // If distributed cache fails, fall back to source
+                // Don't throw - this is an optimization layer
             }
 
-            return result;
+            return null;
+        }
+
+        /// <summary>
+        /// Fetches DEK properties from source (Cosmos DB) and updates all cache layers
+        /// </summary>
+        private async Task<CachedDekProperties> FetchFromSourceAndUpdateCachesAsync(
+            string dekId,
+            Func<string, CosmosDiagnosticsContext, CancellationToken, Task<DataEncryptionKeyProperties>> fetcher,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            // Fetch from source (Cosmos DB)
+            DataEncryptionKeyProperties serverProperties = await fetcher(dekId, diagnosticsContext, cancellationToken);
+            CachedDekProperties cachedProperties = new CachedDekProperties(
+                serverProperties,
+                DateTime.UtcNow + this.dekPropertiesTimeToLive);
+
+            // Update distributed cache (best effort - don't fail if this fails)
+            await this.UpdateDistributedCacheAsync(dekId, cachedProperties, cancellationToken);
+
+            return cachedProperties;
+        }
+
+        /// <summary>
+        /// Updates the distributed cache with DEK properties (best effort, non-blocking on failures)
+        /// </summary>
+        private async Task UpdateDistributedCacheAsync(
+            string dekId,
+            CachedDekProperties cachedProperties,
+            CancellationToken cancellationToken)
+        {
+            if (this.distributedCache == null)
+            {
+                return;
+            }
+
+            try
+            {
+                byte[] serialized = SerializeCachedDekProperties(cachedProperties);
+                await this.distributedCache.SetAsync(
+                    this.GetDistributedCacheKey(dekId),
+                    serialized,
+                    new DistributedCacheEntryOptions
+                    {
+                        AbsoluteExpiration = cachedProperties.ServerPropertiesExpiryUtc,
+                    },
+                    cancellationToken);
+            }
+            catch
+            {
+                // Don't fail the operation if distributed cache write fails
+                // The memory cache still has the value, and we'll try again on next fetch
+            }
         }
 
         private bool ShouldProactivelyRefresh(CachedDekProperties cached)
