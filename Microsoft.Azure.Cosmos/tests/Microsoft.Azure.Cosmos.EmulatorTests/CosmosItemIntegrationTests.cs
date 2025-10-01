@@ -2200,7 +2200,7 @@
         [Owner("ntripician")]
         [TestCategory("MultiRegion")]
         [Timeout(70000)]
-        public void ClinetOverrides0msRequestTimeoutValueForPPAF()
+        public async Task ClinetOverrides0msRequestTimeoutValueForPPAF()
         {
             // Arrange.
             
@@ -2246,12 +2246,14 @@
             Database database = cosmosClient.GetDatabase(MultiRegionSetupHelpers.dbName);
             Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
+            //request to start document client initiation 
+            _ = await container.ReadItemAsync<CosmosIntegrationTestObject>("id", new PartitionKey("pk1"));
+
             // Act and Assert.
 
             CrossRegionHedgingAvailabilityStrategy strat = cosmosClient.DocumentClient.ConnectionPolicy.AvailabilityStrategy as CrossRegionHedgingAvailabilityStrategy;
             Assert.IsNotNull(strat);
             Assert.AreNotEqual(0, strat.Threshold);
-
         }
 
         private async Task TryCreateItems(List<CosmosIntegrationTestObject> testItems)
