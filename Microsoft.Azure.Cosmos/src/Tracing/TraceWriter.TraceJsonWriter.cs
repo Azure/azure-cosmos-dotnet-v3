@@ -411,6 +411,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.jsonWriter.WriteFieldName(nameof(storeResult.GlobalCommittedLSN));
                 this.jsonWriter.WriteNumberValue(storeResult.GlobalCommittedLSN);
 
+                this.jsonWriter.WriteFieldName(nameof(storeResult.GlobalNRegionCommittedGLSN));
+                this.jsonWriter.WriteNumberValue(storeResult.GlobalNRegionCommittedGLSN);
+
                 this.jsonWriter.WriteFieldName(nameof(storeResult.ItemLSN));
                 this.jsonWriter.WriteNumberValue(storeResult.ItemLSN);
 
