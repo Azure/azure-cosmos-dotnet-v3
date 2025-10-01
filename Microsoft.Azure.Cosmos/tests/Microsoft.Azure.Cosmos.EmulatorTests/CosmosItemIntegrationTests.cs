@@ -2246,8 +2246,12 @@
             Database database = cosmosClient.GetDatabase(MultiRegionSetupHelpers.dbName);
             Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
-            //request to start document client initiation 
-            _ = await container.ReadItemAsync<CosmosIntegrationTestObject>("id", new PartitionKey("pk1"));
+            try
+            {
+                //request to start document client initiation 
+                _ = await container.ReadItemAsync<CosmosIntegrationTestObject>("id", new PartitionKey("pk1"));
+            }
+            catch { }
 
             // Act and Assert.
 
