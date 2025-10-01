@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             CachedDekProperties cachedDekProperties = await this.DekPropertiesCache.GetAsync(
                     dekId,
                     null,
-                    () => this.FetchFromL2OrSourceAsync(dekId, fetcher, diagnosticsContext, cancellationToken),
+                    () => this.FetchFromDistributedCacheOrSourceAsync(dekId, fetcher, diagnosticsContext, cancellationToken),
                     cancellationToken);
 
             if (cachedDekProperties.ServerPropertiesExpiryUtc <= DateTime.UtcNow)
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 cachedDekProperties = await this.DekPropertiesCache.GetAsync(
                     dekId,
                     null,
-                    () => this.FetchFromL2OrSourceAsync(dekId, fetcher, diagnosticsContext, cancellationToken, forceSource: true),
+                    () => this.FetchFromDistributedCacheOrSourceAsync(dekId, fetcher, diagnosticsContext, cancellationToken, forceSource: true),
                     cancellationToken,
                     forceRefresh: true);
             }
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 // Trigger background refresh without blocking caller
                 this.DekPropertiesCache.BackgroundRefreshNonBlocking(
                     dekId,
-                    () => this.FetchFromL2OrSourceAsync(dekId, fetcher, diagnosticsContext, cancellationToken, forceSource: true));
+                    () => this.FetchFromDistributedCacheOrSourceAsync(dekId, fetcher, diagnosticsContext, cancellationToken, forceSource: true));
             }
 
             return cachedDekProperties.ServerProperties;
@@ -119,14 +119,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return new CachedDekProperties(serverProperties, DateTime.UtcNow + this.dekPropertiesTimeToLive);
         }
 
-        private async Task<CachedDekProperties> FetchFromL2OrSourceAsync(
+        private async Task<CachedDekProperties> FetchFromDistributedCacheOrSourceAsync(
             string dekId,
             Func<string, CosmosDiagnosticsContext, CancellationToken, Task<DataEncryptionKeyProperties>> fetcher,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken,
             bool forceSource = false)
         {
-            // Try L2 cache if available and not forcing source refresh
+            // Try distributed cache if available and not forcing source refresh
             if (!forceSource && this.distributedCache != null)
             {
                 byte[] cachedBytes = await this.distributedCache.GetAsync(this.GetDistributedCacheKey(dekId), cancellationToken);
@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             // Fetch from source (Cosmos DB)
             CachedDekProperties result = await this.FetchAsync(dekId, fetcher, diagnosticsContext, cancellationToken);
 
-            // Update L2 cache if available
+            // Update distributed cache if available
             if (this.distributedCache != null)
             {
                 try
@@ -163,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 catch
                 {
                     // Don't fail the operation if distributed cache write fails
-                    // The L1 cache still has the value
+                    // The memory cache still has the value
                 }
             }
 
