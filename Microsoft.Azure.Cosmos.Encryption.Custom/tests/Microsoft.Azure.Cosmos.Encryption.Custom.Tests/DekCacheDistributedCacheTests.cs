@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
     public class DekCacheDistributedCacheTests
     {
         [TestMethod]
-        public async Task DekCache_WithoutDistributedCache_UsesOnlyL1Cache()
+        public async Task DekCache_WithoutDistributedCache_UsesOnlyMemoryCache()
         {
             // Arrange
             DekCache cache = new DekCache(dekPropertiesTimeToLive: TimeSpan.FromMinutes(30));
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 CosmosDiagnosticsContext.Create(null),
                 CancellationToken.None);
 
-            // Act - Second fetch (should use L1 cache)
+            // Act - Second fetch (should use memory cache)
             DataEncryptionKeyProperties result2 = await cache.GetOrAddDekPropertiesAsync(
                 "testDek",
                 (id, ctx, ct) => Task.FromResult(CreateDekProperties(id)),
@@ -49,12 +49,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 CancellationToken.None);
 
             // Assert
-            Assert.AreEqual(1, fetchCount, "Should only fetch once - second call should use L1 cache");
+            Assert.AreEqual(1, fetchCount, "Should only fetch once - second call should use memory cache");
             Assert.AreEqual(result1.Id, result2.Id);
         }
 
         [TestMethod]
-        public async Task DekCache_WithDistributedCache_UsesL2Cache()
+        public async Task DekCache_WithDistributedCache_UsesDistributedCache()
         {
             // Arrange
             InMemoryDistributedCache distributedCache = new InMemoryDistributedCache();
@@ -75,17 +75,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                     DateTime.UtcNow);
             }
 
-            // Act - First fetch (will populate both L1 and L2)
+            // Act - First fetch (will populate both memory cache and distributed cache)
             DataEncryptionKeyProperties result1 = await cache.GetOrAddDekPropertiesAsync(
                 "testDek",
                 (id, ctx, ct) => Task.FromResult(CreateDekProperties(id)),
                 CosmosDiagnosticsContext.Create(null),
                 CancellationToken.None);
 
-            // Clear L1 cache to test L2 cache
+            // Clear memory cache to test distributed cache
             await cache.RemoveAsync("testDek");
 
-            // Act - Second fetch (should use L2 cache)
+            // Act - Second fetch (should use distributed cache)
             DataEncryptionKeyProperties result2 = await cache.GetOrAddDekPropertiesAsync(
                 "testDek",
                 (id, ctx, ct) => Task.FromResult(CreateDekProperties(id)),
@@ -93,9 +93,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 CancellationToken.None);
 
             // Assert
-            Assert.AreEqual(1, fetchCount, "Should only fetch once - second call should use L2 cache");
+            Assert.AreEqual(1, fetchCount, "Should only fetch once - second call should use distributed cache");
             Assert.AreEqual(result1.Id, result2.Id);
-            Assert.IsTrue(distributedCache.ContainsKey("dek:testDek"), "L2 cache should contain the key");
+            Assert.IsTrue(distributedCache.ContainsKey("dek:testDek"), "Distributed cache should contain the key");
         }
 
         [TestMethod]
