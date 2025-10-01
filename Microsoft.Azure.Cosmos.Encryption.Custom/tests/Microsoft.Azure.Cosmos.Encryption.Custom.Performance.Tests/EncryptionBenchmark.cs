@@ -3,7 +3,7 @@
     using System.IO;
     using BenchmarkDotNet.Attributes;
     using Microsoft.Data.Encryption.Cryptography;
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
     using Microsoft.IO;
 #endif
     using Moq;
@@ -19,7 +19,7 @@
                 new EncryptionKeyWrapMetadata("name", "value"), DateTime.UtcNow);
         private static readonly Mock<EncryptionKeyStoreProvider> StoreProvider = new();
 
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
         private readonly RecyclableMemoryStreamManager recyclableMemoryStreamManager = new ();
 #endif
 
@@ -35,7 +35,7 @@
         [Params(CompressionOptions.CompressionAlgorithm.None, CompressionOptions.CompressionAlgorithm.Brotli)]
         public CompressionOptions.CompressionAlgorithm CompressionAlgorithm { get; set; }
 
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
         [Params(JsonProcessor.Newtonsoft, JsonProcessor.Stream)]
 #else
         [Params(JsonProcessor.Newtonsoft)]
@@ -52,7 +52,7 @@
             Mock<DataEncryptionKeyProvider> keyProvider = new();
             keyProvider
                 .Setup(x => x.FetchDataEncryptionKeyWithoutRawKeyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(() => new MdeEncryptionAlgorithm(DekProperties, EncryptionType.Randomized, StoreProvider.Object, cacheTimeToLive: TimeSpan.MaxValue));
+                .Returns(async () => await MdeEncryptionAlgorithm.CreateAsync(DekProperties, EncryptionType.Randomized, StoreProvider.Object, cacheTimeToLive: TimeSpan.MaxValue, false, default));
 
             this.encryptor = new(keyProvider.Object);
             this.encryptionOptions = this.CreateEncryptionOptions();
@@ -82,7 +82,7 @@
                  CancellationToken.None);
         }
 
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
         [Benchmark]
         public async Task EncryptToProvidedStream()
         {
@@ -108,7 +108,7 @@
                 CancellationToken.None);
         }
 
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
         [Benchmark]
         public async Task DecryptToProvidedStream()
         {
