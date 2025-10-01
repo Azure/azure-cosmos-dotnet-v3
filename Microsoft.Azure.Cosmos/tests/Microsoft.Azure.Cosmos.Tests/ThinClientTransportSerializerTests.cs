@@ -69,6 +69,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 () => ThinClientTransportSerializer.SerializeProxyRequestAsync(
                     bufferProvider,
                     "MockAccount",
+                    "regionalAccount",
                     clientCollectionCacheMock.Object,
                     message),
                 "Expected an InternalServerErrorException for missing PartitionKey in point operation");
@@ -118,6 +119,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Stream resultStream = await ThinClientTransportSerializer.SerializeProxyRequestAsync(
                 bufferProvider,
                 "MockAccount",
+                "regionalAccount",
                 clientCollectionCacheMock.Object,
                 message);
 

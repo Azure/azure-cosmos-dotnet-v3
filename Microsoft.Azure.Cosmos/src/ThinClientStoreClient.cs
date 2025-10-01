@@ -55,6 +55,7 @@ namespace Microsoft.Azure.Cosmos
            Uri physicalAddress,
            Uri thinClientEndpoint,
            string globalDatabaseAccountName,
+           string regionalDatabaseAccountName,
            ClientCollectionCache clientCollectionCache,
            CancellationToken cancellationToken)
         {
@@ -64,6 +65,7 @@ namespace Microsoft.Azure.Cosmos
                 physicalAddress,
                 thinClientEndpoint,
                 globalDatabaseAccountName,
+                regionalDatabaseAccountName,
                 clientCollectionCache,
                 cancellationToken))
             {
@@ -98,6 +100,7 @@ namespace Microsoft.Azure.Cosmos
                 default,
                 default,
                 default,
+                default,
                 default))
             {
                 return await HttpTransportClient.ProcessHttpResponse(request.ResourceAddress, string.Empty, responseMessage, physicalAddress, request);
@@ -109,6 +112,7 @@ namespace Microsoft.Azure.Cosmos
             Uri physicalAddress,
             Uri thinClientEndpoint,
             string globalDatabaseAccountName,
+            string regionalDatabaseAccountName,
             ClientCollectionCache clientCollectionCache)
         {
             HttpRequestMessage requestMessage = base.PrepareRequestMessageAsync(request, physicalAddress).Result;
@@ -141,6 +145,7 @@ namespace Microsoft.Azure.Cosmos
                 Stream contentStream = await ThinClientTransportSerializer.SerializeProxyRequestAsync(
                     bufferProviderWrapper,
                     globalDatabaseAccountName,
+                    regionalDatabaseAccountName,
                     clientCollectionCache,
                     requestMessage);
 
@@ -180,12 +185,13 @@ namespace Microsoft.Azure.Cosmos
            Uri physicalAddress,
            Uri thinClientEndpoint,
            string globalDatabaseAccountName,
+           string regionalDatabaseAccountName,
            ClientCollectionCache clientCollectionCache,
            CancellationToken cancellationToken)
         {
             DefaultTrace.TraceInformation("In {0}, OperationType: {1}, ResourceType: {2}", nameof(ThinClientStoreClient), request.OperationType, request.ResourceType);
             return base.httpClient.SendHttpAsync(
-                () => this.PrepareRequestForProxyAsync(request, physicalAddress, thinClientEndpoint, globalDatabaseAccountName, clientCollectionCache),
+                () => this.PrepareRequestForProxyAsync(request, physicalAddress, thinClientEndpoint, globalDatabaseAccountName, regionalDatabaseAccountName, clientCollectionCache),
                 resourceType,
                 HttpTimeoutPolicy.GetTimeoutPolicy(request, isThinClientEnabled: true),
                 request.RequestContext.ClientRequestStatistics,

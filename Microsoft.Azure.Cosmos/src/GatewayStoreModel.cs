@@ -134,14 +134,16 @@ namespace Microsoft.Azure.Cosmos
                 {
                     Uri thinClientEndpoint = this.endpointManager.ResolveThinClientEndpoint(request);
 
-                    AccountProperties account = await this.GetDatabaseAccountPropertiesAsync();
+                    AccountProperties accountProperties = await this.GetDatabaseAccountPropertiesAsync();
 
                     response = await this.thinClientStoreClient.InvokeAsync(
                         request,
                         request.ResourceType,
                         physicalAddress,
                         thinClientEndpoint,
-                        account.Id,
+                        accountProperties.Id,
+                        string.Empty,
+                        //thinClientEndpoint.Host.Split('.')[0],
                         this.clientCollectionCache,
                         cancellationToken);
                 }

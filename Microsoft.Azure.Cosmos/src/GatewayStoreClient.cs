@@ -59,6 +59,7 @@ namespace Microsoft.Azure.Cosmos
             Uri physicalAddress,
             Uri endpoint,
             string globalDatabaseAccountName,
+            string regionalDatabaseAccountName,
             ClientCollectionCache clientCollectionCache,
             CancellationToken cancellationToken)
         {

@@ -105,6 +105,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     new Uri("https://mock.cosmos.com/dbs/mockdb/colls/mockcoll/docs/mockdoc"),
                     this.thinClientEndpoint,
                     "mockaccount",
+                    "regionalAccount",
                     clientCollectionCacheMock.Object,
                     default));
         }
@@ -169,6 +170,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new Uri("https://mock.cosmos.com/dbs/mockdb/colls/mockcoll/docs/mockdoc"),
                 this.thinClientEndpoint,
                 "mockaccount",
+                "regionalAccount",
                 clientCollectionCacheMock.Object,
                 default);
 
@@ -264,6 +266,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new Uri("https://mock.cosmos.com/dbs/mockdb/colls/mockcoll/docs/mockdoc"),
                 this.thinClientEndpoint,
                 "mockaccount",
+                "regionalAccount",
                 clientCollectionCacheMock.Object,
                 default);
 
@@ -358,6 +361,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new Uri("https://mock.cosmos.com/dbs/mockdb/colls/mockcoll/docs/mockdoc"),
                 this.thinClientEndpoint,
                 "mockaccount",
+                "regionalAccount",
                 clientCollectionCacheMock.Object,
                 default);
 

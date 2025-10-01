@@ -38,6 +38,7 @@ namespace Microsoft.Azure.Cosmos
         public static async Task<Stream> SerializeProxyRequestAsync(
             BufferProviderWrapper bufferProvider,
             string accountName,
+            string regionalDatabaseAccountName,
             ClientCollectionCache clientCollectionCache,
             HttpRequestMessage requestMessage)
         {
@@ -113,6 +114,7 @@ namespace Microsoft.Azure.Cosmos
                     activityId,
                     bufferProvider.Provider,
                     accountName,
+                    regionalDatabaseAccountName,
                     out _,
                     out _);
 
