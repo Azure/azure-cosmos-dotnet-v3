@@ -143,7 +143,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             this.TestProperty<AccountProperties>(
                 serializerCore,
                 id,
-                $@"{{""id"":""{id}"",""writableLocations"":[],""readableLocations"":[],""userConsistencyPolicy"":null,""addresses"":null,""userReplicationPolicy"":null,""systemReplicationPolicy"":null,""readPolicy"":null,""queryEngineConfiguration"":null,""enableMultipleWriteLocations"":false,""enablePerPartitionFailoverBehavior"":null}}");
+                $@"{{""id"":""{id}"",""writableLocations"":[],""readableLocations"":[],""userConsistencyPolicy"":null,""addresses"":null,""userReplicationPolicy"":null,""systemReplicationPolicy"":null,""readPolicy"":null,""queryEngineConfiguration"":null,""enableMultipleWriteLocations"":false,""enablePerPartitionFailoverBehavior"":null,""enableNRegionSynchronousCommit"":false}}");
 
             this.TestProperty<DatabaseProperties>(
                 serializerCore,
