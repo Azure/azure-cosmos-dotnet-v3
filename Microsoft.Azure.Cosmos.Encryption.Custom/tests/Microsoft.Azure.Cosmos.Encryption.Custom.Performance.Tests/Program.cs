@@ -13,9 +13,13 @@
             ManualConfig dontRequireSlnToRunBenchmarks = ManualConfig
                 .Create(DefaultConfig.Instance)
                 .AddJob(Job.MediumRun.WithToolchain(InProcessEmitToolchain.Instance))
-                .AddDiagnoser(MemoryDiagnoser.Default);
+                .AddDiagnoser(MemoryDiagnoser.Default)
+                .WithOptions(ConfigOptions.DisableOptimizationsValidator);
 
-            BenchmarkRunner.Run<EncryptionBenchmark>(dontRequireSlnToRunBenchmarks, args);
+            // Run any benchmarks in this assembly; respects --filter and avoids crashing when a filter matches none
+            BenchmarkSwitcher
+                .FromAssembly(typeof(Program).Assembly)
+                .Run(args, dontRequireSlnToRunBenchmarks);
         }
     }
 }
