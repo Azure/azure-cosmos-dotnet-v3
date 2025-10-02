@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System.Collections.Generic;
     using System.Globalization;
     using System.Linq;
-    using System.Net.Http;
     using System.Text;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
