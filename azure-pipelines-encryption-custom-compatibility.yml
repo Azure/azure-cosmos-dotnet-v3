@@ -1,0 +1,155 @@
+# Compatibility Testing Pipeline for Microsoft.Azure.Cosmos.Encryption.Custom
+# Tests current build against published NuGet package versions to catch breaking changes
+
+trigger:
+  branches:
+    include:
+      - master
+      - feature/*
+  paths:
+    include:
+      - Microsoft.Azure.Cosmos.Encryption.Custom/**
+      - azure-pipelines-encryption-custom-compatibility.yml
+
+pr:
+  branches:
+    include:
+      - master
+  paths:
+    include:
+      - Microsoft.Azure.Cosmos.Encryption.Custom/**
+
+schedules:
+  - cron: "0 2 * * *"  # Run daily at 2 AM UTC
+    displayName: 'Nightly Compatibility Test (Full Matrix)'
+    branches:
+      include:
+        - master
+    always: true
+
+variables:
+  BuildConfiguration: 'Release'
+  
+  # Baseline version (last published) for PR/CI builds
+  BaselineVersion: '1.0.0-preview07'
+  
+  # Full version matrix for scheduled/manual runs
+  # Update this when new versions are published
+  VersionMatrix: |
+    1.0.0-preview07
+    1.0.0-preview06
+    1.0.0-preview05
+    1.0.0-preview04
+
+stages:
+  # Stage 0: API Compatibility Check (fast fail on breaking changes)
+  - stage: ApiCompatibilityCheck
+    displayName: 'API Compatibility Check'
+    jobs:
+      - job: CheckApi
+        displayName: 'Validate API Surface'
+        pool:
+          vmImage: 'windows-latest'
+        steps:
+          - template: templates/encryption-custom-apicompat-check.yml
+            parameters:
+              BaselineVersion: $(BaselineVersion)
+              StrictMode: false
+              BuildConfiguration: $(BuildConfiguration)
+
+  # Stage 1: Quick compatibility check against last published version
+  - stage: QuickCompatibilityCheck
+    displayName: 'Quick Check (Last Version)'
+    dependsOn: ApiCompatibilityCheck
+    condition: and(succeeded(), eq(variables['Build.Reason'], 'PullRequest'))
+    jobs:
+      - template: templates/encryption-custom-compatibility-test.yml
+        parameters:
+          BuildConfiguration: $(BuildConfiguration)
+          TestVersion: $(BaselineVersion)
+          JobName: 'QuickCheck'
+          DisplayName: 'Test vs $(BaselineVersion)'
+
+  # Stage 2: Full matrix compatibility testing
+  - stage: FullMatrixCompatibility
+    displayName: 'Full Matrix Compatibility'
+    dependsOn: ApiCompatibilityCheck
+    condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+    jobs:
+      # Test against each version in parallel
+      - job: TestPreview07
+        displayName: 'Test vs 1.0.0-preview07'
+        pool:
+          vmImage: 'windows-latest'
+        steps:
+          - template: templates/encryption-custom-compatibility-test-steps.yml
+            parameters:
+              BuildConfiguration: $(BuildConfiguration)
+              TestVersion: '1.0.0-preview07'
+
+      - job: TestPreview06
+        displayName: 'Test vs 1.0.0-preview06'
+        pool:
+          vmImage: 'windows-latest'
+        steps:
+          - template: templates/encryption-custom-compatibility-test-steps.yml
+            parameters:
+              BuildConfiguration: $(BuildConfiguration)
+              TestVersion: '1.0.0-preview06'
+
+      - job: TestPreview05
+        displayName: 'Test vs 1.0.0-preview05'
+        pool:
+          vmImage: 'windows-latest'
+        steps:
+          - template: templates/encryption-custom-compatibility-test-steps.yml
+            parameters:
+              BuildConfiguration: $(BuildConfiguration)
+              TestVersion: '1.0.0-preview05'
+
+      - job: TestPreview04
+        displayName: 'Test vs 1.0.0-preview04'
+        pool:
+          vmImage: 'windows-latest'
+        steps:
+          - template: templates/encryption-custom-compatibility-test-steps.yml
+            parameters:
+              BuildConfiguration: $(BuildConfiguration)
+              TestVersion: '1.0.0-preview04'
+
+  # Stage 3: Summary and reporting
+  - stage: Report
+    displayName: 'Compatibility Report'
+    dependsOn:
+      - ApiCompatibilityCheck
+      - QuickCompatibilityCheck
+      - FullMatrixCompatibility
+    condition: succeededOrFailed()
+    jobs:
+      - job: PublishResults
+        displayName: 'Publish Test Results'
+        pool:
+          vmImage: 'windows-latest'
+        steps:
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Compatibility Report'
+            inputs:
+              PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+              ArtifactName: 'CompatibilityResults'
+              publishLocation: 'Container'
+            condition: always()
+
+          - task: PowerShell@2
+            displayName: 'Generate Summary'
+            inputs:
+              targetType: 'inline'
+              script: |
+                Write-Host "==================================" -ForegroundColor Cyan
+                Write-Host "Compatibility Testing Summary" -ForegroundColor Cyan
+                Write-Host "==================================" -ForegroundColor Cyan
+                Write-Host "Build: $(Build.BuildNumber)" -ForegroundColor Yellow
+                Write-Host "Branch: $(Build.SourceBranch)" -ForegroundColor Yellow
+                Write-Host "Reason: $(Build.Reason)" -ForegroundColor Yellow
+                Write-Host ""
+                Write-Host "See test results for details." -ForegroundColor Green
+                Write-Host "==================================" -ForegroundColor Cyan

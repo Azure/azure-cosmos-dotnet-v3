@@ -1,0 +1,26 @@
+# Job template for compatibility testing (alternative to steps-only template)
+parameters:
+  - name: BuildConfiguration
+    type: string
+    default: 'Release'
+  - name: TestVersion
+    type: string
+    default: ''
+  - name: JobName
+    type: string
+    default: 'CompatTest'
+  - name: DisplayName
+    type: string
+    default: 'Compatibility Test'
+
+jobs:
+  - job: ${{ parameters.JobName }}
+    displayName: ${{ parameters.DisplayName }}
+    pool:
+      vmImage: 'windows-latest'
+    
+    steps:
+      - template: encryption-custom-compatibility-test-steps.yml
+        parameters:
+          BuildConfiguration: ${{ parameters.BuildConfiguration }}
+          TestVersion: ${{ parameters.TestVersion }}
