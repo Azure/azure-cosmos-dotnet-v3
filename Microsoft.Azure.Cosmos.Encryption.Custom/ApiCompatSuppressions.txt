@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Suppressions>
+  <!-- API Compatibility Suppressions -->
+  <!-- 
+    Format: Add <Suppression> elements for each intentional breaking change
+    
+    Example:
+    <Suppression>
+      <DiagnosticId>CP0002</DiagnosticId>
+      <Target>T:Microsoft.Azure.Cosmos.Encryption.Custom.OldTypeName</Target>
+      <Justification>PR #1234 (2024-09-15): Type removed in favor of new API. See API-CHANGES.md</Justification>
+    </Suppression>
+    
+    Common DiagnosticIds:
+    - CP0001: Member removed from public API
+    - CP0002: Type removed from public API
+    - CP0003: Member signature changed
+    - CP0008: Type no longer implements interface
+    
+    Guidelines:
+    1. Add suppressions ONLY for intentional breaking changes
+    2. Always document WHY the suppression is needed in the Justification
+    3. Include the PR number and date
+    4. Document migration path in API-CHANGES.md
+  -->
+  
+  <!-- Add your suppressions below this line -->
+  <!-- ============================================ -->
+  
+</Suppressions>
+
