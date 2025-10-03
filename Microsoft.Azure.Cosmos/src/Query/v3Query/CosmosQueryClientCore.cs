@@ -238,7 +238,7 @@ namespace Microsoft.Azure.Cosmos
                     collectionResourceId,
                     ranges,
                     forceRefresh,
-                    childTrace);
+                    childTrace, partitionKeyDefinition);
             }
         }
 
@@ -247,7 +247,8 @@ namespace Microsoft.Azure.Cosmos
             string collectionResourceId,
             IReadOnlyList<Range<string>> providedRanges,
             bool forceRefresh,
-            ITrace trace)
+            ITrace trace,
+            PartitionKeyDefinition partitionKeyDefinition)
         {
             if (string.IsNullOrEmpty(collectionResourceId))
             {
@@ -265,7 +266,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 IRoutingMapProvider routingMapProvider = await this.GetRoutingMapProviderAsync();
 
-                List<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(collectionResourceId, providedRanges, getPKRangesTrace);
+                List<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(collectionResourceId, providedRanges, getPKRangesTrace, partitionKeyDefinition, false);
                 if (ranges == null && PathsHelper.IsNameBased(resourceLink))
                 {
                     // Refresh the cache and don't try to re-resolve collection as it is not clear what already
@@ -444,13 +445,15 @@ namespace Microsoft.Azure.Cosmos
         public override async Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
             string collectionResourceId,
             Range<string> range,
+            PartitionKeyDefinition partitionKeyDefinition,
             bool forceRefresh = false)
         {
             PartitionKeyRangeCache partitionKeyRangeCache = await this.GetRoutingMapProviderAsync();
             return await partitionKeyRangeCache.TryGetOverlappingRangesAsync( 
-                collectionResourceId, 
+                collectionResourceId,
                 range,
                 NoOpTrace.Singleton,
+                partitionKeyDefinition,
                 forceRefresh);
         }
 

@@ -447,6 +447,7 @@ namespace Microsoft.Azure.Cosmos
                             containerProperties.ResourceId,
                             partitionKeyRangeId,
                             It.IsAny<ITrace>(),
+                            It.IsAny<PartitionKeyDefinition>(),
                             false)).Returns(Task.FromResult(new PartitionKeyRange { Id = "range_1" }));
 
                         await GatewayStoreModel.ApplySessionTokenAsync(
@@ -1120,6 +1121,7 @@ namespace Microsoft.Azure.Cosmos
                          It.Is<string>(str => str == "dbs/OVJwAA==/colls/OVJwAOcMtA0="),
                          It.Is<string>(str => str == splitPKRangeId),
                          It.IsAny<ITrace>(),
+                         It.IsAny<PartitionKeyDefinition>(),
                          It.Is<bool>(b => b == true)), shouldCallRefresh ? Times.Once : Times.Never);
                 }
             }
@@ -1551,10 +1553,10 @@ namespace Microsoft.Azure.Cosmos
             PartitionKeyRange pkRange = new PartitionKeyRange { Id = "0", MinInclusive = "", MaxExclusive = "FF" };
             List<PartitionKeyRange> pkRanges = new List<PartitionKeyRange> { pkRange };
             IEnumerable<Tuple<PartitionKeyRange, ServiceIdentity>> rangeTuples = pkRanges.Select(r => Tuple.Create(r, (ServiceIdentity)null));
-            CollectionRoutingMap routingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(rangeTuples, "testCollectionRid");
+            CollectionRoutingMap routingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(rangeTuples, "testCollectionRid", null);
 
             mockPartitionKeyRangeCache
-                .Setup(c => c.TryLookupAsync(It.IsAny<string>(), It.IsAny<CollectionRoutingMap>(), It.IsAny<DocumentServiceRequest>(), It.IsAny<ITrace>()))
+                .Setup(c => c.TryLookupAsync(It.IsAny<string>(), It.IsAny<CollectionRoutingMap>(), It.IsAny<DocumentServiceRequest>(), It.IsAny<ITrace>(), It.IsAny<PartitionKeyDefinition>()))
                 .ReturnsAsync(routingMap);
 
             storeModel.SetCaches(mockPartitionKeyRangeCache.Object, mockCollectionCache.Object);
