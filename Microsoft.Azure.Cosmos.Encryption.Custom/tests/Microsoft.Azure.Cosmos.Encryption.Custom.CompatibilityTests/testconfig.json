@@ -1,0 +1,15 @@
+{
+  "testConfig": {
+    "description": "Configuration for cross-version encryption/decryption compatibility tests",
+    "testMode": "compatibility"
+  },
+  "versionMatrix": {
+    "description": "All versions to test for cross-version encryption/decryption compatibility. Each version will be tested against every other version.",
+    "versions": [
+      "1.0.0-preview07",
+      "1.0.0-preview06",
+      "1.0.0-preview05"
+    ],
+    "baseline": "1.0.0-preview07"
+  }
+}

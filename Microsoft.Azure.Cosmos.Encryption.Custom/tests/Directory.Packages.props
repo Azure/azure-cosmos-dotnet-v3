@@ -1,0 +1,29 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    
+    <!-- Track the baseline version for API compatibility checks -->
+    <BaselineEncryptionCustomVersion Condition="'$(BaselineEncryptionCustomVersion)' == ''">1.0.0-preview07</BaselineEncryptionCustomVersion>
+    
+    <!-- Default to baseline version for compatibility testing -->
+    <!-- This ensures tests run against published packages by default -->
+    <!-- Override with -p:TargetEncryptionCustomVersion=x.y.z to test specific versions -->
+    <TargetEncryptionCustomVersion Condition="'$(TargetEncryptionCustomVersion)' == ''">$(BaselineEncryptionCustomVersion)</TargetEncryptionCustomVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The package version under test -->
+    <PackageVersion Include="Microsoft.Azure.Cosmos.Encryption.Custom" Version="$(TargetEncryptionCustomVersion)" />
+    
+    <!-- Test framework dependencies -->
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageVersion Include="xunit" Version="2.6.2" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="2.5.4" />
+    <PackageVersion Include="FluentAssertions" Version="6.12.0" />
+    <PackageVersion Include="Moq" Version="4.20.70" />
+    
+    <!-- Azure SDK dependencies for test setup -->
+    <PackageVersion Include="Azure.Identity" Version="1.11.4" />
+    <PackageVersion Include="Microsoft.Data.Encryption.Cryptography" Version="1.2.0" />
+  </ItemGroup>
+</Project>
