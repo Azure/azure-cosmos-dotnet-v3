@@ -115,7 +115,6 @@
             using RecyclableMemoryStream rms = new(this.recyclableMemoryStreamManager);
             await EncryptionProcessor.DecryptAsync(
                 new MemoryStream(this.encryptedData!),
-                rms,
                 this.encryptor,
                 new CosmosDiagnosticsContext(),
                 this.JsonProcessor,
