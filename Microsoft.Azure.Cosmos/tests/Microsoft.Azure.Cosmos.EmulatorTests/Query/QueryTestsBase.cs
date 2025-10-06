@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         }
 
         private async Task<Container> CreateMultiPartitionContainer(
-            string partitionKey,
+            PartitionKeyDefinition partitionKey,
             Microsoft.Azure.Cosmos.IndexingPolicy indexingPolicy,
             Cosmos.GeospatialType geospatialType,
             Cosmos.VectorEmbeddingPolicy vectorEmbeddingPolicy)
@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         }
 
         private async Task<Container> CreateSinglePartitionContainer(
-            string partitionKey,
+            PartitionKeyDefinition partitionKey,
             Microsoft.Azure.Cosmos.IndexingPolicy indexingPolicy,
             Cosmos.GeospatialType geospatialType,
             Cosmos.VectorEmbeddingPolicy vectorEmbeddingPolicy)
@@ -160,7 +160,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
         private async Task<ContainerResponse> CreatePartitionedContainer(
             int throughput,
-            string partitionKey,
+            PartitionKeyDefinition partitionKey,
             Microsoft.Azure.Cosmos.IndexingPolicy indexingPolicy,
             Cosmos.GeospatialType geospatialType,
             Cosmos.VectorEmbeddingPolicy vectorEmbeddingPolicy)
@@ -188,11 +188,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                             }
                         }
                     },
-                    PartitionKey = partitionKey == null ? null : new PartitionKeyDefinition
-                    {
-                        Paths = new Collection<string> { partitionKey },
-                        Kind = PartitionKind.Hash
-                    },
+                    PartitionKey = partitionKey,
                     GeospatialConfig = new Cosmos.GeospatialConfig(geospatialType),
                     VectorEmbeddingPolicy = vectorEmbeddingPolicy
                 },
@@ -224,7 +220,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
         private Task<(Container, IReadOnlyList<CosmosObject>)> CreateSinglePartitionContainerAndIngestDocumentsAsync(
             IEnumerable<string> documents,
-            string partitionKey,
+            PartitionKeyDefinition partitionKey,
             Cosmos.IndexingPolicy indexingPolicy,
             Cosmos.GeospatialType geospatialType,
             Cosmos.VectorEmbeddingPolicy vectorEmbeddingPolicy)
@@ -240,7 +236,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
         private Task<(Container, IReadOnlyList<CosmosObject>)> CreateMultiPartitionContainerAndIngestDocumentsAsync(
             IEnumerable<string> documents,
-            string partitionKey,
+            PartitionKeyDefinition partitionKey,
             Cosmos.IndexingPolicy indexingPolicy,
             Cosmos.GeospatialType geospatialType,
             Cosmos.VectorEmbeddingPolicy vectorEmbeddingPolicy)
@@ -257,7 +253,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         private async Task<(Container, IReadOnlyList<CosmosObject>)> CreateContainerAndIngestDocumentsAsync(
             CollectionTypes collectionType,
             IEnumerable<string> documents,
-            string partitionKey,
+            PartitionKeyDefinition partitionKey,
             Cosmos.IndexingPolicy indexingPolicy,
             Cosmos.GeospatialType geospatialType,
             Cosmos.VectorEmbeddingPolicy vectorEmbeddingPolicy)
@@ -273,43 +269,53 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             foreach (string document in documents)
             {
                 JObject documentObject = JsonConvert.DeserializeObject<JObject>(document);
-                // Add an id
                 if (documentObject["id"] == null)
                 {
+                    // Add an id
                     documentObject["id"] = Guid.NewGuid().ToString();
                 }
+
 
                 // Get partition key value.
                 Cosmos.PartitionKey pkValue;
                 if (partitionKey != null)
                 {
-                    string jObjectPartitionKey = partitionKey.Remove(0, 1);
-                    JValue pkToken = (JValue)documentObject[jObjectPartitionKey];
-                    if (pkToken == null)
+                    PartitionKeyBuilder partitionKeyBuilder = new PartitionKeyBuilder();
+
+                    foreach (string path in partitionKey.Paths)
                     {
-                        pkValue = Cosmos.PartitionKey.None;
-                    }
-                    else
-                    {
-                        switch (pkToken.Type)
+                        List<string> propertyNames = path.Split('/', StringSplitOptions.RemoveEmptyEntries).ToList();
+                        string jsonPath = "$." + string.Join(".", propertyNames);
+                        JToken pkToken = documentObject.SelectToken(jsonPath);
+
+                        if (pkToken == null)
                         {
-                            case JTokenType.Integer:
-                            case JTokenType.Float:
-                                pkValue = new Cosmos.PartitionKey(pkToken.Value<double>());
-                                break;
-                            case JTokenType.String:
-                                pkValue = new Cosmos.PartitionKey(pkToken.Value<string>());
-                                break;
-                            case JTokenType.Boolean:
-                                pkValue = new Cosmos.PartitionKey(pkToken.Value<bool>());
-                                break;
-                            case JTokenType.Null:
-                                pkValue = Cosmos.PartitionKey.Null;
-                                break;
-                            default:
-                                throw new ArgumentException("Unknown partition key type");
+                            partitionKeyBuilder.AddNoneType();
+                        }
+                        else
+                        {
+                            switch (pkToken.Type)
+                            {
+                                case JTokenType.Integer:
+                                case JTokenType.Float:
+                                    partitionKeyBuilder.Add(pkToken.Value<double>());
+                                    break;
+                                case JTokenType.String:
+                                    partitionKeyBuilder.Add(pkToken.Value<string>());
+                                    break;
+                                case JTokenType.Boolean:
+                                    partitionKeyBuilder.Add(pkToken.Value<bool>());
+                                    break;
+                                case JTokenType.Null:
+                                    partitionKeyBuilder.AddNullValue();
+                                    break;
+                                default:
+                                    throw new ArgumentException("Unknown partition key type");
+                            }
                         }
                     }
+
+                    pkValue = partitionKeyBuilder.Build();
                 }
                 else
                 {
@@ -418,6 +424,35 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 vectorEmbeddingPolicy);
         }
 
+        internal Task CreateIngestQueryDeleteAsync(
+            ConnectionModes connectionModes,
+            CollectionTypes collectionTypes,
+            IEnumerable<string> documents,
+            Query query,
+            PartitionKeyDefinition partitionKeyDefinition,
+            Cosmos.IndexingPolicy indexingPolicy = null,
+            CosmosClientFactory cosmosClientFactory = null,
+            Cosmos.GeospatialType geospatialType = Cosmos.GeospatialType.Geography,
+            Cosmos.VectorEmbeddingPolicy vectorEmbeddingPolicy = null)
+        {
+            Task queryWrapper(Container container, IReadOnlyList<CosmosObject> inputDocuments, object throwaway)
+            {
+                return query(container, inputDocuments);
+            }
+
+            return this.CreateIngestQueryDeleteAsync<object>(
+                connectionModes,
+                collectionTypes,
+                documents,
+                queryWrapper,
+                null,
+                partitionKeyDefinition,
+                indexingPolicy,
+                cosmosClientFactory,
+                geospatialType,
+                vectorEmbeddingPolicy);
+        }
+
         internal Task CreateIngestQueryDeleteAsync<T>(
             ConnectionModes connectionModes,
             CollectionTypes collectionTypes,
@@ -430,6 +465,11 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             Cosmos.GeospatialType geospatialType = Cosmos.GeospatialType.Geography,
             Cosmos.VectorEmbeddingPolicy vectorEmbeddingPolicy = null)
         {
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition()
+            {
+                Paths = new Collection<string>() { partitionKey }
+            };
+
             return this.CreateIngestQueryDeleteAsync(
                 connectionModes,
                 collectionTypes,
@@ -437,7 +477,32 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 query,
                 cosmosClientFactory ?? this.CreateDefaultCosmosClient,
                 testArgs,
-                partitionKey,
+                partitionKeyDefinition,
+                indexingPolicy,
+                geospatialType,
+                vectorEmbeddingPolicy);
+        }
+
+        internal Task CreateIngestQueryDeleteAsync<T>(
+            ConnectionModes connectionModes,
+            CollectionTypes collectionTypes,
+            IEnumerable<string> documents,
+            Query<T> query,
+            T testArgs,
+            PartitionKeyDefinition partitionKeyDefinition,
+            Cosmos.IndexingPolicy indexingPolicy = null,
+            CosmosClientFactory cosmosClientFactory = null,
+            Cosmos.GeospatialType geospatialType = Cosmos.GeospatialType.Geography,
+            Cosmos.VectorEmbeddingPolicy vectorEmbeddingPolicy = null)
+        {
+            return this.CreateIngestQueryDeleteAsync(
+                connectionModes,
+                collectionTypes,
+                documents,
+                query,
+                cosmosClientFactory ?? this.CreateDefaultCosmosClient,
+                testArgs,
+                partitionKeyDefinition,
                 indexingPolicy,
                 geospatialType,
                 vectorEmbeddingPolicy);
@@ -468,7 +533,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             Query<T> query,
             CosmosClientFactory cosmosClientFactory,
             T testArgs,
-            string partitionKey = "/id",
+            PartitionKeyDefinition partitionKey,
             Cosmos.IndexingPolicy indexingPolicy = null,
             Cosmos.GeospatialType geospatialType = Cosmos.GeospatialType.Geography,
             Cosmos.VectorEmbeddingPolicy vectorEmbeddingPolicy = null)

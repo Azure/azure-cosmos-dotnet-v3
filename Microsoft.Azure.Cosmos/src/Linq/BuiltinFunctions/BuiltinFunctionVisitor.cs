@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
-    using System.Collections.Generic;
     using System.Globalization;
     using System.Linq.Expressions;
     using Microsoft.Azure.Cosmos;
