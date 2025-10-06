@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 {
-    using System.Threading;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;

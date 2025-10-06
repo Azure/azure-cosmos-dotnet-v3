@@ -272,7 +272,8 @@
                 Exception
         )
 ]]></Text>
-      <Json><![CDATA[{
+      <Json>
+				<![CDATA[{
   "Summary": {
     "DirectCalls": {
       "(0, 0)": 1
@@ -330,6 +331,7 @@
             "LSN": 1337,
             "PartitionKeyRangeId": "42",
             "GlobalCommittedLSN": 1234,
+            "GlobalNRegionCommittedGLSN": -1,
             "ItemLSN": 15,
             "UsingLocalLSN": true,
             "QuorumAckedLSN": 23,
@@ -527,6 +529,7 @@
             "LSN": 0,
             "PartitionKeyRangeId": null,
             "GlobalCommittedLSN": 0,
+            "GlobalNRegionCommittedGLSN": 0,
             "ItemLSN": 0,
             "UsingLocalLSN": false,
             "QuorumAckedLSN": 0,
