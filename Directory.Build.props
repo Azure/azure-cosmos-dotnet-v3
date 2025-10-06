@@ -10,10 +10,12 @@
 		<EncryptionPreviewVersion>2.1.0</EncryptionPreviewVersion>
 		<EncryptionPreviewSuffixVersion>preview5</EncryptionPreviewSuffixVersion>
 		<CustomEncryptionVersion>1.0.0-preview08</CustomEncryptionVersion>
-		<HybridRowVersion>1.1.0-preview3</HybridRowVersion>
+		<HybridRowVersion>1.0.0-preview3</HybridRowVersion>
 		<LangVersion>10.0</LangVersion>
 		<AboveDirBuildProps>$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))</AboveDirBuildProps>
 		<DefineConstants Condition=" '$(IsNightly)' == 'true' or '$(IsPreview)' == 'true' ">$(DefineConstants);PREVIEW;ENCRYPTIONPREVIEW</DefineConstants>
+		<!-- Add local package source for compatibility testing -->
+		<RestoreSources>$(RestoreSources);https://api.nuget.org/v3/index.json;$(MSBuildThisFileDirectory)artifacts/local-packages</RestoreSources>
 	</PropertyGroup>
 	<Import Project="$(AboveDirBuildProps)" Condition=" '$(AboveDirBuildProps)' != '' " />
 </Project>

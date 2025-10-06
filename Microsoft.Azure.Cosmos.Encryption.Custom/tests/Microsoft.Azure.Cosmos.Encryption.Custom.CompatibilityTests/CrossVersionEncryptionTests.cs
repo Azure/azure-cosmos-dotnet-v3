@@ -45,7 +45,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.CompatibilityTests
         [MemberData(nameof(GetVersionPairs))]
         public void CanEncryptWithVersionA_AndDecryptWithVersionB(string encryptVersion, string decryptVersion)
         {
-            this.LogInfo($"Testing: Encrypt with {encryptVersion} → Decrypt with {decryptVersion}");
+            // Resolve version numbers (handles "current" → actual version)
+            string resolvedEncryptVersion = VersionMatrix.ResolveVersion(encryptVersion);
+            string resolvedDecryptVersion = VersionMatrix.ResolveVersion(decryptVersion);
+            
+            string encryptDisplay = VersionMatrix.IsCurrentVersion(encryptVersion) ? $"{encryptVersion} ({resolvedEncryptVersion})" : encryptVersion;
+            string decryptDisplay = VersionMatrix.IsCurrentVersion(decryptVersion) ? $"{decryptVersion} ({resolvedDecryptVersion})" : decryptVersion;
+            
+            this.LogInfo($"Testing: Encrypt with {encryptDisplay} → Decrypt with {decryptDisplay}");
 
             // Arrange
             byte[] testData = this.CreateTestPayload();
@@ -60,6 +67,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.CompatibilityTests
                     encryptedData = this.EncryptDataWithVersion(encryptLoader, testData);
                     encryptedData.Should().NotBeNull($"Encryption with {encryptVersion} should produce data");
                     encryptedData.Length.Should().BeGreaterThan(0);
+                    
+                    // Validate that encryption actually transformed the data
+                    encryptedData.Should().NotBeEquivalentTo(testData,
+                        $"Encrypted data should not match plaintext - encryption must transform the data");
+                    
                     this.LogInfo($"  ✓ Encrypted with {encryptVersion}: {encryptedData.Length} bytes");
                 }
 
@@ -107,6 +119,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.CompatibilityTests
                     
                     encryptedData1.Should().NotBeNull();
                     encryptedData2.Should().NotBeNull();
+                    
+                    // Validate that encryption actually transformed the data
+                    encryptedData1.Should().NotBeEquivalentTo(testData,
+                        $"Encrypted data should not match plaintext - encryption must transform the data");
                     
                     // Deterministic encryption should produce identical ciphertext
                     encryptedData1.Should().BeEquivalentTo(encryptedData2,
@@ -164,6 +180,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.CompatibilityTests
                     
                     encryptedData1.Should().NotBeNull();
                     encryptedData2.Should().NotBeNull();
+                    
+                    // Validate that encryption actually transformed the data
+                    encryptedData1.Should().NotBeEquivalentTo(testData,
+                        $"Encrypted data should not match plaintext - encryption must transform the data");
                     
                     // Randomized encryption should produce different ciphertext
                     encryptedData1.Should().NotBeEquivalentTo(encryptedData2,
