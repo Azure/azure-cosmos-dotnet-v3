@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Json
     using System;
     using System.Collections;
     using System.Collections.Immutable;
-    using Microsoft.Azure.Documents;
 
     internal static partial class JsonBinaryEncoding
     {
