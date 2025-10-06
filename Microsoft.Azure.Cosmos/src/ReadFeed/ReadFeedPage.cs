@@ -6,10 +6,9 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.Immutable;
     using Microsoft.Azure.Cosmos.CosmosElements;
 
-    #if INTERNAL
+#if INTERNAL
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 #pragma warning disable SA1600 // Elements should be documented
 #pragma warning disable SA1601 // Partial elements should be documented
