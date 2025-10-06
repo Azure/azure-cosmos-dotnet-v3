@@ -6866,9 +6866,20 @@ namespace Microsoft.Azure.Cosmos
             {
                 // The default threshold is the minimum value of 1 second and a fraction (currently it's half) of
                 // the request timeout value provided by the end customer.
-                double defaultThresholdInMillis = Math.Min(
-                    DocumentClient.DefaultHedgingThresholdInMilliseconds,
-                    this.ConnectionPolicy.RequestTimeout.TotalMilliseconds / 2);
+                double defaultThresholdInMillis;
+                
+                if (this.ConnectionPolicy.RequestTimeout.TotalMilliseconds == 0)
+                {
+                    // If the request timeout is 0, we will use the default hedging theshold value
+                    defaultThresholdInMillis = DocumentClient.DefaultHedgingThresholdInMilliseconds;
+                    DefaultTrace.TraceWarning("DocumentClient: Request timeout is set to 0, which is not a valid value. Falling back to default hedging threshold of {0} ms", defaultThresholdInMillis);
+                }
+                else
+                {
+                    defaultThresholdInMillis = Math.Min(
+                        DocumentClient.DefaultHedgingThresholdInMilliseconds,
+                        this.ConnectionPolicy.RequestTimeout.TotalMilliseconds / 2);
+                }
 
                 this.ConnectionPolicy.AvailabilityStrategy = AvailabilityStrategy.SDKDefaultCrossRegionHedgingStrategyForPPAF(
                     threshold: TimeSpan.FromMilliseconds(defaultThresholdInMillis),

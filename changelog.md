@@ -15,6 +15,25 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.55.0-preview.0"/> [3.55.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.55.0-preview.0) - 2025-10-2
+
+### <a name="3.54.0"/> [3.54.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.54.0) - 2025-10-2
+
+> Note: FullTextScore query function now expects string value parameters (e.g., FullTextScore(c.text, 'swim','run')); preview array syntax is no longer supported.
+
+#### Added
+
+- [5368](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5368) VectorDataType: Adds Support for Float16 Data Type
+- [5411](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5411) Hedging: Adds GA for adding hedging via RequestOptions
+- [5412](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5412) Hedging: Adds back diagnostics filed Response Region to hedging request diagnostics
+- [5386](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5386) Build: Removes System.Net.Http and System.Text.RegularExpressions package references
+
+#### Fixed
+
+- [5409](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5409) Query: Fixes to not use passthrough context for collections with HPK
+- [5422](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5422) Diagnostics: Fixes race condition that can cause InvalidOperationException in CosmosOperationCancelledException.ToString()
+- [5427](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5427) PPAF: Fixes issue where setting RequestTimeout to 0 second will cause PPAF dynamic enablement to break
+
 ### <a name="3.54.0-preview.1"/> [3.54.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.54.0-preview.1) - 2025-8-27
 
 ### <a name="3.53.1"/> [3.53.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.53.1) - 2025-8-27
