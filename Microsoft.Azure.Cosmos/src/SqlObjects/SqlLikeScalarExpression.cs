@@ -4,9 +4,6 @@
 namespace Microsoft.Azure.Cosmos.SqlObjects
 {
     using System;
-    using System.Collections.Immutable;
-    using System.Linq;
-    using System.Text;
     using Microsoft.Azure.Cosmos.SqlObjects.Visitors;
 
 #if INTERNAL
