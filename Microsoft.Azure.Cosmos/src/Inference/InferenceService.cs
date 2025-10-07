@@ -7,26 +7,16 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Net;
     using System.Net.Http;
     using System.Net.Http.Headers;
-    using System.Net.Security;
-    using System.Reflection;
-    using System.Security.Cryptography.X509Certificates;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.Linq;
-    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
-    using Microsoft.Azure.Cosmos.Tracing;
-    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
-    using Microsoft.Azure.Documents.FaultInjection;
 
     internal class InferenceService : IDisposable
     {
-        private const string basePath = "dbinference.prod.azure.net/";
+        private const string basePath = "dbinference.azure.com/";
 
         private readonly Uri inferenceEndpoint;
         private readonly HttpClient httpClient;
@@ -59,16 +49,35 @@ namespace Microsoft.Azure.Cosmos
             SemanticRerankRequestOptions options = null,
             CancellationToken cancellationToken = default)
         {
-            INameValueCollection headers = new RequestNameValueCollection();
+            HttpRequestMessage message = new HttpRequestMessage(HttpMethod.Post, this.inferenceEndpoint);
+            INameValueCollection additionalHeaders = new RequestNameValueCollection();
             await this.cosmosAuthorization.AddAuthorizationHeaderAsync(
-                headersCollection: headers,
+                headersCollection: additionalHeaders,
                 this.inferenceEndpoint,
                 HttpConstants.HttpMethods.Post,
                 AuthorizationTokenType.PrimaryMasterKey);
 
-            HttpRequestMessage message = new HttpRequestMessage(HttpMethod.Post, this.inferenceEndpoint);
+            this.AddSemanticRerankOptionsToHeders(additionalHeaders, options);
+            foreach (string key in additionalHeaders.AllKeys())
+            {
+                message.Headers.Add(key, additionalHeaders[key]);
+            }
 
-            throw new NotImplementedException();
+            var body = new
+            {
+                query = renrankContext,
+                documents = documents.ToArray()
+            };
+
+            message.Content = new StringContent(Newtonsoft.Json.JsonConvert.SerializeObject(body));
+
+            HttpResponseMessage responseMessage = await this.httpClient.SendAsync(message, cancellationToken);
+
+            responseMessage.EnsureSuccessStatusCode();
+
+            // return the content of the responsemessage as a dictonary
+            string content = await responseMessage.Content.ReadAsStringAsync();
+            return Newtonsoft.Json.JsonConvert.DeserializeObject<IReadOnlyDictionary<TKey, TValue>>(content);
         }
 
         private void CreateClientHelper(HttpClient httpClient)
@@ -82,6 +91,33 @@ namespace Microsoft.Azure.Cosmos
                 HttpConstants.Versions.CurrentVersion);
 
             httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Accept, RuntimeConstants.MediaTypes.Json);
+        }
+
+        private void AddSemanticRerankOptionsToHeders(INameValueCollection headers, SemanticRerankRequestOptions options)
+        {
+            if (options == null)
+            {
+                return;
+            }
+            
+            headers.Add("return_documents", options.ReturnDocuments.ToString());
+            if (options.TopK > -1)
+            {
+                headers.Add("top_k", options.TopK.ToString());
+            }
+            if (options.BatchSize > -1)
+            {
+                headers.Add("batch_size", options.BatchSize.ToString());
+            }
+            headers.Add("sort", options.Sort.ToString());
+            if (!string.IsNullOrEmpty(options.DocumentType))
+            {
+                headers.Add("document_type", options.DocumentType);
+            }
+            if (!string.IsNullOrEmpty(options.TargetPaths))
+            {
+                headers.Add("target_paths", options.TargetPaths);
+            }
         }
 
         protected void Dispose(bool disposing)

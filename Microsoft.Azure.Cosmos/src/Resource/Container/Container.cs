@@ -1695,7 +1695,7 @@ namespace Microsoft.Azure.Cosmos
             string renrankContext,
             IEnumerable<string> documents,
             SemanticRerankRequestOptions options = null,
-            CancellationToken cancellationToken= default);
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Deletes all items in the Container with the specified <see cref="PartitionKey"/> value.
