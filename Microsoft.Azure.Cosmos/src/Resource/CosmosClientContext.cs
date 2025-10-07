@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
@@ -131,6 +132,19 @@ namespace Microsoft.Azure.Cosmos
             string databaseId,
             string containerLinkUri,
             CancellationToken cancellationToken);
+
+        internal abstract Task<IReadOnlyDictionary<TKey, TValue>> SemanticRerankAsync<TKey, TValue>(
+            string renrankContext,
+            IEnumerable<string> documents,
+            SemanticRerankRequestOptions options = null,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Creates, or gets if already created, the inference service for this client
+        /// This will have a seperate http client that is used to make calls to the inference end point
+        /// </summary>
+        /// <returns>the inferenceService</returns>
+        internal abstract Task<InferenceService> GetOrCreateInferenceServiceAsync();
 
         public abstract void Dispose();
     }

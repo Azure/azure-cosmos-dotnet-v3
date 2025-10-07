@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
     using System.Net.Http;
@@ -34,6 +35,7 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly string userAgent;
         private bool isDisposed = false;
+        private InferenceService inferenceService = null;
 
         private ClientContextCore(
             CosmosClient client,
@@ -467,6 +469,32 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
+        internal override async Task<IReadOnlyDictionary<TKey, TValue>> SemanticRerankAsync<TKey, TValue>(
+            string renrankContext,
+            IEnumerable<string> documents,
+            SemanticRerankRequestOptions options = null,
+            CancellationToken cancellationToken = default)
+        {
+            InferenceService inferenceService = await this.GetOrCreateInferenceServiceAsync();
+            return await inferenceService.SemanticRerankAsync<TKey, TValue>(renrankContext, documents, options, cancellationToken);
+        }
+
+        /// <inheritdoc/>
+        internal override async Task<InferenceService> GetOrCreateInferenceServiceAsync()
+        {
+            AccountProperties accountProperties = await this.client.DocumentClient.GlobalEndpointManager.GetDatabaseAccountAsync() ?? throw new InvalidOperationException("Failed to retrieve AccountProperties. The response was null.");
+            if (this.inferenceService == null)
+            {
+                // Double check locking to avoid unnecessary locks
+                lock (this)
+                {
+                    this.inferenceService ??= new InferenceService(this.client, accountProperties);
+                }
+            }
+
+            return this.inferenceService;
+        }
+
         public override void Dispose()
         {
             this.Dispose(true);
@@ -484,6 +512,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     this.batchExecutorCache.Dispose();
                     this.DocumentClient.Dispose();
+                    this.inferenceService?.Dispose();
                 }
 
                 this.isDisposed = true;

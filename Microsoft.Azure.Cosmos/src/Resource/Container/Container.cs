@@ -1689,11 +1689,13 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="renrankContext"> The context or query string to use for reranking the documents.</param>
         /// <param name="documents"> A list of documents to be reranked</param>
         /// <param name="options"> (Optional) The options for the semantic reranking request.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns> The reranking results, typically including the reranked documents and their scores. </returns>
         public abstract Task<IReadOnlyDictionary<TKey, TValue>> SemanticRerankAsync<TKey, TValue>(
             string renrankContext,
             IEnumerable<string> documents,
-            SemanticRerankRequestOptions options = null);
+            SemanticRerankRequestOptions options = null,
+            CancellationToken cancellationToken= default);
 
         /// <summary>
         /// Deletes all items in the Container with the specified <see cref="PartitionKey"/> value.

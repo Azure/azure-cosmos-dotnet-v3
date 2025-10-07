@@ -20,8 +20,13 @@ namespace Microsoft.Azure.Cosmos
         public int TopK { get; set; }
 
         /// <summary>
+        /// Batch size for internal scoring operations
+        /// </summary>
+        public int BatchSize { get; set; }
+
+        /// <summary>
         /// Whether to sort the results by relevance score in descending order. 
         /// </summary>
-        public bool SortDecending { get; set; } = true;
+        public bool Sort { get; set; } = true;
     }
 }
