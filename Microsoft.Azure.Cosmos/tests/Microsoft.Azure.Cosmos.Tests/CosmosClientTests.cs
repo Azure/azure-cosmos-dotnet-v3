@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     public class CosmosClientTests
     {
         public const string AccountEndpoint = "https://localhost:8081/";
-        public const string ConnectionString = "AccountEndpoint=https://dummy.documents.azure.com:443/;AccountKey=dummykey;";
+        public const string ConnectionString = "AccountEndpoint=https://example.documents.azure.com:443/;AccountKey=<placeholder>;";
 
         [TestMethod]
         public async Task TestDispose()
@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 catch (CosmosObjectDisposedException e)
                 {
                     string expectedMessage = $"Cannot access a disposed 'CosmosClient'. Follow best practices and use the CosmosClient as a singleton." +
-                        $" CosmosClient was disposed at: {cosmosClient.DisposedDateTimeUtc.Value.ToString("o", CultureInfo.InvariantCulture)}; CosmosClient Endpoint: https://dummy.documents.azure.com/; Created at: {cosmosClient.ClientConfigurationTraceDatum.ClientCreatedDateTimeUtc.ToString("o", CultureInfo.InvariantCulture)}; UserAgent: {userAgent};";
+                        $" CosmosClient was disposed at: {cosmosClient.DisposedDateTimeUtc.Value.ToString("o", CultureInfo.InvariantCulture)}; CosmosClient Endpoint: https://example.documents.azure.com/; Created at: {cosmosClient.ClientConfigurationTraceDatum.ClientCreatedDateTimeUtc.ToString("o", CultureInfo.InvariantCulture)}; UserAgent: {userAgent};";
                     Assert.IsTrue(e.Message.Contains(expectedMessage));
                     string diagnostics = e.Diagnostics.ToString();
                     Assert.IsNotNull(diagnostics);

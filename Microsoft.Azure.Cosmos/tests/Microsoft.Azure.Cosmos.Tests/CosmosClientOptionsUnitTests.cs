@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     public class CosmosClientOptionsUnitTests
     {
         public const string AccountEndpoint = "https://localhost:8081/";
-        public const string ConnectionString = "AccountEndpoint=https://dummy.documents.azure.com:443/;AccountKey=dummykey;";
+        public const string ConnectionString = "AccountEndpoint=https://example.documents.azure.com:443/;AccountKey=<placeholder>;";
         public Func<HttpClient> HttpClientFactoryDelegate = () => new HttpClient();
 
         [TestMethod]
@@ -707,7 +707,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [ExpectedException(typeof(ArgumentException))]
         public void ThrowOnMissingAccountKeyInConnectionString()
         {
-            string invalidConnectionString = "AccountEndpoint=https://dummy.documents.azure.com:443/;";
+            string invalidConnectionString = "AccountEndpoint=https://example.documents.azure.com:443/;";
             new CosmosClientBuilder(invalidConnectionString);
         }
 
