@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters
 {
     using System;
+    using System.Collections.Generic;
     using System.Globalization;
     using System.Text.Json;
     using System.Text.Json.Serialization;
@@ -56,6 +57,19 @@ namespace Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters
                 {
                     metadata.PreviousLsn = property.Value.GetInt64();
                 }
+                else if (property.NameEquals(ChangeFeedMetadataFields.Id))
+                {
+                    metadata.Id = property.Value.GetString();
+                }
+                else if (property.NameEquals(ChangeFeedMetadataFields.PartitionKey))
+                {
+                    List<(string, object)> partitionKey = new List<(string, object)>();
+                    foreach (JsonProperty pk in property.Value.EnumerateObject())
+                    {
+                        partitionKey.Add((pk.Name, pk.Value));
+                    }
+                    metadata.PartitionKey = partitionKey;
+                }
             }
 
             return metadata;
@@ -75,6 +89,49 @@ namespace Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters
             writer.WriteNumber(ChangeFeedMetadataFields.Lsn, value.Lsn);
             writer.WriteString(ChangeFeedMetadataFields.OperationType, value.OperationType.ToString());
             writer.WriteNumber(ChangeFeedMetadataFields.PreviousImageLSN, value.PreviousLsn);
+
+            if (value.Id != null)
+            {
+                writer.WriteString(ChangeFeedMetadataFields.Id, value.Id);
+            }
+
+            if (value.PartitionKey != null)
+            {
+                writer.WriteStartObject(ChangeFeedMetadataFields.PartitionKey);
+
+                foreach ((string, object) pk in value.PartitionKey)
+                {
+                    JsonElement pkValue = (JsonElement)pk.Item2;
+
+                    switch (pkValue.ValueKind)
+                    {
+                        case JsonValueKind.String:
+                            writer.WriteString(pk.Item1, pkValue.GetString());
+                            break;
+
+                        case JsonValueKind.Number:
+                            writer.WriteNumber(pk.Item1, pkValue.GetDouble());
+                            break;
+
+                        case JsonValueKind.True:
+                        case JsonValueKind.False:
+                            writer.WriteBoolean(pk.Item1, pkValue.GetBoolean());
+                            break;
+
+                        case JsonValueKind.Null:
+                            writer.WriteNull(pk.Item1);
+                            break;
+
+                        case JsonValueKind.Undefined:
+                            break;
+
+                        default:
+                            throw new JsonException(string.Format(CultureInfo.CurrentCulture, RMResources.JsonUnexpectedToken));
+                    }
+                }
+
+                writer.WriteEndObject();
+            }
 
             writer.WriteEndObject();
         }
