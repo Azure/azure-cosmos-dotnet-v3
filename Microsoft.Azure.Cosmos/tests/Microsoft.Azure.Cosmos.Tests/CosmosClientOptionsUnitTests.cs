@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     public class CosmosClientOptionsUnitTests
     {
         public const string AccountEndpoint = "https://localhost:8081/";
-        public const string ConnectionString = "AccountEndpoint=https://example.documents.azure.com:443/;AccountKey=<placeholder>;";
+        public const string ConnectionString = "AccountEndpoint=https://example.documents.azure.com:443/;AccountKey=NotRealKey==;";
         public Func<HttpClient> HttpClientFactoryDelegate = () => new HttpClient();
 
         [TestMethod]
@@ -715,7 +715,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [ExpectedException(typeof(ArgumentException))]
         public void ThrowOnMissingAccountEndpointInConnectionString()
         {
-            string invalidConnectionString = "AccountKey=425Mcv8CXQqzRNCgFNjIhT424GK99CKJvASowTnq15Vt8LeahXTcN5wt3342vQ==;";
+            string invalidConnectionString = "AccountKey=NotRealKey==;";
             new CosmosClientBuilder(invalidConnectionString);
         }
 
@@ -760,7 +760,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void VerifyHttpClientHandlerIsSet()
         {
             string endpoint = AccountEndpoint;
-            string key = "425Mcv8CXQqzRNCgFNjIhT424GK99CKJvASowTnq15Vt8LeahXTcN5wt3342vQ==";
+            string key = "NotRealKey==";
 
             IWebProxy webProxy = new TestWebProxy();
 

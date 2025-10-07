@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class ActiveClientDiagnosticTest
     {
-        private const string ConnectionString = "AccountEndpoint=https://example.documents.azure.com:443/;AccountKey=<placeholder>;";
+        private const string ConnectionString = "AccountEndpoint=https://example.documents.azure.com:443/;AccountKey=NotRealKey==;";
 
         [TestInitialize]
         public void Initialize()

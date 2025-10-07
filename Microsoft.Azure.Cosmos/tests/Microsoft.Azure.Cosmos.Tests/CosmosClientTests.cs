@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     public class CosmosClientTests
     {
         public const string AccountEndpoint = "https://localhost:8081/";
-        public const string ConnectionString = "AccountEndpoint=https://example.documents.azure.com:443/;AccountKey=<placeholder>;";
+        public const string ConnectionString = "AccountEndpoint=https://example.documents.azure.com:443/;AccountKey=NotRealKey==;";
 
         [TestMethod]
         public async Task TestDispose()
