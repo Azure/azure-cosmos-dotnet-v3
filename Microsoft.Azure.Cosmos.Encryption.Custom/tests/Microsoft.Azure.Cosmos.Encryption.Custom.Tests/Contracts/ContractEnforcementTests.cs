@@ -30,7 +30,7 @@
             string contractsDir = "Contracts";
             int? currentMajorVersion = GetCurrentMajorVersion();
             string[] candidates = {
-                currentMajorVersion is null ? null : $"{baseFileName}.{currentMajorVersion}.json",
+                currentMajorVersion is null ? null : $"{baseFileName}.net{currentMajorVersion}.json",
                 defaultFileName
             };
 

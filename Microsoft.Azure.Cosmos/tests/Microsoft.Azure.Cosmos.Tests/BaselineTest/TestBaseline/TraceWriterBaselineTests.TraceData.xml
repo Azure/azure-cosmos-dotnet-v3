@@ -272,8 +272,7 @@
                 Exception
         )
 ]]></Text>
-      <Json>
-				<![CDATA[{
+      <Json><![CDATA[{
   "Summary": {
     "DirectCalls": {
       "(0, 0)": 1
