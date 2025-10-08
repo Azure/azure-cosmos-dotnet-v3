@@ -440,6 +440,157 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        [TestCategory("Flaky")]
+        [DataRow("2000", 2000, 5000, 65000)]
+        [DataRow("6000", 6000, 6000, 65000)]
+        [DataRow("66000", 66000, 66000, 66000)]
+        [DataRow("50", 100, 5000, 65000)]
+        public async Task CustomFirstRetryTimeoutValue_ShouldUseConfiguredValue(string firstTimeoutValue,
+            double expectedFirstTimeout, double expectedSecondTimeout, double expectedThirdTimeout)
+        {
+            string originalFirstTimeoutValue = Environment.GetEnvironmentVariable(ConfigurationManager.HttpFirstRetryTimeoutValueInMs);
+
+            try
+            {
+                // Set custom timeout.
+                Environment.SetEnvironmentVariable(ConfigurationManager.HttpFirstRetryTimeoutValueInMs, firstTimeoutValue);
+
+                await this.TestCustomFirstRetryTimeoutValueWithOutcomes(new TestHttpTimeoutPolicyControlPlaneRetriableHotPath(),
+                    expectedFirstTimeout, expectedSecondTimeout, expectedThirdTimeout);
+            }
+            finally
+            {
+                // Restore original value
+                Environment.SetEnvironmentVariable(ConfigurationManager.HttpFirstRetryTimeoutValueInMs, originalFirstTimeoutValue);
+            }
+        }
+
+        private async Task TestCustomFirstRetryTimeoutValueWithOutcomes(HttpTimeoutPolicy timeoutPolicy,
+            double expectedFirstTimeoutMs, double expectedSecondTimeoutMs, double expectedThirdTimeoutMs)
+        {
+
+            int count = 0;
+            System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
+            List<TimeSpan> actualTimeouts = new List<TimeSpan>();
+
+            async Task<HttpResponseMessage> sendFunc(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                count++;
+
+                if (count <= 3)
+                {
+                    Assert.IsFalse(cancellationToken.IsCancellationRequested);
+
+                    // Wait for cancellation to occur and measure the timeout
+                    try
+                    {
+                        stopwatch.Restart();
+                        await Task.Delay(TimeSpan.FromMinutes(2), cancellationToken);
+                        Assert.Fail($"Should have been cancelled after {stopwatch.ElapsedMilliseconds} ms and count {count}");
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        stopwatch.Stop();
+                        actualTimeouts.Add(stopwatch.Elapsed);
+
+                        if (count < 3)
+                        {
+                            throw; // Let it retry
+                        }
+                    }
+                }
+
+                return new HttpResponseMessage(HttpStatusCode.OK);
+            }
+
+            HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
+            using CosmosHttpClient cosmosHttpClient = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler));
+
+            using (ITrace trace = Cosmos.Tracing.Trace.GetRootTrace(nameof(CustomFirstRetryTimeoutValue_ShouldUseConfiguredValue)))
+            {
+                HttpResponseMessage responseMessage = await cosmosHttpClient.SendHttpAsync(() =>
+                    new ValueTask<HttpRequestMessage>(
+                        result: new HttpRequestMessage(HttpMethod.Post, new Uri("http://localhost"))),
+                        resourceType: ResourceType.Document,
+                        timeoutPolicy: timeoutPolicy,
+                        clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace),
+                        cancellationToken: default);
+
+                Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
+            }
+
+            // Verify timeout values
+            Assert.AreEqual(3, actualTimeouts.Count, "Should have 3 retry attempts");
+
+            // First timeout should be approximately 2000ms (configured value)
+            Assert.IsTrue(actualTimeouts[0] >= TimeSpan.FromMilliseconds(expectedFirstTimeoutMs - 1000) &&
+                            actualTimeouts[0] <= TimeSpan.FromMilliseconds(expectedFirstTimeoutMs + 1000),
+                            $"First timeout should be ~{expectedFirstTimeoutMs}ms but was {actualTimeouts[0].TotalMilliseconds}ms");
+
+            Assert.IsTrue(actualTimeouts[1] >= TimeSpan.FromMilliseconds(expectedSecondTimeoutMs - 1000) &&
+                            actualTimeouts[1] <= TimeSpan.FromMilliseconds(expectedSecondTimeoutMs + 1000),
+                            $"Second timeout should be ~{expectedSecondTimeoutMs}ms but was {actualTimeouts[1].TotalMilliseconds}ms");
+
+            Assert.IsTrue(actualTimeouts[2] >= TimeSpan.FromMilliseconds(expectedThirdTimeoutMs - 1000) &&
+                            actualTimeouts[2] <= TimeSpan.FromMilliseconds(expectedThirdTimeoutMs + 1000),
+                            $"Third timeout should be ~{expectedThirdTimeoutMs}ms but was {actualTimeouts[2].TotalMilliseconds}ms");
+        }
+
+    // Test-specific timeout policy that reads environment variables dynamically
+    private class TestHttpTimeoutPolicyControlPlaneRetriableHotPath : HttpTimeoutPolicy
+    {
+        private const double firstRetryTimeoutDefault = 500;
+
+        public override string TimeoutPolicyName => "TestHttpTimeoutPolicyControlPlaneRetriableHotPath";
+
+        public override int TotalRetryCount => 3;
+
+        public override IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> GetTimeoutEnumerator()
+        {
+            // Read environment variable dynamically each time
+            double configuredValue = ConfigurationManager.GetEnvironmentVariable(
+                ConfigurationManager.HttpFirstRetryTimeoutValueInMs,
+                firstRetryTimeoutDefault);
+
+            IReadOnlyList<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> timeouts = new List<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)>()
+            {
+                (TimeSpan.FromMilliseconds(Math.Max(100, configuredValue)), TimeSpan.Zero),
+                (TimeSpan.FromMilliseconds(Math.Max(5000, configuredValue)), TimeSpan.FromSeconds(1)),
+                (TimeSpan.FromMilliseconds(Math.Max(65000, configuredValue)), TimeSpan.Zero),
+            };
+
+            return timeouts.GetEnumerator();
+        }
+
+        public override bool IsSafeToRetry(HttpMethod httpMethod)
+        {
+            return true;
+        }
+
+        public override bool ShouldRetryBasedOnResponse(HttpMethod requestHttpMethod, HttpResponseMessage responseMessage)
+        {
+            if (responseMessage == null)
+            {
+                return false;
+            }
+
+            if (responseMessage.StatusCode != System.Net.HttpStatusCode.RequestTimeout)
+            {
+                return false;
+            }
+
+            if (!this.IsSafeToRetry(requestHttpMethod))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        public override bool ShouldThrow503OnTimeout => true;
+    }
+
+        [TestMethod]
         public void CreateSocketsHttpHandlerCreatesCorrectValueType()
         {
             int gatewayLimit = 10;

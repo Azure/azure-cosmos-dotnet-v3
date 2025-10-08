@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos
         /// Once this timeout is reached, the exponential backoff retry strategy is triggered.
         /// Default value: <c>500ms</c>
         /// </summary>
-        internal static readonly string HttpFirstRetryTimeoutValue = "AZURE_COSMOS_SDK_HTTP_FIRST_RETRY_TIMEOUT_VALUE_MS";
+        internal static readonly string HttpFirstRetryTimeoutValueInMs = "AZURE_COSMOS_SDK_HTTP_FIRST_RETRY_TIMEOUT_VALUE_MS";
 
         public static T GetEnvironmentVariable<T>(string variable, T defaultValue)
         {
@@ -383,6 +383,17 @@ namespace Microsoft.Azure.Cosmos
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.BypassQueryParsing,
                         defaultValue: false);
+        }
+
+        /// <summary>
+        /// Gets the first timeout duration in milliseconds before an HTTP call is considered timed out.
+        /// </summary>
+        /// <returns>A <see cref="double"/> representing the first retry timeout value in milliseconds.</returns>
+        public static double GetHttpFirstRetryTimeoutValueInMs()
+        {
+            return Math.Max(100, ConfigurationManager.GetEnvironmentVariable(
+                             ConfigurationManager.HttpFirstRetryTimeoutValueInMs,
+                             defaultValue: 500));
         }
     }
 }
