@@ -870,7 +870,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             PatchItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return this.PatchItemCoreAsync<T>(
+                id,
+                partitionKey,
+                patchOperations,
+                requestOptions,
+                cancellationToken);
         }
 
         public override Task<ResponseMessage> PatchItemStreamAsync(
@@ -880,7 +885,71 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             PatchItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return this.PatchItemCoreStreamAsync(
+                id,
+                partitionKey,
+                patchOperations,
+                requestOptions,
+                cancellationToken);
+        }
+
+        private async Task<ItemResponse<T>> PatchItemCoreAsync<T>(
+            string id,
+            PartitionKey partitionKey,
+            IReadOnlyList<PatchOperation> patchOperations,
+            PatchItemRequestOptions requestOptions,
+            CancellationToken cancellationToken)
+        {
+            ResponseMessage response = await this.PatchItemCoreStreamAsync(
+                id,
+                partitionKey,
+                patchOperations,
+                requestOptions,
+                cancellationToken);
+
+            return this.ResponseFactory.CreateItemResponse<T>(response);
+        }
+
+        // Minimal patch implementation: only supports patching non-encrypted paths. If an encrypted path is modified,
+        // the value won't be automatically encrypted – future enhancement would mirror EncryptPatchOperationsAsync from base encryption container.
+        private async Task<ResponseMessage> PatchItemCoreStreamAsync(
+            string id,
+            PartitionKey partitionKey,
+            IReadOnlyList<PatchOperation> patchOperations,
+            PatchItemRequestOptions requestOptions,
+            CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            if (patchOperations == null || patchOperations.Count == 0)
+            {
+                throw new ArgumentNullException(nameof(patchOperations));
+            }
+
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
+            using (diagnosticsContext.CreateScope("PatchItemStream"))
+            {
+                ResponseMessage response = await this.container.PatchItemStreamAsync(
+                    id,
+                    partitionKey,
+                    patchOperations,
+                    requestOptions,
+                    cancellationToken);
+
+                if (response.IsSuccessStatusCode && response.Content != null)
+                {
+                    (response.Content, _) = await EncryptionProcessor.DecryptAsync(
+                        response.Content,
+                        this.Encryptor,
+                        diagnosticsContext,
+                        cancellationToken);
+                }
+
+                return response;
+            }
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
