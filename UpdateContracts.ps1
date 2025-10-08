@@ -62,6 +62,22 @@ if(!(Test-Path -Path $updatedContractFile)){
     Write-Output ("Updated contract " + $updatedContractFile)
 }
 
+try {
+    dotnet test '.\Microsoft.Azure.Cosmos.Encryption\tests\Microsoft.Azure.Cosmos.Encryption.Tests\Microsoft.Azure.Cosmos.Encryption.Tests.csproj' --filter "TestCategory=UpdateContract" --configuration Release -f net8.0
+    $updatedContractFileNet8 = ".\Microsoft.Azure.Cosmos.Encryption\tests\Microsoft.Azure.Cosmos.Encryption.Tests\bin\Release\net8.0\Contracts\DotNetSDKEncryptionAPIChanges.json"
+    if (Test-Path -Path $updatedContractFileNet8) {
+        Copy-Item -Path $updatedContractFileNet8 -Destination ".\Microsoft.Azure.Cosmos.Encryption\tests\Microsoft.Azure.Cosmos.Encryption.Tests\Contracts\DotNetSDKEncryptionAPI.net8.json"
+        Write-Output ("Updated .NET 8 contract " + $updatedContractFileNet8)
+        
+        # Also copy to Debug output directories so tests work in both configurations
+        $debugNet8Path = ".\Microsoft.Azure.Cosmos.Encryption\tests\Microsoft.Azure.Cosmos.Encryption.Tests\bin\Debug\net8.0\Contracts\DotNetSDKEncryptionAPI.net8.json"
+        if (Test-Path -Path (Split-Path $debugNet8Path)) {
+            Copy-Item -Path $updatedContractFileNet8 -Destination $debugNet8Path -Force
+        }
+    }
+} catch {
+    Write-Warning "Unable to run net8.0 Encryption tests to produce .NET 8 baseline. Skipping."
+}
 
 #Run the Encryption.Custom SDK contract tests
 dotnet test '.\Microsoft.Azure.Cosmos.Encryption.Custom\tests\Microsoft.Azure.Cosmos.Encryption.Custom.Tests\Microsoft.Azure.Cosmos.Encryption.Custom.Tests.csproj' --filter "TestCategory=UpdateContract" --configuration Release
