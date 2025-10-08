@@ -1,16 +1,11 @@
 # A pipeline with no CI trigger
-# Temporarily enabled for bug/fixes-contract-tests branch testing
-trigger:
-  branches:
-    include:
-    - bug/fixes-contract-tests
+trigger: none
 
 pr:
   branches:
     include:
     - master
     - releases/*
-    - bug/fixes-contract-tests
   paths:
     include:
     - '*'
