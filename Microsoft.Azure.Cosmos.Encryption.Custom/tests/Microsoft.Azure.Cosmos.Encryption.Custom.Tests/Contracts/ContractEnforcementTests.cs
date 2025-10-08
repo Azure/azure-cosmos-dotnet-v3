@@ -28,10 +28,9 @@
         private static string ResolveFrameworkSpecificBaseline(string baseFileName, string defaultFileName)
         {
             string contractsDir = "Contracts";
-            string tfm = GetCurrentTFM(); // e.g., net8.0
-            string[] candidates = new[]
-            {
-                tfm is null ? null : $"{baseFileName}.{tfm.Split('.')[0]}.json",
+            int? currentMajorVersion = GetCurrentMajorVersion();
+            string[] candidates = {
+                currentMajorVersion is null ? null : $"{baseFileName}.{currentMajorVersion}.json",
                 defaultFileName
             };
 
@@ -44,7 +43,7 @@
             return existing != null ? Path.GetFileName(existing) : defaultFileName;
         }
 
-        private static string GetCurrentTFM()
+        private static int? GetCurrentMajorVersion()
         {
             // Read the TFM from the current test assembly TargetFrameworkAttribute
             TargetFrameworkAttribute attr = Assembly.GetExecutingAssembly().GetCustomAttribute<TargetFrameworkAttribute>();
@@ -53,9 +52,9 @@
                 return null;
             }
 
-            // Example: ".NETCoreApp,Version=v8.0" -> net8.0
+            // Example: ".NETCoreApp,Version=v8.0" -> 8
             FrameworkName fx = new FrameworkName(attr.FrameworkName);
-            return $"net{fx.Version.Major}.{fx.Version.Minor}";
+            return fx.Version.Major;
         }
     }
 }
