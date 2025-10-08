@@ -14,21 +14,29 @@
         [TestMethod]
         public void ContractChanges()
         {
+            int? currentMajorVersion = GetCurrentMajorVersion();
+            
             // Resolve a framework-specific baseline if available; otherwise fall back to the generic baseline.
             string baseline = ResolveFrameworkSpecificBaseline(
                 baseFileName: "DotNetSDKEncryptionCustomAPI",
-                defaultFileName: "DotNetSDKEncryptionCustomAPI.json");
+                defaultFileName: "DotNetSDKEncryptionCustomAPI.json",
+                currentMajorVersion: currentMajorVersion);
+
+            // For breaking changes output, always use framework-specific name if we have a version
+            // (doesn't need to exist yet since the test creates it)
+            string breakingChangesPath = currentMajorVersion.HasValue
+                ? $"DotNetSDKEncryptionCustomAPIChanges.net{currentMajorVersion}.json"
+                : "DotNetSDKEncryptionCustomAPIChanges.json";
 
             Cosmos.Tests.Contracts.ContractEnforcement.ValidateContractContainBreakingChanges(
                 dllName: "Microsoft.Azure.Cosmos.Encryption.Custom",
                 baselinePath: baseline,
-                breakingChangesPath: "DotNetSDKEncryptionCustomAPIChanges.json");
+                breakingChangesPath: breakingChangesPath);
         }
 
-        private static string ResolveFrameworkSpecificBaseline(string baseFileName, string defaultFileName)
+        private static string ResolveFrameworkSpecificBaseline(string baseFileName, string defaultFileName, int? currentMajorVersion)
         {
             string contractsDir = "Contracts";
-            int? currentMajorVersion = GetCurrentMajorVersion();
             string[] candidates = {
                 currentMajorVersion is null ? null : $"{baseFileName}.net{currentMajorVersion}.json",
                 defaultFileName

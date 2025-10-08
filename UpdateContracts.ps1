@@ -93,7 +93,8 @@ if(!(Test-Path -Path $updatedContractFile)){
 # Try to generate and copy .NET 8 specific baselines if net8 target exists
 try {
     dotnet test '.\Microsoft.Azure.Cosmos.Encryption.Custom\tests\Microsoft.Azure.Cosmos.Encryption.Custom.Tests\Microsoft.Azure.Cosmos.Encryption.Custom.Tests.csproj' --filter "TestCategory=UpdateContract" --configuration Release -f net8.0
-    $updatedContractFileNet8 = ".\Microsoft.Azure.Cosmos.Encryption.Custom\tests\Microsoft.Azure.Cosmos.Encryption.Custom.Tests\bin\Release\net8.0\Contracts\DotNetSDKEncryptionCustomAPIChanges.json"
+    # .NET 8 test now generates a framework-specific breaking changes file
+    $updatedContractFileNet8 = ".\Microsoft.Azure.Cosmos.Encryption.Custom\tests\Microsoft.Azure.Cosmos.Encryption.Custom.Tests\bin\Release\net8.0\Contracts\DotNetSDKEncryptionCustomAPIChanges.net8.json"
     if (Test-Path -Path $updatedContractFileNet8) {
         Copy-Item -Path $updatedContractFileNet8 -Destination ".\Microsoft.Azure.Cosmos.Encryption.Custom\tests\Microsoft.Azure.Cosmos.Encryption.Custom.Tests\Contracts\DotNetSDKEncryptionCustomAPI.net8.json"
         Write-Output ("Updated .NET 8 contract " + $updatedContractFileNet8)
