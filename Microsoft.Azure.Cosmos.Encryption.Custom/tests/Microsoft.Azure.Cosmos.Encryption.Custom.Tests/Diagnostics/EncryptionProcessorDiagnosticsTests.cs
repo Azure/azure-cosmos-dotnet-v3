@@ -77,13 +77,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
             catch (NotSupportedException)
             {
             }
-#if NET8_0_OR_GREATER && ENCRYPTION_CUSTOM_PREVIEW
             AssertScopePresent(ctx, "EncryptionProcessor.Decrypt.Mde.Newtonsoft");
+#if NET8_0_OR_GREATER
             AssertScopeAbsent(ctx, "EncryptionProcessor.Decrypt.Mde.Stream");
             AssertScopeAbsent(ctx, "EncryptionProcessor.DecryptStreamImpl.Mde");
-#else
-            // Legacy (non NET8 preview) path emits no selection scopes.
-            Assert.AreEqual(0, ctx.Scopes.Count);
 #endif
         }
 

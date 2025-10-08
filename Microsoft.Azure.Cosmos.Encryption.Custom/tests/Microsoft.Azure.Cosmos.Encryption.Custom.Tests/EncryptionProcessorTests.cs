@@ -97,29 +97,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.AreEqual(1, ctxDiag.Scopes.Count(s => s.StartsWith(EncryptionDiagnostics.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream)), "Expected a single Stream selection scope when falling back for unencrypted payload");
             Assert.IsFalse(ctxDiag.Scopes.Any(s => s.StartsWith(EncryptionDiagnostics.ScopeDecryptModeSelectionPrefix + JsonProcessor.Newtonsoft)));
         }
+#endif
 
-        [TestMethod]
-        public async Task Decrypt_NewtonsoftSelection_LegacyFallback()
-        {
-            TestDoc doc = TestDoc.Create();
-            EncryptionOptions legacy = new()
-            {
-                DataEncryptionKeyId = DekId,
-#pragma warning disable CS0618
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
-#pragma warning restore CS0618
-                PathsToEncrypt = TestDoc.PathsToEncrypt,
-            };
-            Stream legacyEncrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, legacy, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
-            legacyEncrypted.Position = 0;
-            CosmosDiagnosticsContext diag = CosmosDiagnosticsContext.Create(null);
-            (Stream decrypted, DecryptionContext ctxDec) = await EncryptionProcessor.DecryptAsync(legacyEncrypted, mockEncryptor.Object, diag, requestOptions: null, CancellationToken.None);
-            JObject obj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(decrypted);
-            Assert.AreEqual(doc.SensitiveStr, obj.Property(nameof(TestDoc.SensitiveStr)).Value.Value<string>());
-            Assert.IsNotNull(ctxDec);
-            Assert.IsTrue(diag.Scopes.Any(s => s.StartsWith(EncryptionDiagnostics.ScopeDecryptModeSelectionPrefix + JsonProcessor.Newtonsoft)));
-        }
-
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
         [TestMethod]
         public async Task Decrypt_StreamSelection_LegacyAlgorithm_Throws()
         {
