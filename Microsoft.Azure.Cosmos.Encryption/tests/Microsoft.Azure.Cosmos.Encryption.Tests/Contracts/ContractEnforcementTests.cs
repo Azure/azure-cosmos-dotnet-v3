@@ -1,5 +1,7 @@
 ﻿namespace Microsoft.Azure.Cosmos.Encryption.Tests
 {
+    using VisualStudio.TestTools.UnitTesting;
+
     [TestCategory("Windows")]
     [TestCategory("UpdateContract")]
     [TestClass]
@@ -10,7 +12,7 @@
         {
             Cosmos.Tests.Contracts.ContractEnforcement.ValidateContractContainBreakingChanges(
                 dllName: "Microsoft.Azure.Cosmos.Encryption",
-                baselinePath: defaultFileName,
+                baselinePath: "DotNetSDKEncryptionAPI.json",
                 breakingChangesPath: "DotNetSDKEncryptionAPIChanges.json");
         }
     }
