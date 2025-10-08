@@ -112,17 +112,12 @@ namespace Microsoft.Azure.Cosmos
                         CancellationToken.None,
                         NoOpTrace.Singleton);
 
-                    PartitionKeyDefinition partitionKeyDefinition = null;
-                    if (collection != null)
-                    {
-                        partitionKeyDefinition = collection.PartitionKey;
-                    }
                     (bool isSuccess, PartitionKeyRange partitionKeyRange) = await TryResolvePartitionKeyRangeAsync(
                         request: request,
                         sessionContainer: this.sessionContainer,
                         partitionKeyRangeCache: this.partitionKeyRangeCache,
                         clientCollectionCache: this.clientCollectionCache,
-                        partitionKeyDefinition: partitionKeyDefinition,
+                        partitionKeyDefinition: collection.PartitionKey,
                         refreshCache: false);
 
                     request.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
@@ -318,17 +313,11 @@ namespace Microsoft.Azure.Cosmos
                         CancellationToken.None,
                         NoOpTrace.Singleton);
 
-                    PartitionKeyDefinition partitionKeyDefinition = null;
-                    if (collection != null)
-                    {
-                        partitionKeyDefinition = collection.PartitionKey;
-                    }
-
                     await this.partitionKeyRangeCache.TryGetPartitionKeyRangeByIdAsync(
                         request.RequestContext.ResolvedCollectionRid,
                         partitionKeyRangeInResponse,
                         NoOpTrace.Singleton,
-                        partitionKeyDefinition,
+                        collection?.PartitionKey,
                         forceRefresh: true);
                 }
             }
@@ -427,18 +416,12 @@ namespace Microsoft.Azure.Cosmos
                     CancellationToken.None,
                     NoOpTrace.Singleton);
 
-                PartitionKeyDefinition partitionKeyDefinition = null;
-                if (collection != null)
-                {
-                    partitionKeyDefinition = collection.PartitionKey;
-                }
-
                 (bool isSuccess, PartitionKeyRange partitionKeyRange) = await TryResolvePartitionKeyRangeAsync(
                     request: request,
                     sessionContainer: sessionContainer,
                     partitionKeyRangeCache: partitionKeyRangeCache,
                     clientCollectionCache: clientCollectionCache,
-                    partitionKeyDefinition: partitionKeyDefinition,
+                    partitionKeyDefinition: collection?.PartitionKey,
                     refreshCache: false);
 
                 if (isSuccess && sessionContainer is SessionContainer gatewaySessionContainer)

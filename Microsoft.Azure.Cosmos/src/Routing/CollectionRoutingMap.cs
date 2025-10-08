@@ -20,7 +20,6 @@ namespace Microsoft.Azure.Cosmos.Routing
     /// </summary>
     internal sealed class CollectionRoutingMap
     {
-        private const string useLengthAwareComparatorEnvVar = "UseLengthAwareRangeComparator";
         /// <summary>
         /// Partition key range id to partition address and range.
         /// </summary>
@@ -143,12 +142,11 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             SortedList<string, PartitionKeyRange> partitionRanges = new SortedList<string, PartitionKeyRange>();
 
-            string useLengthAwareRangeComparator = Environment.GetEnvironmentVariable(useLengthAwareComparatorEnvVar);
-            bool lengthAwareComparison = !string.IsNullOrEmpty(useLengthAwareRangeComparator) && useLengthAwareRangeComparator.Equals(bool.FalseString, StringComparison.OrdinalIgnoreCase);
+            bool isLengthAwareComparisonEnabled = ConfigurationManager.IsLengthAwareRangeComparatorEnabled();
 
             bool useLengthAwareComparison = false;
             // Enable length-aware comparison for provided partition EPK ranges only when the container uses a hierarchical partition key (MultiHash).
-            if (!lengthAwareComparison && this.partitionKeyDefinition != null && this.partitionKeyDefinition.Kind == PartitionKind.MultiHash)
+            if (isLengthAwareComparisonEnabled && this.partitionKeyDefinition != null && this.partitionKeyDefinition.Kind == PartitionKind.MultiHash && this.partitionKeyDefinition.Paths.Count > 1)
             {
                 useLengthAwareComparison = true;
             }
@@ -157,23 +155,14 @@ namespace Microsoft.Azure.Cosmos.Routing
             // Then within that two positions, check for overlapping partition key ranges
             foreach (Range<string> providedRange in providedPartitionKeyRanges)
             {
-                IComparer<Range<string>> minComparer = Range<string>.MinComparer.Instance;
-                if (useLengthAwareComparison)
-                {
-                    minComparer = Range<string>.LengthAwareMinComparer.Instance;
-                }
-
+                IComparer<Range<string>> minComparer = this.GetComparer(isMinComparer: true, useLengthAwareComparison: useLengthAwareComparison);
                 int minIndex = this.orderedRanges.BinarySearch(providedRange, minComparer);
                 if (minIndex < 0)
                 {
                     minIndex = Math.Max(0, (~minIndex) - 1);
                 }
 
-                IComparer<Range<string>> maxComparer = Range<string>.MaxComparer.Instance;
-                if (useLengthAwareComparison)
-                {
-                    maxComparer = Range<string>.LengthAwareMaxComparer.Instance;
-                }
+                IComparer<Range<string>> maxComparer = this.GetComparer(isMinComparer: false, useLengthAwareComparison: useLengthAwareComparison);
 
                 int maxIndex = this.orderedRanges.BinarySearch(providedRange, maxComparer);
                 if (maxIndex < 0)
@@ -191,6 +180,13 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
 
             return new ReadOnlyCollection<PartitionKeyRange>(partitionRanges.Values);
+        }
+
+        private IComparer<Range<string>> GetComparer(bool isMinComparer, bool useLengthAwareComparison)
+        {
+            return isMinComparer
+                ? (useLengthAwareComparison ? Range<string>.LengthAwareMinComparer.Instance : Range<string>.MinComparer.Instance)
+                : (useLengthAwareComparison ? Range<string>.LengthAwareMaxComparer.Instance : Range<string>.MaxComparer.Instance);
         }
 
         public PartitionKeyRange GetRangeByEffectivePartitionKey(string effectivePartitionKeyValue)

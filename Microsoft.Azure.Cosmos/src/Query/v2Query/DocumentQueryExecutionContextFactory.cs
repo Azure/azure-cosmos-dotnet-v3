@@ -145,18 +145,12 @@ namespace Microsoft.Azure.Cosmos.Query
             List<PartitionKeyRange> targetRanges = null;
             if (!string.IsNullOrEmpty(feedOptions.PartitionKeyRangeId))
             {
-                PartitionKeyDefinition partitionKeyDefinition = null;
-                if (collection != null)
-                {
-                    partitionKeyDefinition = collection.PartitionKey;
-                }
-
                 targetRanges = new List<PartitionKeyRange>()
                 {
                     await queryExecutionContext.GetTargetPartitionKeyRangeByIdAsync(
                                     collection.ResourceId,
                                     feedOptions.PartitionKeyRangeId,
-                                    partitionKeyDefinition)
+                                    collection.PartitionKey)
                 };
             }
             else if (feedOptions.PartitionKey != null)

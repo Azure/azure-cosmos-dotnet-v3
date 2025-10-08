@@ -1146,7 +1146,7 @@ namespace Microsoft.Azure.Cosmos
                         true,
                         false),
                     NoOpTrace.Singleton,
-                    resolvedCollection.PartitionKey);
+                    resolvedCollection?.PartitionKey);
 
                 // In Gateway mode, AddressCache is null
                 if (this.AddressResolver != null)

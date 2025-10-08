@@ -253,7 +253,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void TestLegacyComparatorsUsedWhenLengthAwareComparatorFlagIsFalse()
         {
             // Arrange: Set environment variable to force legacy comparator usage.
-            Environment.SetEnvironmentVariable("UseLengthAwareRangeComparator", "false");
+            Environment.SetEnvironmentVariable(ConfigurationManager.UseLengthAwareRangeComparator, "false");
             CollectionRoutingMap routingMap = this.GenerateRoutingMap(false, this.GeneratePartitionKeyDefinition(2));
 
 
@@ -276,7 +276,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(2, partitionKeyRanges2.Count);
             CollectionAssert.AreEquivalent(new[] { "1", "2" }, partitionKeyRanges2.Select(r => r.Id).ToArray());
 
-            Environment.SetEnvironmentVariable("UseLengthAwareRangeComparator", null);
+            Environment.SetEnvironmentVariable(ConfigurationManager.UseLengthAwareRangeComparator, null);
         }
 
         private CollectionRoutingMap GenerateRoutingMap(bool isFullySpecified, PartitionKeyDefinition partitionKeyDefinition)
