@@ -117,6 +117,14 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal static readonly string BypassQueryParsing = "AZURE_COSMOS_BYPASS_QUERY_PARSING";
 
+        /// <summary>
+        /// A read-only string containing the environment variable name for disabling length aware range comparator.
+        /// Length aware range comparators were intorduced in Range class to handle EPK range comparisons correctly in the case of a container's physical partition set consisting of fully and partially specified EPK values.
+        /// By default length aware range comparator is enabled. Refer to Range.cs in Msdata project for more details. Range.LengthAwareMinComparer/LengthAwareMaxComparer.
+        /// Setting the value to false will disable length aware range comparator and switch to using the regular Range.MinComparer/MaxComparer.
+        /// </summary>
+        internal static readonly string UseLengthAwareRangeComparator = "AZURE_COSMOS_USE_LENGTH_AWARE_RANGE_COMPARATOR";
+
         public static T GetEnvironmentVariable<T>(string variable, T defaultValue)
         {
             string value = Environment.GetEnvironmentVariable(variable);

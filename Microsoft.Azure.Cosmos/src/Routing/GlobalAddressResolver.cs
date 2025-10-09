@@ -103,7 +103,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                     collectionRid: collection.ResourceId,
                     previousValue: null,
                     request: null,
-                    trace: NoOpTrace.Singleton);
+                    trace: NoOpTrace.Singleton,
+                    partitionKeyDefinition: collection.PartitionKey);
 
             if (routingMap == null)
             {
@@ -164,7 +165,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 IReadOnlyList<PartitionKeyRange> partitionKeyRanges = await this.routingMapProvider?.TryGetOverlappingRangesAsync(
                         collectionRid: collection.ResourceId,
                         range: FeedRangeEpk.FullRange.Range,
-                        trace: NoOpTrace.Singleton);
+                        trace: NoOpTrace.Singleton, collection.PartitionKey);
 
                 IReadOnlyList<PartitionKeyRangeIdentity> partitionKeyRangeIdentities = partitionKeyRanges?.Select(
                     range => new PartitionKeyRangeIdentity(

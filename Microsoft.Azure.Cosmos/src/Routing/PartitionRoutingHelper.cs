@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -191,6 +190,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <param name="rangeFromContinuationToken"></param>
         /// <param name="suppliedTokens"></param>
         /// <param name="trace"></param>
+        /// <param name="partitionKeyDefinition"></param>
         /// <param name="direction"></param>
         /// <returns>null if collection with specified <paramref name="collectionRid"/> doesn't exist, which potentially means
         /// that collection was resolved to outdated Rid by name. Also null can be returned if <paramref name="rangeFromContinuationToken"/>
@@ -203,6 +203,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             Range<string> rangeFromContinuationToken,
             List<CompositeContinuationToken> suppliedTokens,
             ITrace trace,
+            PartitionKeyDefinition partitionKeyDefinition,
             RntdbEnumerationDirection direction = RntdbEnumerationDirection.Forward)
         {
             // For queries such as "SELECT * FROM root WHERE false", 
@@ -213,7 +214,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                     await routingMapProvider.TryGetRangeByEffectivePartitionKeyAsync(
                         collectionRid,
                         PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
-                        trace),
+                        trace,
+                        partitionKeyDefinition),
                     suppliedTokens);
             }
 
@@ -225,22 +227,24 @@ namespace Microsoft.Azure.Cosmos.Routing
                     IReadOnlyList<PartitionKeyRange> partitionKeyRanges = await routingMapProvider.TryGetOverlappingRangesAsync(
                         collectionRid, 
                         providedPartitionKeyRanges.Single(),
-                        trace);
+                        trace, partitionKeyDefinition, false);
                     PartitionKeyRange lastPartitionKeyRange = partitionKeyRanges[partitionKeyRanges.Count - 1];
 
                     return new ResolvedRangeInfo(lastPartitionKeyRange, suppliedTokens);
                 }
 
+                IComparer<Range<string>> minComparer = this.getRangeComparerByPartitionKeyDefinition(partitionKeyDefinition, true);
+
                 Range<string> minimumRange = PartitionRoutingHelper.Min(
                 providedPartitionKeyRanges,
-                Range<string>.MinComparer.Instance);
+                minComparer);
 
                 return new ResolvedRangeInfo(
-                    await routingMapProvider.TryGetRangeByEffectivePartitionKeyAsync(collectionRid, minimumRange.Min, trace),
+                    await routingMapProvider.TryGetRangeByEffectivePartitionKeyAsync(collectionRid, minimumRange.Min, trace, partitionKeyDefinition),
                     suppliedTokens);
             }
 
-            PartitionKeyRange targetPartitionKeyRange = await routingMapProvider.TryGetRangeByEffectivePartitionKeyAsync(collectionRid, rangeFromContinuationToken.Min, trace);
+            PartitionKeyRange targetPartitionKeyRange = await routingMapProvider.TryGetRangeByEffectivePartitionKeyAsync(collectionRid, rangeFromContinuationToken.Min, trace, partitionKeyDefinition);
 
             if (targetPartitionKeyRange == null)
             {
@@ -254,6 +258,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         collectionResourceId: collectionRid,
                         range: rangeFromContinuationToken,
                         trace: trace,
+                        partitionKeyDefinition,
                         forceRefresh: true);
 
                 if (replacedRanges == null || replacedRanges.Count < 1)
@@ -298,12 +303,13 @@ namespace Microsoft.Azure.Cosmos.Routing
         public static async Task<List<PartitionKeyRange>> GetReplacementRangesAsync(PartitionKeyRange targetRange, 
                                                             IRoutingMapProvider routingMapProvider, 
                                                             string collectionRid,
-                                                            ITrace trace)
+                                                            ITrace trace,
+                                                            PartitionKeyDefinition partitionKeyDefinition)
         {
             return (await routingMapProvider.TryGetOverlappingRangesAsync(
                 collectionRid, 
                 targetRange.ToRange(), 
-                trace, 
+                trace, partitionKeyDefinition,
                 forceRefresh: true)).ToList();
         }
 
@@ -318,6 +324,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             string collectionRid,
             ResolvedRangeInfo resolvedRangeInfo,
             ITrace trace,
+            PartitionKeyDefinition partitionKeyDefinition,
             RntdbEnumerationDirection direction = RntdbEnumerationDirection.Forward)
         {
             Debug.Assert(resolvedRangeInfo.ResolvedRange != null, "ResolvedRange can't be null");
@@ -353,15 +360,17 @@ namespace Microsoft.Azure.Cosmos.Routing
                             (await routingMapProvider.TryGetOverlappingRangesAsync(
                                 collectionRid, 
                                 providedPartitionKeyRanges.Single(),
-                                trace)).ToList(),
-                            currentRange);
+                                trace, partitionKeyDefinition,
+                                false)).ToList(),
+                            currentRange,
+                            this.getRangeComparerByPartitionKeyDefinition(partitionKeyDefinition, true));
                     }
                     else
                     {
                         Range<string> nextProvidedRange = PartitionRoutingHelper.MinAfter(
                         providedPartitionKeyRanges,
                         currentRange.ToRange(),
-                        Range<string>.MaxComparer.Instance);
+                        this.getRangeComparerByPartitionKeyDefinition(partitionKeyDefinition, false));
 
                         if (nextProvidedRange == null)
                         {
@@ -377,7 +386,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                             return true;
                         }
 
-                        PartitionKeyRange nextRange = await routingMapProvider.TryGetRangeByEffectivePartitionKeyAsync(collectionRid, max, trace);
+                        PartitionKeyRange nextRange = await routingMapProvider.TryGetRangeByEffectivePartitionKeyAsync(collectionRid, max, trace, partitionKeyDefinition);
                         if (nextRange == null)
                         {
                             return false;
@@ -547,14 +556,14 @@ namespace Microsoft.Azure.Cosmos.Routing
             return min;
         }
 
-        private static PartitionKeyRange MinBefore(IReadOnlyList<PartitionKeyRange> values, PartitionKeyRange minValue)
+        private static PartitionKeyRange MinBefore(IReadOnlyList<PartitionKeyRange> values, PartitionKeyRange minValue,
+            IComparer<Range<string>> comparer)
         {
             if (values.Count == 0)
             {
                 throw new ArgumentException(nameof(values));
             }
 
-            IComparer<Range<string>> comparer = Range<string>.MinComparer.Instance;
             PartitionKeyRange min = null;
             foreach (PartitionKeyRange value in values)
             {
@@ -565,6 +574,19 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
 
             return min;
+        }
+
+        private IComparer<Range<string>> getRangeComparerByPartitionKeyDefinition(PartitionKeyDefinition partitionKeyDefinition, bool isMin)
+        {
+            bool isLengthAwareComparisonEnabled = ConfigurationManager.GetEnvironmentVariable<bool>(ConfigurationManager.UseLengthAwareRangeComparator, true);
+            if (isLengthAwareComparisonEnabled && partitionKeyDefinition != null && partitionKeyDefinition.Kind == PartitionKind.MultiHash && partitionKeyDefinition.Paths.Count > 1)
+            {
+                return isMin ? Range<string>.LengthAwareMinComparer.Instance : Range<string>.LengthAwareMaxComparer.Instance;
+            }
+            else
+            {
+                return isMin ? Range<string>.MinComparer.Instance : Range<string>.MaxComparer.Instance;
+            }
         }
 
         public readonly struct ResolvedRangeInfo

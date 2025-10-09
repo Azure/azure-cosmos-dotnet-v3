@@ -110,7 +110,7 @@
                                     Number64.ToLong((document[partitionKey] as CosmosNumber).Value)
                                 },
                                 strict: true).GetEffectivePartitionKeyString(containerSettings.PartitionKey)),
-                        NoOpTrace.Singleton);
+                        NoOpTrace.Singleton, null);
                 Debug.Assert(targetRanges.Count == 1);
                 idToRangeMinKeyMap.Add(((CosmosString)document["id"]).Value, targetRanges[0].MinInclusive);
             }

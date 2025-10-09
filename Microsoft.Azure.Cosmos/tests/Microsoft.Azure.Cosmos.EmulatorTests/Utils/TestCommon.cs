@@ -373,7 +373,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IReadOnlyList<PartitionKeyRange> ranges = routingMapProvider.TryGetOverlappingRangesAsync(
                 collection.ResourceId,
                 Range<string>.GetPointRange(PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey),
-                NoOpTrace.Singleton).Result;
+                NoOpTrace.Singleton, null).Result;
             request.RouteTo(new PartitionKeyRangeIdentity(collection.ResourceId, ranges.Single().Id));
         }
 
@@ -1061,7 +1061,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     IReadOnlyList<PartitionKeyRange> overlappingRanges = routingMapProvider.TryGetOverlappingRangesAsync(
                         collection.ResourceId,
                         Range<string>.GetPointRange(PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey),
-                        NoOpTrace.Singleton).Result;
+                        NoOpTrace.Singleton,
+                        partitionKeyDefinition: collection.PartitionKey).Result;
 
                     request.RouteTo(new PartitionKeyRangeIdentity(collection.ResourceId, overlappingRanges.Single().Id));
                 }

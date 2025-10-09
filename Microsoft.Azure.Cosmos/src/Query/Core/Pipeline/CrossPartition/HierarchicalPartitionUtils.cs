@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition
 {
     using System;
+    using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
 
     internal static class HierarchicalPartitionUtils
@@ -50,7 +51,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition
                                 String overlappingMax;
                                 bool maxInclusive;
 
-                                if (Documents.Routing.Range<String>.MinComparer.Instance.Compare(
+                                bool isLengthAwareComparisonEnabled = ConfigurationManager.GetEnvironmentVariable<bool>(ConfigurationManager.UseLengthAwareRangeComparator, true);
+
+                                IComparer<Documents.Routing.Range<string>> minComparer = Documents.Routing.Range<string>.MinComparer.Instance;
+                                if (isLengthAwareComparisonEnabled)
+                                {
+                                    minComparer = Documents.Routing.Range<string>.LengthAwareMinComparer.Instance;
+                                }
+
+                                if (minComparer.Compare(
                                         epkForPartitionKey,
                                         feedRangeEpk.Range) < 0)
                                 {
@@ -63,7 +72,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition
                                     minInclusive = epkForPartitionKey.IsMinInclusive;
                                 }
 
-                                if (Documents.Routing.Range<String>.MaxComparer.Instance.Compare(
+                                IComparer<Documents.Routing.Range<string>> maxComparer = Documents.Routing.Range<string>.MaxComparer.Instance;
+                                if (isLengthAwareComparisonEnabled)
+                                {
+                                    maxComparer = Documents.Routing.Range<string>.LengthAwareMaxComparer.Instance;
+                                }
+
+                                if (maxComparer.Compare(
                                         epkForPartitionKey,
                                         feedRangeEpk.Range) > 0)
                                 {
