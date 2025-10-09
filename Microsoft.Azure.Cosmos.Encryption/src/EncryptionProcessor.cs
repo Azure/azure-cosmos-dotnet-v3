@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         // UTF-8 Encoding
         private static readonly SqlVarCharSerializer SqlVarcharSerializer = new SqlVarCharSerializer(size: -1, codePageCharacterEncoding: 65001);
 
-        private enum TypeMarker : byte
+        internal enum TypeMarker : byte
         {
             Null = 1, // not used
             Boolean = 2,
@@ -222,7 +222,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return EncryptionProcessor.BaseSerializer.ToStream(encryptedPropertyValue);
         }
 
-        private static (TypeMarker, byte[]) Serialize(JToken propertyValue)
+        internal static (TypeMarker, byte[]) Serialize(JToken propertyValue)
         {
             return propertyValue.Type switch
             {
@@ -234,7 +234,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             };
         }
 
-        private static JToken DeserializeAndAddProperty(
+        internal static JToken DeserializeAndAddProperty(
             byte[] serializedBytes,
             TypeMarker typeMarker)
         {
@@ -248,11 +248,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
             };
         }
 
-        private static async Task EncryptJTokenAsync(
-           JToken jTokenToEncrypt,
-           EncryptionSettingForProperty encryptionSettingForProperty,
-           bool shouldEscape,
-           CancellationToken cancellationToken)
+        internal static async Task EncryptJTokenAsync(
+            JToken jTokenToEncrypt,
+            EncryptionSettingForProperty encryptionSettingForProperty,
+            bool shouldEscape,
+            CancellationToken cancellationToken)
         {
             // Top Level can be an Object
             if (jTokenToEncrypt.Type == JTokenType.Object)
@@ -290,6 +290,63 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             return;
+        }
+
+        internal static async Task DecryptJTokenAsync(
+            JToken jTokenToDecrypt,
+            EncryptionSettingForProperty encryptionSettingForProperty,
+            bool isEscaped,
+            CancellationToken cancellationToken)
+        {
+            if (jTokenToDecrypt.Type == JTokenType.Object)
+            {
+                foreach (JProperty jProperty in jTokenToDecrypt.Children<JProperty>())
+                {
+                    await DecryptJTokenAsync(
+                        jProperty.Value,
+                        encryptionSettingForProperty,
+                        isEscaped,
+                        cancellationToken);
+                }
+            }
+            else if (jTokenToDecrypt.Type == JTokenType.Array)
+            {
+                if (jTokenToDecrypt.Children().Any())
+                {
+                    for (int i = 0; i < jTokenToDecrypt.Count(); i++)
+                    {
+                        await DecryptJTokenAsync(
+                            jTokenToDecrypt[i],
+                            encryptionSettingForProperty,
+                            isEscaped,
+                            cancellationToken);
+                    }
+                }
+            }
+            else
+            {
+                jTokenToDecrypt.Replace(await DecryptAndDeserializeValueAsync(
+                    jTokenToDecrypt,
+                    encryptionSettingForProperty,
+                    isEscaped,
+                    cancellationToken));
+            }
+        }
+
+        internal static string ConvertToBase64UriSafeString(byte[] bytesToProcess)
+        {
+            string base64String = Convert.ToBase64String(bytesToProcess);
+
+            // Base 64 Encoding with URL and Filename Safe Alphabet  https://datatracker.ietf.org/doc/html/rfc4648#section-5
+            // https://docs.microsoft.com/en-us/azure/cosmos-db/concepts-limits#per-item-limits, due to base64 conversion and encryption
+            // the permissible size of the property will further reduce.
+            return new StringBuilder(base64String, base64String.Length).Replace("/", "_").Replace("+", "-").ToString();
+        }
+
+        internal static byte[] ConvertFromBase64UriSafeString(string uriSafeBase64String)
+        {
+            StringBuilder fromUriSafeBase64String = new StringBuilder(uriSafeBase64String, uriSafeBase64String.Length).Replace("_", "/").Replace("-", "+");
+            return Convert.FromBase64String(fromUriSafeBase64String.ToString());
         }
 
         private static async Task<JToken> SerializeAndEncryptValueAsync(
@@ -337,10 +394,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
         private static async Task<JToken> DecryptAndDeserializeValueAsync(
-           JToken jToken,
-           EncryptionSettingForProperty encryptionSettingForProperty,
-           bool isEscaped,
-           CancellationToken cancellationToken)
+            JToken jToken,
+            EncryptionSettingForProperty encryptionSettingForProperty,
+            bool isEscaped,
+            CancellationToken cancellationToken)
         {
             byte[] cipherTextWithTypeMarker = null;
 
@@ -377,47 +434,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return DeserializeAndAddProperty(
                 plainText,
                 (TypeMarker)cipherTextWithTypeMarker[0]);
-        }
-
-        private static async Task DecryptJTokenAsync(
-            JToken jTokenToDecrypt,
-            EncryptionSettingForProperty encryptionSettingForProperty,
-            bool isEscaped,
-            CancellationToken cancellationToken)
-        {
-            if (jTokenToDecrypt.Type == JTokenType.Object)
-            {
-                foreach (JProperty jProperty in jTokenToDecrypt.Children<JProperty>())
-                {
-                    await DecryptJTokenAsync(
-                        jProperty.Value,
-                        encryptionSettingForProperty,
-                        isEscaped,
-                        cancellationToken);
-                }
-            }
-            else if (jTokenToDecrypt.Type == JTokenType.Array)
-            {
-                if (jTokenToDecrypt.Children().Any())
-                {
-                    for (int i = 0; i < jTokenToDecrypt.Count(); i++)
-                    {
-                        await DecryptJTokenAsync(
-                            jTokenToDecrypt[i],
-                            encryptionSettingForProperty,
-                            isEscaped,
-                            cancellationToken);
-                    }
-                }
-            }
-            else
-            {
-                jTokenToDecrypt.Replace(await DecryptAndDeserializeValueAsync(
-                    jTokenToDecrypt,
-                    encryptionSettingForProperty,
-                    isEscaped,
-                    cancellationToken));
-            }
         }
 
         private static async Task<int> DecryptObjectAsync(
@@ -470,22 +486,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             return itemJObj;
-        }
-
-        private static string ConvertToBase64UriSafeString(byte[] bytesToProcess)
-        {
-            string base64String = Convert.ToBase64String(bytesToProcess);
-
-            // Base 64 Encoding with URL and Filename Safe Alphabet  https://datatracker.ietf.org/doc/html/rfc4648#section-5
-            // https://docs.microsoft.com/en-us/azure/cosmos-db/concepts-limits#per-item-limits, due to base64 conversion and encryption
-            // the permissible size of the property will further reduce.
-            return new StringBuilder(base64String, base64String.Length).Replace("/", "_").Replace("+", "-").ToString();
-        }
-
-        private static byte[] ConvertFromBase64UriSafeString(string uriSafeBase64String)
-        {
-            StringBuilder fromUriSafeBase64String = new StringBuilder(uriSafeBase64String, uriSafeBase64String.Length).Replace("_", "/").Replace("-", "+");
-            return Convert.FromBase64String(fromUriSafeBase64String.ToString());
         }
     }
 }
