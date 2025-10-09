@@ -338,11 +338,10 @@
     }
   },
   "Members": {
-    "System.Object MemberwiseClone()[System.Runtime.CompilerServices.NullableContextAttribute((Byte)1)]-[System.Runtime.CompilerServices.IntrinsicAttribute()]": {
+    "System.Object MemberwiseClone()[System.Runtime.CompilerServices.IntrinsicAttribute()]": {
       "Type": "Method",
       "Attributes": [
-        "IntrinsicAttribute",
-        "NullableContextAttribute"
+        "IntrinsicAttribute"
       ],
       "MethodInfo": "System.Object MemberwiseClone();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
     },
