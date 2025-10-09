@@ -3,7 +3,7 @@
 }
 
 #Run the Cosmos DB SDK GA contract tests
-dotnet test '.\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\Microsoft.Azure.Cosmos.Tests.csproj' --filter "TestCategory=UpdateContract" --configuration Release
+dotnet test '.\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\Microsoft.Azure.Cosmos.Tests.csproj' --filter "TestCategory=UpdateContract" --configuration Release -f net6.0
 
 $updatedContractFile = ".\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\bin\Release\net6.0\Contracts\DotNetSDKAPIChanges.json"
 if(!(Test-Path -Path $updatedContractFile)){
@@ -30,7 +30,7 @@ if(!(Test-Path -Path $updatedContractFolder)){
 }
 
 #Run the Cosmos DB SDK Emulator contract tests
-dotnet test '.\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.EmulatorTests\Microsoft.Azure.Cosmos.EmulatorTests.csproj' --filter "TestCategory=UpdateContract" --configuration Release
+dotnet test '.\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.EmulatorTests\Microsoft.Azure.Cosmos.EmulatorTests.csproj' --filter "TestCategory=UpdateContract" --configuration Release -f net6.0
 
 $updatedContractFolder = ".\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.EmulatorTests\bin\Release\net6.0\BaselineTest\TestOutput\*"
 if(!(Test-Path -Path $updatedContractFolder)){
@@ -52,7 +52,7 @@ if(!(Test-Path -Path $updatedContractFile)){
 }
 
 #Run the Encryption SDK contract tests
-dotnet test '.\Microsoft.Azure.Cosmos.Encryption\tests\Microsoft.Azure.Cosmos.Encryption.Tests\Microsoft.Azure.Cosmos.Encryption.Tests.csproj' --filter "TestCategory=UpdateContract" --configuration Release
+dotnet test '.\Microsoft.Azure.Cosmos.Encryption\tests\Microsoft.Azure.Cosmos.Encryption.Tests\Microsoft.Azure.Cosmos.Encryption.Tests.csproj' --filter "TestCategory=UpdateContract" --configuration Release -f net6.0
 
 $updatedContractFile = ".\Microsoft.Azure.Cosmos.Encryption\tests\Microsoft.Azure.Cosmos.Encryption.Tests\bin\Release\net6.0\Contracts\DotNetSDKEncryptionAPIChanges.json"
 if(!(Test-Path -Path $updatedContractFile)){
@@ -80,7 +80,7 @@ try {
 }
 
 #Run the Encryption.Custom SDK contract tests
-dotnet test '.\Microsoft.Azure.Cosmos.Encryption.Custom\tests\Microsoft.Azure.Cosmos.Encryption.Custom.Tests\Microsoft.Azure.Cosmos.Encryption.Custom.Tests.csproj' --filter "TestCategory=UpdateContract" --configuration Release
+dotnet test '.\Microsoft.Azure.Cosmos.Encryption.Custom\tests\Microsoft.Azure.Cosmos.Encryption.Custom.Tests\Microsoft.Azure.Cosmos.Encryption.Custom.Tests.csproj' --filter "TestCategory=UpdateContract" --configuration Release -f net6.0
 
 $updatedContractFile = ".\Microsoft.Azure.Cosmos.Encryption.Custom\tests\Microsoft.Azure.Cosmos.Encryption.Custom.Tests\bin\Release\net6.0\Contracts\DotNetSDKEncryptionCustomAPIChanges.json"
 if(!(Test-Path -Path $updatedContractFile)){
