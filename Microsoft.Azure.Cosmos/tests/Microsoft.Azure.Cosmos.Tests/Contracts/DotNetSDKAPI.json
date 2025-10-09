@@ -8029,11 +8029,6 @@
           "Attributes": [],
           "MethodInfo": "System.String GermanyWestCentral;IsInitOnly:False;IsStatic:True;"
         },
-        "System.String IndiaSouthCentral": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "System.String IndiaSouthCentral;IsInitOnly:False;IsStatic:True;"
-        },
         "System.String IndonesiaCentral": {
           "Type": "Field",
           "Attributes": [],
@@ -8109,11 +8104,6 @@
           "Attributes": [],
           "MethodInfo": "System.String NorthCentralUS;IsInitOnly:False;IsStatic:True;"
         },
-        "System.String NortheastUS5": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "System.String NortheastUS5;IsInitOnly:False;IsStatic:True;"
-        },
         "System.String NorthEurope": {
           "Type": "Field",
           "Attributes": [],
@@ -8138,16 +8128,6 @@
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "System.String QatarCentral;IsInitOnly:False;IsStatic:True;"
-        },
-        "System.String SingaporeCentral": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "System.String SingaporeCentral;IsInitOnly:False;IsStatic:True;"
-        },
-        "System.String SingaporeNorth": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "System.String SingaporeNorth;IsInitOnly:False;IsStatic:True;"
         },
         "System.String SouthAfricaNorth": {
           "Type": "Field",
@@ -9281,18 +9261,6 @@
         }
       },
       "Members": {
-        "Microsoft.Azure.Cosmos.AvailabilityStrategy AvailabilityStrategy": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.AvailabilityStrategy AvailabilityStrategy;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.AvailabilityStrategy get_AvailabilityStrategy();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_AvailabilityStrategy(Microsoft.Azure.Cosmos.AvailabilityStrategy);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Microsoft.Azure.Cosmos.AvailabilityStrategy get_AvailabilityStrategy()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.AvailabilityStrategy get_AvailabilityStrategy();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
         "Microsoft.Azure.Cosmos.CosmosThresholdOptions CosmosThresholdOptions": {
           "Type": "Property",
           "Attributes": [],
@@ -9393,13 +9361,6 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_AddRequestHeaders(System.Action`1[Microsoft.Azure.Cosmos.Headers]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Void set_AvailabilityStrategy(Microsoft.Azure.Cosmos.AvailabilityStrategy)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Void set_AvailabilityStrategy(Microsoft.Azure.Cosmos.AvailabilityStrategy);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_CosmosThresholdOptions(Microsoft.Azure.Cosmos.CosmosThresholdOptions)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
