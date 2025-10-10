@@ -41,7 +41,8 @@ if(!(Test-Path -Path $updatedContractFolder)){
 }
 
 #Run the Cosmos DB SDK Preview contract tests
-dotnet test '.\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\Microsoft.Azure.Cosmos.Tests.csproj' --filter "TestCategory=UpdateContract" --configuration Release -p:IsPreview=true
+# Use FullyQualifiedName filter to run only the PreviewContractChanges test, bypassing the Ignore attribute
+dotnet test '.\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\Microsoft.Azure.Cosmos.Tests.csproj' --filter "FullyQualifiedName~PreviewContractChanges" --configuration Release -p:IsPreview=true
 
 $updatedContractFile = ".\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\bin\Release\net6.0\Contracts\DotNetPreviewSDKAPIChanges.json"
 if(!(Test-Path -Path $updatedContractFile)){

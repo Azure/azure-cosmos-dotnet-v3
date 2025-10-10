@@ -15,17 +15,10 @@
         private const string OfficialBaselinePath = "DotNetSDKAPI.json";
         private const string OfficialTelemetryBaselinePath = "DotNetSDKTelemetryAPI.json";
 
-#if PREVIEW
-        [TestMethod]
-        public void PreviewContractChanges()
-        {
-            ContractEnforcement.ValidatePreviewContractContainBreakingChanges(
-                dllName: DllName,
-                officialBaselinePath: OfficialBaselinePath,
-                previewBaselinePath: "DotNetPreviewSDKAPI.json",
-                previewBreakingChangesPath: "DotNetPreviewSDKAPIChanges.json");
-        }
-#else
+        /// <summary>
+        /// This test validates the GA (official) contract.
+        /// It should be enabled by default and run without IsPreview set.
+        /// </summary>
         [TestMethod]
         public void ContractChanges()
         {
@@ -35,6 +28,10 @@
                 breakingChangesPath: "DotNetSDKAPIChanges.json");
         }
 
+        /// <summary>
+        /// This test validates the Telemetry contract for GA.
+        /// It should be enabled by default and run without IsPreview set.
+        /// </summary>
         [TestMethod]
         public void TelemetryContractChanges()
         {
@@ -43,7 +40,24 @@
                 baselinePath: OfficialTelemetryBaselinePath,
                 breakingChangesPath: "DotNetSDKTelemetryAPIChanges.json");
         }
-#endif
+
+        /// <summary>
+        /// This test validates the Preview contract against the GA baseline.
+        /// It should only be run when explicitly building with IsPreview=true.
+        /// This test is ignored by default to prevent it from running during normal builds,
+        /// ensuring contract validation is resistant to preexisting IsPreview configuration.
+        /// To run this test, remove the Ignore attribute or run with the UpdateContracts script.
+        /// </summary>
+        [TestMethod]
+        [Ignore("Only run this test when explicitly validating preview contracts with IsPreview=true")]
+        public void PreviewContractChanges()
+        {
+            ContractEnforcement.ValidatePreviewContractContainBreakingChanges(
+                dllName: DllName,
+                officialBaselinePath: OfficialBaselinePath,
+                previewBaselinePath: "DotNetPreviewSDKAPI.json",
+                previewBreakingChangesPath: "DotNetPreviewSDKAPIChanges.json");
+        }
 
         [TestMethod]
         public void UniqueKeyUnsealed()
