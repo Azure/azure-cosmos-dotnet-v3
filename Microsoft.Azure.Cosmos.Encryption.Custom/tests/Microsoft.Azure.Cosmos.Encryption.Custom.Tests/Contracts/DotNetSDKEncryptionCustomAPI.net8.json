@@ -1306,6 +1306,11 @@
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.Custom.JsonProcessor Newtonsoft;IsInitOnly:False;IsStatic:True;"
+        },
+        "Microsoft.Azure.Cosmos.Encryption.Custom.JsonProcessor Stream": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.Custom.JsonProcessor Stream;IsInitOnly:False;IsStatic:True;"
         }
       },
       "NestedTypes": {}
