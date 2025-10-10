@@ -158,29 +158,40 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Debug.Assert(encryptor != null);
             Debug.Assert(diagnosticsContext != null);
 
-            // Peek at the content to check if it's legacy encryption algorithm
-            JObject itemJObj = RetrieveItem(input);
-            JObject encryptionPropertiesJObj = RetrieveEncryptionProperties(itemJObj);
-
-            if (encryptionPropertiesJObj != null)
+            // Try to peek at the content to check if it's legacy encryption algorithm
+            // Some streams (e.g., those that only support async reads or contain malformed JSON) may throw exceptions
+            // during synchronous peeking. In such cases, delegate directly to MdeEncryptionProcessor.
+            try
             {
-                // Parse encryption properties to check the algorithm
-                EncryptionProperties encryptionProperties = encryptionPropertiesJObj.ToObject<EncryptionProperties>();
+                JObject itemJObj = RetrieveItem(input);
+                JObject encryptionPropertiesJObj = RetrieveEncryptionProperties(itemJObj);
+
+                if (encryptionPropertiesJObj != null)
+                {
+                    // Parse encryption properties to check the algorithm
+                    EncryptionProperties encryptionProperties = encryptionPropertiesJObj.ToObject<EncryptionProperties>();
 
 #pragma warning disable CS0618 // Type or member is obsolete
-                if (string.Equals(encryptionProperties.EncryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized, StringComparison.Ordinal))
+                    if (string.Equals(encryptionProperties.EncryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized, StringComparison.Ordinal))
 #pragma warning restore CS0618 // Type or member is obsolete
-                {
-                    // Use legacy decryption for AEAes256CbcHmacSha256Randomized
-                    DecryptionContext decryptionContext = await DecryptInternalAsync(encryptor, diagnosticsContext, itemJObj, encryptionPropertiesJObj, cancellationToken);
-                    await input.DisposeCompatAsync();
-                    return (BaseSerializer.ToStream(itemJObj), decryptionContext);
+                    {
+                        // Use legacy decryption for AEAes256CbcHmacSha256Randomized
+                        DecryptionContext decryptionContext = await DecryptInternalAsync(encryptor, diagnosticsContext, itemJObj, encryptionPropertiesJObj, cancellationToken);
+                        await input.DisposeCompatAsync();
+                        return (BaseSerializer.ToStream(itemJObj), decryptionContext);
+                    }
                 }
+
+                // For MDE algorithm or no encryption properties, delegate to MdeEncryptionProcessor
+                input.Position = 0;
+            }
+            catch
+            {
+                // Stream doesn't support synchronous reads, contains malformed JSON, or other parsing error.
+                // Reset position and delegate to MdeEncryptionProcessor which uses async reads and will handle errors appropriately.
+                input.Position = 0;
             }
 
-            // For MDE algorithm or no encryption properties, delegate to MdeEncryptionProcessor
-            // which will handle diagnostic scopes and proper processing
-            input.Position = 0;
             return await MdeEncryptionProcessor.DecryptAsync(input, encryptor, diagnosticsContext, requestOptions, cancellationToken);
         }
 #endif
