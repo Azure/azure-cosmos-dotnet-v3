@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
 #if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
         [TestMethod]
-        public async Task Decrypt_StreamSelection_LegacyAlgorithm_Throws()
+        public async Task Decrypt_StreamSelection_LegacyAlgorithm_FallsBackToNewtonsoft()
         {
             TestDoc doc = TestDoc.Create();
             EncryptionOptions legacy = new()
@@ -118,15 +118,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             ItemRequestOptions opts = new() { Properties = new Dictionary<string, object> { { RequestOptionsPropertiesExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Stream } } };
             CosmosDiagnosticsContext diag = CosmosDiagnosticsContext.Create(null);
 
-            NotSupportedException exception = await Assert.ThrowsExceptionAsync<NotSupportedException>(async () =>
-            {
-                await EncryptionProcessor.DecryptAsync(legacyEncrypted, mockEncryptor.Object, diag, opts, CancellationToken.None);
-            });
+            // Legacy algorithm should decrypt successfully by falling back to the legacy decryption path
+            (Stream decrypted, DecryptionContext context) = await EncryptionProcessor.DecryptAsync(legacyEncrypted, mockEncryptor.Object, diag, opts, CancellationToken.None);
 
-            Assert.IsTrue(exception.Message.Contains("not supported"), $"Unexpected exception message: {exception.Message}");
-#pragma warning disable CS0618
-            Assert.IsTrue(exception.Message.Contains(CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized), $"Exception should mention the unsupported algorithm");
-#pragma warning restore CS0618
+            Assert.IsNotNull(decrypted);
+            Assert.IsNotNull(context);
+            decrypted.Position = 0;
+            TestDoc result = TestCommon.FromStream<TestDoc>(decrypted);
+            Assert.AreEqual(doc, result);
         }
 
         [TestMethod]
