@@ -122,14 +122,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-#if NET8_0_OR_GREATER
-            ArgumentNullException.ThrowIfNull(streamPayload);
-#else
-            if (streamPayload == null)
-            {
-                throw new ArgumentNullException(nameof(streamPayload));
-            }
-#endif
+            ArgumentValidation.ThrowIfNull(streamPayload);
 
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.CreateScope("CreateItemStream"))
@@ -166,6 +159,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 streamPayload,
                 this.Encryptor,
                 encryptionItemRequestOptions.EncryptionOptions,
+                requestOptions,
                 diagnosticsContext,
                 cancellationToken);
 
@@ -181,6 +175,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     responseMessage.Content,
                     this.Encryptor,
                     diagnosticsContext,
+                    requestOptions,
                     cancellationToken);
             }
 
@@ -295,6 +290,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     responseMessage.Content,
                     this.Encryptor,
                     diagnosticsContext,
+                    requestOptions,
                     cancellationToken);
             }
 
@@ -308,20 +304,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-#if NET8_0_OR_GREATER
-            ArgumentNullException.ThrowIfNull(id);
-            ArgumentNullException.ThrowIfNull(item);
-#else
-            if (id == null)
-            {
-                throw new ArgumentNullException(nameof(id));
-            }
-
-            if (item == null)
-            {
-                throw new ArgumentNullException(nameof(item));
-            }
-#endif
+            ArgumentValidation.ThrowIfNull(id);
+            ArgumentValidation.ThrowIfNull(item);
 
             if (requestOptions is not EncryptionItemRequestOptions encryptionItemRequestOptions ||
                 encryptionItemRequestOptions.EncryptionOptions == null)
@@ -393,10 +377,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-#if NET8_0_OR_GREATER
-            ArgumentNullException.ThrowIfNull(id);
-            ArgumentNullException.ThrowIfNull(streamPayload);
-#else
             if (id == null)
             {
                 throw new ArgumentNullException(nameof(id));
@@ -406,7 +386,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 throw new ArgumentNullException(nameof(streamPayload));
             }
-#endif
 
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.CreateScope("ReplaceItemStream"))
@@ -462,6 +441,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     responseMessage.Content,
                     this.Encryptor,
                     diagnosticsContext,
+                    requestOptions,
                     cancellationToken);
             }
 
@@ -545,14 +525,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-#if NET8_0_OR_GREATER
-            ArgumentNullException.ThrowIfNull(streamPayload);
-#else
             if (streamPayload == null)
             {
                 throw new ArgumentNullException(nameof(streamPayload));
             }
-#endif
 
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.CreateScope("UpsertItemStream"))
@@ -604,6 +580,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     responseMessage.Content,
                     this.Encryptor,
                     diagnosticsContext,
+                    requestOptions,
                     cancellationToken);
             }
 
