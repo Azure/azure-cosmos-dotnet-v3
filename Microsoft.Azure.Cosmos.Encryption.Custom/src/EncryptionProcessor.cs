@@ -149,15 +149,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             RequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
-            if (input == null)
-            {
-                return (input, null);
-            }
-
-            // Unconditionally delegate to MdeEncryptionProcessor which will:
-            // 1. Create the diagnostic scope (required for telemetry)
-            // 2. Handle MDE encryption
-            // 3. For legacy/unsupported cases, throw appropriate exceptions with scope already created
             return await MdeEncryptionProcessor.DecryptAsync(input, encryptor, diagnosticsContext, requestOptions, cancellationToken);
         }
 #endif
@@ -171,8 +162,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             RequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
-            // Delegate to MdeEncryptionProcessor which will create the diagnostic scope
-            // and handle both MDE and legacy encryption appropriately
             return await MdeEncryptionProcessor.DecryptAsync(input, output, encryptor, diagnosticsContext, requestOptions, cancellationToken);
         }
 #endif
