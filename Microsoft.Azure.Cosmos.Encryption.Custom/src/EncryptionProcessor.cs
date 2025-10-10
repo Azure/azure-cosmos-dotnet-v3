@@ -149,7 +149,41 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             RequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
-            return await MdeEncryptionProcessor.DecryptAsync(input, encryptor, diagnosticsContext, requestOptions, cancellationToken);
+            if (input == null)
+            {
+                return (input, null);
+            }
+
+            Debug.Assert(input.CanSeek);
+            Debug.Assert(encryptor != null);
+            Debug.Assert(diagnosticsContext != null);
+
+            // Check if the content uses MDE or legacy encryption algorithm
+            JObject itemJObj = RetrieveItem(input);
+            JObject encryptionPropertiesJObj = RetrieveEncryptionProperties(itemJObj);
+
+            if (encryptionPropertiesJObj == null)
+            {
+                input.Position = 0;
+                return (input, null);
+            }
+
+            // Parse encryption properties to check the algorithm
+            EncryptionProperties encryptionProperties = encryptionPropertiesJObj.ToObject<EncryptionProperties>();
+
+            if (string.Equals(encryptionProperties.EncryptionAlgorithm, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized, StringComparison.Ordinal))
+            {
+                // Reset stream and use MDE processor
+                input.Position = 0;
+                return await MdeEncryptionProcessor.DecryptAsync(input, encryptor, diagnosticsContext, requestOptions, cancellationToken);
+            }
+            else
+            {
+                // Use legacy decryption for AEAes256CbcHmacSha256Randomized
+                DecryptionContext decryptionContext = await DecryptInternalAsync(encryptor, diagnosticsContext, itemJObj, encryptionPropertiesJObj, cancellationToken);
+                await input.DisposeCompatAsync();
+                return (BaseSerializer.ToStream(itemJObj), decryptionContext);
+            }
         }
 #endif
 

@@ -2584,7 +2584,7 @@ cancellationToken) =>
                        && this.Sensitive_ArrayFormat == doc.Sensitive_ArrayFormat
                        && this.Sensitive_BoolFormat == doc.Sensitive_BoolFormat
                        && this.Sensitive_FloatFormat == doc.Sensitive_FloatFormat
-                       && this.Sensitive_NestedObjectFormatL1 != doc.Sensitive_NestedObjectFormatL1;
+                       && this.Sensitive_NestedObjectFormatL1 == doc.Sensitive_NestedObjectFormatL1;
             }
 
             public bool EqualsExceptEncryptedProperty(object obj)
