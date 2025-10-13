@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
 
             // Act (decrypt)
             encrypted.Position = 0;
-            (Stream decrypted, DecryptionContext ctx) = await EncryptionProcessor.DecryptStreamAsync(encrypted, mockEncryptor.Object, new CosmosDiagnosticsContext(), CancellationToken.None);
+            (Stream decrypted, DecryptionContext ctx) = await EncryptionProcessor.DecryptAsync(encrypted, mockEncryptor.Object, new CosmosDiagnosticsContext(), CancellationToken.None);
             // Assert (roundtrip)
             using JsonDocument d2 = Parse(decrypted);
             JsonElement r2 = d2.RootElement;
@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
 
             // Act (decrypt)
             encrypted.Position = 0;
-            (Stream decrypted, _) = await EncryptionProcessor.DecryptStreamAsync(encrypted, mockEncryptor.Object, new CosmosDiagnosticsContext(), CancellationToken.None);
+            (Stream decrypted, _) = await EncryptionProcessor.DecryptAsync(encrypted, mockEncryptor.Object, new CosmosDiagnosticsContext(), CancellationToken.None);
             // Assert (roundtrip)
             using JsonDocument d2 = Parse(decrypted);
             JsonElement r2 = d2.RootElement;
@@ -277,7 +277,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
                 // Should succeed regardless of current culture and round-trip the value as a double
                 MemoryStream encrypted = await EncryptAsync(doc, options);
                 encrypted.Position = 0;
-                (Stream decrypted, _) = await EncryptionProcessor.DecryptStreamAsync(encrypted, mockEncryptor.Object, new CosmosDiagnosticsContext(), CancellationToken.None);
+                (Stream decrypted, _) = await EncryptionProcessor.DecryptAsync(encrypted, mockEncryptor.Object, new CosmosDiagnosticsContext(), CancellationToken.None);
                 // Assert
                 using JsonDocument d2 = JsonDocument.Parse(decrypted);
                 double value = d2.RootElement.GetProperty("Weird").GetDouble();
@@ -472,7 +472,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
 
             // Act (decrypt)
             encrypted.Position = 0;
-            (Stream decrypted, _) = await EncryptionProcessor.DecryptStreamAsync(encrypted, mockEncryptor.Object, new CosmosDiagnosticsContext(), CancellationToken.None);
+            (Stream decrypted, _) = await EncryptionProcessor.DecryptAsync(encrypted, mockEncryptor.Object, new CosmosDiagnosticsContext(), CancellationToken.None);
             // Assert
             using JsonDocument jdec = JsonDocument.Parse(decrypted);
             Assert.AreEqual(0.0, jdec.RootElement.GetProperty("DZ").GetDouble(), 0.0);

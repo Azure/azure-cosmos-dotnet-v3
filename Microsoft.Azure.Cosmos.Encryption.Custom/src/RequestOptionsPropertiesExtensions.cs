@@ -80,6 +80,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return false;
         }
 
+        internal static JsonProcessor GetJsonProcessor(this RequestOptions requestOptions, JsonProcessor defaultJsonProcessor = JsonProcessor.Newtonsoft)
+        {
+            if (requestOptions.TryReadJsonProcessorOverride(out JsonProcessor jsonProcessor))
+            {
+                return jsonProcessor;
+            }
+
+            return defaultJsonProcessor;
+        }
+
         private static void SynchronizeJsonProcessorProperty(this RequestOptions requestOptions, JsonProcessor selectedProcessor, bool hasOverride)
         {
             if (requestOptions == null)

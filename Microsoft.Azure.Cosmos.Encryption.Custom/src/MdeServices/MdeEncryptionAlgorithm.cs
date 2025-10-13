@@ -51,6 +51,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             if (!withRawKey)
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 ProtectedDataEncryptionKey protectedDataEncryptionKey = cacheTimeToLive.HasValue && cacheTimeToLive.Value == TimeSpan.Zero
                     ? new ProtectedDataEncryptionKey(
                         dekProperties.Id,
@@ -60,6 +61,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                         dekProperties.Id,
                         keyEncryptionKey,
                         dekProperties.WrappedDataEncryptionKey);
+#pragma warning restore CS0618 // Type or member is obsolete
                 this.mdeAeadAes256CbcHmac256EncryptionAlgorithm = AeadAes256CbcHmac256EncryptionAlgorithm.GetOrCreate(
                     protectedDataEncryptionKey,
                     encryptionType,

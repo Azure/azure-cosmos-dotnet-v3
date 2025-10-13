@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
+    using System.Runtime.CompilerServices;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -209,43 +210,29 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return await MdeEncryptionProcessor.DecryptAsync(input, output, encryptor, diagnosticsContext, requestOptions, cancellationToken);
         }
 
-#if NET8_0_OR_GREATER
-        public static async Task<(Stream, DecryptionContext)> DecryptStreamAsync(
+        public static async Task<(Stream stream, DecryptionContext decryptableContext)> DecryptAsync(
             Stream input,
             Encryptor encryptor,
+            JsonProcessor jsonProcessor,
+            bool legacyFallback,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            if (input == null)
+            try
             {
-                return (input, null);
+                return await MdeEncryptionProcessor.DecryptAsync(input, encryptor, jsonProcessor, diagnosticsContext, cancellationToken);
             }
-
-            Debug.Assert(input.CanSeek);
-            Debug.Assert(encryptor != null);
-            Debug.Assert(diagnosticsContext != null);
-            input.Position = 0;
-
-            EncryptionPropertiesWrapper properties = await System.Text.Json.JsonSerializer.DeserializeAsync<EncryptionPropertiesWrapper>(input, cancellationToken: cancellationToken);
-            input.Position = 0;
-            if (properties?.EncryptionProperties == null)
+            catch (NotSupportedException)
             {
-                return (input, null);
+                if (legacyFallback)
+                {
+                    input.Position = 0;
+                    return await DecryptAsync(input, encryptor, diagnosticsContext, cancellationToken);
+                }
+
+                throw;
             }
-
-            MemoryStream ms = new ();
-
-            DecryptionContext context = await MdeEncryptionProcessor.DecryptStreamAsync(input, ms, encryptor, properties.EncryptionProperties, diagnosticsContext, cancellationToken);
-            if (context == null)
-            {
-                input.Position = 0;
-                return (input, null);
-            }
-
-            await input.DisposeAsync();
-            return (ms, context);
         }
-#endif
 
         public static async Task<(JObject, DecryptionContext)> DecryptAsync(
             JObject document,
@@ -352,7 +339,42 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         internal static async Task<Stream> DeserializeAndDecryptResponseAsync(
             Stream content,
             Encryptor encryptor,
+            JsonProcessor jsonProcessor,
             CancellationToken cancellationToken)
+        {
+            return jsonProcessor switch
+            {
+#if NET8_0_OR_GREATER
+                JsonProcessor.Stream => await DecryptJsonArraySteamAsync(content, encryptor, cancellationToken),
+#endif
+                _ => await DecryptJsonArrayNewtonsoftAsync(content, encryptor, cancellationToken),
+            };
+        }
+
+#if NET8_0_OR_GREATER
+        private static async Task<Stream> DecryptJsonArraySteamAsync(
+            Stream content,
+            Encryptor encryptor,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                return await MdeEncryptionProcessor.DecryptJsonArrayStreamInPlaceAsync(
+                    content,
+                    encryptor,
+                    CosmosDiagnosticsContext.Create(null),
+                    cancellationToken);
+            }
+            catch (NotSupportedException)
+            {
+                content.Position = 0;
+
+                return await DecryptJsonArrayNewtonsoftAsync(content, encryptor, cancellationToken);
+            }
+        }
+#endif
+
+        private static async Task<Stream> DecryptJsonArrayNewtonsoftAsync(Stream content, Encryptor encryptor, CancellationToken cancellationToken)
         {
             JObject contentJObj = BaseSerializer.FromStream<JObject>(content);
 

@@ -4,27 +4,32 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
-    using System;
-    using System.Collections.Generic;
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
-    using Newtonsoft.Json.Linq;
 
     internal sealed class EncryptionFeedIterator : FeedIterator
     {
         private readonly FeedIterator feedIterator;
         private readonly Encryptor encryptor;
-        private readonly CosmosSerializer cosmosSerializer;
+        private readonly JsonProcessor jsonProcessor;
 
         public EncryptionFeedIterator(
             FeedIterator feedIterator,
             Encryptor encryptor,
-            CosmosSerializer cosmosSerializer)
+            JsonProcessor jsonProcessor)
         {
-            this.feedIterator = feedIterator;
-            this.encryptor = encryptor;
-            this.cosmosSerializer = cosmosSerializer;
+            this.feedIterator = feedIterator ?? throw new System.ArgumentNullException(nameof(feedIterator));
+            this.encryptor = encryptor ?? throw new System.ArgumentNullException(nameof(encryptor));
+            this.jsonProcessor = jsonProcessor;
+        }
+
+        public EncryptionFeedIterator(
+            FeedIterator feedIterator,
+            Encryptor encryptor,
+            RequestOptions requestOptions)
+            : this(feedIterator, encryptor, requestOptions.GetJsonProcessor())
+        {
         }
 
         public override bool HasMoreResults => this.feedIterator.HasMoreResults;
@@ -41,6 +46,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     Stream decryptedContent = await EncryptionProcessor.DeserializeAndDecryptResponseAsync(
                         responseMessage.Content,
                         this.encryptor,
+                        this.jsonProcessor,
                         cancellationToken);
 
                     return new DecryptedResponseMessage(responseMessage, decryptedContent);
@@ -50,49 +56,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
         }
 
-        public async Task<(ResponseMessage, List<T>)> ReadNextWithoutDecryptionAsync<T>(CancellationToken cancellationToken = default)
+        internal Task<ResponseMessage> ReadNextRawResponseAsync(CancellationToken cancellationToken = default)
         {
-            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(options: null);
-            using (diagnosticsContext.CreateScope("FeedIterator.ReadNextWithoutDecryption"))
-            {
-                ResponseMessage responseMessage = await this.feedIterator.ReadNextAsync(cancellationToken);
-                List<T> decryptableContent = null;
-
-                if (responseMessage.IsSuccessStatusCode && responseMessage.Content != null)
-                {
-                    decryptableContent = this.ConvertResponseToDecryptableItems<T>(
-                        responseMessage.Content);
-
-                    return (responseMessage, decryptableContent);
-                }
-
-                return (responseMessage, decryptableContent);
-            }
-        }
-
-        private List<T> ConvertResponseToDecryptableItems<T>(
-            Stream content)
-        {
-            JObject contentJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(content);
-
-            if (contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is not JArray documents)
-            {
-                throw new InvalidOperationException("Feed Response body contract was violated. Feed Response did not have an array of Documents.");
-            }
-
-            List<T> decryptableItems = new (documents.Count);
-
-            foreach (JToken value in documents)
-            {
-                DecryptableItemCore item = new (
-                    value,
-                    this.encryptor,
-                    this.cosmosSerializer);
-
-                decryptableItems.Add((T)(object)item);
-            }
-
-            return decryptableItems;
+            return this.feedIterator.ReadNextAsync(cancellationToken);
         }
     }
 }
