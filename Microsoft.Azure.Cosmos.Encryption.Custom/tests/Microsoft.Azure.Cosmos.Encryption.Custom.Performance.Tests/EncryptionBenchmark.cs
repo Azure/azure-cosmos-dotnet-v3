@@ -15,7 +15,7 @@
         {
             public static RequestOptions? Create(JsonProcessor processor)
             {
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
                 if (processor == JsonProcessor.Newtonsoft)
                 {
                     return null;

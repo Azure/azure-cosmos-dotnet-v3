@@ -2,7 +2,6 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-#if ENCRYPTION_CUSTOM_PREVIEW
 namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation;
 
 using System;
@@ -11,7 +10,6 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
-#if NET8_0_OR_GREATER
 internal sealed class StreamAdapter : IMdeJsonProcessorAdapter
 {
     private readonly StreamProcessor streamProcessor;
@@ -109,5 +107,3 @@ internal sealed class StreamAdapter : IMdeJsonProcessorAdapter
         return properties.EncryptionProperties;
     }
 }
-#endif
-#endif

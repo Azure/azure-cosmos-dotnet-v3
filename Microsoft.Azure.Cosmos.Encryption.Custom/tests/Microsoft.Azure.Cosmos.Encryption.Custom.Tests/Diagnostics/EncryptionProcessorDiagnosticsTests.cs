@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
     [TestMethod]
         public async Task DecryptAsync_ProvidedOutput_NewtonsoftScope()
         {
-#if NET8_0_OR_GREATER && ENCRYPTION_CUSTOM_PREVIEW
+#if NET8_0_OR_GREATER
             string json = "{\"_ei\":null}";
             using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(json));
             MemoryStream output = new MemoryStream();
@@ -112,7 +112,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
         [TestMethod]
         public async Task DecryptAsync_StreamOverride_SelectsStreamScope()
         {
-#if NET8_0_OR_GREATER && ENCRYPTION_CUSTOM_PREVIEW
+#if NET8_0_OR_GREATER
             string json = "{\"_ei\":null}";
             using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(json));
             Encryptor encryptor = CreateNoopEncryptor();
@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
         [TestMethod]
         public async Task DecryptAsync_ProvidedOutput_StreamScope()
         {
-#if NET8_0_OR_GREATER && ENCRYPTION_CUSTOM_PREVIEW
+#if NET8_0_OR_GREATER
             string json = "{\"_ei\":null}";
             using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(json));
             MemoryStream output = new MemoryStream();
@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
         [TestMethod]
     public async Task DecryptAsync_MdePayload_DefaultNewtonsoft_Scopes()
         {
-#if NET8_0_OR_GREATER && ENCRYPTION_CUSTOM_PREVIEW
+#if NET8_0_OR_GREATER
             // Create an MDE encrypted payload using Newtonsoft processor (default path)
             var testDoc = new { id = "id1", pk = "pk1", Sensitive = "s" };
             // Build encryption options (MDE) with Newtonsoft (implicit)
@@ -195,7 +195,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
         [TestMethod]
     public async Task DecryptAsync_MdePayload_ProvidedOutput_Newtonsoft_Scopes()
         {
-#if NET8_0_OR_GREATER && ENCRYPTION_CUSTOM_PREVIEW
+#if NET8_0_OR_GREATER
             var testDoc = new { id = "id1", pk = "pk1", Sensitive = "s" };
             EncryptionOptions opts = new()
             {
@@ -232,7 +232,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
             (Stream result, DecryptionContext dctx) = await EncryptionProcessor.DecryptAsync((Stream)null, encryptor, ctx, requestOptions: null, CancellationToken.None);
             Assert.IsNull(result);
             Assert.IsNull(dctx);
-#if NET8_0_OR_GREATER && ENCRYPTION_CUSTOM_PREVIEW
+#if NET8_0_OR_GREATER
             Assert.AreEqual(0, ctx.Scopes.Count, $"Expected no scopes but found: {string.Join(';', ctx.Scopes)}");
 #else
         Assert.AreEqual(0, ctx.Scopes.Count);
@@ -242,7 +242,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
         [TestMethod]
         public async Task DecryptAsync_StreamOverride_MalformedJson_EmitsSelectionOnly()
         {
-#if NET8_0_OR_GREATER && ENCRYPTION_CUSTOM_PREVIEW
+#if NET8_0_OR_GREATER
             string malformed = "{\"_ei\":{"; // truncated JSON
             using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(malformed));
             Encryptor encryptor = CreateNoopEncryptor();
@@ -269,7 +269,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
         [TestMethod]
     public async Task DecryptAsync_StreamOverride_DuplicateScopePrevention()
         {
-#if NET8_0_OR_GREATER && ENCRYPTION_CUSTOM_PREVIEW
+#if NET8_0_OR_GREATER
             // Reuse MDE encrypted payload but consume via stream override
             var testDoc = new { id = "id1", pk = "pk1", Sensitive = "s" };
             EncryptionOptions opts = new()
@@ -300,7 +300,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
         [TestMethod]
         public async Task EncryptAsync_EmitsNewtonsoftSelectionScope()
         {
-#if NET8_0_OR_GREATER && ENCRYPTION_CUSTOM_PREVIEW
+#if NET8_0_OR_GREATER
             var testDoc = new { id = "id1", pk = "pk1", P = "v" };
             EncryptionOptions opts = new()
             {
@@ -326,7 +326,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
         [TestMethod]
         public async Task EncryptAsync_StreamProcessor_EmitsStreamSelectionScope()
         {
-#if NET8_0_OR_GREATER && ENCRYPTION_CUSTOM_PREVIEW
+#if NET8_0_OR_GREATER
             var testDoc = new { id = "id1", pk = "pk1", P = "v" };
             EncryptionOptions opts = new()
             {
@@ -353,7 +353,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
         [TestMethod]
     public async Task DecryptAsync_StreamCancellation_EmitsSelectionBeforeCancel()
         {
-#if NET8_0_OR_GREATER && ENCRYPTION_CUSTOM_PREVIEW
+#if NET8_0_OR_GREATER
             // Build a moderate payload to give cancellation window
             string big = new string('x', 10_000);
             var testDoc = new { id = "id1", pk = "pk1", Sensitive = big };

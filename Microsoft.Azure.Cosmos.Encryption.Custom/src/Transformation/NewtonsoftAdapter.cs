@@ -2,7 +2,6 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-#if ENCRYPTION_CUSTOM_PREVIEW
 namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation;
 
 using System;
@@ -138,4 +137,3 @@ internal sealed class NewtonsoftAdapter : IMdeJsonProcessorAdapter
         return null;
     }
 }
-#endif

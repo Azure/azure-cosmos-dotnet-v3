@@ -2,7 +2,6 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-#if ENCRYPTION_CUSTOM_PREVIEW
 namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation;
 
 using System.IO;
@@ -19,4 +18,3 @@ internal interface IMdeJsonProcessorAdapter
 
     Task<DecryptionContext> DecryptAsync(Stream input, Stream output, Encryptor encryptor, CosmosDiagnosticsContext diagnosticsContext, CancellationToken cancellationToken);
 }
-#endif

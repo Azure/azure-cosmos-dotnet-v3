@@ -274,7 +274,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             }
         }
 
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
         [TestMethod]
         public async Task BackCompat_RoundTrip_WithAndWithoutJsonProcessorOverride()
         {

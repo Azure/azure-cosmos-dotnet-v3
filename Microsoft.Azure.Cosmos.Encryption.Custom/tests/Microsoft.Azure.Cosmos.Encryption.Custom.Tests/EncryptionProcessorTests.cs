@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     using Moq;
     using Newtonsoft.Json.Linq;
     using TestDoc = TestCommon.TestDoc;
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
     using Microsoft.Azure.Cosmos;
 #endif
 
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             mockEncryptor = TestEncryptorFactory.CreateMde(DekId, out _);
         }
 
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
         private static EncryptionOptions CreateMdeOptions(JsonProcessor processor) => new EncryptionOptions
         {
             DataEncryptionKeyId = DekId,
@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 #endif
 
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
         [TestMethod]
         public async Task Decrypt_StreamSelection_LegacyAlgorithm_FallsBackToNewtonsoft()
         {

@@ -72,7 +72,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return EncryptAsync(input, encryptor, encryptionOptions, diagnosticsContext, cancellationToken);
         }
 
-#if NET8_0_OR_GREATER
         public static async Task EncryptAsync(
             Stream input,
             Stream output,
@@ -104,7 +103,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             await MdeEncryptionProcessor.EncryptAsync(input, output, encryptor, encryptionOptions, diagnosticsContext, cancellationToken);
         }
-#endif
 
         /// <remarks>
         /// If there isn't any data that needs to be decrypted, input stream will be returned without any modification.
@@ -141,7 +139,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return (BaseSerializer.ToStream(itemJObj), decryptionContext);
         }
 
-#if ENCRYPTION_CUSTOM_PREVIEW
         public static async Task<(Stream, DecryptionContext)> DecryptAsync(
             Stream input,
             Encryptor encryptor,
@@ -194,9 +191,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             return await MdeEncryptionProcessor.DecryptAsync(input, encryptor, diagnosticsContext, requestOptions, cancellationToken);
         }
-#endif
 
-#if NET8_0_OR_GREATER && ENCRYPTION_CUSTOM_PREVIEW
         public static async Task<DecryptionContext> DecryptAsync(
             Stream input,
             Stream output,
@@ -207,9 +202,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             return await MdeEncryptionProcessor.DecryptAsync(input, output, encryptor, diagnosticsContext, requestOptions, cancellationToken);
         }
-#endif
 
-#if NET8_0_OR_GREATER
         public static async Task<(Stream, DecryptionContext)> DecryptStreamAsync(
             Stream input,
             Encryptor encryptor,
@@ -245,8 +238,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             await input.DisposeAsync();
             return (ms, context);
         }
-
-#endif
 
         public static async Task<(JObject, DecryptionContext)> DecryptAsync(
             JObject document,
