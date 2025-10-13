@@ -2,8 +2,6 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-#if ENCRYPTION_CUSTOM_PREVIEW
-
 namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 {
     using System;
@@ -198,5 +196,3 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         }
     }
 }
-
-#endif
