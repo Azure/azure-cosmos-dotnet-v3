@@ -87,7 +87,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             if (!encryptionOptions.PathsToEncrypt.Any())
             {
+#if NET8_0_OR_GREATER
                 await input.CopyToAsync(output, cancellationToken);
+#else
+                await input.CopyToAsync(output);
+#endif
                 return;
             }
 
@@ -96,10 +100,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 throw new NotSupportedException($"Streaming mode is only allowed for {nameof(CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)}");
             }
 
+#if NET8_0_OR_GREATER
             if (encryptionOptions.JsonProcessor != JsonProcessor.Stream)
             {
                 throw new NotSupportedException($"Streaming mode is only allowed for {nameof(JsonProcessor.Stream)}");
             }
+#endif
 
             await MdeEncryptionProcessor.EncryptAsync(input, output, encryptor, encryptionOptions, diagnosticsContext, cancellationToken);
         }
@@ -203,6 +209,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return await MdeEncryptionProcessor.DecryptAsync(input, output, encryptor, diagnosticsContext, requestOptions, cancellationToken);
         }
 
+#if NET8_0_OR_GREATER
         public static async Task<(Stream, DecryptionContext)> DecryptStreamAsync(
             Stream input,
             Encryptor encryptor,
@@ -238,6 +245,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             await input.DisposeAsync();
             return (ms, context);
         }
+#endif
 
         public static async Task<(JObject, DecryptionContext)> DecryptAsync(
             JObject document,

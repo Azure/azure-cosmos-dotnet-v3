@@ -7,7 +7,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
     using System;
     using System.Collections.Generic;
     using System.IO;
+#if NET8_0_OR_GREATER
     using System.Text.Json.Nodes;
+#endif
     using System.Threading;
     using System.Threading.Tasks;
     using Newtonsoft.Json.Linq;
@@ -16,7 +18,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
     {
         internal MdeJObjectEncryptionProcessor JObjectEncryptionProcessor { get; set; } = new MdeJObjectEncryptionProcessor();
 
+#if NET8_0_OR_GREATER
         internal StreamProcessor StreamProcessor { get; set; } = new StreamProcessor();
+#endif
 
         private readonly Dictionary<JsonProcessor, Func<IMdeJsonProcessorAdapter>> adapterFactories;
 
@@ -25,7 +29,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             this.adapterFactories = new Dictionary<JsonProcessor, Func<IMdeJsonProcessorAdapter>>
             {
                 [JsonProcessor.Newtonsoft] = () => new NewtonsoftAdapter(this.JObjectEncryptionProcessor),
+#if NET8_0_OR_GREATER
                 [JsonProcessor.Stream] = () => new StreamAdapter(this.StreamProcessor),
+#endif
             };
         }
 
@@ -86,7 +92,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             }
 
             JsonProcessor jsonProcessor = this.GetRequestedJsonProcessor(requestOptions);
+#if NET8_0_OR_GREATER
             using IDisposable selectionScope = diagnosticsContext?.CreateScope(EncryptionDiagnostics.ScopeDecryptModeSelectionPrefix + jsonProcessor);
+#endif
 
             IMdeJsonProcessorAdapter adapter = this.GetAdapter(jsonProcessor);
             return await adapter.DecryptAsync(input, output, encryptor, diagnosticsContext, cancellationToken);
@@ -100,17 +108,24 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            if (encryptionOptions.JsonProcessor != JsonProcessor.Stream)
+#if NET8_0_OR_GREATER
+            if (encryptionOptions.JsonProcessor == JsonProcessor.Stream)
             {
-                throw new NotSupportedException("This overload is only supported for Stream JsonProcessor");
+                using IDisposable selectionScope = diagnosticsContext?.CreateScope(EncryptionDiagnostics.ScopeEncryptModeSelectionPrefix + JsonProcessor.Stream);
+                IMdeJsonProcessorAdapter adapter = this.GetAdapter(JsonProcessor.Stream);
+                await adapter.EncryptAsync(input, output, encryptor, encryptionOptions, cancellationToken);
+                return;
             }
+#endif
 
-            using IDisposable selectionScope = diagnosticsContext?.CreateScope(EncryptionDiagnostics.ScopeEncryptModeSelectionPrefix + JsonProcessor.Stream);
-
-            IMdeJsonProcessorAdapter adapter = this.GetAdapter(JsonProcessor.Stream);
-            await adapter.EncryptAsync(input, output, encryptor, encryptionOptions, cancellationToken);
+            // Fall back to Newtonsoft for netstandard2.0 or when Stream processor not requested
+            IMdeJsonProcessorAdapter newtonsoftAdapter = this.GetAdapter(JsonProcessor.Newtonsoft);
+            Stream encryptedStream = await newtonsoftAdapter.EncryptAsync(input, encryptor, encryptionOptions, cancellationToken);
+            await encryptedStream.CopyToAsync(output);
+            await encryptedStream.DisposeCompatAsync();
         }
 
+#if NET8_0_OR_GREATER
         public async Task<(Stream, DecryptionContext)> DecryptStreamAsync(
             Stream input,
             Encryptor encryptor,
@@ -138,13 +153,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         {
             return await this.StreamProcessor.DecryptStreamAsync(input, output, encryptor, properties, diagnosticsContext, cancellationToken);
         }
+#endif
 
         private JsonProcessor GetRequestedJsonProcessor(RequestOptions requestOptions)
         {
+#if NET8_0_OR_GREATER
             if (requestOptions != null && requestOptions.TryReadJsonProcessorOverride(out JsonProcessor overrideProcessor))
             {
                 return overrideProcessor;
             }
+#endif
 
             return JsonProcessor.Newtonsoft;
         }
