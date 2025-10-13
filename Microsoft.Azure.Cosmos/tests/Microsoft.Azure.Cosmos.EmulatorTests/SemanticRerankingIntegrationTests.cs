@@ -1,30 +1,20 @@
 ﻿namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
-    using System.ClientModel.Primitives;
     using System.Collections.Generic;
-    using System.Data;
-    using System.Drawing;
-    using System.IO;
-    using System.Linq;
-    using System.Net;
-    using System.Net.Http;
-    using System.Text;
     using System.Text.Json;
     using System.Text.Json.Serialization;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Cosmos.FaultInjection;
+    using global::Azure.Core;
+    using global::Azure.Identity;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json.Linq;
-    using static Microsoft.Azure.Cosmos.Routing.GlobalPartitionEndpointManagerCore;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.MultiRegionSetupHelpers;
 
     [TestClass]
     public class SemanticRerankingIntegrationTests
     {
-        private readonly string connectionString;
+        private string connectionString;
         private CosmosClient client;
 
         private CosmosSystemTextJsonSerializer cosmosSystemTextJsonSerializer;
@@ -32,7 +22,10 @@
         [TestInitialize]
         public void TestInitAsync()
         {
-            this.connectionString = "_";
+            this.connectionString = "";
+
+            //Create a cosmos client using AAD authentication
+            TokenCredential tokenCredential = new DefaultAzureCredential();
 
             JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions()
             {
@@ -46,6 +39,7 @@
             }
             this.client = new CosmosClient(
                 this.connectionString,
+                tokenCredential,
                 new CosmosClientOptions()
                 {
                     Serializer = this.cosmosSystemTextJsonSerializer,
@@ -63,18 +57,38 @@
         [Timeout(70000)]
         public async Task SemanticRerankTest()
         {
-            Database db = this.client.GetDatabase("ProductsDatabase");
-            Container container = db.GetContainer("FitnessEquipment");
+            Database db = this.client.GetDatabase("virtualstore");
+            Container container = db.GetContainer("sportinggoods");
 
-            string queryString = "SELECT * FROM c WHERE c.Category = 'Cardio'";
+            string search_text = "integrated pull-up bar";
 
-            List<string> documents = new List<string>()
+            // Fix: Use string interpolation instead of raw string literal and 'f' prefix
+            string queryString = $@"
+                SELECT TOP 15 c.id, c.Name, c.Brand, c.Description
+                FROM c
+                WHERE FullTextContains(c.Description, ""{search_text}"")
+                ORDER BY RANK FullTextScore(c.Description, ""{search_text}"")
+                ";
+
+            string reranking_context = "most economical with multiple pulley adjustmnets and ideal for home gyms";
+
+            List<string> documents = new List<string>();
+
+            FeedIterator<dynamic> resultSetIterator = container.GetItemQueryIterator<dynamic>(
+                new QueryDefinition(queryString),
+                requestOptions: new QueryRequestOptions()
+                {
+                    MaxItemCount = 15,
+                });
+
+            while (resultSetIterator.HasMoreResults)
             {
-                "Berlin is the capitol of Germany",
-                "Paris is the capitol of France",
-                "Madrid is the capitol of Spain",
-                "Rome is the capitol of Italy",
-            };
+                FeedResponse<dynamic> response = await resultSetIterator.ReadNextAsync();
+                foreach (JsonElement item in response)
+                {
+                    documents.Add(item.ToString());
+                }
+            }
 
             SemanticRerankRequestOptions options = new SemanticRerankRequestOptions()
             {
@@ -85,7 +99,7 @@
             };
 
             IReadOnlyDictionary<string, string> results = await container.SemanticRerankAsync<string, string>(
-                queryString,
+                reranking_context,
                 documents,
                 options);
 
