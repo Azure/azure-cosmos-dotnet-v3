@@ -3,7 +3,7 @@
     using System.IO;
     using BenchmarkDotNet.Attributes;
     using Microsoft.Data.Encryption.Cryptography;
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
     using Microsoft.IO;
 #endif
     using Moq;
@@ -19,7 +19,7 @@
                 new EncryptionKeyWrapMetadata("name", "value"), DateTime.UtcNow);
         private static readonly Mock<EncryptionKeyStoreProvider> StoreProvider = new();
 
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
         private readonly RecyclableMemoryStreamManager recyclableMemoryStreamManager = new ();
 #endif
 
@@ -79,7 +79,7 @@
                  CancellationToken.None);
         }
 
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
         [Benchmark]
         public async Task EncryptToProvidedStream()
         {
@@ -105,7 +105,7 @@
                 CancellationToken.None);
         }
 
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
         [Benchmark]
         public async Task DecryptToProvidedStream()
         {
