@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Net.Http;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
@@ -51,7 +52,7 @@ namespace Microsoft.Azure.Cosmos
 
         private FeedResponse<T> CreateQueryFeedResponseHelper<T>(
             ResponseMessage cosmosResponseMessage)
-        {            
+        {
             if (cosmosResponseMessage is QueryResponse queryResponse)
             {
                 using (cosmosResponseMessage.Trace.StartChild(TraceDatumKeys.QueryResponseSerialization))
@@ -68,7 +69,7 @@ namespace Microsoft.Azure.Cosmos
                        cosmosResponseMessage,
                        this.serializerCore);
             }
-                
+
         }
 
         private FeedResponse<T> CreateChangeFeedResponseHelper<T>(
@@ -94,7 +95,7 @@ namespace Microsoft.Azure.Cosmos
                     item,
                     cosmosResponseMessage.Diagnostics,
                     cosmosResponseMessage.RequestMessage);
-            });
+            }, handleExtendedStatuses: true);
         }
 
         public override ContainerResponse CreateContainerResponse(
@@ -255,18 +256,22 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
-        public T ProcessMessage<T>(ResponseMessage responseMessage, Func<ResponseMessage, T> createResponse)
+        public T ProcessMessage<T>(ResponseMessage responseMessage, Func<ResponseMessage, T> createResponse, bool handleExtendedStatuses = false)
         {
             using (ResponseMessage message = responseMessage)
             {
-                //Throw the exception
-                message.EnsureSuccessStatusCode();
+                // accept 304 and 404 for GET requests when handleExtendedStatuses is true
+                if (!(handleExtendedStatuses && message.RequestMessage.Method == HttpMethod.Get && message.StatusCode is System.Net.HttpStatusCode.NotFound or System.Net.HttpStatusCode.NotModified))
+                {
+                    //Throw the exception
+                    message.EnsureSuccessStatusCode();
+                }
 
                 using (message.Trace.StartChild("Response Serialization"))
                 {
                     return createResponse(message);
                 }
-                
+
             }
         }
 
