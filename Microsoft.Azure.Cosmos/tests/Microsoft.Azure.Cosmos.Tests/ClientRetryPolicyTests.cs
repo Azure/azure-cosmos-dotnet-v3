@@ -28,6 +28,7 @@
         private static Uri Location1Endpoint = new Uri("https://location1.documents.azure.com");
         private static Uri Location2Endpoint = new Uri("https://location2.documents.azure.com");
 
+        private const string HubRegionHeader = "x-ms-cosmos-hub-region-processing-only";
         private ReadOnlyCollection<string> preferredLocations;
         private AccountProperties databaseAccount;
         private GlobalPartitionEndpointManager partitionKeyRangeLocationCache;
@@ -399,6 +400,51 @@
         public async Task ClientRetryPolicy_NoRetry_MultiMaster_Write_NoPreferredLocationsAsync()
         {
             await this.ValidateConnectTimeoutTriggersClientRetryPolicyAsync(isReadRequest: false, useMultipleWriteLocations: true, usesPreferredLocations: false, true);
+        }
+
+        [TestMethod]
+        public async Task ClientRetryPolicy_AddsHubRegionProcessingOnlyHeader_On404_1002()
+        {
+            // Arrange
+            const bool enableEndpointDiscovery = true;
+
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: true,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false);
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                endpointManager,
+                this.partitionKeyRangeLocationCache,
+                new RetryOptions(),
+                enableEndpointDiscovery,
+                isThinClientEnabled: false);
+
+            DocumentServiceRequest request1 = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+
+            Assert.IsNull(request1.Headers.GetValues(HubRegionHeader), "Header should not exist before any retry.");
+
+            DocumentClientException simulatedException = new DocumentClientException(
+                message: "Simulated 404/1002 ReadSessionNotAvailable",
+                innerException: null,
+                statusCode: HttpStatusCode.NotFound,
+                substatusCode: SubStatusCodes.ReadSessionNotAvailable,
+                requestUri: request1.RequestContext.LocationEndpointToRoute,
+                responseHeaders: new DictionaryNameValueCollection());
+
+            // Act: policy detects error and sets flag
+            ShouldRetryResult shouldRetry = await retryPolicy.ShouldRetryAsync(simulatedException, CancellationToken.None);
+
+            retryPolicy.OnBeforeSendRequest(request1);
+            string[] headerValues = request1.Headers.GetValues(HubRegionHeader);
+            Assert.IsNotNull(headerValues, "Expected header to be added after 404/1002 retry signal.");
+            Assert.AreEqual(1, headerValues.Length, "Header should have exactly one value.");
+            Assert.AreEqual(bool.TrueString, headerValues[0], "Header value should be 'True'.");
+
+            // Header not applied to a new request
+            DocumentServiceRequest request2 = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+            retryPolicy.OnBeforeSendRequest(request2);
+            Assert.IsNull(request2.Headers.GetValues(HubRegionHeader), "Header should not be set on a new request after flag is reset.");
         }
 
         private async Task ValidateConnectTimeoutTriggersClientRetryPolicyAsync(
