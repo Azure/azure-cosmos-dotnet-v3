@@ -142,6 +142,71 @@
             );
         }
 
+        /// <summary>
+        /// Generates a normalized, deterministic string representation of a CustomAttributeData.
+        /// This ensures that attribute parameters are always in the same order, making the
+        /// contract comparison machine-agnostic and independent of .NET reflection ordering.
+        /// </summary>
+        private static string NormalizeCustomAttributeString(CustomAttributeData attributeData)
+        {
+            // Start with the attribute type name
+            string result = attributeData.AttributeType.ToString();
+
+            // Build lists of constructor args and named args
+            List<string> parts = new List<string>();
+
+            // Add constructor arguments in order (these are positional, so order matters)
+            if (attributeData.ConstructorArguments.Count > 0)
+            {
+                foreach (CustomAttributeTypedArgument arg in attributeData.ConstructorArguments)
+                {
+                    parts.Add(FormatAttributeValue(arg));
+                }
+            }
+
+            // Add named arguments (properties/fields) in sorted order for determinism
+            if (attributeData.NamedArguments.Count > 0)
+            {
+                List<string> namedArgs = new List<string>();
+                foreach (CustomAttributeNamedArgument namedArg in attributeData.NamedArguments)
+                {
+                    namedArgs.Add($"{namedArg.MemberName} = {FormatAttributeValue(namedArg.TypedValue)}");
+                }
+                namedArgs.Sort(StringComparer.Ordinal);
+                parts.AddRange(namedArgs);
+            }
+
+            if (parts.Count > 0)
+            {
+                result += "(" + string.Join(", ", parts) + ")";
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Formats an attribute value for consistent string representation.
+        /// </summary>
+        private static string FormatAttributeValue(CustomAttributeTypedArgument arg)
+        {
+            if (arg.Value is string stringValue)
+            {
+                return $"\"{stringValue}\"";
+            }
+            else if (arg.Value is Type typeValue)
+            {
+                return $"typeof({typeValue})";
+            }
+            else if (arg.Value != null && arg.ArgumentType.IsEnum)
+            {
+                return $"{arg.ArgumentType.Name}.{arg.Value}";
+            }
+            else
+            {
+                return arg.Value?.ToString() ?? "null";
+            }
+        }
+
         private static string GenerateNameWithClassAttributes(Type type)
         {
             // FullName contains unwanted assembly artifacts like version when it has a generic type
@@ -219,7 +284,9 @@
 
             IEnumerable<KeyValuePair<string, MemberInfo>> memberInfos =
                 root.Type.GetMembers(bindingflags)
-                    .Select(memberInfo => new KeyValuePair<string, MemberInfo>($"{memberInfo}{string.Join("-", ContractEnforcement.RemoveDebugSpecificAttributes(memberInfo.CustomAttributes))}", memberInfo))
+                    .Select(memberInfo => new KeyValuePair<string, MemberInfo>(
+                        $"{memberInfo}{string.Join("-", ContractEnforcement.RemoveDebugSpecificAttributes(memberInfo.CustomAttributes).Select(attr => "[" + NormalizeCustomAttributeString(attr) + "]"))}",
+                        memberInfo))
                     .OrderBy(o => o.Key, invariantComparer);
             foreach (KeyValuePair<string, MemberInfo> memberInfo in memberInfos)
             {
