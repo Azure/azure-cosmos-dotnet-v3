@@ -80,7 +80,7 @@
     "Microsoft.Azure.Cosmos.ChangeFeedMetadata;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "Boolean get_IsTimeToLiveExpired()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "Boolean get_IsTimeToLiveExpired()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"

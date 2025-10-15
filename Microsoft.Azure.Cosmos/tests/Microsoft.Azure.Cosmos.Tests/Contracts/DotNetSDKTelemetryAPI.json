@@ -19,12 +19,12 @@
     "Microsoft.Azure.Cosmos.Telemetry.Models.ClientTelemetryProperties;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:True": {
       "Subclasses": {},
       "Members": {
-        "Void .ctor(System.String, System.String, System.String, System.String, System.String, System.String, System.String, System.String, System.Nullable`1[System.Boolean], System.Collections.Generic.IReadOnlyList`1[System.String], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.SystemInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.CacheRefreshInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.OperationInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.RequestInfo], System.String)[Newtonsoft.Json.JsonConstructorAttribute]": {
+        "Void .ctor(System.String, System.String, System.String, System.String, System.String, System.String, System.String, System.String, System.Nullable`1[System.Boolean], System.Collections.Generic.IReadOnlyList`1[System.String], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.SystemInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.CacheRefreshInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.OperationInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.RequestInfo], System.String)[Newtonsoft.Json.JsonConstructorAttribute()]": {
           "Type": "Constructor",
           "Attributes": [
             "JsonConstructorAttribute"
           ],
-          "MethodInfo": "[Void .ctor(System.String, System.String, System.String, System.String, System.String, System.String, System.String, System.String, System.Nullable`1[System.Boolean], System.Collections.Generic.IReadOnlyList`1[System.String], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.SystemInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.CacheRefreshInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.OperationInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.RequestInfo], System.String)[Newtonsoft.Json.JsonConstructorAttribute], Void .ctor(System.String, System.String, System.String, System.String, System.String, System.String, System.String, System.String, System.Nullable`1[System.Boolean], System.Collections.Generic.IReadOnlyList`1[System.String], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.SystemInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.CacheRefreshInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.OperationInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.RequestInfo], System.String)]"
+          "MethodInfo": "[Void .ctor(System.String, System.String, System.String, System.String, System.String, System.String, System.String, System.String, System.Nullable`1[System.Boolean], System.Collections.Generic.IReadOnlyList`1[System.String], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.SystemInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.CacheRefreshInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.OperationInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.RequestInfo], System.String)[Newtonsoft.Json.JsonConstructorAttribute()], Void .ctor(System.String, System.String, System.String, System.String, System.String, System.String, System.String, System.String, System.Nullable`1[System.Boolean], System.Collections.Generic.IReadOnlyList`1[System.String], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.SystemInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.CacheRefreshInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.OperationInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.RequestInfo], System.String)]"
         },
         "Void Write(Newtonsoft.Json.JsonWriter)": {
           "Type": "Method",
@@ -70,7 +70,7 @@
           "Attributes": [],
           "MethodInfo": "Boolean Equals(System.Object);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Int32 get_SubStatusCode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "Int32 get_SubStatusCode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
@@ -94,7 +94,7 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Telemetry.Models.OperationInfo Copy();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Nullable`1[System.Int32] get_StatusCode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "System.Nullable`1[System.Int32] get_StatusCode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
@@ -134,7 +134,7 @@
           "Attributes": [],
           "MethodInfo": "Double GetSampleCount();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Int32 get_SubStatusCode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "Int32 get_SubStatusCode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
@@ -158,7 +158,7 @@
           ],
           "MethodInfo": "Int32 SubStatusCode;CanRead:True;CanWrite:True;Int32 get_SubStatusCode();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_SubStatusCode(Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo] get_Metrics()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo] get_Metrics()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
@@ -172,7 +172,7 @@
           ],
           "MethodInfo": "System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo] Metrics;CanRead:True;CanWrite:True;System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo] get_Metrics();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_Metrics(System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Nullable`1[System.Int32] get_StatusCode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "System.Nullable`1[System.Int32] get_StatusCode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
@@ -200,35 +200,35 @@
           ],
           "MethodInfo": "System.String DatabaseName;CanRead:True;CanWrite:True;System.String get_DatabaseName();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DatabaseName(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String get_ContainerName()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "System.String get_ContainerName()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "System.String get_ContainerName();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String get_DatabaseName()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "System.String get_DatabaseName()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "System.String get_DatabaseName();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String get_Operation()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "System.String get_Operation()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "System.String get_Operation();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String get_Resource()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "System.String get_Resource()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "System.String get_Resource();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String get_Uri()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "System.String get_Uri()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
@@ -266,56 +266,56 @@
           "Attributes": [],
           "MethodInfo": "[Void .ctor(), Void .ctor()]"
         },
-        "Void set_ContainerName(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "Void set_ContainerName(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_ContainerName(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Void set_DatabaseName(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "Void set_DatabaseName(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_DatabaseName(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Void set_Metrics(System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo])[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "Void set_Metrics(System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_Metrics(System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Void set_Operation(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "Void set_Operation(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_Operation(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Void set_Resource(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "Void set_Resource(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_Resource(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Void set_StatusCode(System.Nullable`1[System.Int32])[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "Void set_StatusCode(System.Nullable`1[System.Int32])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_StatusCode(System.Nullable`1[System.Int32]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Void set_SubStatusCode(Int32)[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "Void set_SubStatusCode(Int32)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_SubStatusCode(Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Void set_Uri(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "Void set_Uri(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
@@ -338,7 +338,7 @@
     }
   },
   "Members": {
-    "System.Object MemberwiseClone()[System.Runtime.CompilerServices.NullableContextAttribute(1)]-[System.Runtime.CompilerServices.IntrinsicAttribute]": {
+    "System.Object MemberwiseClone()[System.Runtime.CompilerServices.NullableContextAttribute((Byte)1)]-[System.Runtime.CompilerServices.IntrinsicAttribute()]": {
       "Type": "Method",
       "Attributes": [
         "IntrinsicAttribute",

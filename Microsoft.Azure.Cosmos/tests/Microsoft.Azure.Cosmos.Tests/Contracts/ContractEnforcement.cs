@@ -176,10 +176,8 @@
                 parts.AddRange(namedArgs);
             }
 
-            if (parts.Count > 0)
-            {
-                result += "(" + string.Join(", ", parts) + ")";
-            }
+            // Always add parentheses for consistency, even if there are no arguments
+            result += "(" + string.Join(", ", parts) + ")";
 
             return result;
         }
@@ -200,6 +198,11 @@
             else if (arg.Value != null && arg.ArgumentType.IsEnum)
             {
                 return $"{arg.ArgumentType.Name}.{arg.Value}";
+            }
+            else if (arg.Value != null && arg.ArgumentType.IsPrimitive)
+            {
+                // Preserve type information for primitive types (byte, int, etc.)
+                return $"({arg.ArgumentType.Name}){arg.Value}";
             }
             else
             {
