@@ -5,6 +5,8 @@
 namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
     using System;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Microsoft.Data.Encryption.Cryptography;
 
     /// <summary>
@@ -27,12 +29,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <see href="http://tools.ietf.org/html/draft-mcgrew-aead-aes-cbc-hmac-sha2-05">here</see> .
         /// More specifically this implements AEAD_AES_256_CBC_HMAC_SHA256 algorithm.
         /// </summary>
-        public MdeEncryptionAlgorithm(
+        public static async Task<MdeEncryptionAlgorithm> CreateAsync(
             DataEncryptionKeyProperties dekProperties,
             Data.Encryption.Cryptography.EncryptionType encryptionType,
             EncryptionKeyStoreProvider encryptionKeyStoreProvider,
             TimeSpan? cacheTimeToLive,
-            bool withRawKey = false)
+            bool withRawKey,
+            CancellationToken cancellationToken)
         {
             if (dekProperties == null)
             {
@@ -49,27 +52,31 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 dekProperties.EncryptionKeyWrapMetadata.Value,
                 encryptionKeyStoreProvider);
 
+            AeadAes256CbcHmac256EncryptionAlgorithm aeadAes256CbcHmac256EncryptionAlgorithm;
+            byte[] rawKey = null;
+
             if (!withRawKey)
             {
 #pragma warning disable CS0618 // Type or member is obsolete
                 ProtectedDataEncryptionKey protectedDataEncryptionKey = cacheTimeToLive.HasValue && cacheTimeToLive.Value == TimeSpan.Zero
-                    ? new ProtectedDataEncryptionKey(
+                    ? await ProtectedDataEncryptionKey.CreateAsync(
                         dekProperties.Id,
                         keyEncryptionKey,
-                        dekProperties.WrappedDataEncryptionKey)
-                    : ProtectedDataEncryptionKey.GetOrCreate(
+                        dekProperties.WrappedDataEncryptionKey,
+                        cancellationToken)
+                    : await ProtectedDataEncryptionKey.GetOrCreateAsync(
                         dekProperties.Id,
                         keyEncryptionKey,
-                        dekProperties.WrappedDataEncryptionKey);
-#pragma warning restore CS0618 // Type or member is obsolete
-                this.mdeAeadAes256CbcHmac256EncryptionAlgorithm = AeadAes256CbcHmac256EncryptionAlgorithm.GetOrCreate(
+                        dekProperties.WrappedDataEncryptionKey,
+                        cancellationToken);
+                aeadAes256CbcHmac256EncryptionAlgorithm = AeadAes256CbcHmac256EncryptionAlgorithm.GetOrCreate(
                     protectedDataEncryptionKey,
                     encryptionType,
                     Version);
             }
             else
             {
-                byte[] rawKey = keyEncryptionKey.DecryptEncryptionKey(dekProperties.WrappedDataEncryptionKey);
+                rawKey = await keyEncryptionKey.DecryptEncryptionKeyAsync(dekProperties.WrappedDataEncryptionKey, cancellationToken).ConfigureAwait(false);
                 PlaintextDataEncryptionKey plaintextDataEncryptionKey = cacheTimeToLive.HasValue && (cacheTimeToLive.Value == TimeSpan.Zero)
                     ? new PlaintextDataEncryptionKey(
                             dekProperties.Id,
@@ -77,12 +84,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     : PlaintextDataEncryptionKey.GetOrCreate(
                            dekProperties.Id,
                            rawKey);
-                this.RawKey = rawKey;
-                this.mdeAeadAes256CbcHmac256EncryptionAlgorithm = AeadAes256CbcHmac256EncryptionAlgorithm.GetOrCreate(
+                aeadAes256CbcHmac256EncryptionAlgorithm = AeadAes256CbcHmac256EncryptionAlgorithm.GetOrCreate(
                     plaintextDataEncryptionKey,
                     encryptionType,
                     Version);
             }
+
+            return new MdeEncryptionAlgorithm(aeadAes256CbcHmac256EncryptionAlgorithm, rawKey);
         }
 
         /// <summary>
@@ -101,6 +109,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 dataEncryptionKey,
                 encryptionType,
                 Version);
+        }
+
+        private MdeEncryptionAlgorithm(AeadAes256CbcHmac256EncryptionAlgorithm aeadAes256CbcHmac256EncryptionAlgorithm, byte[] rawKey)
+        {
+            this.mdeAeadAes256CbcHmac256EncryptionAlgorithm = aeadAes256CbcHmac256EncryptionAlgorithm ?? throw new ArgumentNullException(nameof(aeadAes256CbcHmac256EncryptionAlgorithm));
+            this.RawKey = rawKey;
         }
 
         /// <summary>
