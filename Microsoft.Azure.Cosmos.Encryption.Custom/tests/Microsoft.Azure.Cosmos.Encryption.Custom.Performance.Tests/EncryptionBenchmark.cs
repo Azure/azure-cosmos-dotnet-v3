@@ -32,10 +32,7 @@
         [Params(1, 10, 100)]
         public int DocumentSizeInKb { get; set; }
 
-        [Params(CompressionOptions.CompressionAlgorithm.None, CompressionOptions.CompressionAlgorithm.Brotli)]
-        public CompressionOptions.CompressionAlgorithm CompressionAlgorithm { get; set; }
-
-#if NET8_0_OR_GREATER
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
         [Params(JsonProcessor.Newtonsoft, JsonProcessor.Stream)]
 #else
         [Params(JsonProcessor.Newtonsoft)]
@@ -52,7 +49,7 @@
             Mock<DataEncryptionKeyProvider> keyProvider = new();
             keyProvider
                 .Setup(x => x.FetchDataEncryptionKeyWithoutRawKeyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(() => new MdeEncryptionAlgorithm(DekProperties, EncryptionType.Randomized, StoreProvider.Object, cacheTimeToLive: TimeSpan.MaxValue));
+                .Returns(async () => await MdeEncryptionAlgorithm.CreateAsync(DekProperties, EncryptionType.Randomized, StoreProvider.Object, cacheTimeToLive: TimeSpan.MaxValue, false, default));
 
             this.encryptor = new(keyProvider.Object);
             this.encryptionOptions = this.CreateEncryptionOptions();
@@ -130,10 +127,6 @@
                 DataEncryptionKeyId = "dekId",
                 EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
                 PathsToEncrypt = TestDoc.PathsToEncrypt,
-                CompressionOptions = new()
-                {
-                    Algorithm = this.CompressionAlgorithm
-                },
                 JsonProcessor = this.JsonProcessor,
             };
 
