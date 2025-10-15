@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Encryptor encryptor,
             CosmosSerializer cosmosSerializer,
             RequestOptions requestOptions)
-            : this(encryptionFeedIterator, responseFactory, encryptor, cosmosSerializer, requestOptions.GetJsonProcessor())
+            : this(encryptionFeedIterator, responseFactory, encryptor, cosmosSerializer, requestOptions?.GetJsonProcessor() ?? throw new ArgumentNullException(nameof(requestOptions)))
         {
         }
 

@@ -43,11 +43,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
                 JsonProcessor = JsonProcessor.Stream,
                 PathsToEncrypt = paths.ToList(),
-                CompressionOptions = new CompressionOptions
-                {
-                    Algorithm = compression ? CompressionOptions.CompressionAlgorithm.Brotli : CompressionOptions.CompressionAlgorithm.None,
-                    CompressionLevel = compression ? CompressionLevel.Fastest : CompressionLevel.NoCompression,
-                }
             };
         }
 

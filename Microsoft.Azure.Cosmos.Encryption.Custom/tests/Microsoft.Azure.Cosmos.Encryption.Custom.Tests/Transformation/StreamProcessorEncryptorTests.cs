@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
     using System;
     using System.Collections.Generic;
     using System.IO;
-    using System.IO.Compression;
     using System.Linq;
     using System.Text;
     using System.Text.Json;
@@ -35,20 +34,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             mockEncryptor = TestEncryptorFactory.CreateMde(DekId, out mockDek);
         }
 
-        private static EncryptionOptions CreateOptions(IEnumerable<string> paths, CompressionOptions.CompressionAlgorithm algorithm = CompressionOptions.CompressionAlgorithm.None, CompressionLevel compressionLevel = CompressionLevel.NoCompression, int? minCompressedLength = null)
+    private static EncryptionOptions CreateOptions(IEnumerable<string> paths)
         {
-            CompressionOptions comp = new CompressionOptions { Algorithm = algorithm, CompressionLevel = compressionLevel };
-            if (minCompressedLength.HasValue)
-            {
-                comp.MinimalCompressedLength = minCompressedLength.Value;
-            }
             return new EncryptionOptions
             {
                 DataEncryptionKeyId = DekId,
                 EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
                 JsonProcessor = JsonProcessor.Stream,
-                PathsToEncrypt = paths.ToList(),
-                CompressionOptions = comp
+        PathsToEncrypt = paths.ToList()
             };
         }
 
@@ -135,29 +128,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             Assert.AreEqual(3, r2.GetProperty("SensitiveArr").GetArrayLength());
             Assert.AreEqual("text", r2.GetProperty("SensitiveObj").GetProperty("b").GetString());
             Assert.IsTrue(ctx.DecryptionInfoList[0].PathsDecrypted.Contains("/SensitiveStr"));
-        }
-
-        [TestMethod]
-        public async Task Encrypt_CompressionBehavior()
-        {
-            // Arrange
-            var doc = new
-            {
-                id = "1",
-                LargeStr = new string('x', 400),
-                SmallStr = new string('y', 10)
-            };
-            string[] paths = new[] { "/LargeStr", "/SmallStr" };
-            EncryptionOptions options = CreateOptions(paths, CompressionOptions.CompressionAlgorithm.Brotli, CompressionLevel.Fastest, minCompressedLength: 64);
-            // Act
-            MemoryStream encrypted = await EncryptAsync(doc, options);
-            using JsonDocument jd = Parse(encrypted);
-            JsonElement propsJson = jd.RootElement.GetProperty(Constants.EncryptedInfo);
-            // Assert
-            EncryptionProperties props = System.Text.Json.JsonSerializer.Deserialize<EncryptionProperties>(propsJson.GetRawText());
-            Assert.AreEqual(EncryptionFormatVersion.MdeWithCompression, props.EncryptionFormatVersion);
-            Assert.IsTrue(props.CompressedEncryptedPaths.ContainsKey("/LargeStr"));
-            Assert.IsFalse(props.CompressedEncryptedPaths.ContainsKey("/SmallStr"));
         }
 
         [TestMethod]

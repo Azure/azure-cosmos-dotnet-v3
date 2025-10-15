@@ -521,16 +521,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         {
             _ = diagnosticsContext;
 
-            if (properties.EncryptionFormatVersion != EncryptionFormatVersion.Mde && properties.EncryptionFormatVersion != EncryptionFormatVersion.MdeWithCompression)
+            if (properties.EncryptionFormatVersion != EncryptionFormatVersion.Mde)
             {
                 throw new NotSupportedException($"Unknown encryption format version: {properties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
-            }
-
-            bool containsCompressed = properties.CompressedEncryptedPaths?.Count > 0;
-
-            if (properties.CompressionAlgorithm != CompressionOptions.CompressionAlgorithm.Brotli && containsCompressed)
-            {
-                throw new NotSupportedException($"Unknown compression algorithm {properties.CompressionAlgorithm}");
             }
 
             DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(properties.DataEncryptionKeyId, properties.EncryptionAlgorithm, cancellationToken);
@@ -558,7 +551,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     isFinalBlock = dataSize == 0;
                     long bytesConsumed = 0;
 
-                    bytesConsumed = this.TransformDecryptBuffer(buffer.AsSpan(0, dataSize), containsCompressed, encryptionKey, pathsDecrypted, writer, ref state, encryptedPaths, isFinalBlock, ref isIgnoredBlock, ref decryptPropertyName, properties);
+                    bytesConsumed = this.TransformDecryptBuffer(buffer.AsSpan(0, dataSize), encryptionKey, pathsDecrypted, writer, ref state, encryptedPaths, isFinalBlock, ref isIgnoredBlock, ref decryptPropertyName);
 
                     leftOver = dataSize - (int)bytesConsumed;
 
@@ -587,7 +580,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
         private long TransformDecryptBuffer(
             ReadOnlySpan<byte> buffer,
-            bool containsCompressed,
             DataEncryptionKey encryptionKey,
             List<string> pathsDecrypted,
             Utf8JsonWriter writer,
@@ -595,8 +587,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             HashSet<string> encryptedPaths,
             bool isFinalBlock,
             ref bool isIgnoredBlock,
-            ref string decryptPropertyName,
-            EncryptionProperties encryptionProperties)
+            ref string decryptPropertyName)
         {
             Utf8JsonReader reader = new (buffer, isFinalBlock, state);
 
@@ -623,7 +614,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                         }
                         else
                         {
-                            this.TransformDecryptProperty(ref reader, encryptionProperties, containsCompressed, encryptionKey, writer, decryptPropertyName);
+                            this.TransformDecryptProperty(ref reader, encryptionKey, writer);
 
                             pathsDecrypted.Add(decryptPropertyName);
                         }
@@ -693,7 +684,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             return reader.BytesConsumed;
         }
 
-        private void TransformDecryptProperty(ref Utf8JsonReader reader, EncryptionProperties properties, bool containsCompressed, DataEncryptionKey encryptionKey, Utf8JsonWriter writer, string decryptPropertyName)
+        private void TransformDecryptProperty(ref Utf8JsonReader reader, DataEncryptionKey encryptionKey, Utf8JsonWriter writer)
         {
             byte[] cipherTextWithTypeMarker = ArrayPool<byte>.Shared.Rent(reader.ValueSpan.Length);
 
@@ -710,20 +701,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                 int expectedLength = 1 + this.Encryptor.GetDecryptedByteCount(encryptionKey, cipherTextLength);
                 byte[] plainText = ArrayPool<byte>.Shared.Rent(expectedLength);
-                byte[] decompressedPlaintext = null;
-                BrotliCompressor decompressor = null;
                 try
                 {
                     int processedBytes = this.Encryptor.Decrypt(encryptionKey, cipherTextWithTypeMarker, cipherTextLength, plainText);
 
-                    if (containsCompressed && properties.CompressedEncryptedPaths.TryGetValue(decryptPropertyName, out int decompressedSize))
-                    {
-                        decompressor ??= new BrotliCompressor();
-                        decompressedPlaintext = ArrayPool<byte>.Shared.Rent(decompressedSize);
-                        processedBytes = decompressor.Decompress(plainText, processedBytes, decompressedPlaintext);
-                    }
-
-                    ReadOnlySpan<byte> bytesToWrite = (decompressedPlaintext ?? plainText).AsSpan(0, processedBytes);
+                    ReadOnlySpan<byte> bytesToWrite = plainText.AsSpan(0, processedBytes);
                     switch ((TypeMarker)cipherTextWithTypeMarker[0])
                     {
                         case TypeMarker.String:
@@ -748,13 +730,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 }
                 finally
                 {
-                    if (decompressedPlaintext != null)
-                    {
-                        ArrayPool<byte>.Shared.Return(decompressedPlaintext, true);
-                    }
-
-                    decompressor?.Dispose();
-
                     ArrayPool<byte>.Shared.Return(plainText, true);
                 }
             }

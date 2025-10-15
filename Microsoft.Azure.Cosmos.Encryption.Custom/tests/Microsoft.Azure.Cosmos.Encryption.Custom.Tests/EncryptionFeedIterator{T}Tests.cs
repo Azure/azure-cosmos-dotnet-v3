@@ -11,11 +11,22 @@
         [TestMethod]
         public void Ctor_Throws_OnNullParam()
         {
-            EncryptionFeedIterator iterator = new (null, null, null);
+            JsonProcessor jsonProcessor = default;
+            Encryptor encryptor = Mock.Of<Encryptor>();
+            EncryptionFeedIterator iterator = new (Mock.Of<FeedIterator>(), encryptor, jsonProcessor);
             CosmosResponseFactory responseFactory = Mock.Of<CosmosResponseFactory>();
+            CosmosSerializer cosmosSerializer = Mock.Of<CosmosSerializer>();
+            RequestOptions requestOptions = new ();
 
-            Assert.ThrowsException<ArgumentNullException>(() => new EncryptionFeedIterator<Object>(null, responseFactory));
-            Assert.ThrowsException<ArgumentNullException>(() => new EncryptionFeedIterator<Object>(iterator, null));
+            Assert.ThrowsException<ArgumentNullException>(() => new EncryptionFeedIterator<Object>(null, responseFactory, encryptor, cosmosSerializer, requestOptions));
+            Assert.ThrowsException<ArgumentNullException>(() => new EncryptionFeedIterator<Object>(iterator, null, encryptor, cosmosSerializer, requestOptions));
+            Assert.ThrowsException<ArgumentNullException>(() => new EncryptionFeedIterator<Object>(iterator, responseFactory, null, cosmosSerializer, requestOptions));
+            Assert.ThrowsException<ArgumentNullException>(() => new EncryptionFeedIterator<Object>(iterator, responseFactory, encryptor, null, requestOptions));
+            Assert.ThrowsException<ArgumentNullException>(() => new EncryptionFeedIterator<Object>(iterator, responseFactory, encryptor, cosmosSerializer, null));
+            Assert.ThrowsException<ArgumentNullException>(() => new EncryptionFeedIterator<Object>(null, responseFactory, encryptor, cosmosSerializer, jsonProcessor));
+            Assert.ThrowsException<ArgumentNullException>(() => new EncryptionFeedIterator<Object>(iterator, null, encryptor, cosmosSerializer, jsonProcessor));
+            Assert.ThrowsException<ArgumentNullException>(() => new EncryptionFeedIterator<Object>(iterator, responseFactory, null, cosmosSerializer, jsonProcessor));
+            Assert.ThrowsException<ArgumentNullException>(() => new EncryptionFeedIterator<Object>(iterator, responseFactory, encryptor, null, jsonProcessor));
         }
     }
 }

@@ -26,7 +26,7 @@ internal sealed class StreamAdapter : IMdeJsonProcessorAdapter
     {
         RecyclableMemoryStream ms = RecyclableMemoryStreamManager.GetStream("StreamAdapter.Encrypt");
         await this.streamProcessor.EncryptStreamAsync(input, ms, encryptor, options, cancellationToken);
-        
+
         return ms;
     }
 
@@ -83,7 +83,7 @@ internal sealed class StreamAdapter : IMdeJsonProcessorAdapter
         }
 
         await input.DisposeAsync();
-        
+
         return context;
     }
 
