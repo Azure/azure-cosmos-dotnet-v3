@@ -32,10 +32,7 @@
         [Params(1, 10, 100)]
         public int DocumentSizeInKb { get; set; }
 
-        [Params(CompressionOptions.CompressionAlgorithm.None, CompressionOptions.CompressionAlgorithm.Brotli)]
-        public CompressionOptions.CompressionAlgorithm CompressionAlgorithm { get; set; }
-
-#if NET8_0_OR_GREATER
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
         [Params(JsonProcessor.Newtonsoft, JsonProcessor.Stream)]
 #else
         [Params(JsonProcessor.Newtonsoft)]
@@ -130,10 +127,6 @@
                 DataEncryptionKeyId = "dekId",
                 EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
                 PathsToEncrypt = TestDoc.PathsToEncrypt,
-                CompressionOptions = new()
-                {
-                    Algorithm = this.CompressionAlgorithm
-                },
                 JsonProcessor = this.JsonProcessor,
             };
 
