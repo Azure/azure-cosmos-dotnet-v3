@@ -35,19 +35,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             mockEncryptor = TestEncryptorFactory.CreateMde(DekId, out _);
         }
 
-        private static EncryptionOptions CreateStreamOptions(IEnumerable<string> paths, bool compression = false)
+        private static EncryptionOptions CreateStreamOptions(IEnumerable<string> paths)
         {
             return new EncryptionOptions
             {
                 DataEncryptionKeyId = DekId,
                 EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
                 JsonProcessor = JsonProcessor.Stream,
-                PathsToEncrypt = paths.ToList(),
-                CompressionOptions = new CompressionOptions
-                {
-                    Algorithm = compression ? CompressionOptions.CompressionAlgorithm.Brotli : CompressionOptions.CompressionAlgorithm.None,
-                    CompressionLevel = compression ? CompressionLevel.Fastest : CompressionLevel.NoCompression,
-                }
+                PathsToEncrypt = paths.ToList()
             };
         }
 

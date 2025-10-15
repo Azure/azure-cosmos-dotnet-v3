@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Encryption.Custom;
+    using Microsoft.Azure.Cosmos.Encryption.Custom.Tests;
 #if NET8_0_OR_GREATER
     using Microsoft.Azure.Cosmos.Encryption.Custom.Transformation;
 #endif
