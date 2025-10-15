@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             this.EncryptionKeyStoreProvider = encryptionKeyStoreProvider ?? throw new ArgumentNullException(nameof(encryptionKeyStoreProvider));
         }
 
-        public override Task<EncryptionKeyUnwrapResult> UnwrapKeyAsync(
+        public override async Task<EncryptionKeyUnwrapResult> UnwrapKeyAsync(
             byte[] wrappedKey,
             EncryptionKeyWrapMetadata metadata,
             CancellationToken cancellationToken)
@@ -38,11 +38,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 metadata.Value,
                 this.EncryptionKeyStoreProvider);
 
-            byte[] result = keyEncryptionKey.DecryptEncryptionKey(wrappedKey);
-            return Task.FromResult(new EncryptionKeyUnwrapResult(result, TimeSpan.Zero));
+            byte[] result = await keyEncryptionKey.DecryptEncryptionKeyAsync(wrappedKey, cancellationToken).ConfigureAwait(false);
+
+            return new EncryptionKeyUnwrapResult(result, TimeSpan.Zero);
         }
 
-        public override Task<EncryptionKeyWrapResult> WrapKeyAsync(
+        public override async Task<EncryptionKeyWrapResult> WrapKeyAsync(
             byte[] key,
             EncryptionKeyWrapMetadata metadata,
             CancellationToken cancellationToken)
@@ -57,8 +58,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 metadata.Value,
                 this.EncryptionKeyStoreProvider);
 
-            byte[] result = keyEncryptionKey.EncryptEncryptionKey(key);
-            return Task.FromResult(new EncryptionKeyWrapResult(result, metadata));
+            byte[] result = await keyEncryptionKey.EncryptEncryptionKeyAsync(key, cancellationToken).ConfigureAwait(false);
+
+            return new EncryptionKeyWrapResult(result, metadata);
         }
     }
 }

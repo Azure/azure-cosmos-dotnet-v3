@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
             else if (string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized, StringComparison.Ordinal))
             {
-                (wrappedDek, updatedMetadata) = this.GenerateAndWrapPdekForMdeEncAlgo(id, encryptionKeyWrapMetadata);
+                (wrappedDek, updatedMetadata) = await this.GenerateAndWrapPdekForMdeEncAlgoAsync(id, encryptionKeyWrapMetadata, cancellationToken);
             }
 #pragma warning restore CS0618 // Type or member is obsolete
 
@@ -395,7 +395,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 if (string.Equals(dekProperties.EncryptionAlgorithm, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized, StringComparison.Ordinal))
                 {
-                    DataEncryptionKey dek = this.InitMdeEncryptionAlgorithm(dekProperties, withRawKey);
+                    DataEncryptionKey dek = await this.InitMdeEncryptionAlgorithmAsync(dekProperties, withRawKey, cancellationToken);
 
                     // TTL is not used since DEK is not cached.
                     return new InMemoryRawDek(dek, TimeSpan.FromMilliseconds(0));
@@ -538,7 +538,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 cancellationToken);
         }
 
-        private (byte[], EncryptionKeyWrapMetadata) GenerateAndWrapPdekForMdeEncAlgo(string id, EncryptionKeyWrapMetadata encryptionKeyWrapMetadata)
+        private async Task<(byte[], EncryptionKeyWrapMetadata)> GenerateAndWrapPdekForMdeEncAlgoAsync(string id, EncryptionKeyWrapMetadata encryptionKeyWrapMetadata, CancellationToken cancellationToken)
         {
             if (this.DekProvider.MdeKeyWrapProvider == null)
             {
@@ -551,9 +551,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 encryptionKeyWrapMetadata.Value,
                 this.DekProvider.MdeKeyWrapProvider.EncryptionKeyStoreProvider);
 
-            ProtectedDataEncryptionKey protectedDataEncryptionKey = new (
+            ProtectedDataEncryptionKey protectedDataEncryptionKey = await ProtectedDataEncryptionKey.CreateAsync(
                 id,
-                keyEncryptionKey);
+                keyEncryptionKey,
+                cancellationToken).ConfigureAwait(false);
 
             byte[] wrappedDek = protectedDataEncryptionKey.EncryptedValue;
             EncryptionKeyWrapMetadata updatedMetadata = encryptionKeyWrapMetadata;
@@ -583,7 +584,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return unwrapResult;
         }
 
-        internal DataEncryptionKey InitMdeEncryptionAlgorithm(DataEncryptionKeyProperties dekProperties, bool withRawKey = false)
+        internal async Task<DataEncryptionKey> InitMdeEncryptionAlgorithmAsync(DataEncryptionKeyProperties dekProperties, bool withRawKey, CancellationToken cancellationToken)
         {
             if (this.DekProvider.MdeKeyWrapProvider == null)
             {
@@ -591,12 +592,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     "Encryptor or CosmosDataEncryptionKeyProvider needs to be initialized with EncryptionKeyStoreProvider.");
             }
 
-            return new MdeEncryptionAlgorithm(
+            return await MdeEncryptionAlgorithm.CreateAsync(
                 dekProperties,
                 Data.Encryption.Cryptography.EncryptionType.Randomized,
                 this.DekProvider.MdeKeyWrapProvider.EncryptionKeyStoreProvider,
                 this.DekProvider.PdekCacheTimeToLive,
-                withRawKey);
+                withRawKey,
+                cancellationToken);
         }
 
         private async Task<DataEncryptionKeyProperties> ReadResourceAsync(
