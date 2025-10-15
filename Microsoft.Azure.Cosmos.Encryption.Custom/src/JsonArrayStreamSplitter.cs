@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <summary>
         /// Splits a JSON array stream into separate objects, returning each as a MemoryStream.
         /// </summary>
-        /// <param name="jsonArrayStream">The input stream containing a JSON array of objects.</param>
+        /// <param name="jsonArrayStream">The input stream containing a Cosmos DB response object with a Documents array.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>An enumerable of MemoryStream objects, each containing a single JSON object.</returns>
         /// <remarks>
@@ -158,16 +158,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             List<MemoryStream> extractedStreams = state.ExtractedStreams ??= new List<MemoryStream>(InitialStreamCapacity);
             extractedStreams.Clear();
-            state.ArrayCompleted = false;
+            state.ResponseCompleted = false;
 
             ReadOnlySpan<byte> data = new ReadOnlySpan<byte>(buffer, 0, bufferLength);
             Utf8JsonReader reader = new (data, isFinalBlock, state.ReaderState);
 
             if (state.IsFirstBuffer)
             {
-                if (!reader.Read() || reader.TokenType != JsonTokenType.StartArray)
+                if (!reader.Read() || reader.TokenType != JsonTokenType.StartObject)
                 {
-                    throw new InvalidOperationException("Expected JSON array to start with '['");
+                    throw new InvalidOperationException("Expected JSON payload to start with '{'.");
                 }
 
                 state.IsFirstBuffer = false;
@@ -175,46 +175,24 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             while (reader.Read())
             {
-                switch (reader.TokenType)
+                TokenProcessingOutcome outcome = reader.TokenType switch
                 {
-                    case JsonTokenType.StartObject:
-                        if (state.PendingObjectStart < 0)
-                        {
-                            state.PendingObjectStart = (int)reader.TokenStartIndex;
-                            state.PendingObjectDepth = reader.CurrentDepth;
-                            state.PendingObjectStream = RecyclableMemoryStreamManager.GetStream("JsonArrayStreamSplitter");
-                            state.PendingObjectNextCopyIndex = state.PendingObjectStart;
-                        }
+                    JsonTokenType.PropertyName => HandlePropertyName(ref state, ref reader),
+                    JsonTokenType.StartArray => HandleStartArray(ref state, ref reader),
+                    JsonTokenType.StartObject => HandleStartObject(ref state, ref reader),
+                    JsonTokenType.EndObject => HandleEndObject(buffer, bufferLength, ref state, ref reader, extractedStreams),
+                    JsonTokenType.EndArray => HandleEndArray(ref state, ref reader),
+                    _ => HandleDefault(ref state),
+                };
 
-                        break;
-
-                    case JsonTokenType.EndObject:
-                        if (state.PendingObjectStart >= 0 && state.PendingObjectDepth == reader.CurrentDepth)
-                        {
-                            FlushPendingObjectBytes(buffer, ref state, reader.BytesConsumed, bufferLength);
-
-                            if (state.PendingObjectStream != null)
-                            {
-                                state.PendingObjectStream.Position = 0;
-                                extractedStreams.Add(state.PendingObjectStream);
-                                state.PendingObjectStream = null;
-                            }
-
-                            state.PendingObjectStart = -1;
-                            state.PendingObjectDepth = -1;
-                            state.PendingObjectNextCopyIndex = 0;
-                        }
-
-                        break;
-
-                    case JsonTokenType.EndArray:
-                        state.ArrayCompleted = true;
-                        break;
+                if (outcome == TokenProcessingOutcome.SkipFlushAndAdvance)
+                {
+                    continue;
                 }
 
                 FlushPendingObjectBytes(buffer, ref state, reader.BytesConsumed, bufferLength);
 
-                if (state.ArrayCompleted)
+                if (state.ResponseCompleted)
                 {
                     break;
                 }
@@ -226,12 +204,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return new JsonReaderResult
             {
                 ExtractedStreamCount = extractedStreams.Count,
-                EndOfArray = state.ArrayCompleted,
+                EndOfArray = state.ResponseCompleted,
                 BytesConsumed = reader.BytesConsumed,
             };
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void FlushPendingObjectBytes(byte[] buffer, ref StreamReadState state, long bytesConsumed, int bufferLength)
         {
             if (state.PendingObjectStream == null)
@@ -277,6 +254,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             ArrayPool<byte>.Shared.Return(currentBuffer, true);
 
             currentBufferSize = newSize;
+
             return newBuffer;
         }
 
@@ -285,24 +263,32 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             public int TotalBytesInBuffer;
             public JsonReaderState ReaderState;
             public bool IsFirstBuffer;
-            public bool ArrayCompleted;
+            public bool ResponseCompleted;
             public int PendingObjectStart;
             public int PendingObjectDepth;
             public List<MemoryStream> ExtractedStreams;
             public RecyclableMemoryStream PendingObjectStream;
             public int PendingObjectNextCopyIndex;
+            public bool WaitingForDocumentsArray;
+            public bool InDocumentsArray;
+            public bool DocumentsArrayClosed;
+            public int PayloadArrayDepth;
 
             public StreamReadState()
             {
                 this.TotalBytesInBuffer = 0;
                 this.ReaderState = default;
                 this.IsFirstBuffer = true;
-                this.ArrayCompleted = false;
+                this.ResponseCompleted = false;
                 this.PendingObjectStart = -1;
                 this.PendingObjectDepth = -1;
                 this.ExtractedStreams = null;
                 this.PendingObjectStream = null;
                 this.PendingObjectNextCopyIndex = 0;
+                this.WaitingForDocumentsArray = false;
+                this.InDocumentsArray = false;
+                this.DocumentsArrayClosed = false;
+                this.PayloadArrayDepth = -1;
             }
         }
 
@@ -311,6 +297,114 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             public int ExtractedStreamCount;
             public bool EndOfArray;
             public long BytesConsumed;
+        }
+
+        private static TokenProcessingOutcome HandlePropertyName(ref StreamReadState state, ref Utf8JsonReader reader)
+        {
+            if (!state.InDocumentsArray && !state.DocumentsArrayClosed)
+            {
+                string propertyName = reader.GetString();
+                state.WaitingForDocumentsArray = string.Equals(propertyName, Constants.DocumentsResourcePropertyName, StringComparison.Ordinal);
+            }
+
+            return TokenProcessingOutcome.Continue;
+        }
+
+        private static TokenProcessingOutcome HandleStartArray(ref StreamReadState state, ref Utf8JsonReader reader)
+        {
+            if (!state.InDocumentsArray)
+            {
+                if (state.WaitingForDocumentsArray)
+                {
+                    state.InDocumentsArray = true;
+                    state.PayloadArrayDepth = reader.CurrentDepth;
+                }
+                else
+                {
+                    state.WaitingForDocumentsArray = false;
+                    return TokenProcessingOutcome.SkipFlushAndAdvance;
+                }
+            }
+
+            state.WaitingForDocumentsArray = false;
+
+            return TokenProcessingOutcome.Continue;
+        }
+
+        private static TokenProcessingOutcome HandleStartObject(ref StreamReadState state, ref Utf8JsonReader reader)
+        {
+            if (state.InDocumentsArray && state.PendingObjectStart < 0)
+            {
+                state.PendingObjectStart = (int)reader.TokenStartIndex;
+                state.PendingObjectDepth = reader.CurrentDepth;
+                state.PendingObjectStream = RecyclableMemoryStreamManager.GetStream("JsonArrayStreamSplitter");
+                state.PendingObjectNextCopyIndex = state.PendingObjectStart;
+            }
+
+            state.WaitingForDocumentsArray = false;
+
+            return TokenProcessingOutcome.Continue;
+        }
+
+        private static TokenProcessingOutcome HandleEndObject(
+            byte[] buffer,
+            int bufferLength,
+            ref StreamReadState state,
+            ref Utf8JsonReader reader,
+            List<MemoryStream> extractedStreams)
+        {
+            if (state.PendingObjectStart >= 0 && state.PendingObjectDepth == reader.CurrentDepth)
+            {
+                FlushPendingObjectBytes(buffer, ref state, reader.BytesConsumed, bufferLength);
+
+                if (state.PendingObjectStream != null)
+                {
+                    state.PendingObjectStream.Position = 0;
+                    extractedStreams.Add(state.PendingObjectStream);
+                    state.PendingObjectStream = null;
+                }
+
+                state.PendingObjectStart = -1;
+                state.PendingObjectDepth = -1;
+                state.PendingObjectNextCopyIndex = 0;
+            }
+
+            if (reader.CurrentDepth == 0 && state.DocumentsArrayClosed)
+            {
+                state.ResponseCompleted = true;
+            }
+
+            state.WaitingForDocumentsArray = false;
+            return TokenProcessingOutcome.Continue;
+        }
+
+        private static TokenProcessingOutcome HandleEndArray(ref StreamReadState state, ref Utf8JsonReader reader)
+        {
+            if (state.InDocumentsArray && reader.CurrentDepth == state.PayloadArrayDepth)
+            {
+                state.InDocumentsArray = false;
+                state.DocumentsArrayClosed = true;
+                state.WaitingForDocumentsArray = false;
+            }
+            else
+            {
+                state.WaitingForDocumentsArray = false;
+            }
+
+            return TokenProcessingOutcome.Continue;
+        }
+
+        private static TokenProcessingOutcome HandleDefault(ref StreamReadState state)
+        {
+            state.WaitingForDocumentsArray = false;
+
+            return TokenProcessingOutcome.Continue;
+        }
+
+        private enum TokenProcessingOutcome
+        {
+            Continue,
+            SkipFlushAndAdvance,
         }
     }
 }

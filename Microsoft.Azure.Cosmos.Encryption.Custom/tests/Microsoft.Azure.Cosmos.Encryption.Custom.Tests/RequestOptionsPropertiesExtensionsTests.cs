@@ -175,6 +175,48 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             Assert.IsFalse(found);
             Assert.AreEqual(JsonProcessor.Newtonsoft, jp);
         }
+
+        [TestMethod]
+        public void GetJsonProcessor_UsesOverride()
+        {
+            RequestOptions requestOptions = new ItemRequestOptions
+            {
+                Properties = new Dictionary<string, object>
+                {
+                    { RequestOptionsPropertiesExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Stream }
+                }
+            };
+
+            JsonProcessor result = requestOptions.GetJsonProcessor();
+            Assert.AreEqual(JsonProcessor.Stream, result);
+        }
+
+        [TestMethod]
+        public void GetJsonProcessor_NoOverride_DefaultNewtonsoft()
+        {
+            RequestOptions requestOptions = new ItemRequestOptions();
+
+            JsonProcessor result = requestOptions.GetJsonProcessor();
+            Assert.AreEqual(JsonProcessor.Newtonsoft, result);
+        }
+
+        [TestMethod]
+        public void GetJsonProcessor_NoOverride_CustomDefault()
+        {
+            RequestOptions requestOptions = new ItemRequestOptions();
+
+            JsonProcessor result = requestOptions.GetJsonProcessor(JsonProcessor.Stream);
+            Assert.AreEqual(JsonProcessor.Stream, result);
+        }
+
+        [TestMethod]
+        public void GetJsonProcessor_NullRequestOptions_UsesDefault()
+        {
+            RequestOptions requestOptions = null;
+
+            JsonProcessor result = requestOptions.GetJsonProcessor(JsonProcessor.Stream);
+            Assert.AreEqual(JsonProcessor.Stream, result);
+        }
     }
 }
 #endif

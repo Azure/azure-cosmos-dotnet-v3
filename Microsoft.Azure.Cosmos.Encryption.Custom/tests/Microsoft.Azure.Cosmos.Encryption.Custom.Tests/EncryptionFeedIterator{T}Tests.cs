@@ -8,10 +8,13 @@
     [TestClass]
     public class EncryptionFeedIteratorTTests
     {
-        [TestMethod]
-        public void Ctor_Throws_OnNullParam()
+        [DataTestMethod]
+        [DataRow(JsonProcessor.Newtonsoft)]
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+        [DataRow(JsonProcessor.Stream)]
+#endif
+        public void Ctor_Throws_OnNullParam(JsonProcessor jsonProcessor)
         {
-            JsonProcessor jsonProcessor = default;
             Encryptor encryptor = Mock.Of<Encryptor>();
             EncryptionFeedIterator iterator = new (Mock.Of<FeedIterator>(), encryptor, jsonProcessor);
             CosmosResponseFactory responseFactory = Mock.Of<CosmosResponseFactory>();
@@ -27,6 +30,48 @@
             Assert.ThrowsException<ArgumentNullException>(() => new EncryptionFeedIterator<Object>(iterator, null, encryptor, cosmosSerializer, jsonProcessor));
             Assert.ThrowsException<ArgumentNullException>(() => new EncryptionFeedIterator<Object>(iterator, responseFactory, null, cosmosSerializer, jsonProcessor));
             Assert.ThrowsException<ArgumentNullException>(() => new EncryptionFeedIterator<Object>(iterator, responseFactory, encryptor, null, jsonProcessor));
+        }
+
+        [DataTestMethod]
+        [DataRow(JsonProcessor.Newtonsoft)]
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+        [DataRow(JsonProcessor.Stream)]
+#endif
+        public void Ctor_WithRequestOptions_Throws_OnNullParam(JsonProcessor jsonProcessor)
+        {
+            FeedIterator mockFeedIterator = Mock.Of<FeedIterator>();
+            Encryptor mockEncryptor = Mock.Of<Encryptor>();
+            CosmosResponseFactory responseFactory = Mock.Of<CosmosResponseFactory>();
+            CosmosSerializer cosmosSerializer = Mock.Of<CosmosSerializer>();
+
+            RequestOptions requestOptions = new ItemRequestOptions
+            {
+                Properties = new System.Collections.Generic.Dictionary<string, object>
+                {
+                    { "encryption-json-processor", jsonProcessor }
+                }
+            };
+
+            EncryptionFeedIterator iterator = new EncryptionFeedIterator(mockFeedIterator, mockEncryptor, requestOptions);
+
+            Assert.ThrowsException<ArgumentNullException>(() => new EncryptionFeedIterator<Object>(null, responseFactory, mockEncryptor, cosmosSerializer, requestOptions));
+            Assert.ThrowsException<ArgumentNullException>(() => new EncryptionFeedIterator<Object>(iterator, null, mockEncryptor, cosmosSerializer, requestOptions));
+        }
+
+        [TestMethod]
+        public void Ctor_WithRequestOptions_WithoutJsonProcessor_Succeeds()
+        {
+            FeedIterator mockFeedIterator = Mock.Of<FeedIterator>();
+            Encryptor mockEncryptor = Mock.Of<Encryptor>();
+            CosmosResponseFactory responseFactory = Mock.Of<CosmosResponseFactory>();
+            CosmosSerializer cosmosSerializer = Mock.Of<CosmosSerializer>();
+            
+            RequestOptions requestOptions = new ItemRequestOptions();
+            EncryptionFeedIterator baseIterator = new EncryptionFeedIterator(mockFeedIterator, mockEncryptor, requestOptions);
+
+            EncryptionFeedIterator<Object> result = new EncryptionFeedIterator<Object>(baseIterator, responseFactory, mockEncryptor, cosmosSerializer, requestOptions);
+
+            Assert.IsNotNull(result);
         }
     }
 }

@@ -57,7 +57,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             if (!withRawKey)
             {
-#pragma warning disable CS0618 // Type or member is obsolete
                 ProtectedDataEncryptionKey protectedDataEncryptionKey = cacheTimeToLive.HasValue && cacheTimeToLive.Value == TimeSpan.Zero
                     ? await ProtectedDataEncryptionKey.CreateAsync(
                         dekProperties.Id,
