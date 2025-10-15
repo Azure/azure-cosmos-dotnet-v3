@@ -25,7 +25,6 @@
             Assert.ThrowsException<ArgumentNullException>(() => new EncryptionFeedIterator<Object>(iterator, null, encryptor, cosmosSerializer, requestOptions));
             Assert.ThrowsException<ArgumentNullException>(() => new EncryptionFeedIterator<Object>(iterator, responseFactory, null, cosmosSerializer, requestOptions));
             Assert.ThrowsException<ArgumentNullException>(() => new EncryptionFeedIterator<Object>(iterator, responseFactory, encryptor, null, requestOptions));
-            Assert.ThrowsException<ArgumentNullException>(() => new EncryptionFeedIterator<Object>(iterator, responseFactory, encryptor, cosmosSerializer, null));
             Assert.ThrowsException<ArgumentNullException>(() => new EncryptionFeedIterator<Object>(null, responseFactory, encryptor, cosmosSerializer, jsonProcessor));
             Assert.ThrowsException<ArgumentNullException>(() => new EncryptionFeedIterator<Object>(iterator, null, encryptor, cosmosSerializer, jsonProcessor));
             Assert.ThrowsException<ArgumentNullException>(() => new EncryptionFeedIterator<Object>(iterator, responseFactory, null, cosmosSerializer, jsonProcessor));
@@ -70,6 +69,26 @@
             EncryptionFeedIterator baseIterator = new EncryptionFeedIterator(mockFeedIterator, mockEncryptor, requestOptions);
 
             EncryptionFeedIterator<Object> result = new EncryptionFeedIterator<Object>(baseIterator, responseFactory, mockEncryptor, cosmosSerializer, requestOptions);
+
+            Assert.IsNotNull(result);
+        }
+
+        [TestMethod]
+        public void Ctor_AllowsNullRequestOptions_DefaultsToNewtonsoft()
+        {
+            FeedIterator mockFeedIterator = Mock.Of<FeedIterator>();
+            Encryptor mockEncryptor = Mock.Of<Encryptor>();
+            CosmosResponseFactory responseFactory = Mock.Of<CosmosResponseFactory>();
+            CosmosSerializer cosmosSerializer = Mock.Of<CosmosSerializer>();
+
+            EncryptionFeedIterator baseIterator = new EncryptionFeedIterator(mockFeedIterator, mockEncryptor, requestOptions: null);
+
+            EncryptionFeedIterator<object> result = new EncryptionFeedIterator<object>(
+                baseIterator,
+                responseFactory,
+                mockEncryptor,
+                cosmosSerializer,
+                requestOptions: null);
 
             Assert.IsNotNull(result);
         }

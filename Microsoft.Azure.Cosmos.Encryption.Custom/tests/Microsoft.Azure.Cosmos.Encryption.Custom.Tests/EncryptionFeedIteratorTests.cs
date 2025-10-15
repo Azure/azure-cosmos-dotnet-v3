@@ -29,6 +29,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             innerIterator.VerifyGet(iterator => iterator.HasMoreResults, Times.Once);
         }
 
+        [TestMethod]
+        public void Constructor_AllowsNullRequestOptions()
+        {
+            Mock<FeedIterator> innerIterator = new Mock<FeedIterator>();
+
+            EncryptionFeedIterator feedIterator = new EncryptionFeedIterator(innerIterator.Object, new NoOpEncryptor(), requestOptions: null);
+
+            Assert.IsNotNull(feedIterator);
+        }
+
         [DataTestMethod]
         [DynamicData(nameof(GetSupportedJsonProcessorsData), DynamicDataSourceType.Method)]
         public async Task ReadNextAsync_SuccessfulResponse_ReturnsDecryptedResponseMessage(JsonProcessor jsonProcessor)

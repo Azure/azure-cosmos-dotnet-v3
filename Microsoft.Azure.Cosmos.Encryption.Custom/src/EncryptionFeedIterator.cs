@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             FeedIterator feedIterator,
             Encryptor encryptor,
             RequestOptions requestOptions)
-            : this(feedIterator, encryptor, requestOptions.GetJsonProcessor())
+            : this(feedIterator, encryptor, requestOptions?.GetJsonProcessor() ?? JsonProcessor.Newtonsoft)
         {
         }
 
