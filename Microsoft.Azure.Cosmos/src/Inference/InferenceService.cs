@@ -16,7 +16,8 @@ namespace Microsoft.Azure.Cosmos
 
     internal class InferenceService : IDisposable
     {
-        private const string basePath = "dbinference.azure.com/";
+        private const string basePath = "dbinference.azure.com/inference/semanticReranking";
+        private const string inferenceUserAgent = "cosmos-inference-dotnet";
 
         private readonly Uri inferenceEndpoint;
         private readonly HttpClient httpClient;
@@ -51,7 +52,7 @@ namespace Microsoft.Azure.Cosmos
         {
             HttpRequestMessage message = new HttpRequestMessage(HttpMethod.Post, this.inferenceEndpoint);
             INameValueCollection additionalHeaders = new RequestNameValueCollection();
-            await this.cosmosAuthorization.AddAuthorizationHeaderAsync(
+            await this.cosmosAuthorization.AddInferenceAuthorizationHeaderAsync(
                 headersCollection: additionalHeaders,
                 this.inferenceEndpoint,
                 HttpConstants.HttpMethods.Post,
@@ -72,11 +73,13 @@ namespace Microsoft.Azure.Cosmos
             message.Content = new StringContent(Newtonsoft.Json.JsonConvert.SerializeObject(body));
 
             HttpResponseMessage responseMessage = await this.httpClient.SendAsync(message, cancellationToken);
-
+            Console.WriteLine(responseMessage.StatusCode);
+            Console.WriteLine(responseMessage.Content);
             responseMessage.EnsureSuccessStatusCode();
 
             // return the content of the responsemessage as a dictonary
             string content = await responseMessage.Content.ReadAsStringAsync();
+            Console.WriteLine(content);
             return Newtonsoft.Json.JsonConvert.DeserializeObject<IReadOnlyDictionary<TKey, TValue>>(content);
         }
 

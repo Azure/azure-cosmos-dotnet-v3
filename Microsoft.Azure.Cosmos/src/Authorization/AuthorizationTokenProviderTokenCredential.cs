@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class AuthorizationTokenProviderTokenCredential : AuthorizationTokenProvider
     {
+        private const string InferenceTokenPrefix = "Bearer ";
         internal readonly TokenCredentialCache tokenCredentialCache;
         private bool isDisposed = false;
 
@@ -68,6 +69,21 @@ namespace Microsoft.Azure.Cosmos
                     await this.tokenCredentialCache.GetTokenAsync(trace));
 
                 headersCollection.Add(HttpConstants.HttpHeaders.Authorization, token);
+            }
+        }
+
+        public override async ValueTask AddInferenceAuthorizationHeaderAsync(
+            INameValueCollection headersCollection,
+            Uri requestAddress,
+            string verb,
+            AuthorizationTokenType tokenType)
+        {
+            using (Trace trace = Trace.GetRootTrace(nameof(GetUserAuthorizationTokenAsync), TraceComponent.Authorization, TraceLevel.Info))
+            {
+                string token = await this.tokenCredentialCache.GetTokenAsync(trace);
+
+                string inferenceToken = InferenceTokenPrefix + token;
+                headersCollection.Add(HttpConstants.HttpHeaders.Authorization, inferenceToken);
             }
         }
 
