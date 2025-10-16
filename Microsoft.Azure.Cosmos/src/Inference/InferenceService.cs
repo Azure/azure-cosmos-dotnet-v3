@@ -11,8 +11,10 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Http.Headers;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Collections;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
+    using Newtonsoft.Json.Linq;
 
     internal class InferenceService : IDisposable
     {
@@ -56,21 +58,23 @@ namespace Microsoft.Azure.Cosmos
                 headersCollection: additionalHeaders,
                 this.inferenceEndpoint,
                 HttpConstants.HttpMethods.Post,
-                AuthorizationTokenType.PrimaryMasterKey);
-
-            this.AddSemanticRerankOptionsToHeders(additionalHeaders, options);
+                AuthorizationTokenType.AadToken);
+            Console.WriteLine(this.inferenceEndpoint);
+            
             foreach (string key in additionalHeaders.AllKeys())
             {
+                Console.WriteLine($"Adding header {key}: {additionalHeaders[key]}");
                 message.Headers.Add(key, additionalHeaders[key]);
             }
 
-            var body = new
-            {
-                query = renrankContext,
-                documents = documents.ToArray()
-            };
+            Dictionary<string, dynamic> body = this.AddSemanticRerankPayload(renrankContext, documents, options);
 
             message.Content = new StringContent(Newtonsoft.Json.JsonConvert.SerializeObject(body));
+
+            Console.WriteLine("\n\n\n\n\n\n\n\n\n\n\n\n\n");
+            Console.WriteLine(message.Headers.ToString());
+            Console.WriteLine(message.Content.ReadAsStringAsync().Result);
+            Console.WriteLine("\n\n\n\n\n\n\n\n\n\n\n\n\n");
 
             HttpResponseMessage responseMessage = await this.httpClient.SendAsync(message, cancellationToken);
             Console.WriteLine(responseMessage.StatusCode);
@@ -96,31 +100,39 @@ namespace Microsoft.Azure.Cosmos
             httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Accept, RuntimeConstants.MediaTypes.Json);
         }
 
-        private void AddSemanticRerankOptionsToHeders(INameValueCollection headers, SemanticRerankRequestOptions options)
+        private Dictionary<string, dynamic> AddSemanticRerankPayload(string rerankContext, IEnumerable<string> documents, SemanticRerankRequestOptions options)
         {
+            Dictionary<string, dynamic> payload = new Dictionary<string, dynamic>
+            {
+                { "query", rerankContext },
+                { "documents", documents.ToArray() }
+            };
+
             if (options == null)
             {
-                return;
+                return payload;
             }
-            
-            headers.Add("return_documents", options.ReturnDocuments.ToString());
+
+            payload["return_documents"] = options.ReturnDocuments;
             if (options.TopK > -1)
             {
-                headers.Add("top_k", options.TopK.ToString());
+                payload["top_k"] = options.TopK;
             }
             if (options.BatchSize > -1)
             {
-                headers.Add("batch_size", options.BatchSize.ToString());
+                payload["batch_size"] = options.BatchSize;
             }
-            headers.Add("sort", options.Sort.ToString());
+            payload["sort"] = options.Sort;
             if (!string.IsNullOrEmpty(options.DocumentType))
             {
-                headers.Add("document_type", options.DocumentType);
+                payload["document_type"] = options.DocumentType;
             }
             if (!string.IsNullOrEmpty(options.TargetPaths))
             {
-                headers.Add("target_paths", options.TargetPaths);
+                payload["target_paths"] = options.TargetPaths;
             }
+
+            return payload;
         }
 
         protected void Dispose(bool disposing)

@@ -24,8 +24,13 @@
         {
             this.connectionString = "";
 
+            DefaultAzureCredentialOptions options = new DefaultAzureCredentialOptions
+            {
+                TenantId = "",
+            };
+
             //Create a cosmos client using AAD authentication
-            TokenCredential tokenCredential = new DefaultAzureCredential();
+            TokenCredential tokenCredential = new DefaultAzureCredential(options);
 
             JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions()
             {
@@ -73,7 +78,7 @@
             string reranking_context = "most economical with multiple pulley adjustmnets and ideal for home gyms";
 
             List<string> documents = new List<string>();
-
+            Console.WriteLine("Query results:");
             FeedIterator<dynamic> resultSetIterator = container.GetItemQueryIterator<dynamic>(
                 new QueryDefinition(queryString),
                 requestOptions: new QueryRequestOptions()
