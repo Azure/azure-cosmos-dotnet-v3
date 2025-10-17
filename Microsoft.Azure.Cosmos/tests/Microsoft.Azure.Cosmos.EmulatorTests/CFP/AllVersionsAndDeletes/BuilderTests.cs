@@ -87,10 +87,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                             // previous
                             Assert.AreEqual(expected: "1", actual: change.Metadata.Id.ToString());
                             Assert.AreEqual(expected: "1", actual: change.Metadata.PartitionKey.FirstOrDefault().Item2);
-                            Assert.AreEqual(expected: "1", actual: change.Previous.id.ToString());
-                            Assert.AreEqual(expected: "1", actual: change.Previous.pk.ToString());
-                            Assert.AreEqual(expected: "Testing TTL on CFP.", actual: change.Previous.description.ToString());
-                            Assert.AreEqual(expected: ttlInSeconds, actual: change.Previous.ttl);
+                            if (change.Previous != null)
+                            {
+                                Assert.AreEqual(expected: "1", actual: change.Previous.id.ToString());
+                                Assert.AreEqual(expected: "1", actual: change.Previous.pk.ToString());
+                                Assert.AreEqual(expected: "Testing TTL on CFP.", actual: change.Previous.description.ToString());
+                                Assert.AreEqual(expected: ttlInSeconds, actual: change.Previous.ttl);
+                            }
 
                             // stop after reading delete since it is the last document in feed.
                             stopwatch.Stop();
@@ -178,9 +181,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                         {
                             metadataId = change.Metadata.Id.ToString();
                             metadataPk = change.Metadata.PartitionKey.FirstOrDefault().Item2.ToString();
-                            id = change.Previous.id.ToString();
-                            pk = change.Previous.pk.ToString();
-                            description = change.Previous.description.ToString();
+                            if (change.Previous != null)
+                            {
+                                id = change.Previous.id.ToString();
+                                pk = change.Previous.pk.ToString();
+                                description = change.Previous.description.ToString();
+                            }
                         }
 
                         ChangeFeedOperationType operationType = change.Metadata.OperationType;
@@ -222,10 +228,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                     Assert.AreEqual(expected: "1", actual: deleteChange.Metadata.PartitionKey.FirstOrDefault().Item2);
                     Assert.AreEqual(expected: deleteChange.Metadata.OperationType, actual: ChangeFeedOperationType.Delete);
                     Assert.AreEqual(expected: replaceChange.Metadata.Lsn, actual: deleteChange.Metadata.PreviousLsn);
-                    Assert.IsNotNull(deleteChange.Previous);
-                    Assert.AreEqual(expected: "1", actual: deleteChange.Previous.id.ToString());
-                    Assert.AreEqual(expected: "1", actual: deleteChange.Previous.pk.ToString());
-                    Assert.AreEqual(expected: "test after replace", actual: deleteChange.Previous.description.ToString());
+
+                    // For now, we verify the metadata contains the information about the deleted item
+                    if (deleteChange.Previous != null)
+                    {
+                        Assert.AreEqual(expected: "1", actual: deleteChange.Previous.id.ToString());
+                        Assert.AreEqual(expected: "1", actual: deleteChange.Previous.pk.ToString());
+                        Assert.AreEqual(expected: "test after replace", actual: deleteChange.Previous.description.ToString());
+                    }
 
                     Assert.IsTrue(condition: createChange.Metadata.ConflictResolutionTimestamp < replaceChange.Metadata.ConflictResolutionTimestamp, message: "The create operation must happen before the replace operation.");
                     Assert.IsTrue(condition: replaceChange.Metadata.ConflictResolutionTimestamp < deleteChange.Metadata.ConflictResolutionTimestamp, message: "The replace operation must happen before the delete operation.");

@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters
                             break;
 
                         default:
-                           throw new JsonException($"Unexpected value type '{objectValue.GetType()}' for PartitionKey property '{key}'.");
+                            throw new JsonException($"Unexpected value type '{objectValue.GetType()}' for PartitionKey property '{key}'.");
                     }
                 }
                 writer.WriteEndObject();
