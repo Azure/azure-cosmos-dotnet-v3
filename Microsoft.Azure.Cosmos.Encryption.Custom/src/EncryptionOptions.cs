@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// </summary>
         Newtonsoft,
 
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
         /// <summary>
         /// Ut8JsonReader/Writer
         /// </summary>
@@ -47,11 +47,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// is the only one supported and is represented by "AEAes256CbcHmacSha256Randomized" value.
         /// </remarks>
         public string EncryptionAlgorithm { get; set; }
-
-        /// <summary>
-        /// Gets or sets payload compression mode
-        /// </summary>
-        public CompressionOptions CompressionOptions { get; set; } = new CompressionOptions();
 
         /// <summary>
         /// Gets or sets list of JSON paths to encrypt on the payload.

@@ -6,6 +6,7 @@
     using System.IO;
     using System.Linq;
     using System.Reflection;
+    using System.Runtime.Versioning;
     using System.Text.RegularExpressions;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -20,9 +21,84 @@
         {
             Assembly.Load(name);
             Assembly[] loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
-            return loadedAssemblies
+            
+            // Get the target framework of the currently executing test assembly
+            Assembly testAssembly = Assembly.GetExecutingAssembly();
+            TargetFrameworkAttribute testTfmAttr = testAssembly.GetCustomAttribute<TargetFrameworkAttribute>();
+            string testTfmName = testTfmAttr?.FrameworkName;
+            
+            // Find all matching assemblies
+            Assembly[] matchingAssemblies = loadedAssemblies
                 .Where((candidate) => candidate.FullName.Contains(name + ","))
-                .FirstOrDefault();
+                .ToArray();
+            
+            if (matchingAssemblies.Length == 0)
+            {
+                return null;
+            }
+            
+            // If we have multiple matches and know our test TFM, try to find the best match
+            if (matchingAssemblies.Length > 1 && !string.IsNullOrEmpty(testTfmName))
+            {
+                // Try to find an assembly with matching or compatible TFM
+                foreach (Assembly candidate in matchingAssemblies)
+                {
+                    TargetFrameworkAttribute candidateTfmAttr = candidate.GetCustomAttribute<TargetFrameworkAttribute>();
+                    string candidateTfmName = candidateTfmAttr?.FrameworkName;
+                    
+                    // Direct match or compatible framework
+                    if (candidateTfmName == testTfmName || 
+                        IsCompatibleFramework(candidateTfmName, testTfmName))
+                    {
+                        return candidate;
+                    }
+                }
+            }
+            
+            // Fallback to first match
+            return matchingAssemblies.FirstOrDefault();
+        }
+
+        /// <summary>
+        /// Determines if the candidate framework is compatible with the test framework.
+        /// For example, netstandard2.0 is compatible with net6.0 or net8.0.
+        /// </summary>
+        private static bool IsCompatibleFramework(string candidateFramework, string testFramework)
+        {
+            if (string.IsNullOrEmpty(candidateFramework) || string.IsNullOrEmpty(testFramework))
+            {
+                return false;
+            }
+            
+            try
+            {
+                FrameworkName candidateFn = new FrameworkName(candidateFramework);
+                FrameworkName testFn = new FrameworkName(testFramework);
+                
+                // If candidate is .NETStandard, it's compatible with .NETCoreApp
+                if (candidateFn.Identifier == ".NETStandard" && testFn.Identifier == ".NETCoreApp")
+                {
+                    return true;
+                }
+                
+                // Same framework identifier
+                if (candidateFn.Identifier == testFn.Identifier)
+                {
+                    // For .NETCoreApp, prefer exact or higher version match
+                    if (testFn.Identifier == ".NETCoreApp")
+                    {
+                        return candidateFn.Version.Major == testFn.Version.Major;
+                    }
+                    return true;
+                }
+            }
+            catch
+            {
+                // If framework name parsing fails, fall back to false
+                return false;
+            }
+            
+            return false;
         }
 
         private sealed class MemberMetadata

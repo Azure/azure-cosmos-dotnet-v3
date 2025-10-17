@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
 namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 {
     using System;
@@ -30,14 +30,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionOptions.DataEncryptionKeyId, encryptionOptions.EncryptionAlgorithm, cancellationToken);
 
-            bool compressionEnabled = encryptionOptions.CompressionOptions.Algorithm != CompressionOptions.CompressionAlgorithm.None;
-
-            BrotliCompressor compressor = encryptionOptions.CompressionOptions.Algorithm == CompressionOptions.CompressionAlgorithm.Brotli
-                ? new BrotliCompressor(encryptionOptions.CompressionOptions.CompressionLevel) : null;
-
             HashSet<string> pathsToEncrypt = encryptionOptions.PathsToEncrypt as HashSet<string> ?? new (encryptionOptions.PathsToEncrypt, StringComparer.Ordinal);
-
-            Dictionary<string, int> compressedPaths = new ();
 
             using Utf8JsonWriter writer = new (outputStream);
 
@@ -80,13 +73,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             await inputStream.DisposeAsync();
 
             EncryptionProperties encryptionProperties = new (
-                encryptionFormatVersion: compressionEnabled ? 4 : 3,
+                encryptionFormatVersion: EncryptionFormatVersion.Mde,
                 encryptionOptions.EncryptionAlgorithm,
                 encryptionOptions.DataEncryptionKeyId,
                 encryptedData: null,
-                pathsEncrypted,
-                encryptionOptions.CompressionOptions.Algorithm,
-                compressedPaths);
+                pathsEncrypted);
 
             writer.WritePropertyName(this.encryptionPropertiesNameBytes);
             JsonSerializer.Serialize(writer, encryptionProperties);
@@ -262,13 +253,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             {
                 byte[] processedBytes = payload;
                 int processedBytesLength = payloadSize;
-
-                if (compressor != null && payloadSize >= encryptionOptions.CompressionOptions.MinimalCompressedLength)
-                {
-                    byte[] compressedBytes = arrayPoolManager.Rent(BrotliCompressor.GetMaxCompressedSize(payloadSize));
-                    processedBytesLength = compressor.Compress(compressedPaths, encryptPropertyName, processedBytes, payloadSize, compressedBytes);
-                    processedBytes = compressedBytes;
-                }
 
                 (byte[] encryptedBytes, int encryptedBytesCount) = this.Encryptor.Encrypt(encryptionKey, typeMarker, processedBytes, processedBytesLength, arrayPoolManager);
 
