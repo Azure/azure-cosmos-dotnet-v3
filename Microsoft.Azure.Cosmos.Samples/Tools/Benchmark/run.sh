@@ -55,7 +55,7 @@ do
             -- -n 2000000 \
             -w $WORKLOAD_NAME \
             $MODE_FLAGS \
-            --pl $PL \
+            --pl 75 \
             -e $ACCOUNT_ENDPOINT \
             -k $ACCOUNT_KEY \
             --enablelatencypercentiles \
