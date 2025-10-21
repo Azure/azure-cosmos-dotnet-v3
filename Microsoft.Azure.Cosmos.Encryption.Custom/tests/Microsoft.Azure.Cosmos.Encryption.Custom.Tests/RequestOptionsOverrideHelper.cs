@@ -10,14 +10,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         internal static RequestOptions? Create(JsonProcessor processor)
         {
 #if NET8_0_OR_GREATER
-#pragma warning disable COSMOSENC0001
             if (processor == JsonProcessor.Newtonsoft)
             {
                 return null; // default path
             }
 
             return EncryptionRequestOptionsExperimental.CreateRequestOptions(processor);
-#pragma warning restore COSMOSENC0001
 #else
             return null;
 #endif

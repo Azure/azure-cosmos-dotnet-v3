@@ -7,16 +7,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics.CodeAnalysis;
     using Microsoft.Azure.Cosmos;
 
     /// <summary>
-    /// Experimental helpers for configuring which JSON processor pipeline is used by the encryption stack.
+    /// Internal helpers for configuring which JSON processor pipeline is used by the encryption stack.
     /// </summary>
-    public static class EncryptionRequestOptionsExperimental
+    internal static class EncryptionRequestOptionsExperimental
     {
-        private const string JsonProcessorExperimentalDiagnosticId = "COSMOSENC0001";
-
         /// <summary>
         /// Configures the JSON processor that should be used for encryption and decryption operations.
         /// </summary>
@@ -45,8 +42,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// var options = EncryptionRequestOptionsExperimental.CreateRequestOptions(JsonProcessor.Stream);
         /// </code>
         /// </example>
-        [Experimental(JsonProcessorExperimentalDiagnosticId)]
-        public static TRequestOptions ConfigureJsonProcessor<TRequestOptions>(this TRequestOptions requestOptions, JsonProcessor jsonProcessor)
+        internal static TRequestOptions ConfigureJsonProcessor<TRequestOptions>(this TRequestOptions requestOptions, JsonProcessor jsonProcessor)
             where TRequestOptions : RequestOptions
         {
             ArgumentValidation.ThrowIfNull(requestOptions);
@@ -83,8 +79,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// This is a convenience method equivalent to creating an <see cref="ItemRequestOptions"/> and calling
         /// <see cref="ConfigureJsonProcessor{TRequestOptions}"/> on it.
         /// </remarks>
-        [Experimental(JsonProcessorExperimentalDiagnosticId)]
-        public static ItemRequestOptions CreateRequestOptions(JsonProcessor jsonProcessor)
+        internal static ItemRequestOptions CreateRequestOptions(JsonProcessor jsonProcessor)
         {
             ItemRequestOptions requestOptions = new ();
             requestOptions.ConfigureJsonProcessor(jsonProcessor);

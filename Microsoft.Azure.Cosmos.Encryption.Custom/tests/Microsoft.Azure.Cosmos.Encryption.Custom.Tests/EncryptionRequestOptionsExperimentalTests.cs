@@ -3,7 +3,6 @@
 // ------------------------------------------------------------
 
 #if NET8_0_OR_GREATER
-#pragma warning disable COSMOSENC0001
 namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 {
     using System;
@@ -72,5 +71,4 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         }
     }
 }
-#pragma warning restore COSMOSENC0001
 #endif
