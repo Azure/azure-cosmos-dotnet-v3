@@ -197,7 +197,9 @@
             }
             else if (arg.Value != null && arg.ArgumentType.IsEnum)
             {
-                return $"{arg.ArgumentType.Name}.{arg.Value}";
+                // Include both enum name and value for clarity: EnumType.Name = Value
+                string enumName = Enum.GetName(arg.ArgumentType, arg.Value) ?? arg.Value.ToString();
+                return $"{arg.ArgumentType.Name}.{enumName} = {arg.Value}";
             }
             else if (arg.Value != null && arg.ArgumentType.IsPrimitive)
             {

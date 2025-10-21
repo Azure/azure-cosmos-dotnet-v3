@@ -95,7 +95,7 @@
           ],
           "MethodInfo": "System.Collections.Generic.IEnumerable`1[Microsoft.Azure.Cosmos.AccountRegion] WritableRegions;CanRead:True;CanWrite:False;System.Collections.Generic.IEnumerable`1[Microsoft.Azure.Cosmos.AccountRegion] get_WritableRegions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"_etag\")]": {
+        "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"_etag\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -562,7 +562,7 @@
           "Attributes": [],
           "MethodInfo": "System.String get_IfNoneMatchEtag();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String IfMatchEtag[System.ObsoleteAttribute(\"IfMatchEtag is inherited from the base class but not used.\")]-[System.ComponentModel.EditorBrowsableAttribute(EditorBrowsableState.1)]": {
+        "System.String IfMatchEtag[System.ObsoleteAttribute(\"IfMatchEtag is inherited from the base class but not used.\")]-[System.ComponentModel.EditorBrowsableAttribute(EditorBrowsableState.Never = 1)]": {
           "Type": "Property",
           "Attributes": [
             "EditorBrowsableAttribute",
@@ -570,7 +570,7 @@
           ],
           "MethodInfo": "System.String IfMatchEtag;CanRead:True;CanWrite:True;System.String get_IfMatchEtag();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_IfMatchEtag(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String IfNoneMatchEtag[System.ObsoleteAttribute(\"IfNoneMatchEtag is inherited from the base class but not used.\")]-[System.ComponentModel.EditorBrowsableAttribute(EditorBrowsableState.1)]": {
+        "System.String IfNoneMatchEtag[System.ObsoleteAttribute(\"IfNoneMatchEtag is inherited from the base class but not used.\")]-[System.ComponentModel.EditorBrowsableAttribute(EditorBrowsableState.Never = 1)]": {
           "Type": "Property",
           "Attributes": [
             "EditorBrowsableAttribute",
@@ -783,7 +783,7 @@
           ],
           "MethodInfo": "Byte[] get_WrappedDataEncryptionKey();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Byte[] WrappedDataEncryptionKey[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"wrappedDataEncryptionKey\")]": {
+        "Byte[] WrappedDataEncryptionKey[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"wrappedDataEncryptionKey\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -795,7 +795,7 @@
           "Attributes": [],
           "MethodInfo": "Int32 GetHashCode();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.EncryptionKeyWrapMetadata EncryptionKeyWrapMetadata[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"keyWrapMetadata\")]": {
+        "Microsoft.Azure.Cosmos.EncryptionKeyWrapMetadata EncryptionKeyWrapMetadata[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"keyWrapMetadata\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -809,7 +809,7 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.EncryptionKeyWrapMetadata get_EncryptionKeyWrapMetadata();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Nullable`1[System.DateTime] CreatedTime[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]-[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"_cts\")]": {
+        "System.Nullable`1[System.DateTime] CreatedTime[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]-[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"_cts\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonConverterAttribute",
@@ -831,7 +831,7 @@
           ],
           "MethodInfo": "System.Nullable`1[System.DateTime] get_LastModified();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Nullable`1[System.DateTime] LastModified[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]-[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"_ts\")]": {
+        "System.Nullable`1[System.DateTime] LastModified[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]-[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"_ts\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonConverterAttribute",
@@ -839,14 +839,14 @@
           ],
           "MethodInfo": "System.Nullable`1[System.DateTime] LastModified;CanRead:True;CanWrite:True;System.Nullable`1[System.DateTime] get_LastModified();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String EncryptionAlgorithm[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"encryptionAlgorithm\")]": {
+        "System.String EncryptionAlgorithm[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"encryptionAlgorithm\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
           ],
           "MethodInfo": "System.String EncryptionAlgorithm;CanRead:True;CanWrite:True;System.String get_EncryptionAlgorithm();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"_etag\")]": {
+        "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"_etag\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -888,7 +888,7 @@
           ],
           "MethodInfo": "System.String Id;CanRead:True;CanWrite:True;System.String get_Id();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"_self\")]": {
+        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"_self\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -1219,7 +1219,7 @@
           ],
           "MethodInfo": "System.String Id;CanRead:True;CanWrite:True;System.String get_Id();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"_self\")]": {
+        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"_self\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -1265,7 +1265,7 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.ConflictResolutionMode get_Mode();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.ConflictResolutionMode Mode[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"mode\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]": {
+        "Microsoft.Azure.Cosmos.ConflictResolutionMode Mode[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"mode\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]": {
           "Type": "Property",
           "Attributes": [
             "JsonConverterAttribute",
@@ -1287,14 +1287,14 @@
           ],
           "MethodInfo": "System.String get_ResolutionProcedure();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String ResolutionPath[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"conflictResolutionPath\")]": {
+        "System.String ResolutionPath[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"conflictResolutionPath\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
           ],
           "MethodInfo": "System.String ResolutionPath;CanRead:True;CanWrite:True;System.String get_ResolutionPath();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_ResolutionPath(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String ResolutionProcedure[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"conflictResolutionProcedure\")]": {
+        "System.String ResolutionProcedure[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"conflictResolutionProcedure\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -2333,7 +2333,7 @@
           ],
           "MethodInfo": "System.Nullable`1[System.DateTime] get_LastModified();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Nullable`1[System.DateTime] LastModified[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"_ts\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]": {
+        "System.Nullable`1[System.DateTime] LastModified[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"_ts\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]": {
           "Type": "Property",
           "Attributes": [
             "JsonConverterAttribute",
@@ -2341,14 +2341,14 @@
           ],
           "MethodInfo": "System.Nullable`1[System.DateTime] LastModified;CanRead:True;CanWrite:True;System.Nullable`1[System.DateTime] get_LastModified();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Nullable`1[System.Int32] AnalyticalStoreTimeToLiveInSeconds[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"analyticalStorageTtl\")]": {
+        "System.Nullable`1[System.Int32] AnalyticalStoreTimeToLiveInSeconds[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"analyticalStorageTtl\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
           ],
           "MethodInfo": "System.Nullable`1[System.Int32] AnalyticalStoreTimeToLiveInSeconds;CanRead:True;CanWrite:True;System.Nullable`1[System.Int32] get_AnalyticalStoreTimeToLiveInSeconds();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_AnalyticalStoreTimeToLiveInSeconds(System.Nullable`1[System.Int32]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Nullable`1[System.Int32] DefaultTimeToLive[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"defaultTtl\")]": {
+        "System.Nullable`1[System.Int32] DefaultTimeToLive[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"defaultTtl\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -2369,7 +2369,7 @@
           ],
           "MethodInfo": "System.Nullable`1[System.Int32] get_DefaultTimeToLive();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"_etag\")]": {
+        "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"_etag\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -2421,14 +2421,14 @@
           ],
           "MethodInfo": "System.String PartitionKeyPath;CanRead:True;CanWrite:True;System.String get_PartitionKeyPath();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_PartitionKeyPath(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"_self\")]": {
+        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"_self\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
           ],
           "MethodInfo": "System.String SelfLink;CanRead:True;CanWrite:True;System.String get_SelfLink();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String TimeToLivePropertyPath[System.ObsoleteAttribute()]-[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"ttlPropertyPath\")]": {
+        "System.String TimeToLivePropertyPath[System.ObsoleteAttribute()]-[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"ttlPropertyPath\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute",
@@ -4174,7 +4174,7 @@
           ],
           "MethodInfo": "System.Nullable`1[System.DateTime] get_LastModified();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Nullable`1[System.DateTime] LastModified[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]-[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"_ts\")]": {
+        "System.Nullable`1[System.DateTime] LastModified[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]-[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"_ts\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonConverterAttribute",
@@ -4182,7 +4182,7 @@
           ],
           "MethodInfo": "System.Nullable`1[System.DateTime] LastModified;CanRead:True;CanWrite:True;System.Nullable`1[System.DateTime] get_LastModified();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"_etag\")]": {
+        "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"_etag\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -4215,7 +4215,7 @@
           ],
           "MethodInfo": "System.String Id;CanRead:True;CanWrite:True;System.String get_Id();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_Id(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"_self\")]": {
+        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"_self\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -4588,7 +4588,7 @@
           "Attributes": [],
           "MethodInfo": "Int32 GetHashCode();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String Algorithm[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"algorithm\")]": {
+        "System.String Algorithm[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"algorithm\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -4623,21 +4623,21 @@
           ],
           "MethodInfo": "System.String get_Value();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String Name[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"name\")]": {
+        "System.String Name[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"name\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
           ],
           "MethodInfo": "System.String Name;CanRead:True;CanWrite:True;System.String get_Name();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String Type[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"type\")]": {
+        "System.String Type[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"type\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
           ],
           "MethodInfo": "System.String Type;CanRead:True;CanWrite:True;System.String get_Type();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String Value[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"value\")]": {
+        "System.String Value[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"value\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -5425,7 +5425,7 @@
           ],
           "MethodInfo": "System.String get_Path();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String Language[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"language\")]": {
+        "System.String Language[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"language\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -5481,7 +5481,7 @@
           "Attributes": [],
           "MethodInfo": "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.FullTextPath] get_FullTextPaths();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String DefaultLanguage[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"defaultLanguage\")]": {
+        "System.String DefaultLanguage[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"defaultLanguage\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -5867,7 +5867,7 @@
           ],
           "MethodInfo": "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.ExcludedPath] get_ExcludedPaths();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.FullTextIndexPath] FullTextIndexes[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"fullTextIndexes\")]": {
+        "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.FullTextIndexPath] FullTextIndexes[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"fullTextIndexes\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -5916,7 +5916,7 @@
           ],
           "MethodInfo": "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.VectorIndexPath] get_VectorIndexes();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.VectorIndexPath] VectorIndexes[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"vectorIndexes\")]": {
+        "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.VectorIndexPath] VectorIndexes[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"vectorIndexes\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -7228,7 +7228,7 @@
           ],
           "MethodInfo": "System.Nullable`1[System.DateTime] get_LastModified();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Nullable`1[System.DateTime] LastModified[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]-[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"_ts\")]": {
+        "System.Nullable`1[System.DateTime] LastModified[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]-[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"_ts\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonConverterAttribute",
@@ -7236,7 +7236,7 @@
           ],
           "MethodInfo": "System.Nullable`1[System.DateTime] LastModified;CanRead:True;CanWrite:True;System.Nullable`1[System.DateTime] get_LastModified();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"_etag\")]": {
+        "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"_etag\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -7292,14 +7292,14 @@
           ],
           "MethodInfo": "System.String ResourceUri;CanRead:True;CanWrite:True;System.String get_ResourceUri();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"_self\")]": {
+        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"_self\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
           ],
           "MethodInfo": "System.String SelfLink;CanRead:True;CanWrite:True;System.String get_SelfLink();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String Token[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"_token\")]": {
+        "System.String Token[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"_token\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -8472,7 +8472,7 @@
               "Attributes": [],
               "MethodInfo": "System.String get_IfNoneMatchEtag();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
-            "System.String IfMatchEtag[System.ObsoleteAttribute(\"IfMatchEtag is inherited from the base class but not used.\")]-[System.ComponentModel.EditorBrowsableAttribute(EditorBrowsableState.1)]": {
+            "System.String IfMatchEtag[System.ObsoleteAttribute(\"IfMatchEtag is inherited from the base class but not used.\")]-[System.ComponentModel.EditorBrowsableAttribute(EditorBrowsableState.Never = 1)]": {
               "Type": "Property",
               "Attributes": [
                 "EditorBrowsableAttribute",
@@ -8480,7 +8480,7 @@
               ],
               "MethodInfo": "System.String IfMatchEtag;CanRead:True;CanWrite:True;System.String get_IfMatchEtag();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_IfMatchEtag(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
-            "System.String IfNoneMatchEtag[System.ObsoleteAttribute(\"IfNoneMatchEtag is inherited from the base class but not used.\")]-[System.ComponentModel.EditorBrowsableAttribute(EditorBrowsableState.1)]": {
+            "System.String IfNoneMatchEtag[System.ObsoleteAttribute(\"IfNoneMatchEtag is inherited from the base class but not used.\")]-[System.ComponentModel.EditorBrowsableAttribute(EditorBrowsableState.Never = 1)]": {
               "Type": "Property",
               "Attributes": [
                 "EditorBrowsableAttribute",
@@ -9974,7 +9974,7 @@
           ],
           "MethodInfo": "System.Nullable`1[System.DateTime] get_LastModified();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Nullable`1[System.DateTime] LastModified[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]-[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"_ts\")]": {
+        "System.Nullable`1[System.DateTime] LastModified[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]-[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"_ts\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonConverterAttribute",
@@ -9989,7 +9989,7 @@
           ],
           "MethodInfo": "System.String Body;CanRead:True;CanWrite:True;System.String get_Body();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_Body(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"_etag\")]": {
+        "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"_etag\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -10027,7 +10027,7 @@
           ],
           "MethodInfo": "System.String Id;CanRead:True;CanWrite:True;System.String get_Id();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_Id(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"_self\")]": {
+        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"_self\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -10301,7 +10301,7 @@
           ],
           "MethodInfo": "System.String Body;CanRead:True;CanWrite:True;System.String get_Body();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_Body(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"_etag\")]": {
+        "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"_etag\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -10343,7 +10343,7 @@
           ],
           "MethodInfo": "System.String Id;CanRead:True;CanWrite:True;System.String get_Id();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_Id(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"_self\")]": {
+        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"_self\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -10506,7 +10506,7 @@
           ],
           "MethodInfo": "System.String Body;CanRead:True;CanWrite:True;System.String get_Body();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_Body(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"_etag\")]": {
+        "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"_etag\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -10548,7 +10548,7 @@
           ],
           "MethodInfo": "System.String Id;CanRead:True;CanWrite:True;System.String get_Id();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_Id(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"_self\")]": {
+        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"_self\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -11121,7 +11121,7 @@
               ],
               "MethodInfo": "System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.Position] get_Positions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
-            "System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.Position] Positions[System.Runtime.Serialization.DataMemberAttribute(Name = \"coordinates\")]-[Newtonsoft.Json.JsonPropertyAttribute(\"coordinates\", Order = (Int32)1, Required = Required.2)]": {
+            "System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.Position] Positions[System.Runtime.Serialization.DataMemberAttribute(Name = \"coordinates\")]-[Newtonsoft.Json.JsonPropertyAttribute(\"coordinates\", Order = (Int32)1, Required = Required.Always = 2)]": {
               "Type": "Property",
               "Attributes": [
                 "DataMemberAttribute",
@@ -11167,7 +11167,7 @@
               ],
               "MethodInfo": "System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates] get_Polygons();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
-            "System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates] Polygons[System.Runtime.Serialization.DataMemberAttribute(Name = \"coordinates\")]-[Newtonsoft.Json.JsonPropertyAttribute(\"coordinates\", Order = (Int32)1, Required = Required.2)]": {
+            "System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates] Polygons[System.Runtime.Serialization.DataMemberAttribute(Name = \"coordinates\")]-[Newtonsoft.Json.JsonPropertyAttribute(\"coordinates\", Order = (Int32)1, Required = Required.Always = 2)]": {
               "Type": "Property",
               "Attributes": [
                 "DataMemberAttribute",
@@ -11213,7 +11213,7 @@
               ],
               "MethodInfo": "Microsoft.Azure.Cosmos.Spatial.Position get_Position();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
-            "Microsoft.Azure.Cosmos.Spatial.Position Position[System.Runtime.Serialization.DataMemberAttribute(Name = \"coordinates\")]-[Newtonsoft.Json.JsonPropertyAttribute(\"coordinates\", Order = (Int32)1, Required = Required.2)]": {
+            "Microsoft.Azure.Cosmos.Spatial.Position Position[System.Runtime.Serialization.DataMemberAttribute(Name = \"coordinates\")]-[Newtonsoft.Json.JsonPropertyAttribute(\"coordinates\", Order = (Int32)1, Required = Required.Always = 2)]": {
               "Type": "Property",
               "Attributes": [
                 "DataMemberAttribute",
@@ -11264,7 +11264,7 @@
               ],
               "MethodInfo": "System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.LinearRing] get_Rings();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
-            "System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.LinearRing] Rings[System.Runtime.Serialization.DataMemberAttribute(Name = \"coordinates\")]-[Newtonsoft.Json.JsonPropertyAttribute(\"coordinates\", Order = (Int32)1, Required = Required.2)]": {
+            "System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.LinearRing] Rings[System.Runtime.Serialization.DataMemberAttribute(Name = \"coordinates\")]-[Newtonsoft.Json.JsonPropertyAttribute(\"coordinates\", Order = (Int32)1, Required = Required.Always = 2)]": {
               "Type": "Property",
               "Attributes": [
                 "DataMemberAttribute",
@@ -11322,7 +11322,7 @@
           "Attributes": [],
           "MethodInfo": "Int32 GetHashCode();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.Spatial.BoundingBox BoundingBox[System.Runtime.Serialization.DataMemberAttribute(Name = \"bbox\")]-[Newtonsoft.Json.JsonPropertyAttribute(\"bbox\", DefaultValueHandling = DefaultValueHandling.1, Order = (Int32)3)]": {
+        "Microsoft.Azure.Cosmos.Spatial.BoundingBox BoundingBox[System.Runtime.Serialization.DataMemberAttribute(Name = \"bbox\")]-[Newtonsoft.Json.JsonPropertyAttribute(\"bbox\", DefaultValueHandling = DefaultValueHandling.Ignore = 1, Order = (Int32)3)]": {
           "Type": "Property",
           "Attributes": [
             "DataMemberAttribute",
@@ -11354,7 +11354,7 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.Spatial.GeometryType get_Type();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.Spatial.GeometryType Type[System.Runtime.Serialization.DataMemberAttribute(Name = \"type\")]-[Newtonsoft.Json.JsonPropertyAttribute(\"type\", Order = (Int32)0, Required = Required.2)]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]": {
+        "Microsoft.Azure.Cosmos.Spatial.GeometryType Type[System.Runtime.Serialization.DataMemberAttribute(Name = \"type\")]-[Newtonsoft.Json.JsonPropertyAttribute(\"type\", Order = (Int32)0, Required = Required.Always = 2)]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]": {
           "Type": "Property",
           "Attributes": [
             "DataMemberAttribute",
@@ -11562,7 +11562,7 @@
           ],
           "MethodInfo": "Boolean get_IsValid();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Boolean IsValid[System.Runtime.Serialization.DataMemberAttribute(Name = \"valid\")]-[Newtonsoft.Json.JsonPropertyAttribute(\"valid\", Order = (Int32)0, Required = Required.2)]": {
+        "Boolean IsValid[System.Runtime.Serialization.DataMemberAttribute(Name = \"valid\")]-[Newtonsoft.Json.JsonPropertyAttribute(\"valid\", Order = (Int32)0, Required = Required.Always = 2)]": {
           "Type": "Property",
           "Attributes": [
             "DataMemberAttribute",
@@ -11658,7 +11658,7 @@
           ],
           "MethodInfo": "System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.Position] get_Positions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.Position] Positions[System.Runtime.Serialization.DataMemberAttribute(Name = \"coordinates\")]-[Newtonsoft.Json.JsonPropertyAttribute(\"coordinates\", Order = (Int32)1, Required = Required.2)]": {
+        "System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.Position] Positions[System.Runtime.Serialization.DataMemberAttribute(Name = \"coordinates\")]-[Newtonsoft.Json.JsonPropertyAttribute(\"coordinates\", Order = (Int32)1, Required = Required.Always = 2)]": {
           "Type": "Property",
           "Attributes": [
             "DataMemberAttribute",
@@ -11753,7 +11753,7 @@
           ],
           "MethodInfo": "System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates] get_Polygons();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates] Polygons[System.Runtime.Serialization.DataMemberAttribute(Name = \"coordinates\")]-[Newtonsoft.Json.JsonPropertyAttribute(\"coordinates\", Order = (Int32)1, Required = Required.2)]": {
+        "System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates] Polygons[System.Runtime.Serialization.DataMemberAttribute(Name = \"coordinates\")]-[Newtonsoft.Json.JsonPropertyAttribute(\"coordinates\", Order = (Int32)1, Required = Required.Always = 2)]": {
           "Type": "Property",
           "Attributes": [
             "DataMemberAttribute",
@@ -11834,7 +11834,7 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.Spatial.Position get_Position();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.Spatial.Position Position[System.Runtime.Serialization.DataMemberAttribute(Name = \"coordinates\")]-[Newtonsoft.Json.JsonPropertyAttribute(\"coordinates\", Order = (Int32)1, Required = Required.2)]": {
+        "Microsoft.Azure.Cosmos.Spatial.Position Position[System.Runtime.Serialization.DataMemberAttribute(Name = \"coordinates\")]-[Newtonsoft.Json.JsonPropertyAttribute(\"coordinates\", Order = (Int32)1, Required = Required.Always = 2)]": {
           "Type": "Property",
           "Attributes": [
             "DataMemberAttribute",
@@ -11885,7 +11885,7 @@
           ],
           "MethodInfo": "System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.LinearRing] get_Rings();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.LinearRing] Rings[System.Runtime.Serialization.DataMemberAttribute(Name = \"coordinates\")]-[Newtonsoft.Json.JsonPropertyAttribute(\"coordinates\", Order = (Int32)1, Required = Required.2)]": {
+        "System.Collections.ObjectModel.ReadOnlyCollection`1[Microsoft.Azure.Cosmos.Spatial.LinearRing] Rings[System.Runtime.Serialization.DataMemberAttribute(Name = \"coordinates\")]-[Newtonsoft.Json.JsonPropertyAttribute(\"coordinates\", Order = (Int32)1, Required = Required.Always = 2)]": {
           "Type": "Property",
           "Attributes": [
             "DataMemberAttribute",
@@ -12034,7 +12034,7 @@
     "Microsoft.Azure.Cosmos.SpatialPath;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "Microsoft.Azure.Cosmos.BoundingBoxProperties BoundingBox[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"boundingBox\")]": {
+        "Microsoft.Azure.Cosmos.BoundingBoxProperties BoundingBox[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"boundingBox\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -12147,7 +12147,7 @@
           ],
           "MethodInfo": "System.Nullable`1[System.DateTime] get_LastModified();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Nullable`1[System.DateTime] LastModified[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]-[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"_ts\")]": {
+        "System.Nullable`1[System.DateTime] LastModified[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]-[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"_ts\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonConverterAttribute",
@@ -12179,7 +12179,7 @@
           ],
           "MethodInfo": "System.Nullable`1[System.Int32] Throughput;CanRead:True;CanWrite:True;System.Nullable`1[System.Int32] get_Throughput();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"_etag\")]": {
+        "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"_etag\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -12200,7 +12200,7 @@
           ],
           "MethodInfo": "System.String get_SelfLink();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"_self\")]": {
+        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"_self\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -12895,7 +12895,7 @@
           ],
           "MethodInfo": "System.Nullable`1[System.DateTime] get_LastModified();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Nullable`1[System.DateTime] LastModified[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]-[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"_ts\")]": {
+        "System.Nullable`1[System.DateTime] LastModified[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]-[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"_ts\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonConverterAttribute",
@@ -12903,7 +12903,7 @@
           ],
           "MethodInfo": "System.Nullable`1[System.DateTime] LastModified;CanRead:True;CanWrite:True;System.Nullable`1[System.DateTime] get_LastModified();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"_etag\")]": {
+        "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"_etag\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -12936,7 +12936,7 @@
           ],
           "MethodInfo": "System.String Id;CanRead:True;CanWrite:True;System.String get_Id();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_Id(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"_self\")]": {
+        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"_self\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
