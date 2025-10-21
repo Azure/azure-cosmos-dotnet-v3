@@ -11,11 +11,11 @@ using System.Threading;
 using System.Threading.Tasks;
 
 #if NET8_0_OR_GREATER
-internal sealed class StreamAdapter : IMdeJsonProcessorAdapter
+internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
 {
     private readonly StreamProcessor streamProcessor;
 
-    public StreamAdapter(StreamProcessor streamProcessor)
+    public SystemTextJsonStreamAdapter(StreamProcessor streamProcessor)
     {
         this.streamProcessor = streamProcessor;
     }

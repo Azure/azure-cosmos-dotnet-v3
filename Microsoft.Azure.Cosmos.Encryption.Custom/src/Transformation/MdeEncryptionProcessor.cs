@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             {
                 [JsonProcessor.Newtonsoft] = () => new NewtonsoftAdapter(this.JObjectEncryptionProcessor),
 #if NET8_0_OR_GREATER
-                [JsonProcessor.Stream] = () => new StreamAdapter(this.StreamProcessor),
+                [JsonProcessor.Stream] = () => new SystemTextJsonStreamAdapter(this.StreamProcessor),
 #endif
             };
         }

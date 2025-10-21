@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -547,7 +547,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                     },
                     Properties = new Dictionary<string, object>
                     {
-                        { RequestOptionsPropertiesExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Newtonsoft }
+                        { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Newtonsoft }
                     }
                 };
 
@@ -568,7 +568,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                         {
                             Properties = new Dictionary<string, object>
                             {
-                                { RequestOptionsPropertiesExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Newtonsoft }
+                                { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Newtonsoft }
                             }
                         });
 
@@ -585,7 +585,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                             {
                                 Properties = new Dictionary<string, object>
                                 {
-                                    { RequestOptionsPropertiesExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Newtonsoft }
+                                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Newtonsoft }
                                 }
                             });
                     }
