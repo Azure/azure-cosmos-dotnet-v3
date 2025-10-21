@@ -34,6 +34,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [5422](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5422) Diagnostics: Fixes race condition that can cause InvalidOperationException in CosmosOperationCancelledException.ToString()
 - [5427](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5427) PPAF: Fixes issue where setting RequestTimeout to 0 second will cause PPAF dynamic enablement to break
 
+## <a name="3.54.0-preview.2"/> [3.54.0-preview.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.54.0-preview.2) - 2025-10-7
+
+### <a name="3.53.2"/> [3.53.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.53.2) - 2025-10-7
+
+#### Fixed
+
+- [5427](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5427) PPAF: Fixes issue where setting RequestTimeout to 0 second will cause PPAF dynamic enablement to break
+
+
 ### <a name="3.54.0-preview.1"/> [3.54.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.54.0-preview.1) - 2025-8-27
 
 ### <a name="3.53.1"/> [3.53.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.53.1) - 2025-8-27

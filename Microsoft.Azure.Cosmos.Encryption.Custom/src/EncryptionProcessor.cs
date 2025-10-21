@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         internal static readonly CosmosJsonDotNetSerializer BaseSerializer = new (JsonSerializerSettings);
 
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
         private static readonly StreamProcessor StreamProcessor = new ();
 #endif
 
@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 #pragma warning restore CS0618 // Type or member is obsolete
         }
 
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
         public static async Task EncryptAsync(
             Stream input,
             Stream output,
@@ -152,14 +152,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return jsonProcessor switch
             {
                 JsonProcessor.Newtonsoft => await DecryptAsync(input, encryptor, diagnosticsContext, cancellationToken),
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
                 JsonProcessor.Stream => await DecryptStreamAsync(input, encryptor, diagnosticsContext, cancellationToken),
 #endif
                 _ => throw new InvalidOperationException("Unsupported Json Processor")
             };
         }
 
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
         public static async Task<DecryptionContext> DecryptAsync(
             Stream input,
             Stream output,
@@ -223,7 +223,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         }
 #endif
 
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
         public static async Task<(Stream, DecryptionContext)> DecryptStreamAsync(
             Stream input,
             Encryptor encryptor,
