@@ -18,8 +18,10 @@
         /// conditional compilation (#if NET8_0_OR_GREATER), the API surface differs between
         /// .NET versions. Therefore:
         /// 
-        /// - When running on net6.0: validates against DotNetSDKEncryptionCustomAPI.json
+        /// - When running on net6.0: validates against DotNetSDKEncryptionCustomAPI.net6.json
         /// - When running on net8.0: validates against DotNetSDKEncryptionCustomAPI.net8.json
+        /// 
+        /// There is NO generic fallback - each supported framework MUST have its own baseline.
         /// 
         /// To update baselines, run: UpdateContracts.ps1 from the repository root.
         /// This script runs tests on BOTH net6.0 and net8.0 to generate both baselines.
@@ -29,48 +31,31 @@
         {
             int? currentMajorVersion = GetCurrentMajorVersion();
             
-            // Resolve a framework-specific baseline if available; otherwise fall back to the generic baseline.
-            string baseline = ResolveFrameworkSpecificBaseline(
-                baseFileName: "DotNetSDKEncryptionCustomAPI",
-                defaultFileName: "DotNetSDKEncryptionCustomAPI.json",
-                currentMajorVersion: currentMajorVersion);
+            // REQUIRE framework-specific baseline - no fallback to generic contract
+            if (!currentMajorVersion.HasValue)
+            {
+                Assert.Fail("Unable to determine target framework version. " +
+                           "Encryption.Custom requires framework-specific contracts (.net6 or .net8).");
+            }
+
+            string baseline = $"DotNetSDKEncryptionCustomAPI.net{currentMajorVersion}.json";
+            string baselinePath = Path.Combine("Contracts", baseline);
 
             // Validate that the baseline file exists
-            string baselinePath = Path.Combine("Contracts", baseline);
             if (!File.Exists(baselinePath))
             {
-                Assert.Fail($"Baseline file not found: {baselinePath}. " +
-                           $"This indicates the baseline for the current target framework (.NET {currentMajorVersion ?? 6}) is missing. " +
+                Assert.Fail($"Framework-specific baseline file not found: {baselinePath}. " +
+                           $"Encryption.Custom requires separate contracts for each target framework (.NET {currentMajorVersion}). " +
                            $"Run UpdateContracts.ps1 from the repository root to generate all required baseline files.");
             }
 
-            // For breaking changes output, always use framework-specific name if we have a version
-            // (doesn't need to exist yet since the test creates it)
-            string breakingChangesPath = currentMajorVersion.HasValue
-                ? $"DotNetSDKEncryptionCustomAPIChanges.net{currentMajorVersion}.json"
-                : "DotNetSDKEncryptionCustomAPIChanges.json";
+            // Breaking changes path is always framework-specific
+            string breakingChangesPath = $"DotNetSDKEncryptionCustomAPIChanges.net{currentMajorVersion}.json";
 
             Cosmos.Tests.Contracts.ContractEnforcement.ValidateContractContainBreakingChanges(
                 dllName: "Microsoft.Azure.Cosmos.Encryption.Custom",
                 baselinePath: baseline,
                 breakingChangesPath: breakingChangesPath);
-        }
-
-        private static string ResolveFrameworkSpecificBaseline(string baseFileName, string defaultFileName, int? currentMajorVersion)
-        {
-            string contractsDir = "Contracts";
-            string[] candidates = {
-                currentMajorVersion is null ? null : $"{baseFileName}.net{currentMajorVersion}.json",
-                defaultFileName
-            };
-
-            string existing = candidates
-                .Where(name => !string.IsNullOrWhiteSpace(name))
-                .Select(name => Path.Combine(contractsDir, name))
-                .FirstOrDefault(File.Exists);
-
-            // Return just the file name as expected by ContractEnforcement
-            return existing != null ? Path.GetFileName(existing) : defaultFileName;
         }
 
         private static int? GetCurrentMajorVersion()
