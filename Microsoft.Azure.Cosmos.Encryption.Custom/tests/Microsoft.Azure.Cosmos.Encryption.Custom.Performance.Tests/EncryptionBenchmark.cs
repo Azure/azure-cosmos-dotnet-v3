@@ -37,7 +37,7 @@
 #else
         [Params(JsonProcessor.Newtonsoft)]
 #endif
-        public JsonProcessor JsonProcessor { get; set; }
+        internal JsonProcessor JsonProcessor { get; set; }
 
         [GlobalSetup]
         public async Task Setup()

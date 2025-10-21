@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// <summary>
     /// API for JSON processing
     /// </summary>
-    public enum JsonProcessor
+    internal enum JsonProcessor
     {
         /// <summary>
         /// Newtonsoft.Json

@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [TestMethod]
         [DynamicData(nameof(JsonProcessors))]
 
-        public async Task InvalidPathToEncrypt(JsonProcessor jsonProcessor)
+        internal async Task InvalidPathToEncrypt(JsonProcessor jsonProcessor)
         {
             TestDoc testDoc = TestDoc.Create();
             EncryptionOptions encryptionOptionsWithInvalidPathToEncrypt = new ()
@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         [TestMethod]
         [DynamicData(nameof(JsonProcessors))]
-        public async Task EncryptDecryptPropertyWithNullValue(JsonProcessor jsonProcessor)
+        internal async Task EncryptDecryptPropertyWithNullValue(JsonProcessor jsonProcessor)
         {
             TestDoc testDoc = TestDoc.Create();
             testDoc.SensitiveStr = null;
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         [TestMethod]
         [DynamicData(nameof(JsonProcessors))]
-        public async Task ValidateEncryptDecryptDocument(JsonProcessor jsonProcessor)
+        internal async Task ValidateEncryptDecryptDocument(JsonProcessor jsonProcessor)
         {
             TestDoc testDoc = TestDoc.Create();
 
@@ -127,7 +127,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         [TestMethod]
         [DynamicData(nameof(JsonProcessors))]
-        public async Task ValidateDecryptStream(JsonProcessor jsonProcessor)
+        internal async Task ValidateDecryptStream(JsonProcessor jsonProcessor)
         {
             TestDoc testDoc = TestDoc.Create();
 

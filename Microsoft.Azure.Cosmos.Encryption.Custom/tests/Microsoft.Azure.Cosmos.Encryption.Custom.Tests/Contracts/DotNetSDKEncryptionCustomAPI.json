@@ -259,7 +259,7 @@
           ],
           "MethodInfo": "Byte[] get_WrappedDataEncryptionKey();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Byte[] WrappedDataEncryptionKey[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"wrappedDataEncryptionKey\", NullValueHandling = 1)]": {
+        "Byte[] WrappedDataEncryptionKey[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"wrappedDataEncryptionKey\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -271,7 +271,7 @@
           "Attributes": [],
           "MethodInfo": "Int32 GetHashCode();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapMetadata EncryptionKeyWrapMetadata[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"keyWrapMetadata\", NullValueHandling = 1)]": {
+        "Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapMetadata EncryptionKeyWrapMetadata[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"keyWrapMetadata\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -285,7 +285,7 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapMetadata get_EncryptionKeyWrapMetadata();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Nullable`1[System.DateTime] CreatedTime[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.Custom.UnixDateTimeConverter))]-[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"createTime\", NullValueHandling = 1)]": {
+        "System.Nullable`1[System.DateTime] CreatedTime[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.Custom.UnixDateTimeConverter))]-[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"createTime\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonConverterAttribute",
@@ -307,7 +307,7 @@
           ],
           "MethodInfo": "System.Nullable`1[System.DateTime] get_LastModified();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Nullable`1[System.DateTime] LastModified[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.Custom.UnixDateTimeConverter))]-[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"_ts\", NullValueHandling = 1)]": {
+        "System.Nullable`1[System.DateTime] LastModified[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.Custom.UnixDateTimeConverter))]-[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_ts\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonConverterAttribute",
@@ -315,14 +315,14 @@
           ],
           "MethodInfo": "System.Nullable`1[System.DateTime] LastModified;CanRead:True;CanWrite:True;System.Nullable`1[System.DateTime] get_LastModified();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String EncryptionAlgorithm[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"encryptionAlgorithm\", NullValueHandling = 1)]": {
+        "System.String EncryptionAlgorithm[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"encryptionAlgorithm\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
           ],
           "MethodInfo": "System.String EncryptionAlgorithm;CanRead:True;CanWrite:True;System.String get_EncryptionAlgorithm();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"_etag\", NullValueHandling = 1)]": {
+        "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_etag\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -364,7 +364,7 @@
           ],
           "MethodInfo": "System.String Id;CanRead:True;CanWrite:True;System.String get_Id();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"_self\", NullValueHandling = 1)]": {
+        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_self\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -893,14 +893,14 @@
           ],
           "MethodInfo": "System.String get_Value();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String Name[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"name\", NullValueHandling = 1)]": {
+        "System.String Name[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"name\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
           ],
           "MethodInfo": "System.String Name;CanRead:True;CanWrite:True;System.String get_Name();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String Value[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"value\", NullValueHandling = 1)]": {
+        "System.String Value[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"value\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -1140,20 +1140,9 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.Encryption.Custom.JsonProcessor;System.Enum;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:True;IsClass:False;IsValueType:True;IsNested:False;IsGenericType:False;IsSerializable:True": {
+    "Microsoft.Azure.Cosmos.Encryption.Custom.JsonProcessorRequestOptionsExtensions;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
-      "Members": {
-        "Int32 value__": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "Int32 value__;IsInitOnly:False;IsStatic:False;"
-        },
-        "Microsoft.Azure.Cosmos.Encryption.Custom.JsonProcessor Newtonsoft": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.Custom.JsonProcessor Newtonsoft;IsInitOnly:False;IsStatic:True;"
-        }
-      },
+      "Members": {},
       "NestedTypes": {}
     }
   },

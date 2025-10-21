@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         [TestMethod]
         [DynamicData(nameof(JsonProcessors))]
-        public async Task InvalidPathToEncrypt(JsonProcessor jsonProcessor)
+        internal async Task InvalidPathToEncrypt(JsonProcessor jsonProcessor)
         {
             TestDoc testDoc = TestDoc.Create();
             EncryptionOptions encryptionOptionsWithInvalidPathToEncrypt = new()
@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         [TestMethod]
         [DynamicData(nameof(JsonProcessors))]
-        public async Task DuplicatePathToEncrypt(JsonProcessor jsonProcessor)
+        internal async Task DuplicatePathToEncrypt(JsonProcessor jsonProcessor)
         {
             TestDoc testDoc = TestDoc.Create();
             EncryptionOptions encryptionOptionsWithDuplicatePathToEncrypt = new()
@@ -133,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         [TestMethod]
         [DynamicData(nameof(JsonProcessors))]
-        public async Task EncryptDecryptPropertyWithNullValue_VerifyByNewtonsoft(JsonProcessor jsonProcessor)
+        internal async Task EncryptDecryptPropertyWithNullValue_VerifyByNewtonsoft(JsonProcessor jsonProcessor)
         {
             EncryptionOptions encryptionOptions = this.CreateEncryptionOptions();
             TestDoc testDoc = TestDoc.Create();
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         [TestMethod]
         [DynamicData(nameof(JsonProcessors))]
-        public async Task ValidateEncryptDecryptDocument_VerifyByNewtonsoft(JsonProcessor jsonProcessor)
+        internal async Task ValidateEncryptDecryptDocument_VerifyByNewtonsoft(JsonProcessor jsonProcessor)
         {
             EncryptionOptions encryptionOptions = this.CreateEncryptionOptions();
             TestDoc testDoc = TestDoc.Create();
@@ -178,7 +178,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         [TestMethod]
         [DynamicData(nameof(JsonProcessors))]
-        public async Task ValidateDecryptByNewtonsoftStream_VerifyByNewtonsoft(JsonProcessor jsonProcessor)
+        internal async Task ValidateDecryptByNewtonsoftStream_VerifyByNewtonsoft(JsonProcessor jsonProcessor)
         {
             EncryptionOptions encryptionOptions = this.CreateEncryptionOptions();
             TestDoc testDoc = TestDoc.Create();
@@ -208,7 +208,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         [TestMethod]
         [DynamicData(nameof(JsonProcessorCombinations))]
-        public async Task ValidateDecryptBySystemTextStream_VerifyByNewtonsoft(JsonProcessor encryptionJsonProcessor, JsonProcessor decryptionJsonProcessor)
+        internal async Task ValidateDecryptBySystemTextStream_VerifyByNewtonsoft(JsonProcessor encryptionJsonProcessor, JsonProcessor decryptionJsonProcessor)
         {
             EncryptionOptions encryptionOptions = this.CreateEncryptionOptions();
             TestDoc testDoc = TestDoc.Create();
@@ -239,7 +239,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 #if NET8_0_OR_GREATER
         [TestMethod]
         [DynamicData(nameof(JsonProcessorCombinations))]
-        public async Task ValidateDecryptBySystemTextStream_VerifyBySystemText(JsonProcessor encryptionJsonProcessor, JsonProcessor decryptionJsonProcessor)
+        internal async Task ValidateDecryptBySystemTextStream_VerifyBySystemText(JsonProcessor encryptionJsonProcessor, JsonProcessor decryptionJsonProcessor)
         {
             EncryptionOptions encryptionOptions = this.CreateEncryptionOptions();
             TestDoc testDoc = TestDoc.Create();
@@ -270,7 +270,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         [TestMethod]
         [DynamicData(nameof(JsonProcessors))]
-        public async Task DecryptStreamWithoutEncryptedProperty(JsonProcessor processor)
+        internal async Task DecryptStreamWithoutEncryptedProperty(JsonProcessor processor)
         {
             TestDoc testDoc = TestDoc.Create();
             Stream docStream = testDoc.ToStream();
