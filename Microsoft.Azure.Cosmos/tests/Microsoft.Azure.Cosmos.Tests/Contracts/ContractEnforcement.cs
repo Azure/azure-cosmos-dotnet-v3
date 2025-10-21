@@ -21,22 +21,22 @@
         {
             Assembly.Load(name);
             Assembly[] loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
-            
+
             // Get the target framework of the currently executing test assembly
             Assembly testAssembly = Assembly.GetExecutingAssembly();
             TargetFrameworkAttribute testTfmAttr = testAssembly.GetCustomAttribute<TargetFrameworkAttribute>();
             string testTfmName = testTfmAttr?.FrameworkName;
-            
+
             // Find all matching assemblies
             Assembly[] matchingAssemblies = loadedAssemblies
                 .Where((candidate) => candidate.FullName.Contains(name + ","))
                 .ToArray();
-            
+
             if (matchingAssemblies.Length == 0)
             {
                 return null;
             }
-            
+
             // If we have multiple matches and know our test TFM, try to find the best match
             if (matchingAssemblies.Length > 1 && !string.IsNullOrEmpty(testTfmName))
             {
@@ -45,16 +45,16 @@
                 {
                     TargetFrameworkAttribute candidateTfmAttr = candidate.GetCustomAttribute<TargetFrameworkAttribute>();
                     string candidateTfmName = candidateTfmAttr?.FrameworkName;
-                    
+
                     // Direct match or compatible framework
-                    if (candidateTfmName == testTfmName || 
+                    if (candidateTfmName == testTfmName ||
                         IsCompatibleFramework(candidateTfmName, testTfmName))
                     {
                         return candidate;
                     }
                 }
             }
-            
+
             // Fallback to first match
             return matchingAssemblies.FirstOrDefault();
         }
@@ -69,18 +69,18 @@
             {
                 return false;
             }
-            
+
             try
             {
                 FrameworkName candidateFn = new FrameworkName(candidateFramework);
                 FrameworkName testFn = new FrameworkName(testFramework);
-                
+
                 // If candidate is .NETStandard, it's compatible with .NETCoreApp
                 if (candidateFn.Identifier == ".NETStandard" && testFn.Identifier == ".NETCoreApp")
                 {
                     return true;
                 }
-                
+
                 // Same framework identifier
                 if (candidateFn.Identifier == testFn.Identifier)
                 {
@@ -97,7 +97,7 @@
                 // If framework name parsing fails, fall back to false
                 return false;
             }
-            
+
             return false;
         }
 
@@ -187,29 +187,24 @@
         /// </summary>
         private static string FormatAttributeValue(CustomAttributeTypedArgument arg)
         {
-            if (arg.Value is string stringValue)
+            return arg.Value switch
             {
-                return $"\"{stringValue}\"";
-            }
-            else if (arg.Value is Type typeValue)
-            {
-                return $"typeof({typeValue})";
-            }
-            else if (arg.Value != null && arg.ArgumentType.IsEnum)
-            {
-                // Include both enum name and value for clarity: EnumType.Name = Value
-                string enumName = Enum.GetName(arg.ArgumentType, arg.Value) ?? arg.Value.ToString();
-                return $"{arg.ArgumentType.Name}.{enumName} = {arg.Value}";
-            }
-            else if (arg.Value != null && arg.ArgumentType.IsPrimitive)
-            {
-                // Preserve type information for primitive types (byte, int, etc.)
-                return $"({arg.ArgumentType.Name}){arg.Value}";
-            }
-            else
-            {
-                return arg.Value?.ToString() ?? "null";
-            }
+                null => "null",
+                string stringValue => $"\"{stringValue}\"",
+                Type typeValue => $"typeof({typeValue})",
+                _ when arg.ArgumentType.IsEnum => FormatEnumValue(arg),
+                _ when arg.ArgumentType.IsPrimitive => $"({arg.ArgumentType.Name}){arg.Value}",
+                _ => arg.Value.ToString()
+            };
+        }
+
+        /// <summary>
+        /// Formats an enum value including both the enum name and numeric value.
+        /// </summary>
+        private static string FormatEnumValue(CustomAttributeTypedArgument arg)
+        {
+            string enumName = Enum.GetName(arg.ArgumentType, arg.Value) ?? arg.Value.ToString();
+            return $"{arg.ArgumentType.Name}.{enumName} = {arg.Value}";
         }
 
         private static string GenerateNameWithClassAttributes(Type type)
