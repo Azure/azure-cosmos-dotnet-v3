@@ -1,121 +1,5 @@
 {
   "Subclasses": {
-    "Microsoft.Azure.Cosmos.Encryption.Custom.CompressionOptions;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
-      "Subclasses": {},
-      "Members": {
-        "CompressionAlgorithm Algorithm": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": "CompressionAlgorithm Algorithm;CanRead:True;CanWrite:True;CompressionAlgorithm get_Algorithm();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_Algorithm(CompressionAlgorithm);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "CompressionAlgorithm get_Algorithm()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "CompressionAlgorithm get_Algorithm();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Int32 get_MinimalCompressedLength()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Int32 get_MinimalCompressedLength();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Int32 MinimalCompressedLength": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": "Int32 MinimalCompressedLength;CanRead:True;CanWrite:True;Int32 get_MinimalCompressedLength();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_MinimalCompressedLength(Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Microsoft.Azure.Cosmos.Encryption.Custom.CompressionOptions+CompressionAlgorithm": {
-          "Type": "NestedType",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.IO.Compression.CompressionLevel CompressionLevel": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": "System.IO.Compression.CompressionLevel CompressionLevel;CanRead:True;CanWrite:True;System.IO.Compression.CompressionLevel get_CompressionLevel();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_CompressionLevel(System.IO.Compression.CompressionLevel);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "System.IO.Compression.CompressionLevel get_CompressionLevel()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "System.IO.Compression.CompressionLevel get_CompressionLevel();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Void .ctor()": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "[Void .ctor(), Void .ctor()]"
-        },
-        "Void set_Algorithm(CompressionAlgorithm)[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Void set_Algorithm(CompressionAlgorithm);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Void set_CompressionLevel(System.IO.Compression.CompressionLevel)[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Void set_CompressionLevel(System.IO.Compression.CompressionLevel);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Void set_MinimalCompressedLength(Int32)[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Void set_MinimalCompressedLength(Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        }
-      },
-      "NestedTypes": {
-        "Microsoft.Azure.Cosmos.Encryption.Custom.CompressionOptions+CompressionAlgorithm;System.Enum;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:True;IsClass:False;IsValueType:True;IsNested:True;IsGenericType:False;IsSerializable:True": {
-          "Subclasses": {},
-          "Members": {
-            "CompressionAlgorithm Brotli": {
-              "Type": "Field",
-              "Attributes": [],
-              "MethodInfo": "CompressionAlgorithm Brotli;IsInitOnly:False;IsStatic:True;"
-            },
-            "CompressionAlgorithm None": {
-              "Type": "Field",
-              "Attributes": [],
-              "MethodInfo": "CompressionAlgorithm None;IsInitOnly:False;IsStatic:True;"
-            },
-            "Int32 value__": {
-              "Type": "Field",
-              "Attributes": [],
-              "MethodInfo": "Int32 value__;IsInitOnly:False;IsStatic:False;"
-            }
-          },
-          "NestedTypes": {}
-        }
-      }
-    },
-    "Microsoft.Azure.Cosmos.Encryption.Custom.CompressionOptions+CompressionAlgorithm;System.Enum;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:True;IsClass:False;IsValueType:True;IsNested:True;IsGenericType:False;IsSerializable:True": {
-      "Subclasses": {},
-      "Members": {
-        "CompressionAlgorithm Brotli": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "CompressionAlgorithm Brotli;IsInitOnly:False;IsStatic:True;"
-        },
-        "CompressionAlgorithm None": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "CompressionAlgorithm None;IsInitOnly:False;IsStatic:True;"
-        },
-        "Int32 value__": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "Int32 value__;IsInitOnly:False;IsStatic:False;"
-        }
-      },
-      "NestedTypes": {}
-    },
     "Microsoft.Azure.Cosmos.Encryption.Custom.CosmosDataEncryptionKeyProvider;Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKeyProvider;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
@@ -134,7 +18,7 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider EncryptionKeyWrapProvider;CanRead:True;CanWrite:False;Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider get_EncryptionKeyWrapProvider();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider get_EncryptionKeyWrapProvider()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider get_EncryptionKeyWrapProvider()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
@@ -146,7 +30,7 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider EncryptionKeyStoreProvider;CanRead:True;CanWrite:False;Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider get_EncryptionKeyStoreProvider();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider get_EncryptionKeyStoreProvider()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider get_EncryptionKeyStoreProvider()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
@@ -222,7 +106,7 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKeyProvider DataEncryptionKeyProvider;CanRead:True;CanWrite:False;Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKeyProvider get_DataEncryptionKeyProvider();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKeyProvider get_DataEncryptionKeyProvider()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKeyProvider get_DataEncryptionKeyProvider()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
@@ -368,14 +252,14 @@
           "Attributes": [],
           "MethodInfo": "Boolean Equals(System.Object);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Byte[] get_WrappedDataEncryptionKey()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "Byte[] get_WrappedDataEncryptionKey()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Byte[] get_WrappedDataEncryptionKey();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Byte[] WrappedDataEncryptionKey[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"wrappedDataEncryptionKey\")]": {
+        "Byte[] WrappedDataEncryptionKey[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"wrappedDataEncryptionKey\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -387,21 +271,21 @@
           "Attributes": [],
           "MethodInfo": "Int32 GetHashCode();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapMetadata EncryptionKeyWrapMetadata[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"keyWrapMetadata\")]": {
+        "Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapMetadata EncryptionKeyWrapMetadata[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"keyWrapMetadata\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapMetadata EncryptionKeyWrapMetadata;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapMetadata get_EncryptionKeyWrapMetadata();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapMetadata get_EncryptionKeyWrapMetadata()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapMetadata get_EncryptionKeyWrapMetadata()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapMetadata get_EncryptionKeyWrapMetadata();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Nullable`1[System.DateTime] CreatedTime[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.Custom.UnixDateTimeConverter))]-[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"createTime\")]": {
+        "System.Nullable`1[System.DateTime] CreatedTime[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.Custom.UnixDateTimeConverter))]-[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"createTime\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonConverterAttribute",
@@ -409,21 +293,21 @@
           ],
           "MethodInfo": "System.Nullable`1[System.DateTime] CreatedTime;CanRead:True;CanWrite:True;System.Nullable`1[System.DateTime] get_CreatedTime();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Nullable`1[System.DateTime] get_CreatedTime()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "System.Nullable`1[System.DateTime] get_CreatedTime()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "System.Nullable`1[System.DateTime] get_CreatedTime();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Nullable`1[System.DateTime] get_LastModified()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "System.Nullable`1[System.DateTime] get_LastModified()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "System.Nullable`1[System.DateTime] get_LastModified();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Nullable`1[System.DateTime] LastModified[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.Custom.UnixDateTimeConverter))]-[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"_ts\")]": {
+        "System.Nullable`1[System.DateTime] LastModified[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.Custom.UnixDateTimeConverter))]-[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_ts\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonConverterAttribute",
@@ -431,42 +315,42 @@
           ],
           "MethodInfo": "System.Nullable`1[System.DateTime] LastModified;CanRead:True;CanWrite:True;System.Nullable`1[System.DateTime] get_LastModified();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String EncryptionAlgorithm[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"encryptionAlgorithm\")]": {
+        "System.String EncryptionAlgorithm[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"encryptionAlgorithm\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
           ],
           "MethodInfo": "System.String EncryptionAlgorithm;CanRead:True;CanWrite:True;System.String get_EncryptionAlgorithm();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"_etag\")]": {
+        "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_etag\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
           ],
           "MethodInfo": "System.String ETag;CanRead:True;CanWrite:True;System.String get_ETag();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String get_EncryptionAlgorithm()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "System.String get_EncryptionAlgorithm()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "System.String get_EncryptionAlgorithm();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String get_ETag()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "System.String get_ETag()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "System.String get_ETag();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String get_Id()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "System.String get_Id()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "System.String get_Id();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String get_SelfLink()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "System.String get_SelfLink()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
@@ -480,7 +364,7 @@
           ],
           "MethodInfo": "System.String Id;CanRead:True;CanWrite:True;System.String get_Id();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"_self\")]": {
+        "System.String SelfLink[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_self\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -515,7 +399,7 @@
               "Attributes": [],
               "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider EncryptionKeyWrapProvider;CanRead:True;CanWrite:False;Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider get_EncryptionKeyWrapProvider();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
-            "Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider get_EncryptionKeyWrapProvider()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+            "Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider get_EncryptionKeyWrapProvider()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
               "Type": "Method",
               "Attributes": [
                 "CompilerGeneratedAttribute"
@@ -527,7 +411,7 @@
               "Attributes": [],
               "MethodInfo": "Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider EncryptionKeyStoreProvider;CanRead:True;CanWrite:False;Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider get_EncryptionKeyStoreProvider();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
-            "Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider get_EncryptionKeyStoreProvider()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+            "Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider get_EncryptionKeyStoreProvider()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
               "Type": "Method",
               "Attributes": [
                 "CompilerGeneratedAttribute"
@@ -611,7 +495,7 @@
           "Attributes": [],
           "MethodInfo": "System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.Encryption.Custom.DecryptionInfo] DecryptionInfoList;CanRead:True;CanWrite:False;System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.Encryption.Custom.DecryptionInfo] get_DecryptionInfoList();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.Encryption.Custom.DecryptionInfo] get_DecryptionInfoList()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.Encryption.Custom.DecryptionInfo] get_DecryptionInfoList()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
@@ -629,7 +513,7 @@
     "Microsoft.Azure.Cosmos.Encryption.Custom.DecryptionInfo;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "System.Collections.Generic.IReadOnlyList`1[System.String] get_PathsDecrypted()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "System.Collections.Generic.IReadOnlyList`1[System.String] get_PathsDecrypted()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
@@ -646,7 +530,7 @@
           "Attributes": [],
           "MethodInfo": "System.String DataEncryptionKeyId;CanRead:True;CanWrite:False;System.String get_DataEncryptionKeyId();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String get_DataEncryptionKeyId()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "System.String get_DataEncryptionKeyId()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
@@ -669,7 +553,7 @@
           "Attributes": [],
           "MethodInfo": "System.Exception Exception;CanRead:True;CanWrite:False;System.Exception get_Exception();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Exception get_Exception()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "System.Exception get_Exception()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
@@ -681,7 +565,7 @@
           "Attributes": [],
           "MethodInfo": "System.ReadOnlyMemory`1[System.Byte] EncryptedStream;CanRead:True;CanWrite:False;System.ReadOnlyMemory`1[System.Byte] get_EncryptedStream();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.ReadOnlyMemory`1[System.Byte] get_EncryptedStream()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "System.ReadOnlyMemory`1[System.Byte] get_EncryptedStream()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
@@ -706,7 +590,7 @@
               "Attributes": [],
               "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.Custom.DecryptableItem get_DecryptableItem();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
-            "T get_Item()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+            "T get_Item()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
               "Type": "Method",
               "Attributes": [
                 "CompilerGeneratedAttribute"
@@ -739,7 +623,7 @@
               "Attributes": [],
               "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.Custom.DecryptableItem get_DecryptableItem();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
-            "System.IO.Stream get_StreamPayload()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+            "System.IO.Stream get_StreamPayload()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
               "Type": "Method",
               "Attributes": [
                 "CompilerGeneratedAttribute"
@@ -792,7 +676,7 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.Custom.DecryptableItem get_DecryptableItem();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "T get_Item()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "T get_Item()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
@@ -825,7 +709,7 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.Custom.DecryptableItem get_DecryptableItem();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.IO.Stream get_StreamPayload()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "System.IO.Stream get_StreamPayload()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
@@ -853,21 +737,21 @@
     "Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionContainerExtensions;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "Microsoft.Azure.Cosmos.Container WithEncryptor(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.Encryption.Custom.Encryptor)[System.Runtime.CompilerServices.ExtensionAttribute]": {
+        "Microsoft.Azure.Cosmos.Container WithEncryptor(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.Encryption.Custom.Encryptor)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.Container WithEncryptor(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.Encryption.Custom.Encryptor);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.FeedIterator ToEncryptionStreamIterator[T](Microsoft.Azure.Cosmos.Container, System.Linq.IQueryable`1[T])[System.Runtime.CompilerServices.ExtensionAttribute]": {
+        "Microsoft.Azure.Cosmos.FeedIterator ToEncryptionStreamIterator[T](Microsoft.Azure.Cosmos.Container, System.Linq.IQueryable`1[T])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator ToEncryptionStreamIterator[T](Microsoft.Azure.Cosmos.Container, System.Linq.IQueryable`1[T]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.FeedIterator`1[T] ToEncryptionFeedIterator[T](Microsoft.Azure.Cosmos.Container, System.Linq.IQueryable`1[T])[System.Runtime.CompilerServices.ExtensionAttribute]": {
+        "Microsoft.Azure.Cosmos.FeedIterator`1[T] ToEncryptionFeedIterator[T](Microsoft.Azure.Cosmos.Container, System.Linq.IQueryable`1[T])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
@@ -890,14 +774,14 @@
           "Attributes": [],
           "MethodInfo": "System.String EncryptedContent;CanRead:True;CanWrite:False;System.String get_EncryptedContent();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String get_DataEncryptionKeyId()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "System.String get_DataEncryptionKeyId()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "System.String get_DataEncryptionKeyId();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String get_EncryptedContent()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "System.String get_EncryptedContent()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
@@ -920,7 +804,7 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionOptions EncryptionOptions;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionOptions get_EncryptionOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_EncryptionOptions(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionOptions get_EncryptionOptions()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionOptions get_EncryptionOptions()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
@@ -932,7 +816,7 @@
           "Attributes": [],
           "MethodInfo": "[Void .ctor(), Void .ctor()]"
         },
-        "Void set_EncryptionOptions(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionOptions)[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "Void set_EncryptionOptions(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionOptions)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
@@ -950,7 +834,7 @@
           "Attributes": [],
           "MethodInfo": "Byte[] DataEncryptionKey;CanRead:True;CanWrite:False;Byte[] get_DataEncryptionKey();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Byte[] get_DataEncryptionKey()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "Byte[] get_DataEncryptionKey()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
@@ -962,7 +846,7 @@
           "Attributes": [],
           "MethodInfo": "System.TimeSpan ClientCacheTimeToLive;CanRead:True;CanWrite:False;System.TimeSpan get_ClientCacheTimeToLive();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.TimeSpan get_ClientCacheTimeToLive()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "System.TimeSpan get_ClientCacheTimeToLive()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
@@ -995,28 +879,28 @@
           "Attributes": [],
           "MethodInfo": "Int32 GetHashCode();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String get_Name()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "System.String get_Name()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "System.String get_Name();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String get_Value()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "System.String get_Value()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "System.String get_Value();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String Name[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"name\")]": {
+        "System.String Name[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"name\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
           ],
           "MethodInfo": "System.String Name;CanRead:True;CanWrite:True;System.String get_Name();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String Value[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.1, PropertyName = \"value\")]": {
+        "System.String Value[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"value\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -1060,7 +944,7 @@
     "Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapResult;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "Byte[] get_WrappedDataEncryptionKey()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "Byte[] get_WrappedDataEncryptionKey()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
@@ -1077,7 +961,7 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapMetadata EncryptionKeyWrapMetadata;CanRead:True;CanWrite:False;Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapMetadata get_EncryptionKeyWrapMetadata();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapMetadata get_EncryptionKeyWrapMetadata()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapMetadata get_EncryptionKeyWrapMetadata()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
@@ -1095,19 +979,7 @@
     "Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionOptions;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "Microsoft.Azure.Cosmos.Encryption.Custom.CompressionOptions CompressionOptions": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.Custom.CompressionOptions CompressionOptions;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.Encryption.Custom.CompressionOptions get_CompressionOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_CompressionOptions(Microsoft.Azure.Cosmos.Encryption.Custom.CompressionOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Microsoft.Azure.Cosmos.Encryption.Custom.CompressionOptions get_CompressionOptions()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.Custom.CompressionOptions get_CompressionOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Microsoft.Azure.Cosmos.Encryption.Custom.JsonProcessor get_JsonProcessor()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "Microsoft.Azure.Cosmos.Encryption.Custom.JsonProcessor get_JsonProcessor()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
@@ -1119,7 +991,7 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.Custom.JsonProcessor JsonProcessor;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.Encryption.Custom.JsonProcessor get_JsonProcessor();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_JsonProcessor(Microsoft.Azure.Cosmos.Encryption.Custom.JsonProcessor);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Collections.Generic.IEnumerable`1[System.String] get_PathsToEncrypt()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "System.Collections.Generic.IEnumerable`1[System.String] get_PathsToEncrypt()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
@@ -1141,14 +1013,14 @@
           "Attributes": [],
           "MethodInfo": "System.String EncryptionAlgorithm;CanRead:True;CanWrite:True;System.String get_EncryptionAlgorithm();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_EncryptionAlgorithm(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String get_DataEncryptionKeyId()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "System.String get_DataEncryptionKeyId()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "System.String get_DataEncryptionKeyId();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String get_EncryptionAlgorithm()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "System.String get_EncryptionAlgorithm()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
@@ -1160,35 +1032,28 @@
           "Attributes": [],
           "MethodInfo": "[Void .ctor(), Void .ctor()]"
         },
-        "Void set_CompressionOptions(Microsoft.Azure.Cosmos.Encryption.Custom.CompressionOptions)[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Void set_CompressionOptions(Microsoft.Azure.Cosmos.Encryption.Custom.CompressionOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Void set_DataEncryptionKeyId(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "Void set_DataEncryptionKeyId(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_DataEncryptionKeyId(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Void set_EncryptionAlgorithm(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "Void set_EncryptionAlgorithm(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_EncryptionAlgorithm(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Void set_JsonProcessor(Microsoft.Azure.Cosmos.Encryption.Custom.JsonProcessor)[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "Void set_JsonProcessor(Microsoft.Azure.Cosmos.Encryption.Custom.JsonProcessor)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_JsonProcessor(Microsoft.Azure.Cosmos.Encryption.Custom.JsonProcessor);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Void set_PathsToEncrypt(System.Collections.Generic.IEnumerable`1[System.String])[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "Void set_PathsToEncrypt(System.Collections.Generic.IEnumerable`1[System.String])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
@@ -1206,7 +1071,7 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionOptions EncryptionOptions;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionOptions get_EncryptionOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_EncryptionOptions(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionOptions get_EncryptionOptions()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionOptions get_EncryptionOptions()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
@@ -1218,7 +1083,7 @@
           "Attributes": [],
           "MethodInfo": "[Void .ctor(), Void .ctor()]"
         },
-        "Void set_EncryptionOptions(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionOptions)[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+        "Void set_EncryptionOptions(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionOptions)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
@@ -1238,7 +1103,7 @@
               "Attributes": [],
               "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKeyProvider DataEncryptionKeyProvider;CanRead:True;CanWrite:False;Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKeyProvider get_DataEncryptionKeyProvider();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
-            "Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKeyProvider get_DataEncryptionKeyProvider()[System.Runtime.CompilerServices.CompilerGeneratedAttribute]": {
+            "Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKeyProvider get_DataEncryptionKeyProvider()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
               "Type": "Method",
               "Attributes": [
                 "CompilerGeneratedAttribute"
@@ -1342,7 +1207,7 @@
       "Attributes": [],
       "MethodInfo": "System.String ToString();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
     },
-    "System.Type GetType()[System.Runtime.CompilerServices.NullableContextAttribute(1)]-[System.Runtime.CompilerServices.IntrinsicAttribute]": {
+    "System.Type GetType()[System.Runtime.CompilerServices.NullableContextAttribute((Byte)1)]-[System.Runtime.CompilerServices.IntrinsicAttribute()]": {
       "Type": "Method",
       "Attributes": [
         "IntrinsicAttribute",
