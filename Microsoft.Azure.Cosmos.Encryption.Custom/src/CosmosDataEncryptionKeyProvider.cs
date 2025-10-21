@@ -148,10 +148,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 throw new InvalidOperationException($"{nameof(CosmosDataEncryptionKeyProvider)} has already been initialized.");
             }
 
-            if (database == null)
-            {
-                throw new ArgumentNullException(nameof(database));
-            }
+            ArgumentValidation.ThrowIfNull(database);
 
             ContainerResponse containerResponse = await database.CreateContainerIfNotExistsAsync(
                 containerId,

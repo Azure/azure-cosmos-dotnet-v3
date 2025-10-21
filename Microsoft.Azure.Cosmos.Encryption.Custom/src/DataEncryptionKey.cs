@@ -102,10 +102,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             byte[] rawKey,
             string encryptionAlgorithm)
         {
-            if (rawKey == null)
-            {
-                throw new ArgumentNullException(nameof(rawKey));
-            }
+            ArgumentValidation.ThrowIfNull(rawKey);
 
 #pragma warning disable CS0618 // Type or member is obsolete
             if (!string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized))
