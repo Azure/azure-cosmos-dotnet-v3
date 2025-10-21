@@ -9,11 +9,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     using Microsoft.Azure.Cosmos;
 
     /// <summary>
+    /// Provides extension methods for <see cref="RequestOptions"/> to configure JSON processor selection for encryption operations.
     /// Centralizes handling of the JsonProcessor override communicated via <see cref="RequestOptions.Properties"/>.
-    /// This isolates the property bag key and parsing / normalization logic so that EncryptionProcessor remains focused
-    /// on encryption/decryption workflows.
     /// </summary>
-    internal static class RequestOptionsPropertiesExtensions
+    internal static class JsonProcessorRequestOptionsExtensions
     {
         /// <summary>
         /// The property bag key used to store the JsonProcessor override in RequestOptions.Properties.

@@ -45,10 +45,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             ResponseMessage responseMessage,
             IReadOnlyCollection<T> resource)
         {
-            if (responseMessage == null)
-            {
-                throw new ArgumentNullException(nameof(responseMessage));
-            }
+            ArgumentValidation.ThrowIfNull(responseMessage);
 
             using (responseMessage)
             {

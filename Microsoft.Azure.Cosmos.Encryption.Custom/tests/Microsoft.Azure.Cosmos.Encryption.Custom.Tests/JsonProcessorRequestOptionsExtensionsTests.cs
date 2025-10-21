@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public class RequestOptionsPropertiesExtensionsTests
+    public class JsonProcessorRequestOptionsExtensionsTests
     {
         [TestMethod]
         public void TryReadOverride_EnumValue_Succeeds()
@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             {
                 Properties = new Dictionary<string, object>
                 {
-                    { RequestOptionsPropertiesExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Stream }
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Stream }
                 }
             };
 
@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             {
                 Properties = new Dictionary<string, object>
                 {
-                    { RequestOptionsPropertiesExtensions.JsonProcessorPropertyBagKey, "sTrEaM" }
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, "sTrEaM" }
                 }
             };
 
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             {
                 Properties = new Dictionary<string, object>
                 {
-                    { RequestOptionsPropertiesExtensions.JsonProcessorPropertyBagKey, "Stream" }
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, "Stream" }
                 }
             };
 
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             {
                 Properties = new Dictionary<string, object>
                 {
-                    { RequestOptionsPropertiesExtensions.JsonProcessorPropertyBagKey, "invalid" }
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, "invalid" }
                 }
             };
 
@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             {
                 Properties = new Dictionary<string, object>
                 {
-                    { RequestOptionsPropertiesExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Stream }
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Stream }
                 }
             };
 
@@ -167,7 +167,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             {
                 Properties = new Dictionary<string, object>
                 {
-                    { RequestOptionsPropertiesExtensions.JsonProcessorPropertyBagKey + "-extra", JsonProcessor.Stream }
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey + "-extra", JsonProcessor.Stream }
                 }
             };
 
@@ -183,7 +183,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             {
                 Properties = new Dictionary<string, object>
                 {
-                    { RequestOptionsPropertiesExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Stream }
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Stream }
                 }
             };
 

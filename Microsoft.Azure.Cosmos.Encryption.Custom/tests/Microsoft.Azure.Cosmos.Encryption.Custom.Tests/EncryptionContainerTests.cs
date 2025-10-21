@@ -436,7 +436,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         {
             return new Dictionary<string, object>
             {
-                { RequestOptionsPropertiesExtensions.JsonProcessorPropertyBagKey, jsonProcessor }
+                { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, jsonProcessor }
             };
         }
 

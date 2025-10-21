@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             mockEncryptor = TestEncryptorFactory.CreateMde(DekId, out _);
         }
 
-        private static EncryptionOptions CreateStreamOptions(IEnumerable<string> paths, bool compression = false)
+        private static EncryptionOptions CreateStreamOptions(IEnumerable<string> paths)
         {
             return new EncryptionOptions
             {

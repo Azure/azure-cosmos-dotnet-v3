@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
     using Moq;
 
     [TestClass]
-    public class StreamAdapterTests
+    public class SystemTextJsonSystemTextJsonStreamAdapterTests
     {
         private const string DekId = "dek-id";
         private static Mock<Encryptor> mockEncryptor = null!;
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
         [TestMethod]
         public async Task EncryptAsync_ReturnsEncryptedStream()
         {
-            StreamAdapter adapter = new (new StreamProcessor());
+            SystemTextJsonStreamAdapter adapter = new (new StreamProcessor());
             using Stream input = TestCommon.ToStream(new { id = "1", Sensitive = "secret" });
 
             Stream encrypted = await adapter.EncryptAsync(input, mockEncryptor.Object, defaultOptions, CancellationToken.None);
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
         [TestMethod]
         public async Task EncryptAsync_StreamOverload_WritesToOutput()
         {
-            StreamAdapter adapter = new (new StreamProcessor());
+            SystemTextJsonStreamAdapter adapter = new (new StreamProcessor());
             using Stream input = TestCommon.ToStream(new { id = "1", Sensitive = "secret" });
             using MemoryStream output = new ();
 
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
         [TestMethod]
         public async Task EncryptAsync_StreamOverload_WithNonStreamProcessor_Throws()
         {
-            StreamAdapter adapter = new (new StreamProcessor());
+            SystemTextJsonStreamAdapter adapter = new (new StreamProcessor());
             using Stream input = TestCommon.ToStream(new { id = "1" });
             using MemoryStream output = new ();
 
@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
         [TestMethod]
         public async Task DecryptAsync_WhenNoMetadata_ReturnsOriginalStream()
         {
-            StreamAdapter adapter = new (new StreamProcessor());
+            SystemTextJsonStreamAdapter adapter = new (new StreamProcessor());
             using MemoryStream input = new (Encoding.UTF8.GetBytes("{\"id\":\"1\"}"));
             CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContext();
 
@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
         [TestMethod]
         public async Task DecryptAsync_ReturnsDecryptedStream()
         {
-            StreamAdapter adapter = new (new StreamProcessor());
+            SystemTextJsonStreamAdapter adapter = new (new StreamProcessor());
             Stream encrypted = await CreateEncryptedPayloadAsync(adapter);
             CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContext();
 
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
         [TestMethod]
         public async Task DecryptAsync_OutputStream_WritesDecryptedPayload()
         {
-            StreamAdapter adapter = new (new StreamProcessor());
+            SystemTextJsonStreamAdapter adapter = new (new StreamProcessor());
             Stream encrypted = await CreateEncryptedPayloadAsync(adapter);
             CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContext();
             using MemoryStream output = new ();
@@ -139,7 +139,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
         [TestMethod]
         public async Task DecryptAsync_OutputStream_WithNonEncryptedPayload_ReturnsNull()
         {
-            StreamAdapter adapter = new (new StreamProcessor());
+            SystemTextJsonStreamAdapter adapter = new (new StreamProcessor());
             using MemoryStream input = new (Encoding.UTF8.GetBytes("{\"id\":1}"));
             using MemoryStream output = new ();
             CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContext();
@@ -155,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
         [TestMethod]
         public async Task DecryptAsync_WithLegacyAlgorithm_Throws()
         {
-            StreamAdapter adapter = new (new StreamProcessor());
+            SystemTextJsonStreamAdapter adapter = new (new StreamProcessor());
             EncryptionProperties legacyProps = CreateLegacyEncryptionProperties();
             EncryptionPropertiesWrapper wrapper = new (legacyProps);
             byte[] payload = JsonSerializer.SerializeToUtf8Bytes(wrapper);
@@ -173,7 +173,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
 #pragma warning restore CS0618
         }
 
-        private static async Task<Stream> CreateEncryptedPayloadAsync(StreamAdapter adapter)
+        private static async Task<Stream> CreateEncryptedPayloadAsync(SystemTextJsonStreamAdapter adapter)
         {
             using Stream input = TestCommon.ToStream(new { id = "1", Sensitive = "secret" });
             Stream encrypted = await adapter.EncryptAsync(input, mockEncryptor.Object, defaultOptions, CancellationToken.None);

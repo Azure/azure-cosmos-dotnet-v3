@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -547,7 +547,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                     },
                     Properties = new Dictionary<string, object>
                     {
-                        { RequestOptionsPropertiesExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Newtonsoft }
+                        { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Newtonsoft }
                     }
                 };
 
@@ -568,7 +568,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                         {
                             Properties = new Dictionary<string, object>
                             {
-                                { RequestOptionsPropertiesExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Newtonsoft }
+                                { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Newtonsoft }
                             }
                         });
 
@@ -585,7 +585,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                             {
                                 Properties = new Dictionary<string, object>
                                 {
-                                    { RequestOptionsPropertiesExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Newtonsoft }
+                                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Newtonsoft }
                                 }
                             });
                     }
@@ -748,6 +748,33 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             public string Sensitive { get; set; }
         }
 #endif
+
+        [TestMethod]
+        [ExpectedException(typeof(NotSupportedException))]
+        public async Task UnsupportedJsonProcessor_ThrowsNotSupportedException()
+        {
+            // This test validates that unsupported JsonProcessor values (e.g., Stream on net6.0/netstandard2.0)
+            // are properly rejected with a clear error message.
+            // We cast an int to JsonProcessor to simulate a value that doesn't exist on this platform.
+            TestDoc testDoc = TestDoc.Create();
+
+            // Cast 99 to JsonProcessor - this simulates an unsupported/future processor value
+            JsonProcessor unsupportedProcessor = (JsonProcessor)99;
+
+            EncryptionItemRequestOptions options = new()
+            {
+                EncryptionOptions = new EncryptionOptions
+                {
+                    DataEncryptionKeyId = dekId,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                    PathsToEncrypt = TestDoc.PathsToEncrypt,
+                    JsonProcessor = unsupportedProcessor
+                }
+            };
+
+            // This should throw NotSupportedException on all platforms for an unsupported processor value
+            await encryptionContainer.CreateItemAsync(testDoc, new PartitionKey(testDoc.PK), options);
+        }
 
         [TestMethod]
         public async Task EncryptionCreateItemWithoutEncryptionOptions()

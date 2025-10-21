@@ -12,12 +12,12 @@ using System.Threading.Tasks;
 using Microsoft.IO;
 
 #if NET8_0_OR_GREATER
-internal sealed class StreamAdapter : IMdeJsonProcessorAdapter
+internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
 {
     private readonly StreamProcessor streamProcessor;
     private static readonly RecyclableMemoryStreamManager RecyclableMemoryStreamManager = new ();
 
-    public StreamAdapter(StreamProcessor streamProcessor)
+    public SystemTextJsonStreamAdapter(StreamProcessor streamProcessor)
     {
         this.streamProcessor = streamProcessor;
     }

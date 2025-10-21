@@ -53,10 +53,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            if (item == null)
-            {
-                throw new ArgumentNullException(nameof(item));
-            }
+            ArgumentValidation.ThrowIfNull(item);
 
             if (requestOptions is not EncryptionItemRequestOptions encryptionItemRequestOptions ||
                 encryptionItemRequestOptions.EncryptionOptions == null)
@@ -379,15 +376,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            if (id == null)
-            {
-                throw new ArgumentNullException(nameof(id));
-            }
-
-            if (streamPayload == null)
-            {
-                throw new ArgumentNullException(nameof(streamPayload));
-            }
+            ArgumentValidation.ThrowIfNull(id);
+            ArgumentValidation.ThrowIfNull(streamPayload);
 
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.CreateScope("ReplaceItemStream"))
@@ -456,10 +446,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            if (item == null)
-            {
-                throw new ArgumentNullException(nameof(item));
-            }
+            ArgumentValidation.ThrowIfNull(item);
 
             if (requestOptions is not EncryptionItemRequestOptions encryptionItemRequestOptions ||
                 encryptionItemRequestOptions.EncryptionOptions == null)
@@ -527,10 +514,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            if (streamPayload == null)
-            {
-                throw new ArgumentNullException(nameof(streamPayload));
-            }
+            ArgumentValidation.ThrowIfNull(streamPayload);
 
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.CreateScope("UpsertItemStream"))

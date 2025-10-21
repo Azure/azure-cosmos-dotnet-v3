@@ -78,10 +78,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 throw new ArgumentNullException(nameof(id));
             }
 
-            if (newWrapMetadata == null)
-            {
-                throw new ArgumentNullException(nameof(newWrapMetadata));
-            }
+            ArgumentValidation.ThrowIfNull(newWrapMetadata);
 
             return TaskHelper.RunInlineIfNeededAsync(() =>
                 this.dataEncryptionKeyContainerCore.RewrapDataEncryptionKeyAsync(id, newWrapMetadata, encryptionAlgorithm, requestOptions, cancellationToken));
