@@ -25,10 +25,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             Stream input,
             Encryptor encryptor,
             EncryptionOptions encryptionOptions,
+            JsonProcessor jsonProcessor,
             CancellationToken token)
         {
 #if NET8_0_OR_GREATER
-            switch (encryptionOptions.JsonProcessor)
+            switch (jsonProcessor)
             {
                 case JsonProcessor.Newtonsoft:
                     return await this.JObjectEncryptionProcessor.EncryptAsync(input, encryptor, encryptionOptions, token);
@@ -41,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     throw new InvalidOperationException("Unsupported JsonProcessor");
             }
 #else
-            return encryptionOptions.JsonProcessor switch
+            return jsonProcessor switch
             {
                 JsonProcessor.Newtonsoft => await this.JObjectEncryptionProcessor.EncryptAsync(input, encryptor, encryptionOptions, token),
                 _ => throw new InvalidOperationException("Unsupported JsonProcessor"),

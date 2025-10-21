@@ -43,6 +43,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Stream input,
             Encryptor encryptor,
             EncryptionOptions encryptionOptions,
+            JsonProcessor jsonProcessor,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
@@ -61,11 +62,43 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 #pragma warning disable CS0618 // Type or member is obsolete
             return encryptionOptions.EncryptionAlgorithm switch
             {
-                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized => await MdeEncryptionProcessor.EncryptAsync(input, encryptor, encryptionOptions, cancellationToken),
+                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized => await MdeEncryptionProcessor.EncryptAsync(input, encryptor, encryptionOptions, jsonProcessor, cancellationToken),
                 CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized => await AeAesEncryptionProcessor.EncryptAsync(input, encryptor, encryptionOptions, cancellationToken),
                 _ => throw new NotSupportedException($"Encryption Algorithm : {encryptionOptions.EncryptionAlgorithm} is not supported."),
             };
 #pragma warning restore CS0618 // Type or member is obsolete
+        }
+
+        public static Task<Stream> EncryptAsync(
+            Stream input,
+            Encryptor encryptor,
+            EncryptionItemRequestOptions requestOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            return EncryptAsync(
+                input,
+                encryptor,
+                requestOptions.EncryptionOptions,
+                requestOptions.GetJsonProcessor(),
+                diagnosticsContext,
+                cancellationToken);
+        }
+
+        public static Task<Stream> EncryptAsync(
+            Stream input,
+            Encryptor encryptor,
+            EncryptionTransactionalBatchItemRequestOptions requestOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            return EncryptAsync(
+                input,
+                encryptor,
+                requestOptions.EncryptionOptions,
+                requestOptions.GetJsonProcessor(),
+                diagnosticsContext,
+                cancellationToken);
         }
 
 #if NET8_0_OR_GREATER
@@ -74,6 +107,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Stream output,
             Encryptor encryptor,
             EncryptionOptions encryptionOptions,
+            JsonProcessor jsonProcessor,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
@@ -95,7 +129,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 throw new NotSupportedException($"Streaming mode is only allowed for {nameof(CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)}");
             }
 
-            if (encryptionOptions.JsonProcessor != JsonProcessor.Stream)
+            if (jsonProcessor != JsonProcessor.Stream)
             {
                 throw new NotSupportedException($"Streaming mode is only allowed for {nameof(JsonProcessor.Stream)}");
             }
