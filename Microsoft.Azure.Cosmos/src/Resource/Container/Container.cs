@@ -1684,14 +1684,12 @@ namespace Microsoft.Azure.Cosmos
         /// This method uses a semantic reranker to score and reorder the provided documents
         /// based on their relevance to the given reranking context.
         /// </summary>
-        /// <typeparam name="TKey">The type of the key in the reranked results.</typeparam>
-        /// <typeparam name="TValue">The type of the value in the reranked results.</typeparam>
         /// <param name="renrankContext"> The context or query string to use for reranking the documents.</param>
         /// <param name="documents"> A list of documents to be reranked</param>
         /// <param name="options"> (Optional) The options for the semantic reranking request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns> The reranking results, typically including the reranked documents and their scores. </returns>
-        public abstract Task<IReadOnlyDictionary<TKey, TValue>> SemanticRerankAsync<TKey, TValue>(
+        public abstract Task<IReadOnlyDictionary<string, dynamic>> SemanticRerankAsync(
             string renrankContext,
             IEnumerable<string> documents,
             SemanticRerankRequestOptions options = null,

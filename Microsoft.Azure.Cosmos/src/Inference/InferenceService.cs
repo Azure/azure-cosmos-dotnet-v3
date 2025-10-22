@@ -9,17 +9,18 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Net.Http;
     using System.Net.Http.Headers;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Core.Collections;
+    using global::Azure.Core;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
-    using Newtonsoft.Json.Linq;
 
     internal class InferenceService : IDisposable
     {
         private const string basePath = "dbinference.azure.com/inference/semanticReranking";
         private const string inferenceUserAgent = "cosmos-inference-dotnet";
+        private const string inferenceServiceDefaultScope = "https://dbinference.azure.com/.default";
 
         private readonly Uri inferenceEndpoint;
         private readonly HttpClient httpClient;
@@ -43,10 +44,21 @@ namespace Microsoft.Azure.Cosmos
             this.inferenceEndpoint = new Uri($"https://{accountProperties.Id}.{basePath}");
 
             //set authorization
-            this.cosmosAuthorization = client.DocumentClient.cosmosAuthorization;
+            if (client.DocumentClient.cosmosAuthorization.GetType() != typeof(AuthorizationTokenProviderTokenCredential))
+            {
+                throw new InvalidOperationException("InferenceService only supports AAD authentication.");
+            }
+
+            AuthorizationTokenProviderTokenCredential defaultOperationTokenProvider = client.DocumentClient.cosmosAuthorization as AuthorizationTokenProviderTokenCredential;
+            TokenCredential tokenCredential = defaultOperationTokenProvider.tokenCredential;
+
+            this.cosmosAuthorization = new AuthorizationTokenProviderTokenCredential(
+                tokenCredential: tokenCredential,
+                accountEndpoint: new Uri(inferenceServiceDefaultScope),
+                backgroundTokenCredentialRefreshInterval: client.ClientOptions?.TokenCredentialBackgroundRefreshInterval);
         }
 
-        public async Task<IReadOnlyDictionary<TKey, TValue>> SemanticRerankAsync<TKey, TValue>(
+        public async Task<IReadOnlyDictionary<string, dynamic>> SemanticRerankAsync(
             string renrankContext,
             IEnumerable<string> documents,
             SemanticRerankRequestOptions options = null,
@@ -59,32 +71,26 @@ namespace Microsoft.Azure.Cosmos
                 this.inferenceEndpoint,
                 HttpConstants.HttpMethods.Post,
                 AuthorizationTokenType.AadToken);
-            Console.WriteLine(this.inferenceEndpoint);
-            
+            additionalHeaders.Add(HttpConstants.HttpHeaders.UserAgent, inferenceUserAgent);
+
             foreach (string key in additionalHeaders.AllKeys())
             {
-                Console.WriteLine($"Adding header {key}: {additionalHeaders[key]}");
                 message.Headers.Add(key, additionalHeaders[key]);
             }
 
             Dictionary<string, dynamic> body = this.AddSemanticRerankPayload(renrankContext, documents, options);
 
-            message.Content = new StringContent(Newtonsoft.Json.JsonConvert.SerializeObject(body));
-
-            Console.WriteLine("\n\n\n\n\n\n\n\n\n\n\n\n\n");
-            Console.WriteLine(message.Headers.ToString());
-            Console.WriteLine(message.Content.ReadAsStringAsync().Result);
-            Console.WriteLine("\n\n\n\n\n\n\n\n\n\n\n\n\n");
+            message.Content = new StringContent(
+                Newtonsoft.Json.JsonConvert.SerializeObject(body),
+                Encoding.UTF8,
+                RuntimeConstants.MediaTypes.Json);
 
             HttpResponseMessage responseMessage = await this.httpClient.SendAsync(message, cancellationToken);
-            Console.WriteLine(responseMessage.StatusCode);
-            Console.WriteLine(responseMessage.Content);
             responseMessage.EnsureSuccessStatusCode();
 
             // return the content of the responsemessage as a dictonary
             string content = await responseMessage.Content.ReadAsStringAsync();
-            Console.WriteLine(content);
-            return Newtonsoft.Json.JsonConvert.DeserializeObject<IReadOnlyDictionary<TKey, TValue>>(content);
+            return Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, dynamic>>(content);
         }
 
         private void CreateClientHelper(HttpClient httpClient)

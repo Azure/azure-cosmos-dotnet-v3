@@ -133,7 +133,7 @@ namespace Microsoft.Azure.Cosmos
             string containerLinkUri,
             CancellationToken cancellationToken);
 
-        internal abstract Task<IReadOnlyDictionary<TKey, TValue>> SemanticRerankAsync<TKey, TValue>(
+        internal abstract Task<IReadOnlyDictionary<string, dynamic>> SemanticRerankAsync(
             string renrankContext,
             IEnumerable<string> documents,
             SemanticRerankRequestOptions options = null,

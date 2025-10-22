@@ -1,6 +1,5 @@
 ﻿namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
-    using System;
     using System.Collections.Generic;
     using System.Text.Json;
     using System.Text.Json.Serialization;
@@ -27,6 +26,7 @@
             DefaultAzureCredentialOptions options = new DefaultAzureCredentialOptions
             {
                 TenantId = "",
+                ExcludeVisualStudioCredential = true
             };
 
             //Create a cosmos client using AAD authentication
@@ -78,7 +78,6 @@
             string reranking_context = "most economical with multiple pulley adjustmnets and ideal for home gyms";
 
             List<string> documents = new List<string>();
-            Console.WriteLine("Query results:");
             FeedIterator<dynamic> resultSetIterator = container.GetItemQueryIterator<dynamic>(
                 new QueryDefinition(queryString),
                 requestOptions: new QueryRequestOptions()
@@ -103,16 +102,12 @@
                 Sort = true,
             };
 
-            IReadOnlyDictionary<string, string> results = await container.SemanticRerankAsync<string, string>(
+            IReadOnlyDictionary<string, dynamic> results = await container.SemanticRerankAsync(
                 reranking_context,
                 documents,
                 options);
 
-            Console.WriteLine("Reranked results:");
-            foreach (KeyValuePair<string, string> result in results)
-            {
-                Console.WriteLine($"Document: {result.Key}, Score: {result.Value}");
-            }
+            Assert.IsTrue(results["Scores"][0]["index"] == 4);
         }
     }
 }

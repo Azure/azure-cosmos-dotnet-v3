@@ -469,14 +469,14 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
-        internal override async Task<IReadOnlyDictionary<TKey, TValue>> SemanticRerankAsync<TKey, TValue>(
+        internal override async Task<IReadOnlyDictionary<string, dynamic>> SemanticRerankAsync(
             string renrankContext,
             IEnumerable<string> documents,
             SemanticRerankRequestOptions options = null,
             CancellationToken cancellationToken = default)
         {
             InferenceService inferenceService = await this.GetOrCreateInferenceServiceAsync();
-            return await inferenceService.SemanticRerankAsync<TKey, TValue>(renrankContext, documents, options, cancellationToken);
+            return await inferenceService.SemanticRerankAsync(renrankContext, documents, options, cancellationToken);
         }
 
         /// <inheritdoc/>

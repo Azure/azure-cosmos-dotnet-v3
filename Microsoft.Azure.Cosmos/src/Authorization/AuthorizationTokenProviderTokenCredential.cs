@@ -19,11 +19,14 @@ namespace Microsoft.Azure.Cosmos
         internal readonly TokenCredentialCache tokenCredentialCache;
         private bool isDisposed = false;
 
+        internal readonly TokenCredential tokenCredential;
+
         public AuthorizationTokenProviderTokenCredential(
             TokenCredential tokenCredential,
             Uri accountEndpoint,
             TimeSpan? backgroundTokenCredentialRefreshInterval)
         {
+            this.tokenCredential = tokenCredential ?? throw new ArgumentNullException(nameof(tokenCredential));
             this.tokenCredentialCache = new TokenCredentialCache(
                 tokenCredential: tokenCredential,
                 accountEndpoint: accountEndpoint,
