@@ -25,6 +25,5 @@
             Assert.IsTrue(new byte[] { 1, 2, 3, 4, 5}.SequenceEqual(properties.EncryptedData));
             Assert.IsTrue(new List<string> { "a", "b"}.SequenceEqual(properties.EncryptedPaths));
         }
-
     }
 }

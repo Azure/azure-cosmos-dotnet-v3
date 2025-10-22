@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     using System;
     using System.Collections.Generic;
     using System.IO;
-    using System.IO.Compression;
     using System.Linq;
 #if NET8_0_OR_GREATER
     using System.Text.Json.Nodes;
@@ -34,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         {
             _ = testContext;
 
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
             StreamProcessor.InitialBufferSize = 16; //we force smallest possible initial buffer to make sure both secondary reads and resize paths are executed
 #endif
 
@@ -67,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         [TestMethod]
         [DataRow(JsonProcessor.Newtonsoft)]
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
         [DataRow(JsonProcessor.Stream)]
 #endif
         public async Task InvalidPathToEncrypt(JsonProcessor jsonProcessor)
@@ -107,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         [TestMethod]
         [DataRow(JsonProcessor.Newtonsoft)]
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
         [DataRow(JsonProcessor.Stream)]
 #endif
         public async Task DuplicatePathToEncrypt(JsonProcessor jsonProcessor)
@@ -237,7 +236,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 decryptionContext);
         }
 
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
         [TestMethod]
         [DynamicData(nameof(EncryptionOptionsStreamTestCombinations))]
         public async Task ValidateDecryptBySystemTextStream_VerifyBySystemText(EncryptionOptions encryptionOptions, JsonProcessor decryptionJsonProcessor)
@@ -269,7 +268,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         [TestMethod]
         [DataRow(JsonProcessor.Newtonsoft)]
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
         [DataRow(JsonProcessor.Stream)]
 #endif
         public async Task DecryptStreamWithoutEncryptedProperty(JsonProcessor processor)
@@ -316,7 +315,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.IsNotNull(encryptionProperties);
             Assert.AreEqual(dekId, encryptionProperties.DataEncryptionKeyId);
 
-            Assert.AreEqual(3, encryptionProperties.EncryptionFormatVersion);
+            Assert.AreEqual(EncryptionFormatVersion.Mde, encryptionProperties.EncryptionFormatVersion);
 
             Assert.IsNull(encryptionProperties.EncryptedData);
             Assert.IsNotNull(encryptionProperties.EncryptedPaths);
@@ -371,7 +370,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             }
         }
 
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
         private static void VerifyDecryptionSucceeded(
             JsonNode decryptedDoc,
             TestDoc expectedDoc,
@@ -432,10 +431,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             };
         }
 
-    public static IEnumerable<object[]> EncryptionOptionsCombinations => new[] {
-        new object[] { CreateEncryptionOptions(JsonProcessor.Newtonsoft) },
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
-        new object[] { CreateEncryptionOptions(JsonProcessor.Stream) },
+        public static IEnumerable<object[]> EncryptionOptionsCombinations => new[] {
+            new object[] { CreateEncryptionOptions(JsonProcessor.Newtonsoft) },
+#if NET8_0_OR_GREATER
+            new object[] { CreateEncryptionOptions(JsonProcessor.Stream) },
 #endif
     };
 
@@ -446,7 +445,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 foreach (object[] encryptionOptions in EncryptionOptionsCombinations)
                 {
                     yield return new object[] { encryptionOptions[0], JsonProcessor.Newtonsoft };
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
                     yield return new object[] { encryptionOptions[0], JsonProcessor.Stream };
 #endif
                 }
