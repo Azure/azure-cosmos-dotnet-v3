@@ -36,10 +36,10 @@
   </ItemGroup>
 
   <ItemGroup>
-     <PackageReference Include="Microsoft.Data.Encryption.Cryptography" Version="2.0.0-pre007" />
+     <PackageReference Include="Microsoft.Data.Encryption.Cryptography" Version="2.0.0-pre015" />
      <PackageReference Include="Azure.Identity" Version="1.11.4" />
      <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
-     <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />
+     <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.6.3" />
      <PackageReference Include="Newtonsoft.Json" Version="10.0.2" NoWarn="NU1903" PrivateAssets="All" />
   </ItemGroup>
 
