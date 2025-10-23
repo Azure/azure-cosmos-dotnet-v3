@@ -1139,19 +1139,6 @@
         }
       },
       "NestedTypes": {}
-    },
-    "Microsoft.Azure.Cosmos.Encryption.Custom.JsonProcessorRequestOptionsExtensions;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
-      "Subclasses": {},
-      "Members": {
-        "Void UseStreamJsonProcessing(Microsoft.Azure.Cosmos.RequestOptions)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "ExtensionAttribute"
-          ],
-          "MethodInfo": "Void UseStreamJsonProcessing(Microsoft.Azure.Cosmos.RequestOptions);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        }
-      },
-      "NestedTypes": {}
     }
   },
   "Members": {

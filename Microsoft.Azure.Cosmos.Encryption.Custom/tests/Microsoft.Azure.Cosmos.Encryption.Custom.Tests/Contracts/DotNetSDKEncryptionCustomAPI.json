@@ -1139,11 +1139,6 @@
         }
       },
       "NestedTypes": {}
-    },
-    "Microsoft.Azure.Cosmos.Encryption.Custom.JsonProcessorRequestOptionsExtensions;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
-      "Subclasses": {},
-      "Members": {},
-      "NestedTypes": {}
     }
   },
   "Members": {

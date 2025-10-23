@@ -12,44 +12,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// Provides extension methods for <see cref="RequestOptions"/> to configure JSON processor selection for encryption operations.
     /// Centralizes handling of the JsonProcessor override communicated via <see cref="RequestOptions.Properties"/>.
     /// </summary>
-    public static class JsonProcessorRequestOptionsExtensions
+    internal static class JsonProcessorRequestOptionsExtensions
     {
         /// <summary>
         /// The property bag key used to store the JsonProcessor override in RequestOptions.Properties.
         /// </summary>
         internal const string JsonProcessorPropertyBagKey = "encryption-json-processor";
-
-#if NET8_0_OR_GREATER
-        /// <summary>
-        /// Configures the request to use the streaming JSON processing method.
-        /// </summary>
-        /// <param name="requestOptions">Request options updated with the streaming processor override.</param>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="requestOptions"/> is <c>null</c>.</exception>
-        public static void UseStreamJsonProcessing(this RequestOptions requestOptions)
-        {
-            if (requestOptions == null)
-            {
-                throw new ArgumentNullException(nameof(requestOptions));
-            }
-
-            Dictionary<string, object> properties;
-            if (requestOptions.Properties != null)
-            {
-                properties = new Dictionary<string, object>(capacity: requestOptions.Properties.Count);
-                foreach (KeyValuePair<string, object> kvp in requestOptions.Properties)
-                {
-                    properties[kvp.Key] = kvp.Value;
-                }
-            }
-            else
-            {
-                properties = new Dictionary<string, object>();
-            }
-
-            properties[JsonProcessorPropertyBagKey] = JsonProcessor.Stream;
-            requestOptions.Properties = properties;
-        }
-#endif
 
         /// <summary>
         /// Attempts to read a JsonProcessor override from the RequestOptions.Properties dictionary.
