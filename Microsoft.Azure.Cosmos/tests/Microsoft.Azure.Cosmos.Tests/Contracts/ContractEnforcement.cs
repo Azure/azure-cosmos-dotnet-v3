@@ -260,6 +260,7 @@
         /// <summary>
         /// Normalizes the string representation of a MemberInfo to ensure machine-agnostic output.
         /// For static methods, ensures the calling convention uses '.' (dot notation).
+        /// For generic methods, includes the generic type parameters in the signature.
         /// </summary>
         private static string NormalizeMemberInfoString(MemberInfo memberInfo)
         {
@@ -270,6 +271,15 @@
                 string declaringTypeName = methodBase.DeclaringType.FullName ?? methodBase.DeclaringType.Name;
                 string returnType = methodBase is MethodInfo mi ? mi.ReturnType.ToString() : "Void";
                 string methodName = methodBase.Name;
+                
+                // Include generic type parameters for generic methods
+                if (methodBase.IsGenericMethod)
+                {
+                    Type[] genericArgs = methodBase.GetGenericArguments();
+                    string genericParams = string.Join(", ", genericArgs.Select(t => t.Name));
+                    methodName = $"{methodName}[{genericParams}]";
+                }
+                
                 string parameters = string.Join(", ", methodBase.GetParameters().Select(p => p.ParameterType.ToString()));
                 
                 return $"{returnType} {declaringTypeName}.{methodName}({parameters})";
@@ -390,8 +400,7 @@
             string dllName,
             ContractType contractType,
             string baselinePattern,
-            string breakingChangesPattern,
-            string officialBaselinePattern = null)
+            string breakingChangesPattern)
         {
             int? currentMajorVersion = GetCurrentMajorVersion();
             if (!currentMajorVersion.HasValue)
@@ -402,57 +411,19 @@
             string baselinePath = $"{baselinePattern}.net{currentMajorVersion}.json";
             string breakingChangesPath = $"{breakingChangesPattern}.net{currentMajorVersion}.json";
 
-            switch (contractType)
+            // Get the current contract based on type
+            string currentJson = contractType switch
             {
-                case ContractType.Standard:
-                    {
-                        string localJson = GetCurrentContract(dllName);
-                        File.WriteAllText($"{ContractsFolder}{breakingChangesPath}", localJson);
+                ContractType.Standard => GetCurrentContract(dllName),
+                ContractType.Telemetry => GetCurrentTelemetryContract(dllName),
+                ContractType.Preview => GetCurrentContract(dllName),
+                _ => throw new ArgumentException($"Unknown contract type: {contractType}", nameof(contractType))
+            };
 
-                        string baselineJson = GetBaselineContract(baselinePath);
-                        ValidateJsonAreSame(baselineJson, localJson);
-                        break;
-                    }
-
-                case ContractType.Telemetry:
-                    {
-                        string localTelemetryJson = GetCurrentTelemetryContract(dllName);
-                        File.WriteAllText($"{ContractsFolder}{breakingChangesPath}", localTelemetryJson);
-
-                        string telemetryBaselineJson = GetBaselineContract(baselinePath);
-                        ValidateJsonAreSame(localTelemetryJson, telemetryBaselineJson);
-                        break;
-                    }
-
-                case ContractType.Preview:
-                    {
-                        if (string.IsNullOrEmpty(officialBaselinePattern))
-                        {
-                            throw new ArgumentException("officialBaselinePattern is required for Preview contract validation", nameof(officialBaselinePattern));
-                        }
-
-                        string officialBaselinePath = $"{officialBaselinePattern}.net{currentMajorVersion}.json";
-                        string currentPreviewJson = GetCurrentContract(dllName);
-
-                        JObject currentJObject = JObject.Parse(currentPreviewJson);
-                        JObject officialBaselineJObject = JObject.Parse(File.ReadAllText($"{ContractsFolder}{officialBaselinePath}"));
-
-                        string currentJsonNoOfficialContract = RemoveDuplicateContractElements(
-                            localContract: currentJObject,
-                            officialContract: officialBaselineJObject);
-
-                        Assert.IsNotNull(currentJsonNoOfficialContract);
-
-                        string baselinePreviewJson = GetBaselineContract(baselinePath);
-                        File.WriteAllText($"{ContractsFolder}{breakingChangesPath}", currentJsonNoOfficialContract);
-
-                        ValidateJsonAreSame(baselinePreviewJson, currentJsonNoOfficialContract);
-                        break;
-                    }
-
-                default:
-                    throw new ArgumentException($"Unknown contract type: {contractType}", nameof(contractType));
-            }
+            // Write breaking changes file and validate against baseline
+            File.WriteAllText($"{ContractsFolder}{breakingChangesPath}", currentJson);
+            string baselineJson = GetBaselineContract(baselinePath);
+            ValidateJsonAreSame(baselineJson, currentJson);
         }
 
         public static string GetCurrentContract(string dllName)

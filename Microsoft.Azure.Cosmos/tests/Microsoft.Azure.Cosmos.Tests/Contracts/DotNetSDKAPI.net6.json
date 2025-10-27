@@ -6268,31 +6268,31 @@
     "Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "Microsoft.Azure.Cosmos.FeedIterator Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.ToStreamIterator(System.Linq.IQueryable`1[T])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "Microsoft.Azure.Cosmos.FeedIterator Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.ToStreamIterator[T](System.Linq.IQueryable`1[T])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.ToStreamIterator(System.Linq.IQueryable`1[T]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.ToStreamIterator[T](System.Linq.IQueryable`1[T]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.FeedIterator`1[T] Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.ToFeedIterator(System.Linq.IQueryable`1[T])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "Microsoft.Azure.Cosmos.FeedIterator`1[T] Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.ToFeedIterator[T](System.Linq.IQueryable`1[T])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator`1[T] Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.ToFeedIterator(System.Linq.IQueryable`1[T]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator`1[T] Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.ToFeedIterator[T](System.Linq.IQueryable`1[T]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions+VectorDistanceOptions": {
           "Type": "NestedType",
           "Attributes": [],
           "MethodInfo": null
         },
-        "Microsoft.Azure.Cosmos.QueryDefinition Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.ToQueryDefinition(System.Linq.IQueryable`1[T])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "Microsoft.Azure.Cosmos.QueryDefinition Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.ToQueryDefinition[T](System.Linq.IQueryable`1[T])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.QueryDefinition Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.ToQueryDefinition(System.Linq.IQueryable`1[T]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.QueryDefinition Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.ToQueryDefinition[T](System.Linq.IQueryable`1[T]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
         },
         "System.Boolean Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.FullTextContains(System.Object, System.String)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
@@ -6385,12 +6385,12 @@
           ],
           "MethodInfo": "System.Boolean Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.RegexMatch(System.Object, System.String);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Double Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.FullTextScore(TSource, System.String[])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Double Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.FullTextScore[TSource](TSource, System.String[])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Double Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.FullTextScore(TSource, System.String[]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.Double Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.FullTextScore[TSource](TSource, System.String[]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
         },
         "System.Double Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.RRF(System.Double[], System.Double[])": {
           "Type": "Method",
@@ -6430,19 +6430,19 @@
           ],
           "MethodInfo": "System.Int32 Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.DocumentId(System.Object);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Linq.IOrderedQueryable`1[TSource] Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.OrderByRank(System.Linq.IQueryable`1[TSource], System.Linq.Expressions.Expression`1[System.Func`2[TSource,TKey]])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Linq.IOrderedQueryable`1[TSource] Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.OrderByRank[TSource, TKey](System.Linq.IQueryable`1[TSource], System.Linq.Expressions.Expression`1[System.Func`2[TSource,TKey]])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Linq.IOrderedQueryable`1[TSource] Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.OrderByRank(System.Linq.IQueryable`1[TSource], System.Linq.Expressions.Expression`1[System.Func`2[TSource,TKey]]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.Linq.IOrderedQueryable`1[TSource] Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.OrderByRank[TSource, TKey](System.Linq.IQueryable`1[TSource], System.Linq.Expressions.Expression`1[System.Func`2[TSource,TKey]]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
         },
-        "System.String Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.GetIndexMetrics(Microsoft.Azure.Cosmos.Response`1[T])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.String Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.GetIndexMetrics[T](Microsoft.Azure.Cosmos.Response`1[T])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.String Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.GetIndexMetrics(Microsoft.Azure.Cosmos.Response`1[T]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.String Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.GetIndexMetrics[T](Microsoft.Azure.Cosmos.Response`1[T]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
         },
         "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Decimal]] Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.AverageAsync(System.Linq.IQueryable`1[System.Decimal], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
@@ -6486,12 +6486,12 @@
           ],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Double]] Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.SumAsync(System.Linq.IQueryable`1[System.Double], System.Threading.CancellationToken);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Int32]] Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.CountAsync(System.Linq.IQueryable`1[TSource], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Int32]] Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.CountAsync[TSource](System.Linq.IQueryable`1[TSource], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Int32]] Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.CountAsync(System.Linq.IQueryable`1[TSource], System.Threading.CancellationToken);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Int32]] Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.CountAsync[TSource](System.Linq.IQueryable`1[TSource], System.Threading.CancellationToken);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
         },
         "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Int32]] Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.SumAsync(System.Linq.IQueryable`1[System.Int32], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
@@ -6591,19 +6591,19 @@
           ],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Single]] Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.SumAsync(System.Linq.IQueryable`1[System.Single], System.Threading.CancellationToken);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[TSource]] Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.MaxAsync(System.Linq.IQueryable`1[TSource], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[TSource]] Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.MaxAsync[TSource](System.Linq.IQueryable`1[TSource], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[TSource]] Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.MaxAsync(System.Linq.IQueryable`1[TSource], System.Threading.CancellationToken);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[TSource]] Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.MaxAsync[TSource](System.Linq.IQueryable`1[TSource], System.Threading.CancellationToken);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
         },
-        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[TSource]] Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.MinAsync(System.Linq.IQueryable`1[TSource], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[TSource]] Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.MinAsync[TSource](System.Linq.IQueryable`1[TSource], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[TSource]] Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.MinAsync(System.Linq.IQueryable`1[TSource], System.Threading.CancellationToken);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[TSource]] Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.MinAsync[TSource](System.Linq.IQueryable`1[TSource], System.Threading.CancellationToken);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {
@@ -6985,10 +6985,10 @@
           "Attributes": [],
           "MethodInfo": "Boolean TrySerializeValueParameter(Microsoft.Azure.Cosmos.CosmosSerializer, System.IO.Stream ByRef);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.PatchOperation Microsoft.Azure.Cosmos.PatchOperation.Add(System.String, T)": {
+        "Microsoft.Azure.Cosmos.PatchOperation Microsoft.Azure.Cosmos.PatchOperation.Add[T](System.String, T)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.PatchOperation Microsoft.Azure.Cosmos.PatchOperation.Add(System.String, T);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.PatchOperation Microsoft.Azure.Cosmos.PatchOperation.Add[T](System.String, T);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.PatchOperation Microsoft.Azure.Cosmos.PatchOperation.Increment(System.String, System.Double)": {
           "Type": "Method",
@@ -7010,15 +7010,15 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.PatchOperation Microsoft.Azure.Cosmos.PatchOperation.Remove(System.String);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.PatchOperation Microsoft.Azure.Cosmos.PatchOperation.Replace(System.String, T)": {
+        "Microsoft.Azure.Cosmos.PatchOperation Microsoft.Azure.Cosmos.PatchOperation.Replace[T](System.String, T)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.PatchOperation Microsoft.Azure.Cosmos.PatchOperation.Replace(System.String, T);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.PatchOperation Microsoft.Azure.Cosmos.PatchOperation.Replace[T](System.String, T);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.PatchOperation Microsoft.Azure.Cosmos.PatchOperation.Set(System.String, T)": {
+        "Microsoft.Azure.Cosmos.PatchOperation Microsoft.Azure.Cosmos.PatchOperation.Set[T](System.String, T)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.PatchOperation Microsoft.Azure.Cosmos.PatchOperation.Set(System.String, T);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.PatchOperation Microsoft.Azure.Cosmos.PatchOperation.Set[T](System.String, T);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.PatchOperationType get_OperationType()": {
           "Type": "Method",
