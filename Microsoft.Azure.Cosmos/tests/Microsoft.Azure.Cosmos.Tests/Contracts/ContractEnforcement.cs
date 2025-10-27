@@ -160,7 +160,7 @@
             {
                 foreach (CustomAttributeTypedArgument arg in attributeData.ConstructorArguments)
                 {
-                    parts.Add(FormatAttributeValue(arg));
+                    parts.Add(ContractEnforcement.FormatAttributeValue(arg));
                 }
             }
 
@@ -170,7 +170,7 @@
                 List<string> namedArgs = new List<string>();
                 foreach (CustomAttributeNamedArgument namedArg in attributeData.NamedArguments)
                 {
-                    namedArgs.Add($"{namedArg.MemberName} = {FormatAttributeValue(namedArg.TypedValue)}");
+                    namedArgs.Add($"{namedArg.MemberName} = {ContractEnforcement.FormatAttributeValue(namedArg.TypedValue)}");
                 }
                 namedArgs.Sort(StringComparer.Ordinal);
                 parts.AddRange(namedArgs);
@@ -192,7 +192,7 @@
                 null => "null",
                 string stringValue => $"\"{stringValue}\"",
                 Type typeValue => $"typeof({typeValue})",
-                _ when arg.ArgumentType.IsEnum => FormatEnumValue(arg),
+                _ when arg.ArgumentType.IsEnum => ContractEnforcement.FormatEnumValue(arg),
                 _ when arg.ArgumentType.IsPrimitive => $"({arg.ArgumentType.Name}){arg.Value}",
                 _ => arg.Value.ToString()
             };
@@ -261,7 +261,7 @@
 
         private static string GenerateNameWithMethodAttributes(MethodInfo methodInfo)
         {
-            return $"{NormalizeMemberInfoString(methodInfo)};{nameof(methodInfo.IsAbstract)}:{(methodInfo.IsAbstract ? bool.TrueString : bool.FalseString)};" +
+            return $"{ContractEnforcement.NormalizeMemberInfoString(methodInfo)};{nameof(methodInfo.IsAbstract)}:{(methodInfo.IsAbstract ? bool.TrueString : bool.FalseString)};" +
                 $"{nameof(methodInfo.IsStatic)}:{(methodInfo.IsStatic ? bool.TrueString : bool.FalseString)};" +
                 $"{nameof(methodInfo.IsVirtual)}:{(methodInfo.IsVirtual ? bool.TrueString : bool.FalseString)};" +
                 $"{nameof(methodInfo.IsGenericMethod)}:{(methodInfo.IsGenericMethod ? bool.TrueString : bool.FalseString)};" +
@@ -271,7 +271,7 @@
 
         private static string GenerateNameWithPropertyAttributes(PropertyInfo propertyInfo)
         {
-            string name = $"{NormalizeMemberInfoString(propertyInfo)};{nameof(propertyInfo.CanRead)}:{(propertyInfo.CanRead ? bool.TrueString : bool.FalseString)};" +
+            string name = $"{ContractEnforcement.NormalizeMemberInfoString(propertyInfo)};{nameof(propertyInfo.CanRead)}:{(propertyInfo.CanRead ? bool.TrueString : bool.FalseString)};" +
                 $"{nameof(propertyInfo.CanWrite)}:{(propertyInfo.CanWrite ? bool.TrueString : bool.FalseString)};";
 
             MethodInfo getMethodInfo = propertyInfo.GetGetMethod();
@@ -291,7 +291,7 @@
 
         private static string GenerateNameWithFieldAttributes(FieldInfo fieldInfo)
         {
-            return $"{NormalizeMemberInfoString(fieldInfo)};{nameof(fieldInfo.IsInitOnly)}:{(fieldInfo.IsInitOnly ? bool.TrueString : bool.FalseString)};" +
+            return $"{ContractEnforcement.NormalizeMemberInfoString(fieldInfo)};{nameof(fieldInfo.IsInitOnly)}:{(fieldInfo.IsInitOnly ? bool.TrueString : bool.FalseString)};" +
                 $"{nameof(fieldInfo.IsStatic)}:{(fieldInfo.IsStatic ? bool.TrueString : bool.FalseString)};";
         }
 
@@ -335,7 +335,7 @@
                 }
                 else if (memberInfo.Value.MemberType == MemberTypes.Constructor || memberInfo.Value.MemberType == MemberTypes.Event)
                 {
-                    methodSignature = NormalizeMemberInfoString(memberInfo.Value);
+                    methodSignature = ContractEnforcement.NormalizeMemberInfoString(memberInfo.Value);
                 }
 
                 // Certain custom attributes add the following to the string value "d__9" which sometimes changes
