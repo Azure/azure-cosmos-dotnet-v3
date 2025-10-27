@@ -16,6 +16,25 @@
     public class ContractEnforcement
     {
         private static readonly InvariantComparer invariantComparer = new();
+        private const string ContractsFolder = "Contracts/";
+
+        /// <summary>
+        /// Gets the current .NET major version from the executing test assembly's target framework.
+        /// </summary>
+        /// <returns>The major version number (e.g., 6 for net6.0, 8 for net8.0), or null if unable to determine.</returns>
+        public static int? GetCurrentMajorVersion()
+        {
+            // Read the TFM from the current test assembly TargetFrameworkAttribute
+            TargetFrameworkAttribute attr = Assembly.GetExecutingAssembly().GetCustomAttribute<TargetFrameworkAttribute>();
+            if (attr?.FrameworkName == null)
+            {
+                return null;
+            }
+
+            // Example: ".NETCoreApp,Version=v8.0" -> 8
+            FrameworkName fx = new FrameworkName(attr.FrameworkName);
+            return fx.Version.Major;
+        }
 
         private static Assembly GetAssemblyLocally(string name)
         {
@@ -358,52 +377,82 @@
             return root;
         }
 
-        public static void ValidateContractContainBreakingChanges(
+        /// <summary>
+        /// Validates contract changes using framework-specific baselines with automatic path construction.
+        /// Determines the current .NET version and builds file paths from patterns.
+        /// </summary>
+        /// <param name="dllName">The name of the DLL to validate</param>
+        /// <param name="contractType">The type of contract to validate (Standard, Telemetry, or Preview)</param>
+        /// <param name="baselinePattern">The baseline file name pattern (e.g., "DotNetSDKAPI", "DotNetSDKTelemetryAPI")</param>
+        /// <param name="breakingChangesPattern">The breaking changes file name pattern (e.g., "DotNetSDKAPIChanges")</param>
+        /// <param name="officialBaselinePattern">For Preview contracts only: the official baseline pattern (e.g., "DotNetSDKAPI")</param>
+        public static void ValidateContract(
             string dllName,
-            string baselinePath,
-            string breakingChangesPath)
+            ContractType contractType,
+            string baselinePattern,
+            string breakingChangesPattern,
+            string officialBaselinePattern = null)
         {
-            string localJson = GetCurrentContract(dllName);
-            File.WriteAllText($"Contracts/{breakingChangesPath}", localJson);
+            int? currentMajorVersion = GetCurrentMajorVersion();
+            if (!currentMajorVersion.HasValue)
+            {
+                Assert.Fail("Unable to determine target framework version. Framework-specific contract baselines are required.");
+            }
 
-            string baselineJson = GetBaselineContract(baselinePath);
-            ContractEnforcement.ValidateJsonAreSame(baselineJson, localJson);
-        }
+            string baselinePath = $"{baselinePattern}.net{currentMajorVersion}.json";
+            string breakingChangesPath = $"{breakingChangesPattern}.net{currentMajorVersion}.json";
 
-        public static void ValidateTelemetryContractContainBreakingChanges(
-          string dllName,
-          string baselinePath,
-          string breakingChangesPath)
-        {
-            string localTelemetryJson = GetCurrentTelemetryContract(dllName);
-            File.WriteAllText($"Contracts/{breakingChangesPath}", localTelemetryJson);
+            switch (contractType)
+            {
+                case ContractType.Standard:
+                    {
+                        string localJson = GetCurrentContract(dllName);
+                        File.WriteAllText($"{ContractsFolder}{breakingChangesPath}", localJson);
 
-            string telemetryBaselineJson = GetBaselineContract(baselinePath);
-            ContractEnforcement.ValidateJsonAreSame(localTelemetryJson, telemetryBaselineJson);
-        }
+                        string baselineJson = GetBaselineContract(baselinePath);
+                        ValidateJsonAreSame(baselineJson, localJson);
+                        break;
+                    }
 
-        public static void ValidatePreviewContractContainBreakingChanges(
-            string dllName,
-            string officialBaselinePath,
-            string previewBaselinePath,
-            string previewBreakingChangesPath)
-        {
-            string currentPreviewJson = ContractEnforcement.GetCurrentContract(
-              dllName);
+                case ContractType.Telemetry:
+                    {
+                        string localTelemetryJson = GetCurrentTelemetryContract(dllName);
+                        File.WriteAllText($"{ContractsFolder}{breakingChangesPath}", localTelemetryJson);
 
-            JObject currentJObject = JObject.Parse(currentPreviewJson);
-            JObject officialBaselineJObject = JObject.Parse(File.ReadAllText("Contracts/" + officialBaselinePath));
+                        string telemetryBaselineJson = GetBaselineContract(baselinePath);
+                        ValidateJsonAreSame(localTelemetryJson, telemetryBaselineJson);
+                        break;
+                    }
 
-            string currentJsonNoOfficialContract = ContractEnforcement.RemoveDuplicateContractElements(
-                localContract: currentJObject,
-                officialContract: officialBaselineJObject);
+                case ContractType.Preview:
+                    {
+                        if (string.IsNullOrEmpty(officialBaselinePattern))
+                        {
+                            throw new ArgumentException("officialBaselinePattern is required for Preview contract validation", nameof(officialBaselinePattern));
+                        }
 
-            Assert.IsNotNull(currentJsonNoOfficialContract);
+                        string officialBaselinePath = $"{officialBaselinePattern}.net{currentMajorVersion}.json";
+                        string currentPreviewJson = GetCurrentContract(dllName);
 
-            string baselinePreviewJson = ContractEnforcement.GetBaselineContract(previewBaselinePath);
-            File.WriteAllText($"Contracts/{previewBreakingChangesPath}", currentJsonNoOfficialContract);
+                        JObject currentJObject = JObject.Parse(currentPreviewJson);
+                        JObject officialBaselineJObject = JObject.Parse(File.ReadAllText($"{ContractsFolder}{officialBaselinePath}"));
 
-            ContractEnforcement.ValidateJsonAreSame(baselinePreviewJson, currentJsonNoOfficialContract);
+                        string currentJsonNoOfficialContract = RemoveDuplicateContractElements(
+                            localContract: currentJObject,
+                            officialContract: officialBaselineJObject);
+
+                        Assert.IsNotNull(currentJsonNoOfficialContract);
+
+                        string baselinePreviewJson = GetBaselineContract(baselinePath);
+                        File.WriteAllText($"{ContractsFolder}{breakingChangesPath}", currentJsonNoOfficialContract);
+
+                        ValidateJsonAreSame(baselinePreviewJson, currentJsonNoOfficialContract);
+                        break;
+                    }
+
+                default:
+                    throw new ArgumentException($"Unknown contract type: {contractType}", nameof(contractType));
+            }
         }
 
         public static string GetCurrentContract(string dllName)
@@ -444,7 +493,7 @@
 
         public static string GetBaselineContract(string baselinePath)
         {
-            string baselineFile = File.ReadAllText("Contracts/" + baselinePath);
+            string baselineFile = File.ReadAllText($"{ContractsFolder}{baselinePath}");
             return NormalizeJsonString(baselineFile);
         }
 
