@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Fixed
 
 - [5455](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5455) Diagnostics: Fixes possible Thread contention in Traces
+- [5446](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5446) Diagnostics: Removes Unnecessary space added by CosmosException.ToString()
 
 ### <a name="3.55.0-preview.0"/> [3.55.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.55.0-preview.0) - 2025-10-2
 
