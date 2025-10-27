@@ -1,6 +1,6 @@
 namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
 {
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
     using System;
     using System.Buffers;
     using System.IO;

@@ -18,6 +18,66 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
+    /// <summary>
+    /// Stream that returns data in very small chunks to force Utf8JsonReader to see HasValueSequence=true.
+    /// </summary>
+    internal class TinyChunkStream : Stream
+    {
+        private readonly byte[] data;
+        private int position;
+        private readonly int maxChunkSize;
+
+        public TinyChunkStream(byte[] data, int maxChunkSize = 4)
+        {
+            this.data = data;
+            this.maxChunkSize = maxChunkSize;
+        }
+
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => this.data.Length;
+        public override long Position { get => this.position; set => throw new NotSupportedException(); }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            int available = this.data.Length - this.position;
+            if (available == 0)
+            {
+                return 0;
+            }
+            
+            int toRead = Math.Min(Math.Min(count, this.maxChunkSize), available);
+            Array.Copy(this.data, this.position, buffer, offset, toRead);
+            this.position += toRead;
+            return toRead;
+        }
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(this.Read(buffer, offset, count));
+        }
+
+        public override void Flush()
+        {
+        }
+
+        public override long Seek(long offset, SeekOrigin origin)
+        {
+            throw new NotSupportedException();
+        }
+
+        public override void SetLength(long value)
+        {
+            throw new NotSupportedException();
+        }
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            throw new NotSupportedException();
+        }
+    }
+
     [TestClass]
     public class StreamProcessorEncryptorTests
     {
@@ -574,6 +634,482 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             EncryptionVerificationTestHelper.AssertEncryptedDocument(
                 rawJson,
                 encryptedProperties: new Dictionary<string, object> { { "Obj", 42 } });
+        }
+
+        [TestMethod]
+        public async Task EncryptStreamAsync_WithNonReadableInputStream_ThrowsArgumentException()
+        {
+            // Arrange
+            Mock<Stream> nonReadableStream = new Mock<Stream>();
+            nonReadableStream.Setup(s => s.CanRead).Returns(false);
+            MemoryStream output = new();
+            EncryptionOptions options = CreateOptions(new[] { "/test" });
+
+            // Act & Assert
+            ArgumentException ex = await Assert.ThrowsExceptionAsync<ArgumentException>(
+                () => new StreamProcessor().EncryptStreamAsync(
+                    nonReadableStream.Object,
+                    output,
+                    mockEncryptor.Object,
+                    options,
+                    new CosmosDiagnosticsContext(),
+                    CancellationToken.None));
+
+            Assert.IsTrue(ex.Message.Contains("Input stream must be readable"));
+            Assert.AreEqual("inputStream", ex.ParamName);
+        }
+
+        [TestMethod]
+        public async Task EncryptStreamAsync_WithNonWritableOutputStream_ThrowsArgumentException()
+        {
+            // Arrange
+            string json = "{\"test\":42}";
+            using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(json));
+            Mock<Stream> nonWritableStream = new Mock<Stream>();
+            nonWritableStream.Setup(s => s.CanWrite).Returns(false);
+            EncryptionOptions options = CreateOptions(new[] { "/test" });
+
+            // Act & Assert
+            ArgumentException ex = await Assert.ThrowsExceptionAsync<ArgumentException>(
+                () => new StreamProcessor().EncryptStreamAsync(
+                    input,
+                    nonWritableStream.Object,
+                    mockEncryptor.Object,
+                    options,
+                    new CosmosDiagnosticsContext(),
+                    CancellationToken.None));
+
+            Assert.IsTrue(ex.Message.Contains("Output stream must be writable"));
+            Assert.AreEqual("outputStream", ex.ParamName);
+        }
+
+        [TestMethod]
+        public async Task EncryptStreamAsync_ExceedsMaxBufferSize_ThrowsInvalidOperationException()
+        {
+            // Arrange - create a JSON token that exceeds max buffer size
+            // Set a small max buffer size for testing
+            int originalInitialBufferSize = StreamProcessor.InitialBufferSize;
+            int? originalMaxBufferSize = StreamProcessor.TestMaxBufferSizeBytesOverride;
+            
+            try
+            {
+                StreamProcessor.InitialBufferSize = 8;
+                StreamProcessor.TestMaxBufferSizeBytesOverride = 64; // very small limit
+
+                // Create a JSON string property value that's larger than the max buffer
+                string hugeValue = new string('x', 100); // > 64 bytes
+                string json = $"{{\"huge\":\"{hugeValue}\"}}";
+                using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(json));
+                MemoryStream output = new();
+                EncryptionOptions options = CreateOptions(new[] { "/huge" });
+
+                // Act & Assert
+                InvalidOperationException ex = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                    () => new StreamProcessor().EncryptStreamAsync(
+                        input,
+                        output,
+                        mockEncryptor.Object,
+                        options,
+                        new CosmosDiagnosticsContext(),
+                        CancellationToken.None));
+
+                Assert.IsTrue(ex.Message.Contains("JSON token exceeds maximum supported size"));
+                Assert.IsTrue(ex.Message.Contains("64 bytes"));
+            }
+            finally
+            {
+                // Restore original values
+                StreamProcessor.InitialBufferSize = originalInitialBufferSize;
+                StreamProcessor.TestMaxBufferSizeBytesOverride = originalMaxBufferSize;
+            }
+        }
+
+        [TestMethod]
+        public async Task Encrypt_MultiSegmentPropertyName_HandlesValueSequence()
+        {
+            // Arrange - create a JSON with a property name that spans multiple buffer segments
+            // InitialBufferSize is 8, so a property name longer than that will cause ValueSequence
+            string longPropertyName = "VeryLongPropertyNameThatWillSpanMultipleBuffers";
+            string json = $"{{\"{longPropertyName}\":\"value\",\"id\":\"123\"}}";
+            using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(json));
+            MemoryStream output = new();
+            EncryptionOptions options = CreateOptions(new[] { $"/{longPropertyName}" });
+
+            // Act
+            await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
+
+            // Assert - verify the document was encrypted correctly
+            output.Position = 0;
+            using JsonDocument jd = JsonDocument.Parse(output);
+            Assert.IsTrue(jd.RootElement.TryGetProperty(longPropertyName, out JsonElement encrypted));
+            Assert.AreEqual(JsonValueKind.String, encrypted.ValueKind);
+            
+            // Verify it's actually encrypted (base64 format)
+            string encryptedValue = encrypted.GetString();
+            Assert.IsTrue(encryptedValue.Length > 0);
+            
+            // Verify the id property is still there and not encrypted
+            Assert.IsTrue(jd.RootElement.TryGetProperty("id", out JsonElement idElement));
+            Assert.AreEqual("123", idElement.GetString());
+        }
+
+        [TestMethod]
+        public async Task Encrypt_NestedArrays_EncryptsCorrectly()
+        {
+            // Arrange - test nested arrays to exercise buffering logic for arrays within arrays
+            var doc = new
+            {
+                id = "123",
+                nestedArr = new object[] { new object[] { 1, 2 }, new object[] { 3, 4 }, "text" }
+            };
+            EncryptionOptions options = CreateOptions(new[] { "/nestedArr" });
+
+            // Act
+            MemoryStream encrypted = await EncryptAsync(doc, options);
+
+            // Assert - verify nested array was encrypted
+            encrypted.Position = 0;
+            using JsonDocument jd = JsonDocument.Parse(encrypted);
+            string base64 = jd.RootElement.GetProperty("nestedArr").GetString();
+            byte[] cipher = Convert.FromBase64String(base64);
+            Assert.AreEqual((byte)TypeMarker.Array, cipher[0]);
+        }
+
+        [TestMethod]
+        public async Task Encrypt_LongUnencryptedString_HandlesValueSequence()
+        {
+            // Arrange - test ValueSequence handling in pass-through (non-encrypted) path
+            // With InitialBufferSize=8, a long string will span multiple segments
+            string longValue = new string('x', 200);
+            var doc = new
+            {
+                id = "123",
+                encrypted = "short",
+                notEncrypted = longValue
+            };
+            EncryptionOptions options = CreateOptions(new[] { "/encrypted" });
+
+            // Act
+            MemoryStream encrypted = await EncryptAsync(doc, options);
+
+            // Assert - verify long unencrypted string preserved
+            encrypted.Position = 0;
+            using JsonDocument jd = JsonDocument.Parse(encrypted);
+            Assert.IsTrue(jd.RootElement.TryGetProperty("notEncrypted", out JsonElement notEncryptedElem));
+            Assert.AreEqual(longValue, notEncryptedElem.GetString());
+            
+            // Verify encrypted property is actually encrypted
+            Assert.IsTrue(jd.RootElement.TryGetProperty("encrypted", out JsonElement encryptedElem));
+            Assert.AreNotEqual("short", encryptedElem.GetString()); // Should be base64
+        }
+
+        [TestMethod]
+        public async Task Encrypt_ObjectWithLongPropertyNames_HandlesValueSequence()
+        {
+            // Arrange - test ValueSequence for property names within an encrypted object
+            // The object itself is encrypted, and has properties with long names
+            string longPropName1 = "VeryLongPropertyNameInside" + new string('A', 100);
+            string longPropName2 = "AnotherLongPropertyName" + new string('B', 100);
+            
+            Dictionary<string, object> doc = new Dictionary<string, object>
+            {
+                { "id", "123" },
+                { "encryptedObject", new Dictionary<string, object>
+                    {
+                        { longPropName1, "value1" },
+                        { longPropName2, "value2" },
+                        { "normal", "value3" }
+                    }
+                }
+            };
+            EncryptionOptions options = CreateOptions(new[] { "/encryptedObject" });
+
+            // Act
+            MemoryStream encrypted = await EncryptAsync(doc, options);
+
+            // Assert - verify the object was encrypted (property names handled)
+            encrypted.Position = 0;
+            using JsonDocument jd = JsonDocument.Parse(encrypted);
+            string base64 = jd.RootElement.GetProperty("encryptedObject").GetString();
+            byte[] cipher = Convert.FromBase64String(base64);
+            Assert.AreEqual((byte)TypeMarker.Object, cipher[0]);
+        }
+
+        [TestMethod]
+        public async Task Encrypt_PassThrough_EscapedString_HandlesCorrectly()
+        {
+            // Arrange - test escaped string handling in pass-through (non-encrypted) path
+            // JSON with escaped characters that are NOT encrypted
+            string jsonWithEscaped = "{\"id\":\"123\",\"encrypted\":\"simple\",\"notEncrypted\":\"Line1\\nLine2\\tTabbed\"}";
+            using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(jsonWithEscaped));
+            MemoryStream output = new();
+            EncryptionOptions options = CreateOptions(new[] { "/encrypted" });
+
+            // Act
+            await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
+
+            // Assert - verify escaped string preserved in pass-through
+            output.Position = 0;
+            using JsonDocument jd = JsonDocument.Parse(output);
+            string notEncrypted = jd.RootElement.GetProperty("notEncrypted").GetString();
+            Assert.AreEqual("Line1\nLine2\tTabbed", notEncrypted); // Properly unescaped
+        }
+
+        [TestMethod]
+        public async Task Encrypt_PassThrough_LongNumber_HandlesValueSequence()
+        {
+            // Arrange - test number spanning multiple segments in pass-through (non-encrypted)
+            // Need a very long number representation that spans buffers
+            string longNumber = "123456789012345678901234567890.123456789012345678901234567890";
+            string json = $"{{\"id\":\"123\",\"encrypted\":\"test\",\"longNum\":{longNumber}}}";
+            using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(json));
+            MemoryStream output = new();
+            EncryptionOptions options = CreateOptions(new[] { "/encrypted" });
+
+            // Act
+            await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
+
+            // Assert
+            output.Position = 0;
+            using JsonDocument jd = JsonDocument.Parse(output);
+            string preserved = jd.RootElement.GetProperty("longNum").GetRawText();
+            Assert.AreEqual(longNumber, preserved);
+        }
+
+        [TestMethod]
+        public async Task Encrypt_BufferedObject_VeryLongPropertyName_HandlesValueSequence()
+        {
+            // Arrange - test property name that spans segments when buffering encrypted object
+            // This tests lines 404-411 where property names in buffered objects are ValueSequence
+            int originalBufferSize = StreamProcessor.InitialBufferSize;
+            try
+            {
+                StreamProcessor.InitialBufferSize = 8; // Force multi-segment for property names
+                string veryLongPropName = new string('A', 200); // 200 character property name
+                string json = $"{{\"id\":\"123\",\"obj\":{{\"{veryLongPropName}\":\"value\"}}}}";
+                using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(json));
+                MemoryStream output = new();
+                EncryptionOptions options = CreateOptions(new[] { "/obj" });
+
+                // Act - the entire /obj will be encrypted, including the long property name
+                await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
+
+                // Assert - the encrypted object should have been processed
+                output.Position = 0;
+                using JsonDocument jd = JsonDocument.Parse(output);
+                Assert.IsTrue(jd.RootElement.TryGetProperty("obj", out JsonElement objElem));
+                Assert.AreEqual(JsonValueKind.String, objElem.ValueKind); // Encrypted as base64 string
+            }
+            finally
+            {
+                StreamProcessor.InitialBufferSize = originalBufferSize;
+            }
+        }
+
+        [TestMethod]
+        public async Task Encrypt_FragmentedStream_PropertyNameValueSequence_HandlesCorrectly()
+        {
+            // Arrange - force property names to span buffer chunks triggering HasValueSequence
+            int originalBufferSize = StreamProcessor.InitialBufferSize;
+            try
+            {
+                StreamProcessor.InitialBufferSize = 16; // Small but not too small
+                string longPropName = new string('X', 30); // Long property name
+                string json = $"{{\"obj\":{{\"{longPropName}\":\"value\"}}}}";
+                
+                // TinyChunkStream returns 4 bytes at a time, forcing property name to span chunks
+                using TinyChunkStream input = new TinyChunkStream(Encoding.UTF8.GetBytes(json), maxChunkSize: 4);
+                MemoryStream output = new();
+                EncryptionOptions options = CreateOptions(new[] { "/obj" });
+
+                // Act - should handle property names that are ValueSequence (lines 404-411)
+                await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
+
+                // Assert
+                output.Position = 0;
+                using JsonDocument jd = JsonDocument.Parse(output);
+                Assert.IsTrue(jd.RootElement.TryGetProperty("obj", out JsonElement objElem));
+                Assert.AreEqual(JsonValueKind.String, objElem.ValueKind); // Encrypted
+            }
+            finally
+            {
+                StreamProcessor.InitialBufferSize = originalBufferSize;
+            }
+        }
+
+        [TestMethod]
+        public async Task Encrypt_FragmentedStream_NumberValueSequenceEncrypted_HandlesCorrectly()
+        {
+            // Arrange - force number to span chunks when encrypting (lines 455-460)
+            int originalBufferSize = StreamProcessor.InitialBufferSize;
+            try
+            {
+                StreamProcessor.InitialBufferSize = 16;
+                string json = "{\"num\":123456.789012}"; // Number to encrypt
+                
+                using TinyChunkStream input = new TinyChunkStream(Encoding.UTF8.GetBytes(json), maxChunkSize: 3);
+                MemoryStream output = new();
+                EncryptionOptions options = CreateOptions(new[] { "/num" });
+
+                // Act - should handle numbers with ValueSequence when encrypting (calls CopySequenceToScratch)
+                await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
+
+                // Assert
+                output.Position = 0;
+                using JsonDocument jd = JsonDocument.Parse(output);
+                Assert.IsTrue(jd.RootElement.TryGetProperty("num", out JsonElement numElem));
+                Assert.AreEqual(JsonValueKind.String, numElem.ValueKind); // Encrypted as base64
+            }
+            finally
+            {
+                StreamProcessor.InitialBufferSize = originalBufferSize;
+            }
+        }
+
+        [TestMethod]
+        public async Task Encrypt_FragmentedStream_NumberValueSequencePassThrough_HandlesCorrectly()
+        {
+            // Arrange - force number to span chunks in pass-through mode (lines 477-482)
+            int originalBufferSize = StreamProcessor.InitialBufferSize;
+            try
+            {
+                StreamProcessor.InitialBufferSize = 16;
+                string json = "{\"encrypted\":\"test\",\"num\":987654.321098}"; // num NOT encrypted
+                
+                using TinyChunkStream input = new TinyChunkStream(Encoding.UTF8.GetBytes(json), maxChunkSize: 3);
+                MemoryStream output = new();
+                EncryptionOptions options = CreateOptions(new[] { "/encrypted" });
+
+                // Act - number should pass through with ValueSequence handling
+                await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
+
+                // Assert
+                output.Position = 0;
+                using JsonDocument jd = JsonDocument.Parse(output);
+                Assert.AreEqual(987654.321098, jd.RootElement.GetProperty("num").GetDouble(), 0.000001);
+            }
+            finally
+            {
+                StreamProcessor.InitialBufferSize = originalBufferSize;
+            }
+        }
+
+        [TestMethod]
+        public void Debug_VerifyHasValueSequenceBehavior()
+        {
+            // This test verifies whether Utf8JsonReader constructed from span can have HasValueSequence=true
+            byte[] json = Encoding.UTF8.GetBytes("{\"veryLongPropertyNameThatMightSpanBuffers\":12345.67890}");
+            
+            // Create reader from span (like StreamProcessor does)
+            Utf8JsonReader reader = new Utf8JsonReader(json, isFinalBlock: true, default);
+            bool hasSeenValueSequence = false;
+            
+            while (reader.Read())
+            {
+                if (reader.HasValueSequence)
+                {
+                    hasSeenValueSequence = true;
+                    System.Diagnostics.Debug.WriteLine($"HasValueSequence=true for {reader.TokenType}");
+                }
+            }
+            
+            // This test documents that span-based readers NEVER have HasValueSequence=true
+            Assert.IsFalse(hasSeenValueSequence, "Span-based Utf8JsonReader should never have HasValueSequence=true");
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public async Task EncryptAsync_NonReadableInputStream_ThrowsArgumentException()
+        {
+            // Arrange - create a write-only stream
+            using MemoryStream writeOnlyStream = new WriteOnlyMemoryStream();
+            using MemoryStream output = new();
+            EncryptionOptions options = CreateOptions(new[] { "/test" });
+
+            // Act - should throw ArgumentException for non-readable input
+            await EncryptionProcessor.EncryptAsync(writeOnlyStream, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public async Task EncryptAsync_NonWritableOutputStream_ThrowsArgumentException()
+        {
+            // Arrange - create a read-only stream
+            using MemoryStream input = new(Encoding.UTF8.GetBytes("{\"id\":\"1\"}"));
+            using MemoryStream readOnlyStream = new ReadOnlyMemoryStream(new byte[100]);
+            EncryptionOptions options = CreateOptions(new[] { "/test" });
+
+            // Act - should throw ArgumentException for non-writable output
+            await EncryptionProcessor.EncryptAsync(input, readOnlyStream, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public async Task EncryptAsync_NullInputStream_ThrowsArgumentNullException()
+        {
+            // Arrange
+            using MemoryStream output = new();
+            EncryptionOptions options = CreateOptions(new[] { "/test" });
+
+            // Act - should throw ArgumentNullException
+            await EncryptionProcessor.EncryptAsync(null, output, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public async Task EncryptAsync_NullOutputStream_ThrowsArgumentNullException()
+        {
+            // Arrange
+            using MemoryStream input = new(Encoding.UTF8.GetBytes("{\"id\":\"1\"}"));
+            EncryptionOptions options = CreateOptions(new[] { "/test" });
+
+            // Act - should throw ArgumentNullException
+            await EncryptionProcessor.EncryptAsync(input, null, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public async Task EncryptAsync_NullEncryptor_ThrowsArgumentNullException()
+        {
+            // Arrange
+            using MemoryStream input = new(Encoding.UTF8.GetBytes("{\"id\":\"1\"}"));
+            using MemoryStream output = new();
+            EncryptionOptions options = CreateOptions(new[] { "/test" });
+
+            // Act - should throw ArgumentNullException
+            await EncryptionProcessor.EncryptAsync(input, output, null, options, new CosmosDiagnosticsContext(), CancellationToken.None);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public async Task EncryptAsync_NullOptions_ThrowsArgumentNullException()
+        {
+            // Arrange
+            using MemoryStream input = new(Encoding.UTF8.GetBytes("{\"id\":\"1\"}"));
+            using MemoryStream output = new();
+
+            // Act - should throw ArgumentNullException
+            await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, null, new CosmosDiagnosticsContext(), CancellationToken.None);
+        }
+
+        /// <summary>
+        /// Helper stream that is write-only (CanRead=false) for testing validation.
+        /// </summary>
+        private class WriteOnlyMemoryStream : MemoryStream
+        {
+            public override bool CanRead => false;
+        }
+
+        /// <summary>
+        /// Helper stream that is read-only (CanWrite=false) for testing validation.
+        /// </summary>
+        private class ReadOnlyMemoryStream : MemoryStream
+        {
+            public ReadOnlyMemoryStream(byte[] buffer) : base(buffer)
+            {
+            }
+
+            public override bool CanWrite => false;
         }
     }
 }

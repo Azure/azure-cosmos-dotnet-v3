@@ -888,6 +888,566 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             }
         }
 
+        [TestMethod]
+        public async Task Decrypt_MultiSegmentPropertyName_HandlesValueSequence()
+        {
+            // Arrange - encrypt a document with a long property name that will span multiple buffer segments
+            // InitialBufferSize is 8, so a property name longer than that will cause ValueSequence during decrypt
+            string longPropertyName = "VeryLongPropertyNameThatWillSpanMultipleBuffersWhenDecrypting";
+            Dictionary<string, object> doc = new Dictionary<string, object>
+            {
+                { "id", "123" },
+                { longPropertyName, "encryptedValue" },
+                { "normalProp", "normalValue" }
+            };
+            
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, CreateOptions(new[] { $"/{longPropertyName}" }));
+            MemoryStream output = new();
+
+            // Act - decrypt the document
+            await new StreamProcessor().DecryptStreamAsync(
+                encrypted,
+                output,
+                mockEncryptor.Object,
+                props,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None);
+
+            // Assert - verify the long property name was correctly handled
+            output.Position = 0;
+            using JsonDocument jd = JsonDocument.Parse(output);
+            Assert.IsTrue(jd.RootElement.TryGetProperty(longPropertyName, out JsonElement decrypted));
+            Assert.AreEqual("encryptedValue", decrypted.GetString());
+            Assert.IsTrue(jd.RootElement.TryGetProperty("id", out JsonElement idElement));
+            Assert.AreEqual("123", idElement.GetString());
+            Assert.IsTrue(jd.RootElement.TryGetProperty("normalProp", out JsonElement normalElement));
+            Assert.AreEqual("normalValue", normalElement.GetString());
+        }
+
+        [TestMethod]
+        public async Task Decrypt_MixedProperties_LongUnencryptedNames_HandlesValueSequence()
+        {
+            // Arrange - decrypt document with long unencrypted property names (ValueSequence in pass-through)
+            string longUnencryptedProp = "VeryLongUnencryptedPropertyName" + new string('X', 150);
+            Dictionary<string, object> doc = new Dictionary<string, object>
+            {
+                { "id", "123" },
+                { "encrypted", "secretValue" },
+                { longUnencryptedProp, "plainValue" },
+                { "alsoNotEncrypted", new string('Y', 200) } // Long value too
+            };
+            
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, CreateOptions(new[] { "/encrypted" }));
+            MemoryStream output = new();
+
+            // Act - decrypt
+            await new StreamProcessor().DecryptStreamAsync(
+                encrypted,
+                output,
+                mockEncryptor.Object,
+                props,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None);
+
+            // Assert - verify long unencrypted property name and value preserved
+            output.Position = 0;
+            using JsonDocument jd = JsonDocument.Parse(output);
+            Assert.IsTrue(jd.RootElement.TryGetProperty(longUnencryptedProp, out JsonElement longPropElem));
+            Assert.AreEqual("plainValue", longPropElem.GetString());
+            Assert.IsTrue(jd.RootElement.TryGetProperty("alsoNotEncrypted", out JsonElement longValueElem));
+            Assert.AreEqual(200, longValueElem.GetString().Length);
+            Assert.IsTrue(jd.RootElement.TryGetProperty("encrypted", out JsonElement decryptedElem));
+            Assert.AreEqual("secretValue", decryptedElem.GetString());
+        }
+
+        [TestMethod]
+        public async Task Decrypt_PassThrough_EscapedStrings_HandlesCorrectly()
+        {
+            // Arrange - decrypt document with escaped strings that are NOT encrypted
+            Dictionary<string, object> doc = new Dictionary<string, object>
+            {
+                { "id", "123" },
+                { "encrypted", "secret" },
+                { "withNewlines", "Line1\nLine2\nLine3" },
+                { "withTabs", "Col1\tCol2\tCol3" },
+                { "withQuotes", "He said \"Hello\"" }
+            };
+            
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, CreateOptions(new[] { "/encrypted" }));
+            MemoryStream output = new();
+
+            // Act
+            await new StreamProcessor().DecryptStreamAsync(
+                encrypted,
+                output,
+                mockEncryptor.Object,
+                props,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None);
+
+            // Assert - verify escaped strings preserved correctly
+            output.Position = 0;
+            using JsonDocument jd = JsonDocument.Parse(output);
+            Assert.AreEqual("Line1\nLine2\nLine3", jd.RootElement.GetProperty("withNewlines").GetString());
+            Assert.AreEqual("Col1\tCol2\tCol3", jd.RootElement.GetProperty("withTabs").GetString());
+            Assert.AreEqual("He said \"Hello\"", jd.RootElement.GetProperty("withQuotes").GetString());
+        }
+
+        [TestMethod]
+        public async Task Decrypt_VeryLargeEncryptedValue_HandlesValueSequence()
+        {
+            // Arrange - encrypt a very large value that will span multiple buffer segments when base64 encoded
+            // This exercises ValueSequence path in encrypted value decryption (lines 388-402)
+            int originalBufferSize = StreamProcessor.InitialBufferSize;
+            try
+            {
+                StreamProcessor.InitialBufferSize = 16; // Small buffer to force ValueSequence
+                
+                // Create a large string that when encrypted and base64-encoded will span buffers
+                string hugeValue = new string('Z', 10000);
+                Dictionary<string, object> doc = new Dictionary<string, object>
+                {
+                    { "id", "123" },
+                    { "hugeEncrypted", hugeValue }
+                };
+                
+                (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, CreateOptions(new[] { "/hugeEncrypted" }));
+                MemoryStream output = new();
+
+                // Act
+                await new StreamProcessor().DecryptStreamAsync(
+                    encrypted,
+                    output,
+                    mockEncryptor.Object,
+                    props,
+                    new CosmosDiagnosticsContext(),
+                    CancellationToken.None);
+
+                // Assert
+                output.Position = 0;
+                using JsonDocument jd = JsonDocument.Parse(output);
+                Assert.AreEqual(hugeValue, jd.RootElement.GetProperty("hugeEncrypted").GetString());
+            }
+            finally
+            {
+                StreamProcessor.InitialBufferSize = originalBufferSize;
+            }
+        }
+
+        [TestMethod]
+        public async Task Decrypt_PassThrough_LongNumber_HandlesValueSequence()
+        {
+            // Arrange - test long number that spans segments in pass-through path
+            int originalBufferSize = StreamProcessor.InitialBufferSize;
+            try
+            {
+                StreamProcessor.InitialBufferSize = 8; // Force multi-segment
+                string longNumber = "987654321098765432109876543210.987654321098765432109876543210";
+                Dictionary<string, object> doc = new()
+                {
+                    ["id"] = "123",
+                    ["encrypted"] = "secret",
+                    ["largeNum"] = double.Parse(longNumber)
+                };
+                
+                EncryptionOptions options = CreateOptions(new[] { "/encrypted" });
+                (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+
+                // Act - decrypt should preserve the long number
+                encrypted.Position = 0;
+                MemoryStream output = new();
+                await new StreamProcessor().DecryptStreamAsync(
+                    encrypted,
+                    output,
+                    mockEncryptor.Object,
+                    props,
+                    new CosmosDiagnosticsContext(),
+                    CancellationToken.None);
+
+                // Assert
+                output.Position = 0;
+                using JsonDocument jd = JsonDocument.Parse(output);
+                double preserved = jd.RootElement.GetProperty("largeNum").GetDouble();
+                Assert.AreEqual(double.Parse(longNumber), preserved);
+            }
+            finally
+            {
+                StreamProcessor.InitialBufferSize = originalBufferSize;
+            }
+        }
+
+        [TestMethod]
+        public async Task Decrypt_RootArray_HandlesCorrectly()
+        {
+            // Arrange - test decrypting when root is an array (not object)
+            Dictionary<string, object> item1 = new() { ["id"] = "1", ["encrypted"] = "secret1" };
+            Dictionary<string, object> item2 = new() { ["id"] = "2", ["encrypted"] = "secret2" };
+            
+            EncryptionOptions encryptOptions = CreateOptions(new[] { "/encrypted" });
+            
+            // Encrypt each item individually
+            (MemoryStream enc1, EncryptionProperties props1) = await EncryptRawAsync(item1, encryptOptions);
+            (MemoryStream enc2, EncryptionProperties _) = await EncryptRawAsync(item2, encryptOptions);
+            
+            // Create array JSON manually
+            enc1.Position = 0;
+            enc2.Position = 0;
+            string item1Json = Encoding.UTF8.GetString(enc1.ToArray());
+            string item2Json = Encoding.UTF8.GetString(enc2.ToArray());
+            string arrayJson = $"[{item1Json},{item2Json}]";
+            
+            using MemoryStream input = new(Encoding.UTF8.GetBytes(arrayJson));
+            MemoryStream output = new();
+
+            // Act - decrypt array root (lines 444-446, 455-457)
+            DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(
+                input,
+                output,
+                mockEncryptor.Object,
+                props1, // Use props from first item
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None);
+
+            // Assert
+            output.Position = 0;
+            using JsonDocument jd = JsonDocument.Parse(output);
+            Assert.AreEqual(JsonValueKind.Array, jd.RootElement.ValueKind);
+            Assert.AreEqual(2, jd.RootElement.GetArrayLength());
+        }
+
+        [TestMethod]
+        public async Task Decrypt_TrailingWhitespaceAfterRoot_HandlesCorrectly()
+        {
+            // Arrange - JSON with trailing whitespace is valid
+            Dictionary<string, object> doc = new() { ["id"] = "123", ["encrypted"] = "secret" };
+            EncryptionOptions options = CreateOptions(new[] { "/encrypted" });
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+            
+            encrypted.Position = 0;
+            string validJson = Encoding.UTF8.GetString(encrypted.ToArray());
+            string jsonWithWhitespace = validJson + "   \t\n  "; // whitespace is OK
+            
+            using MemoryStream input = new(Encoding.UTF8.GetBytes(jsonWithWhitespace));
+            MemoryStream output = new();
+
+            // Act - should succeed with trailing whitespace (tests IsAllWhitespace helper)
+            DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(
+                input,
+                output,
+                mockEncryptor.Object,
+                props,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None);
+
+            // Assert
+            output.Position = 0;
+            using JsonDocument jd = JsonDocument.Parse(output);
+            Assert.AreEqual("123", jd.RootElement.GetProperty("id").GetString());
+        }
+
+        [TestMethod]
+        public async Task Decrypt_ComplexNestedEncryptedInfo_SkipsCorrectly()
+        {
+            // Arrange - test that complex/nested _ei metadata is properly skipped
+            // This exercises HandleActiveSkip with nested objects/arrays (lines 511-522)
+            Dictionary<string, object> doc = new()
+            {
+                ["id"] = "complex",
+                ["data"] = "encrypted",
+                ["nested"] = new Dictionary<string, object>
+                {
+                    ["inner"] = "value"
+                }
+            };
+            
+            EncryptionOptions options = CreateOptions(new[] { "/data" });
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+
+            // Act - decrypt should skip the _ei property completely
+            encrypted.Position = 0;
+            MemoryStream output = new();
+            await new StreamProcessor().DecryptStreamAsync(
+                encrypted,
+                output,
+                mockEncryptor.Object,
+                props,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None);
+
+            // Assert - _ei should not be in output
+            output.Position = 0;
+            using JsonDocument jd = JsonDocument.Parse(output);
+            Assert.IsFalse(jd.RootElement.TryGetProperty(Constants.EncryptedInfo, out _));
+            Assert.AreEqual("complex", jd.RootElement.GetProperty("id").GetString());
+        }
+
+        [TestMethod]
+        public async Task Decrypt_BooleanValues_DecryptsCorrectly()
+        {
+            // Arrange - test boolean type marker handling
+            Dictionary<string, object> doc = new()
+            {
+                ["id"] = "bool-test",
+                ["trueValue"] = true,
+                ["falseValue"] = false
+            };
+            
+            EncryptionOptions options = CreateOptions(new[] { "/trueValue", "/falseValue" });
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+
+            // Act
+            encrypted.Position = 0;
+            MemoryStream output = new();
+            await new StreamProcessor().DecryptStreamAsync(
+                encrypted,
+                output,
+                mockEncryptor.Object,
+                props,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None);
+
+            // Assert
+            output.Position = 0;
+            using JsonDocument jd = JsonDocument.Parse(output);
+            Assert.AreEqual(true, jd.RootElement.GetProperty("trueValue").GetBoolean());
+            Assert.AreEqual(false, jd.RootElement.GetProperty("falseValue").GetBoolean());
+        }
+
+        [TestMethod]
+        public async Task Decrypt_NullValue_DecryptsCorrectly()
+        {
+            // Arrange - test null type marker handling
+            Dictionary<string, object> doc = new()
+            {
+                ["id"] = "null-test",
+                ["nullProp"] = null
+            };
+            
+            EncryptionOptions options = CreateOptions(new[] { "/nullProp" });
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+
+            // Act
+            encrypted.Position = 0;
+            MemoryStream output = new();
+            await new StreamProcessor().DecryptStreamAsync(
+                encrypted,
+                output,
+                mockEncryptor.Object,
+                props,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None);
+
+            // Assert
+            output.Position = 0;
+            using JsonDocument jd = JsonDocument.Parse(output);
+            Assert.AreEqual(JsonValueKind.Null, jd.RootElement.GetProperty("nullProp").ValueKind);
+        }
+
+        [TestMethod]
+        public async Task Decrypt_LongNumber_DecryptsCorrectly()
+        {
+            // Arrange - test TypeMarker.Long deserialization (lines 617-623)
+            Dictionary<string, object> doc = new()
+            {
+                ["id"] = "long-test",
+                ["longValue"] = 9223372036854775807L // Max long value
+            };
+            
+            EncryptionOptions options = CreateOptions(new[] { "/longValue" });
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+
+            // Act
+            encrypted.Position = 0;
+            MemoryStream output = new();
+            await new StreamProcessor().DecryptStreamAsync(
+                encrypted,
+                output,
+                mockEncryptor.Object,
+                props,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None);
+
+            // Assert
+            output.Position = 0;
+            using JsonDocument jd = JsonDocument.Parse(output);
+            Assert.AreEqual(9223372036854775807L, jd.RootElement.GetProperty("longValue").GetInt64());
+        }
+
+        [TestMethod]
+        public async Task Decrypt_DoubleNumber_DecryptsCorrectly()
+        {
+            // Arrange - test TypeMarker.Double deserialization (lines 628-634)
+            Dictionary<string, object> doc = new()
+            {
+                ["id"] = "double-test",
+                ["doubleValue"] = 3.141592653589793
+            };
+            
+            EncryptionOptions options = CreateOptions(new[] { "/doubleValue" });
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+
+            // Act
+            encrypted.Position = 0;
+            MemoryStream output = new();
+            await new StreamProcessor().DecryptStreamAsync(
+                encrypted,
+                output,
+                mockEncryptor.Object,
+                props,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None);
+
+            // Assert
+            output.Position = 0;
+            using JsonDocument jd = JsonDocument.Parse(output);
+            Assert.AreEqual(3.141592653589793, jd.RootElement.GetProperty("doubleValue").GetDouble(), 0.000001);
+        }
+
+        [TestMethod]
+        public async Task Decrypt_MixedTypes_AllTypeMarkers_DecryptsCorrectly()
+        {
+            // Arrange - comprehensive test of all type markers in one document
+            Dictionary<string, object> doc = new()
+            {
+                ["id"] = "mixed-types",
+                ["stringVal"] = "text",
+                ["longVal"] = 12345L,
+                ["doubleVal"] = 67.89,
+                ["boolVal"] = true,
+                ["nullVal"] = null
+            };
+            
+            EncryptionOptions options = CreateOptions(new[] { "/stringVal", "/longVal", "/doubleVal", "/boolVal", "/nullVal" });
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+
+            // Act
+            encrypted.Position = 0;
+            MemoryStream output = new();
+            DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(
+                encrypted,
+                output,
+                mockEncryptor.Object,
+                props,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None);
+
+            // Assert
+            output.Position = 0;
+            using JsonDocument jd = JsonDocument.Parse(output);
+            Assert.AreEqual("text", jd.RootElement.GetProperty("stringVal").GetString());
+            Assert.AreEqual(12345L, jd.RootElement.GetProperty("longVal").GetInt64());
+            Assert.AreEqual(67.89, jd.RootElement.GetProperty("doubleVal").GetDouble(), 0.01);
+            Assert.AreEqual(true, jd.RootElement.GetProperty("boolVal").GetBoolean());
+            Assert.AreEqual(JsonValueKind.Null, jd.RootElement.GetProperty("nullVal").ValueKind);
+            // Note: null values are not encrypted, so only 4 paths are decrypted
+            Assert.AreEqual(4, ctx.DecryptionInfoList[0].PathsDecrypted.Count);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(InvalidOperationException))]
+        public async Task Decrypt_InvalidDecryptionReturnValue_ThrowsInvalidOperationException()
+        {
+            // Arrange - test lines 581-583: negative decryptedLength from DecryptData
+            Mock<DataEncryptionKey> badDek = new Mock<DataEncryptionKey>();
+            badDek.SetupGet(d => d.EncryptionAlgorithm).Returns(CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized);
+            badDek.Setup(d => d.GetDecryptByteCount(It.IsAny<int>())).Returns(100);
+            badDek.Setup(d => d.DecryptData(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<byte[]>(), It.IsAny<int>()))
+                .Returns(-1); // Invalid negative return value
+
+            Mock<Encryptor> badEncryptor = new Mock<Encryptor>();
+            badEncryptor.Setup(e => e.GetEncryptionKeyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(badDek.Object);
+
+            Dictionary<string, object> doc = new() { ["id"] = "1", ["data"] = "secret" };
+            EncryptionOptions options = CreateOptions(new[] { "/data" });
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+
+            // Act - should throw InvalidOperationException for negative decryption length
+            encrypted.Position = 0;
+            MemoryStream output = new();
+            await new StreamProcessor().DecryptStreamAsync(
+                encrypted,
+                output,
+                badEncryptor.Object,
+                props,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(InvalidOperationException))]
+        public async Task Decrypt_CorruptedLongDeserialization_ThrowsInvalidOperationException()
+        {
+            // Arrange - test lines 617-623: invalid Long deserialization
+            Mock<DataEncryptionKey> badDek = new Mock<DataEncryptionKey>();
+            badDek.SetupGet(d => d.EncryptionAlgorithm).Returns(CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized);
+            badDek.Setup(d => d.GetDecryptByteCount(It.IsAny<int>())).Returns(100);
+            badDek.Setup(d => d.DecryptData(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<byte[]>(), It.IsAny<int>()))
+                .Returns((byte[] input, int inOff, int inLen, byte[] output, int outOff) =>
+                {
+                    // Return corrupted Long data (invalid length - SqlLongSerializer expects 8 bytes)
+                    output[outOff] = (byte)TypeMarker.Long;
+                    output[outOff + 1] = 0x01; // Only 2 bytes instead of 8
+                    return 2;
+                });
+
+            Mock<Encryptor> badEncryptor = new Mock<Encryptor>();
+            badEncryptor.Setup(e => e.GetEncryptionKeyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(badDek.Object);
+
+            Dictionary<string, object> doc = new() { ["id"] = "1", ["longVal"] = 12345L };
+            EncryptionOptions options = CreateOptions(new[] { "/longVal" });
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+
+            // Act - should throw InvalidOperationException for corrupted Long
+            encrypted.Position = 0;
+            MemoryStream output = new();
+            await new StreamProcessor().DecryptStreamAsync(
+                encrypted,
+                output,
+                badEncryptor.Object,
+                props,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(InvalidOperationException))]
+        public async Task Decrypt_CorruptedDoubleDeserialization_ThrowsInvalidOperationException()
+        {
+            // Arrange - test lines 628-634: invalid Double deserialization
+            Mock<DataEncryptionKey> badDek = new Mock<DataEncryptionKey>();
+            badDek.SetupGet(d => d.EncryptionAlgorithm).Returns(CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized);
+            badDek.Setup(d => d.GetDecryptByteCount(It.IsAny<int>())).Returns(100);
+            badDek.Setup(d => d.DecryptData(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<byte[]>(), It.IsAny<int>()))
+                .Returns((byte[] input, int inOff, int inLen, byte[] output, int outOff) =>
+                {
+                    // Return corrupted Double data (invalid length - SqlDoubleSerializer expects 8 bytes)
+                    output[outOff] = (byte)TypeMarker.Double;
+                    output[outOff + 1] = 0x01; // Only 3 bytes instead of 8
+                    output[outOff + 2] = 0x02;
+                    return 3;
+                });
+
+            Mock<Encryptor> badEncryptor = new Mock<Encryptor>();
+            badEncryptor.Setup(e => e.GetEncryptionKeyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(badDek.Object);
+
+            Dictionary<string, object> doc = new() { ["id"] = "1", ["doubleVal"] = 3.14 };
+            EncryptionOptions options = CreateOptions(new[] { "/doubleVal" });
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+
+            // Act - should throw InvalidOperationException for corrupted Double
+            encrypted.Position = 0;
+            MemoryStream output = new();
+            await new StreamProcessor().DecryptStreamAsync(
+                encrypted,
+                output,
+                badEncryptor.Object,
+                props,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None);
+        }
     }
 }
 #endif

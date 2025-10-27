@@ -59,7 +59,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.AreEqual(props.EncryptionFormatVersion, ei.GetProperty(Constants.EncryptionFormatVersion).GetInt32());
             Assert.AreEqual(props.EncryptionAlgorithm, ei.GetProperty(Constants.EncryptionAlgorithm).GetString());
             Assert.AreEqual(props.DataEncryptionKeyId, ei.GetProperty(Constants.EncryptionDekId).GetString());
-            Assert.IsFalse(ei.TryGetProperty(Constants.CompressedEncryptedPaths, out _), "_cp should not be present after compression removal");
+            // Compression support removed - no _cp property to check
+            // Assert.IsFalse(ei.TryGetProperty(Constants.CompressedEncryptedPaths, out _), "_cp should not be present after compression removal");
 
             // _ed must always be present; empty byte[] serializes to empty base64 string
             Assert.IsTrue(ei.TryGetProperty(Constants.EncryptedData, out JsonElement edProp), "Missing _ed property in manual JSON");
@@ -91,7 +92,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             using JsonDocument d = JsonDocument.Parse(ms.ToArray());
             JsonElement ei = d.RootElement.GetProperty(Constants.EncryptedInfo);
-            Assert.IsFalse(ei.TryGetProperty(Constants.CompressedEncryptedPaths, out _), "Compressed paths metadata should be removed");
+            // Compression support removed - no _cp property to check
+            // Assert.IsFalse(ei.TryGetProperty(Constants.CompressedEncryptedPaths, out _), "Compressed paths metadata should be removed");
             Assert.AreEqual(3, ei.GetProperty(Constants.EncryptionFormatVersion).GetInt32());
             Assert.AreEqual("alg", ei.GetProperty(Constants.EncryptionAlgorithm).GetString());
             Assert.AreEqual("kid", ei.GetProperty(Constants.EncryptionDekId).GetString());
