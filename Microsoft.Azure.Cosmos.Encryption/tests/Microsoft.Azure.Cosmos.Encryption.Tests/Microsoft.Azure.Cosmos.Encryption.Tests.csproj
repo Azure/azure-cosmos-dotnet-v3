@@ -29,7 +29,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="Contracts\DotNetSDKEncryptionAPI.json">
+    <None Include="Contracts\DotNetSDKEncryptionAPI*.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
