@@ -20,15 +20,14 @@
         public void PreviewContractChanges()
         {
             int? currentMajorVersion = GetCurrentMajorVersion();
-            string baseline = currentMajorVersion.HasValue 
-                ? $"DotNetPreviewSDKAPI.net{currentMajorVersion}.json"
-                : "DotNetPreviewSDKAPI.json";
-            string officialBaseline = currentMajorVersion.HasValue
-                ? $"DotNetSDKAPI.net{currentMajorVersion}.json"
-                : "DotNetSDKAPI.json";
-            string breakingChanges = currentMajorVersion.HasValue
-                ? $"DotNetPreviewSDKAPIChanges.net{currentMajorVersion}.json"
-                : "DotNetPreviewSDKAPIChanges.json";
+            if (!currentMajorVersion.HasValue)
+            {
+                Assert.Fail("Unable to determine target framework version. Framework-specific contract baselines are required.");
+            }
+
+            string baseline = $"DotNetPreviewSDKAPI.net{currentMajorVersion}.json";
+            string officialBaseline = $"DotNetSDKAPI.net{currentMajorVersion}.json";
+            string breakingChanges = $"DotNetPreviewSDKAPIChanges.net{currentMajorVersion}.json";
 
             ContractEnforcement.ValidatePreviewContractContainBreakingChanges(
                 dllName: DllName,
@@ -53,12 +52,13 @@
         public void ContractChanges()
         {
             int? currentMajorVersion = GetCurrentMajorVersion();
-            string baseline = currentMajorVersion.HasValue 
-                ? $"DotNetSDKAPI.net{currentMajorVersion}.json"
-                : "DotNetSDKAPI.json";
-            string breakingChanges = currentMajorVersion.HasValue
-                ? $"DotNetSDKAPIChanges.net{currentMajorVersion}.json"
-                : "DotNetSDKAPIChanges.json";
+            if (!currentMajorVersion.HasValue)
+            {
+                Assert.Fail("Unable to determine target framework version. Framework-specific contract baselines are required.");
+            }
+
+            string baseline = $"DotNetSDKAPI.net{currentMajorVersion}.json";
+            string breakingChanges = $"DotNetSDKAPIChanges.net{currentMajorVersion}.json";
 
             ContractEnforcement.ValidateContractContainBreakingChanges(
                 dllName: DllName,
@@ -70,12 +70,13 @@
         public void TelemetryContractChanges()
         {
             int? currentMajorVersion = GetCurrentMajorVersion();
-            string baseline = currentMajorVersion.HasValue 
-                ? $"DotNetSDKTelemetryAPI.net{currentMajorVersion}.json"
-                : "DotNetSDKTelemetryAPI.json";
-            string breakingChanges = currentMajorVersion.HasValue
-                ? $"DotNetSDKTelemetryAPIChanges.net{currentMajorVersion}.json"
-                : "DotNetSDKTelemetryAPIChanges.json";
+            if (!currentMajorVersion.HasValue)
+            {
+                Assert.Fail("Unable to determine target framework version. Framework-specific contract baselines are required.");
+            }
+
+            string baseline = $"DotNetSDKTelemetryAPI.net{currentMajorVersion}.json";
+            string breakingChanges = $"DotNetSDKTelemetryAPIChanges.net{currentMajorVersion}.json";
 
             ContractEnforcement.ValidateTelemetryContractContainBreakingChanges(
                 dllName: DllName,

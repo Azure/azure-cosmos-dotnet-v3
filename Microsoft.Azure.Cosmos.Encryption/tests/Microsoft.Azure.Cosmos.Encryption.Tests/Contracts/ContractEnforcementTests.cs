@@ -26,12 +26,13 @@
         public void ContractChanges()
         {
             int? currentMajorVersion = GetCurrentMajorVersion();
-            string baseline = currentMajorVersion.HasValue 
-                ? $"DotNetSDKEncryptionAPI.net{currentMajorVersion}.json"
-                : "DotNetSDKEncryptionAPI.json";
-            string breakingChanges = currentMajorVersion.HasValue
-                ? $"DotNetSDKEncryptionAPIChanges.net{currentMajorVersion}.json"
-                : "DotNetSDKEncryptionAPIChanges.json";
+            if (!currentMajorVersion.HasValue)
+            {
+                Assert.Fail("Unable to determine target framework version. Framework-specific contract baselines are required.");
+            }
+
+            string baseline = $"DotNetSDKEncryptionAPI.net{currentMajorVersion}.json";
+            string breakingChanges = $"DotNetSDKEncryptionAPIChanges.net{currentMajorVersion}.json";
 
             Cosmos.Tests.Contracts.ContractEnforcement.ValidateContractContainBreakingChanges(
                 dllName: "Microsoft.Azure.Cosmos.Encryption",
