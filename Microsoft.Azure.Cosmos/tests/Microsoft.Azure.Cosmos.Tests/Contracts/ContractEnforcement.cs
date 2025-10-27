@@ -238,9 +238,30 @@
 
         }
 
+        /// <summary>
+        /// Normalizes the string representation of a MemberInfo to ensure machine-agnostic output.
+        /// For static methods, ensures the calling convention uses '.' (dot notation).
+        /// </summary>
+        private static string NormalizeMemberInfoString(MemberInfo memberInfo)
+        {
+            // Only MethodBase (MethodInfo and ConstructorInfo) has calling convention representation issues
+            if (memberInfo is MethodBase methodBase && methodBase.IsStatic && methodBase.DeclaringType != null)
+            {
+                // Normalize to always use ClassName.MethodName format for static methods
+                string declaringTypeName = methodBase.DeclaringType.FullName ?? methodBase.DeclaringType.Name;
+                string returnType = methodBase is MethodInfo mi ? mi.ReturnType.ToString() : "Void";
+                string methodName = methodBase.Name;
+                string parameters = string.Join(", ", methodBase.GetParameters().Select(p => p.ParameterType.ToString()));
+                
+                return $"{returnType} {declaringTypeName}.{methodName}({parameters})";
+            }
+            
+            return memberInfo.ToString();
+        }
+
         private static string GenerateNameWithMethodAttributes(MethodInfo methodInfo)
         {
-            return $"{methodInfo};{nameof(methodInfo.IsAbstract)}:{(methodInfo.IsAbstract ? bool.TrueString : bool.FalseString)};" +
+            return $"{NormalizeMemberInfoString(methodInfo)};{nameof(methodInfo.IsAbstract)}:{(methodInfo.IsAbstract ? bool.TrueString : bool.FalseString)};" +
                 $"{nameof(methodInfo.IsStatic)}:{(methodInfo.IsStatic ? bool.TrueString : bool.FalseString)};" +
                 $"{nameof(methodInfo.IsVirtual)}:{(methodInfo.IsVirtual ? bool.TrueString : bool.FalseString)};" +
                 $"{nameof(methodInfo.IsGenericMethod)}:{(methodInfo.IsGenericMethod ? bool.TrueString : bool.FalseString)};" +
@@ -250,7 +271,7 @@
 
         private static string GenerateNameWithPropertyAttributes(PropertyInfo propertyInfo)
         {
-            string name = $"{propertyInfo};{nameof(propertyInfo.CanRead)}:{(propertyInfo.CanRead ? bool.TrueString : bool.FalseString)};" +
+            string name = $"{NormalizeMemberInfoString(propertyInfo)};{nameof(propertyInfo.CanRead)}:{(propertyInfo.CanRead ? bool.TrueString : bool.FalseString)};" +
                 $"{nameof(propertyInfo.CanWrite)}:{(propertyInfo.CanWrite ? bool.TrueString : bool.FalseString)};";
 
             MethodInfo getMethodInfo = propertyInfo.GetGetMethod();
@@ -270,7 +291,7 @@
 
         private static string GenerateNameWithFieldAttributes(FieldInfo fieldInfo)
         {
-            return $"{fieldInfo};{nameof(fieldInfo.IsInitOnly)}:{(fieldInfo.IsInitOnly ? bool.TrueString : bool.FalseString)};" +
+            return $"{NormalizeMemberInfoString(fieldInfo)};{nameof(fieldInfo.IsInitOnly)}:{(fieldInfo.IsInitOnly ? bool.TrueString : bool.FalseString)};" +
                 $"{nameof(fieldInfo.IsStatic)}:{(fieldInfo.IsStatic ? bool.TrueString : bool.FalseString)};";
         }
 
@@ -285,7 +306,7 @@
             IEnumerable<KeyValuePair<string, MemberInfo>> memberInfos =
                 root.Type.GetMembers(bindingflags)
                     .Select(memberInfo => new KeyValuePair<string, MemberInfo>(
-                        $"{memberInfo}{string.Join("-", ContractEnforcement.RemoveDebugSpecificAttributes(memberInfo.CustomAttributes).Select(attr => "[" + NormalizeCustomAttributeString(attr) + "]"))}",
+                        $"{NormalizeMemberInfoString(memberInfo)}{string.Join("-", ContractEnforcement.RemoveDebugSpecificAttributes(memberInfo.CustomAttributes).Select(attr => "[" + NormalizeCustomAttributeString(attr) + "]"))}",
                         memberInfo))
                     .OrderBy(o => o.Key, invariantComparer);
             foreach (KeyValuePair<string, MemberInfo> memberInfo in memberInfos)
@@ -314,7 +335,7 @@
                 }
                 else if (memberInfo.Value.MemberType == MemberTypes.Constructor || memberInfo.Value.MemberType == MemberTypes.Event)
                 {
-                    methodSignature = memberInfo.ToString();
+                    methodSignature = NormalizeMemberInfoString(memberInfo.Value);
                 }
 
                 // Certain custom attributes add the following to the string value "d__9" which sometimes changes
