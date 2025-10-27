@@ -31,6 +31,9 @@
                 EncryptionAlgorithm = "something",
                 PathsToEncrypt = null
             }.Validate());
+
         }
+
+    // Compression option validation removed.
     }
 }

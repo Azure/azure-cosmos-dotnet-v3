@@ -323,13 +323,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             if (testDoc.SensitiveStr == null)
             {
                 Assert.IsNull(encryptedDoc.Property(nameof(TestDoc.SensitiveStr)).Value.Value<string>()); // since null value is not encrypted
-                Assert.AreEqual(TestDoc.PathsToEncrypt.Count - 1, encryptionProperties.EncryptedPaths.Count());
+                Assert.AreEqual(TestDoc.PathsToEncrypt.Count - 1, encryptionProperties.EncryptedPaths.Count);
             }
             else
             {
                 Assert.IsNotNull(encryptedDoc.Property(nameof(TestDoc.SensitiveStr)).Value.Value<string>());
                 Assert.AreNotEqual(testDoc.SensitiveStr, encryptedDoc.Property(nameof(TestDoc.SensitiveStr)).Value.Value<string>()); // not equal since value is encrypted
-                Assert.AreEqual(TestDoc.PathsToEncrypt.Count, encryptionProperties.EncryptedPaths.Count());
+                Assert.AreEqual(TestDoc.PathsToEncrypt.Count, encryptionProperties.EncryptedPaths.Count);
             }
 
             return encryptedDoc;
@@ -436,7 +436,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 #if NET8_0_OR_GREATER
             new object[] { CreateEncryptionOptions(JsonProcessor.Stream) },
 #endif
-        };
+    };
 
         public static IEnumerable<object[]> EncryptionOptionsStreamTestCombinations
         {

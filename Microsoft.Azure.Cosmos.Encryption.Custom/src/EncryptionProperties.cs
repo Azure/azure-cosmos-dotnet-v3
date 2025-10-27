@@ -28,14 +28,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         [JsonProperty(PropertyName = Constants.EncryptedPaths)]
         [JsonPropertyName(Constants.EncryptedPaths)]
-        public IEnumerable<string> EncryptedPaths { get; }
+        public IReadOnlyCollection<string> EncryptedPaths { get; }
 
         public EncryptionProperties(
             int encryptionFormatVersion,
             string encryptionAlgorithm,
             string dataEncryptionKeyId,
             byte[] encryptedData,
-            IEnumerable<string> encryptedPaths)
+            IReadOnlyCollection<string> encryptedPaths)
         {
             this.EncryptionFormatVersion = encryptionFormatVersion;
             this.EncryptionAlgorithm = encryptionAlgorithm;

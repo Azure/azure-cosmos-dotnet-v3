@@ -22,6 +22,34 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return buffer;
         }
 
+        public void Return(T[] buffer)
+        {
+            if (buffer == null)
+            {
+                return;
+            }
+
+            int idx = this.rentedBuffers?.IndexOf(buffer) ?? -1;
+            if (idx >= 0)
+            {
+                this.rentedBuffers.RemoveAt(idx);
+                ArrayPool<T>.Shared.Return(buffer, clearArray: true);
+            }
+        }
+
+#if DEBUG
+        // Debug-only ownership probe to assert correct pooling contracts without impacting release perf
+        public bool IsOwned(T[] buffer)
+        {
+            if (buffer == null || this.rentedBuffers == null)
+            {
+                return false;
+            }
+
+            return this.rentedBuffers.IndexOf(buffer) >= 0;
+        }
+#endif
+
         protected virtual void Dispose(bool disposing)
         {
             if (!this.disposedValue)
