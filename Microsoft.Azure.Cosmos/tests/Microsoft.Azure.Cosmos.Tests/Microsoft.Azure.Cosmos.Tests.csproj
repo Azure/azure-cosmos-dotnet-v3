@@ -5,7 +5,7 @@
 
   <PropertyGroup>
     <Platform>AnyCPU</Platform>
-    <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
+    <TargetFramework>net6.0</TargetFramework>
     <IsPackable>false</IsPackable>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <RootNamespace>Microsoft.Azure.Cosmos.Tests</RootNamespace>
@@ -429,4 +429,3 @@
   </PropertyGroup>
   
 </Project>
-
