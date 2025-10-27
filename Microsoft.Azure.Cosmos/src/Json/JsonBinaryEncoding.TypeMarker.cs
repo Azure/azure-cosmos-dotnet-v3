@@ -76,10 +76,26 @@ namespace Microsoft.Azure.Cosmos.Json
 
             #region [0x70, 0x78): String Values (8 Values)
             // <empty> 0x70
-            // <empty> 0x71
-            // <empty> 0x72
-            // <empty> 0x73
-            // <empty> 0x74
+
+            /// <summary>
+            /// The type marker for a standard base64 encoded string with length encoded in 1 byte.
+            /// </summary>
+            public const byte Base64StringLength1 = 0x71;
+
+            /// <summary>
+            /// The type marker for a standard base64 encoded string with length encoded in 2 bytes.
+            /// </summary>
+            public const byte Base64StringLength2 = 0x72;
+
+            /// <summary>
+            /// The type marker for a URL-safe base64 encoded string with length encoded in 1 byte.
+            /// </summary>
+            public const byte Base64UrlStringLength1 = 0x73;
+
+            /// <summary>
+            /// The type marker for a URL-safe base64 encoded string with length encoded in 2 bytes.
+            /// </summary>
+            public const byte Base64UrlStringLength2 = 0x74;
 
             /// <summary>
             /// The type marker for a guid string with only lowercase characters.
@@ -87,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Json
             public const byte LowercaseGuidString = 0x75;
 
             /// <summary>
-            /// The type marker for a guid string with only uppercase characaters.
+            /// The type marker for a guid string with only uppercase characters.
             /// </summary>
             public const byte UppercaseGuidString = 0x76;
 
@@ -570,20 +586,15 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <summary>
-            /// Gets whether a typeMarker is for a compressed string.
-            /// </summary>
-            /// <param name="typeMarker">The input type marker.</param>
-            /// <returns>Whether the typeMarker is for a compressed string.</returns>
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool IsCompressedString(byte typeMarker) => InRange(typeMarker, CompressedLowercaseHexString, Packed7BitStringLength2 + 1);
-
-            /// <summary>
             /// Gets whether a typeMarker is for a variable length string.
             /// </summary>
             /// <param name="typeMarker">The input type marker.</param>
             /// <returns>Whether the typeMarker is for a variable length string.</returns>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool IsVariableLengthString(byte typeMarker) => IsEncodedLengthString(typeMarker) || InRange(typeMarker, StrL1, StrL4 + 1);
+            public static bool IsVariableLengthString(byte typeMarker)
+            {
+                return IsEncodedLengthString(typeMarker) || InRange(typeMarker, StrL1, StrL4 + 1);
+            }
 
             /// <summary>
             /// Gets whether a typeMarker is for a reference string.
@@ -591,7 +602,21 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <param name="typeMarker">The input type marker.</param>
             /// <returns>Whether the typeMarker is for a reference string.</returns>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool IsReferenceString(byte typeMarker) => InRange(typeMarker, StrR1, StrR4 + 1);
+            public static bool IsReferenceString(byte typeMarker)
+            {
+                return InRange(typeMarker, StrR1, StrR4 + 1);
+            }
+
+            /// <summary>
+            /// Gets whether a typeMarker is for a base64-encoded string.
+            /// </summary>
+            /// <param name="typeMarker">The input type marker.</param>
+            /// <returns>Whether the typeMarker is for a base64-encoded string.</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static bool IsBase64String(byte typeMarker)
+            {
+                return InRange(typeMarker, Base64StringLength1, Base64UrlStringLength2 + 1);
+            }
 
             /// <summary>
             /// Gets whether a typeMarker is for a GUID string.
@@ -599,7 +624,21 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <param name="typeMarker">The input type marker.</param>
             /// <returns>Whether the typeMarker is for a GUID string.</returns>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool IsGuidString(byte typeMarker) => InRange(typeMarker, LowercaseGuidString, DoubleQuotedLowercaseGuidString + 1);
+            public static bool IsGuidString(byte typeMarker)
+            {
+                return InRange(typeMarker, LowercaseGuidString, DoubleQuotedLowercaseGuidString + 1);
+            }
+
+            /// <summary>
+            /// Gets whether a typeMarker is for a compressed string.
+            /// </summary>
+            /// <param name="typeMarker">The input type marker.</param>
+            /// <returns>Whether the typeMarker is for a compressed string.</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static bool IsCompressedString(byte typeMarker)
+            {
+                return InRange(typeMarker, CompressedLowercaseHexString, Packed7BitStringLength2 + 1);
+            }
 
             /// <summary>
             /// Gets whether a typeMarker is for a hexadecimal string.
@@ -607,7 +646,10 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <param name="typeMarker">The input type marker.</param>
             /// <returns>Whether the typeMarker is for a hexadecimal string.</returns>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool IsHexadecimalString(byte typeMarker) => InRange(typeMarker, CompressedLowercaseHexString, CompressedUppercaseHexString + 1);
+            public static bool IsHexadecimalString(byte typeMarker)
+            {
+                return InRange(typeMarker, CompressedLowercaseHexString, CompressedUppercaseHexString + 1);
+            }
 
             /// <summary>
             /// Gets whether a typeMarker is for a datetime string.
@@ -615,7 +657,10 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <param name="typeMarker">The input type marker.</param>
             /// <returns>Whether the typeMarker is for a datetime string.</returns>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool IsDateTimeString(byte typeMarker) => typeMarker == CompressedDateTimeString;
+            public static bool IsDateTimeString(byte typeMarker)
+            {
+                return typeMarker == CompressedDateTimeString;
+            }
 
             /// <summary>
             /// Gets whether a typeMarker is for a string.
@@ -623,8 +668,11 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <param name="typeMarker">The type maker.</param>
             /// <returns>Whether the typeMarker is for a string.</returns>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool IsString(byte typeMarker) => InRange(typeMarker, SystemString1ByteLengthMin, UserString2ByteLengthMax)
+            public static bool IsString(byte typeMarker)
+            {
+                return InRange(typeMarker, SystemString1ByteLengthMin, UserString2ByteLengthMax)
                 || InRange(typeMarker, LowercaseGuidString, StrR4 + 1);
+            }
 
             /// <summary>
             /// Gets the length of a encoded string type marker.
