@@ -701,7 +701,7 @@ namespace Microsoft.Azure.Cosmos
         public override Task<IReadOnlyDictionary<string, dynamic>> SemanticRerankAsync(
             string renrankContext,
             IEnumerable<string> documents,
-            SemanticRerankRequestOptions options = null,
+            IDictionary<string, dynamic> options = null,
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.SemanticRerankAsync(renrankContext, documents, options, cancellationToken);

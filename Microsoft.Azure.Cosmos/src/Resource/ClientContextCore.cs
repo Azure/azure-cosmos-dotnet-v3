@@ -472,7 +472,7 @@ namespace Microsoft.Azure.Cosmos
         internal override async Task<IReadOnlyDictionary<string, dynamic>> SemanticRerankAsync(
             string renrankContext,
             IEnumerable<string> documents,
-            SemanticRerankRequestOptions options = null,
+            IDictionary<string, dynamic> options = null,
             CancellationToken cancellationToken = default)
         {
             InferenceService inferenceService = await this.GetOrCreateInferenceServiceAsync();

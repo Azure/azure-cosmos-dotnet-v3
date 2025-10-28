@@ -16,10 +16,16 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
+    /// <summary>
+    /// Provides functionality to interact with the Cosmos DB Inference Service for semantic reranking.
+    /// </summary>
     internal class InferenceService : IDisposable
     {
+        // Base path for the inference service endpoint.
         private const string basePath = "dbinference.azure.com/inference/semanticReranking";
+        // User agent string for inference requests.
         private const string inferenceUserAgent = "cosmos-inference-dotnet";
+        // Default scope for AAD authentication.
         private const string inferenceServiceDefaultScope = "https://dbinference.azure.com/.default";
 
         private readonly Uri inferenceEndpoint;
@@ -28,9 +34,15 @@ namespace Microsoft.Azure.Cosmos
 
         private bool disposedValue;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="InferenceService"/> class.
+        /// </summary>
+        /// <param name="client">The CosmosClient instance.</param>
+        /// <param name="accountProperties">The account properties for endpoint construction.</param>
+        /// <exception cref="InvalidOperationException">Thrown if AAD authentication is not used.</exception>
         public InferenceService(CosmosClient client, AccountProperties accountProperties)
         {
-            //Create HttpClient 
+            // Create and configure HttpClient for inference requests.
             HttpMessageHandler httpMessageHandler = CosmosHttpClientCore.CreateHttpClientHandler(
                         gatewayModeMaxConnectionLimit: client.DocumentClient.ConnectionPolicy.MaxConnectionLimit,
                         webProxy: null,
@@ -40,15 +52,16 @@ namespace Microsoft.Azure.Cosmos
 
             this.CreateClientHelper(this.httpClient);
 
-            //Set endpoints
+            // Construct the inference service endpoint URI.
             this.inferenceEndpoint = new Uri($"https://{accountProperties.Id}.{basePath}");
 
-            //set authorization
+            // Ensure AAD authentication is used.
             if (client.DocumentClient.cosmosAuthorization.GetType() != typeof(AuthorizationTokenProviderTokenCredential))
             {
                 throw new InvalidOperationException("InferenceService only supports AAD authentication.");
             }
 
+            // Set up token credential for authorization.
             AuthorizationTokenProviderTokenCredential defaultOperationTokenProvider = client.DocumentClient.cosmosAuthorization as AuthorizationTokenProviderTokenCredential;
             TokenCredential tokenCredential = defaultOperationTokenProvider.tokenCredential;
 
@@ -58,12 +71,21 @@ namespace Microsoft.Azure.Cosmos
                 backgroundTokenCredentialRefreshInterval: client.ClientOptions?.TokenCredentialBackgroundRefreshInterval);
         }
 
+        /// <summary>
+        /// Sends a semantic rerank request to the inference service.
+        /// </summary>
+        /// <param name="renrankContext">The context/query for reranking.</param>
+        /// <param name="documents">The documents to be reranked.</param>
+        /// <param name="options">Optional additional options for the request.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>A dictionary containing the reranked results.</returns>
         public async Task<IReadOnlyDictionary<string, dynamic>> SemanticRerankAsync(
             string renrankContext,
             IEnumerable<string> documents,
-            SemanticRerankRequestOptions options = null,
+            IDictionary<string, dynamic> options = null,
             CancellationToken cancellationToken = default)
         {
+            // Prepare HTTP request for semantic reranking.
             HttpRequestMessage message = new HttpRequestMessage(HttpMethod.Post, this.inferenceEndpoint);
             INameValueCollection additionalHeaders = new RequestNameValueCollection();
             await this.cosmosAuthorization.AddInferenceAuthorizationHeaderAsync(
@@ -73,11 +95,13 @@ namespace Microsoft.Azure.Cosmos
                 AuthorizationTokenType.AadToken);
             additionalHeaders.Add(HttpConstants.HttpHeaders.UserAgent, inferenceUserAgent);
 
+            // Add all headers to the HTTP request.
             foreach (string key in additionalHeaders.AllKeys())
             {
                 message.Headers.Add(key, additionalHeaders[key]);
             }
 
+            // Build the request payload.
             Dictionary<string, dynamic> body = this.AddSemanticRerankPayload(renrankContext, documents, options);
 
             message.Content = new StringContent(
@@ -85,28 +109,39 @@ namespace Microsoft.Azure.Cosmos
                 Encoding.UTF8,
                 RuntimeConstants.MediaTypes.Json);
 
+            // Send the request and ensure success.
             HttpResponseMessage responseMessage = await this.httpClient.SendAsync(message, cancellationToken);
             responseMessage.EnsureSuccessStatusCode();
 
-            // return the content of the responsemessage as a dictonary
+            // Deserialize and return the response content as a dictionary.
             string content = await responseMessage.Content.ReadAsStringAsync();
             return Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, dynamic>>(content);
         }
 
+        /// <summary>
+        /// Configures the provided HttpClient with default headers and settings for inference requests.
+        /// </summary>
+        /// <param name="httpClient">The HttpClient to configure.</param>
         private void CreateClientHelper(HttpClient httpClient)
         {
             httpClient.Timeout = TimeSpan.FromSeconds(120);
             httpClient.DefaultRequestHeaders.CacheControl = new CacheControlHeaderValue { NoCache = true };
 
-            // Set requested API version header that can be used for
-            // version enforcement.
+            // Set requested API version header for version enforcement.
             httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Version,
                 HttpConstants.Versions.CurrentVersion);
 
             httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Accept, RuntimeConstants.MediaTypes.Json);
         }
 
-        private Dictionary<string, dynamic> AddSemanticRerankPayload(string rerankContext, IEnumerable<string> documents, SemanticRerankRequestOptions options)
+        /// <summary>
+        /// Constructs the payload for the semantic rerank request.
+        /// </summary>
+        /// <param name="rerankContext">The context/query for reranking.</param>
+        /// <param name="documents">The documents to be reranked.</param>
+        /// <param name="options">Optional additional options.</param>
+        /// <returns>A dictionary representing the request payload.</returns>
+        private Dictionary<string, dynamic> AddSemanticRerankPayload(string rerankContext, IEnumerable<string> documents, IDictionary<string, dynamic> options)
         {
             Dictionary<string, dynamic> payload = new Dictionary<string, dynamic>
             {
@@ -119,28 +154,19 @@ namespace Microsoft.Azure.Cosmos
                 return payload;
             }
 
-            payload["return_documents"] = options.ReturnDocuments;
-            if (options.TopK > -1)
+            // Add any additional options to the payload.
+            foreach (string option in options.Keys)
             {
-                payload["top_k"] = options.TopK;
-            }
-            if (options.BatchSize > -1)
-            {
-                payload["batch_size"] = options.BatchSize;
-            }
-            payload["sort"] = options.Sort;
-            if (!string.IsNullOrEmpty(options.DocumentType))
-            {
-                payload["document_type"] = options.DocumentType;
-            }
-            if (!string.IsNullOrEmpty(options.TargetPaths))
-            {
-                payload["target_paths"] = options.TargetPaths;
+                payload.Add(option, options[option].ToString());
             }
 
             return payload;
         }
 
+        /// <summary>
+        /// Disposes managed resources used by the service.
+        /// </summary>
+        /// <param name="disposing">Indicates if called from Dispose.</param>
         protected void Dispose(bool disposing)
         {
             if (!this.disposedValue)
@@ -148,12 +174,16 @@ namespace Microsoft.Azure.Cosmos
                 if (disposing)
                 {
                     this.httpClient.Dispose();
+                    this.cosmosAuthorization.Dispose();
                 }
 
                 this.disposedValue = true;
             }
         }
 
+        /// <summary>
+        /// Disposes the service and its resources.
+        /// </summary>
         public void Dispose()
         {
             this.Dispose(true);

@@ -94,12 +94,12 @@
                 }
             }
 
-            SemanticRerankRequestOptions options = new SemanticRerankRequestOptions()
+            Dictionary<string, dynamic> options = new Dictionary<string, dynamic>
             {
-                ReturnDocuments = true,
-                TopK = 10,
-                BatchSize = 32,
-                Sort = true,
+                { "ReturnDocuments", true },
+                { "TopK", 10 },
+                { "BatchSize", 32 },
+                { "Sort", true }
             };
 
             IReadOnlyDictionary<string, dynamic> results = await container.SemanticRerankAsync(

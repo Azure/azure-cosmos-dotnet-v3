@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos
         internal abstract Task<IReadOnlyDictionary<string, dynamic>> SemanticRerankAsync(
             string renrankContext,
             IEnumerable<string> documents,
-            SemanticRerankRequestOptions options = null,
+            IDictionary<string, dynamic> options = null,
             CancellationToken cancellationToken = default);
 
         /// <summary>
