@@ -1354,22 +1354,10 @@
     "Microsoft.Azure.Cosmos.VectorIndexPath;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "Int32 get_IndexingSearchListSize()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Int32 get_IndexingSearchListSize();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
         "Int32 get_QuantizationByteSize()": {
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Int32 get_QuantizationByteSize();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Int32 IndexingSearchListSize[Newtonsoft.Json.JsonIgnoreAttribute()]": {
-          "Type": "Property",
-          "Attributes": [
-            "JsonIgnoreAttribute"
-          ],
-          "MethodInfo": "Int32 IndexingSearchListSize;CanRead:True;CanWrite:True;Int32 get_IndexingSearchListSize();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_IndexingSearchListSize(Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Int32 QuantizationByteSize[Newtonsoft.Json.JsonIgnoreAttribute()]": {
           "Type": "Property",
@@ -1378,36 +1366,10 @@
           ],
           "MethodInfo": "Int32 QuantizationByteSize;CanRead:True;CanWrite:True;Int32 get_QuantizationByteSize();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_QuantizationByteSize(Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String[] get_VectorIndexShardKey()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "System.String[] get_VectorIndexShardKey();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "System.String[] VectorIndexShardKey[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"vectorIndexShardKey\")]": {
-          "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
-          "MethodInfo": "System.String[] VectorIndexShardKey;CanRead:True;CanWrite:True;System.String[] get_VectorIndexShardKey();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_VectorIndexShardKey(System.String[]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Void set_IndexingSearchListSize(Int32)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Void set_IndexingSearchListSize(Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
         "Void set_QuantizationByteSize(Int32)": {
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Void set_QuantizationByteSize(Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Void set_VectorIndexShardKey(System.String[])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Void set_VectorIndexShardKey(System.String[]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
