@@ -191,20 +191,6 @@ namespace Microsoft.Azure.Cosmos.Json
         }
 
         /// <summary>
-        /// Gets the length of a particular string given its TypeMarker.
-        /// </summary>
-        /// <param name="typeMarker">The type marker as input</param>
-        /// <returns>
-        /// - Non-Negative Value: The TypeMarker encodes the string length
-        /// - Negative Value: System or user dictionary encoded string, or encoded string length that follows The TypeMarker
-        /// </returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int GetStringLengths(byte typeMarker)
-        {
-            return JsonBinaryEncoding.StringLengths.Lengths[typeMarker];
-        }
-
-        /// <summary>
         /// Gets the offset of the first item in an array or object
         /// </summary>
         /// <param name="typeMarker">The TypeMarker as input.</param>

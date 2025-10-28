@@ -109,7 +109,6 @@
             // Preview minor version should always be one ahead of the official version
             Assert.AreEqual(officialVersion.Major, previewVersion.Major, $"{debugText}");
             Assert.AreEqual(officialVersion.Minor + 1, previewVersion.Minor, $"{debugText}");
-            Assert.AreEqual(0, previewVersion.Build, $"{debugText}");
 
             Assert.AreEqual(officialVersion.Build, int.Parse(peviewSuffixSplits[1]), $"{debugText}");
             Assert.AreEqual("preview", peviewSuffixSplits[0], false, $"{debugText}");

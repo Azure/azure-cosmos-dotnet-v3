@@ -1,14 +1,13 @@
 //------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
 namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
 {
     using System;
     using System.Buffers.Text;
     using System.Collections.Generic;
     using System.IO;
-    using System.IO.Compression;
     using System.Linq;
     using System.Text;
     using System.Text.Json;
@@ -63,15 +62,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
                 .ReturnsAsync((byte[] cipher, string dekId, string algo, CancellationToken t) => dekId == DekId ? TestCommon.DecryptData(cipher) : throw new InvalidOperationException("DEK not found"));
         }
 
-        private static EncryptionOptions CreateOptions(IEnumerable<string> paths, CompressionOptions.CompressionAlgorithm algorithm = CompressionOptions.CompressionAlgorithm.None, CompressionLevel compressionLevel = CompressionLevel.NoCompression)
+    private static EncryptionOptions CreateOptions(IEnumerable<string> paths)
         {
             return new EncryptionOptions
             {
                 DataEncryptionKeyId = DekId,
                 EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
                 JsonProcessor = JsonProcessor.Stream,
-                PathsToEncrypt = paths.ToList(),
-                CompressionOptions = new CompressionOptions { Algorithm = algorithm, CompressionLevel = compressionLevel }
+        PathsToEncrypt = paths.ToList()
             };
         }
 
@@ -136,64 +134,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         }
 
         [TestMethod]
-        public async Task Decrypt_CompressedPayloads()
-        {
-            // Arrange
-            var doc = new
-            {
-                id = Guid.NewGuid().ToString(),
-                LargeStr = new string('x', 400), // ensure above minimal compression (default 0 but large anyway)
-                SmallStr = "s",
-            };
-            string[] paths = new[] { "/LargeStr", "/SmallStr" };
-            EncryptionOptions options = CreateOptions(paths, CompressionOptions.CompressionAlgorithm.Brotli, CompressionLevel.Fastest);
-
-            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
-            Assert.AreEqual(EncryptionFormatVersion.MdeWithCompression, props.EncryptionFormatVersion);
-            Assert.IsNotNull(props.CompressedEncryptedPaths);
-            Assert.IsTrue(props.CompressedEncryptedPaths.Count > 0); // at least LargeStr is compressed
-
-            // Act
-            MemoryStream output = new();
-            DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
-            output.Position = 0;
-            using JsonDocument jd = JsonDocument.Parse(output);
-            JsonElement root = jd.RootElement;
-
-            // Assert
-            foreach (string p in paths)
-            {
-                Assert.IsTrue(ctx.DecryptionInfoList[0].PathsDecrypted.Contains(p));
-                Assert.IsTrue(root.TryGetProperty(p.TrimStart('/'), out _));
-            }
-        }
-
-        [TestMethod]
-        public async Task Decrypt_Throws_OnUnknownCompressionAlgorithm()
-        {
-            // Arrange: produce a payload with compression so CompressedEncryptedPaths is non-empty
-            var doc = new { id = "1", LargeStr = new string('x', 400) };
-            string[] paths = new[] { "/LargeStr" };
-            EncryptionOptions options = CreateOptions(paths, CompressionOptions.CompressionAlgorithm.Brotli, CompressionLevel.Fastest);
-            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
-            Assert.IsTrue(props.CompressedEncryptedPaths?.Any() == true);
-
-            // Forge properties with an unsupported compression algorithm to trigger the guard
-            EncryptionProperties badProps = new(
-                props.EncryptionFormatVersion,
-                props.EncryptionAlgorithm,
-                props.DataEncryptionKeyId,
-                encryptedData: null,
-                props.EncryptedPaths,
-                (CompressionOptions.CompressionAlgorithm)123,
-                props.CompressedEncryptedPaths);
-
-            // Act + Assert
-            MemoryStream output = new();
-            await Assert.ThrowsExceptionAsync<NotSupportedException>(() => new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, badProps, new CosmosDiagnosticsContext(), CancellationToken.None));
-        }
-
-        [TestMethod]
         public async Task Decrypt_Skips_EncryptionInfo_Block()
         {
             // Arrange
@@ -243,7 +183,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             string[] paths = new[] { "/SensitiveStr" };
             EncryptionOptions options = CreateOptions(paths);
             (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
-            EncryptionProperties invalid = new EncryptionProperties(999, props.EncryptionAlgorithm, props.DataEncryptionKeyId, null, props.EncryptedPaths, props.CompressionAlgorithm, props.CompressedEncryptedPaths);
+            EncryptionProperties invalid = new EncryptionProperties(999, props.EncryptionAlgorithm, props.DataEncryptionKeyId, null, props.EncryptedPaths);
             // Act + Assert
             MemoryStream output = new();
             await Assert.ThrowsExceptionAsync<NotSupportedException>(() => new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, invalid, new CosmosDiagnosticsContext(), CancellationToken.None));
@@ -267,66 +207,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             // Act + Assert
             MemoryStream output = new();
             await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => new StreamProcessor().DecryptStreamAsync(corruptedStream, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None));
-        }
-
-        [TestMethod]
-        public async Task Decrypt_Throws_OnCorruptedCompressedPayload()
-        {
-            // Arrange: create a document with compression enabled
-            var doc = new { id = "1", LargeStr = new string('x', 400) };
-            string[] paths = new[] { "/LargeStr" };
-            EncryptionOptions options = CreateOptions(paths, CompressionOptions.CompressionAlgorithm.Brotli, CompressionLevel.Fastest);
-            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
-            Assert.IsTrue(props.CompressedEncryptedPaths.ContainsKey("/LargeStr"), "Payload not compressed as expected");
-
-            string jsonText = Encoding.UTF8.GetString(encrypted.ToArray());
-            using JsonDocument jd = JsonDocument.Parse(jsonText);
-            string cipher = jd.RootElement.GetProperty("LargeStr").GetString();
-            Assert.IsNotNull(cipher);
-            byte[] cipherBytes = Convert.FromBase64String(cipher);
-            Assert.IsTrue(cipherBytes.Length > 20);
-            // Flip a middle byte (avoid first byte which is type marker to keep code path the same)
-            int corruptIndex = cipherBytes.Length / 2;
-            cipherBytes[corruptIndex] ^= 0xFF;
-            string corruptedCipher = Convert.ToBase64String(cipherBytes);
-            string originalFragment = "\"LargeStr\":\"" + cipher + "\"";
-            string corruptedFragment = "\"LargeStr\":\"" + corruptedCipher + "\"";
-            jsonText = jsonText.Replace(originalFragment, corruptedFragment);
-            MemoryStream corruptedStream = new MemoryStream(Encoding.UTF8.GetBytes(jsonText));
-
-            // Act + Assert: decompression failure should surface as InvalidOperationException (error originates in BrotliCompressor)
-            MemoryStream output = new();
-            await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => new StreamProcessor().DecryptStreamAsync(corruptedStream, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None));
-        }
-
-        [TestMethod]
-        public async Task Decrypt_Throws_OnCompressedPayload_DestinationTooSmall()
-        {
-            // Arrange: valid compressed payload, but forge properties to declare a too-small decompressed size for the path.
-            var doc = new { id = "1", LargeStr = new string('x', 400) };
-            string[] paths = new[] { "/LargeStr" };
-            EncryptionOptions options = CreateOptions(paths, CompressionOptions.CompressionAlgorithm.Brotli, CompressionLevel.Fastest);
-            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
-            Assert.IsTrue(props.CompressedEncryptedPaths.ContainsKey("/LargeStr"), "Expected LargeStr to be marked as compressed");
-
-            // Forge smaller decompressed size to force DestinationTooSmall from Brotli decoder
-            int declared = props.CompressedEncryptedPaths["/LargeStr"];
-            IDictionary<string, int> adjusted = new Dictionary<string, int>(props.CompressedEncryptedPaths)
-            {
-                ["/LargeStr"] = Math.Max(1, declared / 4)
-            };
-            EncryptionProperties badProps = new(
-                props.EncryptionFormatVersion,
-                props.EncryptionAlgorithm,
-                props.DataEncryptionKeyId,
-                encryptedData: null,
-                props.EncryptedPaths,
-                props.CompressionAlgorithm,
-                adjusted);
-
-            // Act + Assert
-            MemoryStream output = new();
-            await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, badProps, new CosmosDiagnosticsContext(), CancellationToken.None));
         }
 
         [TestMethod]
@@ -374,39 +254,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             {
                 StreamProcessor.InitialBufferSize = original; // restore
             }
-        }
-
-        [TestMethod]
-        public async Task Decrypt_CompressedPathsPropertyNull()
-        {
-            // Arrange
-            // Cover branch where EncryptionProperties.CompressedEncryptedPaths is null (as opposed to empty dictionary or populated),
-            // exercising the null path of the null-conditional operator in: bool containsCompressed = properties.CompressedEncryptedPaths?.Count > 0;
-            var doc = new { id = "1", SensitiveStr = "abc" };
-            string[] paths = new[] { "/SensitiveStr" };
-            EncryptionOptions options = CreateOptions(paths); // no compression requested
-            (MemoryStream encrypted, EncryptionProperties propsWithEmpty) = await EncryptRawAsync(doc, options);
-
-            // Forge properties with CompressedEncryptedPaths = null to reach missing branch
-            EncryptionProperties propsNullCompressed = new(
-                propsWithEmpty.EncryptionFormatVersion,
-                propsWithEmpty.EncryptionAlgorithm,
-                propsWithEmpty.DataEncryptionKeyId,
-                encryptedData: null,
-                propsWithEmpty.EncryptedPaths,
-                propsWithEmpty.CompressionAlgorithm, // None
-                compressedEncryptedPaths: null);
-
-            encrypted.Position = 0;
-            // Act
-            MemoryStream output = new();
-            DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, propsNullCompressed, new CosmosDiagnosticsContext(), CancellationToken.None);
-
-            // Assert
-            output.Position = 0;
-            using JsonDocument jd = JsonDocument.Parse(output);
-            Assert.AreEqual("abc", jd.RootElement.GetProperty("SensitiveStr").GetString());
-            Assert.IsTrue(ctx.DecryptionInfoList[0].PathsDecrypted.Contains("/SensitiveStr"));
         }
 
         [TestMethod]
@@ -509,9 +356,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
                 props.EncryptionAlgorithm,
                 dataEncryptionKeyId: "missing-dek",
                 encryptedData: null,
-                props.EncryptedPaths,
-                props.CompressionAlgorithm,
-                props.CompressedEncryptedPaths);
+                props.EncryptedPaths);
 
             // Act + Assert
             MemoryStream output = new();
@@ -547,36 +392,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             using JsonDocument outDoc = JsonDocument.Parse(output);
             Assert.AreEqual(123, outDoc.RootElement.GetProperty("SensitiveStr").GetInt32());
             Assert.IsFalse(ctx.DecryptionInfoList[0].PathsDecrypted.Contains("/SensitiveStr"));
-        }
-
-        [TestMethod]
-        public async Task Decrypt_ForgedCompressedMetadata_ForNonCompressedPath_Throws()
-        {
-            // Arrange: compression enabled; LargeStr compressed, OtherStr not compressed
-            var doc = new { id = "1", LargeStr = new string('x', 400), OtherStr = new string('y', 50) };
-            string[] paths = new[] { "/LargeStr", "/OtherStr" };
-            EncryptionOptions options = CreateOptions(paths, CompressionOptions.CompressionAlgorithm.Brotli, CompressionLevel.Fastest);
-            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
-            Assert.IsTrue(props.CompressedEncryptedPaths.ContainsKey("/LargeStr"));
-            Assert.IsFalse(props.CompressedEncryptedPaths.ContainsKey("/OtherStr"));
-
-            // Forge metadata to claim OtherStr is compressed even though its ciphertext wasn't compressed
-            IDictionary<string, int> forgedMap = new Dictionary<string, int>(props.CompressedEncryptedPaths)
-            {
-                ["/OtherStr"] = 50,
-            };
-            EncryptionProperties badProps = new(
-                props.EncryptionFormatVersion,
-                props.EncryptionAlgorithm,
-                props.DataEncryptionKeyId,
-                encryptedData: null,
-                props.EncryptedPaths,
-                props.CompressionAlgorithm,
-                compressedEncryptedPaths: forgedMap);
-
-            // Act + Assert: decompressor should fail on non-Brotli data
-            MemoryStream output = new();
-            await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, badProps, new CosmosDiagnosticsContext(), CancellationToken.None));
         }
 
         [TestMethod]
@@ -666,38 +481,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
                 // Serializer throws ArgumentSizeIncorrectException; verify something was thrown
                 Assert.IsTrue(ex != null);
             }
-        }
-
-        [TestMethod]
-        public async Task Decrypt_CompressedContainsPathButNotCurrentProperty()
-        {
-            // Arrange
-            // Scenario: compression enabled, some paths compressed, but the current decryptPropertyName is NOT in CompressedEncryptedPaths.
-            // Covers branch: containsCompressed == true && TryGetValue == false so decompression block is skipped.
-            var doc = new
-            {
-                id = "1",
-                LargeStr = new string('x', 400), // will be compressed
-                OtherStr = new string('y', 50),   // below default MinimalCompressedLength (128) so not compressed
-            };
-            string[] paths = new[] { "/LargeStr", "/OtherStr" };
-            EncryptionOptions options = CreateOptions(paths, CompressionOptions.CompressionAlgorithm.Brotli, CompressionLevel.Fastest);
-            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
-            Assert.IsTrue(props.CompressedEncryptedPaths.ContainsKey("/LargeStr"));
-            Assert.IsFalse(props.CompressedEncryptedPaths.ContainsKey("/OtherStr"));
-
-            // Act
-            MemoryStream output = new();
-            DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(encrypted, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
-            output.Position = 0;
-            using JsonDocument jd = JsonDocument.Parse(output);
-            JsonElement root = jd.RootElement;
-            // Assert
-            Assert.AreEqual(400, root.GetProperty("LargeStr").GetString().Length);
-            Assert.AreEqual(50, root.GetProperty("OtherStr").GetString().Length);
-            // Both should appear in decrypted paths
-            Assert.IsTrue(ctx.DecryptionInfoList[0].PathsDecrypted.Contains("/LargeStr"));
-            Assert.IsTrue(ctx.DecryptionInfoList[0].PathsDecrypted.Contains("/OtherStr"));
         }
 
         [TestMethod]
