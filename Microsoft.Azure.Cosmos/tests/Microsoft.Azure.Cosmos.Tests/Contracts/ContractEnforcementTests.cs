@@ -52,7 +52,7 @@
         }
 
         [TestMethod]
-        public void ValdatePacakgeVersions()
+        public void ValdatePackageVersions()
         {
             const String VersionFile = "Directory.Build.props";
 
