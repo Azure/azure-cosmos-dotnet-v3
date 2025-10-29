@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters
                                     break;
 
                                 default:
-                                    throw new JsonSerializationException($"Unexpected value type: {objectValue.GetType()} for PartitionKey property.");
+                                    throw new JsonSerializationException($"Unexpected value type '{objectValue.GetType()}' for PartitionKey property '{key}'.");
                             }
                         }
                     }
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters
             }
             else
             {
-                throw new JsonSerializationException($"Unexpected value when converting {nameof(ChangeFeedMetadata)}.");
+                throw new JsonSerializationException($"Unexpected value '{value}' of type '{value?.GetType()}' when converting {nameof(ChangeFeedMetadata)}.");
             }
         }
 

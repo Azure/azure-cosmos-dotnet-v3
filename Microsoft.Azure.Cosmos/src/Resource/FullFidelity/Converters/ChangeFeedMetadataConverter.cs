@@ -72,11 +72,20 @@ namespace Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters
                             JsonValueKind.Number => pk.Value.TryGetInt64(out long longValue) ? longValue : (object)pk.Value.GetDouble(),
                             JsonValueKind.True or JsonValueKind.False => pk.Value.GetBoolean(),
                             JsonValueKind.Null => null,
-                            _ => throw new JsonException($"Unexpected JsonValueKind '{pk.Value.ValueKind}' for PartitionKey property."),
+                            _ => throw new JsonException($"Unexpected JsonValueKind '{pk.Value.ValueKind}' for PartitionKey property '{pk.Name}'."),
                         };
                         partitionKey.Add((pk.Name, actualValue));
                     }
                     metadata.PartitionKey = partitionKey;
+                }
+            }
+            
+            // validate delete operation requirements
+            if (metadata.OperationType == ChangeFeedOperationType.Delete)
+            {
+                if (metadata.Id == null || metadata.PartitionKey == null)
+                {
+                    throw new JsonException("Delete operations require both 'id' and 'partitionKey' to be present.");
                 }
             }
 
@@ -132,7 +141,7 @@ namespace Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters
                             break;
 
                         default:
-                            throw new JsonException($"Unexpected value type '{value.GetType()}' for PartitionKey property.");
+                           throw new JsonException($"Unexpected value type '{objectValue.GetType()}' for PartitionKey property '{key}'.");
                     }
                 }
                 writer.WriteEndObject();
