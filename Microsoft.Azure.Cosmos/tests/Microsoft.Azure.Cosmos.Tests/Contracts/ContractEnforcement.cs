@@ -412,39 +412,46 @@
             string baselinePath = $"{baselinePattern}.net{currentMajorVersion}.json";
             string breakingChangesPath = $"{breakingChangesPattern}.net{currentMajorVersion}.json";
 
-            // Get the current contract based on type
-            string currentJson = contractType switch
+            string currentJson = GetContractJson(dllName, contractType);
+
+            if (contractType == ContractType.Preview)
+            {
+                currentJson = FilterPreviewContract(currentJson, officialBaselinePattern, currentMajorVersion.Value);
+            }
+
+            File.WriteAllText($"{ContractsFolder}{breakingChangesPath}", currentJson);
+            string baselineJson = GetBaselineContract(baselinePath);
+            ValidateJsonAreSame(baselineJson, currentJson);
+        }
+
+        private static string GetContractJson(string dllName, ContractType contractType)
+        {
+            return contractType switch
             {
                 ContractType.Standard => GetCurrentContract(dllName),
                 ContractType.Telemetry => GetCurrentTelemetryContract(dllName),
                 ContractType.Preview => GetCurrentContract(dllName),
                 _ => throw new ArgumentException($"Unknown contract type: {contractType}", nameof(contractType))
             };
+        }
 
-            // For Preview contracts, remove elements that already exist in the official baseline
-            // This ensures the preview contract only tracks new/preview-specific APIs
-            if (contractType == ContractType.Preview)
+        private static string FilterPreviewContract(string currentJson, string officialBaselinePattern, int currentMajorVersion)
+        {
+            if (string.IsNullOrEmpty(officialBaselinePattern))
             {
-                if (string.IsNullOrEmpty(officialBaselinePattern))
-                {
-                    throw new ArgumentException("officialBaselinePattern is required for Preview contract validation", nameof(officialBaselinePattern));
-                }
-
-                string officialBaselinePath = $"{officialBaselinePattern}.net{currentMajorVersion}.json";
-                JObject currentJObject = JObject.Parse(currentJson);
-                JObject officialBaselineJObject = JObject.Parse(File.ReadAllText($"{ContractsFolder}{officialBaselinePath}"));
-
-                currentJson = RemoveDuplicateContractElements(
-                    localContract: currentJObject,
-                    officialContract: officialBaselineJObject);
-
-                Assert.IsNotNull(currentJson);
+                throw new ArgumentException(
+                    "officialBaselinePattern is required for Preview contract validation",
+                    nameof(officialBaselinePattern));
             }
 
-            // Write breaking changes file and validate against baseline
-            File.WriteAllText($"{ContractsFolder}{breakingChangesPath}", currentJson);
-            string baselineJson = GetBaselineContract(baselinePath);
-            ValidateJsonAreSame(baselineJson, currentJson);
+            string officialBaselinePath = $"{officialBaselinePattern}.net{currentMajorVersion}.json";
+            JObject currentContract = JObject.Parse(currentJson);
+            JObject officialContract = JObject.Parse(File.ReadAllText($"{ContractsFolder}{officialBaselinePath}"));
+
+            string filteredJson = RemoveDuplicateContractElements(currentContract, officialContract);
+            Assert.IsNotNull(filteredJson);
+
+            return filteredJson;
         }
 
         public static string GetCurrentContract(string dllName)
