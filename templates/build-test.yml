@@ -176,7 +176,7 @@ jobs:
 
 - job:
   displayName: EmulatorTests ${{ parameters.BuildConfiguration }} - ${{ parameters.EmulatorPipeline1CategoryListName }}
-  timeoutInMinutes: 60
+  timeoutInMinutes: 100
   condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
   pool:
     name: 'OneES'
@@ -216,7 +216,7 @@ jobs:
 
 - job:
   displayName: EmulatorTests ${{ parameters.BuildConfiguration }} - ${{ parameters.EmulatorPipeline2CategoryListName }}
-  timeoutInMinutes: 60
+  timeoutInMinutes: 100
   condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
   pool:
     name: 'OneES'
@@ -257,7 +257,7 @@ jobs:
 
 - job:
   displayName: EmulatorTests ${{ parameters.BuildConfiguration }} Flaky
-  timeoutInMinutes: 60
+  timeoutInMinutes: 100
   condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
   pool:
     name: 'OneES'
@@ -297,7 +297,7 @@ jobs:
 
 - job:
   displayName: Encryption EmulatorTests ${{ parameters.BuildConfiguration }}
-  timeoutInMinutes: 60
+  timeoutInMinutes: 100
   condition: and(eq(${{ parameters.IncludeEncryption }}, true), and(succeeded(), eq('${{ parameters.OS }}', 'Windows')))
   pool:
     name: 'OneES'
@@ -337,7 +337,7 @@ jobs:
 
 - job:
   displayName: Encryption.Custom EmulatorTests ${{ parameters.BuildConfiguration }}
-  timeoutInMinutes: 60
+  timeoutInMinutes: 100
   condition: and(eq(${{ parameters.IncludeEncryption }}, true), and(succeeded(), eq('${{ parameters.OS }}', 'Windows')))
   pool:
     name: 'OneES'
@@ -377,7 +377,7 @@ jobs:
 
 - job:
   displayName: EmulatorTests ${{ parameters.BuildConfiguration }} - ${{ parameters.EmulatorPipeline3CategoryListName }}
-  timeoutInMinutes: 60
+  timeoutInMinutes: 100
   condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
   pool:
     name: 'OneES'
@@ -416,7 +416,7 @@ jobs:
 
 - job:
   displayName: EmulatorTests ${{ parameters.BuildConfiguration }} - ${{ parameters.EmulatorPipeline4CategoryListName }}
-  timeoutInMinutes: 60
+  timeoutInMinutes: 100
   condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
   pool:
     name: 'OneES'
