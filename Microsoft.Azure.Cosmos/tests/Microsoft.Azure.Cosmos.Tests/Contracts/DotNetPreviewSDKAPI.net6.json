@@ -1180,12 +1180,12 @@
     "Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "Microsoft.Azure.Cosmos.QueryDefinition Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.ToQueryDefinition(System.Linq.IQueryable`1[T], System.Collections.Generic.IDictionary`2[System.Object,System.String])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "Microsoft.Azure.Cosmos.QueryDefinition Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.ToQueryDefinition[T](System.Linq.IQueryable`1[T], System.Collections.Generic.IDictionary`2[System.Object,System.String])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.QueryDefinition Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.ToQueryDefinition(System.Linq.IQueryable`1[T], System.Collections.Generic.IDictionary`2[System.Object,System.String]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.QueryDefinition Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.ToQueryDefinition[T](System.Linq.IQueryable`1[T], System.Collections.Generic.IDictionary`2[System.Object,System.String]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}

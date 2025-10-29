@@ -23,7 +23,8 @@
                 dllName: DllName,
                 contractType: ContractType.Preview,
                 baselinePattern: "DotNetPreviewSDKAPI",
-                breakingChangesPattern: "DotNetPreviewSDKAPIChanges");
+                breakingChangesPattern: "DotNetPreviewSDKAPIChanges",
+                officialBaselinePattern: "DotNetSDKAPI");
         }
 #else
         /// <summary>
