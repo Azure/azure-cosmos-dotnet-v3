@@ -57,21 +57,21 @@ namespace Microsoft.Azure.Cosmos
         class ChangeFeedItem<T>
     {
         /// <summary>
-        /// The full fidelity change feed current item.
+        /// The current version of the item for all versions and deletes change feed mode.
         /// </summary>
         [JsonProperty(PropertyName = "current")]
         [JsonPropertyName("current")]
         public T Current { get; set; }
 
         /// <summary>
-        /// The full fidelity change feed metadata.
+        /// The item metadata for all versions and deletes change feed mode.
         /// </summary>
         [JsonProperty(PropertyName = "metadata", NullValueHandling = NullValueHandling.Ignore)]
         [JsonPropertyName("metadata")]
         public ChangeFeedMetadata Metadata { get; set; }
 
         /// <summary>
-        /// For delete operations, previous image is always going to be provided. The previous image on replace operations is not going to be exposed by default and requires account-level or container-level opt-in.
+        /// The previous version of the item for all versions and deletes change feed mode. The previous version on delete and replace operations is not exposed by default and requires container-level opt-in. Refer to https://aka.ms/cosmosdb-change-feed-deletes for more information.
         /// </summary>
         [JsonProperty(PropertyName = "previous", NullValueHandling = NullValueHandling.Ignore)]
         [JsonPropertyName("previous")]

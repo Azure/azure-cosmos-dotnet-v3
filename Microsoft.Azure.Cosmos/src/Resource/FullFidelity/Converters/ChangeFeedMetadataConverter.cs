@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters
 {
     using System;
+    using System.Collections.Generic;
     using System.Globalization;
     using System.Text.Json;
     using System.Text.Json.Serialization;
@@ -56,6 +57,36 @@ namespace Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters
                 {
                     metadata.PreviousLsn = property.Value.GetInt64();
                 }
+                else if (property.NameEquals(ChangeFeedMetadataFields.Id))
+                {
+                    metadata.Id = property.Value.GetString();
+                }
+                else if (property.NameEquals(ChangeFeedMetadataFields.PartitionKey))
+                {
+                    List<(string, object)> partitionKey = new List<(string, object)>();
+                    foreach (JsonProperty pk in property.Value.EnumerateObject())
+                    {
+                        object actualValue = pk.Value.ValueKind switch
+                        {
+                            JsonValueKind.String => pk.Value.GetString(),
+                            JsonValueKind.Number => pk.Value.TryGetInt64(out long longValue) ? longValue : (object)pk.Value.GetDouble(),
+                            JsonValueKind.True or JsonValueKind.False => pk.Value.GetBoolean(),
+                            JsonValueKind.Null => null,
+                            _ => throw new JsonException($"Unexpected JsonValueKind '{pk.Value.ValueKind}' for PartitionKey property '{pk.Name}'."),
+                        };
+                        partitionKey.Add((pk.Name, actualValue));
+                    }
+                    metadata.PartitionKey = partitionKey;
+                }
+            }
+            
+            // validate delete operation requirements
+            if (metadata.OperationType == ChangeFeedOperationType.Delete)
+            {
+                if (metadata.Id == null || metadata.PartitionKey == null)
+                {
+                    throw new JsonException("Delete operations require both 'id' and 'partitionKey' to be present.");
+                }
             }
 
             return metadata;
@@ -75,6 +106,46 @@ namespace Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters
             writer.WriteNumber(ChangeFeedMetadataFields.Lsn, value.Lsn);
             writer.WriteString(ChangeFeedMetadataFields.OperationType, value.OperationType.ToString());
             writer.WriteNumber(ChangeFeedMetadataFields.PreviousImageLSN, value.PreviousLsn);
+
+            if (value.Id != null)
+            {
+                writer.WriteString(ChangeFeedMetadataFields.Id, value.Id);
+            }
+
+            if (value.PartitionKey != null)
+            {
+                writer.WriteStartObject(ChangeFeedMetadataFields.PartitionKey);
+
+                foreach ((string key, object objectValue) in value.PartitionKey)
+                {
+                    switch (objectValue)
+                    {
+                        case string stringValue:
+                            writer.WriteString(key, stringValue);
+                            break;
+
+                        case long longValue:
+                            writer.WriteNumber(key, longValue);
+                            break;
+
+                        case double doubleValue:
+                            writer.WriteNumber(key, doubleValue);
+                            break;
+
+                        case bool boolValue:
+                            writer.WriteBoolean(key, boolValue);
+                            break;
+
+                        case null:
+                            writer.WriteNull(key);
+                            break;
+
+                        default:
+                           throw new JsonException($"Unexpected value type '{objectValue.GetType()}' for PartitionKey property '{key}'.");
+                    }
+                }
+                writer.WriteEndObject();
+            }
 
             writer.WriteEndObject();
         }
