@@ -263,6 +263,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[System.Collections.Generic.IEnumerable`1[System.String]] GetPartitionKeyRangesAsync(Microsoft.Azure.Cosmos.FeedRange, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Threading.Tasks.Task`1[System.Collections.Generic.IReadOnlyDictionary`2[System.String,System.Object]] SemanticRerankAsync(System.String, System.Collections.Generic.IEnumerable`1[System.String], System.Collections.Generic.IDictionary`2[System.String,System.Object], System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[System.Collections.Generic.IReadOnlyDictionary`2[System.String,System.Object]] SemanticRerankAsync(System.String, System.Collections.Generic.IEnumerable`1[System.String], System.Collections.Generic.IDictionary`2[System.String,System.Object], System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}

@@ -697,5 +697,14 @@ namespace Microsoft.Azure.Cosmos
                     y,
                     cancellationToken: cancellationToken));
         }
+
+        public override Task<IReadOnlyDictionary<string, dynamic>> SemanticRerankAsync(
+            string renrankContext,
+            IEnumerable<string> documents,
+            IDictionary<string, dynamic> options = null,
+            CancellationToken cancellationToken = default)
+        {
+            return this.ClientContext.SemanticRerankAsync(renrankContext, documents, options, cancellationToken);
+        }
     }
 }
