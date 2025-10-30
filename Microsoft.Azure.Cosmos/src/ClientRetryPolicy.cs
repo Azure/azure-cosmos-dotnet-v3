@@ -23,6 +23,7 @@ namespace Microsoft.Azure.Cosmos
         private const int RetryIntervalInMS = 1000; // Once we detect failover wait for 1 second before retrying request.
         private const int MaxRetryCount = 120;
         private const int MaxServiceUnavailableRetryCount = 1;
+        private const string HubRegionHeader = "x-ms-cosmos-hub-region-processing-only";
 
         private readonly IDocumentClientRetryPolicy throttlingRetry;
         private readonly GlobalEndpointManager globalEndpointManager;
@@ -39,6 +40,7 @@ namespace Microsoft.Azure.Cosmos
         private Uri locationEndpoint;
         private RetryContext retryContext;
         private DocumentServiceRequest documentServiceRequest;
+        private bool addHubRegionProcessingOnlyHeader;
 
         public ClientRetryPolicy(
             GlobalEndpointManager globalEndpointManager,
@@ -223,6 +225,12 @@ namespace Microsoft.Azure.Cosmos
                     request.RequestContext.RouteToLocation(this.retryContext.RetryLocationIndex, this.retryContext.RetryRequestOnPreferredLocations);
                 }
             }
+            // If previous attempt failed with 404/1002, add the hub-region-processing-only header
+            if (this.addHubRegionProcessingOnlyHeader)
+            {
+                request.Headers[HubRegionHeader] = bool.TrueString;
+                this.addHubRegionProcessingOnlyHeader = false; // reset after applying
+            }
 
             // Resolve the endpoint for the request and pin the resolution to the resolved endpoint
             // This enables marking the endpoint unavailability on endpoint failover/unreachability
@@ -323,6 +331,7 @@ namespace Microsoft.Azure.Cosmos
             if (statusCode == HttpStatusCode.NotFound
                 && subStatusCode == SubStatusCodes.ReadSessionNotAvailable)
             {
+                this.addHubRegionProcessingOnlyHeader = true;
                 return this.ShouldRetryOnSessionNotAvailable(this.documentServiceRequest);
             }
             
