@@ -157,7 +157,7 @@ namespace Microsoft.Azure.Cosmos
             // Add any additional options to the payload.
             foreach (string option in options.Keys)
             {
-                payload.Add(option, options[option].ToString());
+                payload.Add(option, options[option]);
             }
 
             return payload;

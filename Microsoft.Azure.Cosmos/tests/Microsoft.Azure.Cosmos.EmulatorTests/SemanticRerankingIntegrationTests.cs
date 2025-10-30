@@ -21,11 +21,11 @@
         [TestInitialize]
         public void TestInitAsync()
         {
-            this.connectionString = "";
+            this.connectionString = "https://inferencee2etest.documents.azure.com:443/";
 
             DefaultAzureCredentialOptions options = new DefaultAzureCredentialOptions
             {
-                TenantId = "",
+                TenantId = "72f988bf-86f1-41af-91ab-2d7cd011db47",
                 ExcludeVisualStudioCredential = true
             };
 
@@ -96,10 +96,10 @@
 
             Dictionary<string, dynamic> options = new Dictionary<string, dynamic>
             {
-                { "ReturnDocuments", true },
-                { "TopK", 10 },
-                { "BatchSize", 32 },
-                { "Sort", true }
+                { "return_documents", true },
+                { "top_k", 10 },
+                { "batch_size", 32 },
+                { "sort", true }
             };
 
             IReadOnlyDictionary<string, dynamic> results = await container.SemanticRerankAsync(
