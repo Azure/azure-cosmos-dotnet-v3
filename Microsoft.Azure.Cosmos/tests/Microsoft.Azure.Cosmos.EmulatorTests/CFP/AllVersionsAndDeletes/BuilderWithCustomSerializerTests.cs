@@ -313,7 +313,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                 Lsn = 374,
                 OperationType = ChangeFeedOperationType.Create,
                 IsTimeToLiveExpired = true,
-                ConflictResolutionTimestamp = DateTime.Parse("7/31/2024 7:59:30 PM")
+                ConflictResolutionTimestampInSecones = 1722455970
             };
 
             string json = System.Text.Json.JsonSerializer.Serialize<ChangeFeedMetadata>(
@@ -339,7 +339,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
             {
                 Lsn = 374,
                 OperationType = ChangeFeedOperationType.Create,
-                ConflictResolutionTimestamp = DateTime.Parse("7/31/2024 7:59:30 PM")
+                ConflictResolutionTimestampInSecones = 1722455970
             };
 
             string json = System.Text.Json.JsonSerializer.Serialize<ChangeFeedMetadata>(
