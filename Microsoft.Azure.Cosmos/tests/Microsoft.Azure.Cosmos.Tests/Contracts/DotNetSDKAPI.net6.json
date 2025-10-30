@@ -13165,7 +13165,7 @@
           ],
           "MethodInfo": "System.String[] get_VectorIndexShardKey();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String[] VectorIndexShardKey[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"vectorIndexShardKey\")]": {
+        "System.String[] VectorIndexShardKey[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"vectorIndexShardKey\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
