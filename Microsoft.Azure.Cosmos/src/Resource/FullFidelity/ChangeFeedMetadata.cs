@@ -36,6 +36,7 @@ namespace Microsoft.Azure.Cosmos
         /// The current change's logical sequence number.
         /// </summary>
         [JsonProperty(PropertyName = ChangeFeedMetadataFields.Lsn, NullValueHandling = NullValueHandling.Ignore)]
+        [System.Text.Json.Serialization.JsonInclude]
         [System.Text.Json.Serialization.JsonPropertyName(ChangeFeedMetadataFields.Lsn)]
         public long Lsn { get; internal set; }
 
@@ -44,6 +45,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         [JsonProperty(PropertyName = ChangeFeedMetadataFields.OperationType, NullValueHandling = NullValueHandling.Ignore)]
         [JsonConverter(typeof(StringEnumConverter))]
+        [System.Text.Json.Serialization.JsonInclude]
         [System.Text.Json.Serialization.JsonPropertyName(ChangeFeedMetadataFields.OperationType)]
         [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter))]
         public ChangeFeedOperationType OperationType { get; internal set; }
@@ -52,6 +54,7 @@ namespace Microsoft.Azure.Cosmos
         /// The previous change's logical sequence number.
         /// </summary>
         [JsonProperty(PropertyName = ChangeFeedMetadataFields.PreviousImageLSN, NullValueHandling = NullValueHandling.Ignore)]
+        [System.Text.Json.Serialization.JsonInclude]
         [System.Text.Json.Serialization.JsonPropertyName(ChangeFeedMetadataFields.PreviousImageLSN)]
         public long PreviousLsn { get; internal set; }
 
@@ -59,6 +62,7 @@ namespace Microsoft.Azure.Cosmos
         /// Used to distinquish explicit deletes (e.g. via DeleteItem) from deletes caused by TTL expiration (a collection may define time-to-live policy for documents).
         /// </summary>
         [JsonProperty(PropertyName = ChangeFeedMetadataFields.TimeToLiveExpired, NullValueHandling = NullValueHandling.Ignore)]
+        [System.Text.Json.Serialization.JsonInclude]
         [System.Text.Json.Serialization.JsonPropertyName(ChangeFeedMetadataFields.TimeToLiveExpired)]
         public bool IsTimeToLiveExpired { get; internal set; }
     }
