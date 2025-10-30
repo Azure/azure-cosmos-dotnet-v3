@@ -181,7 +181,7 @@ namespace Microsoft.Azure.Cosmos
         {
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.Append(this.GetType().FullName);
-            stringBuilder.Append(" : ");
+            stringBuilder.Append(": ");
 
             this.ToStringHelper(stringBuilder);
 
