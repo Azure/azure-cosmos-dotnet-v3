@@ -39,7 +39,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                ""crts"": 1722511591,
                ""operationType"": ""delete"",
                ""timeToLiveExpired"": true,
-               ""previousImageLSN"": 16
+               ""previousImageLSN"": 16,
+               ""id"": ""1"",
+               ""partitionKey"": {
+                ""pk1"": ""1"",
+                ""pk2"": ""2""
+               }
               },
               ""previous"": {
                ""id"": ""1"",
@@ -92,6 +97,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                 Assert.IsTrue(deletedChange.Metadata.IsTimeToLiveExpired);
                 Assert.IsNotNull(deletedChange.Previous);
                 Assert.AreEqual(expected: "Testing TTL on CFP.", actual: deletedChange.Previous.description);
+                Assert.AreEqual(expected: "pk1", actual: deletedChange.Metadata.PartitionKey.First().Key);
+                Assert.AreEqual(expected: "1", actual: deletedChange.Metadata.PartitionKey.First().Value.ToString());
+                Assert.AreEqual(expected: "pk2", actual: deletedChange.Metadata.PartitionKey.Last().Key);
+                Assert.AreEqual(expected: "2", actual: deletedChange.Metadata.PartitionKey.Last().Value.ToString());
                 Assert.AreEqual(expected: "1", actual: deletedChange.Previous.id);
                 Assert.AreEqual(expected: 5, actual: deletedChange.Previous.ttl);
             }
@@ -313,7 +322,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                 Lsn = 374,
                 OperationType = ChangeFeedOperationType.Create,
                 IsTimeToLiveExpired = true,
-                ConflictResolutionTimestampInSecones = 1722455970
+                ConflictResolutionTimestampInSeconds = 1722455970
             };
 
             string json = System.Text.Json.JsonSerializer.Serialize<ChangeFeedMetadata>(
@@ -339,7 +348,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
             {
                 Lsn = 374,
                 OperationType = ChangeFeedOperationType.Create,
-                ConflictResolutionTimestampInSecones = 1722455970
+                ConflictResolutionTimestampInSeconds = 1722455970
             };
 
             string json = System.Text.Json.JsonSerializer.Serialize<ChangeFeedMetadata>(

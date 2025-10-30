@@ -5,7 +5,9 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Text.Json;
+    using System.Text.Json.Serialization;
     using Microsoft.Azure.Cosmos.Resource.FullFidelity;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
@@ -25,12 +27,12 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// The change's conflict resolution timestamp.
         /// </summary>
-        public DateTime ConflictResolutionTimestamp => UnixEpoch.AddSeconds(this.ConflictResolutionTimestampInSecones.Value);
+        public DateTime ConflictResolutionTimestamp => UnixEpoch.AddSeconds(this.ConflictResolutionTimestampInSeconds.Value);
 
         [System.Text.Json.Serialization.JsonInclude]
         [System.Text.Json.Serialization.JsonPropertyName(ChangeFeedMetadataFields.ConflictResolutionTimestamp)]
         [JsonProperty(PropertyName = ChangeFeedMetadataFields.ConflictResolutionTimestamp, NullValueHandling = NullValueHandling.Ignore)]
-        internal double? ConflictResolutionTimestampInSecones { get; set; }
+        internal double? ConflictResolutionTimestampInSeconds { get; set; }
 
         /// <summary>
         /// The current change's logical sequence number.
@@ -44,7 +46,7 @@ namespace Microsoft.Azure.Cosmos
         /// The change's feed operation type <see cref="ChangeFeedOperationType"/>.
         /// </summary>
         [JsonProperty(PropertyName = ChangeFeedMetadataFields.OperationType, NullValueHandling = NullValueHandling.Ignore)]
-        [JsonConverter(typeof(StringEnumConverter))]
+        [Newtonsoft.Json.JsonConverter(typeof(StringEnumConverter))]
         [System.Text.Json.Serialization.JsonInclude]
         [System.Text.Json.Serialization.JsonPropertyName(ChangeFeedMetadataFields.OperationType)]
         [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter))]
@@ -65,5 +67,10 @@ namespace Microsoft.Azure.Cosmos
         [System.Text.Json.Serialization.JsonInclude]
         [System.Text.Json.Serialization.JsonPropertyName(ChangeFeedMetadataFields.TimeToLiveExpired)]
         public bool IsTimeToLiveExpired { get; internal set; }
+
+        [System.Text.Json.Serialization.JsonInclude]
+        [JsonProperty(PropertyName = ChangeFeedMetadataFields.PartitionKey, NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName(ChangeFeedMetadataFields.PartitionKey)]
+        public Dictionary<string, object> PartitionKey { get; internal set; }
     }
 }
