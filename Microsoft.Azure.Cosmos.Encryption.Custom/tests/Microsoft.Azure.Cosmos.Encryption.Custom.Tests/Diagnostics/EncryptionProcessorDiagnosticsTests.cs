@@ -82,6 +82,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
             AssertScopeAbsent(ctx, "EncryptionProcessor.Decrypt.Mde.Stream");
             AssertScopeAbsent(ctx, "EncryptionProcessor.DecryptStreamImpl.Mde");
 #endif
+            Assert.IsTrue(CosmosDiagnosticsContextTestUtilities.IsScopeStackEmpty(ctx), "Scope stack should be empty after all scopes disposed");
         }
 
     #if NET8_0_OR_GREATER
@@ -107,6 +108,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
 #else
             Assert.Inconclusive("Provided-output decrypt path only available in NET8 preview build.");
 #endif
+            Assert.IsTrue(CosmosDiagnosticsContextTestUtilities.IsScopeStackEmpty(ctx), "Scope stack should be empty after all scopes disposed");
         }
 
         [TestMethod]
@@ -131,6 +133,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
 #else
             Assert.Inconclusive("Stream override only validated in NET8 preview build.");
 #endif
+            Assert.IsTrue(CosmosDiagnosticsContextTestUtilities.IsScopeStackEmpty(ctx), "Scope stack should be empty after all scopes disposed");
         }
 
         [TestMethod]
@@ -156,6 +159,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
 #else
             Assert.Inconclusive("Provided-output stream path only available in NET8 preview build.");
 #endif
+            Assert.IsTrue(CosmosDiagnosticsContextTestUtilities.IsScopeStackEmpty(ctx), "Scope stack should be empty after all scopes disposed");
         }
 
         [TestMethod]
@@ -187,6 +191,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
             AssertScopeAbsent(decryptDiag, "EncryptionProcessor.DecryptStreamImpl.Mde"); // Newtonsoft path
             // Ensure no duplicate selection scopes
             Assert.AreEqual(1, decryptDiag.Scopes.Count(s => s.StartsWith("EncryptionProcessor.Decrypt.Mde.Newtonsoft", StringComparison.Ordinal)));
+            Assert.IsTrue(CosmosDiagnosticsContextTestUtilities.IsScopeStackEmpty(encryptDiag), "Encrypt scope stack should be empty");
+            Assert.IsTrue(CosmosDiagnosticsContextTestUtilities.IsScopeStackEmpty(decryptDiag), "Decrypt scope stack should be empty");
         #else
             Assert.Inconclusive("MDE payload diagnostic selection test only valid in NET8 preview.");
         #endif
@@ -219,6 +225,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
             AssertScopeAbsent(decryptDiag, "EncryptionProcessor.Decrypt.Mde.Stream");
             AssertScopeAbsent(decryptDiag, "EncryptionProcessor.DecryptStreamImpl.Mde");
             Assert.AreEqual(1, decryptDiag.Scopes.Count(s => s.StartsWith("EncryptionProcessor.Decrypt.Mde.Newtonsoft", StringComparison.Ordinal)));
+            Assert.IsTrue(CosmosDiagnosticsContextTestUtilities.IsScopeStackEmpty(encryptDiag), "Encrypt scope stack should be empty");
+            Assert.IsTrue(CosmosDiagnosticsContextTestUtilities.IsScopeStackEmpty(decryptDiag), "Decrypt scope stack should be empty");
         #else
             Assert.Inconclusive("Provided-output MDE newtonsoft selection test only valid in NET8 preview.");
         #endif
@@ -291,6 +299,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
             Assert.IsNotNull(ctxDec);
             Assert.AreEqual(1, decryptDiag.Scopes.Count(s => s.StartsWith("EncryptionProcessor.Decrypt.Mde.Stream", StringComparison.Ordinal)));
             Assert.AreEqual(0, decryptDiag.Scopes.Count(s => s == "EncryptionProcessor.DecryptStreamImpl.Mde"));
+            Assert.IsTrue(CosmosDiagnosticsContextTestUtilities.IsScopeStackEmpty(encryptDiag), "Encrypt scope stack should be empty");
+            Assert.IsTrue(CosmosDiagnosticsContextTestUtilities.IsScopeStackEmpty(decryptDiag), "Decrypt scope stack should be empty");
         #else
             Assert.Inconclusive("Duplicate scope prevention test only valid in NET8 preview.");
         #endif
@@ -317,6 +327,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
             AssertScopePresent(encryptDiag, "EncryptionProcessor.Encrypt.Mde.Newtonsoft");
             AssertScopeAbsent(encryptDiag, "EncryptionProcessor.Encrypt.Mde.Stream");
             Assert.AreEqual(1, encryptDiag.Scopes.Count(s => s.StartsWith("EncryptionProcessor.Encrypt.Mde.Newtonsoft", StringComparison.Ordinal)));
+            Assert.IsTrue(CosmosDiagnosticsContextTestUtilities.IsScopeStackEmpty(encryptDiag), "Scope stack should be empty after all scopes disposed");
 #else
             Assert.Inconclusive("Encrypt telemetry contract test only relevant for NET8 preview.");
 #endif
@@ -344,6 +355,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
 
             AssertScopePresent(encryptDiag, "EncryptionProcessor.Encrypt.Mde.Stream");
             Assert.AreEqual(1, encryptDiag.Scopes.Count(s => s.StartsWith("EncryptionProcessor.Encrypt.Mde.Stream", StringComparison.Ordinal)));
+            Assert.IsTrue(CosmosDiagnosticsContextTestUtilities.IsScopeStackEmpty(encryptDiag), "Scope stack should be empty after all scopes disposed");
 #else
             Assert.Inconclusive("Stream encrypt telemetry test only relevant for NET8 preview.");
 #endif
@@ -514,6 +526,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
             string scope1Parent = (string)parentNameProp.GetValue(records[1]);
             Assert.AreEqual("TestParentOperation", scope1Name);
             Assert.IsNull(scope1Parent, "Parent scope should have null ParentName");
+
+            Assert.IsTrue(CosmosDiagnosticsContextTestUtilities.IsScopeStackEmpty(ctx), "Scope stack should be empty after all scopes disposed");
         }
 
         [TestMethod]
@@ -563,6 +577,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
             string scope1Parent = (string)parentNameProp.GetValue(records[1]);
             Assert.AreEqual("TestReadOperation", scope1Name);
             Assert.IsNull(scope1Parent);
+
+            Assert.IsTrue(CosmosDiagnosticsContextTestUtilities.IsScopeStackEmpty(ctx), "Scope stack should be empty after all scopes disposed");
         }
     }
 }
