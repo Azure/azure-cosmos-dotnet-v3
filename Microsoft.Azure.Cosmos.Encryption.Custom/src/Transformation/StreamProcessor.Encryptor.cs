@@ -45,19 +45,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             Utf8JsonWriter encryptionPayloadWriter = null;
             string encryptPropertyName = null;
             RentArrayBufferWriter bufferWriter = null;
+            bool firstTokenValidated = false;
 
             while (!isFinalBlock)
             {
                 int dataLength = await inputStream.ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), cancellationToken);
                 int dataSize = dataLength + leftOver;
                 isFinalBlock = dataSize == 0;
-                long bytesConsumed = 0;
 
-                bytesConsumed = TransformEncryptBuffer(buffer.AsSpan(0, dataSize));
+                long bytesConsumed = TransformEncryptBuffer(buffer.AsSpan(0, dataSize));
 
                 leftOver = dataSize - (int)bytesConsumed;
 
-                // we need to scale out buffer
                 if (leftOver == dataSize)
                 {
                     byte[] newBuffer = arrayPoolManager.Rent(buffer.Length * 2);
@@ -92,9 +91,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                 while (reader.Read())
                 {
-                    Utf8JsonWriter currentWriter = encryptionPayloadWriter ?? writer;
-
                     JsonTokenType tokenType = reader.TokenType;
+
+                    if (!firstTokenValidated)
+                    {
+                        // The first non-None token must be StartObject for streaming encryption.
+                        if (tokenType == JsonTokenType.StartObject)
+                        {
+                            firstTokenValidated = true;
+                        }
+                        else if (tokenType == JsonTokenType.Comment || tokenType == JsonTokenType.None)
+                        {
+                            continue; // skip and keep waiting for first structural token
+                        }
+                        else
+                        {
+                            throw new NotSupportedException("Streaming encryption requires a JSON object root. Root arrays or primitive values are not supported.");
+                        }
+                    }
+
+                    Utf8JsonWriter currentWriter = encryptionPayloadWriter ?? writer;
 
                     switch (tokenType)
                     {
