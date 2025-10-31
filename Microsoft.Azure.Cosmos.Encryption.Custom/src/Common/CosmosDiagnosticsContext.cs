@@ -85,8 +85,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             // Only create Activity if there are listeners to avoid unnecessary allocations.
             Activity activity = ActivitySource.HasListeners() ? ActivitySource.StartActivity(scope, ActivityKind.Internal) : null;
-            long startTicks = Stopwatch.GetTimestamp();
-            return new Scope(this, scope, startTicks, activity);
+            return new Scope(this, scope, activity);
         }
 
         private void Record(string name, long startTicks, long elapsedTicks)
@@ -116,11 +115,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             private readonly Activity activity;
             private readonly bool enabled;
 
-            internal Scope(CosmosDiagnosticsContext owner, string name, long startTicks, Activity activity)
+            internal Scope(CosmosDiagnosticsContext owner, string name, Activity activity)
             {
                 this.owner = owner;
                 this.name = name;
-                this.startTicks = startTicks;
+                this.startTicks = Stopwatch.GetTimestamp(); // Capture start time in constructor for better accuracy
                 this.activity = activity;
                 this.enabled = owner != null; // default struct (Noop) => owner null
             }
