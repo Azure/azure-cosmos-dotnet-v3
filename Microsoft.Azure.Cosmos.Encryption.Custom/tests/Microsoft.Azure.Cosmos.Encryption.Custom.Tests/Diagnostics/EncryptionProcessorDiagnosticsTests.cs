@@ -467,5 +467,103 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
         {
             Assert.IsFalse(ctx.Scopes.Any(s => s.StartsWith(prefix, StringComparison.Ordinal)), $"Did not expect scope prefix '{prefix}'. Scopes: {string.Join(';', ctx.Scopes)}");
         }
+
+        [TestMethod]
+        public async Task EncryptAsync_WithParentScope_CreatesNestedScope()
+        {
+            // Arrange
+            var testDoc = new { id = "id1", pk = "pk1", Sensitive = "secret" };
+            EncryptionOptions opts = new()
+            {
+                DataEncryptionKeyId = "dekId",
+#pragma warning disable CS0618
+                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+#pragma warning restore CS0618
+                PathsToEncrypt = new System.Collections.Generic.List<string> { "/Sensitive" },
+            };
+            Encryptor encryptor = CreateNoopEncryptor();
+            CosmosDiagnosticsContext ctx = CosmosDiagnosticsContext.Create(null);
+
+            // Act - Create a parent scope and then call EncryptAsync (which creates nested mode selection scope)
+            using (ctx.CreateScope("TestParentOperation"))
+            {
+                await EncryptionProcessor.EncryptAsync(TestCommon.ToStream(testDoc), encryptor, opts, ctx, CancellationToken.None);
+            }
+
+            // Assert - Verify hierarchy
+            System.Reflection.FieldInfo recordsField = typeof(CosmosDiagnosticsContext).GetField("records", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            Assert.IsNotNull(recordsField, "records field should exist");
+            System.Collections.IList records = (System.Collections.IList)recordsField.GetValue(ctx);
+            Assert.IsNotNull(records);
+            Assert.AreEqual(2, records.Count, "Should have parent scope and nested mode selection scope");
+
+            // Get ScopeRecord type and ParentName property
+            Type scopeRecordType = records[0].GetType();
+            System.Reflection.PropertyInfo scopeNameProp = scopeRecordType.GetProperty("Name");
+            System.Reflection.PropertyInfo parentNameProp = scopeRecordType.GetProperty("ParentName");
+            Assert.IsNotNull(scopeNameProp);
+            Assert.IsNotNull(parentNameProp);
+
+            // First recorded scope is the mode selection (child, disposed first)
+            string scope0Name = (string)scopeNameProp.GetValue(records[0]);
+            string scope0Parent = (string)parentNameProp.GetValue(records[0]);
+            Assert.IsTrue(scope0Name.StartsWith("EncryptionProcessor.Encrypt.Mde.", StringComparison.Ordinal), $"Expected mode selection scope, got: {scope0Name}");
+            Assert.AreEqual("TestParentOperation", scope0Parent, "Mode selection scope should have TestParentOperation as parent");
+
+            // Second recorded scope is the parent (disposed second)
+            string scope1Name = (string)scopeNameProp.GetValue(records[1]);
+            string scope1Parent = (string)parentNameProp.GetValue(records[1]);
+            Assert.AreEqual("TestParentOperation", scope1Name);
+            Assert.IsNull(scope1Parent, "Parent scope should have null ParentName");
+        }
+
+        [TestMethod]
+        public async Task DecryptAsync_WithParentScope_CreatesNestedScope()
+        {
+            // Arrange - First create an encrypted payload
+            var testDoc = new { id = "id1", pk = "pk1", Sensitive = "secret" };
+            EncryptionOptions encryptOpts = new()
+            {
+                DataEncryptionKeyId = "dekId",
+#pragma warning disable CS0618
+                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+#pragma warning restore CS0618
+                PathsToEncrypt = new System.Collections.Generic.List<string> { "/Sensitive" },
+            };
+            Encryptor encryptor = CreateNoopEncryptor();
+            Stream encrypted = await EncryptionProcessor.EncryptAsync(TestCommon.ToStream(testDoc), encryptor, encryptOpts, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
+            encrypted.Position = 0;
+
+            // Act - Create a parent scope and then call DecryptAsync
+            CosmosDiagnosticsContext ctx = CosmosDiagnosticsContext.Create(null);
+            using (ctx.CreateScope("TestReadOperation"))
+            {
+                await EncryptionProcessor.DecryptAsync(encrypted, encryptor, ctx, requestOptions: null, CancellationToken.None);
+            }
+
+            // Assert - Verify hierarchy
+            System.Reflection.FieldInfo recordsField = typeof(CosmosDiagnosticsContext).GetField("records", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            Assert.IsNotNull(recordsField);
+            System.Collections.IList records = (System.Collections.IList)recordsField.GetValue(ctx);
+            Assert.IsNotNull(records);
+            Assert.AreEqual(2, records.Count, "Should have parent scope and nested mode selection scope");
+
+            // Get ScopeRecord properties
+            Type scopeRecordType = records[0].GetType();
+            System.Reflection.PropertyInfo scopeNameProp = scopeRecordType.GetProperty("Name");
+            System.Reflection.PropertyInfo parentNameProp = scopeRecordType.GetProperty("ParentName");
+
+            // First recorded scope is the mode selection (child, disposed first)
+            string scope0Name = (string)scopeNameProp.GetValue(records[0]);
+            string scope0Parent = (string)parentNameProp.GetValue(records[0]);
+            Assert.IsTrue(scope0Name.StartsWith("EncryptionProcessor.Decrypt.Mde.", StringComparison.Ordinal), $"Expected mode selection scope, got: {scope0Name}");
+            Assert.AreEqual("TestReadOperation", scope0Parent, "Mode selection scope should have TestReadOperation as parent");
+
+            // Second recorded scope is the parent (disposed second)
+            string scope1Name = (string)scopeNameProp.GetValue(records[1]);
+            string scope1Parent = (string)parentNameProp.GetValue(records[1]);
+            Assert.AreEqual("TestReadOperation", scope1Name);
+            Assert.IsNull(scope1Parent);
+        }
     }
 }
