@@ -22,9 +22,12 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly IReadOnlyList<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> TimeoutsAndDelays = new List<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)>()
         {
-            (TimeSpan.FromSeconds(.5), TimeSpan.Zero),
-            (TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(1)),
-            (TimeSpan.FromSeconds(65), TimeSpan.Zero),
+                (TimeSpan.FromMilliseconds(
+                        Math.Max(100, ConfigurationManager.GetHttpFirstRetryTimeoutValueInMs())),
+                    TimeSpan.Zero
+                ),
+                (TimeSpan.FromMilliseconds(Math.Max(5000, ConfigurationManager.GetHttpFirstRetryTimeoutValueInMs())), TimeSpan.FromSeconds(1)),
+                (TimeSpan.FromMilliseconds(Math.Max(65000, ConfigurationManager.GetHttpFirstRetryTimeoutValueInMs())), TimeSpan.Zero),
         };
 
         public override string TimeoutPolicyName => HttpTimeoutPolicyControlPlaneRetriableHotPath.Name;
