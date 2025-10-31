@@ -11,26 +11,29 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
     /// <summary>
     /// Lightweight diagnostics context for Custom Encryption extension.
-    /// Records scope names, start/stop timestamps and exposes them for tests or future wiring into SDK diagnostics.
+    /// Records scope names, start/stop timestamps, and parent-child relationships for nested scopes.
+    /// Exposes scope records for tests or future wiring into SDK diagnostics.
     /// Uses <see cref="ActivitySource"/> so downstream telemetry (OpenTelemetry) can optionally subscribe.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <strong>Limitation:</strong> This implementation does not capture hierarchical relationships between nested scopes.
-    /// All scopes are recorded in a flat list in the order they are disposed (LIFO order for nested scopes).
+    /// <strong>Nested Scope Support:</strong> This implementation fully supports hierarchical scope tracking.
+    /// When a scope is created while another scope is active, the parent-child relationship is captured
+    /// in <see cref="ScopeRecord.ParentName"/>. This enables analysis of timing attribution and call hierarchies.
     /// </para>
     /// <para>
-    /// For example, nested scopes like <c>Outer { Inner1 { } Inner2 { } }</c> will be recorded as
-    /// <c>[Inner1, Inner2, Outer]</c> without parent-child relationships.
+    /// For example, nested scopes like <c>Outer { Inner1 { } Inner2 { } }</c> will be recorded with
+    /// Inner1.ParentName = "Outer" and Inner2.ParentName = "Outer", allowing reconstruction of the call tree.
     /// </para>
     /// <para>
-    /// For hierarchical span tracking, consider using <see cref="ActivitySource"/>/<see cref="Activity"/> directly
-    /// or a structured logging framework that supports scope nesting.
+    /// Scope tracking uses <see cref="AsyncLocal{T}"/> to maintain the active scope chain across async/await boundaries,
+    /// ensuring correct parent-child relationships even in asynchronous code paths.
     /// </para>
     /// </remarks>
     internal class CosmosDiagnosticsContext
     {
         private static readonly ActivitySource ActivitySource = new ("Microsoft.Azure.Cosmos.Encryption.Custom");
+        private static readonly AsyncLocal<Scope?> CurrentScope = new ();
 
         private readonly List<ScopeRecord> records = new (4);
 
@@ -52,11 +55,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// </summary>
         internal readonly struct ScopeRecord
         {
-            public ScopeRecord(string name, long startTimestamp, long elapsedTicks)
+            public ScopeRecord(string name, long startTimestamp, long elapsedTicks, string parentName)
             {
                 this.Name = name;
                 this.StartTimestamp = startTimestamp;
                 this.ElapsedTicks = elapsedTicks;
+                this.ParentName = parentName;
             }
 
             public string Name { get; }
@@ -64,6 +68,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             public long StartTimestamp { get; }
 
             public long ElapsedTicks { get; } // Stopwatch ticks
+
+            public string ParentName { get; }
 
             public TimeSpan Elapsed => TimeSpan.FromTicks(this.ElapsedTicks);
         }
@@ -103,26 +109,35 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// and performs no recording (zero-allocation no-op pattern).
         /// </returns>
         /// <remarks>
-        /// Note: Nested scopes are recorded independently in a flat list without capturing parent-child relationships.
-        /// Each scope is recorded when it is disposed, resulting in LIFO order for nested scopes.
+        /// Nested scopes are fully supported. When a scope is created while another scope is active,
+        /// the parent-child relationship is captured in the <see cref="ScopeRecord.ParentName"/> property.
+        /// Each scope is recorded when it is disposed, in LIFO order for nested scopes.
         /// </remarks>
         public Scope CreateScope(string scope)
         {
             if (string.IsNullOrEmpty(scope))
             {
-                return Scope.Noop; // Returns default(Scope) with null owner - this is intentional for no-op pattern
+                return Scope.Noop;
             }
 
-            // Only create Activity if there are listeners to avoid unnecessary allocations.
+            Scope? currentScope = CurrentScope.Value;
+            string parentName = currentScope.HasValue ? GetScopeName(currentScope.Value) : null;
             Activity activity = ActivitySource.HasListeners() ? ActivitySource.StartActivity(scope, ActivityKind.Internal) : null;
-            return new Scope(this, scope, activity);
+            Scope newScope = new Scope(this, scope, activity, parentName);
+            CurrentScope.Value = newScope;
+            return newScope;
         }
 
-        private void Record(string name, long startTicks, long elapsedTicks)
+        private static string GetScopeName(Scope scope)
+        {
+            return scope.Enabled ? scope.Name : null;
+        }
+
+        private void Record(string name, long startTicks, long elapsedTicks, string parentName)
         {
             lock (this.records)
             {
-                this.records.Add(new ScopeRecord(name, startTicks, elapsedTicks));
+                this.records.Add(new ScopeRecord(name, startTicks, elapsedTicks, parentName));
             }
         }
 
@@ -148,18 +163,24 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         public readonly struct Scope : IDisposable
         {
             private readonly CosmosDiagnosticsContext owner;
-            private readonly string name;
+            private readonly string scopeName;
             private readonly long startTicks;
             private readonly Activity activity;
-            private readonly bool enabled;
+            private readonly bool isEnabled;
+            private readonly string parentName;
 
-            internal Scope(CosmosDiagnosticsContext owner, string name, Activity activity)
+            internal string Name => this.scopeName;
+
+            internal bool Enabled => this.isEnabled;
+
+            internal Scope(CosmosDiagnosticsContext owner, string name, Activity activity, string parentName)
             {
                 this.owner = owner;
-                this.name = name;
-                this.startTicks = Stopwatch.GetTimestamp(); // Capture start time in constructor for better accuracy
+                this.scopeName = name;
+                this.startTicks = Stopwatch.GetTimestamp();
                 this.activity = activity;
-                this.enabled = owner != null; // default struct (Noop) => owner null
+                this.isEnabled = owner != null;
+                this.parentName = parentName;
             }
 
             /// <summary>
@@ -174,14 +195,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             public void Dispose()
             {
-                if (!this.enabled)
+                if (!this.isEnabled)
                 {
                     return;
                 }
 
                 long elapsedTicks = Stopwatch.GetTimestamp() - this.startTicks;
 
-                this.owner?.Record(this.name, this.startTicks, elapsedTicks);
+                this.owner?.Record(this.scopeName, this.startTicks, elapsedTicks, this.parentName);
 
                 this.activity?.Dispose();
             }
