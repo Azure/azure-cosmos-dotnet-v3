@@ -169,11 +169,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return newScope;
         }
 
-        private static string GetScopeName(Scope scope)
-        {
-            return scope.Enabled ? scope.Name : null;
-        }
-
         private void Record(string name, long startTicks, long elapsedTicks, string parentName)
         {
             lock (this.records)
@@ -207,20 +202,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             private readonly string scopeName;
             private readonly long startTicks;
             private readonly Activity activity;
-            private readonly bool isEnabled;
             private readonly string parentName;
 
             internal string Name => this.scopeName;
 
-            internal bool Enabled => this.isEnabled;
-
             internal Scope(CosmosDiagnosticsContext owner, string name, Activity activity, string parentName)
             {
+                ArgumentValidation.ThrowIfNull(owner, nameof(owner));
+                ArgumentValidation.ThrowIfNullOrEmpty(name, nameof(name));
+
                 this.owner = owner;
                 this.scopeName = name;
                 this.startTicks = Stopwatch.GetTimestamp();
                 this.activity = activity;
-                this.isEnabled = owner != null;
                 this.parentName = parentName;
             }
 
@@ -236,25 +230,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             public void Dispose()
             {
-                if (!this.isEnabled)
-                {
-                    return;
-                }
-
                 long elapsedTicks = Stopwatch.GetTimestamp() - this.startTicks;
 
-                this.owner?.Record(this.scopeName, this.startTicks, elapsedTicks, this.parentName);
+                this.owner.Record(this.scopeName, this.startTicks, elapsedTicks, this.parentName);
 
                 this.activity?.Dispose();
 
-                if (this.owner != null)
+                lock (this.owner.scopeStack)
                 {
-                    lock (this.owner.scopeStack)
+                    if (this.owner.scopeStack.Count > 0 && this.owner.scopeStack.Peek() == this.scopeName)
                     {
-                        if (this.owner.scopeStack.Count > 0 && this.owner.scopeStack.Peek() == this.scopeName)
-                        {
-                            this.owner.scopeStack.Pop();
-                        }
+                        this.owner.scopeStack.Pop();
                     }
                 }
             }

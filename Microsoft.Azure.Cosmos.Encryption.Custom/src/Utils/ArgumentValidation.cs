@@ -41,5 +41,40 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
 #endif
         }
+
+        /// <summary>
+        /// Throws an <see cref="ArgumentException"/> if <paramref name="argument"/> is null or empty.
+        /// </summary>
+        /// <param name="argument">The string argument to validate as non-null and non-empty.</param>
+        /// <param name="paramName">The name of the parameter with which <paramref name="argument"/> corresponds.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="argument"/> is null.</exception>
+        /// <exception cref="ArgumentException"><paramref name="argument"/> is empty.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DebuggerStepThrough]
+        public static void ThrowIfNullOrEmpty(
+#if NET6_0_OR_GREATER
+            [System.Diagnostics.CodeAnalysis.NotNull]
+#endif
+            string argument,
+#if NET6_0_OR_GREATER
+            [CallerArgumentExpression(nameof(argument))] string paramName = null)
+#else
+            string paramName = null)
+#endif
+        {
+#if NET8_0_OR_GREATER
+            ArgumentException.ThrowIfNullOrEmpty(argument, paramName);
+#else
+            if (argument is null)
+            {
+                throw new ArgumentNullException(paramName);
+            }
+
+            if (argument.Length == 0)
+            {
+                throw new ArgumentException("The value cannot be an empty string.", paramName);
+            }
+#endif
+        }
     }
 }
