@@ -266,8 +266,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.IsNull(decryptionContext);
         }
 
-        // Local CreateRequestOptions helper removed in favor of shared RequestOptionsOverrideHelper.
-
         private static async Task<JObject> VerifyEncryptionSucceededNewtonsoft(TestDoc testDoc, EncryptionOptions encryptionOptions)
         {
             Stream encryptedStream = await EncryptionProcessor.EncryptAsync(

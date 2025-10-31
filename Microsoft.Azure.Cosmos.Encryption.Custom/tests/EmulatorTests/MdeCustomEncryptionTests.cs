@@ -287,7 +287,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                 Sensitive = "secret-value"
             };
 
-            ItemRequestOptions baselineRequestOptions = null; // no override
+            ItemRequestOptions baselineRequestOptions = null;
             ItemRequestOptions overrideRequestOptions = new()
             {
                 Properties = new Dictionary<string, object>

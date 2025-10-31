@@ -255,7 +255,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
             }
             catch (Exception)
             {
-                // Swallow; focus on scopes
             }
             AssertScopePresent(ctx, "EncryptionProcessor.Decrypt.Mde.Stream");
             // Impl scope may appear if the code reached MDE stream impl before failing; assert at most one.

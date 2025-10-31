@@ -14,10 +14,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 #if NET8_0_OR_GREATER
             if (processor == JsonProcessor.Newtonsoft)
             {
-                return null; // default path
+                return null;
             }
 
-            // Inline the logic from EncryptionRequestOptionsExperimental.CreateRequestOptions()
             ItemRequestOptions requestOptions = new ItemRequestOptions
             {
                 Properties = new Dictionary<string, object>

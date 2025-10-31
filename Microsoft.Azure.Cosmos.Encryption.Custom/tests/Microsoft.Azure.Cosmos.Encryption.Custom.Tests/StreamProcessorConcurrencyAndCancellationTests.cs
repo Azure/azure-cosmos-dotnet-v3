@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         [TestMethod]
         public async Task Encrypt_Cancellation_Aborts()
         {
-            string large = new string('z', 50_000); // forces multiple reads with small chunk size
+            string large = new string('z', 50_000);
             var doc = new { id = Guid.NewGuid().ToString(), Large = large };
 
             // Use slow stream to create a window for cancellation.

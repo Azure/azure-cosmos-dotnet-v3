@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// </summary>
         public static CosmosDiagnosticsContext Create(RequestOptions options)
         {
-            _ = options; // Reserved for future correlation if RequestOptions ever carries a diagnostics handle.
+            _ = options;
             return new CosmosDiagnosticsContext();
         }
 
@@ -211,7 +211,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
                 this.activity?.Dispose();
 
-                // Pop this scope from the stack
                 if (this.owner != null)
                 {
                     lock (this.owner.scopeStack)
