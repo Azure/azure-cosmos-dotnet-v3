@@ -99,6 +99,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <returns>
         /// A <see cref="Scope"/> that records timing information when disposed.
         /// Use with a <c>using</c> statement to ensure proper disposal.
+        /// If <paramref name="scope"/> is null or empty, returns <see cref="Scope.Noop"/> which has a null owner
+        /// and performs no recording (zero-allocation no-op pattern).
         /// </returns>
         /// <remarks>
         /// Note: Nested scopes are recorded independently in a flat list without capturing parent-child relationships.
@@ -108,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             if (string.IsNullOrEmpty(scope))
             {
-                return Scope.Noop; // returns default(struct) => no-op
+                return Scope.Noop; // Returns default(Scope) with null owner - this is intentional for no-op pattern
             }
 
             // Only create Activity if there are listeners to avoid unnecessary allocations.
@@ -131,9 +133,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// to an Activity object that will be disposed when this scope is disposed.
         /// </summary>
         /// <remarks>
+        /// <para>
         /// While Activity.Dispose() is idempotent (safe to call multiple times), the intended
         /// usage pattern is single disposal via 'using' statement. Copying the struct and
         /// disposing multiple copies is not recommended, even though it is technically safe.
+        /// </para>
+        /// <para>
+        /// <strong>Null Owner Design:</strong> A default-initialized Scope (via <see cref="Noop"/>) has a null owner
+        /// and acts as a no-op. This is an intentional design to avoid allocations when diagnostics are disabled
+        /// or when the scope name is null/empty. The <c>enabled</c> flag is set to <c>false</c> when owner is null,
+        /// causing <see cref="Dispose"/> to return early without any operations.
+        /// </para>
         /// </remarks>
         public readonly struct Scope : IDisposable
         {
@@ -152,6 +162,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 this.enabled = owner != null; // default struct (Noop) => owner null
             }
 
+            /// <summary>
+            /// Gets a no-op scope that performs no recording when disposed.
+            /// </summary>
+            /// <remarks>
+            /// This returns <c>default(Scope)</c> which has a null owner. The <see cref="Dispose"/> method
+            /// safely handles this case by checking the <c>enabled</c> flag and returning early.
+            /// This pattern avoids allocations for disabled scopes or empty scope names.
+            /// </remarks>
             internal static Scope Noop => default;
 
             public void Dispose()
