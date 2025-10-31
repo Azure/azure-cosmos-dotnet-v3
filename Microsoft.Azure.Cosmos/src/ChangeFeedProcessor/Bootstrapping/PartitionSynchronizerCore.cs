@@ -48,10 +48,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
 
         public override async Task CreateMissingLeasesAsync()
         {
+            PartitionKeyDefinition partitionKeyDefinition = await this.container.GetPartitionKeyDefinitionAsync(cancellationToken: default);
+
             IReadOnlyList<PartitionKeyRange> ranges = await this.partitionKeyRangeCache.TryGetOverlappingRangesAsync(
                 this.containerRid, 
                 FeedRangeEpk.FullRange.Range, 
-                NoOpTrace.Singleton, 
+                NoOpTrace.Singleton,
+                partitionKeyDefinition,
                 forceRefresh: false);
             DefaultTrace.TraceInformation("Source collection: '{0}', {1} partition(s)", this.container.LinkUri, ranges.Count);
             await this.CreateLeasesAsync(ranges).ConfigureAwait(false);
@@ -73,10 +76,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
 
             DefaultTrace.TraceInformation("Lease {0} is gone due to split or merge", leaseToken);
 
+            PartitionKeyDefinition partitionKeyDefinition = await this.container.GetPartitionKeyDefinitionAsync(cancellationToken: default);
+
             IReadOnlyList<PartitionKeyRange> overlappingRanges = await this.partitionKeyRangeCache.TryGetOverlappingRangesAsync(
                 this.containerRid, 
                 ((FeedRangeEpk)lease.FeedRange).Range, 
-                NoOpTrace.Singleton, 
+                NoOpTrace.Singleton,
+                partitionKeyDefinition,
                 forceRefresh: true);
             if (overlappingRanges.Count == 0)
             {

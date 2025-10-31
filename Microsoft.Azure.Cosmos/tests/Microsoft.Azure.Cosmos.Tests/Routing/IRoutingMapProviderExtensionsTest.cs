@@ -26,13 +26,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
             public MockRoutingMapProvider(IList<PartitionKeyRange> ranges)
             {
-                this.routingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(ranges.Select(r => Tuple.Create(r, (ServiceIdentity)null)), "");
+                this.routingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(ranges.Select(r => Tuple.Create(r, (ServiceIdentity)null)), "", null);
             }
 
             public Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
                 string collectionIdOrNameBasedLink,
                 Range<string> range,
                 ITrace trace,
+                PartitionKeyDefinition partitionKeyDefinition,
                 bool forceRefresh = false)
             {
                 return Task.FromResult(this.routingMap.GetOverlappingRanges(range));
@@ -42,6 +43,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 string collectionResourceId,
                 string partitionKeyRangeId,
                 ITrace trace,
+                PartitionKeyDefinition partitionKeyDefinition,
                 bool forceRefresh = false)
             {
                 return Task.FromResult(this.routingMap.TryGetRangeByPartitionKeyRangeId(partitionKeyRangeId));
@@ -71,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             IList<PartitionKeyRange> ranges = await this.routingMapProvider.TryGetOverlappingRangesAsync(
                 "dbs/db1/colls/coll1",
                 new[] { new Range<string>("0B", "0B", true, true), new Range<string>("0A", "0A", true, true) },
-                NoOpTrace.Singleton);
+                NoOpTrace.Singleton, null);
 
             Assert.AreEqual("6", string.Join(",", ranges.Select(r => r.Id)));
         }
@@ -87,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             await this.routingMapProvider.TryGetOverlappingRangesAsync(
                 "dbs/db1/colls/coll1",
                 new[] { new Range<string>("0A", "0D", true, true), new Range<string>("0B", "0E", true, true) },
-                NoOpTrace.Singleton);
+                NoOpTrace.Singleton, null);
         }
 
         /// <summary>
@@ -101,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             await this.routingMapProvider.TryGetOverlappingRangesAsync(
                 "dbs/db1/colls/coll1",
                 new[] { new Range<string>("0A", "0D", true, true), new Range<string>("0D", "0E", true, true) },
-                NoOpTrace.Singleton);
+                NoOpTrace.Singleton, null);
         }
 
         /// <summary>
@@ -112,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         public async Task TestDuplicates()
         {
             {
-                // Deep Copy Duplicate
+                // Deep Copy DuplicateTryGetOverlappingRangesAsync
                 IList<PartitionKeyRange> ranges = await this.routingMapProvider.TryGetOverlappingRangesAsync(
                 "dbs/db1/colls/coll1",
                 new[]
@@ -121,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                     // Duplicate
                     new Range<string>("", "FF", true, false),
                 },
-                NoOpTrace.Singleton);
+                NoOpTrace.Singleton, null);
 
                 Assert.AreEqual("0,1,2,3,4,5,6", string.Join(",", ranges.Select(r => r.Id)));
             }
@@ -137,7 +139,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 IList<PartitionKeyRange> ranges = await this.routingMapProvider.TryGetOverlappingRangesAsync(
                     "dbs/db1/colls/coll1",
                     queryRanges,
-                    NoOpTrace.Singleton);
+                    NoOpTrace.Singleton, null);
 
                 Assert.AreEqual("0,1,2,3,4,5,6", string.Join(",", ranges.Select(r => r.Id)));
             }
@@ -159,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                         new Range<string>("000F", "0010", true, true),
                         new Range<string>("0015", "0015", true, true)
                     },
-                NoOpTrace.Singleton);
+                NoOpTrace.Singleton, null);
 
             Assert.AreEqual("1,2,4", string.Join(",", ranges.Select(r => r.Id)));
 
@@ -170,7 +172,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                     {
                         new Range<string>("", "", true, true),
                     },
-                NoOpTrace.Singleton);
+                NoOpTrace.Singleton, null);
 
             Assert.AreEqual("0", string.Join(",", ranges.Select(r => r.Id)));
 
@@ -181,7 +183,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                     {
                         new Range<string>("", "", true, false),
                     },
-                NoOpTrace.Singleton);
+                NoOpTrace.Singleton, null);
 
             Assert.AreEqual("", string.Join(",", ranges.Select(r => r.Id)));
 
@@ -192,7 +194,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                     {
                         new Range<string>("", "FF", true, false),
                     },
-                NoOpTrace.Singleton);
+                NoOpTrace.Singleton, null);
 
             Assert.AreEqual("0,1,2,3,4,5,6", string.Join(",", ranges.Select(r => r.Id)));
 
@@ -203,7 +205,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                     {
                         new Range<string>("0012", "0015", true, false),
                     },
-                NoOpTrace.Singleton);
+                NoOpTrace.Singleton, null);
 
             Assert.AreEqual("3", string.Join(",", ranges.Select(r => r.Id)));
 
@@ -214,7 +216,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                     {
                         new Range<string>("0012", "0015", false, true),
                     },
-                NoOpTrace.Singleton);
+                NoOpTrace.Singleton, null);
 
             Assert.AreEqual("3,4", string.Join(",", ranges.Select(r => r.Id)));
         }

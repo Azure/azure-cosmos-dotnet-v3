@@ -178,10 +178,13 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         trace: refreshTrace,
                         cancellationToken: cancellationToken);
 
+                    Documents.PartitionKeyDefinition partitionKeyDefinition = await this.container.GetPartitionKeyDefinitionAsync(cancellationToken);
+
                     // We can refresh the cache by just getting all the ranges for this container using the force refresh flag
                     _ = await this.cosmosQueryClient.TryGetOverlappingRangesAsync(
                         resourceId,
                         FeedRangeEpk.FullRange.Range,
+                        partitionKeyDefinition,
                         forceRefresh: true);
 
                     return TryCatch.FromResult();

@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition
 {
     using System;
+    using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
 
     internal static class HierarchicalPartitionUtils
@@ -50,7 +51,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition
                                 String overlappingMax;
                                 bool maxInclusive;
 
-                                if (Documents.Routing.Range<String>.MinComparer.Instance.Compare(
+                                bool isLengthAwareComparisonEnabled = ConfigurationManager.IsLengthAwareRangeComparatorEnabled();
+
+                                IComparer<Documents.Routing.Range<string>> minComparer = GetComparer(isMinComparer: true, useLengthAwareComparison: isLengthAwareComparisonEnabled);
+
+                                if (minComparer.Compare(
                                         epkForPartitionKey,
                                         feedRangeEpk.Range) < 0)
                                 {
@@ -63,7 +68,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition
                                     minInclusive = epkForPartitionKey.IsMinInclusive;
                                 }
 
-                                if (Documents.Routing.Range<String>.MaxComparer.Instance.Compare(
+                                IComparer<Documents.Routing.Range<string>> maxComparer = GetComparer(isMinComparer: false, useLengthAwareComparison: isLengthAwareComparisonEnabled);
+
+                                if (maxComparer.Compare(
                                         epkForPartitionKey,
                                         feedRangeEpk.Range) > 0)
                                 {
@@ -95,6 +102,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition
             }
 
             return feedRange;
+        }
+
+        private static IComparer<Documents.Routing.Range<string>> GetComparer(bool isMinComparer, bool useLengthAwareComparison)
+        {
+            return isMinComparer
+                ? (useLengthAwareComparison ? Documents.Routing.Range<string>.LengthAwareMinComparer.Instance : Documents.Routing.Range<string>.MinComparer.Instance)
+                : (useLengthAwareComparison ? Documents.Routing.Range<string>.LengthAwareMaxComparer.Instance : Documents.Routing.Range<string>.MaxComparer.Instance);
         }
     }
 }

@@ -107,11 +107,17 @@ namespace Microsoft.Azure.Cosmos
                     && !ReplicatedResourceClient.IsMasterResource(request.ResourceType)
                     && request.ResourceType.IsPartitioned())
                 {
+                    ContainerProperties collection = await this.clientCollectionCache.ResolveCollectionAsync(
+                        request,
+                        CancellationToken.None,
+                        NoOpTrace.Singleton);
+
                     (bool isSuccess, PartitionKeyRange partitionKeyRange) = await TryResolvePartitionKeyRangeAsync(
                         request: request,
                         sessionContainer: this.sessionContainer,
                         partitionKeyRangeCache: this.partitionKeyRangeCache,
                         clientCollectionCache: this.clientCollectionCache,
+                        partitionKeyDefinition: collection.PartitionKey,
                         refreshCache: false);
 
                     request.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
@@ -301,10 +307,17 @@ namespace Microsoft.Azure.Cosmos
                     && !partitionKeyRangeInResponse.Equals(detectedPartitionKeyRange.Id, StringComparison.OrdinalIgnoreCase))
                 {
                     // The request ended up being on a different partition unknown to the client, so we better refresh the caches
+
+                    ContainerProperties collection = await this.clientCollectionCache.ResolveCollectionAsync(
+                        request,
+                        CancellationToken.None,
+                        NoOpTrace.Singleton);
+
                     await this.partitionKeyRangeCache.TryGetPartitionKeyRangeByIdAsync(
                         request.RequestContext.ResolvedCollectionRid,
                         partitionKeyRangeInResponse,
                         NoOpTrace.Singleton,
+                        collection?.PartitionKey,
                         forceRefresh: true);
                 }
             }
@@ -398,11 +411,17 @@ namespace Microsoft.Azure.Cosmos
 
             if (request.ResourceType.IsPartitioned())
             {
+                ContainerProperties collection = await clientCollectionCache.ResolveCollectionAsync(
+                    request,
+                    CancellationToken.None,
+                    NoOpTrace.Singleton);
+
                 (bool isSuccess, PartitionKeyRange partitionKeyRange) = await TryResolvePartitionKeyRangeAsync(
                     request: request,
                     sessionContainer: sessionContainer,
                     partitionKeyRangeCache: partitionKeyRangeCache,
                     clientCollectionCache: clientCollectionCache,
+                    partitionKeyDefinition: collection?.PartitionKey,
                     refreshCache: false);
 
                 if (isSuccess && sessionContainer is SessionContainer gatewaySessionContainer)
@@ -430,7 +449,8 @@ namespace Microsoft.Azure.Cosmos
             ISessionContainer sessionContainer,
             PartitionKeyRangeCache partitionKeyRangeCache,
             CollectionCache clientCollectionCache,
-            bool refreshCache)
+            bool refreshCache,
+            PartitionKeyDefinition partitionKeyDefinition)
         {
             if (refreshCache)
             {
@@ -451,7 +471,8 @@ namespace Microsoft.Azure.Cosmos
                     collectionRid: collection.ResourceId,
                     previousValue: null,
                     request: request,
-                    NoOpTrace.Singleton);
+                    NoOpTrace.Singleton,
+                    partitionKeyDefinition);
 
                 if (refreshCache && collectionRoutingMap != null)
                 {
@@ -459,7 +480,8 @@ namespace Microsoft.Azure.Cosmos
                         collectionRid: collection.ResourceId,
                         previousValue: collectionRoutingMap,
                         request: request,
-                        NoOpTrace.Singleton);
+                        NoOpTrace.Singleton,
+                        partitionKeyDefinition);
                 }
 
                 if (collectionRoutingMap != null)
@@ -479,6 +501,7 @@ namespace Microsoft.Azure.Cosmos
                     collection.ResourceId,
                     partitionKeyRangeId.PartitionKeyRangeId,
                     NoOpTrace.Singleton,
+                    partitionKeyDefinition,
                     refreshCache);
             }
             else if (request.RequestContext.ResolvedPartitionKeyRange != null)
@@ -499,6 +522,7 @@ namespace Microsoft.Azure.Cosmos
                     sessionContainer: sessionContainer,
                     partitionKeyRangeCache: partitionKeyRangeCache,
                     clientCollectionCache: clientCollectionCache,
+                    partitionKeyDefinition: partitionKeyDefinition,
                     refreshCache: true);
             }
 

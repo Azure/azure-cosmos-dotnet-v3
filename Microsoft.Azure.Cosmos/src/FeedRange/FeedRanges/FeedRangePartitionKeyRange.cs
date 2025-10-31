@@ -36,6 +36,7 @@ namespace Microsoft.Azure.Cosmos
                 collectionResourceId: containerRid,
                 partitionKeyRangeId: this.PartitionKeyRangeId,
                 trace: trace,
+                partitionKeyDefinition: partitionKeyDefinition,
                 forceRefresh: false);
 
             if (pkRange == null)
@@ -45,6 +46,7 @@ namespace Microsoft.Azure.Cosmos
                     collectionResourceId: containerRid,
                     partitionKeyRangeId: this.PartitionKeyRangeId,
                     trace: trace,
+                    partitionKeyDefinition: partitionKeyDefinition,
                     forceRefresh: true);
             }
 
