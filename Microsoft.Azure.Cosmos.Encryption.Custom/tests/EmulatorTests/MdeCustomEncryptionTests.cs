@@ -647,10 +647,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
 
         private static (int StreamEncrypt, int StreamDecrypt, int NewtonsoftEncrypt, int NewtonsoftDecrypt) CountJsonProcessorScopes(IEnumerable<string> scopes)
         {
-            string encryptStreamScope = "EncryptionProcessor.Encrypt.Mde." + JsonProcessor.Stream;
-            string decryptStreamScope = "EncryptionProcessor.Decrypt.Mde." + JsonProcessor.Stream;
-            string encryptNewtonsoftScope = "EncryptionProcessor.Encrypt.Mde." + JsonProcessor.Newtonsoft;
-            string decryptNewtonsoftScope = "EncryptionProcessor.Decrypt.Mde." + JsonProcessor.Newtonsoft;
+            string encryptStreamScope = CosmosDiagnosticsContext.ScopeEncryptModeSelectionPrefix + JsonProcessor.Stream;
+            string decryptStreamScope = CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream;
+            string encryptNewtonsoftScope = CosmosDiagnosticsContext.ScopeEncryptModeSelectionPrefix + JsonProcessor.Newtonsoft;
+            string decryptNewtonsoftScope = CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Newtonsoft;
 
             int streamEncrypt = scopes.Count(scope => string.Equals(scope, encryptStreamScope, StringComparison.Ordinal));
             int streamDecrypt = scopes.Count(scope => string.Equals(scope, decryptStreamScope, StringComparison.Ordinal));
