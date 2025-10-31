@@ -181,13 +181,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
                 long elapsedTicks = Stopwatch.GetTimestamp() - this.startTicks;
 
-                // Defensive null check - should never be null if enabled=true,
-                // but guards against struct manipulation bugs
                 this.owner?.Record(this.name, this.startTicks, elapsedTicks);
 
-                // Activity.Dispose() is idempotent per .NET framework documentation,
-                // so multiple calls are safe (though not the intended usage pattern).
-                // Null-conditional ensures we skip disposal if activity was never created.
                 this.activity?.Dispose();
             }
         }
