@@ -14,6 +14,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// Records scope names, start/stop timestamps and exposes them for tests or future wiring into SDK diagnostics.
     /// Uses <see cref="ActivitySource"/> so downstream telemetry (OpenTelemetry) can optionally subscribe.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <strong>Limitation:</strong> This implementation does not capture hierarchical relationships between nested scopes.
+    /// All scopes are recorded in a flat list in the order they are disposed (LIFO order for nested scopes).
+    /// </para>
+    /// <para>
+    /// For example, nested scopes like <c>Outer { Inner1 { } Inner2 { } }</c> will be recorded as
+    /// <c>[Inner1, Inner2, Outer]</c> without parent-child relationships.
+    /// </para>
+    /// <para>
+    /// For hierarchical span tracking, consider using <see cref="ActivitySource"/>/<see cref="Activity"/> directly
+    /// or a structured logging framework that supports scope nesting.
+    /// </para>
+    /// </remarks>
     internal class CosmosDiagnosticsContext
     {
         private static readonly ActivitySource ActivitySource = new ("Microsoft.Azure.Cosmos.Encryption.Custom");
@@ -76,6 +90,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
         }
 
+        /// <summary>
+        /// Creates a new diagnostic scope for timing an operation.
+        /// </summary>
+        /// <param name="scope">
+        /// The name of the scope. If null or empty, returns a no-op scope that performs no recording.
+        /// </param>
+        /// <returns>
+        /// A <see cref="Scope"/> that records timing information when disposed.
+        /// Use with a <c>using</c> statement to ensure proper disposal.
+        /// </returns>
+        /// <remarks>
+        /// Note: Nested scopes are recorded independently in a flat list without capturing parent-child relationships.
+        /// Each scope is recorded when it is disposed, resulting in LIFO order for nested scopes.
+        /// </remarks>
         public Scope CreateScope(string scope)
         {
             if (string.IsNullOrEmpty(scope))
