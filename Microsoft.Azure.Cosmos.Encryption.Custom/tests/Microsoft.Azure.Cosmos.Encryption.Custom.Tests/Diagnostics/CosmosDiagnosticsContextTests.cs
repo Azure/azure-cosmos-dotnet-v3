@@ -178,6 +178,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
             Assert.AreEqual("VarPattern", ctx.Scopes[0]);
         }
 
+
         [TestMethod]
         public void EmptyStringScope_NoRecord()
         {
@@ -195,5 +196,147 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
             snapshot[0] = "Mutated"; // mutate copy
             Assert.AreEqual("X", ctx.Scopes[0], "Internal data should be unchanged by external mutations");
         }
+
+        [TestMethod]
+        public void NestedScopes_CaptureParentChildRelationship()
+        {
+            CosmosDiagnosticsContext ctx = CosmosDiagnosticsContext.Create(null);
+            using (ctx.CreateScope("Outer"))
+            {
+                using (ctx.CreateScope("Inner1")) { }
+                using (ctx.CreateScope("Inner2")) { }
+            }
+
+            // Access internal records via reflection to verify hierarchy
+            System.Reflection.FieldInfo recordsField = typeof(CosmosDiagnosticsContext).GetField("records", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            List<CosmosDiagnosticsContext.ScopeRecord> records = (List<CosmosDiagnosticsContext.ScopeRecord>)recordsField.GetValue(ctx);
+
+            Assert.AreEqual(3, records.Count);
+            Assert.AreEqual("Inner1", records[0].Name);
+            Assert.AreEqual("Outer", records[0].ParentName);
+            Assert.AreEqual("Inner2", records[1].Name);
+            Assert.AreEqual("Outer", records[1].ParentName);
+            Assert.AreEqual("Outer", records[2].Name);
+            Assert.IsNull(records[2].ParentName, "Top-level scope should have null parent");
+        }
+
+        [TestMethod]
+        public void SequentialScopes_NoParent()
+        {
+            CosmosDiagnosticsContext ctx = CosmosDiagnosticsContext.Create(null);
+            using (ctx.CreateScope("A")) { }
+            using (ctx.CreateScope("B")) { }
+            using (ctx.CreateScope("C")) { }
+
+            System.Reflection.FieldInfo recordsField = typeof(CosmosDiagnosticsContext).GetField("records", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            List<CosmosDiagnosticsContext.ScopeRecord> records = (List<CosmosDiagnosticsContext.ScopeRecord>)recordsField.GetValue(ctx);
+
+            Assert.AreEqual(3, records.Count);
+            Assert.IsNull(records[0].ParentName, "Sequential scopes should have no parent");
+            Assert.IsNull(records[1].ParentName, "Sequential scopes should have no parent");
+            Assert.IsNull(records[2].ParentName, "Sequential scopes should have no parent");
+        }
+
+        [TestMethod]
+        public void DeeplyNestedScopes_CaptureFullHierarchy()
+        {
+            CosmosDiagnosticsContext ctx = CosmosDiagnosticsContext.Create(null);
+            using (ctx.CreateScope("Level1"))
+            {
+                using (ctx.CreateScope("Level2"))
+                {
+                    using (ctx.CreateScope("Level3"))
+                    {
+                        using (ctx.CreateScope("Level4")) { }
+                    }
+                }
+            }
+
+            System.Reflection.FieldInfo recordsField = typeof(CosmosDiagnosticsContext).GetField("records", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            List<CosmosDiagnosticsContext.ScopeRecord> records = (List<CosmosDiagnosticsContext.ScopeRecord>)recordsField.GetValue(ctx);
+
+            Assert.AreEqual(4, records.Count);
+            // LIFO disposal order
+            Assert.AreEqual("Level4", records[0].Name);
+            Assert.AreEqual("Level3", records[0].ParentName);
+            Assert.AreEqual("Level3", records[1].Name);
+            Assert.AreEqual("Level2", records[1].ParentName);
+            Assert.AreEqual("Level2", records[2].Name);
+            Assert.AreEqual("Level1", records[2].ParentName);
+            Assert.AreEqual("Level1", records[3].Name);
+            Assert.IsNull(records[3].ParentName);
+        }
+
+        [TestMethod]
+        public async Task NestedScopes_AsyncBoundaries_PreserveHierarchy()
+        {
+            CosmosDiagnosticsContext ctx = CosmosDiagnosticsContext.Create(null);
+            using (ctx.CreateScope("AsyncOuter"))
+            {
+                await Task.Delay(1);
+                using (ctx.CreateScope("AsyncInner"))
+                {
+                    await Task.Yield();
+                }
+            }
+
+            System.Reflection.FieldInfo recordsField = typeof(CosmosDiagnosticsContext).GetField("records", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            List<CosmosDiagnosticsContext.ScopeRecord> records = (List<CosmosDiagnosticsContext.ScopeRecord>)recordsField.GetValue(ctx);
+
+            Assert.AreEqual(2, records.Count);
+            Assert.AreEqual("AsyncInner", records[0].Name);
+            Assert.AreEqual("AsyncOuter", records[0].ParentName, "AsyncLocal should preserve parent across await");
+            Assert.AreEqual("AsyncOuter", records[1].Name);
+            Assert.IsNull(records[1].ParentName);
+        }
+
+        [TestMethod]
+        public void MixedNestedAndSequential_CorrectParentAssignment()
+        {
+            CosmosDiagnosticsContext ctx = CosmosDiagnosticsContext.Create(null);
+            using (ctx.CreateScope("A"))
+            {
+                using (ctx.CreateScope("A1")) { }
+            }
+            using (ctx.CreateScope("B"))
+            {
+                using (ctx.CreateScope("B1")) { }
+                using (ctx.CreateScope("B2")) { }
+            }
+
+            System.Reflection.FieldInfo recordsField = typeof(CosmosDiagnosticsContext).GetField("records", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            List<CosmosDiagnosticsContext.ScopeRecord> records = (List<CosmosDiagnosticsContext.ScopeRecord>)recordsField.GetValue(ctx);
+
+            Assert.AreEqual(5, records.Count);
+            Assert.AreEqual("A1", records[0].Name);
+            Assert.AreEqual("A", records[0].ParentName);
+            Assert.AreEqual("A", records[1].Name);
+            Assert.IsNull(records[1].ParentName);
+            Assert.AreEqual("B1", records[2].Name);
+            Assert.AreEqual("B", records[2].ParentName);
+            Assert.AreEqual("B2", records[3].Name);
+            Assert.AreEqual("B", records[3].ParentName);
+            Assert.AreEqual("B", records[4].Name);
+            Assert.IsNull(records[4].ParentName);
+        }
+
+        [TestMethod]
+        public void NoopScope_NoParentRecorded()
+        {
+            CosmosDiagnosticsContext ctx = CosmosDiagnosticsContext.Create(null);
+            using (ctx.CreateScope("Real"))
+            {
+                using (ctx.CreateScope(null)) { } // No-op scope
+                using (ctx.CreateScope("")) { }   // No-op scope
+            }
+
+            System.Reflection.FieldInfo recordsField = typeof(CosmosDiagnosticsContext).GetField("records", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            List<CosmosDiagnosticsContext.ScopeRecord> records = (List<CosmosDiagnosticsContext.ScopeRecord>)recordsField.GetValue(ctx);
+
+            Assert.AreEqual(1, records.Count, "No-op scopes should not be recorded");
+            Assert.AreEqual("Real", records[0].Name);
+            Assert.IsNull(records[0].ParentName);
+        }
     }
 }
+

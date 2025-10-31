@@ -33,9 +33,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     internal class CosmosDiagnosticsContext
     {
         private static readonly ActivitySource ActivitySource = new ("Microsoft.Azure.Cosmos.Encryption.Custom");
-        private static readonly AsyncLocal<Scope?> CurrentScope = new ();
 
         private readonly List<ScopeRecord> records = new (4);
+        private readonly Stack<string> scopeStack = new ();
 
         internal CosmosDiagnosticsContext()
         {
@@ -120,11 +120,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 return Scope.Noop;
             }
 
-            Scope? currentScope = CurrentScope.Value;
-            string parentName = currentScope.HasValue ? GetScopeName(currentScope.Value) : null;
+            string parentName = this.scopeStack.Count > 0 ? this.scopeStack.Peek() : null;
+
             Activity activity = ActivitySource.HasListeners() ? ActivitySource.StartActivity(scope, ActivityKind.Internal) : null;
             Scope newScope = new Scope(this, scope, activity, parentName);
-            CurrentScope.Value = newScope;
+
+            this.scopeStack.Push(scope);
+
             return newScope;
         }
 
@@ -205,6 +207,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 this.owner?.Record(this.scopeName, this.startTicks, elapsedTicks, this.parentName);
 
                 this.activity?.Dispose();
+
+                // Pop this scope from the stack
+                if (this.owner != null && this.owner.scopeStack.Count > 0 && this.owner.scopeStack.Peek() == this.scopeName)
+                {
+                    this.owner.scopeStack.Pop();
+                }
             }
         }
     }
