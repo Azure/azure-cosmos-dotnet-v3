@@ -120,12 +120,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 return Scope.Noop;
             }
 
-            string parentName = this.scopeStack.Count > 0 ? this.scopeStack.Peek() : null;
+            string parentName;
+            lock (this.scopeStack)
+            {
+                parentName = this.scopeStack.Count > 0 ? this.scopeStack.Peek() : null;
+                this.scopeStack.Push(scope);
+            }
 
             Activity activity = ActivitySource.HasListeners() ? ActivitySource.StartActivity(scope, ActivityKind.Internal) : null;
             Scope newScope = new Scope(this, scope, activity, parentName);
-
-            this.scopeStack.Push(scope);
 
             return newScope;
         }
@@ -209,9 +212,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 this.activity?.Dispose();
 
                 // Pop this scope from the stack
-                if (this.owner != null && this.owner.scopeStack.Count > 0 && this.owner.scopeStack.Peek() == this.scopeName)
+                if (this.owner != null)
                 {
-                    this.owner.scopeStack.Pop();
+                    lock (this.owner.scopeStack)
+                    {
+                        if (this.owner.scopeStack.Count > 0 && this.owner.scopeStack.Peek() == this.scopeName)
+                        {
+                            this.owner.scopeStack.Pop();
+                        }
+                    }
                 }
             }
         }
