@@ -68,8 +68,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             {
                 DataEncryptionKeyId = DekId,
                 EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
-                JsonProcessor = JsonProcessor.Stream,
-        PathsToEncrypt = paths.ToList()
+                PathsToEncrypt = paths.ToList()
             };
         }
 
@@ -77,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         {
             Stream input = TestCommon.ToStream(doc);
             MemoryStream encryptedStream = new();
-            await EncryptionProcessor.EncryptAsync(input, encryptedStream, mockEncryptor.Object, options, new CosmosDiagnosticsContext(), CancellationToken.None);
+            await EncryptionProcessor.EncryptAsync(input, encryptedStream, mockEncryptor.Object, options, JsonProcessor.Stream, new CosmosDiagnosticsContext(), CancellationToken.None);
             encryptedStream.Position = 0;
 
             // get properties via System.Text.Json to assert later
