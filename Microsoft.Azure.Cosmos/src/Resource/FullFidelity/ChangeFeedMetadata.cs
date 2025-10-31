@@ -59,6 +59,6 @@ namespace Microsoft.Azure.Cosmos
         ///  Applicable for delete operations only, otherwise null.
         /// The partition key of the previous item version. string  is the partition key property name and object is the partition key property value. All levels of hierarchy will be represented in order if a HPK is used.
         /// </summary>
-        public List<(string, object)> PartitionKey { get; internal set; }
+        public Dictionary<string, object> PartitionKey { get; internal set; }
     }
 }

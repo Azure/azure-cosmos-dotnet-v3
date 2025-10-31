@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters
     /// </summary>
     internal class ChangeFeedMetadataConverter : JsonConverter<ChangeFeedMetadata>
     {
-        private readonly static DateTime UnixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+        private static readonly DateTime UnixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
 
         public override ChangeFeedMetadata Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
@@ -43,7 +43,9 @@ namespace Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters
                 }
                 else if (property.NameEquals(ChangeFeedMetadataFields.ConflictResolutionTimestamp))
                 {
-                    metadata.ConflictResolutionTimestamp = ChangeFeedMetadataConverter.ToDateTimeFromUnixTimeInSeconds(property.Value.GetInt64());
+                    // Read the Unix timestamp and convert to DateTime
+                    long unixTimeInSeconds = property.Value.GetInt64();
+                    metadata.ConflictResolutionTimestamp = UnixEpoch.AddSeconds(unixTimeInSeconds);
                 }
                 else if (property.NameEquals(ChangeFeedMetadataFields.OperationType))
                 {
@@ -63,20 +65,8 @@ namespace Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters
                 }
                 else if (property.NameEquals(ChangeFeedMetadataFields.PartitionKey))
                 {
-                    List<(string, object)> partitionKey = new List<(string, object)>();
-                    foreach (JsonProperty pk in property.Value.EnumerateObject())
-                    {
-                        object actualValue = pk.Value.ValueKind switch
-                        {
-                            JsonValueKind.String => pk.Value.GetString(),
-                            JsonValueKind.Number => pk.Value.TryGetInt64(out long longValue) ? longValue : (object)pk.Value.GetDouble(),
-                            JsonValueKind.True or JsonValueKind.False => pk.Value.GetBoolean(),
-                            JsonValueKind.Null => null,
-                            _ => throw new JsonException($"Unexpected JsonValueKind '{pk.Value.ValueKind}' for PartitionKey property '{pk.Name}'."),
-                        };
-                        partitionKey.Add((pk.Name, actualValue));
-                    }
-                    metadata.PartitionKey = partitionKey;
+                    // Dictionary<string, object> is handled by default System.Text.Json deserialization
+                    metadata.PartitionKey = JsonSerializer.Deserialize<Dictionary<string, object>>(property.Value.GetRawText(), options);
                 }
             }
             
@@ -101,7 +91,10 @@ namespace Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters
 
             writer.WriteStartObject();
 
-            writer.WriteNumber(ChangeFeedMetadataFields.ConflictResolutionTimestamp, ChangeFeedMetadataConverter.ToUnixTimeInSecondsFromDateTime(value.ConflictResolutionTimestamp));
+            writer.WritePropertyName(ChangeFeedMetadataFields.ConflictResolutionTimestamp);
+            long unixTimeInSeconds = (long)(value.ConflictResolutionTimestamp - UnixEpoch).TotalSeconds;
+            writer.WriteNumberValue(unixTimeInSeconds);
+
             writer.WriteBoolean(ChangeFeedMetadataFields.TimeToLiveExpired, value.IsTimeToLiveExpired);
             writer.WriteNumber(ChangeFeedMetadataFields.Lsn, value.Lsn);
             writer.WriteString(ChangeFeedMetadataFields.OperationType, value.OperationType.ToString());
@@ -114,50 +107,12 @@ namespace Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters
 
             if (value.PartitionKey != null)
             {
-                writer.WriteStartObject(ChangeFeedMetadataFields.PartitionKey);
-
-                foreach ((string key, object objectValue) in value.PartitionKey)
-                {
-                    switch (objectValue)
-                    {
-                        case string stringValue:
-                            writer.WriteString(key, stringValue);
-                            break;
-
-                        case long longValue:
-                            writer.WriteNumber(key, longValue);
-                            break;
-
-                        case double doubleValue:
-                            writer.WriteNumber(key, doubleValue);
-                            break;
-
-                        case bool boolValue:
-                            writer.WriteBoolean(key, boolValue);
-                            break;
-
-                        case null:
-                            writer.WriteNull(key);
-                            break;
-
-                        default:
-                           throw new JsonException($"Unexpected value type '{objectValue.GetType()}' for PartitionKey property '{key}'.");
-                    }
-                }
-                writer.WriteEndObject();
+                // Dictionary<string, object> is handled by default System.Text.Json serialization
+                writer.WritePropertyName(ChangeFeedMetadataFields.PartitionKey);
+                JsonSerializer.Serialize(writer, value.PartitionKey, options);
             }
 
             writer.WriteEndObject();
-        }
-
-        private static long ToUnixTimeInSecondsFromDateTime(DateTime date)
-        {
-            return (long)(date - ChangeFeedMetadataConverter.UnixEpoch).TotalSeconds;
-        }
-
-        private static DateTime ToDateTimeFromUnixTimeInSeconds(long unixTimeInSeconds)
-        {
-            return ChangeFeedMetadataConverter.UnixEpoch.AddSeconds(unixTimeInSeconds);
         }
     }
 }

@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                 Assert.IsNotNull(deletedChange.Previous);
                 Assert.AreEqual(expected: "Testing TTL on CFP.", actual: deletedChange.Previous.description);
                 Assert.AreEqual(expected: "1", actual: deletedChange.Metadata.Id.ToString());
-                Assert.AreEqual(expected: "1", actual: deletedChange.Metadata.PartitionKey.FirstOrDefault().Item2.ToString());
+                Assert.AreEqual(expected: "1", actual: deletedChange.Metadata.PartitionKey.Values.FirstOrDefault().ToString());
                 Assert.AreEqual(expected: "1", actual: deletedChange.Previous.id);
                 Assert.AreEqual(expected: 5, actual: deletedChange.Previous.ttl);
             }
@@ -306,7 +306,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                 Assert.IsNotNull(deletedChange.Previous);
                 Assert.AreEqual(expected: "test after replace", actual: deletedChange.Previous.description);
                 Assert.AreEqual(expected: "1", actual: deletedChange.Metadata.Id.ToString());
-                Assert.AreEqual(expected: "1", actual: deletedChange.Metadata.PartitionKey.FirstOrDefault().Item2.ToString());
+                Assert.AreEqual(expected: "1", actual: deletedChange.Metadata.PartitionKey.Values.FirstOrDefault().ToString());
                 Assert.AreEqual(expected: "1", actual: deletedChange.Previous.id);
                 Assert.AreEqual(expected: 0, actual: deletedChange.Previous.ttl);
             }
@@ -395,12 +395,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
             ChangeFeedProcessor processor = monitoredContainer
                 .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName: "processor", onChangesDelegate: (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItem<ToDoActivity>> docs, CancellationToken token) =>
                 {
-                    // NOTE(philipthomas-MSFT): Please allow these Logger.LogLine because TTL on items will purge at random times so I am using this to test when ran locally using emulator.
+                        // NOTE(philipthomas-MSFT): Please allow these Logger.LogLine because TTL on items will purge at random times so I am using this to test when ran locally using emulator.
 
-                    Logger.LogLine($"@ {DateTime.Now}, {nameof(stopwatch)} -> CFP AVAD took '{stopwatch.ElapsedMilliseconds}' to read document CRUD in feed.");
+                        Logger.LogLine($"@ {DateTime.Now}, {nameof(stopwatch)} -> CFP AVAD took '{stopwatch.ElapsedMilliseconds}' to read document CRUD in feed.");
 
-                    foreach (ChangeFeedItem<ToDoActivity> change in docs)
-                    {
+                        foreach (ChangeFeedItem<ToDoActivity> change in docs)
+                        {
                         if (change.Metadata.OperationType == ChangeFeedOperationType.Create)
                         {
                             // current
@@ -429,23 +429,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                             Assert.IsTrue(change.Metadata.Lsn > 0, message: "Invalid lsn must be a long value.");
                             Assert.IsTrue(change.Metadata.IsTimeToLiveExpired);
                             Assert.AreEqual(expected: "1", actual: change.Metadata.Id.ToString());
-                            Assert.AreEqual(expected: "1", actual: change.Metadata.PartitionKey.FirstOrDefault().Item2);
+                            Assert.AreEqual(expected: "1", actual: change.Metadata.PartitionKey.Values.FirstOrDefault());
 
                             // previous
-                            Assert.AreEqual(expected: "1", actual: change.Previous.id.ToString());
-                            Assert.AreEqual(expected: "1", actual: change.Previous.pk.ToString());
-                            Assert.AreEqual(expected: "Testing TTL on CFP.", actual: change.Previous.description.ToString());
-                            Assert.AreEqual(expected: ttlInSeconds, actual: change.Previous.ttl);
+                            Assert.IsNull(change.Previous);
 
                             // stop after reading delete since it is the last document in feed.
                             stopwatch.Stop();
                             allDocsProcessed.Set();
                         }
-                        else
-                        {
-                            Assert.Fail("Invalid operation.");
+                            else
+                            {
+                                Assert.Fail("Invalid operation.");
+                            }
                         }
-                    }
 
                     return Task.CompletedTask;
                 })
@@ -541,10 +538,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                         else
                         {
                             metadataId = change.Metadata.Id.ToString();
-                            metadataPk = change.Metadata.PartitionKey.FirstOrDefault().Item2.ToString();
-                            id = change.Previous.id.ToString();
-                            pk = change.Previous.pk.ToString();
-                            description = change.Previous.description.ToString();
+                            metadataPk = change.Metadata.PartitionKey.Values.FirstOrDefault().ToString();
                         }
 
                         ChangeFeedOperationType operationType = change.Metadata.OperationType;
@@ -584,13 +578,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                     Assert.IsNull(deleteChange.Current.id);
                     Assert.AreEqual(expected: deleteChange.Metadata.OperationType, actual: ChangeFeedOperationType.Delete);
                     Assert.AreEqual(expected: replaceChange.Metadata.Lsn, actual: deleteChange.Metadata.PreviousLsn);
-                    Assert.IsNotNull(deleteChange.Previous);
+                    Assert.IsNull(deleteChange.Previous);
                     Assert.AreEqual(expected: "1", actual: deleteChange.Metadata.Id.ToString());
-                    Assert.AreEqual(expected: "1", actual: deleteChange.Metadata.PartitionKey.FirstOrDefault().Item2);
-                    Assert.AreEqual(expected: "1", actual: deleteChange.Previous.id.ToString());
-                    Assert.AreEqual(expected: "1", actual: deleteChange.Previous.pk.ToString());
-                    Assert.AreEqual(expected: "test after replace", actual: deleteChange.Previous.description.ToString());
-
+                    Assert.AreEqual(expected: "1", actual: deleteChange.Metadata.PartitionKey.Values.FirstOrDefault().ToString());
+                    
                     Assert.IsTrue(condition: createChange.Metadata.ConflictResolutionTimestamp < replaceChange.Metadata.ConflictResolutionTimestamp, message: "The create operation must happen before the replace operation.");
                     Assert.IsTrue(condition: replaceChange.Metadata.ConflictResolutionTimestamp < deleteChange.Metadata.ConflictResolutionTimestamp, message: "The replace operation must happen before the delete operation.");
                     Assert.IsTrue(condition: createChange.Metadata.Lsn < replaceChange.Metadata.Lsn, message: "The create operation must happen before the replace operation.");
