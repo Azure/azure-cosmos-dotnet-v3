@@ -155,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <param name="throughputProperties">Desired throughput for the container expressed in Request Units per second.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>An asynchronous Task representing the creation of a <see cref="Container"/> based on the Fluent definition.</returns>
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
+        /// <seealso href="https://learn.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
         public async Task<ContainerResponse> CreateAsync(
             ThroughputProperties throughputProperties,
             CancellationToken cancellationToken = default)
@@ -174,7 +174,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <param name="throughputProperties">Desired throughput for the container expressed in Request Units per second.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>An asynchronous Task representing the creation of a <see cref="Container"/> based on the Fluent definition.</returns>
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
+        /// <seealso href="https://learn.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
         public async Task<ContainerResponse> CreateIfNotExistsAsync(
             ThroughputProperties throughputProperties,
             CancellationToken cancellationToken = default)
@@ -193,7 +193,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <param name="throughput">Desired throughput for the container expressed in Request Units per second.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>An asynchronous Task representing the creation of a <see cref="Container"/> based on the Fluent definition.</returns>
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
+        /// <seealso href="https://learn.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
         public async Task<ContainerResponse> CreateAsync(
             int? throughput = null,
             CancellationToken cancellationToken = default)
@@ -213,7 +213,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <param name="throughput">Desired throughput for the container expressed in Request Units per second.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>An asynchronous Task representing the creation of a <see cref="Container"/> based on the Fluent definition.</returns>
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
+        /// <seealso href="https://learn.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
         public async Task<ContainerResponse> CreateIfNotExistsAsync(
             int? throughput = null,
             CancellationToken cancellationToken = default)
