@@ -179,7 +179,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
 
                         ChangeFeedOperationType operationType = change.Metadata.OperationType;
                         long previousLsn = change.Metadata.PreviousLsn;
-                        DateTime m = change.Metadata.ConflictResolutionTimestamp;
+                        DateTime? m = change.Metadata.ConflictResolutionTimestamp;
                         long lsn = change.Metadata.Lsn;
                         bool isTimeToLiveExpired = change.Metadata.IsTimeToLiveExpired;
                     }

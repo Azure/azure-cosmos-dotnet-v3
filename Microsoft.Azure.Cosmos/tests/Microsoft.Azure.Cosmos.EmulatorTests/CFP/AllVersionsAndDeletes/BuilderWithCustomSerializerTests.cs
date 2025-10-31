@@ -313,6 +313,166 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
         }
 
         [TestMethod]
+        [Owner("trivediyash")]
+        [Description("Validating to deserization using NSJ and STJ of ChangeFeedItem with HPK (Hierarchical Partition Key) with Create, Replace, and Delete payload.")]
+        [DataRow(true)]
+        [DataRow(false)]
+        public void ValidateNSJAndSTJSerializationOfChangeFeedItemWithHPKTest(bool propertyNameCaseInsensitive)
+        {
+            string json = @"[
+             {
+              ""current"": {
+               ""id"": ""1"",
+               ""pk1"": ""value1"",
+               ""pk2"": ""value2"",
+               ""pk3"": ""value3"",
+               ""description"": ""original test with HPK"",
+               ""_rid"": ""HpxDAL+dzLQBAAAAAAAAAA=="",
+               ""_self"": ""dbs/HpxDAA==/colls/HpxDAL+dzLQ=/docs/HpxDAL+dzLQBAAAAAAAAAA==/"",
+               ""_etag"": ""\""00000000-0000-0000-e384-28095c1a01da\"""",
+               ""_attachments"": ""attachments/"",
+               ""_ts"": 1722455970
+              },
+              ""metadata"": {
+               ""crts"": 1722455970,
+               ""lsn"": 374,
+               ""operationType"": ""create"",
+               ""previousImageLSN"": 0,
+               ""timeToLiveExpired"": false
+              }
+             },
+             {
+              ""current"": {
+               ""id"": ""1"",
+               ""pk1"": ""value1"",
+               ""pk2"": ""value2"",
+               ""pk3"": ""value3"",
+               ""description"": ""test after replace with HPK"",
+               ""_rid"": ""HpxDAL+dzLQBAAAAAAAAAA=="",
+               ""_self"": ""dbs/HpxDAA==/colls/HpxDAL+dzLQ=/docs/HpxDAL+dzLQBAAAAAAAAAA==/"",
+               ""_etag"": ""\""00000000-0000-0000-e384-28a5abdd01da\"""",
+               ""_attachments"": ""attachments/"",
+               ""_ts"": 1722455971
+              },
+              ""metadata"": {
+               ""crts"": 1722455971,
+               ""lsn"": 375,
+               ""operationType"": ""replace"",
+               ""previousImageLSN"": 374,
+               ""timeToLiveExpired"": false
+              }
+             },
+             {
+              ""current"": {},
+              ""metadata"": {
+               ""crts"": 1722455972,
+               ""lsn"": 376,
+               ""operationType"": ""delete"",
+               ""previousImageLSN"": 375,
+               ""timeToLiveExpired"": false,
+               ""id"": ""1"",
+               ""partitionKey"": {
+                ""pk1"": ""value1"",
+                ""pk2"": ""value2"",
+                ""pk3"": ""value3""
+               }
+              },
+              ""previous"": {
+               ""id"": ""1"",
+               ""pk1"": ""value1"",
+               ""pk2"": ""value2"",
+               ""pk3"": ""value3"",
+               ""description"": ""test after replace with HPK"",
+               ""_rid"": ""HpxDAL+dzLQBAAAAAAAAAA=="",
+               ""_self"": ""dbs/HpxDAA==/colls/HpxDAL+dzLQ=/docs/HpxDAL+dzLQBAAAAAAAAAA==/"",
+               ""_etag"": ""\""00000000-0000-0000-e384-28a5abdd01da\"""",
+               ""_attachments"": ""attachments/"",
+               ""_ts"": 1722455971
+              }
+             }
+            ]";
+
+            ValidateSystemTextJsonDeserialization(json, propertyNameCaseInsensitive);
+            ValidateNewtonsoftJsonDeserialization(json);
+
+            static void ValidateNewtonsoftJsonDeserialization(string json)
+            {
+                ValidateDeserialization(JsonConvert.DeserializeObject<List<ChangeFeedItem<ToDoActivityWithHPK>>>(json));
+            }
+
+            static void ValidateSystemTextJsonDeserialization(string json, bool propertyNameCaseInsensitive)
+            {
+                ValidateDeserialization(System.Text.Json.JsonSerializer.Deserialize<List<ChangeFeedItem<ToDoActivityWithHPK>>>(
+                    json: json,
+                    options: new JsonSerializerOptions()
+                    {
+                        PropertyNameCaseInsensitive = propertyNameCaseInsensitive
+                    }));
+            }
+
+            static void ValidateDeserialization(List<ChangeFeedItem<ToDoActivityWithHPK>> activities)
+            {
+                Assert.IsNotNull(activities);
+
+                ChangeFeedItem<ToDoActivityWithHPK> createdUpdate = activities.ElementAt(0);
+                Assert.IsNotNull(createdUpdate);
+                Assert.IsNotNull(createdUpdate.Current);
+                Assert.AreEqual(expected: "original test with HPK", actual: createdUpdate.Current.description);
+                Assert.AreEqual(expected: "1", actual: createdUpdate.Current.id);
+                Assert.AreEqual(expected: "value1", actual: createdUpdate.Current.pk1);
+                Assert.AreEqual(expected: "value2", actual: createdUpdate.Current.pk2);
+                Assert.AreEqual(expected: "value3", actual: createdUpdate.Current.pk3);
+                Assert.IsNotNull(createdUpdate.Metadata);
+                Assert.AreEqual(expected: DateTime.Parse("7/31/2024 7:59:30 PM"), actual: createdUpdate.Metadata.ConflictResolutionTimestamp);
+                Assert.AreEqual(expected: 374, actual: createdUpdate.Metadata.Lsn);
+                Assert.AreEqual(expected: ChangeFeedOperationType.Create, actual: createdUpdate.Metadata.OperationType);
+                Assert.AreEqual(expected: 0, actual: createdUpdate.Metadata.PreviousLsn);
+                Assert.IsFalse(createdUpdate.Metadata.IsTimeToLiveExpired);
+                Assert.IsNull(createdUpdate.Previous); // No Previous for a Create change.
+
+                ChangeFeedItem<ToDoActivityWithHPK> replacedChange = activities.ElementAt(1);
+                Assert.IsNotNull(replacedChange);
+                Assert.IsNotNull(replacedChange.Current);
+                Assert.AreEqual(expected: "test after replace with HPK", actual: replacedChange.Current.description);
+                Assert.AreEqual(expected: "1", actual: replacedChange.Current.id);
+                Assert.AreEqual(expected: "value1", actual: replacedChange.Current.pk1);
+                Assert.AreEqual(expected: "value2", actual: replacedChange.Current.pk2);
+                Assert.AreEqual(expected: "value3", actual: replacedChange.Current.pk3);
+                Assert.IsNotNull(replacedChange.Metadata);
+                Assert.AreEqual(expected: DateTime.Parse("7/31/2024 7:59:31 PM"), actual: replacedChange.Metadata.ConflictResolutionTimestamp);
+                Assert.AreEqual(expected: 375, actual: replacedChange.Metadata.Lsn);
+                Assert.AreEqual(expected: ChangeFeedOperationType.Replace, actual: replacedChange.Metadata.OperationType);
+                Assert.AreEqual(expected: 374, actual: replacedChange.Metadata.PreviousLsn);
+                Assert.IsFalse(replacedChange.Metadata.IsTimeToLiveExpired);
+                Assert.IsNull(replacedChange.Previous); // No Previous for a Replace change.
+
+                ChangeFeedItem<ToDoActivityWithHPK> deletedChange = activities.ElementAt(2);
+                Assert.IsNotNull(deletedChange);
+                Assert.IsNotNull(deletedChange.Current); // Current is not null, but no data.
+                Assert.AreEqual(expected: default, actual: deletedChange.Current.description); // No current description for Delete
+                Assert.AreEqual(expected: default, actual: deletedChange.Current.id); // No current id for Delete
+                Assert.IsNotNull(deletedChange.Metadata);
+                Assert.AreEqual(expected: DateTime.Parse("7/31/2024 7:59:32 PM"), actual: deletedChange.Metadata.ConflictResolutionTimestamp);
+                Assert.AreEqual(expected: 376, actual: deletedChange.Metadata.Lsn);
+                Assert.AreEqual(expected: ChangeFeedOperationType.Delete, actual: deletedChange.Metadata.OperationType);
+                Assert.AreEqual(expected: 375, actual: deletedChange.Metadata.PreviousLsn);
+                Assert.IsFalse(deletedChange.Metadata.IsTimeToLiveExpired);
+                Assert.IsNotNull(deletedChange.Previous);
+                Assert.AreEqual(expected: "test after replace with HPK", actual: deletedChange.Previous.description);
+                Assert.AreEqual(expected: "1", actual: deletedChange.Metadata.Id.ToString());
+                Assert.IsNotNull(deletedChange.Metadata.PartitionKey);
+                Assert.AreEqual(expected: 3, actual: deletedChange.Metadata.PartitionKey.Count);
+                Assert.AreEqual(expected: "value1", actual: deletedChange.Metadata.PartitionKey["pk1"].ToString());
+                Assert.AreEqual(expected: "value2", actual: deletedChange.Metadata.PartitionKey["pk2"].ToString());
+                Assert.AreEqual(expected: "value3", actual: deletedChange.Metadata.PartitionKey["pk3"].ToString());
+                Assert.AreEqual(expected: "1", actual: deletedChange.Previous.id);
+                Assert.AreEqual(expected: "value1", actual: deletedChange.Previous.pk1);
+                Assert.AreEqual(expected: "value2", actual: deletedChange.Previous.pk2);
+                Assert.AreEqual(expected: "value3", actual: deletedChange.Previous.pk3);
+            }
+        }
+
+        [TestMethod]
         [Owner("philipthomas-MSFT")]
         [Description("Replace and Deletes have full ChangeFeedMetadata.")]
         [DataRow(true)]
@@ -545,7 +705,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
 
                         ChangeFeedOperationType operationType = change.Metadata.OperationType;
                         long previousLsn = change.Metadata.PreviousLsn;
-                        DateTime m = change.Metadata.ConflictResolutionTimestamp;
+                        DateTime? m = change.Metadata.ConflictResolutionTimestamp;
                         long lsn = change.Metadata.Lsn;
                         bool isTimeToLiveExpired = change.Metadata.IsTimeToLiveExpired;
                     }

@@ -27,11 +27,12 @@ namespace Microsoft.Azure.Cosmos
         /// The change's conflict resolution timestamp.
         /// </summary>
         [System.Text.Json.Serialization.JsonIgnore]
-        public DateTime ConflictResolutionTimestamp => UnixEpoch.AddSeconds(this.ConflictResolutionTimestampInSeconds.Value);
+        [Newtonsoft.Json.JsonIgnore]
+        public DateTime? ConflictResolutionTimestamp => this.ConflictResolutionTimestampInSeconds.HasValue ? UnixEpoch.AddSeconds(this.ConflictResolutionTimestampInSeconds.Value) : null;
 
         [System.Text.Json.Serialization.JsonInclude]
         [System.Text.Json.Serialization.JsonPropertyName(ChangeFeedMetadataFields.ConflictResolutionTimestamp)]
-        [JsonProperty(PropertyName = ChangeFeedMetadataFields.ConflictResolutionTimestamp, NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName = ChangeFeedMetadataFields.ConflictResolutionTimestamp)]
         internal double? ConflictResolutionTimestampInSeconds { get; set; }
 
         /// <summary>
@@ -78,9 +79,48 @@ namespace Microsoft.Azure.Cosmos
         public string Id { get; internal set; }
 
         /// <summary>
-        ///  Applicable for delete operations only, otherwise null.
-        /// The partition key of the previous item version. string  is the partition key property name and object is the partition key property value. All levels of hierarchy will be represented in order if a HPK is used.
+        /// Applicable for delete operations only, otherwise null.
+        /// The partition key of the previous item version represented as a dictionary where the key is the partition key property name 
+        /// and the value is the partition key property value. All levels of hierarchy will be present if a hierarchical partition key (HPK) is used.
         /// </summary>
+        /// <remarks>
+        /// <para>
+        /// For single partition key containers, the dictionary will contain one entry with the partition key path name (without the leading '/') 
+        /// as the key and the partition key value as the value.
+        /// </para>
+        /// <para>
+        /// For hierarchical partition key containers, the dictionary will contain multiple entries, one for each level of the hierarchy, 
+        /// in the order they were defined in the container's partition key definition.
+        /// </para>
+        /// <para>
+        /// Example for a single partition key container with partition key path "/tenantId":
+        /// <code>
+        /// {
+        ///     "tenantId": "tenant123"
+        /// }
+        /// </code>
+        /// </para>
+        /// <para>
+        /// Example for a hierarchical partition key container with partition key paths ["/tenantId", "/userId", "/sessionId"]:
+        /// <code>
+        /// {
+        ///     "tenantId": "tenant123",
+        ///     "userId": "user456",
+        ///     "sessionId": "session789"
+        /// }
+        /// </code>
+        /// </para>
+        /// <para>
+        /// The partition key values can be of different types (string, number, boolean, null) depending on the document's schema.
+        /// For example, with partition key paths ["/category", "/priority"]:
+        /// <code>
+        /// {
+        ///     "category": "electronics",
+        ///     "priority": 1
+        /// }
+        /// </code>
+        /// </para>
+        /// </remarks>
         [System.Text.Json.Serialization.JsonInclude]
         [System.Text.Json.Serialization.JsonPropertyName(ChangeFeedMetadataFields.PartitionKey)]
         [JsonProperty(PropertyName = ChangeFeedMetadataFields.PartitionKey, NullValueHandling = NullValueHandling.Ignore)]
