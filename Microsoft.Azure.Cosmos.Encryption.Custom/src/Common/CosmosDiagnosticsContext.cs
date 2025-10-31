@@ -124,7 +124,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 }
 
                 long elapsedTicks = Stopwatch.GetTimestamp() - this.startTicks;
-                this.owner.Record(this.name, this.startTicks, elapsedTicks);
+
+                // Defensive null check - should never be null if enabled=true,
+                // but guards against struct manipulation bugs
+                if (this.owner != null)
+                {
+                    this.owner.Record(this.name, this.startTicks, elapsedTicks);
+                }
+
                 this.activity?.Dispose();
             }
         }
