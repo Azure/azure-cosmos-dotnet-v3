@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
     using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Encryption.Custom; // For PooledBufferWriter
 
     internal partial class StreamProcessor
     {
@@ -34,39 +35,57 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             using Utf8JsonWriter writer = new (outputStream);
 
-            byte[] buffer = arrayPoolManager.Rent(InitialBufferSize);
+            using PooledBufferWriter<byte> stagingBuffer = new (InitialBufferSize);
 
             JsonReaderState state = new (StreamProcessor.JsonReaderOptions);
 
-            int leftOver = 0;
-
-            bool isFinalBlock = false;
+            // Master-like loop structure (similar to decryptor) with pooled writer usage and truncated JSON detection retained.
+            bool isFinalBlock = false;      // Final iteration: EOF reached and no buffered data remains
+            bool inputCompleted = false;    // Physical end-of-stream observed (ReadAsync returned 0)
 
             Utf8JsonWriter encryptionPayloadWriter = null;
             string encryptPropertyName = null;
-            RentArrayBufferWriter bufferWriter = null;
+            PooledBufferWriter<byte> payloadBuffer = null;
 
             while (!isFinalBlock)
             {
-                int dataLength = await inputStream.ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), cancellationToken);
-                int dataSize = dataLength + leftOver;
-                isFinalBlock = dataSize == 0;
-                long bytesConsumed = 0;
-
-                bytesConsumed = TransformEncryptBuffer(buffer.AsSpan(0, dataSize));
-
-                leftOver = dataSize - (int)bytesConsumed;
-
-                // we need to scale out buffer
-                if (leftOver == dataSize)
+                if (stagingBuffer.FreeCapacity == 0)
                 {
-                    byte[] newBuffer = arrayPoolManager.Rent(buffer.Length * 2);
-                    buffer.AsSpan().CopyTo(newBuffer);
-                    buffer = newBuffer;
+                    stagingBuffer.EnsureCapacity(stagingBuffer.Count == 0 ? InitialBufferSize : stagingBuffer.Count * 2);
                 }
-                else if (leftOver != 0)
+
+                int read = await inputStream.ReadAsync(stagingBuffer.GetInternalArray().AsMemory(stagingBuffer.Count, stagingBuffer.FreeCapacity), cancellationToken);
+                if (read > 0)
                 {
-                    buffer.AsSpan(dataSize - leftOver, leftOver).CopyTo(buffer);
+                    stagingBuffer.Advance(read);
+                }
+                else
+                {
+                    inputCompleted = true; // EOF reached
+                }
+
+                int dataSize = stagingBuffer.Count;
+                isFinalBlock = inputCompleted && dataSize == 0; // Empty buffer after EOF => final block
+
+                long bytesConsumed = TransformEncryptBuffer(stagingBuffer.WrittenSpan.Slice(0, dataSize));
+                int consumed = (int)bytesConsumed;
+                int remaining = dataSize - consumed;
+
+                if (consumed > 0)
+                {
+                    stagingBuffer.ConsumePrefix(consumed);
+                }
+
+                // Truncated / incomplete JSON detection: EOF observed, bytes remain, but no forward progress.
+                if (remaining == dataSize && inputCompleted && dataSize > 0)
+                {
+                    throw new InvalidOperationException("Incomplete or truncated JSON input.");
+                }
+
+                if ((remaining == dataSize) && !inputCompleted)
+                {
+                    // No progress yet, attempt to read more by growing buffer.
+                    stagingBuffer.EnsureCapacity((stagingBuffer.Count * 2) + 1);
                 }
             }
 
@@ -83,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             JsonSerializer.Serialize(writer, encryptionProperties);
             writer.WriteEndObject();
 
-            writer.Flush();
+            await writer.FlushAsync(cancellationToken);
             outputStream.Position = 0;
 
             long TransformEncryptBuffer(ReadOnlySpan<byte> buffer)
@@ -103,8 +122,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                         case JsonTokenType.StartObject:
                             if (encryptPropertyName != null && encryptionPayloadWriter == null)
                             {
-                                bufferWriter = new RentArrayBufferWriter();
-                                encryptionPayloadWriter = new Utf8JsonWriter(bufferWriter);
+                                payloadBuffer = new PooledBufferWriter<byte>();
+                                encryptionPayloadWriter = new Utf8JsonWriter(payloadBuffer);
                                 encryptionPayloadWriter.WriteStartObject();
                             }
                             else
@@ -123,7 +142,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             if (reader.CurrentDepth == 1 && encryptionPayloadWriter != null)
                             {
                                 currentWriter.Flush();
-                                (byte[] bytes, int length) = bufferWriter.WrittenBuffer;
+                                byte[] bytes = payloadBuffer.GetInternalArray();
+                                int length = payloadBuffer.Count;
                                 ReadOnlySpan<byte> encryptedBytes = TransformEncryptPayload(bytes, length, TypeMarker.Object);
                                 writer.WriteBase64StringValue(encryptedBytes);
 
@@ -132,16 +152,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                 encryptionPayloadWriter.Dispose();
 #pragma warning restore VSTHRD103 // Call async methods when in an async method
                                 encryptionPayloadWriter = null;
-                                bufferWriter.Dispose();
-                                bufferWriter = null;
+                                payloadBuffer.Dispose();
+                                payloadBuffer = null;
                             }
 
                             break;
                         case JsonTokenType.StartArray:
                             if (encryptPropertyName != null && encryptionPayloadWriter == null)
                             {
-                                bufferWriter = new RentArrayBufferWriter();
-                                encryptionPayloadWriter = new Utf8JsonWriter(bufferWriter);
+                                payloadBuffer = new PooledBufferWriter<byte>();
+                                encryptionPayloadWriter = new Utf8JsonWriter(payloadBuffer);
                                 encryptionPayloadWriter.WriteStartArray();
                             }
                             else
@@ -155,7 +175,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             if (reader.CurrentDepth == 1 && encryptionPayloadWriter != null)
                             {
                                 currentWriter.Flush();
-                                (byte[] bytes, int length) = bufferWriter.WrittenBuffer;
+                                byte[] bytes = payloadBuffer.GetInternalArray();
+                                int length = payloadBuffer.Count;
                                 ReadOnlySpan<byte> encryptedBytes = TransformEncryptPayload(bytes, length, TypeMarker.Array);
                                 writer.WriteBase64StringValue(encryptedBytes);
 
@@ -164,8 +185,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                 encryptionPayloadWriter.Dispose();
 #pragma warning restore VSTHRD103 // Call async methods when in an async method
                                 encryptionPayloadWriter = null;
-                                bufferWriter.Dispose();
-                                bufferWriter = null;
+                                payloadBuffer.Dispose();
+                                payloadBuffer = null;
                             }
 
                             break;
@@ -270,14 +291,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             return (buffer, length);
         }
 
-        private static (TypeMarker typeMarker, byte[] buffer, int length) SerializeNumber(ReadOnlySpan<byte> utf8bytes, ArrayPoolManager arrayPoolManager)
+        private static (TypeMarker typeMarker, byte[] buffer, int length) SerializeNumber(ReadOnlySpan<byte> utf8Bytes, ArrayPoolManager arrayPoolManager)
         {
-            if (System.Buffers.Text.Utf8Parser.TryParse(utf8bytes, out long longValue, out int consumedLong) && consumedLong == utf8bytes.Length)
+            if (System.Buffers.Text.Utf8Parser.TryParse(utf8Bytes, out long longValue, out int consumedLong) && consumedLong == utf8Bytes.Length)
             {
                 return Serialize(longValue, arrayPoolManager);
             }
 
-            if (System.Buffers.Text.Utf8Parser.TryParse(utf8bytes, out double doubleValue, out int consumedDouble) && consumedDouble == utf8bytes.Length)
+            if (System.Buffers.Text.Utf8Parser.TryParse(utf8Bytes, out double doubleValue, out int consumedDouble) && consumedDouble == utf8Bytes.Length)
             {
                 // Reject non-finite numbers to keep JSON contract compatibility
                 if (double.IsFinite(doubleValue))

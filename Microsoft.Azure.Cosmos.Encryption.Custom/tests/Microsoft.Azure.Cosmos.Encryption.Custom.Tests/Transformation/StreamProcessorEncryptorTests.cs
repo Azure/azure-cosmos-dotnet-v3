@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             return JsonDocument.Parse(s);
         }
 
-        [TestMethod]
+    [TestMethod, Timeout(5000)]
         public async Task Encrypt_AllPrimitiveTypesAndContainers()
         {
             // Arrange
@@ -132,7 +132,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
 
             // Act (decrypt)
             encrypted.Position = 0;
-            (Stream decrypted, DecryptionContext ctx) = await EncryptionProcessor.DecryptStreamAsync(encrypted, mockEncryptor.Object, new CosmosDiagnosticsContext(), CancellationToken.None);
+            (Stream decrypted, DecryptionContext ctx) = await EncryptionProcessor.DecryptAsync(encrypted, mockEncryptor.Object, new CosmosDiagnosticsContext(), JsonProcessor.Stream, CancellationToken.None);
             // Assert (roundtrip)
             using JsonDocument d2 = Parse(decrypted);
             JsonElement r2 = d2.RootElement;
@@ -169,7 +169,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
 
             // Act (decrypt)
             encrypted.Position = 0;
-            (Stream decrypted, _) = await EncryptionProcessor.DecryptStreamAsync(encrypted, mockEncryptor.Object, new CosmosDiagnosticsContext(), CancellationToken.None);
+            (Stream decrypted, _) = await EncryptionProcessor.DecryptAsync(encrypted, mockEncryptor.Object, new CosmosDiagnosticsContext(), JsonProcessor.Stream, CancellationToken.None);
             // Assert (roundtrip)
             using JsonDocument d2 = Parse(decrypted);
             JsonElement r2 = d2.RootElement;
@@ -177,7 +177,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             Assert.AreEqual(2, r2.GetProperty("Arr").GetArrayLength());
         }
 
-        [TestMethod]
+    [TestMethod, Timeout(5000)]
         public async Task Encrypt_BufferGrowthLargeString()
         {
             // Arrange
@@ -191,7 +191,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             Assert.IsTrue(cipher.Length > 10);
         }
 
-        [TestMethod]
+    [TestMethod, Timeout(5000)]
         public async Task Encrypt_SkipsNullProperty()
         {
             // Arrange
@@ -207,7 +207,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             Assert.AreEqual(JsonValueKind.Null, root.GetProperty("Maybe").ValueKind);
         }
 
-        [TestMethod]
+    [TestMethod, Timeout(5000)]
         public async Task Encrypt_NullThenPlain_RemainsPlain()
         {
             // Arrange
@@ -231,7 +231,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             Assert.AreEqual(42, root.GetProperty("Plain").GetInt32());
         }
 
-        [TestMethod]
+    [TestMethod, Timeout(5000)]
         public void Encrypt_InternalProperty_Getter_Coverage()
         {
             // Arrange
@@ -242,7 +242,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             Assert.IsTrue(StreamProcessor.InitialBufferSize > 0);
         }
 
-        [TestMethod]
+    [TestMethod, Timeout(5000)]
         public async Task Encrypt_NumberParsing_IsCultureInvariant()
         {
             // Arrange
@@ -264,7 +264,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
                 // Should succeed regardless of current culture and round-trip the value as a double
                 MemoryStream encrypted = await EncryptAsync(doc, options);
                 encrypted.Position = 0;
-                (Stream decrypted, _) = await EncryptionProcessor.DecryptStreamAsync(encrypted, mockEncryptor.Object, new CosmosDiagnosticsContext(), CancellationToken.None);
+                (Stream decrypted, _) = await EncryptionProcessor.DecryptAsync(encrypted, mockEncryptor.Object, new CosmosDiagnosticsContext(), JsonProcessor.Stream, CancellationToken.None);
                 // Assert
                 using JsonDocument d2 = JsonDocument.Parse(decrypted);
                 double value = d2.RootElement.GetProperty("Weird").GetDouble();
@@ -277,7 +277,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             }
         }
 
-        [TestMethod]
+    [TestMethod, Timeout(5000)]
         public async Task Encrypt_InputWithComments_IgnoresComments()
         {
             // Arrange
@@ -301,7 +301,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             Assert.IsTrue(root.TryGetProperty(Constants.EncryptedInfo, out _));
         }
 
-        [TestMethod]
+    [TestMethod, Timeout(5000)]
         public async Task Encrypt_NonObjectRoot_Array_RemainsUnchanged()
         {
             // Arrange
@@ -318,7 +318,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             Assert.AreEqual(JsonValueKind.Array, jd.RootElement.ValueKind);
         }
 
-        [TestMethod]
+    [TestMethod, Timeout(5000)]
         public async Task Encrypt_NonObjectRoot_Primitive_RemainsUnchanged()
         {
             // Arrange
@@ -345,7 +345,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             }
         }
 
-        [TestMethod]
+    [TestMethod, Timeout(5000)]
         public async Task Encrypt_Fails_OnTruncatedJson()
         {
             // Arrange
@@ -367,7 +367,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             }
         }
 
-        [TestMethod]
+    [TestMethod, Timeout(5000)]
         public async Task Encrypt_Fails_OnDoubleInfinity()
         {
             // Arrange
@@ -390,7 +390,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             }
         }
 
-        [TestMethod]
+    [TestMethod, Timeout(5000)]
         public async Task Encrypt_Fails_OnInvalidUtf8InString()
         {
             // Arrange
@@ -420,7 +420,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             }
         }
 
-        [TestMethod]
+    [TestMethod, Timeout(5000)]
         public async Task Encrypt_Fails_OnNaN_Literal()
         {
             // Arrange
@@ -442,7 +442,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             }
         }
 
-        [TestMethod]
+    [TestMethod, Timeout(5000)]
         public async Task Encrypt_NegativeZero_Double_RoundtripsAsZero()
         {
             // Arrange
@@ -459,13 +459,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
 
             // Act (decrypt)
             encrypted.Position = 0;
-            (Stream decrypted, _) = await EncryptionProcessor.DecryptStreamAsync(encrypted, mockEncryptor.Object, new CosmosDiagnosticsContext(), CancellationToken.None);
+            (Stream decrypted, _) = await EncryptionProcessor.DecryptAsync(encrypted, mockEncryptor.Object, new CosmosDiagnosticsContext(), JsonProcessor.Stream, CancellationToken.None);
             // Assert
             using JsonDocument jdec = JsonDocument.Parse(decrypted);
             Assert.AreEqual(0.0, jdec.RootElement.GetProperty("DZ").GetDouble(), 0.0);
         }
 
-        [TestMethod]
+    [TestMethod, Timeout(5000)]
         public async Task Encrypt_DeepNesting_ExceedsDepth_Fails()
         {
             // Arrange
@@ -494,7 +494,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             }
         }
 
-        [TestMethod]
+    [TestMethod, Timeout(5000)]
         public async Task Encrypt_PathToArray_ButValueIsString_EncryptsAsString()
         {
             // Arrange
@@ -512,7 +512,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             Assert.AreEqual((byte)TypeMarker.String, cipher[0]);
         }
 
-        [TestMethod]
+    [TestMethod, Timeout(5000)]
         public async Task Encrypt_PathToObject_ButValueIsNumber_EncryptsAsNumber()
         {
             // Arrange
