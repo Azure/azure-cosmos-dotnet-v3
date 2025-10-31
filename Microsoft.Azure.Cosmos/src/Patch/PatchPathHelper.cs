@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Helper class for processing JSON patch paths to handle numeric-looking strings
     /// </summary>
-    public static class PatchPathHelper
+    internal static class PatchPathHelper
     {
         private const int MaxNumericTokenLength = 19;
         private static readonly Regex NumericRegex = new Regex(@"^\d+$", RegexOptions.Compiled);
