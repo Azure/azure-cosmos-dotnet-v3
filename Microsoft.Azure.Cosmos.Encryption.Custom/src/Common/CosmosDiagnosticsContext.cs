@@ -97,6 +97,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
         }
 
+        /// <summary>
+        /// Represents a diagnostic scope for timing operations and Activity tracking.
+        /// IMPORTANT: This struct should ONLY be used with the 'using' pattern to ensure
+        /// single disposal. Do not manually copy this struct as it contains a reference
+        /// to an Activity object that will be disposed when this scope is disposed.
+        /// </summary>
+        /// <remarks>
+        /// While Activity.Dispose() is idempotent (safe to call multiple times), the intended
+        /// usage pattern is single disposal via 'using' statement. Copying the struct and
+        /// disposing multiple copies is not recommended, even though it is technically safe.
+        /// </remarks>
         public readonly struct Scope : IDisposable
         {
             private readonly CosmosDiagnosticsContext owner;
@@ -127,11 +138,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
                 // Defensive null check - should never be null if enabled=true,
                 // but guards against struct manipulation bugs
-                if (this.owner != null)
-                {
-                    this.owner.Record(this.name, this.startTicks, elapsedTicks);
-                }
+                this.owner?.Record(this.name, this.startTicks, elapsedTicks);
 
+                // Activity.Dispose() is idempotent per .NET framework documentation,
+                // so multiple calls are safe (though not the intended usage pattern).
+                // Null-conditional ensures we skip disposal if activity was never created.
                 this.activity?.Dispose();
             }
         }
