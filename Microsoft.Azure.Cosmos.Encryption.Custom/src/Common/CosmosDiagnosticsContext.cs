@@ -26,8 +26,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// Inner1.ParentName = "Outer" and Inner2.ParentName = "Outer", allowing reconstruction of the call tree.
     /// </para>
     /// <para>
-    /// Scope tracking uses <see cref="AsyncLocal{T}"/> to maintain the active scope chain across async/await boundaries,
-    /// ensuring correct parent-child relationships even in asynchronous code paths.
+    /// Parent-child relationships are captured at scope creation time using a stack to track the currently active scope.
+    /// Each <see cref="CosmosDiagnosticsContext"/> instance is intended for use within a single operation flow and is
+    /// not designed for concurrent access across parallel tasks.
     /// </para>
     /// </remarks>
     internal class CosmosDiagnosticsContext
@@ -113,6 +114,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 }
 
                 return names;
+            }
+        }
+
+        /// <summary>
+        /// Gets full scope records including parent relationships and timing data.
+        /// Primarily for unit tests to verify nested scope hierarchies (copy snapshot each access).
+        /// </summary>
+        internal IReadOnlyList<ScopeRecord> ScopeRecords
+        {
+            get
+            {
+                lock (this.records)
+                {
+                    return this.records.ToArray();
+                }
             }
         }
 

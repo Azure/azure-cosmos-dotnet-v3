@@ -140,6 +140,59 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
         }
 
         [TestMethod]
+        public void OverlappingScopes_ParentRelationshipsReflectCreationTime()
+        {
+            CosmosDiagnosticsContext ctx = CosmosDiagnosticsContext.Create(null);
+            CosmosDiagnosticsContext.Scope a = ctx.CreateScope("A");
+            CosmosDiagnosticsContext.Scope b = ctx.CreateScope("B"); // B created while A is active
+            b.Dispose(); // B disposed before A (out of order)
+            CosmosDiagnosticsContext.Scope c = ctx.CreateScope("C"); // C created while A is still active
+            c.Dispose();
+            a.Dispose();
+
+            IReadOnlyList<CosmosDiagnosticsContext.ScopeRecord> records = ctx.ScopeRecords;
+
+            // Disposal order: B, C, A
+            Assert.AreEqual(3, records.Count);
+            Assert.AreEqual("B", records[0].Name);
+            Assert.AreEqual("A", records[0].ParentName, "B was created while A was active (parent relationship based on creation, not disposal)");
+            Assert.AreEqual("C", records[1].Name);
+            Assert.AreEqual("A", records[1].ParentName, "C was created while A was active");
+            Assert.AreEqual("A", records[2].Name);
+            Assert.IsNull(records[2].ParentName, "A is top-level");
+        }
+
+        [TestMethod]
+        public void OutOfOrderDisposal_StackCleanupMatters()
+        {
+            // This test demonstrates WHY we need the "peek == scopeName" check in Dispose.
+            // Without it, the stack would get corrupted and subsequent scopes would get wrong parents.
+            CosmosDiagnosticsContext ctx = CosmosDiagnosticsContext.Create(null);
+            
+            CosmosDiagnosticsContext.Scope a = ctx.CreateScope("A");  // Stack: [A]
+            CosmosDiagnosticsContext.Scope b = ctx.CreateScope("B");  // Stack: [A, B]
+            
+            // Dispose B in correct order - it's at top of stack
+            b.Dispose();  // Stack after cleanup: [A]
+            
+            // Create C - should have A as parent because stack now shows A at top
+            CosmosDiagnosticsContext.Scope c = ctx.CreateScope("C");  // Stack: [A, C]
+            c.Dispose();  // Stack: [A]
+            
+            a.Dispose();  // Stack: []
+
+            IReadOnlyList<CosmosDiagnosticsContext.ScopeRecord> records = ctx.ScopeRecords;
+
+            Assert.AreEqual(3, records.Count);
+            Assert.AreEqual("B", records[0].Name);
+            Assert.AreEqual("A", records[0].ParentName, "B parent is A");
+            Assert.AreEqual("C", records[1].Name);
+            Assert.AreEqual("A", records[1].ParentName, "C parent is A (not B, because B was already disposed and cleaned from stack)");
+            Assert.AreEqual("A", records[2].Name);
+            Assert.IsNull(records[2].ParentName);
+        }
+
+        [TestMethod]
         public async Task Concurrency_ManyThreads_AllScopesRecorded()
         {
             CosmosDiagnosticsContext ctx = CosmosDiagnosticsContext.Create(null);
@@ -207,9 +260,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
                 using (ctx.CreateScope("Inner2")) { }
             }
 
-            // Access internal records via reflection to verify hierarchy
-            System.Reflection.FieldInfo recordsField = typeof(CosmosDiagnosticsContext).GetField("records", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            List<CosmosDiagnosticsContext.ScopeRecord> records = (List<CosmosDiagnosticsContext.ScopeRecord>)recordsField.GetValue(ctx);
+            IReadOnlyList<CosmosDiagnosticsContext.ScopeRecord> records = ctx.ScopeRecords;
 
             Assert.AreEqual(3, records.Count);
             Assert.AreEqual("Inner1", records[0].Name);
@@ -228,8 +279,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
             using (ctx.CreateScope("B")) { }
             using (ctx.CreateScope("C")) { }
 
-            System.Reflection.FieldInfo recordsField = typeof(CosmosDiagnosticsContext).GetField("records", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            List<CosmosDiagnosticsContext.ScopeRecord> records = (List<CosmosDiagnosticsContext.ScopeRecord>)recordsField.GetValue(ctx);
+            IReadOnlyList<CosmosDiagnosticsContext.ScopeRecord> records = ctx.ScopeRecords;
 
             Assert.AreEqual(3, records.Count);
             Assert.IsNull(records[0].ParentName, "Sequential scopes should have no parent");
@@ -252,8 +302,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
                 }
             }
 
-            System.Reflection.FieldInfo recordsField = typeof(CosmosDiagnosticsContext).GetField("records", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            List<CosmosDiagnosticsContext.ScopeRecord> records = (List<CosmosDiagnosticsContext.ScopeRecord>)recordsField.GetValue(ctx);
+            IReadOnlyList<CosmosDiagnosticsContext.ScopeRecord> records = ctx.ScopeRecords;
 
             Assert.AreEqual(4, records.Count);
             // LIFO disposal order
@@ -280,14 +329,52 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
                 }
             }
 
-            System.Reflection.FieldInfo recordsField = typeof(CosmosDiagnosticsContext).GetField("records", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            List<CosmosDiagnosticsContext.ScopeRecord> records = (List<CosmosDiagnosticsContext.ScopeRecord>)recordsField.GetValue(ctx);
+            IReadOnlyList<CosmosDiagnosticsContext.ScopeRecord> records = ctx.ScopeRecords;
 
             Assert.AreEqual(2, records.Count);
             Assert.AreEqual("AsyncInner", records[0].Name);
-            Assert.AreEqual("AsyncOuter", records[0].ParentName, "AsyncLocal should preserve parent across await");
+            Assert.AreEqual("AsyncOuter", records[0].ParentName, "Parent preserved because stack state is shared via ctx reference");
             Assert.AreEqual("AsyncOuter", records[1].Name);
             Assert.IsNull(records[1].ParentName);
+        }
+
+        [TestMethod]
+        public async Task AsyncScopes_ParallelTasks_StackIsSharedNotIsolated()
+        {
+            // This test demonstrates that scopeStack is NOT AsyncLocal - it's just a regular stack.
+            // Multiple parallel async tasks would interfere with each other if they share a ctx.
+            CosmosDiagnosticsContext ctx = CosmosDiagnosticsContext.Create(null);
+            
+            Task task1 = Task.Run(async () =>
+            {
+                using (ctx.CreateScope("Task1_Outer"))
+                {
+                    await Task.Delay(10);
+                    using (ctx.CreateScope("Task1_Inner"))
+                    {
+                        await Task.Delay(10);
+                    }
+                }
+            });
+
+            Task task2 = Task.Run(async () =>
+            {
+                using (ctx.CreateScope("Task2_Outer"))
+                {
+                    await Task.Delay(10);
+                    using (ctx.CreateScope("Task2_Inner"))
+                    {
+                        await Task.Delay(10);
+                    }
+                }
+            });
+
+            await Task.WhenAll(task1, task2);
+
+            // The stack is shared, so parent relationships will be interleaved/unpredictable
+            IReadOnlyList<CosmosDiagnosticsContext.ScopeRecord> records = ctx.ScopeRecords;
+            Assert.AreEqual(4, records.Count, "All 4 scopes should be recorded");
+            // Parent relationships may be incorrect due to race conditions on shared stack
         }
 
         [TestMethod]
@@ -304,8 +391,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
                 using (ctx.CreateScope("B2")) { }
             }
 
-            System.Reflection.FieldInfo recordsField = typeof(CosmosDiagnosticsContext).GetField("records", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            List<CosmosDiagnosticsContext.ScopeRecord> records = (List<CosmosDiagnosticsContext.ScopeRecord>)recordsField.GetValue(ctx);
+            IReadOnlyList<CosmosDiagnosticsContext.ScopeRecord> records = ctx.ScopeRecords;
 
             Assert.AreEqual(5, records.Count);
             Assert.AreEqual("A1", records[0].Name);
@@ -330,8 +416,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Diagnostics
                 using (ctx.CreateScope("")) { }   // No-op scope
             }
 
-            System.Reflection.FieldInfo recordsField = typeof(CosmosDiagnosticsContext).GetField("records", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            List<CosmosDiagnosticsContext.ScopeRecord> records = (List<CosmosDiagnosticsContext.ScopeRecord>)recordsField.GetValue(ctx);
+            IReadOnlyList<CosmosDiagnosticsContext.ScopeRecord> records = ctx.ScopeRecords;
 
             Assert.AreEqual(1, records.Count, "No-op scopes should not be recorded");
             Assert.AreEqual("Real", records[0].Name);
