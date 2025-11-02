@@ -28,6 +28,7 @@ namespace Microsoft.Azure.Cosmos
             (TimeSpan.FromSeconds(.5), TimeSpan.Zero),
             (TimeSpan.FromSeconds(1), TimeSpan.Zero),
             (TimeSpan.FromSeconds(5), TimeSpan.Zero),
+            (TimeSpan.FromSeconds(30), TimeSpan.Zero),
         };
 
         public override string TimeoutPolicyName => HttpTimeoutPolicyForThinClient.Name;
