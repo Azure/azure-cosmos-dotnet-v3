@@ -1694,7 +1694,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        abstract Task<IReadOnlyDictionary<string, dynamic>> SemanticRerankAsync(
+        abstract Task<SemanticRerankResult> SemanticRerankAsync(
             string renrankContext,
             IEnumerable<string> documents,
             IDictionary<string, dynamic> options = null,

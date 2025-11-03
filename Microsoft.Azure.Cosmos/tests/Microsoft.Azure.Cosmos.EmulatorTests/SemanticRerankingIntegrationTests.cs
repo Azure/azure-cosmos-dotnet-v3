@@ -1,5 +1,6 @@
 ﻿namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
+    using System;
     using System.Collections.Generic;
     using System.Text.Json;
     using System.Text.Json.Serialization;
@@ -102,12 +103,15 @@
                 { "sort", true }
             };
 
-            IReadOnlyDictionary<string, dynamic> results = await container.SemanticRerankAsync(
+            SemanticRerankResult results = await container.SemanticRerankAsync(
                 reranking_context,
                 documents,
                 options);
 
-            Assert.IsTrue(results["Scores"][0]["index"] == 4);
+            Assert.IsTrue(results.RerankScores.Count > 0);
+            Assert.AreEqual(4, results.RerankScores[0].Index);
+            Assert.IsNotNull(results.Latency);
+            Assert.IsNotNull(results.TokenUseage);
         }
     }
 }

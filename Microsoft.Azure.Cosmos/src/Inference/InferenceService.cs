@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="options">Optional additional options for the request.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>A dictionary containing the reranked results.</returns>
-        public async Task<IReadOnlyDictionary<string, dynamic>> SemanticRerankAsync(
+        public async Task<SemanticRerankResult> SemanticRerankAsync(
             string renrankContext,
             IEnumerable<string> documents,
             IDictionary<string, dynamic> options = null,
@@ -114,8 +114,7 @@ namespace Microsoft.Azure.Cosmos
             responseMessage.EnsureSuccessStatusCode();
 
             // Deserialize and return the response content as a dictionary.
-            string content = await responseMessage.Content.ReadAsStringAsync();
-            return Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, dynamic>>(content);
+            return await SemanticRerankResult.DeserializeSemanticRerankResultAsync(responseMessage);
         }
 
         /// <summary>
