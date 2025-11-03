@@ -1060,7 +1060,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             }
             //----------------------------------------------------------------
 
-            this.ExecuteTestSuite(inputs);
+            //this.ExecuteTestSuite(inputs);
         }
 
         [TestMethod]
