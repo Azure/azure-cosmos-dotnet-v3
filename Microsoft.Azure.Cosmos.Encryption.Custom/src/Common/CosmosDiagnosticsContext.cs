@@ -16,16 +16,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <strong>Limitation:</strong> This implementation does not capture hierarchical relationships between nested scopes.
-    /// All scopes are recorded in a flat list in the order they are disposed (LIFO order for nested scopes).
+    /// <strong>Nested Scope Limitation:</strong> This implementation does not track hierarchical relationships between nested scopes.
+    /// All scopes are recorded in a flat list in the order they complete (LIFO order for nested scopes).
+    /// Only the most recently created scope is tracked at any given time.
     /// </para>
     /// <para>
     /// For example, nested scopes like <c>Outer { Inner1 { } Inner2 { } }</c> will be recorded as
-    /// <c>[Inner1, Inner2, Outer]</c> without parent-child relationships.
+    /// <c>[Inner1, Inner2, Outer]</c> without parent-child relationships. This is intentional to keep
+    /// the implementation simple and lightweight.
     /// </para>
     /// <para>
-    /// For hierarchical span tracking, consider using <see cref="ActivitySource"/>/<see cref="Activity"/> directly
-    /// or a structured logging framework that supports scope nesting.
+    /// For hierarchical span tracking with parent-child relationships, use <see cref="ActivitySource"/>/<see cref="Activity"/>
+    /// directly or a structured logging framework that supports scope nesting.
     /// </para>
     /// </remarks>
     internal class CosmosDiagnosticsContext
@@ -103,8 +105,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// and performs no recording (zero-allocation no-op pattern).
         /// </returns>
         /// <remarks>
-        /// Note: Nested scopes are recorded independently in a flat list without capturing parent-child relationships.
+        /// <para>
+        /// <strong>Nested Scope Behavior:</strong> Nested scopes are recorded independently in a flat list without
+        /// capturing parent-child relationships. Only the most recently created scope is active at any given time.
         /// Each scope is recorded when it is disposed, resulting in LIFO order for nested scopes.
+        /// </para>
+        /// <para>
+        /// This design keeps diagnostics lightweight and simple. If you need hierarchical tracing with parent-child
+        /// relationships, use the <see cref="Activity"/> objects created by this context (when listeners are present).
+        /// </para>
         /// </remarks>
         public Scope CreateScope(string scope)
         {
