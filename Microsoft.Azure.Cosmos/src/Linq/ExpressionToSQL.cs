@@ -1152,11 +1152,21 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <param name="context">Query translation context.</param>
         private static Collection VisitMethodCall(MethodCallExpression inputExpression, TranslationContext context)
         {
+            Console.WriteLine("Here");
             context.PushMethod(inputExpression);
-
             Type declaringType = inputExpression.Method.DeclaringType;
 
-            if ((declaringType != typeof(Queryable) 
+            if (declaringType == typeof(MemoryExtensions))
+            {
+                // Convert MemoryExtensions type to Enumerable type due to C#13 using Span Types
+                bool tryUnwrap = Utilities.TryUnwrapSpanImplicitCast(inputExpression, out Expression unwrappedExpression);
+                if (tryUnwrap)
+                {
+                    inputExpression = (MethodCallExpression)unwrappedExpression;
+                    declaringType = inputExpression.Method.DeclaringType;
+                }
+            }
+            else if ((declaringType != typeof(Queryable)
                 && declaringType != typeof(Enumerable) /*LINQ Methods*/
                 && declaringType != typeof(CosmosLinqExtensions) /*OrderByRank*/)
                 || !inputExpression.Method.IsStatic /*Other extansion method*/)

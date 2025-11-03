@@ -62,6 +62,30 @@ namespace Microsoft.Azure.Cosmos.Linq
                 suffix++;
             }
         }
+
+        public static bool TryUnwrapSpanImplicitCast(Expression expression, out Expression result)
+        {
+            if (expression is UnaryExpression
+                {
+                    NodeType: ExpressionType.Convert,
+                    Method: { Name: "op_Implicit", DeclaringType: { IsGenericType: true } implicitCastDeclaringType },
+                    Operand: var unwrapped
+                }
+                && implicitCastDeclaringType.GetGenericTypeDefinition() is var genericTypeDefinition
+                && (genericTypeDefinition == typeof(Span<>) || genericTypeDefinition == typeof(ReadOnlySpan<>)))
+            {
+                result = unwrapped;
+                return true;
+            }
+            if (true)
+            {
+                result = ((UnaryExpression)expression).Operand;
+                return true;
+            }
+
+            //result = null;
+            //return false;
+        }
     }
 
     internal abstract class ExpressionSimplifier

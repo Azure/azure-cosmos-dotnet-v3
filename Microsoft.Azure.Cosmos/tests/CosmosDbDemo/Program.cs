@@ -2,8 +2,10 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Cosmos.Linq;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-class Program
+[TestClass]
+public class Program
 {
     // Cosmos DB Emulator values
     private static readonly string EndpointUrl = "https://localhost:8081";
@@ -11,7 +13,8 @@ class Program
     private static readonly string DatabaseId = "ToDoList";
     private static readonly string ContainerId = "Items";
 
-    static async Task Main()
+    [TestMethod]
+    public async Task Main()
     {
         try
         {
@@ -63,11 +66,10 @@ class Program
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error: {ex.Message}");
+            Console.WriteLine($"Error: {ex}");
         }
     }
 
-    
     private class TodoItem
     {
 #pragma warning disable IDE1006 // Naming Styles

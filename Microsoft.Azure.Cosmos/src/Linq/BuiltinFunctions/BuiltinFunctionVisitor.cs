@@ -33,6 +33,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public static SqlScalarExpression VisitBuiltinFunctionCall(MethodCallExpression methodCallExpression, TranslationContext context)
         {
+            Console.WriteLine("Visiting builtin" + methodCallExpression.Arguments[0].Type.ToString());
             Type declaringType;
             bool isExtensionMethod = methodCallExpression.Method.IsExtensionMethod();
             // Method could be an extension method
