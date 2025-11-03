@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task TestInitialize()
         {
             this.connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTI_REGION", string.Empty);
-            
+
             if (string.IsNullOrEmpty(this.connectionString))
             {
                 Assert.Fail("Set environment variable COSMOSDB_MULTI_REGION to run the tests");
@@ -52,8 +52,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 new ContainerProperties(uniqueContainerName, "/pk")
                 {
                     PartitionKey = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string> { "/pk" } }
-                },
-                throughput: 10000);
+                });
         }
 
         [TestCleanup]
