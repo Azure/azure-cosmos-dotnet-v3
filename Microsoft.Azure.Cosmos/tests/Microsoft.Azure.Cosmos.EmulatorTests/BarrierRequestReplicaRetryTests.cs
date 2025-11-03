@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.Generic;
     using System.Globalization;
     using System.IO;
+    using System.Linq;
     using System.Net;
     using System.Text;
     using System.Threading.Tasks;
@@ -29,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task TestInitialize()
         {
             this.connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTI_REGION", string.Empty);
-
+            
             if (string.IsNullOrEmpty(this.connectionString))
             {
                 Assert.Fail("Set environment variable COSMOSDB_MULTI_REGION to run the tests");
@@ -268,6 +269,215 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (CosmosException ex)
             {
                 Assert.Fail($"Unexpected exception: {ex.StatusCode} - {ex.Message}. Barrier requests: {barrierRequestCount}, ForceRefresh seen: {forceRefreshAddressCacheSeen}");
+            }
+        }
+
+        [TestMethod]
+        [Owner("aavasthy")]
+        [Description("Validates that write barrier fails when primary replica returns 410/1022")]
+        [TestCategory("MultiRegion")]
+        public async Task WriteBarrier_PrimaryReplicaLeaseNotFound_Fails()
+        {
+            int barrierRequestCount = 0;
+            int primaryBarrierCount = 0;
+            long targetLsn = 0;
+
+            // Based on ConsistencyWriter code
+            const int expectedMaxBarrierRetries = 40;
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                ConsistencyLevel = Cosmos.ConsistencyLevel.Strong,
+                RequestTimeout = TimeSpan.FromSeconds(5), // Set a shorter timeout to fail faster
+                TransportClientHandlerFactory = (transport) => new TransportClientWrapper(
+                    transport,
+                    interceptorAfterResult: (request, storeResponse) =>
+                    {
+                        // Force barrier request by setting GlobalCommittedLSN behind LSN on write
+                        if (storeResponse.StatusCode == HttpStatusCode.Created && targetLsn == 0)
+                        {
+                            targetLsn = storeResponse.LSN;
+                            // This triggers barrier request in ConsistencyWriter.ApplySessionToken
+                            storeResponse.Headers.Set(WFConstants.BackendHeaders.NumberOfReadRegions, "2");
+                            storeResponse.Headers.Set(WFConstants.BackendHeaders.GlobalCommittedLSN, "0"); // Behind LSN
+                            storeResponse.Headers.Set(WFConstants.BackendHeaders.LSN, targetLsn.ToString(CultureInfo.InvariantCulture));
+                        }
+
+                        // Handle barrier (HEAD) requests
+                        if (request.OperationType == OperationType.Head)
+                        {
+                            barrierRequestCount++;
+
+                            if (request.RequestContext != null && request.RequestContext.ForceRefreshAddressCache)
+                            {
+                                primaryBarrierCount++;
+                            }
+
+                            // Always return 410/1022 for ALL barrier requests
+                            DictionaryNameValueCollection headers = new DictionaryNameValueCollection();
+                            headers.Set(WFConstants.BackendHeaders.SubStatus,
+                                ((int)SubStatusCodes.LeaseNotFound).ToString(CultureInfo.InvariantCulture));
+
+                            return new StoreResponse()
+                            {
+                                Status = 410,
+                                Headers = headers,
+                                ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes($"Lease not found - attempt {barrierRequestCount}"))
+                            };
+                        }
+
+                        return storeResponse;
+                    })
+            };
+
+            using CosmosClient client = new CosmosClient(this.connectionString, clientOptions);
+            Container testContainer = client.GetContainer(this.database.Id, this.container.Id);
+
+            // Act & Assert
+            ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
+
+            try
+            {
+                ItemResponse<ToDoActivity> response = await testContainer.CreateItemAsync(
+                    item,
+                    new Cosmos.PartitionKey(item.pk));
+
+                if (barrierRequestCount == 0)
+                {
+                    Assert.Inconclusive("Barrier requests were not triggered. This test requires a multi-region Strong consistency account.");
+                }
+                else
+                {
+                    Assert.Fail($"Write should have failed when all barrier attempts returned 410/1022. Barrier requests: {barrierRequestCount}, Primary barrier requests: {primaryBarrierCount}");
+                }
+            }
+            catch (CosmosException ex)
+            {
+                Assert.IsTrue(
+                    ex.StatusCode == HttpStatusCode.Gone ||
+                    ex.StatusCode == HttpStatusCode.RequestTimeout ||
+                    ex.StatusCode == HttpStatusCode.ServiceUnavailable,
+                    $"Expected Gone, RequestTimeout, or ServiceUnavailable but got {ex.StatusCode}");
+
+                Assert.IsTrue(barrierRequestCount > 1, $"Should have attempted multiple barrier requests (had {barrierRequestCount})");
+
+                // Verify at least primary replica barrier attempt was made
+                Assert.IsTrue(primaryBarrierCount >= 1, $"Should have attempted at least one primary barrier request (had {primaryBarrierCount})");
+
+                Assert.IsTrue(barrierRequestCount <= expectedMaxBarrierRetries,
+                    $"Barrier request count {barrierRequestCount} exceeded expected max {expectedMaxBarrierRetries}");
+            }
+        }
+
+        [TestMethod]
+        [Owner("aavasthy")]
+        [Description("Validates that read barrier retries on primary when replica returns 410/1022, and if primary fails, SDK updates region list and retries on next available region")]
+        [TestCategory("MultiRegion")]
+        public async Task ReadBarrier_ReplicaAndPrimaryFail_RetriesOnNextAvailableRegion()
+        {
+            ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
+            await this.container.CreateItemAsync(item, new Cosmos.PartitionKey(item.pk));
+
+            int barrierRequestCount = 0;
+            int primaryBarrierAttempts = 0;
+            HashSet<string> uniqueRegionsContacted = new HashSet<string>();
+            List<string> barrierRequestRegions = new List<string>();
+            bool shouldTriggerBarrier = true;
+            string targetItemId = item.id;
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                ConsistencyLevel = Cosmos.ConsistencyLevel.Strong,
+                TransportClientHandlerFactory = (transport) => new TransportClientWrapper(
+                    transport,
+                    interceptorAfterResult: (request, storeResponse) =>
+                    {
+                        // Track all regions contacted
+                        string currentRegion = request.RequestContext?.LocationEndpointToRoute?.ToString();
+                        if (!string.IsNullOrEmpty(currentRegion))
+                        {
+                            uniqueRegionsContacted.Add(currentRegion);
+                        }
+
+                        if (shouldTriggerBarrier &&
+                            request.OperationType == OperationType.Read &&
+                            storeResponse.StatusCode == HttpStatusCode.OK &&
+                            request.ResourceAddress?.Contains(targetItemId) == true)
+                        {
+                            // Force barrier check by setting GlobalCommittedLSN behind LSN
+                            storeResponse.Headers.Set(WFConstants.BackendHeaders.NumberOfReadRegions, "2");
+                            storeResponse.Headers.Set(WFConstants.BackendHeaders.LSN, "100");
+                            storeResponse.Headers.Set(WFConstants.BackendHeaders.ItemLSN, "100");
+                            storeResponse.Headers.Set(WFConstants.BackendHeaders.GlobalCommittedLSN, "50"); // Behind LSN - triggers barrier
+
+                            shouldTriggerBarrier = false; // Only trigger once
+                        }
+
+                        if (request.OperationType == OperationType.Head)
+                        {
+                            barrierRequestCount++;
+                            barrierRequestRegions.Add(currentRegion ?? "unknown");
+
+                            bool isPrimaryRetry = request.RequestContext?.ForceRefreshAddressCache == true;
+                            if (isPrimaryRetry)
+                            {
+                                primaryBarrierAttempts++;
+                            }
+
+                            Console.WriteLine($"Barrier #{barrierRequestCount}: Region={currentRegion}, IsPrimary={isPrimaryRetry}");
+
+                            // Simulate 410/1022 for first few attempts to force region retry
+                            if (barrierRequestCount <= 2) 
+                            {
+                                DictionaryNameValueCollection headers = new DictionaryNameValueCollection();
+                                headers.Set(WFConstants.BackendHeaders.SubStatus,
+                                    ((int)SubStatusCodes.LeaseNotFound).ToString(CultureInfo.InvariantCulture));
+
+                                return new StoreResponse()
+                                {
+                                    Status = 410,
+                                    Headers = headers,
+                                    ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes("Lease not found"))
+                                };
+                            }
+                        }
+
+                        return storeResponse;
+                    })
+            };
+
+            using CosmosClient client = new CosmosClient(this.connectionString, clientOptions);
+            Container testContainer = client.GetContainer(this.database.Id, this.container.Id);
+
+            // Act
+            ItemResponse<ToDoActivity> response = await testContainer.ReadItemAsync<ToDoActivity>(
+                item.id,
+                new Cosmos.PartitionKey(item.pk));
+
+            // Assert
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode, "Read should eventually succeed");
+
+            if (barrierRequestCount > 0)
+            {
+                // Verify replica failure triggers primary retry
+                Assert.IsTrue(barrierRequestCount >= 2,
+                    "Should have at least 2 barrier attempts (replica + primary)");
+
+                Assert.IsTrue(primaryBarrierAttempts >= 1,
+                    "Should retry on primary with ForceRefreshAddressCache=true after replica fails");
+
+                // 3. Verify region failover behavior
+                if (uniqueRegionsContacted.Count > 1)
+                {
+                    Assert.IsTrue(barrierRequestCount >= 3,
+                        "When failing over to new region, should have additional barrier attempts");
+                }
+            }
+            else
+            {
+                Assert.Inconclusive("Barrier requests were not triggered. This test requires a multi-region Strong consistency account.");
             }
         }
     }
