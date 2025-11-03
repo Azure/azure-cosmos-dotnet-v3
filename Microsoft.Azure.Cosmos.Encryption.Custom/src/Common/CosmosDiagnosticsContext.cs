@@ -36,6 +36,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         private readonly List<ScopeRecord> records = new (4);
 
+        /// <summary>
+        /// Scope name prefix for MDE (Microsoft.Data.Encryption) encrypt operations.
+        /// Concatenate with the JSON processor name to create the full scope name.
+        /// </summary>
+        /// <example>
+        /// Usage: <c>CosmosDiagnosticsContext.ScopeEncryptModeSelectionPrefix + "Stream"</c>
+        /// produces: <c>"EncryptionProcessor.Encrypt.Mde.Stream"</c>
+        /// </example>
+        internal const string ScopeEncryptModeSelectionPrefix = "EncryptionProcessor.Encrypt.Mde.";
+
+        /// <summary>
+        /// Scope name prefix for MDE (Microsoft.Data.Encryption) decrypt operations.
+        /// Concatenate with the JSON processor name to create the full scope name.
+        /// </summary>
+        /// <example>
+        /// Usage: <c>CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + "Newtonsoft"</c>
+        /// produces: <c>"EncryptionProcessor.Decrypt.Mde.Newtonsoft"</c>
+        /// </example>
+        internal const string ScopeDecryptModeSelectionPrefix = "EncryptionProcessor.Decrypt.Mde.";
+
         internal CosmosDiagnosticsContext()
         {
         }

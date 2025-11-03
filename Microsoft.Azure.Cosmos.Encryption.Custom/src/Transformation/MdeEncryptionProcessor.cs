@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             CancellationToken token)
         {
             JsonProcessor jsonProcessor = encryptionOptions.JsonProcessor;
-            using IDisposable selectionScope = diagnosticsContext?.CreateScope(EncryptionDiagnostics.ScopeEncryptModeSelectionPrefix + jsonProcessor);
+            using IDisposable selectionScope = diagnosticsContext?.CreateScope(CosmosDiagnosticsContext.ScopeEncryptModeSelectionPrefix + jsonProcessor);
 
             IMdeJsonProcessorAdapter adapter = this.GetAdapter(jsonProcessor);
             return await adapter.EncryptAsync(input, encryptor, encryptionOptions, token);
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             }
 
             JsonProcessor jsonProcessor = this.GetRequestedJsonProcessor(requestOptions);
-            using CosmosDiagnosticsContext.Scope? selectionScope = diagnosticsContext?.CreateScope(EncryptionDiagnostics.ScopeDecryptModeSelectionPrefix + jsonProcessor);
+            using CosmosDiagnosticsContext.Scope? selectionScope = diagnosticsContext?.CreateScope(CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + jsonProcessor);
 
             IMdeJsonProcessorAdapter adapter = this.GetAdapter(jsonProcessor);
             return await adapter.DecryptAsync(input, encryptor, diagnosticsContext, cancellationToken);
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             JsonProcessor jsonProcessor = this.GetRequestedJsonProcessor(requestOptions);
 #if NET8_0_OR_GREATER
-            using IDisposable selectionScope = diagnosticsContext?.CreateScope(EncryptionDiagnostics.ScopeDecryptModeSelectionPrefix + jsonProcessor);
+            using IDisposable selectionScope = diagnosticsContext?.CreateScope(CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + jsonProcessor);
 #endif
 
             IMdeJsonProcessorAdapter adapter = this.GetAdapter(jsonProcessor);
@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 #if NET8_0_OR_GREATER
             if (encryptionOptions.JsonProcessor == JsonProcessor.Stream)
             {
-                using IDisposable selectionScope = diagnosticsContext?.CreateScope(EncryptionDiagnostics.ScopeEncryptModeSelectionPrefix + JsonProcessor.Stream);
+                using IDisposable selectionScope = diagnosticsContext?.CreateScope(CosmosDiagnosticsContext.ScopeEncryptModeSelectionPrefix + JsonProcessor.Stream);
                 IMdeJsonProcessorAdapter adapter = this.GetAdapter(JsonProcessor.Stream);
                 await adapter.EncryptAsync(input, output, encryptor, encryptionOptions, cancellationToken);
                 return;
