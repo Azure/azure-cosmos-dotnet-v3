@@ -74,13 +74,13 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Sends a semantic rerank request to the inference service.
         /// </summary>
-        /// <param name="renrankContext">The context/query for reranking.</param>
+        /// <param name="rerankContext">The context/query for reranking.</param>
         /// <param name="documents">The documents to be reranked.</param>
         /// <param name="options">Optional additional options for the request.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>A dictionary containing the reranked results.</returns>
         public async Task<SemanticRerankResult> SemanticRerankAsync(
-            string renrankContext,
+            string rerankContext,
             IEnumerable<string> documents,
             IDictionary<string, dynamic> options = null,
             CancellationToken cancellationToken = default)
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // Build the request payload.
-            Dictionary<string, dynamic> body = this.AddSemanticRerankPayload(renrankContext, documents, options);
+            Dictionary<string, dynamic> body = this.AddSemanticRerankPayload(rerankContext, documents, options);
 
             message.Content = new StringContent(
                 Newtonsoft.Json.JsonConvert.SerializeObject(body),

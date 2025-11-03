@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken);
 
         internal abstract Task<SemanticRerankResult> SemanticRerankAsync(
-            string renrankContext,
+            string rerankContext,
             IEnumerable<string> documents,
             IDictionary<string, dynamic> options = null,
             CancellationToken cancellationToken = default);

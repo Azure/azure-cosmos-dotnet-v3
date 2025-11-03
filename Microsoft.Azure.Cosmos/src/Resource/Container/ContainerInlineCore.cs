@@ -704,12 +704,12 @@ namespace Microsoft.Azure.Cosmos
         internal
 #endif
         override Task<SemanticRerankResult> SemanticRerankAsync(
-            string renrankContext,
+            string rerankContext,
             IEnumerable<string> documents,
             IDictionary<string, dynamic> options = null,
             CancellationToken cancellationToken = default)
         {
-            return this.ClientContext.SemanticRerankAsync(renrankContext, documents, options, cancellationToken);
+            return this.ClientContext.SemanticRerankAsync(rerankContext, documents, options, cancellationToken);
         }
     }
 }
