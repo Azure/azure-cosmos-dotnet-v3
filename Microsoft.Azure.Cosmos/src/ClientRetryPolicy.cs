@@ -228,8 +228,8 @@ namespace Microsoft.Azure.Cosmos
             // If previous attempt failed with 404/1002, add the hub-region-processing-only header
             if (this.addHubRegionProcessingOnlyHeader)
             {
-                request.Headers[HubRegionHeader] = bool.TrueString;
-                this.addHubRegionProcessingOnlyHeader = false; // reset after applying
+                request.Headers.Add(HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion, bool.TrueString);
+                this.addHubRegionProcessingOnlyHeader = false;
             }
 
             // Resolve the endpoint for the request and pin the resolution to the resolved endpoint
