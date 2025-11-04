@@ -72,21 +72,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         public override int Read(char[] buffer, int index, int count)
         {
             ArgumentValidation.ThrowIfNull(buffer);
-
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
-
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-
-            if (buffer.Length - index < count)
-            {
-                throw new ArgumentOutOfRangeException();
-            }
+            ArgumentValidation.ThrowIfNegative(index);
+            ArgumentValidation.ThrowIfNegative(count);
+            ArgumentValidation.ThrowIfGreaterThan(count, buffer.Length - index);
 
             if (this.closed)
             {
