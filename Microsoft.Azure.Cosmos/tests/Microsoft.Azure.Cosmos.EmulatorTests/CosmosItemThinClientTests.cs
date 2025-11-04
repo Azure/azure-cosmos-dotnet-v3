@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Text.Json;
     using System.Text.Json.Serialization;
     using System.Threading.Tasks;
+    using global::Azure;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -243,12 +244,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task CreateItemsTestWithThinClientFlagEnabledAndAccountDisabled()
         {
             Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
-            string connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_ACCOUNT_CONNECTION_STRING", null);
-
-            if (string.IsNullOrEmpty(connectionString))
-            {
-                Assert.Fail("Set environment variable COSMOSDB_MULTI_REGION to run the tests");
-            }
+            string authKey = Utils.ConfigurationManager.AppSettings["MasterKey"];
+            string endpoint = Utils.ConfigurationManager.AppSettings["GatewayEndpoint"];
+            AzureKeyCredential masterKeyCredential = new AzureKeyCredential(authKey);
 
             JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
             {
@@ -259,7 +257,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.cosmosSystemTextJsonSerializer = new MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer(jsonSerializerOptions);
 
             this.client = new CosmosClient(
-                  connectionString,
+                  endpoint,
+                  masterKeyCredential,
                   new CosmosClientOptions()
                   {
                       ConnectionMode = ConnectionMode.Gateway,
