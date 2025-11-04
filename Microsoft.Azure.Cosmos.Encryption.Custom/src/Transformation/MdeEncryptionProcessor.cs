@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             }
 
             JsonProcessor jsonProcessor = this.GetRequestedJsonProcessor(requestOptions);
-            using CosmosDiagnosticsContext.Scope? selectionScope = diagnosticsContext?.CreateScope(CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + jsonProcessor);
+            using IDisposable selectionScope = diagnosticsContext?.CreateScope(CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + jsonProcessor);
 
             IMdeJsonProcessorAdapter adapter = this.GetAdapter(jsonProcessor);
             return await adapter.DecryptAsync(input, encryptor, diagnosticsContext, cancellationToken);

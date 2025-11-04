@@ -6,11 +6,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Encryption.Custom;
+    using Microsoft.Azure.Cosmos.Encryption.Custom.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json.Linq;
@@ -48,6 +50,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         {
             TestDoc doc = TestDoc.Create();
             EncryptionOptions opts = CreateMdeOptions(JsonProcessor.Stream);
+            
+            // Capture activities to validate scopes are created
+            List<Activity> capturedActivities = new List<Activity>();
+            using ActivityListener listener = new ActivityListener
+            {
+                ShouldListenTo = (activitySource) => activitySource.Name == "Microsoft.Azure.Cosmos.Encryption.Custom",
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+                ActivityStarted = activity => { lock (capturedActivities) { capturedActivities.Add(activity); } }
+            };
+            ActivitySource.AddActivityListener(listener);
+            
             CosmosDiagnosticsContext diagEncrypt = CosmosDiagnosticsContext.Create(null);
             MemoryStream encrypted = new();
             await EncryptionProcessor.EncryptAsync(doc.ToStream(), encrypted, mockEncryptor.Object, opts, diagEncrypt, CancellationToken.None);
@@ -64,6 +77,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.IsNull(decryptedObj.Property(Constants.EncryptedInfo));
             Assert.IsNotNull(ctx);
             Assert.IsTrue(ctx.DecryptionInfoList.First().PathsDecrypted.All(p => TestDoc.PathsToEncrypt.Contains(p)));
+            
+            // Validate diagnostic scopes were created
+            string expectedEncryptScope = CosmosDiagnosticsContext.ScopeEncryptModeSelectionPrefix + JsonProcessor.Stream;
+            string expectedDecryptScope = CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream;
+            lock (capturedActivities)
+            {
+                Assert.IsTrue(capturedActivities.Any(a => a.DisplayName == expectedEncryptScope),
+                    $"Expected encrypt scope '{expectedEncryptScope}' not found. Activities: {string.Join(", ", capturedActivities.Select(a => a.DisplayName))}");
+                Assert.IsTrue(capturedActivities.Any(a => a.DisplayName == expectedDecryptScope),
+                    $"Expected decrypt scope '{expectedDecryptScope}' not found. Activities: {string.Join(", ", capturedActivities.Select(a => a.DisplayName))}");
+            }
         }
 
     [TestMethod]
@@ -71,11 +95,30 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     {
         TestDoc doc = TestDoc.Create();
         EncryptionOptions opts = CreateMdeOptions(JsonProcessor.Newtonsoft);
+        
+        // Capture activities to validate scopes are created
+        List<Activity> capturedActivities = new List<Activity>();
+        using ActivityListener listener = new ActivityListener
+        {
+            ShouldListenTo = (activitySource) => activitySource.Name == "Microsoft.Azure.Cosmos.Encryption.Custom",
+            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+            ActivityStarted = activity => { lock (capturedActivities) { capturedActivities.Add(activity); } }
+        };
+        ActivitySource.AddActivityListener(listener);
+        
         CosmosDiagnosticsContext diagEncrypt = CosmosDiagnosticsContext.Create(null);
         Stream encrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, opts, diagEncrypt, CancellationToken.None);
 
         Assert.IsNotNull(encrypted);
         encrypted.Dispose();
+        
+        // Validate Newtonsoft encrypt scope was created
+        string expectedEncryptScope = CosmosDiagnosticsContext.ScopeEncryptModeSelectionPrefix + JsonProcessor.Newtonsoft;
+        lock (capturedActivities)
+        {
+            Assert.IsTrue(capturedActivities.Any(a => a.DisplayName == expectedEncryptScope),
+                $"Expected Newtonsoft encrypt scope '{expectedEncryptScope}' not found. Activities: {string.Join(", ", capturedActivities.Select(a => a.DisplayName))}");
+        }
     }
 
         [TestMethod]

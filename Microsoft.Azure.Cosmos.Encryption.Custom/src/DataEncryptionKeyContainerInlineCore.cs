@@ -56,10 +56,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrEmpty(id))
-            {
-                throw new ArgumentNullException(nameof(id));
-            }
+            ArgumentValidation.ThrowIfNullOrEmpty(id);
 
             return TaskHelper.RunInlineIfNeededAsync(() =>
                 this.dataEncryptionKeyContainerCore.ReadDataEncryptionKeyAsync(id, requestOptions, cancellationToken));
@@ -73,11 +70,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
            ItemRequestOptions requestOptions = null,
            CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrEmpty(id))
-            {
-                throw new ArgumentNullException(nameof(id));
-            }
-
+            ArgumentValidation.ThrowIfNullOrEmpty(id);
             ArgumentValidation.ThrowIfNull(newWrapMetadata);
 
             return TaskHelper.RunInlineIfNeededAsync(() =>

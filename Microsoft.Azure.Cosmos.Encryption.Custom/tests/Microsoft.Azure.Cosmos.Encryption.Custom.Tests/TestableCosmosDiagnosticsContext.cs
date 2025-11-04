@@ -16,13 +16,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         private readonly CosmosDiagnosticsContext inner;
         private readonly List<ScopeRecord> records = new List<ScopeRecord>(4);
         private readonly object recordsLock = new object();
-        private int nextScopeId = 0;
-        private readonly HashSet<int> disposedScopeIds = new HashSet<int>();
 
         public TestableCosmosDiagnosticsContext()
         {
             this.inner = CosmosDiagnosticsContext.Create(null);
         }
+
+        /// <summary>
+        /// Gets the inner CosmosDiagnosticsContext for passing to APIs.
+        /// </summary>
+        public CosmosDiagnosticsContext Inner => this.inner;
 
         /// <summary>
         /// Recorded scope metadata.
@@ -75,17 +78,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         /// </summary>
         public TestableScope CreateScope(string scope)
         {
-            int scopeId = System.Threading.Interlocked.Increment(ref this.nextScopeId);
             CosmosDiagnosticsContext.Scope innerScope = this.inner.CreateScope(scope);
-            return new TestableScope(this, scope, innerScope, scopeId);
-        }
-
-        private bool TryMarkDisposed(int scopeId)
-        {
-            lock (this.recordsLock)
-            {
-                return this.disposedScopeIds.Add(scopeId);
-            }
+            return new TestableScope(this, scope, innerScope);
         }
 
         private void Record(string name, long startTicks, long elapsedTicks)
@@ -99,33 +93,32 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         /// <summary>
         /// Testable scope wrapper that records timing information for tests.
         /// </summary>
-        public readonly struct TestableScope : IDisposable
+        public sealed class TestableScope : IDisposable
         {
             private readonly TestableCosmosDiagnosticsContext owner;
             private readonly string name;
             private readonly long startTicks;
             private readonly CosmosDiagnosticsContext.Scope innerScope;
-            private readonly int scopeId;
+            private bool isDisposed;
 
-            internal TestableScope(TestableCosmosDiagnosticsContext owner, string name, CosmosDiagnosticsContext.Scope innerScope, int scopeId)
+            internal TestableScope(TestableCosmosDiagnosticsContext owner, string name, CosmosDiagnosticsContext.Scope innerScope)
             {
                 this.owner = owner;
                 this.name = name;
                 this.startTicks = Stopwatch.GetTimestamp();
                 this.innerScope = innerScope;
-                this.scopeId = scopeId;
             }
 
             public void Dispose()
             {
                 // Only record the first dispose call (idempotent)
-                if (this.owner.TryMarkDisposed(this.scopeId))
+                if (!this.isDisposed)
                 {
+                    this.isDisposed = true;
                     long elapsedTicks = Stopwatch.GetTimestamp() - this.startTicks;
                     this.owner.Record(this.name, this.startTicks, elapsedTicks);
+                    this.innerScope.Dispose();
                 }
-                
-                this.innerScope.Dispose();
             }
         }
     }

@@ -71,10 +71,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
         public override int Read(char[] buffer, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ArgumentValidation.ThrowIfNull(buffer);
 
             if (index < 0)
             {

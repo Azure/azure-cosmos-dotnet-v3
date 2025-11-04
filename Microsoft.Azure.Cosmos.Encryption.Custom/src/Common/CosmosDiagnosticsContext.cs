@@ -17,9 +17,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     {
         private static readonly ActivitySource ActivitySource = new ("Microsoft.Azure.Cosmos.Encryption.Custom");
 
-        private readonly HashSet<int> disposedScopeIds = new HashSet<int>();
-        private int nextScopeId = 0;
-
         /// <summary>
         /// Scope name prefix for MDE (Microsoft.Data.Encryption) encrypt operations.
         /// </summary>
@@ -59,16 +56,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             Activity activity = ActivitySource.HasListeners() ? ActivitySource.StartActivity(scope, ActivityKind.Internal) : null;
 
-            int scopeId = Interlocked.Increment(ref this.nextScopeId);
-            return new Scope(this, activity, scopeId);
-        }
-
-        private bool TryMarkDisposed(int scopeId)
-        {
-            lock (this.disposedScopeIds)
-            {
-                return this.disposedScopeIds.Add(scopeId);
-            }
+            return new Scope(activity);
         }
 
         /// <summary>
@@ -78,30 +66,23 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <remarks>
         /// Dispose() is idempotent - calling it multiple times will only dispose the Activity once.
         /// </remarks>
-        public readonly struct Scope : IDisposable
+        public sealed class Scope : IDisposable
         {
-            private readonly CosmosDiagnosticsContext owner;
             private readonly Activity activity;
-            private readonly int scopeId;
+            private bool isDisposed;
 
-            internal Scope(CosmosDiagnosticsContext owner, Activity activity, int scopeId)
+            internal Scope(Activity activity)
             {
-                ArgumentValidation.ThrowIfNull(owner, nameof(owner));
-
-                this.owner = owner;
                 this.activity = activity;
-                this.scopeId = scopeId;
             }
 
             public void Dispose()
             {
-                if (!this.owner.TryMarkDisposed(this.scopeId))
+                if (!this.isDisposed)
                 {
+                    this.isDisposed = true;
                     this.activity?.Dispose();
-                    return;
                 }
-
-                this.activity?.Dispose();
             }
         }
     }

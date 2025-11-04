@@ -531,5 +531,296 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             Assert.AreEqual("Outer", context.Scopes[3]);
             Assert.AreEqual("Sequential", context.Scopes[4]);
         }
+
+        #region Activity Integration Tests (Production CosmosDiagnosticsContext)
+
+        [TestMethod]
+        public void ProductionContext_CreateScope_CreatesActivity()
+        {
+            // Test the actual production CosmosDiagnosticsContext, not the wrapper
+            List<Activity> capturedActivities = new List<Activity>();
+            using ActivityListener listener = new ActivityListener
+            {
+                ShouldListenTo = (activitySource) => activitySource.Name == "Microsoft.Azure.Cosmos.Encryption.Custom",
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+                ActivityStarted = activity => { lock (capturedActivities) { capturedActivities.Add(activity); } }
+            };
+            ActivitySource.AddActivityListener(listener);
+
+            CosmosDiagnosticsContext context = CosmosDiagnosticsContext.Create(null);
+            using (context.CreateScope("TestScope"))
+            {
+                // Activity should be created and started
+            }
+
+            lock (capturedActivities)
+            {
+                Assert.AreEqual(1, capturedActivities.Count, "Should have captured exactly one activity");
+                Assert.AreEqual("TestScope", capturedActivities[0].DisplayName);
+            }
+        }
+
+        [TestMethod]
+        public void ProductionContext_NestedScopes_CreatesNestedActivities()
+        {
+            List<Activity> capturedActivities = new List<Activity>();
+            using ActivityListener listener = new ActivityListener
+            {
+                ShouldListenTo = (activitySource) => activitySource.Name == "Microsoft.Azure.Cosmos.Encryption.Custom",
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+                ActivityStarted = activity => { lock (capturedActivities) { capturedActivities.Add(activity); } }
+            };
+            ActivitySource.AddActivityListener(listener);
+
+            CosmosDiagnosticsContext context = CosmosDiagnosticsContext.Create(null);
+            using (context.CreateScope("Outer"))
+            {
+                using (context.CreateScope("Inner"))
+                {
+                    // Both activities should be created
+                }
+            }
+
+            lock (capturedActivities)
+            {
+                Assert.AreEqual(2, capturedActivities.Count, "Should have captured two activities");
+                Assert.AreEqual("Outer", capturedActivities[0].DisplayName);
+                Assert.AreEqual("Inner", capturedActivities[1].DisplayName);
+                
+                // Inner should be a child of Outer
+                Assert.AreEqual(capturedActivities[0].Id, capturedActivities[1].ParentId);
+            }
+        }
+
+        [TestMethod]
+        public void ProductionContext_WithoutListener_DoesNotCreateActivity()
+        {
+            // When no listener is active, Activity should be null (optimization)
+            CosmosDiagnosticsContext context = CosmosDiagnosticsContext.Create(null);
+            
+            // Create scope without any listener - should work but not create Activity
+            using (CosmosDiagnosticsContext.Scope scope = context.CreateScope("NoListener"))
+            {
+                // Should not throw, even though no Activity is created
+            }
+
+            // Test passes if no exception is thrown
+            Assert.IsTrue(true);
+        }
+
+        [TestMethod]
+        public void ProductionContext_ScopeDisposal_StopsActivity()
+        {
+            Activity startedActivity = null;
+            Activity stoppedActivity = null;
+            
+            using ActivityListener listener = new ActivityListener
+            {
+                ShouldListenTo = (activitySource) => activitySource.Name == "Microsoft.Azure.Cosmos.Encryption.Custom",
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+                ActivityStarted = activity => startedActivity = activity,
+                ActivityStopped = activity => stoppedActivity = activity
+            };
+            ActivitySource.AddActivityListener(listener);
+
+            CosmosDiagnosticsContext context = CosmosDiagnosticsContext.Create(null);
+            using (context.CreateScope("TestScope"))
+            {
+                Assert.IsNotNull(startedActivity, "Activity should have started");
+                Assert.IsNull(stoppedActivity, "Activity should not be stopped yet");
+            }
+
+            Assert.IsNotNull(stoppedActivity, "Activity should be stopped after dispose");
+            Assert.AreSame(startedActivity, stoppedActivity, "Same activity should be started and stopped");
+        }
+
+        [TestMethod]
+        public void ProductionContext_IdempotentDisposal_OnlyStopsActivityOnce()
+        {
+            int stopCount = 0;
+            
+            using ActivityListener listener = new ActivityListener
+            {
+                ShouldListenTo = (activitySource) => activitySource.Name == "Microsoft.Azure.Cosmos.Encryption.Custom",
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+                ActivityStopped = activity => stopCount++
+            };
+            ActivitySource.AddActivityListener(listener);
+
+            CosmosDiagnosticsContext context = CosmosDiagnosticsContext.Create(null);
+            CosmosDiagnosticsContext.Scope scope = context.CreateScope("TestScope");
+            
+            scope.Dispose();
+            scope.Dispose();
+            scope.Dispose();
+
+            Assert.AreEqual(1, stopCount, "Activity should only be stopped once despite multiple Dispose calls");
+        }
+
+        [TestMethod]
+        public void ProductionContext_MultipleScopes_EachCreatesOwnActivity()
+        {
+            List<Activity> capturedActivities = new List<Activity>();
+            using ActivityListener listener = new ActivityListener
+            {
+                ShouldListenTo = (activitySource) => activitySource.Name == "Microsoft.Azure.Cosmos.Encryption.Custom",
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+                ActivityStarted = activity => { lock (capturedActivities) { capturedActivities.Add(activity); } }
+            };
+            ActivitySource.AddActivityListener(listener);
+
+            CosmosDiagnosticsContext context = CosmosDiagnosticsContext.Create(null);
+            
+            using (context.CreateScope("Scope1")) { }
+            using (context.CreateScope("Scope2")) { }
+            using (context.CreateScope("Scope3")) { }
+
+            lock (capturedActivities)
+            {
+                Assert.AreEqual(3, capturedActivities.Count);
+                Assert.AreEqual("Scope1", capturedActivities[0].DisplayName);
+                Assert.AreEqual("Scope2", capturedActivities[1].DisplayName);
+                Assert.AreEqual("Scope3", capturedActivities[2].DisplayName);
+            }
+        }
+
+        [TestMethod]
+        public void ProductionContext_ActivityKind_IsInternal()
+        {
+            Activity capturedActivity = null;
+            using ActivityListener listener = new ActivityListener
+            {
+                ShouldListenTo = (activitySource) => activitySource.Name == "Microsoft.Azure.Cosmos.Encryption.Custom",
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+                ActivityStarted = activity => capturedActivity = activity
+            };
+            ActivitySource.AddActivityListener(listener);
+
+            CosmosDiagnosticsContext context = CosmosDiagnosticsContext.Create(null);
+            using (context.CreateScope("TestScope")) { }
+
+            Assert.IsNotNull(capturedActivity);
+            Assert.AreEqual(ActivityKind.Internal, capturedActivity.Kind);
+        }
+
+        [TestMethod]
+        public void ProductionContext_ActivitySource_HasCorrectName()
+        {
+            Activity capturedActivity = null;
+            using ActivityListener listener = new ActivityListener
+            {
+                ShouldListenTo = (activitySource) => activitySource.Name == "Microsoft.Azure.Cosmos.Encryption.Custom",
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+                ActivityStarted = activity => capturedActivity = activity
+            };
+            ActivitySource.AddActivityListener(listener);
+
+            CosmosDiagnosticsContext context = CosmosDiagnosticsContext.Create(null);
+            using (context.CreateScope("TestScope")) { }
+
+            Assert.IsNotNull(capturedActivity);
+            Assert.AreEqual("Microsoft.Azure.Cosmos.Encryption.Custom", capturedActivity.Source.Name);
+        }
+
+        [TestMethod]
+        public void ProductionContext_ConcurrentScopes_IndependentActivities()
+        {
+            List<Activity> capturedActivities = new List<Activity>();
+            using ActivityListener listener = new ActivityListener
+            {
+                ShouldListenTo = (activitySource) => activitySource.Name == "Microsoft.Azure.Cosmos.Encryption.Custom",
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+                ActivityStarted = activity => { lock (capturedActivities) { capturedActivities.Add(activity); } }
+            };
+            ActivitySource.AddActivityListener(listener);
+
+            CosmosDiagnosticsContext context1 = CosmosDiagnosticsContext.Create(null);
+            CosmosDiagnosticsContext context2 = CosmosDiagnosticsContext.Create(null);
+
+            using (context1.CreateScope("Context1Scope"))
+            using (context2.CreateScope("Context2Scope"))
+            {
+                // Both should create independent activities
+            }
+
+            lock (capturedActivities)
+            {
+                Assert.AreEqual(2, capturedActivities.Count);
+                // They should have different IDs
+                Assert.AreNotEqual(capturedActivities[0].Id, capturedActivities[1].Id);
+            }
+        }
+
+        [TestMethod]
+        public void ProductionContext_ScopeWithNullName_ThrowsArgumentException()
+        {
+            CosmosDiagnosticsContext context = CosmosDiagnosticsContext.Create(null);
+
+            // ArgumentNullException is a subclass of ArgumentException, so we expect ArgumentNullException specifically
+            ArgumentNullException exception = Assert.ThrowsException<ArgumentNullException>(() =>
+            {
+                using (context.CreateScope(null)) { }
+            });
+
+            Assert.IsTrue(exception.ParamName == "scope");
+        }
+
+        [TestMethod]
+        public void ProductionContext_ScopeWithEmptyName_ThrowsArgumentException()
+        {
+            CosmosDiagnosticsContext context = CosmosDiagnosticsContext.Create(null);
+
+            ArgumentException exception = Assert.ThrowsException<ArgumentException>(() =>
+            {
+                using (context.CreateScope(string.Empty)) { }
+            });
+
+            Assert.IsTrue(exception.Message.Contains("scope"));
+        }
+
+        [TestMethod]
+        public void ProductionContext_ScopeWithWhitespaceName_ThrowsArgumentException()
+        {
+            CosmosDiagnosticsContext context = CosmosDiagnosticsContext.Create(null);
+
+            ArgumentException exception = Assert.ThrowsException<ArgumentException>(() =>
+            {
+                using (context.CreateScope("   ")) { }
+            });
+
+            Assert.IsTrue(exception.Message.Contains("scope"));
+        }
+
+        [TestMethod]
+        public void ProductionContext_MultipleListeners_AllReceiveEvents()
+        {
+            int listener1StartCount = 0;
+            int listener2StartCount = 0;
+
+            using ActivityListener listener1 = new ActivityListener
+            {
+                ShouldListenTo = (activitySource) => activitySource.Name == "Microsoft.Azure.Cosmos.Encryption.Custom",
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+                ActivityStarted = activity => listener1StartCount++
+            };
+
+            using ActivityListener listener2 = new ActivityListener
+            {
+                ShouldListenTo = (activitySource) => activitySource.Name == "Microsoft.Azure.Cosmos.Encryption.Custom",
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+                ActivityStarted = activity => listener2StartCount++
+            };
+
+            ActivitySource.AddActivityListener(listener1);
+            ActivitySource.AddActivityListener(listener2);
+
+            CosmosDiagnosticsContext context = CosmosDiagnosticsContext.Create(null);
+            using (context.CreateScope("TestScope")) { }
+
+            Assert.AreEqual(1, listener1StartCount, "Listener 1 should receive the event");
+            Assert.AreEqual(1, listener2StartCount, "Listener 2 should receive the event");
+        }
+
+        #endregion
     }
 }
