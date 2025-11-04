@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using System.Net;
     using System.Text;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Documents;
@@ -29,8 +30,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestInitialize]
         public async Task TestInitialize()
         {
-            this.connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTI_REGION", string.Empty);
-
             if (string.IsNullOrEmpty(this.connectionString))
             {
                 Assert.Fail("Set environment variable COSMOSDB_MULTI_REGION to run the tests");
@@ -77,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task WriteBarrier_SecondaryReplicaLeaseNotFound_RetriesOnPrimary()
         {
             int barrierRequestCount = 0;
-            bool forceRefreshAddressCacheSeen = false;
+            int forceRefreshAddressCacheSeenCount = 0;
             long targetLsn = 0;
 
             CosmosClientOptions clientOptions = new CosmosClientOptions()
@@ -89,29 +88,31 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     interceptorAfterResult: (request, storeResponse) =>
                     {
                         // Force barrier request by setting GlobalCommittedLSN behind LSN on write
-                        if (storeResponse.StatusCode == HttpStatusCode.Created && targetLsn == 0)
+                        if (storeResponse.StatusCode == HttpStatusCode.Created)
                         {
-                            targetLsn = storeResponse.LSN;
-                            // This triggers barrier request in ConsistencyWriter.ApplySessionToken
-                            storeResponse.Headers.Set(WFConstants.BackendHeaders.NumberOfReadRegions, "2");
-                            storeResponse.Headers.Set(WFConstants.BackendHeaders.GlobalCommittedLSN, "0"); // Behind LSN
-                            storeResponse.Headers.Set(WFConstants.BackendHeaders.LSN, targetLsn.ToString(CultureInfo.InvariantCulture));
+                            long currentLsn = Interlocked.CompareExchange(ref targetLsn, storeResponse.LSN, 0);
+                            if (currentLsn == 0)
+                            {
+                                // This triggers barrier request in ConsistencyWriter.ApplySessionToken
+                                storeResponse.Headers.Set(WFConstants.BackendHeaders.NumberOfReadRegions, "2");
+                                storeResponse.Headers.Set(WFConstants.BackendHeaders.GlobalCommittedLSN, "0"); // Behind LSN
+                                storeResponse.Headers.Set(WFConstants.BackendHeaders.LSN, storeResponse.LSN.ToString(CultureInfo.InvariantCulture));
+                            }
                         }
 
                         // Handle barrier (HEAD) requests
                         if (request.OperationType == OperationType.Head)
                         {
-                            barrierRequestCount++;
+                            int currentCount = Interlocked.Increment(ref barrierRequestCount);
 
                             if (request.RequestContext != null && request.RequestContext.ForceRefreshAddressCache)
                             {
-                                forceRefreshAddressCacheSeen = true;
+                                Interlocked.Increment(ref forceRefreshAddressCacheSeenCount);
                             }
 
                             // First barrier request returns 410/1022
-                            if (barrierRequestCount == 1)
+                            if (currentCount == 1)
                             {
-                                // Create new StoreResponse with 410/1022
                                 DictionaryNameValueCollection headers = new DictionaryNameValueCollection();
                                 headers.Set(WFConstants.BackendHeaders.SubStatus,
                                     ((int)SubStatusCodes.LeaseNotFound).ToString(CultureInfo.InvariantCulture));
@@ -124,15 +125,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                 };
                             }
                             // Second barrier request (to primary with ForceRefreshAddressCache) succeeds
-                            else if (barrierRequestCount == 2)
+                            else if (currentCount == 2)
                             {
-                                // Return success with proper headers
                                 DictionaryNameValueCollection successHeaders = new DictionaryNameValueCollection();
                                 successHeaders.Set(WFConstants.BackendHeaders.NumberOfReadRegions, "2");
+
+                                long lsnValue = Interlocked.Read(ref targetLsn);
                                 successHeaders.Set(WFConstants.BackendHeaders.GlobalCommittedLSN,
-                                    targetLsn.ToString(CultureInfo.InvariantCulture));
+                                    lsnValue.ToString(CultureInfo.InvariantCulture));
                                 successHeaders.Set(WFConstants.BackendHeaders.LSN,
-                                    targetLsn.ToString(CultureInfo.InvariantCulture));
+                                    lsnValue.ToString(CultureInfo.InvariantCulture));
 
                                 return new StoreResponse()
                                 {
@@ -162,7 +164,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             if (barrierRequestCount > 0)
             {
                 Assert.AreEqual(2, barrierRequestCount, "Should make exactly 2 barrier requests (secondary then primary)");
-                Assert.IsTrue(forceRefreshAddressCacheSeen, "Second barrier request should have ForceRefreshAddressCache=true");
+                Assert.IsTrue(forceRefreshAddressCacheSeenCount > 0, "Second barrier request should have ForceRefreshAddressCache=true");
             }
             else
             {
@@ -180,48 +182,49 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await this.container.CreateItemAsync(item, new Cosmos.PartitionKey(item.pk));
 
             int barrierRequestCount = 0;
-            bool forceRefreshAddressCacheSeen = false;
-            long targetLsn = 100;
-            bool shouldInterceptRead = false;
+            int forceRefreshAddressCacheSeenCount = 0;
+            const long targetLsn = 100;
+            int shouldInterceptRead = 1;
             string targetItemId = item.id;
 
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ConnectionMode = ConnectionMode.Direct,
-                ConsistencyLevel = Cosmos.ConsistencyLevel.Strong, 
+                ConsistencyLevel = Cosmos.ConsistencyLevel.Strong,
                 TransportClientHandlerFactory = (transport) => new TransportClientWrapper(
                     transport,
                     interceptorAfterResult: (request, storeResponse) =>
                     {
                         // Only manipulate the read response for our specific test item when flag is set
-                        if (shouldInterceptRead &&
-                            request.OperationType == OperationType.Read &&
+                        if (request.OperationType == OperationType.Read &&
                             storeResponse.StatusCode == HttpStatusCode.OK &&
                             request.ResourceAddress != null &&
                             request.ResourceAddress.Contains(targetItemId))
                         {
-                            // This triggers barrier in QuorumReader.ReadQuorumAsync
-                            storeResponse.Headers.Set(WFConstants.BackendHeaders.NumberOfReadRegions, "2");
-                            storeResponse.Headers.Set(WFConstants.BackendHeaders.LSN, targetLsn.ToString(CultureInfo.InvariantCulture));
-                            storeResponse.Headers.Set(WFConstants.BackendHeaders.ItemLSN, targetLsn.ToString(CultureInfo.InvariantCulture));
-                            storeResponse.Headers.Set(WFConstants.BackendHeaders.GlobalCommittedLSN, "50"); // Behind LSN
-
-                            shouldInterceptRead = false;
+                            // Try to atomically set the flag from 1 to 0
+                            if (Interlocked.CompareExchange(ref shouldInterceptRead, 0, 1) == 1)
+                            {
+                                // This triggers barrier in QuorumReader.ReadQuorumAsync
+                                storeResponse.Headers.Set(WFConstants.BackendHeaders.NumberOfReadRegions, "2");
+                                storeResponse.Headers.Set(WFConstants.BackendHeaders.LSN, targetLsn.ToString(CultureInfo.InvariantCulture));
+                                storeResponse.Headers.Set(WFConstants.BackendHeaders.ItemLSN, targetLsn.ToString(CultureInfo.InvariantCulture));
+                                storeResponse.Headers.Set(WFConstants.BackendHeaders.GlobalCommittedLSN, "50"); // Behind LSN
+                            }
                         }
 
                         // Handle barrier (HEAD) requests
                         if (request.OperationType == OperationType.Head)
                         {
-                            barrierRequestCount++;
+                            int currentCount = Interlocked.Increment(ref barrierRequestCount);
 
                             // Check if ForceRefreshAddressCache is set
                             if (request.RequestContext != null && request.RequestContext.ForceRefreshAddressCache)
                             {
-                                forceRefreshAddressCacheSeen = true;
+                                Interlocked.Increment(ref forceRefreshAddressCacheSeenCount);
                             }
 
                             // First attempt (quorum replica) fails with 410/1022
-                            if (barrierRequestCount == 1 && !forceRefreshAddressCacheSeen)
+                            if (currentCount == 1)
                             {
                                 DictionaryNameValueCollection headers = new DictionaryNameValueCollection();
                                 headers.Set(WFConstants.BackendHeaders.SubStatus,
@@ -243,8 +246,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             using CosmosClient client = new CosmosClient(this.connectionString, clientOptions);
             Container testContainer = client.GetContainer(this.database.Id, this.container.Id);
 
-            shouldInterceptRead = true;
-
             try
             {
                 // Act
@@ -258,7 +259,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 if (barrierRequestCount > 0)
                 {
                     Assert.IsTrue(barrierRequestCount >= 2, $"Should make at least 2 barrier requests (had {barrierRequestCount})");
-                    Assert.IsTrue(forceRefreshAddressCacheSeen, "Retry should have ForceRefreshAddressCache=true");
+                    Assert.IsTrue(forceRefreshAddressCacheSeenCount > 0, "Retry should have ForceRefreshAddressCache=true");
                 }
                 else
                 {
@@ -267,7 +268,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (CosmosException ex)
             {
-                Assert.Fail($"Unexpected exception: {ex.StatusCode} - {ex.Message}. Barrier requests: {barrierRequestCount}, ForceRefresh seen: {forceRefreshAddressCacheSeen}");
+                Assert.Fail($"Unexpected exception: {ex.StatusCode} - {ex.Message}. Barrier requests: {barrierRequestCount}, ForceRefresh seen: {forceRefreshAddressCacheSeenCount > 0}");
             }
         }
 
@@ -294,23 +295,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     interceptorAfterResult: (request, storeResponse) =>
                     {
                         // Force barrier request by setting GlobalCommittedLSN behind LSN on write
-                        if (storeResponse.StatusCode == HttpStatusCode.Created && targetLsn == 0)
+                        if (storeResponse.StatusCode == HttpStatusCode.Created)
                         {
-                            targetLsn = storeResponse.LSN;
-                            // This triggers barrier request in ConsistencyWriter.ApplySessionToken
-                            storeResponse.Headers.Set(WFConstants.BackendHeaders.NumberOfReadRegions, "2");
-                            storeResponse.Headers.Set(WFConstants.BackendHeaders.GlobalCommittedLSN, "0"); // Behind LSN
-                            storeResponse.Headers.Set(WFConstants.BackendHeaders.LSN, targetLsn.ToString(CultureInfo.InvariantCulture));
+                            long currentLsn = Interlocked.CompareExchange(ref targetLsn, storeResponse.LSN, 0);
+                            if (currentLsn == 0)
+                            {
+                                // This triggers barrier request in ConsistencyWriter.ApplySessionToken
+                                storeResponse.Headers.Set(WFConstants.BackendHeaders.NumberOfReadRegions, "2");
+                                storeResponse.Headers.Set(WFConstants.BackendHeaders.GlobalCommittedLSN, "0"); // Behind LSN
+                                storeResponse.Headers.Set(WFConstants.BackendHeaders.LSN, storeResponse.LSN.ToString(CultureInfo.InvariantCulture));
+                            }
                         }
 
                         // Handle barrier (HEAD) requests
                         if (request.OperationType == OperationType.Head)
                         {
-                            barrierRequestCount++;
+                            int currentCount = Interlocked.Increment(ref barrierRequestCount);
 
                             if (request.RequestContext != null && request.RequestContext.ForceRefreshAddressCache)
                             {
-                                primaryBarrierCount++;
+                                Interlocked.Increment(ref primaryBarrierCount);
                             }
 
                             // Always return 410/1022 for ALL barrier requests
@@ -322,7 +326,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             {
                                 Status = 410,
                                 Headers = headers,
-                                ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes($"Lease not found - attempt {barrierRequestCount}"))
+                                ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes($"Lease not found - attempt {currentCount}"))
                             };
                         }
 
@@ -342,14 +346,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     item,
                     new Cosmos.PartitionKey(item.pk));
 
-                if (barrierRequestCount == 0)
-                {
-                    Assert.Inconclusive("Barrier requests were not triggered. This test requires a multi-region Strong consistency account.");
-                }
-                else
-                {
-                    Assert.Fail($"Write should have failed when all barrier attempts returned 410/1022. Barrier requests: {barrierRequestCount}, Primary barrier requests: {primaryBarrierCount}");
-                }
+                Assert.Fail($"Write should have failed when all barrier attempts returned 410/1022. Barrier requests: {barrierRequestCount}, Primary barrier requests: {primaryBarrierCount}");
             }
             catch (CosmosException ex)
             {
@@ -380,9 +377,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             int barrierRequestCount = 0;
             int primaryBarrierAttempts = 0;
-            HashSet<string> uniqueRegionsContacted = new HashSet<string>();
-            List<string> barrierRequestRegions = new List<string>();
-            bool shouldTriggerBarrier = true;
+            System.Collections.Concurrent.ConcurrentDictionary<string, bool> uniqueRegionsContacted = new System.Collections.Concurrent.ConcurrentDictionary<string, bool>();
+            System.Collections.Concurrent.ConcurrentBag<string> barrierRequestRegions = new System.Collections.Concurrent.ConcurrentBag<string>();
+            int shouldTriggerBarrier = 1;
             string targetItemId = item.id;
 
             CosmosClientOptions clientOptions = new CosmosClientOptions()
@@ -397,38 +394,38 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         string currentRegion = request.RequestContext?.LocationEndpointToRoute?.ToString();
                         if (!string.IsNullOrEmpty(currentRegion))
                         {
-                            uniqueRegionsContacted.Add(currentRegion);
+                            uniqueRegionsContacted.TryAdd(currentRegion, true);
                         }
 
-                        if (shouldTriggerBarrier &&
-                            request.OperationType == OperationType.Read &&
+                        if (request.OperationType == OperationType.Read &&
                             storeResponse.StatusCode == HttpStatusCode.OK &&
                             request.ResourceAddress?.Contains(targetItemId) == true)
                         {
-                            // Force barrier check by setting GlobalCommittedLSN behind LSN
-                            storeResponse.Headers.Set(WFConstants.BackendHeaders.NumberOfReadRegions, "2");
-                            storeResponse.Headers.Set(WFConstants.BackendHeaders.LSN, "100");
-                            storeResponse.Headers.Set(WFConstants.BackendHeaders.ItemLSN, "100");
-                            storeResponse.Headers.Set(WFConstants.BackendHeaders.GlobalCommittedLSN, "50"); // Behind LSN - triggers barrier
-
-                            shouldTriggerBarrier = false; // Only trigger once
+                            if (Interlocked.CompareExchange(ref shouldTriggerBarrier, 0, 1) == 1)
+                            {
+                                // Force barrier check by setting GlobalCommittedLSN behind LSN
+                                storeResponse.Headers.Set(WFConstants.BackendHeaders.NumberOfReadRegions, "2");
+                                storeResponse.Headers.Set(WFConstants.BackendHeaders.LSN, "100");
+                                storeResponse.Headers.Set(WFConstants.BackendHeaders.ItemLSN, "100");
+                                storeResponse.Headers.Set(WFConstants.BackendHeaders.GlobalCommittedLSN, "50"); // Behind LSN - triggers barrier
+                            }
                         }
 
                         if (request.OperationType == OperationType.Head)
                         {
-                            barrierRequestCount++;
+                            int currentCount = Interlocked.Increment(ref barrierRequestCount);
                             barrierRequestRegions.Add(currentRegion ?? "unknown");
 
                             bool isPrimaryRetry = request.RequestContext?.ForceRefreshAddressCache == true;
                             if (isPrimaryRetry)
                             {
-                                primaryBarrierAttempts++;
+                                Interlocked.Increment(ref primaryBarrierAttempts);
                             }
 
-                            Console.WriteLine($"Barrier #{barrierRequestCount}: Region={currentRegion}, IsPrimary={isPrimaryRetry}");
+                            Console.WriteLine($"Barrier #{currentCount}: Region={currentRegion}, IsPrimary={isPrimaryRetry}");
 
                             // Simulate 410/1022 for first few attempts to force region retry
-                            if (barrierRequestCount <= 2) 
+                            if (currentCount <= 2)
                             {
                                 DictionaryNameValueCollection headers = new DictionaryNameValueCollection();
                                 headers.Set(WFConstants.BackendHeaders.SubStatus,
