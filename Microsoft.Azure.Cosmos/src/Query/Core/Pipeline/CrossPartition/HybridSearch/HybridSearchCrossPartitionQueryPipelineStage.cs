@@ -452,21 +452,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
             HybridSearchDebugTraceHelpers.TraceQueryResults(queryResults, queryPipelineStages.Count);
 
-            queryResults.Sort((x, y) => string.CompareOrdinal(x.Rid.Value, y.Rid.Value));
+            queryResults = queryResults.OrderBy(x => x.Rid.Value).ToList();
 
             CoalesceDuplicateRids(queryResults);
 
-            TryCatch<IReadOnlyList<List<ScoreTuple>>> tryGetComponentScores = RetrieveComponentScores(queryResults, queryPipelineStages.Count);
+            TryCatch<List<List<ScoreTuple>>> tryGetComponentScores = RetrieveComponentScores(queryResults, queryPipelineStages.Count);
             if (tryGetComponentScores.Failed)
             {
                 return TryCatch<(IReadOnlyList<HybridSearchQueryResult>, QueryPage)>.FromException(tryGetComponentScores.Exception);
             }
 
-            IReadOnlyList<List<ScoreTuple>> componentScores = tryGetComponentScores.Result;
+            List<List<ScoreTuple>> componentScores = tryGetComponentScores.Result;
 
             for (int index = 0; index < componentScores.Count; ++index)
             {
-                componentScores[index].Sort((x, y) => componentWeights[index].Comparison(x.Score, y.Score));
+                IOrderedEnumerable<ScoreTuple> ordered = componentWeights[index].SortOrder == SortOrder.Ascending 
+                    ? componentScores[index].OrderBy(x => x.Score)
+                    : componentScores[index].OrderByDescending(x => x.Score);
+                componentScores[index] = ordered.ToList();
             }
 
             int[,] ranks = ComputeRanks(componentScores);
@@ -475,7 +478,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
             HybridSearchDebugTraceHelpers.TraceQueryResultsWithRanks(queryResults, ranks);
 
-            queryResults.Sort((x, y) => (-1) * x.Score.CompareTo(y.Score)); // higher scores are better
+            queryResults = queryResults.OrderByDescending(x => x.Score).ToList();
+            //queryResults.Sort((x, y) => (-1) * x.Score.CompareTo(y.Score)); // higher scores are better
 
             HybridSearchDebugTraceHelpers.TraceQueryResults(queryResults, queryPipelineStages.Count);
 
@@ -566,7 +570,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             queryResults.RemoveRange(writeIndex + 1, queryResults.Count - writeIndex - 1);
         }
 
-        private static TryCatch<IReadOnlyList<List<ScoreTuple>>> RetrieveComponentScores(IReadOnlyList<HybridSearchQueryResult> queryResults, int componentCount)
+        private static TryCatch<List<List<ScoreTuple>>> RetrieveComponentScores(IReadOnlyList<HybridSearchQueryResult> queryResults, int componentCount)
         {
             List<List<ScoreTuple>> componentScores = new List<List<ScoreTuple>>(componentCount);
             for (int componentIndex = 0; componentIndex < componentCount; ++componentIndex)
@@ -583,7 +587,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                     if (!(componentScoresArray[componentScoreindex] is CosmosNumber cosmosNumber))
                     {
                         DocumentClientException exception = new InternalServerErrorException($"componentScores must be an array of numbers.");
-                        return TryCatch<IReadOnlyList<List<ScoreTuple>>>.FromException(exception);
+                        return TryCatch<List<List<ScoreTuple>>>.FromException(exception);
                     }
 
                     ScoreTuple scoreTuple = new ScoreTuple(Number64.ToDouble(cosmosNumber.Value), index);
@@ -591,7 +595,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                 }
             }
 
-            return TryCatch<IReadOnlyList<List<ScoreTuple>>>.FromResult(componentScores);
+            return TryCatch<List<List<ScoreTuple>>>.FromResult(componentScores);
         }
 
         private static int[,] ComputeRanks(IReadOnlyList<List<ScoreTuple>> componentScores)
@@ -786,11 +790,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
         {
             public double Weight { get; }
 
+            public SortOrder SortOrder { get; }
             public Comparison<double> Comparison { get; }
 
             public ComponentWeight(double weight, SortOrder sortOrder)
             {
                 this.Weight = weight;
+                this.SortOrder = sortOrder;
 
                 int comparisonFactor = (sortOrder == SortOrder.Ascending) ? 1 : -1;
                 this.Comparison = (x, y) => comparisonFactor * x.CompareTo(y);
