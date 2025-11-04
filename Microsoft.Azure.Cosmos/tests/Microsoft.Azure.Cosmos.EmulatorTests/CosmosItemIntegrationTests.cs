@@ -2203,7 +2203,7 @@
         public async Task ClinetOverrides0msRequestTimeoutValueForPPAF()
         {
             // Arrange.
-            
+
             // Now that the ppaf enablement flag is returned from gateway, we need to intercept the response and remove the flag from the response, so that
             // the environment variable set above is honored.
             HttpClientHandlerHelper httpClientHandlerHelper = new HttpClientHandlerHelper()
@@ -2258,6 +2258,96 @@
             CrossRegionHedgingAvailabilityStrategy strat = cosmosClient.DocumentClient.ConnectionPolicy.AvailabilityStrategy as CrossRegionHedgingAvailabilityStrategy;
             Assert.IsNotNull(strat);
             Assert.AreNotEqual(0, strat.Threshold);
+        }
+        
+        
+        [TestMethod]
+        [TestCategory("MultiRegion")]
+        [Owner("trivediyash")]
+        [Description("Scenario: When a document is created, then updated, and finally deleted, the operations must reflect on Change Feed.")]
+        public async Task WhenADocumentIsCreatedThenUpdatedThenDeletedCFPTests()
+        {
+            string testId = "testDoc" + Guid.NewGuid().ToString("N");
+            string testPk = "testPk" + Guid.NewGuid().ToString("N");
+
+            try
+            {
+                // Create the document
+                CosmosIntegrationTestObject createItem = new CosmosIntegrationTestObject
+                {
+                    Id = testId,
+                    Pk = testPk,
+                    Other = "original test"
+                };
+
+                ItemResponse<CosmosIntegrationTestObject> createResponse = await this.container.CreateItemAsync(
+                    createItem,
+                    new PartitionKey(testPk));
+
+                Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+                Assert.IsNotNull(createResponse.Resource);
+                Assert.AreEqual(testId, createResponse.Resource.Id);
+                Assert.AreEqual(testPk, createResponse.Resource.Pk);
+                Assert.AreEqual("original test", createResponse.Resource.Other);
+
+                // Wait 1 second to ensure different timestamps
+                await Task.Delay(1000);
+
+                // Update the document
+                CosmosIntegrationTestObject updateItem = new CosmosIntegrationTestObject
+                {
+                    Id = testId,
+                    Pk = testPk,
+                    Other = "test after replace"
+                };
+
+                ItemResponse<CosmosIntegrationTestObject> updateResponse = await this.container.ReplaceItemAsync(
+                    updateItem,
+                    testId,
+                    new PartitionKey(testPk));
+
+                Assert.AreEqual(HttpStatusCode.OK, updateResponse.StatusCode);
+                Assert.IsNotNull(updateResponse.Resource);
+                Assert.AreEqual(testId, updateResponse.Resource.Id);
+                Assert.AreEqual(testPk, updateResponse.Resource.Pk);
+                Assert.AreEqual("test after replace", updateResponse.Resource.Other);
+
+                // Verify the ETag changed
+                Assert.AreNotEqual(createResponse.ETag, updateResponse.ETag);
+
+                // Wait 1 second to ensure different timestamps
+                await Task.Delay(1000);
+
+                // Delete the document
+                ItemResponse<CosmosIntegrationTestObject> deleteResponse = await this.container.DeleteItemAsync<CosmosIntegrationTestObject>(
+                    testId,
+                    new PartitionKey(testPk));
+
+                Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+
+                // Verify the document no longer exists
+                try
+                {
+                    await this.container.ReadItemAsync<CosmosIntegrationTestObject>(testId, new PartitionKey(testPk));
+                    Assert.Fail("Document should not exist after deletion");
+                }
+                catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+                {
+                    // Expected - document was successfully deleted
+                }
+            }
+            finally
+            {
+                // Cleanup in case test failed before deletion
+                try
+                {
+                    await this.container.DeleteItemAsync<CosmosIntegrationTestObject>(testId, new PartitionKey(testPk));
+                }
+                catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+                {
+                    // Ignore - document already deleted
+                }
+            }
         }
 
         private async Task TryCreateItems(List<CosmosIntegrationTestObject> testItems)
