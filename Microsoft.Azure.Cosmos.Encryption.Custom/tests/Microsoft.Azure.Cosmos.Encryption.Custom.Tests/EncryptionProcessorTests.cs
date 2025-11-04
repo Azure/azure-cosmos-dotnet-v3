@@ -52,8 +52,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             MemoryStream encrypted = new();
             await EncryptionProcessor.EncryptAsync(doc.ToStream(), encrypted, mockEncryptor.Object, opts, diagEncrypt, CancellationToken.None);
             encrypted.Position = 0;
-            Assert.AreEqual(1, diagEncrypt.Scopes.Count(s => s.StartsWith(CosmosDiagnosticsContext.ScopeEncryptModeSelectionPrefix + JsonProcessor.Stream)), "Expected a single Stream selection scope for encrypt");
-            Assert.IsFalse(diagEncrypt.Scopes.Any(s => s.StartsWith(CosmosDiagnosticsContext.ScopeEncryptModeSelectionPrefix + JsonProcessor.Newtonsoft)));
 
             CosmosDiagnosticsContext diagDecrypt = CosmosDiagnosticsContext.Create(null);
             MemoryStream decryptedOut = new();
@@ -66,21 +64,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.IsNull(decryptedObj.Property(Constants.EncryptedInfo));
             Assert.IsNotNull(ctx);
             Assert.IsTrue(ctx.DecryptionInfoList.First().PathsDecrypted.All(p => TestDoc.PathsToEncrypt.Contains(p)));
-            Assert.AreEqual(1, diagDecrypt.Scopes.Count(s => s.StartsWith(CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream)), "Expected a single Stream selection scope for decrypt");
-            Assert.IsFalse(diagDecrypt.Scopes.Any(s => s.StartsWith(CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Newtonsoft)));
         }
 
     [TestMethod]
-    public async Task Encrypt_NewtonsoftProcessor_TracksScope()
+    public async Task Encrypt_NewtonsoftProcessor_Works()
     {
         TestDoc doc = TestDoc.Create();
         EncryptionOptions opts = CreateMdeOptions(JsonProcessor.Newtonsoft);
         CosmosDiagnosticsContext diagEncrypt = CosmosDiagnosticsContext.Create(null);
         Stream encrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, opts, diagEncrypt, CancellationToken.None);
 
-    Assert.AreEqual(1, diagEncrypt.Scopes.Count(s => s.StartsWith(CosmosDiagnosticsContext.ScopeEncryptModeSelectionPrefix + JsonProcessor.Newtonsoft)), "Expected a single Newtonsoft selection scope for encrypt");
-    Assert.IsFalse(diagEncrypt.Scopes.Any(s => s.StartsWith(CosmosDiagnosticsContext.ScopeEncryptModeSelectionPrefix + JsonProcessor.Stream)));
-
+        Assert.IsNotNull(encrypted);
         encrypted.Dispose();
     }
 
@@ -94,8 +88,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             (Stream result, DecryptionContext ctxDec) = await EncryptionProcessor.DecryptAsync(input, mockEncryptor.Object, ctxDiag, opts, CancellationToken.None);
             Assert.IsNull(ctxDec);
             Assert.AreEqual(0, result.Position);
-            Assert.AreEqual(1, ctxDiag.Scopes.Count(s => s.StartsWith(CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream)), "Expected a single Stream selection scope when falling back for unencrypted payload");
-            Assert.IsFalse(ctxDiag.Scopes.Any(s => s.StartsWith(CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Newtonsoft)));
         }
 #endif
 

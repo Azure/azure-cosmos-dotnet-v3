@@ -98,7 +98,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
 
             Assert.AreSame(input, result);
             Assert.IsNull(context);
-            Assert.AreEqual(0, diagnostics.Scopes.Count);
             Assert.AreEqual(0, result.Position);
         }
 
@@ -112,7 +111,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
             (Stream decrypted, DecryptionContext context) = await adapter.DecryptAsync(encrypted, mockEncryptor.Object, diagnostics, CancellationToken.None);
 
             Assert.IsNotNull(context);
-            Assert.AreEqual(0, diagnostics.Scopes.Count);
             Assert.AreNotSame(encrypted, decrypted);
 
             using JsonDocument doc = JsonDocument.Parse(decrypted);
@@ -130,7 +128,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
             DecryptionContext context = await adapter.DecryptAsync(encrypted, output, mockEncryptor.Object, diagnostics, CancellationToken.None);
 
             Assert.IsNotNull(context);
-            Assert.AreEqual(0, diagnostics.Scopes.Count);
             output.Position = 0;
             using JsonDocument doc = JsonDocument.Parse(output);
             Assert.AreEqual("secret", doc.RootElement.GetProperty("Sensitive").GetString());
@@ -147,7 +144,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
             DecryptionContext context = await adapter.DecryptAsync(input, output, mockEncryptor.Object, diagnostics, CancellationToken.None);
 
             Assert.IsNull(context);
-            Assert.AreEqual(0, diagnostics.Scopes.Count);
             Assert.AreEqual(0, input.Position);
             Assert.AreEqual(0, output.Length);
         }

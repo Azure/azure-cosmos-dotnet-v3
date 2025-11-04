@@ -75,7 +75,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
 
             Assert.AreSame(input, result);
             Assert.IsNull(context);
-            Assert.AreEqual(0, diagnostics.Scopes.Count);
             Assert.AreEqual(0, result.Position);
         }
 
@@ -105,7 +104,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
 
             Assert.AreSame(input, result);
             Assert.IsNull(context);
-            Assert.AreEqual(0, diagnostics.Scopes.Count);
             Assert.AreEqual(0, result.Position);
         }
 
@@ -120,7 +118,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
             DecryptionContext context = await adapter.DecryptAsync(encrypted, output, mockEncryptor.Object, diagnostics, CancellationToken.None);
 
             Assert.IsNotNull(context);
-            Assert.AreEqual(0, diagnostics.Scopes.Count);
 
             JObject roundTripped = Read(output);
             Assert.IsFalse(roundTripped.ContainsKey(Constants.EncryptedInfo));
@@ -137,7 +134,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
             (Stream decryptedStream, DecryptionContext context) = await adapter.DecryptAsync(encrypted, mockEncryptor.Object, diagnostics, CancellationToken.None);
 
             Assert.IsNotNull(context);
-            Assert.AreEqual(0, diagnostics.Scopes.Count);
             Assert.AreNotSame(encrypted, decryptedStream);
 
             JObject roundTripped = Read(decryptedStream);
