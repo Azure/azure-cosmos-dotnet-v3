@@ -148,7 +148,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string uniqueDbName = "TestRegional_" + Guid.NewGuid().ToString();
             Database database = await client.CreateDatabaseIfNotExistsAsync(uniqueDbName);
             string uniqueContainerName = "TestRegionalContainer_" + Guid.NewGuid().ToString();
-            Container container = await database.CreateContainerIfNotExistsAsync(uniqueContainerName, "/pk"); // lowercase pk like all other tests
+            Container container = await database.CreateContainerIfNotExistsAsync(uniqueContainerName, "/pk");
 
             string pk = "pk_regional";
             TestObject testItem = this.GenerateItems(pk).First();
