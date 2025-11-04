@@ -55,7 +55,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <param name="randomBytes">Buffer into which cryptographically random bytes are to be generated.</param>
         internal static void GenerateRandomBytes(byte[] randomBytes)
         {
-            // Generate random bytes cryptographically.
 #if NET8_0_OR_GREATER
             RandomNumberGenerator.Fill(randomBytes);
 #else

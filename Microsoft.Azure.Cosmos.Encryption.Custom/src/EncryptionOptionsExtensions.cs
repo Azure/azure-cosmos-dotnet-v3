@@ -12,26 +12,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     {
         internal static void Validate(this EncryptionOptions options)
         {
-            if (string.IsNullOrWhiteSpace(options.DataEncryptionKeyId))
-            {
-#pragma warning disable CA2208 // Instantiate argument exceptions correctly
-                throw new ArgumentNullException(nameof(options.DataEncryptionKeyId));
-#pragma warning restore CA2208 // Instantiate argument exceptions correctly
-            }
-
-            if (string.IsNullOrWhiteSpace(options.EncryptionAlgorithm))
-            {
-#pragma warning disable CA2208 // Instantiate argument exceptions correctly
-                throw new ArgumentNullException(nameof(options.EncryptionAlgorithm));
-#pragma warning restore CA2208 // Instantiate argument exceptions correctly
-            }
-
-            if (options.PathsToEncrypt == null)
-            {
-#pragma warning disable CA2208 // Instantiate argument exceptions correctly
-                throw new ArgumentNullException(nameof(options.PathsToEncrypt));
-#pragma warning restore CA2208 // Instantiate argument exceptions correctly
-            }
+            ArgumentValidation.ThrowIfNullOrWhiteSpace(options.DataEncryptionKeyId, nameof(options.DataEncryptionKeyId));
+            ArgumentValidation.ThrowIfNullOrWhiteSpace(options.EncryptionAlgorithm, nameof(options.EncryptionAlgorithm));
+            ArgumentValidation.ThrowIfNull(options.PathsToEncrypt, nameof(options.PathsToEncrypt));
 
             if (options.PathsToEncrypt is not HashSet<string> && options.PathsToEncrypt.Distinct().Count() != options.PathsToEncrypt.Count())
             {
