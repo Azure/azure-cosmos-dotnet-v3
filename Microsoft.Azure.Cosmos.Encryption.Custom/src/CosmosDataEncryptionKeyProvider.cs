@@ -145,14 +145,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             this.ThrowIfAlreadyInitialized();
 
-#if NET8_0_OR_GREATER
-            ArgumentNullException.ThrowIfNull(database);
-#else
-            if (database == null)
-            {
-                throw new ArgumentNullException(nameof(database));
-            }
-#endif
+            ArgumentValidation.ThrowIfNull(database);
 
             ContainerResponse containerResponse = await database.CreateContainerIfNotExistsAsync(
                 containerId,

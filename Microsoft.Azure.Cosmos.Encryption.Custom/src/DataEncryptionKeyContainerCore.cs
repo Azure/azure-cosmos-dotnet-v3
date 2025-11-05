@@ -57,24 +57,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrEmpty(id))
-            {
-                throw new ArgumentNullException(nameof(id));
-            }
+            ArgumentValidation.ThrowIfNullOrEmpty(id);
 
             if (!CosmosEncryptionAlgorithm.VerifyIfSupportedAlgorithm(encryptionAlgorithm))
             {
                 throw new ArgumentException(string.Format("Unsupported Encryption Algorithm {0}", encryptionAlgorithm), nameof(encryptionAlgorithm));
             }
 
-#if NET8_0_OR_GREATER
-            ArgumentNullException.ThrowIfNull(encryptionKeyWrapMetadata);
-#else
-            if (encryptionKeyWrapMetadata == null)
-            {
-                throw new ArgumentNullException(nameof(encryptionKeyWrapMetadata));
-            }
-#endif
+            ArgumentValidation.ThrowIfNull(encryptionKeyWrapMetadata);
 
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
 
@@ -159,14 +149,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
            ItemRequestOptions requestOptions = null,
            CancellationToken cancellationToken = default)
         {
-#if NET8_0_OR_GREATER
-            ArgumentNullException.ThrowIfNull(newWrapMetadata);
-#else
-            if (newWrapMetadata == null)
-            {
-                throw new ArgumentNullException(nameof(newWrapMetadata));
-            }
-#endif
+            ArgumentValidation.ThrowIfNull(newWrapMetadata);
 
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
 
