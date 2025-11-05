@@ -9,13 +9,11 @@ using System.IO;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.IO;
 
 #if NET8_0_OR_GREATER
 internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
 {
     private readonly StreamProcessor streamProcessor;
-    private static readonly RecyclableMemoryStreamManager RecyclableMemoryStreamManager = new ();
 
     public SystemTextJsonStreamAdapter(StreamProcessor streamProcessor)
     {
@@ -24,9 +22,8 @@ internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
 
     public async Task<Stream> EncryptAsync(Stream input, Encryptor encryptor, EncryptionOptions options, CancellationToken cancellationToken)
     {
-        RecyclableMemoryStream ms = RecyclableMemoryStreamManager.GetStream("StreamAdapter.Encrypt");
+        MemoryStream ms = new ();
         await this.streamProcessor.EncryptStreamAsync(input, ms, encryptor, options, cancellationToken);
-
         return ms;
     }
 
@@ -48,8 +45,8 @@ internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
             return (input, null);
         }
 
-        RecyclableMemoryStream ms = RecyclableMemoryStreamManager.GetStream("StreamAdapter.Decrypt");
-        DecryptionContext context = await this.streamProcessor.DecryptStreamAsync(input, (Stream)ms, encryptor, properties, diagnosticsContext, cancellationToken);
+        MemoryStream ms = new ();
+        DecryptionContext context = await this.streamProcessor.DecryptStreamAsync(input, ms, encryptor, properties, diagnosticsContext, cancellationToken);
         if (context == null)
         {
             return (input, null);
@@ -83,7 +80,6 @@ internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
         }
 
         await input.DisposeAsync();
-
         return context;
     }
 

@@ -220,7 +220,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             try
             {
-                return await MdeEncryptionProcessor.DecryptAsync(input, encryptor, jsonProcessor, diagnosticsContext, cancellationToken);
+                (Stream stream, DecryptionContext context) = await MdeEncryptionProcessor.DecryptAsync(input, encryptor, jsonProcessor, diagnosticsContext, cancellationToken);
+                if (context == null)
+                {
+                    input.Position = 0;
+                    return (input, null);
+                }
+
+                await input.DisposeCompatAsync();
+
+                return (stream, context);
             }
             catch (NotSupportedException)
             {

@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         }
 
         /// <summary>
-        /// Serializes an object directly into the provided output stream (which remains open) and rewinds it if seekable.
+        /// Serializes an object directly into the provided output stream (which remains open).
         /// </summary>
         /// <typeparam name="T">Type of object being serialized.</typeparam>
         /// <param name="input">Object to serialize.</param>
@@ -89,8 +89,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="output"/> is <c>null</c>.</exception>
         /// <exception cref="ArgumentException">Thrown when <paramref name="output"/> is not writable.</exception>
         /// <remarks>
-        /// This method serializes the object directly to the provided stream without creating an intermediate MemoryStream,
-        /// reducing memory allocations for large objects. If the output stream is seekable, its position is reset to 0 after writing.
+        /// <para>This method serializes the object directly to the provided stream without creating an intermediate MemoryStream,
+        /// reducing memory allocations for large objects.</para>
+        /// <para>After writing, the stream position will be at the end of the written content.
+        /// Callers are responsible for resetting the stream position if needed for subsequent reads.</para>
         /// </remarks>
         public void WriteToStream<T>(T input, Stream output)
         {
@@ -110,11 +112,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 jsonSerializer.Serialize(writer, input);
                 writer.Flush();
                 streamWriter.Flush();
-            }
-
-            if (output.CanSeek)
-            {
-                output.Position = 0;
             }
         }
 

@@ -3,21 +3,29 @@
 #nullable enable
 namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 {
+    using System.Collections.Generic;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Encryption.Custom;
+
     internal static class RequestOptionsOverrideHelper
     {
         internal static RequestOptions? Create(JsonProcessor processor)
         {
 #if NET8_0_OR_GREATER
-#pragma warning disable COSMOSENC0001
             if (processor == JsonProcessor.Newtonsoft)
             {
                 return null; // default path
             }
 
-            return EncryptionRequestOptionsExperimental.CreateRequestOptions(processor);
-#pragma warning restore COSMOSENC0001
+            // Inline the logic from EncryptionRequestOptionsExperimental.CreateRequestOptions()
+            ItemRequestOptions requestOptions = new ItemRequestOptions
+            {
+                Properties = new Dictionary<string, object>
+                {
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, processor }
+                }
+            };
+            return requestOptions;
 #else
             return null;
 #endif

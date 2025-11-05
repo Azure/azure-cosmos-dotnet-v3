@@ -48,6 +48,7 @@ internal sealed class NewtonsoftAdapter : IMdeJsonProcessorAdapter
 
                     MemoryStream direct = new (capacity: 1024);
                     EncryptionProcessor.BaseSerializer.WriteToStream(itemJObj, direct);
+                    direct.Position = 0; // Reset position for caller to read from beginning
                     return (direct, context);
                 }
 
@@ -66,9 +67,8 @@ internal sealed class NewtonsoftAdapter : IMdeJsonProcessorAdapter
             case MdePropertyStatus.Mde:
                 {
                     DecryptionContext context = await this.jObjectProcessor.DecryptObjectAsync(itemJObj, encryptor, encryptionProperties, diagnosticsContext, cancellationToken);
-                    output.Position = 0;
                     EncryptionProcessor.BaseSerializer.WriteToStream(itemJObj, output);
-                    output.Position = 0;
+                    output.Position = 0; // Reset position for caller to read from beginning
                     await input.DisposeCompatAsync();
                     return context;
                 }

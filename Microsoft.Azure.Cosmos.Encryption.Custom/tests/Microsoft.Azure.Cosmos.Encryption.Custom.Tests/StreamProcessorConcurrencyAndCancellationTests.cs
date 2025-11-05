@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 DataEncryptionKeyId = DekId,
                 EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
                 JsonProcessor = JsonProcessor.Stream,
-                PathsToEncrypt = paths.ToList(),
+                PathsToEncrypt = paths.ToList()
             };
         }
 

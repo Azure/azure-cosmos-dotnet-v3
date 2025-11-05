@@ -11,121 +11,78 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
     /// <summary>
     /// Lightweight diagnostics context for Custom Encryption extension.
-    /// Records scope names, start/stop timestamps and exposes them for tests or future wiring into SDK diagnostics.
-    /// Uses <see cref="ActivitySource"/> so downstream telemetry (OpenTelemetry) can optionally subscribe.
+    /// Manages Activity creation for OpenTelemetry integration.
     /// </summary>
     internal class CosmosDiagnosticsContext
     {
         private static readonly ActivitySource ActivitySource = new ("Microsoft.Azure.Cosmos.Encryption.Custom");
 
-        private readonly List<ScopeRecord> records = new (4);
+        /// <summary>
+        /// Scope name prefix for MDE (Microsoft.Data.Encryption) encrypt operations.
+        /// </summary>
+        internal const string ScopeEncryptModeSelectionPrefix = "EncryptionProcessor.Encrypt.Mde.";
+
+        /// <summary>
+        /// Scope name prefix for MDE (Microsoft.Data.Encryption) decrypt operations.
+        /// </summary>
+        internal const string ScopeDecryptModeSelectionPrefix = "EncryptionProcessor.Decrypt.Mde.";
 
         internal CosmosDiagnosticsContext()
         {
         }
 
         /// <summary>
-        /// Factory. A new instance is created per high-level operation to avoid cross-talk.
+        /// Creates a new diagnostics context instance.
         /// </summary>
         public static CosmosDiagnosticsContext Create(RequestOptions options)
         {
-            _ = options; // Reserved for future correlation if RequestOptions ever carries a diagnostics handle.
+            _ = options;
             return new CosmosDiagnosticsContext();
         }
 
         /// <summary>
-        /// Recorded scope metadata (immutable snapshot on scope dispose).
+        /// Creates a new diagnostic scope for Activity tracking.
         /// </summary>
-        internal readonly struct ScopeRecord
+        /// <param name="scope">The name of the scope.</param>
+        /// <returns>A <see cref="Scope"/> that manages an Activity lifecycle.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="scope"/> is null.</exception>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="scope"/> is empty or whitespace.</exception>
+        /// <remarks>
+        /// Use with a <c>using</c> statement to ensure proper disposal.
+        /// </remarks>
+        public Scope CreateScope(string scope)
         {
-            public ScopeRecord(string name, long startTimestamp, long elapsedTicks)
-            {
-                this.Name = name;
-                this.StartTimestamp = startTimestamp;
-                this.ElapsedTicks = elapsedTicks;
-            }
+            ArgumentValidation.ThrowIfNullOrWhiteSpace(scope, nameof(scope));
 
-            public string Name { get; }
+            Activity activity = ActivitySource.HasListeners() ? ActivitySource.StartActivity(scope, ActivityKind.Internal) : null;
 
-            public long StartTimestamp { get; }
-
-            public long ElapsedTicks { get; } // Stopwatch ticks
-
-            public TimeSpan Elapsed => TimeSpan.FromTicks(this.ElapsedTicks);
+            return new Scope(activity);
         }
 
         /// <summary>
-        /// Gets recorded scope names primarily for unit tests (copy snapshot each access).
+        /// Represents a diagnostic scope for Activity tracking.
+        /// Must be used with the 'using' pattern to ensure proper disposal.
         /// </summary>
-        internal IReadOnlyList<string> Scopes
+        /// <remarks>
+        /// Dispose() is idempotent - calling it multiple times will only dispose the Activity once.
+        /// </remarks>
+        public sealed class Scope : IDisposable
         {
-            get
-            {
-                if (this.records.Count == 0)
-                {
-                    return Array.Empty<string>();
-                }
-
-                string[] names = new string[this.records.Count];
-                for (int i = 0; i < this.records.Count; i++)
-                {
-                    names[i] = this.records[i].Name;
-                }
-
-                return names;
-            }
-        }
-
-        public Scope CreateScope(string scope)
-        {
-            if (string.IsNullOrEmpty(scope))
-            {
-                return Scope.Noop; // returns default(struct) => no-op
-            }
-
-            // Only create Activity if there are listeners to avoid unnecessary allocations.
-            Activity activity = ActivitySource.HasListeners() ? ActivitySource.StartActivity(scope, ActivityKind.Internal) : null;
-            long startTicks = Stopwatch.GetTimestamp();
-            return new Scope(this, scope, startTicks, activity);
-        }
-
-        private void Record(string name, long startTicks, long elapsedTicks)
-        {
-            lock (this.records)
-            {
-                this.records.Add(new ScopeRecord(name, startTicks, elapsedTicks));
-            }
-        }
-
-        public readonly struct Scope : IDisposable
-        {
-            private readonly CosmosDiagnosticsContext owner;
-            private readonly string name;
-            private readonly long startTicks;
             private readonly Activity activity;
-            private readonly bool enabled;
+            private bool isDisposed;
 
-            internal Scope(CosmosDiagnosticsContext owner, string name, long startTicks, Activity activity)
+            internal Scope(Activity activity)
             {
-                this.owner = owner;
-                this.name = name;
-                this.startTicks = startTicks;
                 this.activity = activity;
-                this.enabled = owner != null; // default struct (Noop) => owner null
             }
-
-            internal static Scope Noop => default;
 
             public void Dispose()
             {
-                if (!this.enabled)
+                if (!this.isDisposed)
                 {
-                    return;
+                    this.isDisposed = true;
+                    this.activity?.Dispose();
                 }
-
-                long elapsedTicks = Stopwatch.GetTimestamp() - this.startTicks;
-                this.owner.Record(this.name, this.startTicks, elapsedTicks);
-                this.activity?.Dispose();
             }
         }
     }

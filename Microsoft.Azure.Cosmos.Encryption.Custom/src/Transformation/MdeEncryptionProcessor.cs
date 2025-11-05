@@ -42,8 +42,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken token)
         {
+            ArgumentValidation.ThrowIfNull(diagnosticsContext);
+
             JsonProcessor jsonProcessor = encryptionOptions.JsonProcessor;
-            using IDisposable selectionScope = diagnosticsContext?.CreateScope(EncryptionDiagnostics.ScopeEncryptModeSelectionPrefix + jsonProcessor);
+            using IDisposable selectionScope = diagnosticsContext.CreateScope(CosmosDiagnosticsContext.ScopeEncryptModeSelectionPrefix + jsonProcessor);
 
             IMdeJsonProcessorAdapter adapter = this.GetAdapter(jsonProcessor);
             return await adapter.EncryptAsync(input, encryptor, encryptionOptions, token);
@@ -71,7 +73,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 return (input, null);
             }
 
-            JsonProcessor jsonProcessor = requestOptions.GetJsonProcessor(JsonProcessor.Newtonsoft);
+            ArgumentValidation.ThrowIfNull(diagnosticsContext);
+
+            JsonProcessor jsonProcessor = this.GetRequestedJsonProcessor(requestOptions);
 
             return await this.DecryptAsync(input, encryptor, jsonProcessor, diagnosticsContext, cancellationToken);
         }
@@ -83,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            using CosmosDiagnosticsContext.Scope? selectionScope = diagnosticsContext?.CreateScope(EncryptionDiagnostics.ScopeDecryptModeSelectionPrefix + jsonProcessor);
+            using IDisposable selectionScope = diagnosticsContext.CreateScope(CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + jsonProcessor);
 
             IMdeJsonProcessorAdapter adapter = this.GetAdapter(jsonProcessor);
 
@@ -103,8 +107,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 return null;
             }
 
-            JsonProcessor jsonProcessor = requestOptions.GetJsonProcessor(JsonProcessor.Newtonsoft);
-            using IDisposable selectionScope = diagnosticsContext?.CreateScope(EncryptionDiagnostics.ScopeDecryptModeSelectionPrefix + jsonProcessor);
+            ArgumentValidation.ThrowIfNull(diagnosticsContext);
+
+            JsonProcessor jsonProcessor = this.GetRequestedJsonProcessor(requestOptions);
+#if NET8_0_OR_GREATER
+            using IDisposable selectionScope = diagnosticsContext.CreateScope(CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + jsonProcessor);
+#endif
 
             IMdeJsonProcessorAdapter adapter = this.GetAdapter(jsonProcessor);
             return await adapter.DecryptAsync(input, output, encryptor, diagnosticsContext, cancellationToken);
@@ -118,10 +126,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
+            ArgumentValidation.ThrowIfNull(diagnosticsContext);
+
 #if NET8_0_OR_GREATER
             if (encryptionOptions.JsonProcessor == JsonProcessor.Stream)
             {
-                using IDisposable selectionScope = diagnosticsContext?.CreateScope(EncryptionDiagnostics.ScopeEncryptModeSelectionPrefix + JsonProcessor.Stream);
+                using IDisposable selectionScope = diagnosticsContext.CreateScope(CosmosDiagnosticsContext.ScopeEncryptModeSelectionPrefix + JsonProcessor.Stream);
                 IMdeJsonProcessorAdapter adapter = this.GetAdapter(JsonProcessor.Stream);
                 await adapter.EncryptAsync(input, output, encryptor, encryptionOptions, cancellationToken);
                 return;
@@ -146,7 +156,47 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             return input;
         }
+
+        public async Task<(Stream, DecryptionContext)> DecryptStreamAsync(
+            Stream input,
+            Encryptor encryptor,
+            EncryptionProperties properties,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            MemoryStream ms = new ();
+            DecryptionContext context = await this.StreamProcessor.DecryptStreamAsync(input, ms, encryptor, properties, diagnosticsContext, cancellationToken);
+            if (context == null)
+            {
+                return (input, null);
+            }
+
+            return (ms, context);
+        }
+
+        public async Task<DecryptionContext> DecryptStreamAsync(
+            Stream input,
+            Stream output,
+            Encryptor encryptor,
+            EncryptionProperties properties,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            return await this.StreamProcessor.DecryptStreamAsync(input, output, encryptor, properties, diagnosticsContext, cancellationToken);
+        }
 #endif
+
+        private JsonProcessor GetRequestedJsonProcessor(RequestOptions requestOptions)
+        {
+#if NET8_0_OR_GREATER
+            if (requestOptions != null && requestOptions.TryReadJsonProcessorOverride(out JsonProcessor overrideProcessor))
+            {
+                return overrideProcessor;
+            }
+#endif
+
+            return JsonProcessor.Newtonsoft;
+        }
 
         private readonly Dictionary<JsonProcessor, IMdeJsonProcessorAdapter> adapterCache = new Dictionary<JsonProcessor, IMdeJsonProcessorAdapter>();
 
