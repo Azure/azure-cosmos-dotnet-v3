@@ -72,6 +72,11 @@
           ],
           "MethodInfo": "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, System.Nullable`1[System.TimeSpan])"
         },
+        "Void .ctor(Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan], Microsoft.Extensions.Caching.Distributed.IDistributedCache, System.Nullable`1[System.TimeSpan])": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "Void .ctor(Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan], Microsoft.Extensions.Caching.Distributed.IDistributedCache, System.Nullable`1[System.TimeSpan])"
+        },
         "Void .ctor(Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan])": {
           "Type": "Constructor",
           "Attributes": [],
@@ -452,6 +457,11 @@
                 "ObsoleteAttribute"
               ],
               "MethodInfo": "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, System.Nullable`1[System.TimeSpan])"
+            },
+            "Void .ctor(Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan], Microsoft.Extensions.Caching.Distributed.IDistributedCache, System.Nullable`1[System.TimeSpan])": {
+              "Type": "Constructor",
+              "Attributes": [],
+              "MethodInfo": "Void .ctor(Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan], Microsoft.Extensions.Caching.Distributed.IDistributedCache, System.Nullable`1[System.TimeSpan])"
             },
             "Void .ctor(Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan])": {
               "Type": "Constructor",
