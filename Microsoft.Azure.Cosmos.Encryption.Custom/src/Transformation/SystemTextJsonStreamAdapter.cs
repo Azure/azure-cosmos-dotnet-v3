@@ -22,7 +22,7 @@ internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
 
     public async Task<Stream> EncryptAsync(Stream input, Encryptor encryptor, EncryptionOptions options, CancellationToken cancellationToken)
     {
-        MemoryStream ms = new ();
+        PooledMemoryStream ms = new ();
         await this.streamProcessor.EncryptStreamAsync(input, ms, encryptor, options, cancellationToken);
         return ms;
     }
@@ -45,7 +45,7 @@ internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
             return (input, null);
         }
 
-        MemoryStream ms = new ();
+        PooledMemoryStream ms = new ();
         DecryptionContext context = await this.streamProcessor.DecryptStreamAsync(input, ms, encryptor, properties, diagnosticsContext, cancellationToken);
         if (context == null)
         {
@@ -91,7 +91,7 @@ internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
     private async Task<EncryptionProperties> ReadMdeEncryptionPropertiesStreamingAsync(Stream input, CancellationToken cancellationToken)
     {
         input.Position = 0;
-        EncryptionPropertiesWrapper properties = await JsonSerializer.DeserializeAsync<EncryptionPropertiesWrapper>(input, cancellationToken: cancellationToken);
+        EncryptionPropertiesWrapper properties = await PooledJsonSerializer.DeserializeFromStreamAsync<EncryptionPropertiesWrapper>(input, cancellationToken: cancellationToken);
         input.Position = 0;
         if (properties?.EncryptionProperties == null)
         {

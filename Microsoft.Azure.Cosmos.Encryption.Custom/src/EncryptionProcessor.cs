@@ -226,14 +226,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Debug.Assert(diagnosticsContext != null);
             input.Position = 0;
 
-            EncryptionPropertiesWrapper properties = await System.Text.Json.JsonSerializer.DeserializeAsync<EncryptionPropertiesWrapper>(input, cancellationToken: cancellationToken);
+            EncryptionPropertiesWrapper properties = await PooledJsonSerializer.DeserializeFromStreamAsync<EncryptionPropertiesWrapper>(input, cancellationToken: cancellationToken);
             input.Position = 0;
             if (properties?.EncryptionProperties == null)
             {
                 return (input, null);
             }
 
-            MemoryStream ms = new ();
+            PooledMemoryStream ms = new ();
 
             DecryptionContext context = await MdeEncryptionProcessor.DecryptStreamAsync(input, ms, encryptor, properties.EncryptionProperties, diagnosticsContext, cancellationToken);
             if (context == null)
