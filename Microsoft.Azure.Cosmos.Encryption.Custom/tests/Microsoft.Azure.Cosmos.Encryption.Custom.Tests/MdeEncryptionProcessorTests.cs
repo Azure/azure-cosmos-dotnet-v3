@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Encryption.Custom;
+    using Microsoft.Azure.Cosmos.Encryption.Custom.Tests;
 #if NET8_0_OR_GREATER
     using Microsoft.Azure.Cosmos.Encryption.Custom.Transformation;
 #endif
@@ -37,37 +38,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             StreamProcessor.InitialBufferSize = 16; //we force smallest possible initial buffer to make sure both secondary reads and resize paths are executed
 #endif
 
-            Mock<DataEncryptionKey> DekMock = new();
-            DekMock.Setup(m => m.EncryptData(It.IsAny<byte[]>()))
-                .Returns((byte[] plainText) => TestCommon.EncryptData(plainText));
-            DekMock.Setup(m => m.GetEncryptByteCount(It.IsAny<int>()))
-                .Returns((int plainTextLength) => plainTextLength);
-            DekMock.Setup(m => m.EncryptData(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<byte[]>(), It.IsAny<int>()))
-                .Returns((byte[] plainText, int plainTextOffset, int plainTextLength, byte[] output, int outputOffset) => TestCommon.EncryptData(plainText, plainTextOffset, plainTextLength, output, outputOffset));
-            DekMock.Setup(m => m.DecryptData(It.IsAny<byte[]>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<byte[]>(), It.IsAny<int>()))
-                .Returns((byte[] plainText, int plainTextOffset, int plainTextLength, byte[] output, int outputOffset) => TestCommon.DecryptData(plainText, plainTextOffset, plainTextLength, output, outputOffset));
-            DekMock.Setup(m => m.GetDecryptByteCount(It.IsAny<int>()))
-                .Returns((int cipherTextLength) => cipherTextLength);
-
-
-            mockEncryptor = new Mock<Encryptor>();
-            mockEncryptor.Setup(m => m.GetEncryptionKeyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync((string dekId, string algorithm, CancellationToken token) =>
-                    dekId == MdeEncryptionProcessorTests.dekId ? DekMock.Object : throw new InvalidOperationException("DEK not found."));
-
-            mockEncryptor.Setup(m => m.EncryptAsync(It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync((byte[] plainText, string dekId, string algo, CancellationToken t) =>
-                    dekId == MdeEncryptionProcessorTests.dekId ? TestCommon.EncryptData(plainText) : throw new InvalidOperationException("DEK not found."));
-
-            mockEncryptor.Setup(m => m.DecryptAsync(It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync((byte[] cipherText, string dekId, string algo, CancellationToken t) =>
-                    dekId == MdeEncryptionProcessorTests.dekId ? TestCommon.DecryptData(cipherText) : throw new InvalidOperationException("Null DEK was returned."));
+            mockEncryptor = TestEncryptorFactory.CreateMde(dekId, out _);
         }
 
         [TestMethod]
         [DynamicData(nameof(JsonProcessors))]
-        internal async Task InvalidPathToEncrypt(JsonProcessor jsonProcessor)
+        public async Task InvalidPathToEncrypt(int jsonProcessorValue)
         {
+            JsonProcessor jsonProcessor = ResolveJsonProcessor(jsonProcessorValue);
             TestDoc testDoc = TestDoc.Create();
             EncryptionOptions encryptionOptionsWithInvalidPathToEncrypt = new()
             {
@@ -103,8 +81,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         [TestMethod]
         [DynamicData(nameof(JsonProcessors))]
-        internal async Task DuplicatePathToEncrypt(JsonProcessor jsonProcessor)
+        public async Task DuplicatePathToEncrypt(int jsonProcessorValue)
         {
+            JsonProcessor jsonProcessor = ResolveJsonProcessor(jsonProcessorValue);
             TestDoc testDoc = TestDoc.Create();
             EncryptionOptions encryptionOptionsWithDuplicatePathToEncrypt = new()
             {
@@ -133,8 +112,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         [TestMethod]
         [DynamicData(nameof(JsonProcessors))]
-        internal async Task EncryptDecryptPropertyWithNullValue_VerifyByNewtonsoft(JsonProcessor jsonProcessor)
+        public async Task EncryptDecryptPropertyWithNullValue_VerifyByNewtonsoft(int jsonProcessorValue)
         {
+            JsonProcessor jsonProcessor = ResolveJsonProcessor(jsonProcessorValue);
             EncryptionOptions encryptionOptions = this.CreateEncryptionOptions();
             TestDoc testDoc = TestDoc.Create();
             testDoc.SensitiveStr = null;
@@ -156,8 +136,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         [TestMethod]
         [DynamicData(nameof(JsonProcessors))]
-        internal async Task ValidateEncryptDecryptDocument_VerifyByNewtonsoft(JsonProcessor jsonProcessor)
+        public async Task ValidateEncryptDecryptDocument_VerifyByNewtonsoft(int jsonProcessorValue)
         {
+            JsonProcessor jsonProcessor = ResolveJsonProcessor(jsonProcessorValue);
             EncryptionOptions encryptionOptions = this.CreateEncryptionOptions();
             TestDoc testDoc = TestDoc.Create();
 
@@ -178,8 +159,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         [TestMethod]
         [DynamicData(nameof(JsonProcessors))]
-        internal async Task ValidateDecryptByNewtonsoftStream_VerifyByNewtonsoft(JsonProcessor jsonProcessor)
+        public async Task ValidateDecryptByNewtonsoftStream_VerifyByNewtonsoft(int jsonProcessorValue)
         {
+            JsonProcessor jsonProcessor = ResolveJsonProcessor(jsonProcessorValue);
             EncryptionOptions encryptionOptions = this.CreateEncryptionOptions();
             TestDoc testDoc = TestDoc.Create();
 
@@ -195,7 +177,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 encryptedStream,
                 mockEncryptor.Object,
                 new CosmosDiagnosticsContext(),
-                JsonProcessor.Newtonsoft,
+                requestOptions: null,
                 CancellationToken.None);
 
             JObject decryptedDoc = EncryptionProcessor.BaseSerializer.FromStream<JObject>(decryptedStream);
@@ -208,8 +190,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         [TestMethod]
         [DynamicData(nameof(JsonProcessorCombinations))]
-        internal async Task ValidateDecryptBySystemTextStream_VerifyByNewtonsoft(JsonProcessor encryptionJsonProcessor, JsonProcessor decryptionJsonProcessor)
+        public async Task ValidateDecryptBySystemTextStream_VerifyByNewtonsoft(int encryptionJsonProcessorValue, int decryptionJsonProcessorValue)
         {
+            JsonProcessor encryptionJsonProcessor = ResolveJsonProcessor(encryptionJsonProcessorValue);
+            JsonProcessor decryptionJsonProcessor = ResolveJsonProcessor(decryptionJsonProcessorValue);
             EncryptionOptions encryptionOptions = this.CreateEncryptionOptions();
             TestDoc testDoc = TestDoc.Create();
 
@@ -225,7 +209,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 encryptedStream,
                 mockEncryptor.Object,
                 new CosmosDiagnosticsContext(),
-                decryptionJsonProcessor,
+                RequestOptionsOverrideHelper.Create(decryptionJsonProcessor),
                 CancellationToken.None);
 
             JObject decryptedDoc = EncryptionProcessor.BaseSerializer.FromStream<JObject>(decryptedStream);
@@ -239,8 +223,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 #if NET8_0_OR_GREATER
         [TestMethod]
         [DynamicData(nameof(JsonProcessorCombinations))]
-        internal async Task ValidateDecryptBySystemTextStream_VerifyBySystemText(JsonProcessor encryptionJsonProcessor, JsonProcessor decryptionJsonProcessor)
+        public async Task ValidateDecryptBySystemTextStream_VerifyBySystemText(int encryptionJsonProcessorValue, int decryptionJsonProcessorValue)
         {
+            JsonProcessor encryptionJsonProcessor = ResolveJsonProcessor(encryptionJsonProcessorValue);
+            JsonProcessor decryptionJsonProcessor = ResolveJsonProcessor(decryptionJsonProcessorValue);
             EncryptionOptions encryptionOptions = this.CreateEncryptionOptions();
             TestDoc testDoc = TestDoc.Create();
 
@@ -256,7 +242,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 encryptedStream,
                 mockEncryptor.Object,
                 new CosmosDiagnosticsContext(),
-                decryptionJsonProcessor,
+                RequestOptionsOverrideHelper.Create(decryptionJsonProcessor),
                 CancellationToken.None);
 
             JsonNode decryptedDoc = JsonNode.Parse(decryptedStream);
@@ -270,8 +256,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         [TestMethod]
         [DynamicData(nameof(JsonProcessors))]
-        internal async Task DecryptStreamWithoutEncryptedProperty(JsonProcessor processor)
+        public async Task DecryptStreamWithoutEncryptedProperty(int processorValue)
         {
+            JsonProcessor processor = ResolveJsonProcessor(processorValue);
             TestDoc testDoc = TestDoc.Create();
             Stream docStream = testDoc.ToStream();
 
@@ -279,7 +266,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 docStream,
                 mockEncryptor.Object,
                 new CosmosDiagnosticsContext(),
-                processor,
+                RequestOptionsOverrideHelper.Create(processor),
                 CancellationToken.None);
 
             Assert.IsTrue(decryptedStream.CanSeek);
@@ -434,25 +421,44 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         {
             get
             {
-                    yield return new object[] { JsonProcessor.Newtonsoft };
-#if NET8_0_OR_GREATER
-                    yield return new object[] { JsonProcessor.Stream };
-#endif
+                foreach (JsonProcessor processor in EnumerateJsonProcessors())
+                {
+                    yield return new object[] { (int)processor };
+                }
             }
         }
 
         public static IEnumerable<object[]> JsonProcessorCombinations
         {
-                       get
+            get
             {
-                foreach (JsonProcessor encProcessor in JsonProcessors.Select(p => (JsonProcessor)p[0]))
+                JsonProcessor[] processors = EnumerateJsonProcessors().ToArray();
+                foreach (JsonProcessor encProcessor in processors)
                 {
-                    foreach (JsonProcessor decProcessor in JsonProcessors.Select(p => (JsonProcessor)p[0]))
+                    foreach (JsonProcessor decProcessor in processors)
                     {
-                        yield return new object[] { encProcessor, decProcessor };
+                        yield return new object[] { (int)encProcessor, (int)decProcessor };
                     }
                 }
             }
+        }
+
+        private static JsonProcessor ResolveJsonProcessor(int value)
+        {
+            if (!Enum.IsDefined(typeof(JsonProcessor), value))
+            {
+                throw new ArgumentOutOfRangeException(nameof(value), "Invalid JsonProcessor value supplied to test.");
+            }
+
+            return (JsonProcessor)value;
+        }
+
+        private static IEnumerable<JsonProcessor> EnumerateJsonProcessors()
+        {
+            yield return JsonProcessor.Newtonsoft;
+#if NET8_0_OR_GREATER
+            yield return JsonProcessor.Stream;
+#endif
         }
     }
 }

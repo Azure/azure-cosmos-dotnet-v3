@@ -35,14 +35,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
                 PathsToEncrypt = TestDoc.PathsToEncrypt
             };
-
-            LegacyEncryptionProcessorTests.mockEncryptor = new Mock<Encryptor>();
-            LegacyEncryptionProcessorTests.mockEncryptor.Setup(m => m.EncryptAsync(It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync((byte[] plainText, string dekId, string algo, CancellationToken t) =>
-                    dekId == LegacyEncryptionProcessorTests.dekId ? TestCommon.EncryptData(plainText) : throw new InvalidOperationException("DEK not found."));
-            LegacyEncryptionProcessorTests.mockEncryptor.Setup(m => m.DecryptAsync(It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync((byte[] cipherText, string dekId, string algo, CancellationToken t) => 
-                    dekId == LegacyEncryptionProcessorTests.dekId ? TestCommon.DecryptData(cipherText) : throw new InvalidOperationException("Null DEK was returned."));
+            LegacyEncryptionProcessorTests.mockEncryptor = TestEncryptorFactory.CreateLegacy(dekId);
         }
 
         [TestMethod]

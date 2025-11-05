@@ -237,6 +237,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                         result.ResourceStream,
                         this.encryptor,
                         diagnosticsContext,
+                        requestOptions: null,
                         cancellationToken);
 
                     decryptedTransactionalBatchOperationResults.Add(new EncryptionTransactionalBatchOperationResult(result, decryptedStream));

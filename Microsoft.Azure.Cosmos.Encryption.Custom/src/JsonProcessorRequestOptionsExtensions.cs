@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
     using System;
-    using System.Collections.Generic;
     using Microsoft.Azure.Cosmos;
 
     /// <summary>
@@ -29,25 +28,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         internal static bool TryReadJsonProcessorOverride(this RequestOptions requestOptions, out JsonProcessor jsonProcessor)
         {
             jsonProcessor = JsonProcessor.Newtonsoft;
-
-            if (requestOptions?.Properties == null ||
-                !requestOptions.Properties.TryGetValue(JsonProcessorPropertyBagKey, out object value) || value == null)
+            if (requestOptions?.Properties != null &&
+                requestOptions.Properties.TryGetValue(JsonProcessorPropertyBagKey, out object value) && value != null)
             {
-                return false;
-            }
-
-            if (value is JsonProcessor enumVal)
-            {
-                jsonProcessor = enumVal;
-
-                return true;
-            }
-
-            if (value is string s && Enum.TryParse(s, true, out JsonProcessor parsed))
-            {
-                jsonProcessor = parsed;
-
-                return true;
+                if (value is JsonProcessor enumVal)
+                {
+                    jsonProcessor = enumVal;
+                    return true;
+                }
+                else if (value is string s && Enum.TryParse(s, true, out JsonProcessor parsed))
+                {
+                    jsonProcessor = parsed;
+                    return true;
+                }
             }
 
             return false;
