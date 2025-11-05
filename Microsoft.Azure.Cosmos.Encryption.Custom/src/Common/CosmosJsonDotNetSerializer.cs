@@ -40,14 +40,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <returns>The object representing the deserialized stream</returns>
         public T FromStream<T>(Stream stream)
         {
-#if NET8_0_OR_GREATER
-            ArgumentNullException.ThrowIfNull(stream);
-#else
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
-#endif
+            ArgumentValidation.ThrowIfNull(stream);
 
             if (typeof(Stream).IsAssignableFrom(typeof(T)))
             {
@@ -85,6 +78,41 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             streamPayload.Position = 0;
             return streamPayload;
+        }
+
+        /// <summary>
+        /// Serializes an object directly into the provided output stream (which remains open).
+        /// </summary>
+        /// <typeparam name="T">Type of object being serialized.</typeparam>
+        /// <param name="input">Object to serialize.</param>
+        /// <param name="output">Destination stream. Must be writable. The stream is not disposed by this method.</param>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="output"/> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="output"/> is not writable.</exception>
+        /// <remarks>
+        /// <para>This method serializes the object directly to the provided stream without creating an intermediate MemoryStream,
+        /// reducing memory allocations for large objects.</para>
+        /// <para>After writing, the stream position will be at the end of the written content.
+        /// Callers are responsible for resetting the stream position if needed for subsequent reads.</para>
+        /// </remarks>
+        public void WriteToStream<T>(T input, Stream output)
+        {
+            ArgumentValidation.ThrowIfNull(output);
+
+            if (!output.CanWrite)
+            {
+                throw new ArgumentException("Output stream must be writable", nameof(output));
+            }
+
+            using (StreamWriter streamWriter = new (output, encoding: CosmosJsonDotNetSerializer.DefaultEncoding, bufferSize: 1024, leaveOpen: true))
+            using (JsonTextWriter writer = new (streamWriter))
+            {
+                writer.ArrayPool = JsonArrayPool.Instance;
+                writer.Formatting = Newtonsoft.Json.Formatting.None;
+                JsonSerializer jsonSerializer = this.GetSerializer();
+                jsonSerializer.Serialize(writer, input);
+                writer.Flush();
+                streamWriter.Flush();
+            }
         }
 
         /// <summary>
