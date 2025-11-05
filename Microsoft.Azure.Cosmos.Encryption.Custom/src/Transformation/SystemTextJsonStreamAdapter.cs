@@ -23,18 +23,19 @@ internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
     public async Task<Stream> EncryptAsync(Stream input, Encryptor encryptor, EncryptionOptions options, CancellationToken cancellationToken)
     {
         MemoryStream ms = new ();
-        await this.streamProcessor.EncryptStreamAsync(input, ms, encryptor, options, cancellationToken);
+        CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(null);
+        await this.streamProcessor.EncryptStreamAsync(input, ms, encryptor, options, diagnosticsContext, cancellationToken);
         return ms;
     }
 
-    public Task EncryptAsync(Stream input, Stream output, Encryptor encryptor, EncryptionOptions options, CancellationToken cancellationToken)
+    public Task EncryptAsync(Stream input, Stream output, Encryptor encryptor, EncryptionOptions options, CosmosDiagnosticsContext diagnosticsContext, CancellationToken cancellationToken)
     {
         if (options.JsonProcessor != JsonProcessor.Stream)
         {
             throw new NotSupportedException("This overload is only supported for Stream JsonProcessor");
         }
 
-        return this.streamProcessor.EncryptStreamAsync(input, output, encryptor, options, cancellationToken);
+        return this.streamProcessor.EncryptStreamAsync(input, output, encryptor, options, diagnosticsContext, cancellationToken);
     }
 
     public async Task<(Stream, DecryptionContext)> DecryptAsync(Stream input, Encryptor encryptor, CosmosDiagnosticsContext diagnosticsContext, CancellationToken cancellationToken)

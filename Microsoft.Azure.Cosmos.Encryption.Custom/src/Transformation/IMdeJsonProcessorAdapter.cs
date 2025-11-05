@@ -42,9 +42,10 @@ internal interface IMdeJsonProcessorAdapter
     /// <param name="output">Output stream to write encrypted JSON document to.</param>
     /// <param name="encryptor">Encryptor to use for encryption operations.</param>
     /// <param name="options">Encryption options including paths to encrypt.</param>
+    /// <param name="diagnosticsContext">Diagnostics context for telemetry.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <exception cref="NotSupportedException">Thrown by NewtonsoftAdapter as it requires in-memory processing.</exception>
-    Task EncryptAsync(Stream input, Stream output, Encryptor encryptor, EncryptionOptions options, CancellationToken cancellationToken);
+    Task EncryptAsync(Stream input, Stream output, Encryptor encryptor, EncryptionOptions options, CosmosDiagnosticsContext diagnosticsContext, CancellationToken cancellationToken);
 
     /// <summary>
     /// Decrypts a JSON stream and returns the decrypted result as a new stream along with decryption context.
