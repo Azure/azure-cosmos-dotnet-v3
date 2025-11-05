@@ -188,6 +188,255 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             Assert.AreEqual("testDek", result.Id);
         }
 
+        [TestMethod]
+        public void DekCache_ProactiveRefreshThreshold_NegativeValue_ThrowsArgumentOutOfRangeException()
+        {
+            // Act & Assert
+            ArgumentOutOfRangeException ex = Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
+            {
+                DekCache cache = new DekCache(
+                    dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
+                    distributedCache: null,
+                    proactiveRefreshThreshold: TimeSpan.FromMinutes(-5));
+            });
+
+            Assert.AreEqual("proactiveRefreshThreshold", ex.ParamName);
+        }
+
+        [TestMethod]
+        public void DekCache_ProactiveRefreshThreshold_EqualToTTL_ThrowsArgumentException()
+        {
+            // Act & Assert
+            ArgumentOutOfRangeException ex = Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
+            {
+                DekCache cache = new DekCache(
+                    dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
+                    distributedCache: null,
+                    proactiveRefreshThreshold: TimeSpan.FromMinutes(30));
+            });
+
+            Assert.AreEqual("proactiveRefreshThreshold", ex.ParamName);
+        }
+
+        [TestMethod]
+        public void DekCache_ProactiveRefreshThreshold_GreaterThanTTL_ThrowsArgumentException()
+        {
+            // Act & Assert
+            ArgumentOutOfRangeException ex = Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
+            {
+                DekCache cache = new DekCache(
+                    dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
+                    distributedCache: null,
+                    proactiveRefreshThreshold: TimeSpan.FromMinutes(60));
+            });
+
+            Assert.AreEqual("proactiveRefreshThreshold", ex.ParamName);
+        }
+
+        [TestMethod]
+        public void DekCache_ProactiveRefreshThreshold_ValidValue_DoesNotThrow()
+        {
+            // Act & Assert - Should not throw
+            DekCache cache = new DekCache(
+                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
+                distributedCache: null,
+                proactiveRefreshThreshold: TimeSpan.FromMinutes(25));
+
+            Assert.IsNotNull(cache);
+        }
+
+        [TestMethod]
+        public void DekCache_ProactiveRefreshThreshold_Null_DoesNotThrow()
+        {
+            // Act & Assert - Should not throw
+            DekCache cache = new DekCache(
+                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
+                distributedCache: null,
+                proactiveRefreshThreshold: null);
+
+            Assert.IsNotNull(cache);
+        }
+
+        [TestMethod]
+        public void DekCache_ProactiveRefreshThreshold_WithDefaultTTL_ValidatesCorrectly()
+        {
+            // Default TTL is 120 minutes, so 119 minutes should be valid, 120+ should throw
+
+            // Valid case
+            DekCache validCache = new DekCache(
+                dekPropertiesTimeToLive: null, // Uses default 120 minutes
+                distributedCache: null,
+                proactiveRefreshThreshold: TimeSpan.FromMinutes(119));
+
+            Assert.IsNotNull(validCache);
+
+            // Invalid case - equal to default TTL
+            ArgumentOutOfRangeException ex = Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
+            {
+                DekCache cache = new DekCache(
+                    dekPropertiesTimeToLive: null, // Uses default 120 minutes
+                    distributedCache: null,
+                    proactiveRefreshThreshold: TimeSpan.FromMinutes(120));
+            });
+
+            Assert.AreEqual("proactiveRefreshThreshold", ex.ParamName);
+        }
+
+        [TestMethod]
+        public async Task DekCache_DefaultCacheKeyPrefix_UsesDekPrefix()
+        {
+            // Arrange
+            InMemoryDistributedCache distributedCache = new InMemoryDistributedCache();
+            DekCache cache = new DekCache(
+                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
+                distributedCache: distributedCache);
+
+            static DataEncryptionKeyProperties CreateDekProperties(string id)
+            {
+                return new DataEncryptionKeyProperties(
+                    id,
+                    "AEAD_AES_256_CBC_HMAC_SHA256",
+                    new byte[] { 1, 2, 3 },
+                    new EncryptionKeyWrapMetadata("test", "test", "RSA-OAEP", "test"),
+                    DateTime.UtcNow);
+            }
+
+            // Act
+            await cache.GetOrAddDekPropertiesAsync(
+                "testDek",
+                (id, ctx, ct) => Task.FromResult(CreateDekProperties(id)),
+                CosmosDiagnosticsContext.Create(null),
+                CancellationToken.None);
+
+            // Assert
+            Assert.IsTrue(distributedCache.ContainsKey("dek:testDek"), "Should use default 'dek' prefix");
+        }
+
+        [TestMethod]
+        public async Task DekCache_CustomCacheKeyPrefix_UsesCustomPrefix()
+        {
+            // Arrange
+            InMemoryDistributedCache distributedCache = new InMemoryDistributedCache();
+            DekCache cache = new DekCache(
+                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
+                distributedCache: distributedCache,
+                cacheKeyPrefix: "tenant1-dek");
+
+            static DataEncryptionKeyProperties CreateDekProperties(string id)
+            {
+                return new DataEncryptionKeyProperties(
+                    id,
+                    "AEAD_AES_256_CBC_HMAC_SHA256",
+                    new byte[] { 1, 2, 3 },
+                    new EncryptionKeyWrapMetadata("test", "test", "RSA-OAEP", "test"),
+                    DateTime.UtcNow);
+            }
+
+            // Act
+            await cache.GetOrAddDekPropertiesAsync(
+                "testDek",
+                (id, ctx, ct) => Task.FromResult(CreateDekProperties(id)),
+                CosmosDiagnosticsContext.Create(null),
+                CancellationToken.None);
+
+            // Assert
+            Assert.IsTrue(distributedCache.ContainsKey("tenant1-dek:testDek"), "Should use custom 'tenant1-dek' prefix");
+            Assert.IsFalse(distributedCache.ContainsKey("dek:testDek"), "Should NOT use default 'dek' prefix");
+        }
+
+        [TestMethod]
+        public async Task DekCache_MultiTenantScenario_IsolatesCacheEntriesByPrefix()
+        {
+            // Arrange - Shared distributed cache with two tenants
+            InMemoryDistributedCache sharedDistributedCache = new InMemoryDistributedCache();
+
+            DekCache tenant1Cache = new DekCache(
+                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
+                distributedCache: sharedDistributedCache,
+                cacheKeyPrefix: "tenant1");
+
+            DekCache tenant2Cache = new DekCache(
+                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
+                distributedCache: sharedDistributedCache,
+                cacheKeyPrefix: "tenant2");
+
+            int tenant1FetchCount = 0;
+            int tenant2FetchCount = 0;
+
+            DataEncryptionKeyProperties CreateTenant1DekProperties(string id)
+            {
+                tenant1FetchCount++;
+                return new DataEncryptionKeyProperties(
+                    "tenant1-" + id, // Prefix DEK ID with tenant
+                    "AEAD_AES_256_CBC_HMAC_SHA256",
+                    new byte[] { 1, 1, 1 }, // Tenant 1 key
+                    new EncryptionKeyWrapMetadata("test", "test", "RSA-OAEP", "tenant1-kek"),
+                    DateTime.UtcNow);
+            }
+
+            DataEncryptionKeyProperties CreateTenant2DekProperties(string id)
+            {
+                tenant2FetchCount++;
+                return new DataEncryptionKeyProperties(
+                    "tenant2-" + id, // Prefix DEK ID with tenant
+                    "AEAD_AES_256_CBC_HMAC_SHA256",
+                    new byte[] { 2, 2, 2 }, // Tenant 2 key (different)
+                    new EncryptionKeyWrapMetadata("test", "test", "RSA-OAEP", "tenant2-kek"),
+                    DateTime.UtcNow);
+            }
+
+            // Act - Both tenants use same DEK ID "shared-dek-id"
+            DataEncryptionKeyProperties tenant1Result = await tenant1Cache.GetOrAddDekPropertiesAsync(
+                "shared-dek-id",
+                (id, ctx, ct) => Task.FromResult(CreateTenant1DekProperties(id)),
+                CosmosDiagnosticsContext.Create(null),
+                CancellationToken.None);
+
+            DataEncryptionKeyProperties tenant2Result = await tenant2Cache.GetOrAddDekPropertiesAsync(
+                "shared-dek-id",
+                (id, ctx, ct) => Task.FromResult(CreateTenant2DekProperties(id)),
+                CosmosDiagnosticsContext.Create(null),
+                CancellationToken.None);
+
+            // Assert - Both entries should exist with different prefixes
+            Assert.IsTrue(sharedDistributedCache.ContainsKey("tenant1:shared-dek-id"), "Tenant 1 entry should exist");
+            Assert.IsTrue(sharedDistributedCache.ContainsKey("tenant2:shared-dek-id"), "Tenant 2 entry should exist");
+            Assert.AreEqual(1, tenant1FetchCount, "Tenant 1 should fetch once");
+            Assert.AreEqual(1, tenant2FetchCount, "Tenant 2 should fetch once");
+
+            // Verify different DEK IDs showing proper isolation
+            Assert.AreEqual("tenant1-shared-dek-id", tenant1Result.Id);
+            Assert.AreEqual("tenant2-shared-dek-id", tenant2Result.Id);
+
+            // Verify different KEK names
+            Assert.AreEqual("tenant1-kek", tenant1Result.EncryptionKeyWrapMetadata.Name);
+            Assert.AreEqual("tenant2-kek", tenant2Result.EncryptionKeyWrapMetadata.Name);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public void DekCache_NullCacheKeyPrefix_ThrowsArgumentException()
+        {
+            // Act & Assert
+            _ = new DekCache(cacheKeyPrefix: null);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void DekCache_EmptyCacheKeyPrefix_ThrowsArgumentException()
+        {
+            // Act & Assert
+            _ = new DekCache(cacheKeyPrefix: string.Empty);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void DekCache_WhitespaceCacheKeyPrefix_ThrowsArgumentException()
+        {
+            // Act & Assert
+            _ = new DekCache(cacheKeyPrefix: "   ");
+        }
+
         /// <summary>
         /// Simple in-memory implementation of IDistributedCache for testing
         /// </summary>

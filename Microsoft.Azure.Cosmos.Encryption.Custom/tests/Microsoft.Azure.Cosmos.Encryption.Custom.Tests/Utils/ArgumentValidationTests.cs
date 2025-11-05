@@ -659,5 +659,259 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Utils
         }
 
         #endregion
+
+        #region ThrowIfNegative TimeSpan Tests
+
+        [TestMethod]
+        public void ThrowIfNegative_TimeSpan_WithNegativeValue_ThrowsArgumentOutOfRangeException()
+        {
+            // Arrange
+            TimeSpan negativeValue = TimeSpan.FromMinutes(-5);
+
+            // Act & Assert
+            ArgumentOutOfRangeException ex = Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
+                ArgumentValidation.ThrowIfNegative(negativeValue, "testParam"));
+
+            Assert.AreEqual("testParam", ex.ParamName);
+            Assert.IsTrue(ex.Message.Contains("non-negative") || ex.Message.Contains("negative"));
+        }
+
+        [TestMethod]
+        public void ThrowIfNegative_TimeSpan_WithMinValue_ThrowsArgumentOutOfRangeException()
+        {
+            // Arrange
+            TimeSpan minValue = TimeSpan.MinValue;
+
+            // Act & Assert
+            ArgumentOutOfRangeException ex = Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
+                ArgumentValidation.ThrowIfNegative(minValue, "testParam"));
+
+            Assert.AreEqual("testParam", ex.ParamName);
+        }
+
+        [TestMethod]
+        public void ThrowIfNegative_TimeSpan_WithZero_DoesNotThrow()
+        {
+            // Arrange
+            TimeSpan zeroValue = TimeSpan.Zero;
+
+            // Act & Assert - should not throw
+            ArgumentValidation.ThrowIfNegative(zeroValue, "testParam");
+        }
+
+        [TestMethod]
+        public void ThrowIfNegative_TimeSpan_WithPositiveValue_DoesNotThrow()
+        {
+            // Arrange
+            TimeSpan positiveValue = TimeSpan.FromMinutes(30);
+
+            // Act & Assert - should not throw
+            ArgumentValidation.ThrowIfNegative(positiveValue, "testParam");
+        }
+
+        [TestMethod]
+        public void ThrowIfNegative_TimeSpan_WithMaxValue_DoesNotThrow()
+        {
+            // Arrange
+            TimeSpan maxValue = TimeSpan.MaxValue;
+
+            // Act & Assert - should not throw
+            ArgumentValidation.ThrowIfNegative(maxValue, "testParam");
+        }
+
+        [TestMethod]
+        public void ThrowIfNegative_TimeSpan_WithVariousNegativeValues_ThrowsConsistently()
+        {
+            // Test various negative TimeSpan values
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
+                ArgumentValidation.ThrowIfNegative(TimeSpan.FromMilliseconds(-1), "test"));
+            
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
+                ArgumentValidation.ThrowIfNegative(TimeSpan.FromSeconds(-1), "test"));
+            
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
+                ArgumentValidation.ThrowIfNegative(TimeSpan.FromHours(-1), "test"));
+            
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
+                ArgumentValidation.ThrowIfNegative(TimeSpan.FromDays(-1), "test"));
+        }
+
+        #endregion
+
+        #region ThrowIfGreaterThanOrEqual TimeSpan Tests
+
+        [TestMethod]
+        public void ThrowIfGreaterThanOrEqual_TimeSpan_WithValueGreaterThanOther_ThrowsArgumentOutOfRangeException()
+        {
+            // Arrange
+            TimeSpan value = TimeSpan.FromMinutes(60);
+            TimeSpan other = TimeSpan.FromMinutes(30);
+
+            // Act & Assert
+            ArgumentOutOfRangeException ex = Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
+                ArgumentValidation.ThrowIfGreaterThanOrEqual(value, other, "testParam"));
+
+            Assert.AreEqual("testParam", ex.ParamName);
+            Assert.IsTrue(ex.Message.Contains("must be less than") || ex.Message.Contains("greater"));
+            Assert.IsTrue(ex.Message.Contains("00:60:00") || ex.Message.Contains("01:00:00")); // Value in message
+        }
+
+        [TestMethod]
+        public void ThrowIfGreaterThanOrEqual_TimeSpan_WithValueEqualToOther_ThrowsArgumentOutOfRangeException()
+        {
+            // Arrange
+            TimeSpan value = TimeSpan.FromMinutes(30);
+            TimeSpan other = TimeSpan.FromMinutes(30);
+
+            // Act & Assert - equal values should throw (GreaterThanOrEqual)
+            ArgumentOutOfRangeException ex = Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
+                ArgumentValidation.ThrowIfGreaterThanOrEqual(value, other, "testParam"));
+
+            Assert.AreEqual("testParam", ex.ParamName);
+        }
+
+        [TestMethod]
+        public void ThrowIfGreaterThanOrEqual_TimeSpan_WithValueLessThanOther_DoesNotThrow()
+        {
+            // Arrange
+            TimeSpan value = TimeSpan.FromMinutes(25);
+            TimeSpan other = TimeSpan.FromMinutes(30);
+
+            // Act & Assert - should not throw
+            ArgumentValidation.ThrowIfGreaterThanOrEqual(value, other, "testParam");
+        }
+
+        [TestMethod]
+        public void ThrowIfGreaterThanOrEqual_TimeSpan_WithZeroValues_WorksCorrectly()
+        {
+            // Zero equals Zero - should throw
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
+                ArgumentValidation.ThrowIfGreaterThanOrEqual(TimeSpan.Zero, TimeSpan.Zero, "test"));
+
+            // Negative less than Zero - should not throw
+            ArgumentValidation.ThrowIfGreaterThanOrEqual(TimeSpan.FromMinutes(-1), TimeSpan.Zero, "test");
+
+            // Positive greater than Zero - should throw
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
+                ArgumentValidation.ThrowIfGreaterThanOrEqual(TimeSpan.FromMinutes(1), TimeSpan.Zero, "test"));
+        }
+
+        [TestMethod]
+        public void ThrowIfGreaterThanOrEqual_TimeSpan_WithBoundaryValues_WorksCorrectly()
+        {
+            // Max >= Max - should throw
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
+                ArgumentValidation.ThrowIfGreaterThanOrEqual(TimeSpan.MaxValue, TimeSpan.MaxValue, "test"));
+
+            // Min >= Max - should not throw (Min < Max)
+            ArgumentValidation.ThrowIfGreaterThanOrEqual(TimeSpan.MinValue, TimeSpan.MaxValue, "test");
+
+            // Max-1 < Max - should not throw
+            ArgumentValidation.ThrowIfGreaterThanOrEqual(
+                TimeSpan.MaxValue - TimeSpan.FromTicks(1), 
+                TimeSpan.MaxValue, 
+                "test");
+        }
+
+        [TestMethod]
+        public void ThrowIfGreaterThanOrEqual_TimeSpan_RealWorldScenario_ProactiveRefreshValidation()
+        {
+            // Simulate real-world scenario: proactiveRefreshThreshold < dekPropertiesTimeToLive
+            TimeSpan dekTtl = TimeSpan.FromMinutes(120);
+
+            // Valid: 119 minutes < 120 minutes
+            ArgumentValidation.ThrowIfGreaterThanOrEqual(TimeSpan.FromMinutes(119), dekTtl, "proactiveRefreshThreshold");
+
+            // Invalid: 120 minutes >= 120 minutes
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
+                ArgumentValidation.ThrowIfGreaterThanOrEqual(TimeSpan.FromMinutes(120), dekTtl, "proactiveRefreshThreshold"));
+
+            // Invalid: 121 minutes >= 120 minutes
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
+                ArgumentValidation.ThrowIfGreaterThanOrEqual(TimeSpan.FromMinutes(121), dekTtl, "proactiveRefreshThreshold"));
+        }
+
+        [TestMethod]
+        public void ThrowIfGreaterThanOrEqual_TimeSpan_WithDifferentUnits_ComparesCorrectly()
+        {
+            // Test that comparison works correctly across different time units
+            TimeSpan oneHour = TimeSpan.FromHours(1);
+            TimeSpan sixtyMinutes = TimeSpan.FromMinutes(60);
+            TimeSpan thirtyMinutes = TimeSpan.FromMinutes(30);
+            TimeSpan ninetyMinutes = TimeSpan.FromMinutes(90);
+
+            // Equal values (1 hour = 60 minutes) - should throw
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
+                ArgumentValidation.ThrowIfGreaterThanOrEqual(oneHour, sixtyMinutes, "test"));
+
+            // 30 minutes < 1 hour - should not throw
+            ArgumentValidation.ThrowIfGreaterThanOrEqual(thirtyMinutes, oneHour, "test");
+
+            // 90 minutes > 1 hour - should throw
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
+                ArgumentValidation.ThrowIfGreaterThanOrEqual(ninetyMinutes, oneHour, "test"));
+        }
+
+        #endregion
+
+        #region TimeSpan Methods Integration Tests
+
+        [TestMethod]
+        public void TimeSpanValidations_WithNullParamName_DoNotThrow()
+        {
+            // Test that TimeSpan methods work without param name
+            ArgumentValidation.ThrowIfNegative(TimeSpan.Zero);
+            ArgumentValidation.ThrowIfNegative(TimeSpan.FromMinutes(1));
+            ArgumentValidation.ThrowIfGreaterThanOrEqual(TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(10));
+        }
+
+        [TestMethod]
+        public void TimeSpanValidations_AllInvalidCasesThrow()
+        {
+            int thrownCount = 0;
+
+            // ThrowIfNegative should throw
+            try
+            {
+                ArgumentValidation.ThrowIfNegative(TimeSpan.FromMinutes(-1), "test");
+                Assert.Fail("Should have thrown for negative TimeSpan");
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                thrownCount++;
+            }
+
+            // ThrowIfGreaterThanOrEqual should throw for equal
+            try
+            {
+                ArgumentValidation.ThrowIfGreaterThanOrEqual(
+                    TimeSpan.FromMinutes(30), 
+                    TimeSpan.FromMinutes(30), 
+                    "test");
+                Assert.Fail("Should have thrown for equal TimeSpan values");
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                thrownCount++;
+            }
+
+            // ThrowIfGreaterThanOrEqual should throw for greater
+            try
+            {
+                ArgumentValidation.ThrowIfGreaterThanOrEqual(
+                    TimeSpan.FromMinutes(60), 
+                    TimeSpan.FromMinutes(30), 
+                    "test");
+                Assert.Fail("Should have thrown for greater TimeSpan value");
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                thrownCount++;
+            }
+
+            Assert.AreEqual(3, thrownCount, "All invalid TimeSpan validations should throw");
+        }
+
+        #endregion
     }
 }
