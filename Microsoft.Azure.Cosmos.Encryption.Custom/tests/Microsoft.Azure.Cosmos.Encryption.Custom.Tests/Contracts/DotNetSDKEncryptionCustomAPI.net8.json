@@ -1068,27 +1068,6 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionRequestOptionsExperimental;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
-      "Subclasses": {},
-      "Members": {
-        "Microsoft.Azure.Cosmos.ItemRequestOptions Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionRequestOptionsExperimental.CreateRequestOptions(Microsoft.Azure.Cosmos.Encryption.Custom.JsonProcessor)[System.Diagnostics.CodeAnalysis.ExperimentalAttribute(\"COSMOSENC0001\")]": {
-          "Type": "Method",
-          "Attributes": [
-            "ExperimentalAttribute"
-          ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.ItemRequestOptions Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionRequestOptionsExperimental.CreateRequestOptions(Microsoft.Azure.Cosmos.Encryption.Custom.JsonProcessor);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "TRequestOptions Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionRequestOptionsExperimental.ConfigureJsonProcessor[TRequestOptions](TRequestOptions, Microsoft.Azure.Cosmos.Encryption.Custom.JsonProcessor)[System.Runtime.CompilerServices.ExtensionAttribute()]-[System.Diagnostics.CodeAnalysis.ExperimentalAttribute(\"COSMOSENC0001\")]": {
-          "Type": "Method",
-          "Attributes": [
-            "ExperimentalAttribute",
-            "ExtensionAttribute"
-          ],
-          "MethodInfo": "TRequestOptions Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionRequestOptionsExperimental.ConfigureJsonProcessor[TRequestOptions](TRequestOptions, Microsoft.Azure.Cosmos.Encryption.Custom.JsonProcessor);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
-        }
-      },
-      "NestedTypes": {}
-    },
     "Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionTransactionalBatchItemRequestOptions;Microsoft.Azure.Cosmos.TransactionalBatchItemRequestOptions;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
