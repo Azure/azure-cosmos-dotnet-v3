@@ -344,6 +344,27 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return encryptionPropertiesJObj;
         }
 
+        internal static Task<List<DecryptableItem>> ConvertResponseToDecryptableItemsAsync(
+            Stream content,
+            Encryptor encryptor,
+            CosmosSerializer cosmosSerializer,
+            JsonProcessor jsonProcessor,
+            CancellationToken cancellationToken)
+        {
+            ArgumentValidation.ThrowIfNull(content);
+            ArgumentValidation.ThrowIfNull(encryptor);
+            ArgumentValidation.ThrowIfNull(cosmosSerializer);
+
+            return jsonProcessor switch
+            {
+#if NET8_0_OR_GREATER
+                JsonProcessor.Stream => ConvertResponseToDecryptableItemsStreamAsync(content, encryptor, cosmosSerializer, cancellationToken),
+#endif
+                JsonProcessor.Newtonsoft => Task.FromResult(ConvertResponseToDecryptableItemsNewtonsoft(content, encryptor, cosmosSerializer)),
+                _ => throw new NotImplementedException(),
+            };
+        }
+
         internal static async Task<Stream> DeserializeAndDecryptResponseAsync(
             Stream content,
             Encryptor encryptor,
@@ -357,6 +378,56 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 #endif
                 _ => await DecryptJsonArrayNewtonsoftAsync(content, encryptor, cancellationToken),
             };
+        }
+
+#if NET8_0_OR_GREATER
+        private static async Task<List<DecryptableItem>> ConvertResponseToDecryptableItemsStreamAsync(
+            Stream content,
+            Encryptor encryptor,
+            CosmosSerializer cosmosSerializer,
+            CancellationToken cancellationToken)
+        {
+            List<DecryptableItem> decryptableItems = new ();
+
+            await foreach (Stream itemStream in JsonArrayStreamSplitter.SplitIntoSubstreamsAsync(content, cancellationToken).ConfigureAwait(false))
+            {
+                StreamDecryptableItem item = new (
+                    itemStream,
+                    encryptor,
+                    cosmosSerializer);
+
+                decryptableItems.Add(item);
+            }
+
+            return decryptableItems;
+        }
+#endif
+
+        private static List<DecryptableItem> ConvertResponseToDecryptableItemsNewtonsoft(
+            Stream content,
+            Encryptor encryptor,
+            CosmosSerializer cosmosSerializer)
+        {
+            JObject contentJObj = BaseSerializer.FromStream<JObject>(content);
+
+            if (contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is not JArray documents)
+            {
+                throw new InvalidOperationException("Feed Response body contract was violated. Feed Response did not have an array of Documents.");
+            }
+
+            List<DecryptableItem> decryptableItems = new (documents.Count);
+
+            foreach (JToken value in documents)
+            {
+                DecryptableItemCore item = new (
+                    value,
+                    encryptor,
+                    cosmosSerializer);
+
+                decryptableItems.Add(item);
+            }
+
+            return decryptableItems;
         }
 
 #if NET8_0_OR_GREATER

@@ -6,10 +6,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
-    using Newtonsoft.Json.Linq;
 
     internal sealed class EncryptionFeedIterator<T> : FeedIterator<T>
     {
@@ -79,60 +77,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     return (responseMessage, decryptableContent);
                 }
 
-                decryptableContent = this.jsonProcessor switch
+                List<DecryptableItem> decryptableItems = await EncryptionProcessor.ConvertResponseToDecryptableItemsAsync(
+                    responseMessage.Content,
+                    this.encryptor,
+                    this.cosmosSerializer,
+                    this.jsonProcessor,
+                    cancellationToken).ConfigureAwait(false);
+
+                decryptableContent = new List<T>(decryptableItems.Count);
+
+                foreach (DecryptableItem decryptableItem in decryptableItems)
                 {
-#if NET8_0_OR_GREATER
-                    JsonProcessor.Stream => await this.ConvertResponseToDecryptableItemsStreamAsync(responseMessage.Content, cancellationToken).ConfigureAwait(false),
-#endif
-                    JsonProcessor.Newtonsoft => this.ConvertResponseToDecryptableItemsNewtonsoft(responseMessage.Content),
-                    _ => throw new NotImplementedException()
-                };
+                    decryptableContent.Add((T)(object)decryptableItem);
+                }
 
                 return (responseMessage, decryptableContent);
             }
         }
-
-        private List<T> ConvertResponseToDecryptableItemsNewtonsoft(Stream content)
-        {
-            JObject contentJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(content);
-
-            if (contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is not JArray documents)
-            {
-                throw new InvalidOperationException("Feed Response body contract was violated. Feed Response did not have an array of Documents.");
-            }
-
-            List<T> decryptableItems = new (documents.Count);
-
-            foreach (JToken value in documents)
-            {
-                DecryptableItemCore item = new (
-                    value,
-                    this.encryptor,
-                    this.cosmosSerializer);
-
-                decryptableItems.Add((T)(object)item);
-            }
-
-            return decryptableItems;
-        }
-
-#if NET8_0_OR_GREATER
-        private async Task<List<T>> ConvertResponseToDecryptableItemsStreamAsync(Stream content, CancellationToken cancellationToken)
-        {
-            List<T> decryptableItems = new ();
-
-            await foreach (Stream itemStream in JsonArrayStreamSplitter.SplitIntoSubstreamsAsync(content, cancellationToken).ConfigureAwait(false))
-            {
-                StreamDecryptableItem item = new (
-                    itemStream,
-                    this.encryptor,
-                    this.cosmosSerializer);
-
-                decryptableItems.Add((T)(object)item);
-            }
-
-            return decryptableItems;
-        }
-#endif
     }
 }
