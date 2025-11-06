@@ -274,7 +274,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("dkunda")]
+        [Owner("mpalaparthi")]
         public void AllDateTimeOffsetVariationsTest()
         {
             // Arrange
