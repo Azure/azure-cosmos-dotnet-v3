@@ -632,9 +632,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
                     feedPayloadStream.Position = 0;
                     using StreamReader reader = new(feedPayloadStream, Encoding.UTF8, detectEncodingFromByteOrderMarks: false, leaveOpen: true);
                     string decryptedJson = await reader.ReadToEndAsync().ConfigureAwait(false);
-                    JArray decryptedArray = JArray.Parse(decryptedJson);
+                    JObject decryptedPayload = JObject.Parse(decryptedJson);
+                    JToken documentsToken = decryptedPayload[Constants.DocumentsResourcePropertyName];
+                    Assert.IsNotNull(documentsToken, "Feed payload missing Documents array after decryption.");
+                    Assert.IsInstanceOfType(documentsToken, typeof(JArray), "Documents payload expected to be a JSON array.");
+
+                    JArray decryptedArray = (JArray)documentsToken;
 
                     Assert.AreEqual(originalDocs.Count, decryptedArray.Count, "Decrypted array length mismatch");
+                    Assert.AreEqual(originalDocs.Count, decryptedPayload.Value<int>("_count"), "Feed metadata _count mismatch.");
 
                     for (int i = 0; i < originalDocs.Count; i++)
                     {
@@ -669,7 +675,25 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         [TestMethod]
         public async Task DecryptJsonArrayStreamInPlaceAsync_ReturnsNullContextWhenNoEncryptedObjects()
         {
-            const string json = "[{\"id\":\"1\",\"value\":10},{\"id\":\"2\",\"value\":20}]";
+            JObject payload = new()
+            {
+                ["_rid"] = "testRid==",
+                [Constants.DocumentsResourcePropertyName] = new JArray(
+                    new JObject
+                    {
+                        ["id"] = "1",
+                        ["value"] = 10,
+                    },
+                    new JObject
+                    {
+                        ["id"] = "2",
+                        ["value"] = 20,
+                    }),
+                ["_count"] = 2,
+            };
+
+            string json = payload.ToString(Newtonsoft.Json.Formatting.None);
+            JObject expectedPayload = JObject.Parse(json);
 
             using MemoryStream input = new();
             using (StreamWriter writer = new(input, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), bufferSize: 1024, leaveOpen: true))
@@ -699,7 +723,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
                 input.Position = 0;
                 using StreamReader reader = new(input, Encoding.UTF8, detectEncodingFromByteOrderMarks: false, leaveOpen: true);
                 string roundTripped = await reader.ReadToEndAsync().ConfigureAwait(false);
-                Assert.AreEqual(json, roundTripped, "Plain payload should round-trip unchanged");
+                JObject roundTrippedPayload = JObject.Parse(roundTripped);
+
+                Assert.IsTrue(JToken.DeepEquals(expectedPayload, roundTrippedPayload), "Plain payload should round-trip unchanged.");
             }
             finally
             {
@@ -759,12 +785,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
                 encryptedDocuments.Add(encryptedJObject);
             }
 
+            JObject feedPayload = new()
+            {
+                ["_rid"] = "benchmarkRid==",
+                [Constants.DocumentsResourcePropertyName] = new JArray(encryptedDocuments),
+                ["_count"] = encryptedDocuments.Count,
+            };
+
             byte[] feedPayloadBytes;
             using (MemoryStream buffer = new())
             using (StreamWriter writer = new(buffer, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), bufferSize: 1024, leaveOpen: true))
             using (Newtonsoft.Json.JsonTextWriter jsonWriter = new(writer))
             {
-                new JArray(encryptedDocuments).WriteTo(jsonWriter);
+                feedPayload.WriteTo(jsonWriter);
                 jsonWriter.Flush();
                 writer.Flush();
                 feedPayloadBytes = buffer.ToArray();

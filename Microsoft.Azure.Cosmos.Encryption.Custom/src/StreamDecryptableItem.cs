@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Diagnostics;
 
     internal sealed class StreamDecryptableItem : DecryptableItem
     {

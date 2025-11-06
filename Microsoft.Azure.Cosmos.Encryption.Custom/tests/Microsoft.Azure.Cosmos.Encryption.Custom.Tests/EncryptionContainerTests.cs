@@ -356,7 +356,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             this.innerContainerMock
                 .Setup(c => c.ReadManyItemsStreamAsync(items, null, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(innerResponse);
-            this.encryptionContainer.DefaultJsonProcessor = JsonProcessor.Newtonsoft;
 
             ResponseMessage decryptedResponse = await this.encryptionContainer.ReadManyItemsStreamAsync(
                 items,
@@ -374,6 +373,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 c => c.ReadManyItemsStreamAsync(items, null, It.IsAny<CancellationToken>()),
                 Times.Once);
         }
+
+#if NET8_0_OR_GREATER
+        [TestMethod]
+        public void UseStreamJsonProcessing_SetsDefaultJsonProcessor()
+        {
+            Assert.AreEqual(JsonProcessor.Newtonsoft, this.encryptionContainer.DefaultJsonProcessor);
+
+            this.encryptionContainer.UseStreamJsonProcessing();
+
+            Assert.AreEqual(JsonProcessor.Stream, this.encryptionContainer.DefaultJsonProcessor);
+        }
+#endif
 
         private static EncryptionContainer CreateEncryptionContainer(
             out Mock<Container> innerContainerMock,

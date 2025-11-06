@@ -54,32 +54,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             return (encryptedText, encryptedTextLength);
         }
 
-        internal virtual int Encrypt(DataEncryptionKey encryptionKey, TypeMarker typeMarker, byte[] plainText, int plainTextLength, byte[] outputBuffer)
-        {
-            int encryptedTextLength = encryptionKey.GetEncryptByteCount(plainTextLength) + 1;
-
-            if (outputBuffer.Length < encryptedTextLength)
-            {
-                throw new ArgumentException($"Output buffer length {outputBuffer.Length} is less than required encrypted text length {encryptedTextLength}.");
-            }
-
-            outputBuffer[0] = (byte)typeMarker;
-
-            int encryptedLength = encryptionKey.EncryptData(
-                plainText,
-                plainTextOffset: 0,
-                plainTextLength,
-                outputBuffer,
-                outputOffset: 1);
-
-            if (encryptedLength < 0)
-            {
-                throw new InvalidOperationException($"{nameof(DataEncryptionKey)} returned null cipherText from {nameof(DataEncryptionKey.EncryptData)}.");
-            }
-
-            return encryptedTextLength;
-        }
-
         internal virtual (byte[] plainText, int plainTextLength) Decrypt(DataEncryptionKey encryptionKey, byte[] cipherText, int cipherTextLength, ArrayPoolManager arrayPoolManager)
         {
             int plainTextLength = this.GetDecryptedByteCount(encryptionKey, cipherTextLength);
@@ -103,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
         internal virtual int Decrypt(DataEncryptionKey encryptionKey, byte[] cipherText, int cipherTextLength, byte[] plainText)
         {
-            int plainTextLength = encryptionKey.GetDecryptByteCount(cipherTextLength - 1);
+            int plainTextLength = this.GetDecryptedByteCount(encryptionKey, cipherTextLength);
 
             if (plainText.Length < plainTextLength)
             {

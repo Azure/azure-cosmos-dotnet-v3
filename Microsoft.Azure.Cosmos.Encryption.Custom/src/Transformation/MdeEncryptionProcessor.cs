@@ -7,9 +7,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
     using System;
     using System.Collections.Generic;
     using System.IO;
-#if NET8_0_OR_GREATER
-    using System.Text.Json.Nodes;
-#endif
     using System.Threading;
     using System.Threading.Tasks;
     using Newtonsoft.Json.Linq;
@@ -155,34 +152,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             await this.StreamProcessor.DecryptJsonArrayStreamInPlaceAsync(input, encryptor, diagnosticsContext, cancellationToken);
 
             return input;
-        }
-
-        public async Task<(Stream, DecryptionContext)> DecryptStreamAsync(
-            Stream input,
-            Encryptor encryptor,
-            EncryptionProperties properties,
-            CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken)
-        {
-            MemoryStream ms = new ();
-            DecryptionContext context = await this.StreamProcessor.DecryptStreamAsync(input, ms, encryptor, properties, diagnosticsContext, cancellationToken);
-            if (context == null)
-            {
-                return (input, null);
-            }
-
-            return (ms, context);
-        }
-
-        public async Task<DecryptionContext> DecryptStreamAsync(
-            Stream input,
-            Stream output,
-            Encryptor encryptor,
-            EncryptionProperties properties,
-            CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken)
-        {
-            return await this.StreamProcessor.DecryptStreamAsync(input, output, encryptor, properties, diagnosticsContext, cancellationToken);
         }
 #endif
 

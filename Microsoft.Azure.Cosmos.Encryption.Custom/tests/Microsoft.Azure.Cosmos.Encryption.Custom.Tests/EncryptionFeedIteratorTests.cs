@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             ResponseMessage response = this.CreateResponseMessage(HttpStatusCode.OK, new JObject
             {
                 [Constants.DocumentsResourcePropertyName] = new JArray(firstDocument),
-            }, jsonProcessor);
+            });
 
             Mock<FeedIterator> innerIterator = new Mock<FeedIterator>();
             innerIterator
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [DynamicData(nameof(GetSupportedJsonProcessorsData), DynamicDataSourceType.Method)]
         public async Task ReadNextAsync_UnsuccessfulResponse_ReturnsOriginalResponseMessage(JsonProcessor jsonProcessor)
         {
-            ResponseMessage response = this.CreateResponseMessage(HttpStatusCode.NotFound, new { message = "not-found" }, jsonProcessor);
+            ResponseMessage response = this.CreateResponseMessage(HttpStatusCode.NotFound, new { message = "not-found" });
 
             Mock<FeedIterator> innerIterator = new Mock<FeedIterator>();
             innerIterator
@@ -136,31 +136,28 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
                 using ResponseMessage newtonsoftResponse = await ExecuteAsync(
                     JsonProcessor.Newtonsoft,
-                    () => this.CreateResponseMessage(HttpStatusCode.OK, payload, JsonProcessor.Newtonsoft));
+                    () => this.CreateResponseMessage(HttpStatusCode.OK, payload));
 
                 using ResponseMessage streamResponse = await ExecuteAsync(
                     JsonProcessor.Stream,
-                    () => this.CreateResponseMessage(HttpStatusCode.OK, payload, JsonProcessor.Stream));
+                    () => this.CreateResponseMessage(HttpStatusCode.OK, payload));
 
                 JToken newtonsoftPayload = TestCommon.FromStream<JToken>(newtonsoftResponse.Content);
                 JToken streamPayload = TestCommon.FromStream<JToken>(streamResponse.Content);
 
-                JObject normalizedNewtonsoft = NormalizePayload(newtonsoftPayload);
-                JObject normalizedStream = NormalizePayload(streamPayload);
-
                 Assert.IsTrue(
-                    JToken.DeepEquals(normalizedNewtonsoft, normalizedStream),
+                    JToken.DeepEquals(newtonsoftPayload, streamPayload),
                     $"{scenarioName}: Stream processor payload differed from Newtonsoft payload.");
 
-                JArray docsArray = ExtractDocuments(normalizedNewtonsoft);
+                JArray docsArray = ExtractDocuments(newtonsoftPayload);
                 Assert.IsNotNull(docsArray, $"{scenarioName}: Documents array missing in payload.");
                 Assert.AreEqual(documents.Count, docsArray.Count, $"{scenarioName}: Document count mismatch.");
             }
 
             async Task VerifyErrorScenarioAsync(HttpStatusCode statusCode)
             {
-                ResponseMessage newtonsoftResponseMessage = this.CreateResponseMessage(statusCode, new { message = "error" }, JsonProcessor.Newtonsoft);
-                ResponseMessage streamResponseMessage = this.CreateResponseMessage(statusCode, new { message = "error" }, JsonProcessor.Stream);
+                ResponseMessage newtonsoftResponseMessage = this.CreateResponseMessage(statusCode, new { message = "error" });
+                ResponseMessage streamResponseMessage = this.CreateResponseMessage(statusCode, new { message = "error" });
 
                 ResponseMessage newtonsoftResult = await ExecuteAsync(JsonProcessor.Newtonsoft, () => newtonsoftResponseMessage);
                 ResponseMessage streamResult = await ExecuteAsync(JsonProcessor.Stream, () => streamResponseMessage);
@@ -183,6 +180,59 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 return await feedIterator.ReadNextAsync();
             }
         }
+
+        [TestMethod]
+        public async Task ReadNextAsync_StreamProcessorWithFeedEnvelope_ReturnsDecryptedResponse()
+        {
+            JObject document = new()
+            {
+                ["id"] = "doc-id",
+                ["pk"] = "doc-pk",
+                ["value"] = 1,
+            };
+
+            JObject feedPayload = new()
+            {
+                ["_rid"] = "sampleRid==",
+                [Constants.DocumentsResourcePropertyName] = new JArray(document),
+                ["_count"] = 1,
+            };
+
+            ResponseMessage responseMessage = new(HttpStatusCode.OK)
+            {
+                Content = TestCommon.ToStream(feedPayload),
+            };
+
+            Mock<FeedIterator> innerIterator = new();
+            innerIterator
+                .Setup(iterator => iterator.ReadNextAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(responseMessage);
+
+            RequestOptions requestOptions = new ItemRequestOptions
+            {
+                Properties = new Dictionary<string, object>
+                {
+                    { "encryption-json-processor", JsonProcessor.Stream },
+                },
+            };
+
+            EncryptionFeedIterator feedIterator = new(
+                innerIterator.Object,
+                new NoOpEncryptor(),
+                requestOptions);
+
+            ResponseMessage decrypted = await feedIterator.ReadNextAsync();
+
+            Assert.IsInstanceOfType(decrypted, typeof(DecryptedResponseMessage));
+
+            JToken payload = TestCommon.FromStream<JToken>(decrypted.Content);
+            JArray documents = ExtractDocuments(payload);
+
+            Assert.AreEqual(1, documents.Count);
+            Assert.AreEqual(document["id"], documents[0]["id"]);
+            Assert.AreEqual(document["pk"], documents[0]["pk"]);
+            Assert.AreEqual(document["value"], documents[0]["value"]);
+        }
 #endif
 
         private EncryptionFeedIterator CreateFeedIterator(FeedIterator innerIterator, JsonProcessor jsonProcessor)
@@ -190,26 +240,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             return new EncryptionFeedIterator(innerIterator, new NoOpEncryptor(), jsonProcessor);
         }
 
-        private ResponseMessage CreateResponseMessage(HttpStatusCode statusCode, object payload, JsonProcessor processor)
+        private ResponseMessage CreateResponseMessage(HttpStatusCode statusCode, object payload)
         {
             ResponseMessage response = new ResponseMessage(statusCode);
             if (payload != null)
             {
-                response.Content = this.ToStream(payload, processor);
+                response.Content = this.ToStream(payload);
             }
 
             return response;
         }
 
-        private Stream ToStream(object payload, JsonProcessor processor)
+        private Stream ToStream(object payload)
         {
-#if NET8_0_OR_GREATER
-            if (processor == JsonProcessor.Stream && payload is JObject obj && obj.TryGetValue(Constants.DocumentsResourcePropertyName, out JToken docsToken) && docsToken is JArray docsArray)
-            {
-                payload = docsArray;
-            }
-#endif
-
             string json = JsonConvert.SerializeObject(payload);
             byte[] buffer = Encoding.UTF8.GetBytes(json);
             MemoryStream stream = new MemoryStream(buffer.Length);
@@ -220,40 +263,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         private static JArray ExtractDocuments(JToken payload)
         {
-            if (payload is JObject obj)
-            {
-                JToken documentsToken = obj[Constants.DocumentsResourcePropertyName];
-                Assert.IsNotNull(documentsToken, "Feed payload missing Documents array.");
-                Assert.IsInstanceOfType(documentsToken, typeof(JArray), "Documents payload expected to be a JSON array.");
-                return (JArray)documentsToken;
-            }
+            Assert.IsInstanceOfType(payload, typeof(JObject), "Feed payload expected to be a JSON object with a Documents array.");
 
-            if (payload is JArray array)
-            {
-                return array;
-            }
-
-            Assert.Fail($"Unsupported payload type: {payload?.Type}");
-            return null;
-        }
-
-        private static JObject NormalizePayload(JToken payload)
-        {
-            if (payload is JObject obj)
-            {
-                return obj;
-            }
-
-            if (payload is JArray array)
-            {
-                return new JObject
-                {
-                    [Constants.DocumentsResourcePropertyName] = array,
-                };
-            }
-
-            Assert.Fail($"Unsupported payload type: {payload?.Type}");
-            return null;
+            JObject obj = (JObject)payload;
+            JToken documentsToken = obj[Constants.DocumentsResourcePropertyName];
+            Assert.IsNotNull(documentsToken, "Feed payload missing Documents array.");
+            Assert.IsInstanceOfType(documentsToken, typeof(JArray), "Documents payload expected to be a JSON array.");
+            return (JArray)documentsToken;
         }
 
         private sealed class NoOpEncryptor : Encryptor

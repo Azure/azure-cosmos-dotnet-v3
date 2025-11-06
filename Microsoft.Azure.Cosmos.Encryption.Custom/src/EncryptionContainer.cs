@@ -16,13 +16,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     {
         private readonly Container container;
 
+        internal JsonProcessor DefaultJsonProcessor { get; private set; } = JsonProcessor.Newtonsoft;
+
         public CosmosSerializer CosmosSerializer { get; }
 
         public Encryptor Encryptor { get; }
 
         public CosmosResponseFactory ResponseFactory { get; }
-
-        public JsonProcessor DefaultJsonProcessor { get; set; }
 
         /// <summary>
         /// All the operations / requests for exercising client-side encryption functionality need to be made using this EncryptionContainer instance.
@@ -1022,6 +1022,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 x,
                 y,
                 cancellationToken);
+        }
+#endif
+
+#if NET8_0_OR_GREATER
+        public void UseStreamJsonProcessing()
+        {
+            this.DefaultJsonProcessor = JsonProcessor.Stream;
         }
 #endif
 

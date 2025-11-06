@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 stream.Position = 0;
 
                 JsonReaderState readerState = new (JsonReaderOptions);
-                JsonArrayTraversalState traversalState = default;
+                JsonArrayTraversalState traversalState = JsonArrayTraversalState.CreateInitial();
                 Dictionary<string, HashSet<string>> aggregatedPaths = null;
 
                 using RentArrayBufferWriter objectBuffer = new (InitialBufferSize);
@@ -99,8 +99,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     }
                 }
 
-                ValidateJsonArrayCompletion(traversalState);
-
                 stream.Position = 0;
                 stream.SetLength(0);
                 tempOutputStream.Position = 0;
@@ -135,27 +133,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     dataSegment,
                     ref lastConsumed,
                     tokenStart,
-                    traversalState.CapturingObject,
+                    traversalState.DocumentOpen,
                     objectBuffer,
                     outputStream);
 
                 JsonTokenType tokenType = reader.TokenType;
 
-                EnsureRootArrayStarted(ref traversalState, tokenType);
-                HandleStartObject(ref traversalState, tokenType, reader.CurrentDepth);
+                bool documentCompleted = UpdateTraversalState(ref traversalState, tokenType, reader.CurrentDepth, ref reader);
 
                 WriteJsonSegment(
-                    traversalState.CapturingObject,
+                    traversalState.DocumentOpen,
                     objectBuffer,
                     outputStream,
                     dataSegment[tokenStart..tokenEnd]);
 
-                if (TryCompleteObject(ref traversalState, tokenType, ref reader, ref readerState))
+                if (documentCompleted)
                 {
+                    traversalState.DocumentOpen = false;
+                    readerState = reader.CurrentState;
                     return new ProcessResult(checked((int)reader.BytesConsumed), objectCompleted: true);
                 }
-
-                UpdateArrayCompletion(ref traversalState, tokenType, reader.CurrentDepth);
 
                 lastConsumed = tokenEnd;
             }
@@ -186,75 +183,135 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             lastConsumed = tokenStart;
         }
 
-        private static void EnsureRootArrayStarted(ref JsonArrayTraversalState traversalState, JsonTokenType tokenType)
+        private static bool UpdateTraversalState(ref JsonArrayTraversalState traversalState, JsonTokenType tokenType, int readerDepth, ref Utf8JsonReader reader)
         {
-            if (traversalState.RootArrayStarted)
+            return tokenType switch
             {
-                return;
-            }
-
-            if (tokenType == JsonTokenType.StartArray)
-            {
-                traversalState.RootArrayStarted = true;
-
-                return;
-            }
-
-            if (tokenType != JsonTokenType.Comment && tokenType != JsonTokenType.None)
-            {
-                throw new InvalidOperationException("The JSON payload must be an array of objects.");
-            }
+                JsonTokenType.StartObject => HandleStartObjectToken(ref traversalState, readerDepth),
+                JsonTokenType.PropertyName => HandlePropertyNameToken(ref traversalState, ref reader, readerDepth),
+                JsonTokenType.StartArray => HandleStartArrayToken(ref traversalState, readerDepth),
+                JsonTokenType.EndArray => HandleEndArrayToken(ref traversalState, readerDepth),
+                JsonTokenType.EndObject => HandleEndObjectToken(in traversalState, readerDepth),
+                _ => HandleValueToken(in traversalState, readerDepth),
+            };
         }
 
-        private static void HandleStartObject(ref JsonArrayTraversalState traversalState, JsonTokenType tokenType, int readerDepth)
+        private static bool HandleStartObjectToken(ref JsonArrayTraversalState traversalState, int readerDepth)
         {
-            if (tokenType != JsonTokenType.StartObject)
+            if (traversalState.EnvelopeDepth < 0)
             {
-                return;
-            }
+                traversalState.EnvelopeDepth = readerDepth;
 
-            if (!traversalState.CapturingObject && traversalState.RootArrayStarted && !traversalState.RootArrayCompleted && readerDepth == 1)
-            {
-                traversalState.CapturingObject = true;
-                traversalState.CapturedObjectDepth = 1;
-                return;
-            }
-
-            if (traversalState.CapturingObject)
-            {
-                traversalState.CapturedObjectDepth++;
-            }
-        }
-
-        private static bool TryCompleteObject(
-            ref JsonArrayTraversalState traversalState,
-            JsonTokenType tokenType,
-            ref Utf8JsonReader reader,
-            ref JsonReaderState readerState)
-        {
-            if (!traversalState.CapturingObject || tokenType != JsonTokenType.EndObject)
-            {
                 return false;
             }
 
-            traversalState.CapturedObjectDepth--;
-            if (traversalState.CapturedObjectDepth > 0)
+            if (traversalState.PendingDocumentsArray)
             {
+                throw new InvalidOperationException("The Documents property must be a JSON array.");
+            }
+
+            if (traversalState.DocumentsArrayDepth >= 0 && readerDepth == traversalState.DocumentsArrayDepth + 1)
+            {
+                if (traversalState.DocumentOpen)
+                {
+                    throw new InvalidOperationException("Unexpected nested document start at the documents array level.");
+                }
+
+                traversalState.DocumentOpen = true;
+            }
+
+            return false;
+        }
+
+        private static bool HandlePropertyNameToken(ref JsonArrayTraversalState traversalState, ref Utf8JsonReader reader, int readerDepth)
+        {
+            bool atEnvelopeRoot = traversalState.EnvelopeDepth >= 0 && readerDepth == traversalState.EnvelopeDepth + 1;
+            if (!atEnvelopeRoot)
+            {
+                traversalState.PendingDocumentsArray = false;
+
                 return false;
             }
 
-            traversalState.CapturingObject = false;
-            readerState = reader.CurrentState;
+            if (!reader.ValueTextEquals(Constants.DocumentsResourcePropertyName))
+            {
+                traversalState.PendingDocumentsArray = false;
 
-            return true;
+                return false;
+            }
+
+            if (traversalState.DocumentsArraySeen || traversalState.DocumentsArrayDepth >= 0)
+            {
+                throw new InvalidOperationException("Multiple Documents arrays are not supported in the feed payload.");
+            }
+
+            traversalState.PendingDocumentsArray = true;
+
+            return false;
         }
 
-        private static void UpdateArrayCompletion(ref JsonArrayTraversalState traversalState, JsonTokenType tokenType, int readerDepth)
+        private static bool HandleStartArrayToken(ref JsonArrayTraversalState traversalState, int readerDepth)
         {
-            if (traversalState.RootArrayStarted && !traversalState.RootArrayCompleted && tokenType == JsonTokenType.EndArray && readerDepth == 0)
+            if (traversalState.PendingDocumentsArray)
             {
-                traversalState.RootArrayCompleted = true;
+                traversalState.DocumentsArrayDepth = readerDepth;
+                traversalState.PendingDocumentsArray = false;
+
+                return false;
             }
+
+            if (traversalState.EnvelopeDepth < 0)
+            {
+                throw new InvalidOperationException("The JSON payload must be a Cosmos DB feed response object containing a Documents array.");
+            }
+
+            return false;
+        }
+
+        private static bool HandleEndArrayToken(ref JsonArrayTraversalState traversalState, int readerDepth)
+        {
+            if (traversalState.DocumentsArrayDepth >= 0 && readerDepth == traversalState.DocumentsArrayDepth)
+            {
+                traversalState.DocumentsArrayDepth = -1;
+                traversalState.DocumentsArraySeen = true;
+            }
+
+            return false;
+        }
+
+        private static bool HandleEndObjectToken(in JsonArrayTraversalState traversalState, int readerDepth)
+        {
+            if (traversalState.DocumentOpen && traversalState.DocumentsArrayDepth >= 0 && readerDepth == traversalState.DocumentsArrayDepth + 1)
+            {
+                return true;
+            }
+
+            if (readerDepth == traversalState.EnvelopeDepth && !traversalState.DocumentsArraySeen)
+            {
+                throw new InvalidOperationException("The JSON payload must contain a Documents array.");
+            }
+
+            return false;
+        }
+
+        private static bool HandleValueToken(in JsonArrayTraversalState traversalState, int readerDepth)
+        {
+            if (traversalState.EnvelopeDepth < 0)
+            {
+                throw new InvalidOperationException("The JSON payload must be a Cosmos DB feed response object containing a Documents array.");
+            }
+
+            if (traversalState.PendingDocumentsArray)
+            {
+                throw new InvalidOperationException("The Documents property must be a JSON array.");
+            }
+
+            if (traversalState.DocumentsArrayDepth >= 0 && readerDepth == traversalState.DocumentsArrayDepth + 1)
+            {
+                throw new InvalidOperationException("Documents array items must be JSON objects.");
+            }
+
+            return false;
         }
 
         private async Task<Dictionary<string, HashSet<string>>> ProcessCapturedObjectAsync(
@@ -287,6 +344,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 cancellationToken).ConfigureAwait(false);
 
             UpdateAggregatedPaths(context, ref aggregatedPaths);
+
             return aggregatedPaths;
         }
 
@@ -297,6 +355,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 byte[] newBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length * 2);
                 buffer.AsSpan(0, dataLength).CopyTo(newBuffer);
                 ArrayPool<byte>.Shared.Return(buffer, clearArray: true);
+
                 return newBuffer;
             }
 
@@ -306,19 +365,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             }
 
             return buffer;
-        }
-
-        private static void ValidateJsonArrayCompletion(JsonArrayTraversalState traversalState)
-        {
-            if (traversalState.CapturingObject)
-            {
-                throw new InvalidOperationException("Input stream ended while reading a JSON object.");
-            }
-
-            if (!traversalState.RootArrayStarted || !traversalState.RootArrayCompleted)
-            {
-                throw new InvalidOperationException("Input stream does not contain a complete JSON array.");
-            }
         }
 
         private static DecryptionContext CreateAggregatedContext(Dictionary<string, HashSet<string>> aggregatedPaths)
@@ -420,10 +466,23 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
         private struct JsonArrayTraversalState
         {
-            internal bool RootArrayStarted;
-            internal bool RootArrayCompleted;
-            internal bool CapturingObject;
-            internal int CapturedObjectDepth;
+            internal int EnvelopeDepth;
+            internal int DocumentsArrayDepth;
+            internal bool DocumentsArraySeen;
+            internal bool PendingDocumentsArray;
+            internal bool DocumentOpen;
+
+            internal static JsonArrayTraversalState CreateInitial()
+            {
+                return new JsonArrayTraversalState
+                {
+                    EnvelopeDepth = -1,
+                    DocumentsArrayDepth = -1,
+                    DocumentsArraySeen = false,
+                    PendingDocumentsArray = false,
+                    DocumentOpen = false,
+                };
+            }
         }
 
         private static void WriteJsonSegment(
@@ -442,11 +501,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 Span<byte> destination = objectBuffer.GetSpan(segment.Length);
                 segment.CopyTo(destination);
                 objectBuffer.Advance(segment.Length);
+
+                return;
             }
-            else
-            {
-                outputStream.Write(segment);
-            }
+
+            outputStream.Write(segment);
         }
 
         private static EncryptionProperties TryExtractEncryptionProperties(byte[] buffer, int length)
@@ -456,6 +515,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 EncryptionPropertiesWrapper wrapper = JsonSerializer.Deserialize<EncryptionPropertiesWrapper>(
                     new ReadOnlySpan<byte>(buffer, 0, length),
                     JsonSerializerOptions);
+
                 return wrapper?.EncryptionProperties;
             }
             catch (JsonException)
@@ -502,6 +562,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             ArgumentNullException.ThrowIfNull(outputBuffer);
 
             using Utf8JsonWriter writer = new (outputBuffer);
+
             return await this.DecryptStreamCoreAsync(
                 inputStream,
                 writer,
