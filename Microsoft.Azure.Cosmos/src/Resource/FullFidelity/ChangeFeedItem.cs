@@ -58,6 +58,7 @@ namespace Microsoft.Azure.Cosmos
     {
         /// <summary>
         /// The current version of the item for all versions and deletes change feed mode.
+        /// It is always null for delete change feed operations.
         /// </summary>
         [JsonProperty(PropertyName = "current")]
         [JsonPropertyName("current")]

@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// <para>
         /// For hierarchical partition key containers, the dictionary will contain multiple entries, one for each level of the hierarchy, 
-        /// in the order they were defined in the container's partition key definition.
+        /// as defined in the container's partition key definition.
         /// </para>
         /// <para>
         /// Example for a single partition key container with partition key path "/tenantId":
