@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
         }
 
-        private class ArrayContainsVisitor : SqlBuiltinFunctionVisitor
+        internal class ArrayContainsVisitor : SqlBuiltinFunctionVisitor
         {
             public ArrayContainsVisitor()
                 : base("ARRAY_CONTAINS", true, null)
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return SqlFunctionCallScalarExpression.CreateBuiltin("ARRAY_CONTAINS", array, expression);
             }
 
-            private SqlScalarExpression VisitIN(Expression expression, ConstantExpression constantExpressionList, TranslationContext context)
+            internal SqlScalarExpression VisitIN(Expression expression, ConstantExpression constantExpressionList, TranslationContext context)
             {
                 List<SqlScalarExpression> items = new List<SqlScalarExpression>();
                 foreach (object item in (IEnumerable)constantExpressionList.Value)

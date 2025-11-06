@@ -11,6 +11,8 @@ namespace Microsoft.Azure.Cosmos.Linq
     using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Documents;
+    using static Microsoft.Azure.Cosmos.Linq.ArrayBuiltinFunctions;
+    using static Microsoft.Azure.Cosmos.Linq.StringBuiltinFunctions;
 
     internal abstract class BuiltinFunctionVisitor
     {
@@ -33,7 +35,6 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public static SqlScalarExpression VisitBuiltinFunctionCall(MethodCallExpression methodCallExpression, TranslationContext context)
         {
-            Console.WriteLine("Visiting builtin" + methodCallExpression.Arguments[0].Type.ToString());
             Type declaringType;
             bool isExtensionMethod = methodCallExpression.Method.IsExtensionMethod();
             // Method could be an extension method
@@ -94,6 +95,34 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Object, context);
             }
 
+            // Handle MemoryExtension implicit cast to Span<T>/ReadOnlySpan<T> -- introduced in C#14
+            // Try to unwrap and translate the Span.Contains expression into IN 
+            if (methodCallExpression.Method.DeclaringType == typeof(MemoryExtensions))
+            {
+                bool canUnwrap = Utilities.TryUnwrapSpanImplicitCast(methodCallExpression.Arguments[0], out Expression unwrappedExpression);
+                if (canUnwrap)
+                {
+                    // Make a new MethodCallExpression with the unwrapped expression
+                    Expression searchList = null;
+                    Expression searchExpression = null;
+
+                    // If non static Contains
+                    if (methodCallExpression.Arguments.Count == 2)
+                    {
+                        searchList = unwrappedExpression;
+                        searchExpression = methodCallExpression.Arguments[1];
+                    }
+
+                    if (searchList == null || searchExpression == null)
+                    {
+                        return null;
+                    }
+
+                    ArrayContainsVisitor visitor = new ArrayContainsVisitor();
+                    return visitor.VisitIN(searchExpression, (ConstantExpression)searchList, context);
+                }
+            }
+          
             // String functions or ToString with Objects that are not strings and guids
             if ((declaringType == typeof(string)) ||
                 (methodCallExpression.Method.Name == "ToString" &&

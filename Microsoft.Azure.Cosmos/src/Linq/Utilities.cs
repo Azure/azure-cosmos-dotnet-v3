@@ -65,26 +65,18 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public static bool TryUnwrapSpanImplicitCast(Expression expression, out Expression result)
         {
-            if (expression is UnaryExpression
-                {
-                    NodeType: ExpressionType.Convert,
-                    Method: { Name: "op_Implicit", DeclaringType: { IsGenericType: true } implicitCastDeclaringType },
-                    Operand: var unwrapped
-                }
+            if (expression is MethodCallExpression methodCallExpression
+                && methodCallExpression.Method.Name == "op_Implicit"
+                && methodCallExpression.Method.DeclaringType is { IsGenericType: true } implicitCastDeclaringType
                 && implicitCastDeclaringType.GetGenericTypeDefinition() is var genericTypeDefinition
                 && (genericTypeDefinition == typeof(Span<>) || genericTypeDefinition == typeof(ReadOnlySpan<>)))
             {
-                result = unwrapped;
-                return true;
-            }
-            if (true)
-            {
-                result = ((UnaryExpression)expression).Operand;
+                result = methodCallExpression.Arguments[0];
                 return true;
             }
 
-            //result = null;
-            //return false;
+            result = null;
+            return false;
         }
     }
 

@@ -49,7 +49,9 @@ namespace Microsoft.Azure.Cosmos.Linq
             if (methodCallExpression != null)
             {
                 Type type = methodCallExpression.Method.DeclaringType;
-                if (type == typeof(Enumerable) || type == typeof(Queryable) || type == typeof(CosmosLinq))
+
+                // Aside from the known types, we also need to avoid partial eval for op_implicit methods, which are the implicit conversions of enum to memoryextension span types (introduced in c#14)
+                if (type == typeof(Enumerable) || type == typeof(Queryable) || type == typeof(CosmosLinq) || methodCallExpression.Method.Name == "op_Implicit")
                 {
                     return false;
                 }
