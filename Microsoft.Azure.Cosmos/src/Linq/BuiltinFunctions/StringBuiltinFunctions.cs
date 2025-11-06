@@ -66,7 +66,6 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 if (methodCallExpression.Arguments.Count == 2)
                 {
-                    Console.WriteLine("Im here");
                     SqlScalarExpression haystack = ExpressionToSql.VisitScalarExpression(methodCallExpression.Object, context);
                     SqlScalarExpression needle = ExpressionToSql.VisitScalarExpression(methodCallExpression.Arguments[0], context);
                     SqlScalarExpression caseSensitivity = SqlStringWithComparisonVisitor.GetCaseSensitivityExpression(methodCallExpression.Arguments[1]);

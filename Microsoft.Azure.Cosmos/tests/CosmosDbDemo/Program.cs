@@ -46,9 +46,12 @@ public class Program
             await container.CreateItemAsync(todoItem);
             Console.WriteLine($"Created item: {todoItem.id}");
 
-            string[] someStringArray = ["a"];
+            string[] someStringArray = ["Learn Cosmos DB"];
             IOrderedQueryable<TodoItem> queryable = container.GetItemLinqQueryable<TodoItem>();
-            IQueryable<TodoItem> query = queryable.Where(item => someStringArray.Contains(item.id));
+            IQueryable<TodoItem> query = queryable.Where(item => someStringArray.Contains(item.Title));
+
+            string querytest = query.ToQueryDefinition().QueryText;
+            Console.WriteLine($"Generated SQL Query: {querytest}");
 
             using FeedIterator<TodoItem> feed = query.ToFeedIterator();
             

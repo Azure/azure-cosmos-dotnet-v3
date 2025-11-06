@@ -1153,8 +1153,8 @@ namespace Microsoft.Azure.Cosmos.Linq
         private static Collection VisitMethodCall(MethodCallExpression inputExpression, TranslationContext context)
         {
             context.PushMethod(inputExpression);
+
             Type declaringType = inputExpression.Method.DeclaringType;
-        
             if ((declaringType != typeof(Queryable)
                 && declaringType != typeof(Enumerable) /*LINQ Methods*/
                 && declaringType != typeof(CosmosLinqExtensions) /*OrderByRank*/)
