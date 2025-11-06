@@ -415,7 +415,7 @@ namespace Microsoft.Azure.Cosmos
 
                                 // Convert OperationCanceledException to 408 when the HTTP client throws it. This makes it clear that the 
                                 // the request timed out and was not user canceled operation.
-                                if (isOutOfRetries || !timeoutPolicy.IsSafeToRetry(documentServiceRequest))
+                                if (isOutOfRetries || !documentServiceRequest.IsReadOnlyRequest)
                                 {
                                     // throw current exception (caught in transport handler)
                                     string message =
@@ -440,14 +440,14 @@ namespace Microsoft.Azure.Cosmos
 
                                 break;
                             case WebException webException:
-                                if (isOutOfRetries || (!timeoutPolicy.IsSafeToRetry(documentServiceRequest) && !WebExceptionUtility.IsWebExceptionRetriable(webException)))
+                                if (isOutOfRetries || (!documentServiceRequest.IsReadOnlyRequest && !WebExceptionUtility.IsWebExceptionRetriable(webException)))
                                 {
                                     throw;
                                 }
 
                                 break;
                             case HttpRequestException httpRequestException:
-                                if (isOutOfRetries || !timeoutPolicy.IsSafeToRetry(documentServiceRequest))
+                                if (isOutOfRetries || !documentServiceRequest.IsReadOnlyRequest)
                                 {
                                     throw;
                                 }

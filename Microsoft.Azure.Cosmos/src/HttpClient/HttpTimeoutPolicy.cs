@@ -18,63 +18,6 @@ namespace Microsoft.Azure.Cosmos
 
         public virtual bool ShouldThrow503OnTimeout => false;
 
-        public bool IsSafeToRetry(DocumentServiceRequest documentServiceRequest)
-        {
-            if (this is HttpTimeoutPolicyNoRetry)
-            {
-                return (this as HttpTimeoutPolicyNoRetry).IsSafeToRetry();
-            }
-            if (documentServiceRequest != null)
-            {
-                //Query Plan Requests
-                if (documentServiceRequest.ResourceType == ResourceType.Document
-                    && documentServiceRequest.OperationType == OperationType.QueryPlan)
-                {
-                    return true;
-                }
-
-                //Get Partition Key Range Requests
-                if (documentServiceRequest.ResourceType == ResourceType.PartitionKeyRange
-                    && documentServiceRequest.OperationType == OperationType.ReadFeed)
-                {
-                    return true;
-                }
-
-                //Get Addresses Requests
-                if (documentServiceRequest.ResourceType == ResourceType.Address)
-                {
-                    return true;
-                }
-
-                //Meta Data Read
-                if (HttpTimeoutPolicy.IsMetaData(documentServiceRequest) && documentServiceRequest.IsReadOnlyRequest)
-                {
-                    return true;
-                }
-
-                //Data Plane Operations
-                if (!HttpTimeoutPolicy.IsMetaData(documentServiceRequest))
-                {
-                    if (documentServiceRequest.IsReadOnlyRequest)
-                    {
-                        if (this is HttpTimeoutPolicyForThinClient)
-                        {
-                            return (this as HttpTimeoutPolicyForThinClient).shouldRetry;
-                        }
-                        else
-                        {
-                            return true;
-                        }
-                    }
-                    else
-                    {
-                        return false;
-                    }
-                }
-            }
-            return false;
-        }
-
         public static HttpTimeoutPolicy GetTimeoutPolicy(
            DocumentServiceRequest documentServiceRequest,
            bool isPartitionLevelFailoverEnabled = false,

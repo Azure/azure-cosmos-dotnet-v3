@@ -31,12 +31,6 @@ namespace Microsoft.Azure.Cosmos
             return this.TimeoutsAndDelays.GetEnumerator();
         }
 
-        // Always Unsafe to retry
-        public bool IsSafeToRetry()
-        {
-            return false;
-        }
-
         public override bool ShouldRetryBasedOnResponse(HttpMethod requestHttpMethod, HttpResponseMessage responseMessage)
         {
             return false;
