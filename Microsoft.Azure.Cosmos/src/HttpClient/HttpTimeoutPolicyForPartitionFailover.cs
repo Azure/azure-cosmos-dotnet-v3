@@ -22,8 +22,8 @@ namespace Microsoft.Azure.Cosmos
         private readonly IReadOnlyList<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> TimeoutsAndDelays = new List<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)>()
         {
             (TimeSpan.FromSeconds(.5), TimeSpan.Zero),
+            (TimeSpan.FromSeconds(.5), TimeSpan.Zero),
             (TimeSpan.FromSeconds(1), TimeSpan.Zero),
-            (TimeSpan.FromSeconds(5), TimeSpan.Zero),
         };
 
         public override string TimeoutPolicyName => HttpTimeoutPolicyForPartitionFailover.Name;

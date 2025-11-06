@@ -415,7 +415,7 @@ namespace Microsoft.Azure.Cosmos
 
                                 // Convert OperationCanceledException to 408 when the HTTP client throws it. This makes it clear that the 
                                 // the request timed out and was not user canceled operation.
-                                if (isOutOfRetries || !documentServiceRequest.IsReadOnlyRequest)
+                                if (isOutOfRetries || !IsSafeToRetry(documentServiceRequest))
                                 {
                                     // throw current exception (caught in transport handler)
                                     string message =
@@ -440,14 +440,14 @@ namespace Microsoft.Azure.Cosmos
 
                                 break;
                             case WebException webException:
-                                if (isOutOfRetries || (!documentServiceRequest.IsReadOnlyRequest && !WebExceptionUtility.IsWebExceptionRetriable(webException)))
+                                if (isOutOfRetries || (!IsSafeToRetry(documentServiceRequest) && !WebExceptionUtility.IsWebExceptionRetriable(webException)))
                                 {
                                     throw;
                                 }
 
                                 break;
                             case HttpRequestException httpRequestException:
-                                if (isOutOfRetries || !documentServiceRequest.IsReadOnlyRequest)
+                                if (isOutOfRetries || !IsSafeToRetry(documentServiceRequest))
                                 {
                                     throw;
                                 }
@@ -496,6 +496,15 @@ namespace Microsoft.Azure.Cosmos
             IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> timeoutEnumerator)
         {
             return !timeoutEnumerator.MoveNext(); // No more retries are configured
+        }
+
+        private static bool IsSafeToRetry(DocumentServiceRequest documentServiceRequest)
+        {
+            if (documentServiceRequest == null)
+            {
+                return false;
+            }
+            return documentServiceRequest.IsReadOnlyRequest || documentServiceRequest.ResourceType == ResourceType.Address;
         }
 
         private async Task<HttpResponseMessage> ExecuteHttpHelperAsync(
