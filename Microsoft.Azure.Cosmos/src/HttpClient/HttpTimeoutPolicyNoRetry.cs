@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         // Always Unsafe to retry
-        public override bool IsSafeToRetry(HttpMethod httpMethod)
+        public bool IsSafeToRetry()
         {
             return false;
         }

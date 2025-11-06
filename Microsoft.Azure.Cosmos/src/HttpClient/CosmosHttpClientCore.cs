@@ -388,7 +388,7 @@ namespace Microsoft.Azure.Cosmos
                             return responseMessage;
                         }
 
-                        bool isOutOfRetries = CosmosHttpClientCore.IsOutOfRetries(timeoutPolicy, startDateTimeUtc, timeoutEnumerator);
+                        bool isOutOfRetries = CosmosHttpClientCore.IsOutOfRetries(timeoutEnumerator);
                         if (isOutOfRetries)
                         {
                             return responseMessage;
@@ -402,7 +402,7 @@ namespace Microsoft.Azure.Cosmos
                             datum.RecordHttpException(requestMessage, e, resourceType, requestStartTime);
                             trace = datum.Trace;
                         }
-                        bool isOutOfRetries = CosmosHttpClientCore.IsOutOfRetries(timeoutPolicy, startDateTimeUtc, timeoutEnumerator);
+                        bool isOutOfRetries = CosmosHttpClientCore.IsOutOfRetries(timeoutEnumerator);
 
                         switch (e)
                         {
@@ -415,7 +415,7 @@ namespace Microsoft.Azure.Cosmos
 
                                 // Convert OperationCanceledException to 408 when the HTTP client throws it. This makes it clear that the 
                                 // the request timed out and was not user canceled operation.
-                                if (isOutOfRetries || !timeoutPolicy.IsSafeToRetry(requestMessage.Method))
+                                if (isOutOfRetries || !timeoutPolicy.IsSafeToRetry(documentServiceRequest))
                                 {
                                     // throw current exception (caught in transport handler)
                                     string message =
@@ -440,14 +440,14 @@ namespace Microsoft.Azure.Cosmos
 
                                 break;
                             case WebException webException:
-                                if (isOutOfRetries || (!timeoutPolicy.IsSafeToRetry(requestMessage.Method) && !WebExceptionUtility.IsWebExceptionRetriable(webException)))
+                                if (isOutOfRetries || (!timeoutPolicy.IsSafeToRetry(documentServiceRequest) && !WebExceptionUtility.IsWebExceptionRetriable(webException)))
                                 {
                                     throw;
                                 }
 
                                 break;
                             case HttpRequestException httpRequestException:
-                                if (isOutOfRetries || !timeoutPolicy.IsSafeToRetry(requestMessage.Method))
+                                if (isOutOfRetries || !timeoutPolicy.IsSafeToRetry(documentServiceRequest))
                                 {
                                     throw;
                                 }
@@ -493,8 +493,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private static bool IsOutOfRetries(
-            HttpTimeoutPolicy timeoutPolicy,
-            DateTime startDateTimeUtc,
             IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> timeoutEnumerator)
         {
             return !timeoutEnumerator.MoveNext(); // No more retries are configured
