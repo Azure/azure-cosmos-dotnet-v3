@@ -36,10 +36,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <param name="container">the encryption container.</param>
         /// <param name="query">the IQueryable{T} to be converted.</param>
         /// <returns>An iterator to go through the items.</returns>
-        /// <remarks>
-        /// This iterator uses the container's <see cref="EncryptionContainer.DefaultJsonProcessor"/>
-        /// setting to decide which JSON processor is applied (Newtonsoft-based unless explicitly overridden).
-        /// </remarks>
         /// <example>
         /// This example shows how to get FeedIterator from LINQ.
         ///
@@ -75,10 +71,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <param name="container">the encryption container.</param>
         /// <param name="query">the IQueryable{T} to be converted.</param>
         /// <returns>An iterator to go through the items.</returns>
-        /// <remarks>
-        /// This iterator uses the container's <see cref="EncryptionContainer.DefaultJsonProcessor"/>
-        /// setting to decide which JSON processor is applied (Newtonsoft-based unless explicitly overridden).
-        /// </remarks>
         /// <example>
         /// This example shows how to get FeedIterator from LINQ.
         ///
