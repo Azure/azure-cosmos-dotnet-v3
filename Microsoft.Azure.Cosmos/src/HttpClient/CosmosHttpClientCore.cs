@@ -415,7 +415,7 @@ namespace Microsoft.Azure.Cosmos
 
                                 // Convert OperationCanceledException to 408 when the HTTP client throws it. This makes it clear that the 
                                 // the request timed out and was not user canceled operation.
-                                if (isOutOfRetries || !IsSafeToRetry(documentServiceRequest))
+                                if (isOutOfRetries || !CosmosHttpClientCore.IsSafeToRetry(documentServiceRequest))
                                 {
                                     // throw current exception (caught in transport handler)
                                     string message =
@@ -440,14 +440,14 @@ namespace Microsoft.Azure.Cosmos
 
                                 break;
                             case WebException webException:
-                                if (isOutOfRetries || (!IsSafeToRetry(documentServiceRequest) && !WebExceptionUtility.IsWebExceptionRetriable(webException)))
+                                if (isOutOfRetries || (!CosmosHttpClientCore.IsSafeToRetry(documentServiceRequest) && !WebExceptionUtility.IsWebExceptionRetriable(webException)))
                                 {
                                     throw;
                                 }
 
                                 break;
                             case HttpRequestException httpRequestException:
-                                if (isOutOfRetries || !IsSafeToRetry(documentServiceRequest))
+                                if (isOutOfRetries || !CosmosHttpClientCore.IsSafeToRetry(documentServiceRequest))
                                 {
                                     throw;
                                 }
@@ -502,7 +502,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (documentServiceRequest == null)
             {
-                return false;
+                return true;
             }
             return documentServiceRequest.IsReadOnlyRequest || documentServiceRequest.ResourceType == ResourceType.Address;
         }
