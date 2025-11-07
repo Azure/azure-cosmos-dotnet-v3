@@ -500,6 +500,10 @@ namespace Microsoft.Azure.Cosmos
 
         private static bool IsSafeToRetry(DocumentServiceRequest documentServiceRequest)
         {
+            // Three scenarios are safely retriable:
+            // 1) If request is null since they are originated from GetAsync calls
+            // 2) If request is read-only
+            // 3) If request is an address request.
             if (documentServiceRequest == null)
             {
                 return true;
