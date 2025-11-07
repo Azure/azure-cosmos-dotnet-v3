@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos
         internal abstract Task<SemanticRerankResult> SemanticRerankAsync(
             string rerankContext,
             IEnumerable<string> documents,
-            IDictionary<string, dynamic> options = null,
+            IDictionary<string, object> options = null,
             CancellationToken cancellationToken = default);
 
         /// <summary>
@@ -144,7 +144,7 @@ namespace Microsoft.Azure.Cosmos
         /// This will have a seperate http client that is used to make calls to the inference end point
         /// </summary>
         /// <returns>the inferenceService</returns>
-        internal abstract Task<InferenceService> GetOrCreateInferenceServiceAsync();
+        internal abstract InferenceService GetOrCreateInferenceService();
 
         public abstract void Dispose();
     }

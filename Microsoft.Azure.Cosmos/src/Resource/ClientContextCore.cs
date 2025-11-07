@@ -472,23 +472,22 @@ namespace Microsoft.Azure.Cosmos
         internal override async Task<SemanticRerankResult> SemanticRerankAsync(
             string rerankContext,
             IEnumerable<string> documents,
-            IDictionary<string, dynamic> options = null,
+            IDictionary<string, object> options = null,
             CancellationToken cancellationToken = default)
         {
-            InferenceService inferenceService = await this.GetOrCreateInferenceServiceAsync();
+            InferenceService inferenceService = this.GetOrCreateInferenceService();
             return await inferenceService.SemanticRerankAsync(rerankContext, documents, options, cancellationToken);
         }
 
         /// <inheritdoc/>
-        internal override async Task<InferenceService> GetOrCreateInferenceServiceAsync()
+        internal override InferenceService GetOrCreateInferenceService()
         {
-            AccountProperties accountProperties = await this.client.DocumentClient.GlobalEndpointManager.GetDatabaseAccountAsync() ?? throw new InvalidOperationException("Failed to retrieve AccountProperties. The response was null.");
             if (this.inferenceService == null)
             {
                 // Double check locking to avoid unnecessary locks
                 lock (this)
                 {
-                    this.inferenceService ??= new InferenceService(this.client, accountProperties);
+                    this.inferenceService ??= new InferenceService(this.client);
                 }
             }
 

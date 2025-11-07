@@ -23,7 +23,7 @@
         public void TestInitAsync()
         {
             this.connectionString = "https://inferencee2etest.documents.azure.com:443/";
-
+            Environment.SetEnvironmentVariable("AZURE_COSMOS_SEMANTIC_RERANKER_INFERENCE_ENDPOINT", "https://inferencee2etest.dbinference.azure.com");
             DefaultAzureCredentialOptions options = new DefaultAzureCredentialOptions
             {
                 TenantId = "72f988bf-86f1-41af-91ab-2d7cd011db47",

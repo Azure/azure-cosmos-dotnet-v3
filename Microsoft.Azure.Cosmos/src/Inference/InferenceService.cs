@@ -22,12 +22,13 @@ namespace Microsoft.Azure.Cosmos
     internal class InferenceService : IDisposable
     {
         // Base path for the inference service endpoint.
-        private const string basePath = "dbinference.azure.com/inference/semanticReranking";
+        private const string basePath = "/inference/semanticReranking";
         // User agent string for inference requests.
         private const string inferenceUserAgent = "cosmos-inference-dotnet";
         // Default scope for AAD authentication.
         private const string inferenceServiceDefaultScope = "https://dbinference.azure.com/.default";
 
+        private readonly string inferenceServiceBaseUrl;
         private readonly Uri inferenceEndpoint;
         private readonly HttpClient httpClient;
         private readonly AuthorizationTokenProvider cosmosAuthorization;
@@ -38,10 +39,16 @@ namespace Microsoft.Azure.Cosmos
         /// Initializes a new instance of the <see cref="InferenceService"/> class.
         /// </summary>
         /// <param name="client">The CosmosClient instance.</param>
-        /// <param name="accountProperties">The account properties for endpoint construction.</param>
         /// <exception cref="InvalidOperationException">Thrown if AAD authentication is not used.</exception>
-        public InferenceService(CosmosClient client, AccountProperties accountProperties)
+        public InferenceService(CosmosClient client)
         {
+            this.inferenceServiceBaseUrl = ConfigurationManager.GetEnvironmentVariable<string>("AZURE_COSMOS_SEMANTIC_RERANKER_INFERENCE_ENDPOINT", null);
+
+            if (string.IsNullOrEmpty(this.inferenceServiceBaseUrl))
+            {
+                throw new ArgumentNullException("Set environment variable AZURE_COSMOS_SEMANTIC_RERANKER_INFERENCE_ENDPOINT to use inference service");
+            }
+
             // Create and configure HttpClient for inference requests.
             HttpMessageHandler httpMessageHandler = CosmosHttpClientCore.CreateHttpClientHandler(
                         gatewayModeMaxConnectionLimit: client.DocumentClient.ConnectionPolicy.MaxConnectionLimit,
@@ -53,7 +60,7 @@ namespace Microsoft.Azure.Cosmos
             this.CreateClientHelper(this.httpClient);
 
             // Construct the inference service endpoint URI.
-            this.inferenceEndpoint = new Uri($"https://{accountProperties.Id}.{basePath}");
+            this.inferenceEndpoint = new Uri($"{this.inferenceServiceBaseUrl}/{basePath}");
 
             // Ensure AAD authentication is used.
             if (client.DocumentClient.cosmosAuthorization.GetType() != typeof(AuthorizationTokenProviderTokenCredential))
@@ -82,7 +89,7 @@ namespace Microsoft.Azure.Cosmos
         public async Task<SemanticRerankResult> SemanticRerankAsync(
             string rerankContext,
             IEnumerable<string> documents,
-            IDictionary<string, dynamic> options = null,
+            IDictionary<string, object> options = null,
             CancellationToken cancellationToken = default)
         {
             // Prepare HTTP request for semantic reranking.
@@ -102,7 +109,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // Build the request payload.
-            Dictionary<string, dynamic> body = this.AddSemanticRerankPayload(rerankContext, documents, options);
+            Dictionary<string, object> body = this.AddSemanticRerankPayload(rerankContext, documents, options);
 
             message.Content = new StringContent(
                 Newtonsoft.Json.JsonConvert.SerializeObject(body),
@@ -140,9 +147,9 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="documents">The documents to be reranked.</param>
         /// <param name="options">Optional additional options.</param>
         /// <returns>A dictionary representing the request payload.</returns>
-        private Dictionary<string, dynamic> AddSemanticRerankPayload(string rerankContext, IEnumerable<string> documents, IDictionary<string, dynamic> options)
+        private Dictionary<string, object> AddSemanticRerankPayload(string rerankContext, IEnumerable<string> documents, IDictionary<string, object> options)
         {
-            Dictionary<string, dynamic> payload = new Dictionary<string, dynamic>
+            Dictionary<string, object> payload = new Dictionary<string, object>
             {
                 { "query", rerankContext },
                 { "documents", documents.ToArray() }

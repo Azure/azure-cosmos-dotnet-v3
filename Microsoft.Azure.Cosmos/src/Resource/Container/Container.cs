@@ -1697,7 +1697,7 @@ namespace Microsoft.Azure.Cosmos
         abstract Task<SemanticRerankResult> SemanticRerankAsync(
             string rerankContext,
             IEnumerable<string> documents,
-            IDictionary<string, dynamic> options = null,
+            IDictionary<string, object> options = null,
             CancellationToken cancellationToken = default);
 
         /// <summary>

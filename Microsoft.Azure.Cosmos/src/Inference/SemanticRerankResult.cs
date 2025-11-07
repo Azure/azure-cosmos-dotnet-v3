@@ -83,7 +83,6 @@ namespace Microsoft.Azure.Cosmos
                 responseJson.ContainsKey("latency") ? Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(responseJson["latency"].ToString()) : null,
                 responseJson.ContainsKey("token_usage") ? Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(responseJson["token_usage"].ToString()) : null,
                 responseMessage.Headers);
-            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -99,9 +98,9 @@ namespace Microsoft.Azure.Cosmos
                 foreach (Newtonsoft.Json.Linq.JToken item in rerankScoresArray)
                 {
                     // Extract document, score, and index from each item.
-                    string document = item["document"]?.ToString();
-                    double score = item["score"] != null ? Convert.ToDouble(item["score"]) : 0.0;
-                    int index = item["index"] != null ? Convert.ToInt32(item["index"]) : -1;
+                    object document = item["document"];
+                    double score = item["score"] != null ? item.Value<double>("score") : 0.0;
+                    int index = item["index"] != null ? item.Value<int>("index") : -1;
                     RerankScore rerankScore = new RerankScore(document, score, index);
                     rerankScores.Add(rerankScore);
                 }
