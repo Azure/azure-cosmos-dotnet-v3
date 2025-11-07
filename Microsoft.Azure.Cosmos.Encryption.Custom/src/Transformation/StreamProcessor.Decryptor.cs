@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             if (!stream.CanRead || !stream.CanWrite || !stream.CanSeek)
             {
-                throw new ArgumentException("Stream must be readable, writable, and seekable for in-place decryption.", nameof(stream));
+                throw new NotSupportedException("Stream must support read, write, and seek operations for in-place decryption.");
             }
 
             using RecyclableMemoryStream tempOutputStream = RecyclableMemoryStreamManager.GetStream();

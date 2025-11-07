@@ -83,5 +83,40 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             StringAssert.Contains(exception.Message, nameof(EncryptionContainer));
             StringAssert.Contains(exception.Message, nameof(EncryptionContainerExtensions.ToEncryptionFeedIterator));
         }
+
+#if NET8_0_OR_GREATER
+        [TestMethod]
+        public void UseStreamingJsonProcessingByDefault_SetsDefaultJsonProcessor()
+        {
+            Mock<CosmosClient> clientMock = new();
+            clientMock.SetupGet(c => c.ClientOptions).Returns(new CosmosClientOptions()
+            {
+                Serializer = Mock.Of<CosmosSerializer>()
+            });
+
+            Mock<Database> databaseMock = new();
+            databaseMock.SetupGet(d => d.Client).Returns(clientMock.Object);
+
+            Mock<Container> innerContainerMock = new();
+            innerContainerMock.SetupGet(c => c.Database).Returns(databaseMock.Object);
+
+            EncryptionContainer encryptionContainer = new(innerContainerMock.Object, Mock.Of<Encryptor>());
+
+            Assert.AreEqual(JsonProcessor.Newtonsoft, encryptionContainer.DefaultJsonProcessor);
+
+            Container result = EncryptionContainerExtensions.UseStreamingJsonProcessingByDefault(encryptionContainer);
+
+            Assert.AreSame(encryptionContainer, result);
+            Assert.AreEqual(JsonProcessor.Stream, encryptionContainer.DefaultJsonProcessor);
+        }
+
+        [TestMethod]
+        public void UseStreamingJsonProcessingByDefault_ThrowsForNonEncryptionContainer()
+        {
+            Container nonEncryptionContainer = Mock.Of<Container>();
+
+            Assert.ThrowsException<NotSupportedException>(() => nonEncryptionContainer.UseStreamingJsonProcessingByDefault());
+        }
+#endif
     }
 }

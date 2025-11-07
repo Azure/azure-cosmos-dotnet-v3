@@ -376,11 +376,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
 #if NET8_0_OR_GREATER
         [TestMethod]
-        public void UseStreamJsonProcessing_SetsDefaultJsonProcessor()
+        public void UseStreamingJsonProcessingByDefault_SetsDefaultJsonProcessor()
         {
             Assert.AreEqual(JsonProcessor.Newtonsoft, this.encryptionContainer.DefaultJsonProcessor);
 
-            this.encryptionContainer.UseStreamJsonProcessing();
+            this.encryptionContainer.UseStreamingJsonProcessingByDefault();
 
             Assert.AreEqual(JsonProcessor.Stream, this.encryptionContainer.DefaultJsonProcessor);
         }

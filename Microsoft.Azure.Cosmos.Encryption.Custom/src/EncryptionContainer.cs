@@ -1026,7 +1026,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 #endif
 
 #if NET8_0_OR_GREATER
-        public void UseStreamJsonProcessing()
+        public void UseStreamingJsonProcessingByDefault()
         {
             this.DefaultJsonProcessor = JsonProcessor.Stream;
         }
