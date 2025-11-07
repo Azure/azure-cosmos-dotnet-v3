@@ -16,7 +16,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Encryption.Custom;
     using Microsoft.Data.Encryption.Cryptography.Serializers;
-    using Microsoft.IO;
 
     internal partial class StreamProcessor
     {
@@ -27,7 +26,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
         private static readonly JsonReaderOptions JsonReaderOptions = new () { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip };
         private static readonly JsonSerializerOptions JsonSerializerOptions = new () { AllowTrailingCommas = true, ReadCommentHandling = JsonCommentHandling.Skip };
-        private static readonly RecyclableMemoryStreamManager RecyclableMemoryStreamManager = new ();
 
         internal static int InitialBufferSize { get; set; } = 16384;
 
@@ -48,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 throw new NotSupportedException("Stream must support read, write, and seek operations for in-place decryption.");
             }
 
-            using RecyclableMemoryStream tempOutputStream = RecyclableMemoryStreamManager.GetStream();
+            using MemoryStream tempOutputStream = new (InitialBufferSize);
             byte[] buffer = ArrayPool<byte>.Shared.Rent(InitialBufferSize);
 
             try
@@ -84,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             Stream stream,
             Encryptor encryptor,
             CosmosDiagnosticsContext diagnosticsContext,
-            RecyclableMemoryStream tempOutputStream,
+            MemoryStream tempOutputStream,
             RentArrayBufferWriter objectBuffer,
             RentArrayBufferWriter decryptedObjectBuffer,
             CancellationToken cancellationToken,
@@ -147,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             return (aggregatedPaths, buffer);
         }
 
-        private static async Task OverwriteStreamAsync(Stream stream, RecyclableMemoryStream source, CancellationToken cancellationToken)
+        private static async Task OverwriteStreamAsync(Stream stream, MemoryStream source, CancellationToken cancellationToken)
         {
             stream.Position = 0;
             stream.SetLength(0);
@@ -217,7 +215,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            using MemoryStream objectInput = RecyclableMemoryStreamManager.GetStream("StreamProcessor.DecryptEncryptedObjectAsync", objectBytes, 0, length);
+            using MemoryStream objectInput = new (objectBytes, 0, length, writable: false, publiclyVisible: true);
             decryptedObjectBuffer.Clear();
 
             DecryptionContext context = await this.DecryptStreamAsync(

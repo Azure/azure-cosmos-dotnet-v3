@@ -11,14 +11,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     using System.Runtime.CompilerServices;
     using System.Text.Json;
     using System.Threading;
-    using Microsoft.IO;
 
     internal static class JsonArrayStreamSplitter
     {
         private const int DefaultBufferSize = 8192;
         private const int MaxBufferSize = 64 * 1024 * 1024;
-
-        private static readonly RecyclableMemoryStreamManager RecyclableMemoryStreamManager = new ();
 
         /// <summary>
         /// Splits a JSON array stream into separate objects, returning each as a MemoryStream.
@@ -27,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>An enumerable of MemoryStream objects, each containing a single JSON object.</returns>
         /// <remarks>
-        /// Callers MUST dispose the returned MemoryStream instances to return them to the pool.
+        /// Callers MUST dispose the returned MemoryStream instances once the payload is no longer needed.
         /// </remarks>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "VSTHRD200:Use \"Async\" suffix for async methods", Justification = "The method returns IAsyncEnumerable.")]
         public static async IAsyncEnumerable<MemoryStream> SplitIntoSubstreamsAsync(
@@ -41,7 +38,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
 
             byte[] buffer = ArrayPool<byte>.Shared.Rent(DefaultBufferSize);
-            RecyclableMemoryStream currentDocumentStream = null;
+            MemoryStream currentDocumentStream = null;
+#if NETSTANDARD2_0
+            byte[] pooledWriteBuffer = null;
+#endif
 
             try
             {
@@ -92,6 +92,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 currentDocumentStream?.Dispose();
                 ArrayPool<byte>.Shared.Return(buffer, clearArray: true);
+#if NETSTANDARD2_0
+                if (pooledWriteBuffer != null)
+                {
+                    ArrayPool<byte>.Shared.Return(pooledWriteBuffer);
+                }
+#endif
             }
 
             void WriteObjectSegment(ReadOnlySpan<byte> segment)
@@ -101,8 +107,23 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     return;
                 }
 
-                currentDocumentStream ??= RecyclableMemoryStreamManager.GetStream("JsonArrayStreamSplitter");
+                currentDocumentStream ??= new MemoryStream(DefaultBufferSize);
+#if NETSTANDARD2_0
+                if (pooledWriteBuffer == null || pooledWriteBuffer.Length < segment.Length)
+                {
+                    if (pooledWriteBuffer != null)
+                    {
+                        ArrayPool<byte>.Shared.Return(pooledWriteBuffer);
+                    }
+
+                    pooledWriteBuffer = ArrayPool<byte>.Shared.Rent(segment.Length);
+                }
+
+                segment.CopyTo(pooledWriteBuffer);
+                currentDocumentStream.Write(pooledWriteBuffer, 0, segment.Length);
+#else
                 currentDocumentStream.Write(segment);
+#endif
             }
         }
     }
