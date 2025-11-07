@@ -24,6 +24,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
     [TestCategory("ChangeFeedProcessor")]
     public class BuilderWithCustomSerializerTests
     {
+        public TestContext TestContext { get; set; }
+
         [TestMethod]
         [Owner("philipthomas")]
         [Description("Validating to deserization of ChangeFeedItem with a Delete payload with TimeToLiveExpired set to true.")]
@@ -657,6 +659,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
         }
 
         [TestMethod]
+        [TestCategory("MultiMaster")]
+        [TestCategory("ChangeFeed")]
         [Owner("philipthomas-MSFT")]
         [Description("Scenario: When a document is created, then updated, and finally deleted, there should be 3 changes that will appear for that " +
             "document when using ChangeFeedProcessor with AllVersionsAndDeletes set as the ChangeFeedMode.")]
@@ -664,6 +668,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
         [DataRow(false)]
         public async Task WhenADocumentIsCreatedThenUpdatedThenDeletedTestsAsync(bool propertyNameCaseInsensitive)
         {
+            bool isMultiMaster = this.TestContext.Properties.ContainsKey("TestCategory") &&
+                        this.TestContext.Properties["TestCategory"].ToString().Contains("MultiMaster");
+
             CosmosClient cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) =>
                 cosmosClientBuilder.WithSystemTextJsonSerializerOptions(
                     new JsonSerializerOptions()
@@ -740,9 +747,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                     Assert.IsNull(deleteChange.Current.id);
                     Assert.AreEqual(expected: deleteChange.Metadata.OperationType, actual: ChangeFeedOperationType.Delete);
                     Assert.AreEqual(expected: replaceChange.Metadata.Lsn, actual: deleteChange.Metadata.PreviousLsn);
-                    Assert.IsNull(deleteChange.Previous);
-                    Assert.AreEqual(expected: "1", actual: deleteChange.Metadata.Id.ToString());
-                    Assert.AreEqual(expected: "1", actual: deleteChange.Metadata.PartitionKey.Values.FirstOrDefault().ToString());
+
+                    if (isMultiMaster)
+                    {
+                        Assert.IsNull(deleteChange.Previous);
+                        Assert.AreEqual(expected: "1", actual: deleteChange.Metadata.Id.ToString());
+                        Assert.AreEqual(expected: "1", actual: deleteChange.Metadata.PartitionKey.Values.FirstOrDefault().ToString());
+                    }
+                    else
+                    {
+                        Assert.IsNull(deleteChange.Previous);
+                        Assert.AreEqual(expected: "1", actual: deleteChange.Metadata.Id.ToString());
+                        Assert.AreEqual(expected: "1", actual: deleteChange.Metadata.PartitionKey.Values.FirstOrDefault().ToString());
+                    }
                     
                     Assert.IsTrue(condition: createChange.Metadata.ConflictResolutionTimestamp < replaceChange.Metadata.ConflictResolutionTimestamp, message: "The create operation must happen before the replace operation.");
                     Assert.IsTrue(condition: replaceChange.Metadata.ConflictResolutionTimestamp < deleteChange.Metadata.ConflictResolutionTimestamp, message: "The replace operation must happen before the delete operation.");
