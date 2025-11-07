@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Net.Http;
     using System.Net.Http.Headers;
     using System.Threading.Tasks;
@@ -68,14 +69,16 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A task that represents the asynchronous operation. The task result contains the deserialized <see cref="SemanticRerankResult"/>.</returns>
         internal static async Task<SemanticRerankResult> DeserializeSemanticRerankResultAsync(HttpResponseMessage responseMessage)
         {
-            // Read the response content as a string.
-            string content = await responseMessage.Content.ReadAsStringAsync();
+            Stream content = await responseMessage.Content.ReadAsStreamAsync();
 
             // Deserialize the JSON content into a dictionary.
-            Dictionary<string, object> responseJson = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(content);
-
-            // Log the response JSON for debugging purposes.
-            Console.WriteLine("Response JSON: " + content);
+            Dictionary<string, object> responseJson;
+            using (StreamReader streamReader = new StreamReader(content))
+            using (Newtonsoft.Json.JsonTextReader jsonReader = new Newtonsoft.Json.JsonTextReader(streamReader))
+            {
+                Newtonsoft.Json.JsonSerializer serializer = new Newtonsoft.Json.JsonSerializer();
+                responseJson = serializer.Deserialize<Dictionary<string, object>>(jsonReader);
+            }
 
             // Parse the rerank scores, latency, and token usage from the response.
             return new SemanticRerankResult(
