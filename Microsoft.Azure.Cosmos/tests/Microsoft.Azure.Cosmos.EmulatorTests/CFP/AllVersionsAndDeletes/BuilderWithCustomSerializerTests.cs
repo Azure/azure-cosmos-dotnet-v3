@@ -24,8 +24,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
     [TestCategory("ChangeFeedProcessor")]
     public class BuilderWithCustomSerializerTests
     {
-        public TestContext TestContext { get; set; }
-
         [TestMethod]
         [Owner("philipthomas")]
         [Description("Validating to deserization of ChangeFeedItem with a Delete payload with TimeToLiveExpired set to true.")]
@@ -559,54 +557,54 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
             ChangeFeedProcessor processor = monitoredContainer
                 .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName: "processor", onChangesDelegate: (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItem<ToDoActivity>> docs, CancellationToken token) =>
                 {
-                        // NOTE(philipthomas-MSFT): Please allow these Logger.LogLine because TTL on items will purge at random times so I am using this to test when ran locally using emulator.
+                    // NOTE(philipthomas-MSFT): Please allow these Logger.LogLine because TTL on items will purge at random times so I am using this to test when ran locally using emulator.
 
-                        Logger.LogLine($"@ {DateTime.Now}, {nameof(stopwatch)} -> CFP AVAD took '{stopwatch.ElapsedMilliseconds}' to read document CRUD in feed.");
+                    Logger.LogLine($"@ {DateTime.Now}, {nameof(stopwatch)} -> CFP AVAD took '{stopwatch.ElapsedMilliseconds}' to read document CRUD in feed.");
 
-                        foreach (ChangeFeedItem<ToDoActivity> change in docs)
+                    foreach (ChangeFeedItem<ToDoActivity> change in docs)
+                    {
+                        if (change.Metadata.OperationType == ChangeFeedOperationType.Create)
                         {
-                            if (change.Metadata.OperationType == ChangeFeedOperationType.Create)
-                            {
-                                // current
-                                Assert.AreEqual(expected: "1", actual: change.Current.id.ToString());
-                                Assert.AreEqual(expected: "1", actual: change.Current.pk.ToString());
-                                Assert.AreEqual(expected: "Testing TTL on CFP.", actual: change.Current.description.ToString());
-                                Assert.AreEqual(expected: ttlInSeconds, actual: change.Current.ttl);
+                            // current
+                            Assert.AreEqual(expected: "1", actual: change.Current.id.ToString());
+                            Assert.AreEqual(expected: "1", actual: change.Current.pk.ToString());
+                            Assert.AreEqual(expected: "Testing TTL on CFP.", actual: change.Current.description.ToString());
+                            Assert.AreEqual(expected: ttlInSeconds, actual: change.Current.ttl);
 
-                                // metadata
-                                Assert.IsTrue(DateTime.TryParse(s: change.Metadata.ConflictResolutionTimestamp.ToString(), out _), message: "Invalid csrt must be a datetime value.");
-                                Assert.IsTrue(change.Metadata.Lsn > 0, message: "Invalid lsn must be a long value.");
-                                Assert.IsFalse(change.Metadata.IsTimeToLiveExpired);
-                                Assert.IsNull(change.Metadata.Id);
-                                Assert.IsNull(change.Metadata.PartitionKey);
+                            // metadata
+                            Assert.IsTrue(DateTime.TryParse(s: change.Metadata.ConflictResolutionTimestamp.ToString(), out _), message: "Invalid csrt must be a datetime value.");
+                            Assert.IsTrue(change.Metadata.Lsn > 0, message: "Invalid lsn must be a long value.");
+                            Assert.IsFalse(change.Metadata.IsTimeToLiveExpired);
+                            Assert.IsNull(change.Metadata.Id);
+                            Assert.IsNull(change.Metadata.PartitionKey);
 
-                                // previous
-                                Assert.IsNull(change.Previous);
-                            }
-                            else if (change.Metadata.OperationType == ChangeFeedOperationType.Delete)
-                            {
-                                // current
-                                Assert.IsNull(change.Current.id);
-
-                                // metadata
-                                Assert.IsTrue(DateTime.TryParse(s: change.Metadata.ConflictResolutionTimestamp.ToString(), out _), message: "Invalid csrt must be a datetime value.");
-                                Assert.IsTrue(change.Metadata.Lsn > 0, message: "Invalid lsn must be a long value.");
-                                Assert.IsTrue(change.Metadata.IsTimeToLiveExpired);
-                                Assert.AreEqual(expected: "1", actual: change.Metadata.Id.ToString());
-                                Assert.AreEqual(expected: "1", actual: change.Metadata.PartitionKey.Values.FirstOrDefault());
-
-                                // previous
-                                Assert.IsNull(change.Previous);
-
-                                // stop after reading delete since it is the last document in feed.
-                                stopwatch.Stop();
-                                allDocsProcessed.Set();
-                            }
-                            else
-                            {
-                                Assert.Fail("Invalid operation.");
-                            }
+                            // previous
+                            Assert.IsNull(change.Previous);
                         }
+                        else if (change.Metadata.OperationType == ChangeFeedOperationType.Delete)
+                        {
+                            // current
+                            Assert.IsNull(change.Current.id);
+
+                            // metadata
+                            Assert.IsTrue(DateTime.TryParse(s: change.Metadata.ConflictResolutionTimestamp.ToString(), out _), message: "Invalid csrt must be a datetime value.");
+                            Assert.IsTrue(change.Metadata.Lsn > 0, message: "Invalid lsn must be a long value.");
+                            Assert.IsTrue(change.Metadata.IsTimeToLiveExpired);
+                            Assert.AreEqual(expected: "1", actual: change.Metadata.Id.ToString());
+                            Assert.AreEqual(expected: "1", actual: change.Metadata.PartitionKey.Values.FirstOrDefault());
+
+                            // previous
+                            Assert.IsNull(change.Previous);
+
+                            // stop after reading delete since it is the last document in feed.
+                            stopwatch.Stop();
+                            allDocsProcessed.Set();
+                        }
+                        else
+                        {
+                            Assert.Fail("Invalid operation.");
+                        }
+                    }
 
                     return Task.CompletedTask;
                 })
@@ -659,18 +657,33 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
         }
 
         [TestMethod]
-        [TestCategory("MultiMaster")]
         [TestCategory("ChangeFeed")]
         [Owner("philipthomas-MSFT")]
         [Description("Scenario: When a document is created, then updated, and finally deleted, there should be 3 changes that will appear for that " +
-            "document when using ChangeFeedProcessor with AllVersionsAndDeletes set as the ChangeFeedMode.")]
+            "document when using ChangeFeedProcessor with AllVersionsAndDeletes set as the ChangeFeedMode. This test runs against the Cosmos DB Emulator" +
+            " which has enablePreviousImageForDeleteInFFCF set to true.")]
         [DataRow(true)]
         [DataRow(false)]
-        public async Task WhenADocumentIsCreatedThenUpdatedThenDeletedTestsAsync(bool propertyNameCaseInsensitive)
+        public async Task WhenADocumentIsCreatedThenUpdatedThenDeletedTestsAsyncEmulator(bool propertyNameCaseInsensitive)
         {
-            bool isMultiMaster = this.TestContext.Properties.ContainsKey("TestCategory") &&
-                        this.TestContext.Properties["TestCategory"].ToString().Contains("MultiMaster");
+            await this.WhenADocumentIsCreatedThenUpdatedThenDeletedTestsAsync(propertyNameCaseInsensitive);
+        }
+        
+        [TestMethod]
+        [TestCategory("MultiMaster")]
+        [Owner("philipthomas-MSFT")]
+        [Description("Scenario: When a document is created, then updated, and finally deleted, there should be 3 changes that will appear for that " +
+            "document when using ChangeFeedProcessor with AllVersionsAndDeletes set as the ChangeFeedMode. This test runs against a live multi-region" +
+            " Cosmos DB account which has does not have enablePreviousImageForDeleteInFFCF set.")]
+        [DataRow(true)]
+        [DataRow(false)]
+        public async Task WhenADocumentIsCreatedThenUpdatedThenDeletedTestsAsyncLiveAccount(bool propertyNameCaseInsensitive)
+        {
+            await this.WhenADocumentIsCreatedThenUpdatedThenDeletedTestsAsync(propertyNameCaseInsensitive, true);
+        }
 
+        private async Task WhenADocumentIsCreatedThenUpdatedThenDeletedTestsAsync(bool propertyNameCaseInsensitive, bool isMultiMaster = false)
+        {
             string accountEndpoint = isMultiMaster ?
                 TestCommon.GetMultiRegionConnectionString() :
                 null;
