@@ -47,13 +47,6 @@ namespace Microsoft.Azure.Cosmos
             return this.isQuery ? this.TimeoutsAndDelaysForQueries.GetEnumerator() : this.TimeoutsAndDelaysForReads.GetEnumerator();
         }
 
-        // Assume that it is not safe to retry unless it is a get method.
-        // Create and other operations could have succeeded even though a timeout occurred.
-        public override bool IsSafeToRetry(HttpMethod httpMethod)
-        {
-            return httpMethod == HttpMethod.Get;
-        }
-
         public override bool ShouldRetryBasedOnResponse(HttpMethod requestHttpMethod, HttpResponseMessage responseMessage)
         {
             return false;
