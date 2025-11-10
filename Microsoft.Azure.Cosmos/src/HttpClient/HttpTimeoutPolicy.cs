@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos
         public abstract string TimeoutPolicyName { get; }
         public abstract int TotalRetryCount { get; }
         public abstract IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> GetTimeoutEnumerator();
-        public abstract bool IsSafeToRetry(HttpMethod httpMethod);
 
         public abstract bool ShouldRetryBasedOnResponse(HttpMethod requestHttpMethod, HttpResponseMessage responseMessage);
 
