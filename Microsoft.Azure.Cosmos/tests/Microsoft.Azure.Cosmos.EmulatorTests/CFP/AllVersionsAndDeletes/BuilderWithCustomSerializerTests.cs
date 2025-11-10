@@ -684,19 +684,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
 
         private async Task WhenADocumentIsCreatedThenUpdatedThenDeletedTestsAsync(bool propertyNameCaseInsensitive, bool isMultiMaster = false)
         {
-            string accountEndpoint = isMultiMaster ?
-                TestCommon.GetMultiRegionConnectionString() :
-                null;
+            (string defaultEndpoint, string authKey) = TestCommon.GetAccountInfo();
+            string accountEndpoint = TestCommon.GetMultiRegionConnectionString();
 
-            CosmosClient cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) =>
-                cosmosClientBuilder.WithSystemTextJsonSerializerOptions(
-                    new JsonSerializerOptions()
-                    {
-                        PropertyNameCaseInsensitive = propertyNameCaseInsensitive
-                    }),
-                    useCustomSeralizer: false,
-                    accountEndpointOverride: accountEndpoint);
+            CosmosClientOptions options = new CosmosClientOptions()
+            {
+                UseSystemTextJsonSerializerWithOptions = new JsonSerializerOptions()
+                {
+                    PropertyNameCaseInsensitive = propertyNameCaseInsensitive
+                }
+            };
 
+            CosmosClient cosmosClient = isMultiMaster 
+                        ? new CosmosClient(accountEndpoint, options) 
+                        : new CosmosClient(accountEndpoint, authKey, options);
+    
             Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync(id: Guid.NewGuid().ToString());
             Container leaseContainer = await database.CreateContainerIfNotExistsAsync(containerProperties: new ContainerProperties(id: "leases", partitionKeyPath: "/id"));
             ContainerInternal monitoredContainer = await this.CreateMonitoredContainer(ChangeFeedMode.AllVersionsAndDeletes, database);
