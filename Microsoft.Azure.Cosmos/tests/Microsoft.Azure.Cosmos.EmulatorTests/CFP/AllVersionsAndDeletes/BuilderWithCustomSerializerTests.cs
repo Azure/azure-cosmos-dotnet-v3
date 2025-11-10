@@ -565,43 +565,43 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
 
                         foreach (ChangeFeedItem<ToDoActivity> change in docs)
                         {
-                        if (change.Metadata.OperationType == ChangeFeedOperationType.Create)
-                        {
-                            // current
-                            Assert.AreEqual(expected: "1", actual: change.Current.id.ToString());
-                            Assert.AreEqual(expected: "1", actual: change.Current.pk.ToString());
-                            Assert.AreEqual(expected: "Testing TTL on CFP.", actual: change.Current.description.ToString());
-                            Assert.AreEqual(expected: ttlInSeconds, actual: change.Current.ttl);
+                            if (change.Metadata.OperationType == ChangeFeedOperationType.Create)
+                            {
+                                // current
+                                Assert.AreEqual(expected: "1", actual: change.Current.id.ToString());
+                                Assert.AreEqual(expected: "1", actual: change.Current.pk.ToString());
+                                Assert.AreEqual(expected: "Testing TTL on CFP.", actual: change.Current.description.ToString());
+                                Assert.AreEqual(expected: ttlInSeconds, actual: change.Current.ttl);
 
-                            // metadata
-                            Assert.IsTrue(DateTime.TryParse(s: change.Metadata.ConflictResolutionTimestamp.ToString(), out _), message: "Invalid csrt must be a datetime value.");
-                            Assert.IsTrue(change.Metadata.Lsn > 0, message: "Invalid lsn must be a long value.");
-                            Assert.IsFalse(change.Metadata.IsTimeToLiveExpired);
-                            Assert.IsNull(change.Metadata.Id);
-                            Assert.IsNull(change.Metadata.PartitionKey);
+                                // metadata
+                                Assert.IsTrue(DateTime.TryParse(s: change.Metadata.ConflictResolutionTimestamp.ToString(), out _), message: "Invalid csrt must be a datetime value.");
+                                Assert.IsTrue(change.Metadata.Lsn > 0, message: "Invalid lsn must be a long value.");
+                                Assert.IsFalse(change.Metadata.IsTimeToLiveExpired);
+                                Assert.IsNull(change.Metadata.Id);
+                                Assert.IsNull(change.Metadata.PartitionKey);
 
-                            // previous
-                            Assert.IsNull(change.Previous);
-                        }
-                        else if (change.Metadata.OperationType == ChangeFeedOperationType.Delete)
-                        {
-                            // current
-                            Assert.IsNull(change.Current.id);
+                                // previous
+                                Assert.IsNull(change.Previous);
+                            }
+                            else if (change.Metadata.OperationType == ChangeFeedOperationType.Delete)
+                            {
+                                // current
+                                Assert.IsNull(change.Current.id);
 
-                            // metadata
-                            Assert.IsTrue(DateTime.TryParse(s: change.Metadata.ConflictResolutionTimestamp.ToString(), out _), message: "Invalid csrt must be a datetime value.");
-                            Assert.IsTrue(change.Metadata.Lsn > 0, message: "Invalid lsn must be a long value.");
-                            Assert.IsTrue(change.Metadata.IsTimeToLiveExpired);
-                            Assert.AreEqual(expected: "1", actual: change.Metadata.Id.ToString());
-                            Assert.AreEqual(expected: "1", actual: change.Metadata.PartitionKey.Values.FirstOrDefault());
+                                // metadata
+                                Assert.IsTrue(DateTime.TryParse(s: change.Metadata.ConflictResolutionTimestamp.ToString(), out _), message: "Invalid csrt must be a datetime value.");
+                                Assert.IsTrue(change.Metadata.Lsn > 0, message: "Invalid lsn must be a long value.");
+                                Assert.IsTrue(change.Metadata.IsTimeToLiveExpired);
+                                Assert.AreEqual(expected: "1", actual: change.Metadata.Id.ToString());
+                                Assert.AreEqual(expected: "1", actual: change.Metadata.PartitionKey.Values.FirstOrDefault());
 
-                            // previous
-                            Assert.IsNull(change.Previous);
+                                // previous
+                                Assert.IsNull(change.Previous);
 
-                            // stop after reading delete since it is the last document in feed.
-                            stopwatch.Stop();
-                            allDocsProcessed.Set();
-                        }
+                                // stop after reading delete since it is the last document in feed.
+                                stopwatch.Stop();
+                                allDocsProcessed.Set();
+                            }
                             else
                             {
                                 Assert.Fail("Invalid operation.");
@@ -671,13 +671,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
             bool isMultiMaster = this.TestContext.Properties.ContainsKey("TestCategory") &&
                         this.TestContext.Properties["TestCategory"].ToString().Contains("MultiMaster");
 
+            string accountEndpoint = isMultiMaster ?
+                TestCommon.GetMultiRegionConnectionString() :
+                null;
+
             CosmosClient cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) =>
                 cosmosClientBuilder.WithSystemTextJsonSerializerOptions(
                     new JsonSerializerOptions()
                     {
                         PropertyNameCaseInsensitive = propertyNameCaseInsensitive
                     }),
-                    useCustomSeralizer: false);
+                    useCustomSeralizer: false,
+                    accountEndpointOverride: accountEndpoint);
 
             Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync(id: Guid.NewGuid().ToString());
             Container leaseContainer = await database.CreateContainerIfNotExistsAsync(containerProperties: new ContainerProperties(id: "leases", partitionKeyPath: "/id"));
