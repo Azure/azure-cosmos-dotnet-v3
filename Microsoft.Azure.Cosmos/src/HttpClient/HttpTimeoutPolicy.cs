@@ -56,9 +56,16 @@ namespace Microsoft.Azure.Cosmos
                 // Data Plane Reads.
                 else if (documentServiceRequest.IsReadOnlyRequest)
                 {
-                    return isPartitionLevelFailoverEnabled
-                        ? HttpTimeoutPolicyForPartitionFailover.InstanceShouldThrow503OnTimeout
-                        : HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout;
+                    if (isPartitionLevelFailoverEnabled)
+                    {
+                        return documentServiceRequest.OperationType == OperationType.Query
+                            ? HttpTimeoutPolicyForPartitionFailover.InstanceShouldThrow503OnTimeoutForQuery
+                            : HttpTimeoutPolicyForPartitionFailover.InstanceShouldThrow503OnTimeoutForReads;
+                    }
+                    else
+                    {
+                         return HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout;
+                    }
                 }
             }
 

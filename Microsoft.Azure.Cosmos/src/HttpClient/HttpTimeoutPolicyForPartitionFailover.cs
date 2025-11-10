@@ -9,30 +9,42 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class HttpTimeoutPolicyForPartitionFailover : HttpTimeoutPolicy
     {
-        public static readonly HttpTimeoutPolicy Instance = new HttpTimeoutPolicyForPartitionFailover(false);
-        public static readonly HttpTimeoutPolicy InstanceShouldThrow503OnTimeout = new HttpTimeoutPolicyForPartitionFailover(true);
+        public bool isQuery;
+        public static readonly HttpTimeoutPolicy InstanceShouldThrow503OnTimeoutForQuery = new HttpTimeoutPolicyForPartitionFailover(true);
+        public static readonly HttpTimeoutPolicy InstanceShouldThrow503OnTimeoutForReads = new HttpTimeoutPolicyForPartitionFailover(false);
+
         public bool shouldThrow503OnTimeout;
         private static readonly string Name = nameof(HttpTimeoutPolicyDefault);
 
-        private HttpTimeoutPolicyForPartitionFailover(bool shouldThrow503OnTimeout)
+        private HttpTimeoutPolicyForPartitionFailover(bool isQuery)
         {
-            this.shouldThrow503OnTimeout = shouldThrow503OnTimeout;
+            this.isQuery = isQuery;
         }
 
-        private readonly IReadOnlyList<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> TimeoutsAndDelays = new List<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)>()
+        // Timeouts and delays are based on the following rationale:
+        // For reads: 3 agressive attempts with timeouts of .5s, .5s, and 1s respectively.
+        // For queries: 3 attempts with timeouts of 5s, 5s, and 10s respectively.
+        private readonly IReadOnlyList<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> TimeoutsAndDelaysForReads = new List<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)>()
         {
             (TimeSpan.FromSeconds(.5), TimeSpan.Zero),
             (TimeSpan.FromSeconds(.5), TimeSpan.Zero),
             (TimeSpan.FromSeconds(1), TimeSpan.Zero),
         };
 
+        private readonly IReadOnlyList<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> TimeoutsAndDelaysForQueries = new List<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)>()
+        {
+            (TimeSpan.FromSeconds(5), TimeSpan.Zero),
+            (TimeSpan.FromSeconds(5), TimeSpan.Zero),
+            (TimeSpan.FromSeconds(10), TimeSpan.Zero),
+        };
+
         public override string TimeoutPolicyName => HttpTimeoutPolicyForPartitionFailover.Name;
 
-        public override int TotalRetryCount => this.TimeoutsAndDelays.Count;
+        public override int TotalRetryCount => this.isQuery ? this.TimeoutsAndDelaysForQueries.Count : this.TimeoutsAndDelaysForReads.Count;
 
         public override IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> GetTimeoutEnumerator()
         {
-            return this.TimeoutsAndDelays.GetEnumerator();
+            return this.isQuery ? this.TimeoutsAndDelaysForQueries.GetEnumerator() : this.TimeoutsAndDelaysForReads.GetEnumerator();
         }
 
         // Assume that it is not safe to retry unless it is a get method.
