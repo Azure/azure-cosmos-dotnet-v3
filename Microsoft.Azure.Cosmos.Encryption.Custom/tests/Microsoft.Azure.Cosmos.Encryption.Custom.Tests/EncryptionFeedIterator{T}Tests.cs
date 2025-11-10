@@ -10,7 +10,7 @@
     {
         [DataTestMethod]
         [DataRow(JsonProcessor.Newtonsoft)]
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
         [DataRow(JsonProcessor.Stream)]
 #endif
         public void Ctor_Throws_OnNullParam(JsonProcessor jsonProcessor)
@@ -33,7 +33,7 @@
 
         [DataTestMethod]
         [DataRow(JsonProcessor.Newtonsoft)]
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
         [DataRow(JsonProcessor.Stream)]
 #endif
         public void Ctor_WithRequestOptions_Throws_OnNullParam(JsonProcessor jsonProcessor)

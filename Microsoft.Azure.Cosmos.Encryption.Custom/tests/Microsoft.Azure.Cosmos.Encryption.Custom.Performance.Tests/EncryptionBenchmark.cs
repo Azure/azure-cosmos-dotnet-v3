@@ -53,7 +53,7 @@
         [Params(1, 10, 100)]
         public int DocumentSizeInKb { get; set; }
 
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
         [Params(JsonProcessor.Newtonsoft, JsonProcessor.Stream)]
 #else
         [Params(JsonProcessor.Newtonsoft)]
