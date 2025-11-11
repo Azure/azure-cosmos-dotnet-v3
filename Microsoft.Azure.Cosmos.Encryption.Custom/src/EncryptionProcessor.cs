@@ -233,7 +233,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 return (input, null);
             }
 
-            MemoryStream ms = new ();
+            MemoryStream ms = RecyclableMemoryStreamManager.GetStream("DecryptAsync");
 
             DecryptionContext context = await MdeEncryptionProcessor.DecryptStreamAsync(input, ms, encryptor, properties.EncryptionProperties, diagnosticsContext, cancellationToken);
             if (context == null)

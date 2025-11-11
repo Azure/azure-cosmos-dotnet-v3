@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <returns>An open readable stream containing the JSON of the serialized object</returns>
         public MemoryStream ToStream<T>(T input)
         {
-            MemoryStream streamPayload = new ();
+            MemoryStream streamPayload = RecyclableMemoryStreamManager.GetStream("ToStream");
             using (StreamWriter streamWriter = new (streamPayload, encoding: CosmosJsonDotNetSerializer.DefaultEncoding, bufferSize: 1024, leaveOpen: true))
             using (JsonTextWriter writer = new (streamWriter))
             {
