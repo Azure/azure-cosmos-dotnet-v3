@@ -152,28 +152,67 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     cancellationToken);
             }
 
-            streamPayload = await EncryptionProcessor.EncryptAsync(
-                streamPayload,
-                this.Encryptor,
-                encryptionItemRequestOptions.EncryptionOptions,
-                requestOptions,
-                diagnosticsContext,
-                cancellationToken);
+            Stream encryptedPayload = MemoryStreamPool.GetStream("CreateItemStreamHelperAsync");
+            bool encryptSuccess = false;
+            try
+            {
+                await EncryptionProcessor.EncryptAsync(
+                    streamPayload,
+                    encryptedPayload,
+                    this.Encryptor,
+                    encryptionItemRequestOptions.EncryptionOptions,
+                    requestOptions,
+                    diagnosticsContext,
+                    cancellationToken);
+                encryptedPayload.Position = 0;
+                encryptSuccess = true;
+            }
+            finally
+            {
+                if (!encryptSuccess)
+                {
+#if NET8_0_OR_GREATER
+                    await encryptedPayload.DisposeAsync();
+#else
+                    encryptedPayload.Dispose();
+#endif
+                }
+            }
 
             ResponseMessage responseMessage = await this.container.CreateItemStreamAsync(
-                streamPayload,
+                encryptedPayload,
                 partitionKey,
                 requestOptions,
                 cancellationToken);
 
             if (decryptResponse)
             {
-                (responseMessage.Content, _) = await EncryptionProcessor.DecryptAsync(
-                    responseMessage.Content,
-                    this.Encryptor,
-                    diagnosticsContext,
-                    requestOptions,
-                    cancellationToken);
+                Stream decryptedContent = MemoryStreamPool.GetStream("CreateItemStreamHelperAsync_Decrypt");
+                bool decryptSuccess = false;
+                try
+                {
+                    await EncryptionProcessor.DecryptAsync(
+                        responseMessage.Content,
+                        decryptedContent,
+                        this.Encryptor,
+                        diagnosticsContext,
+                        requestOptions,
+                        cancellationToken);
+                    decryptedContent.Position = 0;
+                    decryptSuccess = true;
+                    responseMessage.Content = decryptedContent;
+                }
+                finally
+                {
+                    if (!decryptSuccess)
+                    {
+#if NET8_0_OR_GREATER
+                        await decryptedContent.DisposeAsync();
+#else
+                        decryptedContent.Dispose();
+#endif
+                    }
+                }
             }
 
             return responseMessage;
@@ -283,12 +322,32 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             if (decryptResponse)
             {
-                (responseMessage.Content, _) = await EncryptionProcessor.DecryptAsync(
-                    responseMessage.Content,
-                    this.Encryptor,
-                    diagnosticsContext,
-                    requestOptions,
-                    cancellationToken);
+                Stream decryptedContent = MemoryStreamPool.GetStream("ReadItemHelperAsync_Decrypt");
+                bool decryptSuccess = false;
+                try
+                {
+                    await EncryptionProcessor.DecryptAsync(
+                        responseMessage.Content,
+                        decryptedContent,
+                        this.Encryptor,
+                        diagnosticsContext,
+                        requestOptions,
+                        cancellationToken);
+                    decryptedContent.Position = 0;
+                    decryptSuccess = true;
+                    responseMessage.Content = decryptedContent;
+                }
+                finally
+                {
+                    if (!decryptSuccess)
+                    {
+#if NET8_0_OR_GREATER
+                        await decryptedContent.DisposeAsync();
+#else
+                        decryptedContent.Dispose();
+#endif
+                    }
+                }
             }
 
             return responseMessage;
@@ -411,15 +470,35 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     cancellationToken);
             }
 
-            streamPayload = await EncryptionProcessor.EncryptAsync(
-                streamPayload,
-                this.Encryptor,
-                encryptionItemRequestOptions.EncryptionOptions,
-                diagnosticsContext,
-                cancellationToken);
+            Stream encryptedPayload = MemoryStreamPool.GetStream("ReplaceItemStreamHelperAsync");
+            bool encryptSuccess = false;
+            try
+            {
+                await EncryptionProcessor.EncryptAsync(
+                    streamPayload,
+                    encryptedPayload,
+                    this.Encryptor,
+                    encryptionItemRequestOptions.EncryptionOptions,
+                    requestOptions,
+                    diagnosticsContext,
+                    cancellationToken);
+                encryptedPayload.Position = 0;
+                encryptSuccess = true;
+            }
+            finally
+            {
+                if (!encryptSuccess)
+                {
+#if NET8_0_OR_GREATER
+                    await encryptedPayload.DisposeAsync();
+#else
+                    encryptedPayload.Dispose();
+#endif
+                }
+            }
 
             ResponseMessage responseMessage = await this.container.ReplaceItemStreamAsync(
-                streamPayload,
+                encryptedPayload,
                 id,
                 partitionKey,
                 requestOptions,
@@ -427,12 +506,32 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             if (decryptResponse)
             {
-                (responseMessage.Content, _) = await EncryptionProcessor.DecryptAsync(
-                    responseMessage.Content,
-                    this.Encryptor,
-                    diagnosticsContext,
-                    requestOptions,
-                    cancellationToken);
+                Stream decryptedContent = MemoryStreamPool.GetStream("ReplaceItemStreamHelperAsync_Decrypt");
+                bool decryptSuccess = false;
+                try
+                {
+                    await EncryptionProcessor.DecryptAsync(
+                        responseMessage.Content,
+                        decryptedContent,
+                        this.Encryptor,
+                        diagnosticsContext,
+                        requestOptions,
+                        cancellationToken);
+                    decryptedContent.Position = 0;
+                    decryptSuccess = true;
+                    responseMessage.Content = decryptedContent;
+                }
+                finally
+                {
+                    if (!decryptSuccess)
+                    {
+#if NET8_0_OR_GREATER
+                        await decryptedContent.DisposeAsync();
+#else
+                        decryptedContent.Dispose();
+#endif
+                    }
+                }
             }
 
             return responseMessage;
@@ -545,27 +644,67 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     cancellationToken);
             }
 
-            streamPayload = await EncryptionProcessor.EncryptAsync(
-                streamPayload,
-                this.Encryptor,
-                encryptionItemRequestOptions.EncryptionOptions,
-                diagnosticsContext,
-                cancellationToken);
+            Stream encryptedPayload = MemoryStreamPool.GetStream("UpsertItemStreamHelperAsync");
+            bool encryptSuccess = false;
+            try
+            {
+                await EncryptionProcessor.EncryptAsync(
+                    streamPayload,
+                    encryptedPayload,
+                    this.Encryptor,
+                    encryptionItemRequestOptions.EncryptionOptions,
+                    requestOptions,
+                    diagnosticsContext,
+                    cancellationToken);
+                encryptedPayload.Position = 0;
+                encryptSuccess = true;
+            }
+            finally
+            {
+                if (!encryptSuccess)
+                {
+#if NET8_0_OR_GREATER
+                    await encryptedPayload.DisposeAsync();
+#else
+                    encryptedPayload.Dispose();
+#endif
+                }
+            }
 
             ResponseMessage responseMessage = await this.container.UpsertItemStreamAsync(
-                streamPayload,
+                encryptedPayload,
                 partitionKey,
                 requestOptions,
                 cancellationToken);
 
             if (decryptResponse)
             {
-                (responseMessage.Content, _) = await EncryptionProcessor.DecryptAsync(
-                    responseMessage.Content,
-                    this.Encryptor,
-                    diagnosticsContext,
-                    requestOptions,
-                    cancellationToken);
+                Stream decryptedContent = MemoryStreamPool.GetStream("UpsertItemStreamHelperAsync_Decrypt");
+                bool decryptSuccess = false;
+                try
+                {
+                    await EncryptionProcessor.DecryptAsync(
+                        responseMessage.Content,
+                        decryptedContent,
+                        this.Encryptor,
+                        diagnosticsContext,
+                        requestOptions,
+                        cancellationToken);
+                    decryptedContent.Position = 0;
+                    decryptSuccess = true;
+                    responseMessage.Content = decryptedContent;
+                }
+                finally
+                {
+                    if (!decryptSuccess)
+                    {
+#if NET8_0_OR_GREATER
+                        await decryptedContent.DisposeAsync();
+#else
+                        decryptedContent.Dispose();
+#endif
+                    }
+                }
             }
 
             return responseMessage;

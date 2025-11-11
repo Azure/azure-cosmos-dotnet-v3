@@ -29,76 +29,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         private static readonly MdeEncryptionProcessor MdeEncryptionProcessor = new ();
 
-        /// <remarks>
-        /// If there isn't any PathsToEncrypt, input stream will be returned without any modification.
-        /// Else input stream will be disposed, and a new stream is returned.
-        /// In case of an exception, input stream won't be disposed, but position will be end of stream.
-        /// </remarks>
-        public static async Task<Stream> EncryptAsync(
-            Stream input,
-            Encryptor encryptor,
-            EncryptionOptions encryptionOptions,
-            CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken)
-        {
-            ValidateInputForEncrypt(
-                input,
-                encryptor,
-                encryptionOptions);
-
-            if (!encryptionOptions.PathsToEncrypt.Any())
-            {
-                return input;
-            }
-
-            Stream result;
-#pragma warning disable CS0618 // Type or member is obsolete
-            if (encryptionOptions.EncryptionAlgorithm == CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)
-            {
-                result = MemoryStreamPool.GetStream("EncryptAsync");
-                bool success = false;
-                try
-                {
-                    await MdeEncryptionProcessor.EncryptAsync(input, result, encryptor, encryptionOptions, diagnosticsContext, cancellationToken);
-                    result.Position = 0;
-                    success = true;
-                    return result;
-                }
-                finally
-                {
-                    if (!success)
-                    {
-#if NET8_0_OR_GREATER
-                        await result.DisposeAsync();
-#else
-                        result.Dispose();
-#endif
-                    }
-                }
-            }
-            else if (encryptionOptions.EncryptionAlgorithm == CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized)
-            {
-                return await AeAesEncryptionProcessor.EncryptAsync(input, encryptor, encryptionOptions, cancellationToken);
-            }
-            else
-            {
-                throw new NotSupportedException($"Encryption Algorithm : {encryptionOptions.EncryptionAlgorithm} is not supported.");
-            }
-#pragma warning restore CS0618 // Type or member is obsolete
-        }
-
-        public static Task<Stream> EncryptAsync(
-            Stream input,
-            Encryptor encryptor,
-            EncryptionOptions encryptionOptions,
-            RequestOptions requestOptions,
-            CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken)
-        {
-            requestOptions.ResolveJsonProcessorSelection(encryptionOptions);
-            return EncryptAsync(input, encryptor, encryptionOptions, diagnosticsContext, cancellationToken);
-        }
-
         public static async Task EncryptAsync(
             Stream input,
             Stream output,
@@ -137,116 +67,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             await MdeEncryptionProcessor.EncryptAsync(input, output, encryptor, encryptionOptions, diagnosticsContext, cancellationToken);
         }
 
-        /// <remarks>
-        /// If there isn't any data that needs to be decrypted, input stream will be returned without any modification.
-        /// Else input stream will be disposed, and a new stream is returned.
-        /// In case of an exception, input stream won't be disposed, but position will be end of stream.
-        /// </remarks>
-        public static async Task<(Stream, DecryptionContext)> DecryptAsync(
+        public static async Task EncryptAsync(
             Stream input,
+            Stream output,
             Encryptor encryptor,
-            CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken)
-        {
-            if (input == null)
-            {
-                return (input, null);
-            }
-
-            Debug.Assert(input.CanSeek);
-            Debug.Assert(encryptor != null);
-            Debug.Assert(diagnosticsContext != null);
-
-            JObject itemJObj = RetrieveItem(input);
-            JObject encryptionPropertiesJObj = RetrieveEncryptionProperties(itemJObj);
-
-            if (encryptionPropertiesJObj == null)
-            {
-                input.Position = 0;
-                return (input, null);
-            }
-
-            DecryptionContext decryptionContext = await DecryptInternalAsync(encryptor, diagnosticsContext, itemJObj, encryptionPropertiesJObj, cancellationToken);
-            await input.DisposeCompatAsync();
-
-            return (BaseSerializer.ToStream(itemJObj), decryptionContext);
-        }
-
-        public static async Task<(Stream, DecryptionContext)> DecryptAsync(
-            Stream input,
-            Encryptor encryptor,
-            CosmosDiagnosticsContext diagnosticsContext,
+            EncryptionOptions encryptionOptions,
             RequestOptions requestOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            if (input == null)
-            {
-                return (input, null);
-            }
-
-            Debug.Assert(input.CanSeek);
-            Debug.Assert(encryptor != null);
-            Debug.Assert(diagnosticsContext != null);
-
-            // Try to peek at the content to check if it's legacy encryption algorithm
-            // Some streams (e.g., those that only support async reads or contain malformed JSON) may throw exceptions
-            // during synchronous peeking. In such cases, delegate directly to MdeEncryptionProcessor.
-            try
-            {
-                JObject itemJObj = RetrieveItem(input);
-                JObject encryptionPropertiesJObj = RetrieveEncryptionProperties(itemJObj);
-
-                if (encryptionPropertiesJObj != null)
-                {
-                    // Parse encryption properties to check the algorithm
-                    EncryptionProperties encryptionProperties = encryptionPropertiesJObj.ToObject<EncryptionProperties>();
-
-#pragma warning disable CS0618 // Type or member is obsolete
-                    if (string.Equals(encryptionProperties.EncryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized, StringComparison.Ordinal))
-#pragma warning restore CS0618 // Type or member is obsolete
-                    {
-                        // Use legacy decryption for AEAes256CbcHmacSha256Randomized
-                        DecryptionContext decryptionContext = await DecryptInternalAsync(encryptor, diagnosticsContext, itemJObj, encryptionPropertiesJObj, cancellationToken);
-                        await input.DisposeCompatAsync();
-                        return (BaseSerializer.ToStream(itemJObj), decryptionContext);
-                    }
-                }
-
-                // For MDE algorithm or no encryption properties, delegate to MdeEncryptionProcessor
-                input.Position = 0;
-            }
-            catch
-            {
-                // Stream doesn't support synchronous reads, contains malformed JSON, or other parsing error.
-                // Reset position and delegate to MdeEncryptionProcessor which uses async reads and will handle errors appropriately.
-                input.Position = 0;
-            }
-
-            MemoryStream output = MemoryStreamPool.GetStream("DecryptAsync");
-            bool success = false;
-            try
-            {
-                DecryptionContext context = await MdeEncryptionProcessor.DecryptAsync(input, output, encryptor, diagnosticsContext, requestOptions, cancellationToken);
-                if (context == null)
-                {
-                    return (input, null);
-                }
-
-                output.Position = 0;
-                success = true;
-                return (output, context);
-            }
-            finally
-            {
-                if (!success)
-                {
-#if NET8_0_OR_GREATER
-                    await output.DisposeAsync();
-#else
-                    output.Dispose();
-#endif
-                }
-            }
+            requestOptions.ResolveJsonProcessorSelection(encryptionOptions);
+            await EncryptAsync(input, output, encryptor, encryptionOptions, diagnosticsContext, cancellationToken);
         }
 
         public static async Task<DecryptionContext> DecryptAsync(
@@ -259,56 +90,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             return await MdeEncryptionProcessor.DecryptAsync(input, output, encryptor, diagnosticsContext, requestOptions, cancellationToken);
         }
-
-#if NET8_0_OR_GREATER
-        public static async Task<(Stream, DecryptionContext)> DecryptStreamAsync(
-            Stream input,
-            Encryptor encryptor,
-            CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken)
-        {
-            if (input == null)
-            {
-                return (input, null);
-            }
-
-            Debug.Assert(input.CanSeek);
-            Debug.Assert(encryptor != null);
-            Debug.Assert(diagnosticsContext != null);
-            input.Position = 0;
-
-            EncryptionPropertiesWrapper properties = await System.Text.Json.JsonSerializer.DeserializeAsync<EncryptionPropertiesWrapper>(input, cancellationToken: cancellationToken);
-            input.Position = 0;
-            if (properties?.EncryptionProperties == null)
-            {
-                return (input, null);
-            }
-
-            MemoryStream ms = MemoryStreamPool.GetStream("DecryptAsync");
-            bool success = false;
-            try
-            {
-                DecryptionContext context = await MdeEncryptionProcessor.DecryptStreamAsync(input, ms, encryptor, properties.EncryptionProperties, diagnosticsContext, cancellationToken);
-                if (context == null)
-                {
-                    input.Position = 0;
-                    return (input, null);
-                }
-
-                await input.DisposeAsync();
-                ms.Position = 0;
-                success = true;
-                return (ms, context);
-            }
-            finally
-            {
-                if (!success)
-                {
-                    await ms.DisposeAsync();
-                }
-            }
-        }
-#endif
 
         public static async Task<(JObject, DecryptionContext)> DecryptAsync(
             JObject document,
