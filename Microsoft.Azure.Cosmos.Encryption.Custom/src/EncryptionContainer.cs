@@ -152,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     cancellationToken);
             }
 
-            Stream encryptedPayload = await this.EncryptStreamAsync(
+            Stream encryptedPayload = await EncryptionProcessor.EncryptStreamAsync(
                 streamPayload,
                 this.Encryptor,
                 encryptionItemRequestOptions.EncryptionOptions,
@@ -169,7 +169,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             if (decryptResponse)
             {
-                responseMessage.Content = await this.DecryptStreamAsync(
+                responseMessage.Content = await EncryptionProcessor.DecryptStreamAsync(
                     responseMessage.Content,
                     this.Encryptor,
                     diagnosticsContext,
@@ -285,7 +285,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             if (decryptResponse)
             {
-                responseMessage.Content = await this.DecryptStreamAsync(
+                responseMessage.Content = await EncryptionProcessor.DecryptStreamAsync(
                     responseMessage.Content,
                     this.Encryptor,
                     diagnosticsContext,
@@ -414,7 +414,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     cancellationToken);
             }
 
-            Stream encryptedPayload = await this.EncryptStreamAsync(
+            Stream encryptedPayload = await EncryptionProcessor.EncryptStreamAsync(
                 streamPayload,
                 this.Encryptor,
                 encryptionItemRequestOptions.EncryptionOptions,
@@ -432,7 +432,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             if (decryptResponse)
             {
-                responseMessage.Content = await this.DecryptStreamAsync(
+                responseMessage.Content = await EncryptionProcessor.DecryptStreamAsync(
                     responseMessage.Content,
                     this.Encryptor,
                     diagnosticsContext,
@@ -551,7 +551,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     cancellationToken);
             }
 
-            Stream encryptedPayload = await this.EncryptStreamAsync(
+            Stream encryptedPayload = await EncryptionProcessor.EncryptStreamAsync(
                 streamPayload,
                 this.Encryptor,
                 encryptionItemRequestOptions.EncryptionOptions,
@@ -568,7 +568,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             if (decryptResponse)
             {
-                responseMessage.Content = await this.DecryptStreamAsync(
+                responseMessage.Content = await EncryptionProcessor.DecryptStreamAsync(
                     responseMessage.Content,
                     this.Encryptor,
                     diagnosticsContext,
@@ -1072,80 +1072,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
 
             return decryptItems;
-        }
-
-        private async Task<Stream> EncryptStreamAsync(
-            Stream input,
-            Encryptor encryptor,
-            EncryptionOptions encryptionOptions,
-            RequestOptions requestOptions,
-            CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken,
-            string tag)
-        {
-            Stream output = MemoryStreamPool.GetStream(tag);
-            bool success = false;
-            try
-            {
-                await EncryptionProcessor.EncryptAsync(
-                    input,
-                    output,
-                    encryptor,
-                    encryptionOptions,
-                    requestOptions,
-                    diagnosticsContext,
-                    cancellationToken);
-                output.Position = 0;
-                success = true;
-                return output;
-            }
-            finally
-            {
-                if (!success)
-                {
-#if NET8_0_OR_GREATER
-                    await output.DisposeAsync();
-#else
-                    output.Dispose();
-#endif
-                }
-            }
-        }
-
-        private async Task<Stream> DecryptStreamAsync(
-            Stream input,
-            Encryptor encryptor,
-            CosmosDiagnosticsContext diagnosticsContext,
-            RequestOptions requestOptions,
-            CancellationToken cancellationToken,
-            string tag)
-        {
-            Stream output = MemoryStreamPool.GetStream(tag);
-            bool success = false;
-            try
-            {
-                await EncryptionProcessor.DecryptAsync(
-                    input,
-                    output,
-                    encryptor,
-                    diagnosticsContext,
-                    requestOptions,
-                    cancellationToken);
-                output.Position = 0;
-                success = true;
-                return output;
-            }
-            finally
-            {
-                if (!success)
-                {
-#if NET8_0_OR_GREATER
-                    await output.DisposeAsync();
-#else
-                    output.Dispose();
-#endif
-                }
-            }
         }
     }
 }

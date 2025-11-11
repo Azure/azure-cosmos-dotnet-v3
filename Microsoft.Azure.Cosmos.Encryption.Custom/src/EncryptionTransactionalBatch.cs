@@ -58,17 +58,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
                 using (diagnosticsContext.CreateScope("EncryptItemStream"))
                 {
-                    Stream encryptedPayload = MemoryStreamPool.GetStream("CreateItemStream");
-                    EncryptionProcessor.EncryptAsync(
+                    streamPayload = EncryptionProcessor.EncryptStreamSync(
                         streamPayload,
-                        encryptedPayload,
                         this.encryptor,
                         encryptionItemRequestOptions.EncryptionOptions,
                         requestOptions,
                         diagnosticsContext,
-                        cancellationToken: default).GetAwaiter().GetResult();
-                    encryptedPayload.Position = 0;
-                    streamPayload = encryptedPayload;
+                        "CreateItemStream");
                 }
             }
 
@@ -135,17 +131,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
                 using (diagnosticsContext.CreateScope("EncryptItemStream"))
                 {
-                    Stream encryptedPayload = MemoryStreamPool.GetStream("ReplaceItemStream");
-                    EncryptionProcessor.EncryptAsync(
+                    streamPayload = EncryptionProcessor.EncryptStreamSync(
                         streamPayload,
-                        encryptedPayload,
                         this.encryptor,
                         encryptionItemRequestOptions.EncryptionOptions,
                         requestOptions,
                         diagnosticsContext,
-                        cancellationToken: default).GetAwaiter().GetResult();
-                    encryptedPayload.Position = 0;
-                    streamPayload = encryptedPayload;
+                        "ReplaceItemStream");
                 }
             }
 
@@ -187,17 +179,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
                 using (diagnosticsContext.CreateScope("EncryptItemStream"))
                 {
-                    Stream encryptedPayload = MemoryStreamPool.GetStream("UpsertItemStream");
-                    EncryptionProcessor.EncryptAsync(
+                    streamPayload = EncryptionProcessor.EncryptStreamSync(
                         streamPayload,
-                        encryptedPayload,
                         this.encryptor,
                         encryptionItemRequestOptions.EncryptionOptions,
                         requestOptions,
                         diagnosticsContext,
-                        cancellationToken: default).GetAwaiter().GetResult();
-                    encryptedPayload.Position = 0;
-                    streamPayload = encryptedPayload;
+                        "UpsertItemStream");
                 }
             }
 
@@ -248,33 +236,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 if (response.IsSuccessStatusCode && result.ResourceStream != null)
                 {
-                    Stream decryptedStream = MemoryStreamPool.GetStream("DecryptTransactionalBatchResponse");
-                    bool decryptSuccess = false;
-                    try
-                    {
-                        await EncryptionProcessor.DecryptAsync(
-                            result.ResourceStream,
-                            decryptedStream,
-                            this.encryptor,
-                            diagnosticsContext,
-                            requestOptions: null,
-                            cancellationToken);
-                        decryptedStream.Position = 0;
-                        decryptSuccess = true;
+                    Stream decryptedStream = await EncryptionProcessor.DecryptStreamAsync(
+                        result.ResourceStream,
+                        this.encryptor,
+                        diagnosticsContext,
+                        requestOptions: null,
+                        cancellationToken,
+                        "DecryptTransactionalBatchResponse");
 
-                        decryptedTransactionalBatchOperationResults.Add(new EncryptionTransactionalBatchOperationResult(result, decryptedStream));
-                    }
-                    finally
-                    {
-                        if (!decryptSuccess)
-                        {
-#if NET8_0_OR_GREATER
-                            await decryptedStream.DisposeAsync();
-#else
-                            decryptedStream.Dispose();
-#endif
-                        }
-                    }
+                    decryptedTransactionalBatchOperationResults.Add(new EncryptionTransactionalBatchOperationResult(result, decryptedStream));
                 }
                 else
                 {

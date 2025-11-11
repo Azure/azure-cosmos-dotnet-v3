@@ -224,5 +224,115 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             // and corresponding decrypted properties are added back in the documents.
             return BaseSerializer.ToStream(contentJObj);
         }
+
+        /// <summary>
+        /// Encrypts a stream and returns a new stream with encrypted content.
+        /// The returned stream is a pooled MemoryStream that the caller must dispose.
+        /// </summary>
+        public static async Task<Stream> EncryptStreamAsync(
+            Stream input,
+            Encryptor encryptor,
+            EncryptionOptions encryptionOptions,
+            RequestOptions requestOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken,
+            string tag)
+        {
+            Stream output = MemoryStreamPool.GetStream(tag);
+            bool success = false;
+            try
+            {
+                await EncryptAsync(
+                    input,
+                    output,
+                    encryptor,
+                    encryptionOptions,
+                    requestOptions,
+                    diagnosticsContext,
+                    cancellationToken);
+                output.Position = 0;
+                success = true;
+                return output;
+            }
+            finally
+            {
+                if (!success)
+                {
+#if NET8_0_OR_GREATER
+                    await output.DisposeAsync();
+#else
+                    output.Dispose();
+#endif
+                }
+            }
+        }
+
+        /// <summary>
+        /// Decrypts a stream and returns a new stream with decrypted content.
+        /// The returned stream is a pooled MemoryStream that the caller must dispose.
+        /// </summary>
+        public static async Task<Stream> DecryptStreamAsync(
+            Stream input,
+            Encryptor encryptor,
+            CosmosDiagnosticsContext diagnosticsContext,
+            RequestOptions requestOptions,
+            CancellationToken cancellationToken,
+            string tag)
+        {
+            Stream output = MemoryStreamPool.GetStream(tag);
+            bool success = false;
+            try
+            {
+                await DecryptAsync(
+                    input,
+                    output,
+                    encryptor,
+                    diagnosticsContext,
+                    requestOptions,
+                    cancellationToken);
+                output.Position = 0;
+                success = true;
+                return output;
+            }
+            finally
+            {
+                if (!success)
+                {
+#if NET8_0_OR_GREATER
+                    await output.DisposeAsync();
+#else
+                    output.Dispose();
+#endif
+                }
+            }
+        }
+
+        /// <summary>
+        /// Synchronously encrypts a stream and returns a new stream with encrypted content.
+        /// The returned stream is a pooled MemoryStream that the caller must dispose.
+        /// Used by synchronous TransactionalBatch operations.
+        /// </summary>
+#pragma warning disable VSTHRD002 // Intentional synchronous wait for TransactionalBatch API
+        public static Stream EncryptStreamSync(
+            Stream input,
+            Encryptor encryptor,
+            EncryptionOptions encryptionOptions,
+            RequestOptions requestOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
+            string tag)
+        {
+            Stream output = MemoryStreamPool.GetStream(tag);
+            EncryptAsync(
+                input,
+                output,
+                encryptor,
+                encryptionOptions,
+                requestOptions,
+                diagnosticsContext,
+                cancellationToken: default).GetAwaiter().GetResult();
+            output.Position = 0;
+            return output;
+        }
+#pragma warning restore VSTHRD002
     }
 }
