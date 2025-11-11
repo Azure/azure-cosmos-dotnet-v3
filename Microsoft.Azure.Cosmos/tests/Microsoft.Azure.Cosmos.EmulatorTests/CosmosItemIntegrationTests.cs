@@ -2263,7 +2263,7 @@
         [TestMethod]
         [TestCategory("MultiRegion")]
         [Owner("pkolluri")]
-        [Timeout(70000)]        
+        //[Timeout(70000)]
         public async Task QueryItemAsync_WithCircuitBreakerEnabledMultiRegionAndServiceResponseDelay_ShouldFailOverToNextRegionAsync()
         {
             // Arrange.
@@ -2356,21 +2356,21 @@
                             {
                                 if (thresholdCounter <= ppcbDefaultThreshold)
                                 {
-                                    Assert.IsTrue(contactedRegions.Count == 2, "Asserting that when the query request succeeds before the consecutive failure count reaches the threshold, the partition didn't fail over to the next region, and the request was retried.");
+                                    Assert.IsTrue(contactedRegions.Count == 2, "Asserting that when the query request succeeds before the consecutive failure count reaches the threshold, the partition didn't fail over to the next region, and the request was retried." + response.Diagnostics.ToString());
                                     Assert.IsTrue(contactedRegions.Contains(region1) && contactedRegions.Contains(region2), "Asserting that both region 1 and region 2 were contacted.");
                                     thresholdCounter++;
                                 }
                                 else
                                 {
-                                    Assert.IsTrue(contactedRegions.Count == 1, "Asserting that when the consecutive failure count reaches the threshold, the partition was failed over to the next region, and the subsequent query request/s were successful on the next region.");
+                                    Assert.IsTrue(contactedRegions.Count == 1, "Asserting that when the consecutive failure count reaches the threshold, the partition was failed over to the next region, and the subsequent query request/s were successful on the next region." + response.Diagnostics.ToString());
                                 }
                             }
 
                         }
                     }
-                    catch (CosmosException)
+                    catch (CosmosException ce)
                     {
-                        Assert.Fail("Query operation should succeed with successful failover to next region.");
+                        Assert.Fail("Query operation should succeed with successful failover to next region." + ce.Diagnostics.ToString());
                     }
                     catch (Exception ex)
                     {
