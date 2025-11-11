@@ -50,13 +50,40 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 return input;
             }
+
+            Stream result;
 #pragma warning disable CS0618 // Type or member is obsolete
-            return encryptionOptions.EncryptionAlgorithm switch
+            if (encryptionOptions.EncryptionAlgorithm == CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)
             {
-                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized => await MdeEncryptionProcessor.EncryptAsync(input, encryptor, encryptionOptions, diagnosticsContext, cancellationToken),
-                CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized => await AeAesEncryptionProcessor.EncryptAsync(input, encryptor, encryptionOptions, cancellationToken),
-                _ => throw new NotSupportedException($"Encryption Algorithm : {encryptionOptions.EncryptionAlgorithm} is not supported."),
-            };
+                result = MemoryStreamPool.GetStream("EncryptAsync");
+                bool success = false;
+                try
+                {
+                    await MdeEncryptionProcessor.EncryptAsync(input, result, encryptor, encryptionOptions, diagnosticsContext, cancellationToken);
+                    result.Position = 0;
+                    success = true;
+                    return result;
+                }
+                finally
+                {
+                    if (!success)
+                    {
+#if NET8_0_OR_GREATER
+                        await result.DisposeAsync();
+#else
+                        result.Dispose();
+#endif
+                    }
+                }
+            }
+            else if (encryptionOptions.EncryptionAlgorithm == CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized)
+            {
+                return await AeAesEncryptionProcessor.EncryptAsync(input, encryptor, encryptionOptions, cancellationToken);
+            }
+            else
+            {
+                throw new NotSupportedException($"Encryption Algorithm : {encryptionOptions.EncryptionAlgorithm} is not supported.");
+            }
 #pragma warning restore CS0618 // Type or member is obsolete
         }
 
@@ -195,7 +222,31 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 input.Position = 0;
             }
 
-            return await MdeEncryptionProcessor.DecryptAsync(input, encryptor, diagnosticsContext, requestOptions, cancellationToken);
+            MemoryStream output = MemoryStreamPool.GetStream("DecryptAsync");
+            bool success = false;
+            try
+            {
+                DecryptionContext context = await MdeEncryptionProcessor.DecryptAsync(input, output, encryptor, diagnosticsContext, requestOptions, cancellationToken);
+                if (context == null)
+                {
+                    return (input, null);
+                }
+
+                output.Position = 0;
+                success = true;
+                return (output, context);
+            }
+            finally
+            {
+                if (!success)
+                {
+#if NET8_0_OR_GREATER
+                    await output.DisposeAsync();
+#else
+                    output.Dispose();
+#endif
+                }
+            }
         }
 
         public static async Task<DecryptionContext> DecryptAsync(
@@ -234,16 +285,28 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
 
             MemoryStream ms = MemoryStreamPool.GetStream("DecryptAsync");
-
-            DecryptionContext context = await MdeEncryptionProcessor.DecryptStreamAsync(input, ms, encryptor, properties.EncryptionProperties, diagnosticsContext, cancellationToken);
-            if (context == null)
+            bool success = false;
+            try
             {
-                input.Position = 0;
-                return (input, null);
-            }
+                DecryptionContext context = await MdeEncryptionProcessor.DecryptStreamAsync(input, ms, encryptor, properties.EncryptionProperties, diagnosticsContext, cancellationToken);
+                if (context == null)
+                {
+                    input.Position = 0;
+                    return (input, null);
+                }
 
-            await input.DisposeAsync();
-            return (ms, context);
+                await input.DisposeAsync();
+                ms.Position = 0;
+                success = true;
+                return (ms, context);
+            }
+            finally
+            {
+                if (!success)
+                {
+                    await ms.DisposeAsync();
+                }
+            }
         }
 #endif
 

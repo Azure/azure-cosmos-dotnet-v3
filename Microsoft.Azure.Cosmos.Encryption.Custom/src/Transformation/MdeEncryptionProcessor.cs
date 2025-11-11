@@ -35,8 +35,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             };
         }
 
-        public async Task<Stream> EncryptAsync(
+        public async Task EncryptAsync(
             Stream input,
+            Stream output,
             Encryptor encryptor,
             EncryptionOptions encryptionOptions,
             CosmosDiagnosticsContext diagnosticsContext,
@@ -47,27 +48,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             JsonProcessor jsonProcessor = encryptionOptions.JsonProcessor;
             using IDisposable selectionScope = diagnosticsContext.CreateScope(CosmosDiagnosticsContext.ScopeEncryptModeSelectionPrefix + jsonProcessor);
 
-            MemoryStream output = MemoryStreamPool.GetStream("EncryptAsync");
-            bool success = false;
-            try
-            {
-                IMdeJsonProcessorAdapter adapter = this.GetAdapter(jsonProcessor);
-                await adapter.EncryptAsync(input, output, encryptor, encryptionOptions, token);
-                output.Position = 0;
-                success = true;
-                return output;
-            }
-            finally
-            {
-                if (!success)
-                {
-#if NET8_0_OR_GREATER
-                    await output.DisposeAsync();
-#else
-                    output.Dispose();
-#endif
-                }
-            }
+            IMdeJsonProcessorAdapter adapter = this.GetAdapter(jsonProcessor);
+            await adapter.EncryptAsync(input, output, encryptor, encryptionOptions, token);
         }
 
         internal async Task<DecryptionContext> DecryptObjectAsync(
@@ -78,51 +60,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             CancellationToken cancellationToken)
         {
             return await this.JObjectEncryptionProcessor.DecryptObjectAsync(document, encryptor, encryptionProperties, diagnosticsContext, cancellationToken);
-        }
-
-        public async Task<(Stream, DecryptionContext)> DecryptAsync(
-            Stream input,
-            Encryptor encryptor,
-            CosmosDiagnosticsContext diagnosticsContext,
-            RequestOptions requestOptions,
-            CancellationToken cancellationToken)
-        {
-            if (input == null)
-            {
-                return (input, null);
-            }
-
-            ArgumentValidation.ThrowIfNull(diagnosticsContext);
-
-            JsonProcessor jsonProcessor = this.GetRequestedJsonProcessor(requestOptions);
-            using IDisposable selectionScope = diagnosticsContext.CreateScope(CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + jsonProcessor);
-
-            MemoryStream output = MemoryStreamPool.GetStream("DecryptAsync");
-            bool success = false;
-            try
-            {
-                IMdeJsonProcessorAdapter adapter = this.GetAdapter(jsonProcessor);
-                DecryptionContext context = await adapter.DecryptAsync(input, output, encryptor, diagnosticsContext, cancellationToken);
-                if (context == null)
-                {
-                    return (input, null);
-                }
-
-                output.Position = 0;
-                success = true;
-                return (output, context);
-            }
-            finally
-            {
-                if (!success)
-                {
-#if NET8_0_OR_GREATER
-                    await output.DisposeAsync();
-#else
-                    output.Dispose();
-#endif
-                }
-            }
         }
 
         public async Task<DecryptionContext> DecryptAsync(
@@ -141,49 +78,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             ArgumentValidation.ThrowIfNull(diagnosticsContext);
 
             JsonProcessor jsonProcessor = this.GetRequestedJsonProcessor(requestOptions);
-#if NET8_0_OR_GREATER
             using IDisposable selectionScope = diagnosticsContext.CreateScope(CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + jsonProcessor);
-#endif
 
             IMdeJsonProcessorAdapter adapter = this.GetAdapter(jsonProcessor);
             return await adapter.DecryptAsync(input, output, encryptor, diagnosticsContext, cancellationToken);
         }
 
-        public async Task EncryptAsync(
-            Stream input,
-            Stream output,
-            Encryptor encryptor,
-            EncryptionOptions encryptionOptions,
-            CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken)
-        {
-            ArgumentValidation.ThrowIfNull(diagnosticsContext);
-
-            JsonProcessor jsonProcessor = encryptionOptions.JsonProcessor;
-            using IDisposable selectionScope = diagnosticsContext.CreateScope(CosmosDiagnosticsContext.ScopeEncryptModeSelectionPrefix + jsonProcessor);
-
-            IMdeJsonProcessorAdapter adapter = this.GetAdapter(jsonProcessor);
-            await adapter.EncryptAsync(input, output, encryptor, encryptionOptions, cancellationToken);
-        }
-
 #if NET8_0_OR_GREATER
-        public async Task<(Stream, DecryptionContext)> DecryptStreamAsync(
-            Stream input,
-            Encryptor encryptor,
-            EncryptionProperties properties,
-            CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken)
-        {
-            MemoryStream ms = MemoryStreamPool.GetStream("DecryptAsync");
-            DecryptionContext context = await this.StreamProcessor.DecryptStreamAsync(input, ms, encryptor, properties, diagnosticsContext, cancellationToken);
-            if (context == null)
-            {
-                return (input, null);
-            }
-
-            return (ms, context);
-        }
-
         public async Task<DecryptionContext> DecryptStreamAsync(
             Stream input,
             Stream output,
