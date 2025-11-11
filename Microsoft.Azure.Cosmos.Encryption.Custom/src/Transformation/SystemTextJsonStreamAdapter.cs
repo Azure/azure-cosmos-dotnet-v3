@@ -20,6 +20,13 @@ internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
         this.streamProcessor = streamProcessor;
     }
 
+    public async Task<Stream> EncryptAsync(Stream input, Encryptor encryptor, EncryptionOptions options, CancellationToken cancellationToken)
+    {
+        MemoryStream ms = MemoryStreamPool.GetStream("EncryptAsync");
+        await this.streamProcessor.EncryptStreamAsync(input, ms, encryptor, options, cancellationToken);
+        return ms;
+    }
+
     public Task EncryptAsync(Stream input, Stream output, Encryptor encryptor, EncryptionOptions options, CancellationToken cancellationToken)
     {
         if (options.JsonProcessor != JsonProcessor.Stream)
@@ -28,6 +35,24 @@ internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
         }
 
         return this.streamProcessor.EncryptStreamAsync(input, output, encryptor, options, cancellationToken);
+    }
+
+    public async Task<(Stream, DecryptionContext)> DecryptAsync(Stream input, Encryptor encryptor, CosmosDiagnosticsContext diagnosticsContext, CancellationToken cancellationToken)
+    {
+        EncryptionProperties properties = await this.ReadMdeEncryptionPropertiesStreamingAsync(input, cancellationToken);
+        if (properties == null)
+        {
+            return (input, null);
+        }
+
+        MemoryStream ms = MemoryStreamPool.GetStream("DecryptAsync");
+        DecryptionContext context = await this.streamProcessor.DecryptStreamAsync(input, ms, encryptor, properties, diagnosticsContext, cancellationToken);
+        if (context == null)
+        {
+            return (input, null);
+        }
+
+        return (ms, context);
     }
 
     public async Task<DecryptionContext> DecryptAsync(Stream input, Stream output, Encryptor encryptor, CosmosDiagnosticsContext diagnosticsContext, CancellationToken cancellationToken)

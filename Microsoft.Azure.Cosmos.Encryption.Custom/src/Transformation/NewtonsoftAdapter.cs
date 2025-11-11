@@ -26,17 +26,36 @@ internal sealed class NewtonsoftAdapter : IMdeJsonProcessorAdapter
         this.jObjectProcessor = jObjectProcessor;
     }
 
-    public async Task EncryptAsync(Stream input, Stream output, Encryptor encryptor, EncryptionOptions options, CancellationToken cancellationToken)
+    public Task<Stream> EncryptAsync(Stream input, Encryptor encryptor, EncryptionOptions options, CancellationToken cancellationToken)
     {
-        // NewtonsoftAdapter works with JObject in memory, so we need to encrypt to a temp stream first
-        Stream encryptedStream = await this.jObjectProcessor.EncryptAsync(input, encryptor, options, cancellationToken);
-        try
+        return this.jObjectProcessor.EncryptAsync(input, encryptor, options, cancellationToken);
+    }
+
+    public Task EncryptAsync(Stream input, Stream output, Encryptor encryptor, EncryptionOptions options, CancellationToken cancellationToken)
+    {
+        throw new NotSupportedException("This overload is only supported for Stream JsonProcessor");
+    }
+
+    public async Task<(Stream, DecryptionContext)> DecryptAsync(Stream input, Encryptor encryptor, CosmosDiagnosticsContext diagnosticsContext, CancellationToken cancellationToken)
+    {
+        (MdePropertyStatus status, JObject itemJObj, EncryptionProperties encryptionProperties) = this.InspectForMde(input);
+        switch (status)
         {
-            await encryptedStream.CopyToAsync(output);
-        }
-        finally
-        {
-            await encryptedStream.DisposeCompatAsync();
+            case MdePropertyStatus.Mde:
+                {
+                    DecryptionContext context = await this.jObjectProcessor.DecryptObjectAsync(itemJObj, encryptor, encryptionProperties, diagnosticsContext, cancellationToken);
+                    await input.DisposeCompatAsync();
+
+                    MemoryStream direct = MemoryStreamPool.GetStream("DecryptAsync", requiredSize: 1024);
+                    EncryptionProcessor.BaseSerializer.WriteToStream(itemJObj, direct);
+                    direct.Position = 0; // Reset position for caller to read from beginning
+                    return (direct, context);
+                }
+
+            case MdePropertyStatus.None:
+            case MdePropertyStatus.LegacyOther:
+            default:
+                return (input, null);
         }
     }
 
