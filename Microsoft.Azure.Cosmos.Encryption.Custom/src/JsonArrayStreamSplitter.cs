@@ -11,11 +11,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     using System.Runtime.CompilerServices;
     using System.Text.Json;
     using System.Threading;
+    using Microsoft.IO;
 
     internal static class JsonArrayStreamSplitter
     {
-        private const int DefaultBufferSize = 8192;
+        private const int DefaultBufferSize = 4096;
         private const int MaxBufferSize = 64 * 1024 * 1024;
+
+        private static readonly RecyclableMemoryStreamManager RecyclableMemoryStreamManager = new ();
 
         /// <summary>
         /// Splits a JSON array stream into separate objects, returning each as a MemoryStream.
@@ -107,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     return;
                 }
 
-                currentDocumentStream ??= new MemoryStream(DefaultBufferSize);
+                currentDocumentStream ??= RecyclableMemoryStreamManager.GetStream(nameof(JsonArrayStreamSplitter));
 #if NETSTANDARD2_0
                 if (pooledWriteBuffer == null || pooledWriteBuffer.Length < segment.Length)
                 {
