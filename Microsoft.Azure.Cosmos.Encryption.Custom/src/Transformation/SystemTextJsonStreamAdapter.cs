@@ -22,9 +22,20 @@ internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
 
     public async Task<Stream> EncryptAsync(Stream input, Encryptor encryptor, EncryptionOptions options, CancellationToken cancellationToken)
     {
-        MemoryStream ms = MemoryStreamPool.GetStream("EncryptAsync");
-        await this.streamProcessor.EncryptStreamAsync(input, ms, encryptor, options, cancellationToken);
-        return ms;
+        // For SystemTextJson, we can always use the streaming approach
+        // Create a pooled stream and write directly to it
+        MemoryStream output = MemoryStreamPool.GetStream("EncryptAsync");
+        try
+        {
+            await this.EncryptAsync(input, output, encryptor, options, cancellationToken);
+            output.Position = 0;
+            return output;
+        }
+        catch
+        {
+            await output.DisposeAsync();
+            throw;
+        }
     }
 
     public Task EncryptAsync(Stream input, Stream output, Encryptor encryptor, EncryptionOptions options, CancellationToken cancellationToken)
@@ -39,20 +50,26 @@ internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
 
     public async Task<(Stream, DecryptionContext)> DecryptAsync(Stream input, Encryptor encryptor, CosmosDiagnosticsContext diagnosticsContext, CancellationToken cancellationToken)
     {
-        EncryptionProperties properties = await this.ReadMdeEncryptionPropertiesStreamingAsync(input, cancellationToken);
-        if (properties == null)
+        // For SystemTextJson, we can always use the streaming approach
+        // Create a pooled stream and write directly to it
+        MemoryStream output = MemoryStreamPool.GetStream("DecryptAsync");
+        try
         {
-            return (input, null);
-        }
+            DecryptionContext context = await this.DecryptAsync(input, output, encryptor, diagnosticsContext, cancellationToken);
+            if (context == null)
+            {
+                await output.DisposeAsync();
+                return (input, null);
+            }
 
-        MemoryStream ms = MemoryStreamPool.GetStream("DecryptAsync");
-        DecryptionContext context = await this.streamProcessor.DecryptStreamAsync(input, ms, encryptor, properties, diagnosticsContext, cancellationToken);
-        if (context == null)
+            output.Position = 0;
+            return (output, context);
+        }
+        catch
         {
-            return (input, null);
+            await output.DisposeAsync();
+            throw;
         }
-
-        return (ms, context);
     }
 
     public async Task<DecryptionContext> DecryptAsync(Stream input, Stream output, Encryptor encryptor, CosmosDiagnosticsContext diagnosticsContext, CancellationToken cancellationToken)
