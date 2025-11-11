@@ -20,24 +20,6 @@ internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
         this.streamProcessor = streamProcessor;
     }
 
-    public async Task<Stream> EncryptAsync(Stream input, Encryptor encryptor, EncryptionOptions options, CancellationToken cancellationToken)
-    {
-        // For SystemTextJson, we can always use the streaming approach
-        // Create a pooled stream and write directly to it
-        MemoryStream output = MemoryStreamPool.GetStream("EncryptAsync");
-        try
-        {
-            await this.EncryptAsync(input, output, encryptor, options, cancellationToken);
-            output.Position = 0;
-            return output;
-        }
-        catch
-        {
-            await output.DisposeAsync();
-            throw;
-        }
-    }
-
     public Task EncryptAsync(Stream input, Stream output, Encryptor encryptor, EncryptionOptions options, CancellationToken cancellationToken)
     {
         if (options.JsonProcessor != JsonProcessor.Stream)
@@ -46,30 +28,6 @@ internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
         }
 
         return this.streamProcessor.EncryptStreamAsync(input, output, encryptor, options, cancellationToken);
-    }
-
-    public async Task<(Stream, DecryptionContext)> DecryptAsync(Stream input, Encryptor encryptor, CosmosDiagnosticsContext diagnosticsContext, CancellationToken cancellationToken)
-    {
-        // For SystemTextJson, we can always use the streaming approach
-        // Create a pooled stream and write directly to it
-        MemoryStream output = MemoryStreamPool.GetStream("DecryptAsync");
-        try
-        {
-            DecryptionContext context = await this.DecryptAsync(input, output, encryptor, diagnosticsContext, cancellationToken);
-            if (context == null)
-            {
-                await output.DisposeAsync();
-                return (input, null);
-            }
-
-            output.Position = 0;
-            return (output, context);
-        }
-        catch
-        {
-            await output.DisposeAsync();
-            throw;
-        }
     }
 
     public async Task<DecryptionContext> DecryptAsync(Stream input, Stream output, Encryptor encryptor, CosmosDiagnosticsContext diagnosticsContext, CancellationToken cancellationToken)

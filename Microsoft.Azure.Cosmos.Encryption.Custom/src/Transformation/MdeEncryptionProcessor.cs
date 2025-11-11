@@ -47,8 +47,23 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             JsonProcessor jsonProcessor = encryptionOptions.JsonProcessor;
             using IDisposable selectionScope = diagnosticsContext.CreateScope(CosmosDiagnosticsContext.ScopeEncryptModeSelectionPrefix + jsonProcessor);
 
-            IMdeJsonProcessorAdapter adapter = this.GetAdapter(jsonProcessor);
-            return await adapter.EncryptAsync(input, encryptor, encryptionOptions, token);
+            MemoryStream output = MemoryStreamPool.GetStream("EncryptAsync");
+            try
+            {
+                IMdeJsonProcessorAdapter adapter = this.GetAdapter(jsonProcessor);
+                await adapter.EncryptAsync(input, output, encryptor, encryptionOptions, token);
+                output.Position = 0;
+                return output;
+            }
+            catch
+            {
+#if NET8_0_OR_GREATER
+                await output.DisposeAsync();
+#else
+                output.Dispose();
+#endif
+                throw;
+            }
         }
 
         internal async Task<DecryptionContext> DecryptObjectAsync(
@@ -78,8 +93,33 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             JsonProcessor jsonProcessor = this.GetRequestedJsonProcessor(requestOptions);
             using IDisposable selectionScope = diagnosticsContext.CreateScope(CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + jsonProcessor);
 
-            IMdeJsonProcessorAdapter adapter = this.GetAdapter(jsonProcessor);
-            return await adapter.DecryptAsync(input, encryptor, diagnosticsContext, cancellationToken);
+            MemoryStream output = MemoryStreamPool.GetStream("DecryptAsync");
+            try
+            {
+                IMdeJsonProcessorAdapter adapter = this.GetAdapter(jsonProcessor);
+                DecryptionContext context = await adapter.DecryptAsync(input, output, encryptor, diagnosticsContext, cancellationToken);
+                if (context == null)
+                {
+#if NET8_0_OR_GREATER
+                    await output.DisposeAsync();
+#else
+                    output.Dispose();
+#endif
+                    return (input, null);
+                }
+
+                output.Position = 0;
+                return (output, context);
+            }
+            catch
+            {
+#if NET8_0_OR_GREATER
+                await output.DisposeAsync();
+#else
+                output.Dispose();
+#endif
+                throw;
+            }
         }
 
         public async Task<DecryptionContext> DecryptAsync(
@@ -116,21 +156,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         {
             ArgumentValidation.ThrowIfNull(diagnosticsContext);
 
-#if NET8_0_OR_GREATER
-            if (encryptionOptions.JsonProcessor == JsonProcessor.Stream)
-            {
-                using IDisposable selectionScope = diagnosticsContext.CreateScope(CosmosDiagnosticsContext.ScopeEncryptModeSelectionPrefix + JsonProcessor.Stream);
-                IMdeJsonProcessorAdapter adapter = this.GetAdapter(JsonProcessor.Stream);
-                await adapter.EncryptAsync(input, output, encryptor, encryptionOptions, cancellationToken);
-                return;
-            }
-#endif
+            JsonProcessor jsonProcessor = encryptionOptions.JsonProcessor;
+            using IDisposable selectionScope = diagnosticsContext.CreateScope(CosmosDiagnosticsContext.ScopeEncryptModeSelectionPrefix + jsonProcessor);
 
-            // Fall back to Newtonsoft for netstandard2.0 or when Stream processor not requested
-            IMdeJsonProcessorAdapter newtonsoftAdapter = this.GetAdapter(JsonProcessor.Newtonsoft);
-            Stream encryptedStream = await newtonsoftAdapter.EncryptAsync(input, encryptor, encryptionOptions, cancellationToken);
-            await encryptedStream.CopyToAsync(output);
-            await encryptedStream.DisposeCompatAsync();
+            IMdeJsonProcessorAdapter adapter = this.GetAdapter(jsonProcessor);
+            await adapter.EncryptAsync(input, output, encryptor, encryptionOptions, cancellationToken);
         }
 
 #if NET8_0_OR_GREATER
