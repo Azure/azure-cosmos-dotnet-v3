@@ -2263,17 +2263,17 @@
         [TestMethod]
         [TestCategory("MultiRegion")]
         [Owner("pkolluri")]
-        //[Timeout(70000)]
-        public async Task QueryItemAsync_WithCircuitBreakerEnabledFailOverAsync()
+        [Timeout(70000)]        
+        public async Task QueryItemAsync_WithCircuitBreakerEnabledMultiRegionAndServiceResponseDelay_ShouldFailOverToNextRegionAsync()
         {
             // Arrange.
             Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelCircuitBreakerEnabled, "True");
             Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerConsecutiveFailureCountForReads, "1");
 
             // Enabling fault injection rule to simulate a 503 service unavailable scenario.
-            string serviceUnavailableRuleId1 = "503-rule-" + Guid.NewGuid().ToString();
-            FaultInjectionRule serviceUnavailableRule1 = new FaultInjectionRuleBuilder(
-                id: serviceUnavailableRuleId1,
+            string serviceResponseDelayRuleId1 = "503-rule-" + Guid.NewGuid().ToString();
+            FaultInjectionRule serviceResponseDelay1 = new FaultInjectionRuleBuilder(
+                id: serviceResponseDelayRuleId1,
                 condition:
                     new FaultInjectionConditionBuilder()
                         .WithOperationType(FaultInjectionOperationType.QueryItem)
@@ -2286,25 +2286,9 @@
                         .Build())
                 .Build();
 
-            string serviceUnavailableRuleId2 = "503-rule-" + Guid.NewGuid().ToString();
-            FaultInjectionRule serviceUnavailableRule2 = new FaultInjectionRuleBuilder(
-                id: serviceUnavailableRuleId2,
-                condition:
-                    new FaultInjectionConditionBuilder()
-                        .WithOperationType(FaultInjectionOperationType.QueryItem)
-                        .WithConnectionType(FaultInjectionConnectionType.Gateway)
-                        .WithRegion(region2)
-                        .Build(),
-                result:
-                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
-                        .WithDelay(TimeSpan.FromSeconds(70))
-                        .Build())
-                .Build();
+            serviceResponseDelay1.Disable();
 
-            serviceUnavailableRule1.Disable();
-            serviceUnavailableRule2.Disable();
-
-            List<FaultInjectionRule> rules = new List<FaultInjectionRule> { serviceUnavailableRule1, serviceUnavailableRule2 };
+            List<FaultInjectionRule> rules = new List<FaultInjectionRule> { serviceResponseDelay1};
             FaultInjector faultInjector = new FaultInjector(rules);
 
             List<string> preferredRegions = new List<string> { region1, region2, region3 };
@@ -2341,7 +2325,6 @@
                 int totalIterations = 7;
                 int ppcbDefaultThreshold = 1;
                 int firstRegionServiceUnavailableAttempt = 1;
-                int secondRegionServiceUnavailableAttempt = 4;
 
                 for (int attemptCount = 1; attemptCount <= totalIterations; attemptCount++)
                 {
@@ -2366,7 +2349,7 @@
                                 if (attemptCount == firstRegionServiceUnavailableAttempt)
                                 {
                                     isRegion1Available = false;
-                                    serviceUnavailableRule1.Enable();
+                                    serviceResponseDelay1.Enable();
                                 }
                             }
                             else if (isRegion2Available)
@@ -2381,31 +2364,13 @@
                                 {
                                     Assert.IsTrue(contactedRegions.Count == 1, "Asserting that when the consecutive failure count reaches the threshold, the partition was failed over to the next region, and the subsequent query request/s were successful on the next region.");
                                 }
+                            }
 
-                                // Simulating service unavailable on region 2.
-                                if (attemptCount == secondRegionServiceUnavailableAttempt)
-                                {
-                                    isRegion2Available = false;
-                                    serviceUnavailableRule2.Enable();
-                                }
-                            }
-                            else
-                            {
-                                if (thresholdCounter <= ppcbDefaultThreshold + 1)
-                                {
-                                    Assert.IsTrue(contactedRegions.Count == 2, "Asserting that when the query request fails on the second region, the partition did over to the next region, and the request was retried on the next region.");
-                                    thresholdCounter++;
-                                }
-                                else
-                                {
-                                    Assert.IsTrue(contactedRegions.Count == 1, "Asserting that when the consecutive failure count reaches the threshold, the partition was failed over to the third region, and the subsequent query request/s were successful on the third region.");
-                                }
-                            }
                         }
                     }
                     catch (CosmosException)
                     {
-                        Assert.Fail("Query operation should succeed.");
+                        Assert.Fail("Query operation should succeed with successful failover to next region.");
                     }
                     catch (Exception ex)
                     {

@@ -628,13 +628,17 @@ namespace Microsoft.Azure.Cosmos.Tests
             int count = 0;
             while (availableRetries.MoveNext())
             {
-                if (count <= 1)
+                if (count == 0)
                 {
                     Assert.AreEqual(new TimeSpan(0, 0,0, 0, 500), availableRetries.Current.requestTimeout);
                 }
-                else if (count == 2)
+                else if (count == 1)
                 {
                     Assert.AreEqual(new TimeSpan(0, 0, 1), availableRetries.Current.requestTimeout);
+                }
+                else if (count == 2)
+                {
+                    Assert.AreEqual(new TimeSpan(0, 0, 5), availableRetries.Current.requestTimeout);
                 }
                 count++;
             }
