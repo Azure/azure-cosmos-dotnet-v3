@@ -43,10 +43,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 itemJObj.Remove(propertyName);
             }
 
-            MemoryStream memoryStream = EncryptionProcessor.BaseSerializer.ToStream<JObject>(toEncryptJObj);
-            Debug.Assert(memoryStream != null);
-            Debug.Assert(memoryStream.TryGetBuffer(out _));
-            plainText = memoryStream.ToArray();
+            using (MemoryStream memoryStream = EncryptionProcessor.BaseSerializer.ToStream<JObject>(toEncryptJObj))
+            {
+                Debug.Assert(memoryStream != null);
+                Debug.Assert(memoryStream.TryGetBuffer(out _));
+                plainText = memoryStream.ToArray();
+            }
 
             cipherText = await encryptor.EncryptAsync(
                 plainText,
