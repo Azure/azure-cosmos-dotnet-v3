@@ -46,7 +46,7 @@ internal sealed class NewtonsoftAdapter : IMdeJsonProcessorAdapter
                     DecryptionContext context = await this.jObjectProcessor.DecryptObjectAsync(itemJObj, encryptor, encryptionProperties, diagnosticsContext, cancellationToken);
                     await input.DisposeCompatAsync();
 
-                    MemoryStream direct = RecyclableMemoryStreamManager.GetStream("DecryptAsync", requiredSize: 1024);
+                    MemoryStream direct = MemoryStreamPool.GetStream("DecryptAsync", requiredSize: 1024);
                     EncryptionProcessor.BaseSerializer.WriteToStream(itemJObj, direct);
                     direct.Position = 0; // Reset position for caller to read from beginning
                     return (direct, context);

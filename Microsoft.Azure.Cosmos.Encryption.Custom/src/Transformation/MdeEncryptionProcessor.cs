@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            MemoryStream ms = RecyclableMemoryStreamManager.GetStream("DecryptAsync");
+            MemoryStream ms = MemoryStreamPool.GetStream("DecryptAsync");
             DecryptionContext context = await this.StreamProcessor.DecryptStreamAsync(input, ms, encryptor, properties, diagnosticsContext, cancellationToken);
             if (context == null)
             {
