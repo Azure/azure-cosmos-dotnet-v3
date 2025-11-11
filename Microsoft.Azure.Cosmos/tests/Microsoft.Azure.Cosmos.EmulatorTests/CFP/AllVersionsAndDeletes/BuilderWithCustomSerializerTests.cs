@@ -776,7 +776,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                     }
                     else
                     {
-                        Assert.IsNull(deleteChange.Previous);
+                        Assert.IsNotNull(deleteChange.Previous);
                         Assert.AreEqual(expected: "1", actual: deleteChange.Metadata.Id.ToString());
                         Assert.AreEqual(expected: "1", actual: deleteChange.Metadata.PartitionKey.Values.FirstOrDefault().ToString());
                     }
