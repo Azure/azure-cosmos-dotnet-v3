@@ -48,21 +48,25 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             using IDisposable selectionScope = diagnosticsContext.CreateScope(CosmosDiagnosticsContext.ScopeEncryptModeSelectionPrefix + jsonProcessor);
 
             MemoryStream output = MemoryStreamPool.GetStream("EncryptAsync");
+            bool success = false;
             try
             {
                 IMdeJsonProcessorAdapter adapter = this.GetAdapter(jsonProcessor);
                 await adapter.EncryptAsync(input, output, encryptor, encryptionOptions, token);
                 output.Position = 0;
+                success = true;
                 return output;
             }
-            catch
+            finally
             {
+                if (!success)
+                {
 #if NET8_0_OR_GREATER
-                await output.DisposeAsync();
+                    await output.DisposeAsync();
 #else
-                output.Dispose();
+                    output.Dispose();
 #endif
-                throw;
+                }
             }
         }
 
@@ -94,31 +98,30 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             using IDisposable selectionScope = diagnosticsContext.CreateScope(CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + jsonProcessor);
 
             MemoryStream output = MemoryStreamPool.GetStream("DecryptAsync");
+            bool success = false;
             try
             {
                 IMdeJsonProcessorAdapter adapter = this.GetAdapter(jsonProcessor);
                 DecryptionContext context = await adapter.DecryptAsync(input, output, encryptor, diagnosticsContext, cancellationToken);
                 if (context == null)
                 {
+                    return (input, null);
+                }
+
+                output.Position = 0;
+                success = true;
+                return (output, context);
+            }
+            finally
+            {
+                if (!success)
+                {
 #if NET8_0_OR_GREATER
                     await output.DisposeAsync();
 #else
                     output.Dispose();
 #endif
-                    return (input, null);
                 }
-
-                output.Position = 0;
-                return (output, context);
-            }
-            catch
-            {
-#if NET8_0_OR_GREATER
-                await output.DisposeAsync();
-#else
-                output.Dispose();
-#endif
-                throw;
             }
         }
 
