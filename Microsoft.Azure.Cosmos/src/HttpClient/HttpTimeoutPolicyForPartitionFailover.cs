@@ -9,11 +9,9 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class HttpTimeoutPolicyForPartitionFailover : HttpTimeoutPolicy
     {
-        public bool isQuery;
         public static readonly HttpTimeoutPolicy InstanceShouldThrow503OnTimeoutForQuery = new HttpTimeoutPolicyForPartitionFailover(true);
         public static readonly HttpTimeoutPolicy InstanceShouldThrow503OnTimeoutForReads = new HttpTimeoutPolicyForPartitionFailover(false);
-
-        public bool shouldThrow503OnTimeout;
+        private readonly bool isQuery;
         private static readonly string Name = nameof(HttpTimeoutPolicyDefault);
 
         private HttpTimeoutPolicyForPartitionFailover(bool isQuery)
@@ -52,6 +50,6 @@ namespace Microsoft.Azure.Cosmos
             return false;
         }
 
-        public override bool ShouldThrow503OnTimeout => this.shouldThrow503OnTimeout;
+        public override bool ShouldThrow503OnTimeout => true;
     }
 }
