@@ -20,12 +20,12 @@ namespace Microsoft.Azure.Cosmos
         }
 
         // Timeouts and delays are based on the following rationale:
-        // For reads: 3 agressive attempts with timeouts of .5s, 1s, and 5s respectively.
-        // For queries: 3 attempts with timeouts of 5s, 5s, and 10s respectively.
+        // For reads: 3 agressive attempts with timeouts of 1s, 6s, and 6s respectively.
+        // For queries: 3 attempts with timeouts of 6s, 6s, and 10s respectively.
         private readonly IReadOnlyList<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> TimeoutsAndDelaysForReads = new List<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)>()
         {
             (TimeSpan.FromSeconds(1), TimeSpan.Zero),
-            (TimeSpan.FromSeconds(5), TimeSpan.Zero),
+            (TimeSpan.FromSeconds(6), TimeSpan.Zero),
             (TimeSpan.FromSeconds(6), TimeSpan.Zero),
         };
 
