@@ -470,6 +470,8 @@
 
         [TestMethod]
         [TestCategory("MultiRegion")]
+        [DoNotParallelize]
+        [Ignore("We will enable this test once the test staging account used for multi master validation starts supporting thin proxy.")]
         [DataRow(ConnectionMode.Direct, "15", "10", DisplayName = "Direct Mode - Scenario when the total iteration count is 15 and circuit breaker consecutive failure threshold is set to 10.")]
         [DataRow(ConnectionMode.Direct, "25", "20", DisplayName = "Direct Mode - Scenario when the total iteration count is 25 and circuit breaker consecutive failure threshold is set to 20.")]
         [DataRow(ConnectionMode.Direct, "35", "30", DisplayName = "Direct Mode - Scenario when the total iteration count is 35 and circuit breaker consecutive failure threshold is set to 30.")]
@@ -605,6 +607,8 @@
 
         [TestMethod]
         [TestCategory("MultiRegion")]
+        [DoNotParallelize]
+        [Ignore("We will enable this test once the test staging account used for multi master validation starts supporting thin proxy.")]
         [DataRow(ConnectionMode.Direct, DisplayName ="Direct Mode")]
         [DataRow(ConnectionMode.Gateway, DisplayName = "Gateway Mode")]
         [Owner("nalutripician")]
@@ -732,6 +736,8 @@
 
         [TestMethod]
         [TestCategory("MultiRegion")]
+        [DoNotParallelize]
+        [Ignore("We will enable this test once the test staging account used for multi master validation starts supporting thin proxy.")]
         [Owner("dkunda")]
         [Timeout(70000)]
         public async Task ReadItemAsync_WithCircuitBreakerEnabledAndSingleMasterAccountAndServiceUnavailableReceivedFromTwoRegions_ShouldApplyPartitionLevelOverrideToThridRegion()
@@ -896,6 +902,8 @@
 
         [TestMethod]
         [TestCategory("MultiRegion")]
+        [DoNotParallelize]
+        [Ignore("We will enable this test once the test staging account used for multi master validation starts supporting thin proxy.")]
         [Owner("dkunda")]
         [Timeout(70000)]
         public async Task ReadItemAsync_WithNoPreferredRegionsAndCircuitBreakerEnabledAndSingleMasterAccountAndServiceUnavailableReceived_ShouldApplyPartitionLevelOverride()
@@ -1014,6 +1022,8 @@
         [TestMethod]
         [Owner("dkunda")]
         [TestCategory("MultiRegion")]
+        [DoNotParallelize]
+        [Ignore("We will enable this test once the test staging account used for multi master validation starts supporting thin proxy.")]
         [Timeout(70000)]
         public async Task ReadItemAsync_WithCircuitBreakerDisabledAndSingleMasterAccountAndServiceUnavailableReceived_ShouldNotApplyPartitionLevelOverride()
         {
@@ -1105,6 +1115,8 @@
 
         [TestMethod]
         [Owner("dkunda")]
+        [DoNotParallelize]
+        [Ignore("We will enable this test once the test staging account used for multi master validation starts supporting thin proxy.")]
         [TestCategory("MultiRegion")]
         [Timeout(70000)]
         public async Task CreateItemAsync_WithCircuitBreakerEnabledAndSingleMasterAccountAndServiceUnavailableReceived_ShouldNotApplyPartitionLevelOverride()
@@ -1185,6 +1197,8 @@
         [TestMethod]
         [Owner("dkunda")]
         [TestCategory("MultiMaster")]
+        [DoNotParallelize]
+        [Ignore("We will enable this test once the test staging account used for multi master validation starts supporting thin proxy.")]
         [DataRow(ConnectionMode.Direct, "15", "10", DisplayName = "Direct Mode - Scenario whtn the total iteration count is 15 and circuit breaker consecutive failure threshold is set to 10.")]
         [DataRow(ConnectionMode.Direct, "25", "20", DisplayName = "Direct Mode - Scenario whtn the total iteration count is 25 and circuit breaker consecutive failure threshold is set to 20.")]
         [DataRow(ConnectionMode.Direct, "35", "30", DisplayName = "Direct Mode - Scenario whtn the total iteration count is 35 and circuit breaker consecutive failure threshold is set to 30.")]
@@ -2326,7 +2340,7 @@
 
                 int thresholdCounter = 0;
                 int totalIterations = 7;
-                //int ppcbDefaultThreshold = 1;
+                int ppcbDefaultThreshold = 1;
                 int firstRegionServiceUnavailableAttempt = 1;
 
                 for (int attemptCount = 1; attemptCount <= totalIterations; attemptCount++)
@@ -2357,25 +2371,17 @@
                             }
                             else if (isRegion2Available)
                             {
-                                try
+                                Trace.WriteLine("Current Attempt: " + attemptCount + ", Threshold: " + thresholdCounter + ", RegionCount: " + contactedRegions.Count.ToString() + ", Regions:" + string.Join(",", contactedRegions) + response.Diagnostics.ToString());
+                                if (thresholdCounter <= ppcbDefaultThreshold)
                                 {
-                                    Trace.TraceInformation("Current Attempt: " + attemptCount + ", Threshold: " + thresholdCounter + ", RegionCount: " + contactedRegions.Count.ToString() + ", Regions:" + string.Join(",", contactedRegions) + response.Diagnostics.ToString());
-                                    Console.WriteLine("Current Attempt: " + attemptCount + ", Threshold: " + thresholdCounter + ", RegionCount: " + contactedRegions.Count.ToString() + ", Regions:" + string.Join(",", contactedRegions) + response.Diagnostics.ToString());
+                                    Assert.IsTrue(contactedRegions.Count == 2, "Asserting that when the query request succeeds before the consecutive failure count reaches the threshold, the partition didn't fail over to the next region, and the request was retried." + response.Diagnostics.ToString());
+                                    Assert.IsTrue(contactedRegions.Contains(region1) && contactedRegions.Contains(region2), "Asserting that both region 1 and region 2 were contacted.");
+                                    thresholdCounter++;
                                 }
-                                catch
+                                else
                                 {
-                                    continue;
+                                    Assert.IsTrue(contactedRegions.Count == 1, "Asserting that when the consecutive failure count reaches the threshold, the partition was failed over to the next region, and the subsequent query request/s were successful on the next region. Current Attempt: " + attemptCount + ", Threshold: " + thresholdCounter + ", RegionCount: " + contactedRegions.Count.ToString() + ", Regions:" + string.Join(",", contactedRegions) + response.Diagnostics.ToString());
                                 }
-                                //if (thresholdCounter <= ppcbDefaultThreshold)
-                                //{
-                                //    Assert.IsTrue(contactedRegions.Count == 2, "Asserting that when the query request succeeds before the consecutive failure count reaches the threshold, the partition didn't fail over to the next region, and the request was retried." + response.Diagnostics.ToString());
-                                //    Assert.IsTrue(contactedRegions.Contains(region1) && contactedRegions.Contains(region2), "Asserting that both region 1 and region 2 were contacted.");
-                                //    thresholdCounter++;
-                                //}
-                                //else
-                                //{
-                                //    Assert.IsTrue(contactedRegions.Count == 1, "Asserting that when the consecutive failure count reaches the threshold, the partition was failed over to the next region, and the subsequent query request/s were successful on the next region. Current Attempt: " + attemptCount + ", Threshold: " + thresholdCounter + ", RegionCount: " + contactedRegions.Count.ToString() + ", Regions:" + string.Join(",", contactedRegions) + response.Diagnostics.ToString() );
-                                //}
                             }
                         }
                     }
