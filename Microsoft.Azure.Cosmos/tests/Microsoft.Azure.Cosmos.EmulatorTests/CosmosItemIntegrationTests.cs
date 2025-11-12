@@ -2264,6 +2264,7 @@
         [TestMethod]
         [TestCategory("MultiRegion")]
         [Owner("pkolluri")]
+        [DoNotParallelize]
         //[Timeout(70000)]
         public async Task QueryItemAsync_WithCircuitBreakerEnabledMultiRegionAndServiceResponseDelay_ShouldFailOverToNextRegionAsync()
         {
