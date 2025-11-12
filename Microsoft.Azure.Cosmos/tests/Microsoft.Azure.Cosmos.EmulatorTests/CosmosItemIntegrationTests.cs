@@ -470,7 +470,6 @@
 
         [TestMethod]
         [TestCategory("MultiRegion")]
-        [DoNotParallelize]
         [DataRow(ConnectionMode.Direct, "15", "10", DisplayName = "Direct Mode - Scenario when the total iteration count is 15 and circuit breaker consecutive failure threshold is set to 10.")]
         [DataRow(ConnectionMode.Direct, "25", "20", DisplayName = "Direct Mode - Scenario when the total iteration count is 25 and circuit breaker consecutive failure threshold is set to 20.")]
         [DataRow(ConnectionMode.Direct, "35", "30", DisplayName = "Direct Mode - Scenario when the total iteration count is 35 and circuit breaker consecutive failure threshold is set to 30.")]
@@ -606,7 +605,6 @@
 
         [TestMethod]
         [TestCategory("MultiRegion")]
-        [DoNotParallelize]
         [DataRow(ConnectionMode.Direct, DisplayName ="Direct Mode")]
         [DataRow(ConnectionMode.Gateway, DisplayName = "Gateway Mode")]
         [Owner("nalutripician")]
@@ -733,7 +731,6 @@
 
         [TestMethod]
         [TestCategory("MultiRegion")]
-        [DoNotParallelize]
         [Owner("dkunda")]
         [Timeout(70000)]
         public async Task ReadItemAsync_WithCircuitBreakerEnabledAndSingleMasterAccountAndServiceUnavailableReceivedFromTwoRegions_ShouldApplyPartitionLevelOverrideToThridRegion()
@@ -898,7 +895,6 @@
 
         [TestMethod]
         [TestCategory("MultiRegion")]
-        [DoNotParallelize]
         [Owner("dkunda")]
         [Timeout(70000)]
         public async Task ReadItemAsync_WithNoPreferredRegionsAndCircuitBreakerEnabledAndSingleMasterAccountAndServiceUnavailableReceived_ShouldApplyPartitionLevelOverride()
@@ -1017,7 +1013,6 @@
         [TestMethod]
         [Owner("dkunda")]
         [TestCategory("MultiRegion")]
-        [DoNotParallelize]
         [Timeout(70000)]
         public async Task ReadItemAsync_WithCircuitBreakerDisabledAndSingleMasterAccountAndServiceUnavailableReceived_ShouldNotApplyPartitionLevelOverride()
         {
@@ -1107,7 +1102,6 @@
 
         [TestMethod]
         [Owner("dkunda")]
-        [DoNotParallelize]
         [TestCategory("MultiRegion")]
         [Timeout(70000)]
         public async Task CreateItemAsync_WithCircuitBreakerEnabledAndSingleMasterAccountAndServiceUnavailableReceived_ShouldNotApplyPartitionLevelOverride()
@@ -1188,7 +1182,6 @@
         [TestMethod]
         [Owner("dkunda")]
         [TestCategory("MultiMaster")]
-        [DoNotParallelize]
         [DataRow(ConnectionMode.Direct, "15", "10", DisplayName = "Direct Mode - Scenario whtn the total iteration count is 15 and circuit breaker consecutive failure threshold is set to 10.")]
         [DataRow(ConnectionMode.Direct, "25", "20", DisplayName = "Direct Mode - Scenario whtn the total iteration count is 25 and circuit breaker consecutive failure threshold is set to 20.")]
         [DataRow(ConnectionMode.Direct, "35", "30", DisplayName = "Direct Mode - Scenario whtn the total iteration count is 35 and circuit breaker consecutive failure threshold is set to 30.")]
@@ -2269,7 +2262,6 @@
         [TestMethod]
         [TestCategory("MultiRegion")]
         [Owner("pkolluri")]
-        [DoNotParallelize]
         [Timeout(70000)]
         public async Task QueryItemAsync_WithCircuitBreakerEnabledMultiRegionAndServiceResponseDelay_ShouldFailOverToNextRegionAsync()
         {
@@ -2362,13 +2354,13 @@
                             {
                                 if (thresholdCounter <= ppcbDefaultThreshold)
                                 {
-                                    Assert.IsTrue(contactedRegions.Count == 2, "Asserting that when the query request succeeds before the consecutive failure count reaches the threshold, the partition didn't fail over to the next region, and the request was retried." + response.Diagnostics.ToString());
+                                    Assert.IsTrue(contactedRegions.Count == 2, "Asserting that when the query request succeeds before the consecutive failure count reaches the threshold, the partition didn't fail over to the next region, and the request was retried.");
                                     Assert.IsTrue(contactedRegions.Contains(region1) && contactedRegions.Contains(region2), "Asserting that both region 1 and region 2 were contacted.");
                                     thresholdCounter++;
                                 }
                                 else
                                 {
-                                    Assert.IsTrue(contactedRegions.Count == 1, "Asserting that when the consecutive failure count reaches the threshold, the partition was failed over to the next region, and the subsequent query request/s were successful on the next region. Current Attempt: " + attemptCount + ", Threshold: " + thresholdCounter + ", RegionCount: " + contactedRegions.Count.ToString() + ", Regions:" + string.Join(",", contactedRegions) + response.Diagnostics.ToString());
+                                    Assert.IsTrue(contactedRegions.Count == 1, "Asserting that when the consecutive failure count reaches the threshold, the partition was failed over to the next region, and the subsequent query request/s were successful on the next region");
                                 }
                             }
                         }
