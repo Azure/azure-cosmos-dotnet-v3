@@ -24,7 +24,7 @@
                 {
                     Properties = new System.Collections.Generic.Dictionary<string, object>
                     {
-                        { "encryption-json-processor", processor }
+                        { "encryption-json-processor", processor.ToString() }
                     }
                 };
 #else

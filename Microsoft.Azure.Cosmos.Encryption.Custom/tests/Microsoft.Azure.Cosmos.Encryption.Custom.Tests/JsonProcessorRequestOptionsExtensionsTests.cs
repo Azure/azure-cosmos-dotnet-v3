@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             {
                 Properties = new Dictionary<string, object>
                 {
-                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Stream }
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, "Stream" }
                 }
             };
 
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 Properties = new Dictionary<string, object>
                 {
                     // Intentionally different casing pattern; should not match for perf (no ToUpper/ToLower)
-                    { "Encryption-Json-Processor", JsonProcessor.Stream }
+                    { "Encryption-Json-Processor", "Stream" }
                 }
             };
 
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             {
                 Properties = new Dictionary<string, object>
                 {
-                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey + "-extra", JsonProcessor.Stream }
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey + "-extra", "Stream" }
                 }
             };
 

@@ -152,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Stream legacyEncrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, legacy, JsonProcessor.Newtonsoft, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
             legacyEncrypted.Position = 0;
 
-            ItemRequestOptions opts = new() { Properties = new Dictionary<string, object> { { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Stream } } };
+            ItemRequestOptions opts = new() { Properties = new Dictionary<string, object> { { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, "Stream" } } };
             CosmosDiagnosticsContext diag = CosmosDiagnosticsContext.Create(null);
 
             // Legacy algorithm should decrypt successfully by falling back to the legacy decryption path
@@ -180,7 +180,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Stream legacyEncrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, legacy, JsonProcessor.Newtonsoft, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
             legacyEncrypted.Position = 0;
 
-            ItemRequestOptions opts = new() { Properties = new Dictionary<string, object> { { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Stream } } };
+            ItemRequestOptions opts = new() { Properties = new Dictionary<string, object> { { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, "Stream" } } };
             CosmosDiagnosticsContext diag = CosmosDiagnosticsContext.Create(null);
             MemoryStream output = new();
 
@@ -209,7 +209,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 #pragma warning restore CS0618
                     PathsToEncrypt = TestDoc.PathsToEncrypt,
                 },
-                Properties = new Dictionary<string, object> { { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Stream } } 
+                Properties = new Dictionary<string, object> { { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, "Stream" } } 
             };
 
             CosmosDiagnosticsContext diag = CosmosDiagnosticsContext.Create(null);

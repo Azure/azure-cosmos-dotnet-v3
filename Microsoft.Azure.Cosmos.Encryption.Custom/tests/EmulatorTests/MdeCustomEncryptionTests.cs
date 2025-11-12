@@ -292,7 +292,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             {
                 Properties = new Dictionary<string, object>
                 {
-                    { "encryption-json-processor", JsonProcessor.Stream }
+                    { "encryption-json-processor", "Stream" }
                 }
             };
 
@@ -367,7 +367,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                 },
                 Properties = new Dictionary<string, object>
                 {
-                    { "encryption-json-processor", JsonProcessor.Stream }
+                    { "encryption-json-processor", "Stream" }
                 }
             };
 
@@ -377,7 +377,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             // Read back with stream override explicit (should decrypt)
             ItemResponse<TestItem> read = await encryptionContainer.ReadItemAsync<TestItem>(testItem.Id, new PartitionKey(testItem.PK), new ItemRequestOptions
             {
-                Properties = new Dictionary<string, object> { { "encryption-json-processor", JsonProcessor.Stream } }
+                Properties = new Dictionary<string, object> { { "encryption-json-processor", "Stream" } }
             });
             Assert.AreEqual(testItem.Sensitive, read.Resource.Sensitive);
         }
@@ -417,7 +417,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                         {
                             Properties = new Dictionary<string, object>
                             {
-                                { "encryption-json-processor", JsonProcessor.Stream }
+                                { "encryption-json-processor", "Stream" }
                             }
                         });
 
@@ -599,7 +599,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                 output,
                 encryptor,
                 new CosmosDiagnosticsContext(),
-                new ItemRequestOptions { Properties = new Dictionary<string, object> { { "encryption-json-processor", JsonProcessor.Stream } } },
+                new ItemRequestOptions { Properties = new Dictionary<string, object> { { "encryption-json-processor", "Stream" } } },
                 CancellationToken.None);
             Assert.IsNotNull(ctx);
             Assert.AreEqual(0, output.Position); // rewound for caller consumption
@@ -635,7 +635,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                 output,
                 encryptor,
                 new CosmosDiagnosticsContext(),
-                new ItemRequestOptions { Properties = new Dictionary<string, object> { { "encryption-json-processor", JsonProcessor.Stream } } },
+                new ItemRequestOptions { Properties = new Dictionary<string, object> { { "encryption-json-processor", "Stream" } } },
                 CancellationToken.None);
         }
 
@@ -648,25 +648,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         }
 #endif
 
-        private static EncryptionItemRequestOptions CreateEncryptionItemRequestOptions(string dekId, string encryptionAlgorithm, JsonProcessor? jsonProcessor = null)
+        private static EncryptionItemRequestOptions CreateEncryptionItemRequestOptions(string dekId, string encryptionAlgorithm, JsonProcessor jsonProcessor)
         {
-            EncryptionItemRequestOptions options = new()
+            EncryptionItemRequestOptions options = new ()
             {
                 EncryptionOptions = new EncryptionOptions
                 {
                     DataEncryptionKeyId = dekId,
                     EncryptionAlgorithm = encryptionAlgorithm,
                     PathsToEncrypt = new List<string> { "/Sensitive" },
+                },
+                Properties = new Dictionary<string, object>
+                {
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, jsonProcessor.ToString() }
                 }
             };
-
-            if (jsonProcessor.HasValue)
-            {
-                options.Properties = new Dictionary<string, object>
-                {
-                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, jsonProcessor.Value }
-                };
-            }
 
             return options;
         }
