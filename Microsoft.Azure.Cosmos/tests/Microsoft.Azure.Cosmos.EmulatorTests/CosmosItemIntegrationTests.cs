@@ -726,8 +726,7 @@
             finally
             {
                 Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelCircuitBreakerEnabled, null);
-                Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerConsecutiveFailureCountForReads, null);
-
+                Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerTimeoutCounterResetWindowInMinutes, null);
                 await this.TryDeleteItems(itemsList);
             }
         }
@@ -1102,8 +1101,6 @@
             finally
             {
                 Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelCircuitBreakerEnabled, null);
-                Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerConsecutiveFailureCountForReads, null);
-
                 await this.TryDeleteItems(itemsList);
             }
         }
@@ -2273,13 +2270,12 @@
         [TestCategory("MultiRegion")]
         [Owner("pkolluri")]
         [DoNotParallelize]
-        //[Timeout(70000)]
+        [Timeout(70000)]
         public async Task QueryItemAsync_WithCircuitBreakerEnabledMultiRegionAndServiceResponseDelay_ShouldFailOverToNextRegionAsync()
         {
             // Arrange.
             Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelCircuitBreakerEnabled, "True");
             Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerConsecutiveFailureCountForReads, "1");
-            Environment.SetEnvironmentVariable(ConfigurationManager.StalePartitionUnavailabilityRefreshIntervalInSeconds, "3600");
 
             // Enabling fault injection rule to simulate a 503 service unavailable scenario.
             string serviceResponseDelayRuleId = "response-delay-rule-" + Guid.NewGuid().ToString();
@@ -2391,7 +2387,6 @@
             {
                 Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelCircuitBreakerEnabled, null);
                 Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerConsecutiveFailureCountForReads, null);
-                Environment.SetEnvironmentVariable(ConfigurationManager.StalePartitionUnavailabilityRefreshIntervalInSeconds, null);
 
                 await this.TryDeleteItems(itemsList);
             }
