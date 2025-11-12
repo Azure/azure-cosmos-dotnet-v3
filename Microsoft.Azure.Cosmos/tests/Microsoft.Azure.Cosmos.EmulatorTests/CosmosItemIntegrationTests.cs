@@ -37,8 +37,6 @@
         [TestInitialize]
         public async Task TestInitAsync()
         {
-            Environment.SetEnvironmentVariable(ConfigurationManager.StalePartitionUnavailabilityRefreshIntervalInSeconds, "3600");
-
             this.connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTI_REGION", null);
 
             JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions()
@@ -2272,11 +2270,12 @@
             // Arrange.
             Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelCircuitBreakerEnabled, "True");
             Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerConsecutiveFailureCountForReads, "1");
+            Environment.SetEnvironmentVariable(ConfigurationManager.StalePartitionUnavailabilityRefreshIntervalInSeconds, "3600");
 
             // Enabling fault injection rule to simulate a 503 service unavailable scenario.
-            string serviceResponseDelayRuleId1 = "503-rule-" + Guid.NewGuid().ToString();
-            FaultInjectionRule serviceResponseDelay1 = new FaultInjectionRuleBuilder(
-                id: serviceResponseDelayRuleId1,
+            string serviceResponseDelayRuleId = "response-delay-rule-" + Guid.NewGuid().ToString();
+            FaultInjectionRule serviceResponseDelayRuleFromRegion1 = new FaultInjectionRuleBuilder(
+                id: serviceResponseDelayRuleId,
                 condition:
                     new FaultInjectionConditionBuilder()
                         .WithOperationType(FaultInjectionOperationType.QueryItem)
@@ -2289,9 +2288,9 @@
                         .Build())
                 .Build();
 
-            serviceResponseDelay1.Disable();
+            serviceResponseDelayRuleFromRegion1.Disable();
 
-            List<FaultInjectionRule> rules = new List<FaultInjectionRule> { serviceResponseDelay1};
+            List<FaultInjectionRule> rules = new List<FaultInjectionRule> { serviceResponseDelayRuleFromRegion1};
             FaultInjector faultInjector = new FaultInjector(rules);
 
             List<string> preferredRegions = new List<string> { region1, region2, region3 };
@@ -2299,7 +2298,6 @@
             {
                 ConsistencyLevel = ConsistencyLevel.Session,
                 FaultInjector = faultInjector,
-                //RequestTimeout = TimeSpan.FromSeconds(5),
                 ApplicationPreferredRegions = preferredRegions,
                 ConnectionMode = ConnectionMode.Gateway,
             };
@@ -2352,7 +2350,7 @@
                                 if (attemptCount == firstRegionServiceUnavailableAttempt)
                                 {
                                     isRegion1Available = false;
-                                    serviceResponseDelay1.Enable();
+                                    serviceResponseDelayRuleFromRegion1.Enable();
                                 }
                             }
                             else if (isRegion2Available)
@@ -2385,6 +2383,7 @@
             {
                 Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelCircuitBreakerEnabled, null);
                 Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerConsecutiveFailureCountForReads, null);
+                Environment.SetEnvironmentVariable(ConfigurationManager.StalePartitionUnavailabilityRefreshIntervalInSeconds, null);
 
                 await this.TryDeleteItems(itemsList);
             }

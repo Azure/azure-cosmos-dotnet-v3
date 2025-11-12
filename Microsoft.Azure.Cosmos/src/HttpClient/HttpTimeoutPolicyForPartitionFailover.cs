@@ -9,8 +9,8 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class HttpTimeoutPolicyForPartitionFailover : HttpTimeoutPolicy
     {
-        public static readonly HttpTimeoutPolicy InstanceShouldThrow503OnTimeoutForQuery = new HttpTimeoutPolicyForPartitionFailover(true);
-        public static readonly HttpTimeoutPolicy InstanceShouldThrow503OnTimeoutForReads = new HttpTimeoutPolicyForPartitionFailover(false);
+        public static readonly HttpTimeoutPolicy InstanceShouldThrow503OnTimeoutForQuery = new HttpTimeoutPolicyForPartitionFailover(isQuery: true);
+        public static readonly HttpTimeoutPolicy InstanceShouldThrow503OnTimeoutForReads = new HttpTimeoutPolicyForPartitionFailover(isQuery: false);
         private readonly bool isQuery;
         private static readonly string Name = nameof(HttpTimeoutPolicyDefault);
 
@@ -24,15 +24,15 @@ namespace Microsoft.Azure.Cosmos
         // For queries: 3 attempts with timeouts of 5s, 5s, and 10s respectively.
         private readonly IReadOnlyList<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> TimeoutsAndDelaysForReads = new List<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)>()
         {
-            (TimeSpan.FromSeconds(.5), TimeSpan.Zero),
             (TimeSpan.FromSeconds(1), TimeSpan.Zero),
             (TimeSpan.FromSeconds(5), TimeSpan.Zero),
+            (TimeSpan.FromSeconds(6), TimeSpan.Zero),
         };
 
         private readonly IReadOnlyList<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> TimeoutsAndDelaysForQueries = new List<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)>()
         {
-            (TimeSpan.FromSeconds(5), TimeSpan.Zero),
-            (TimeSpan.FromSeconds(5), TimeSpan.Zero),
+            (TimeSpan.FromSeconds(6), TimeSpan.Zero),
+            (TimeSpan.FromSeconds(6), TimeSpan.Zero),
             (TimeSpan.FromSeconds(10), TimeSpan.Zero),
         };
 
