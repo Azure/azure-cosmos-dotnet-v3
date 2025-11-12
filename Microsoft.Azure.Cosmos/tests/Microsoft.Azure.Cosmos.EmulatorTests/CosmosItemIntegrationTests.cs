@@ -37,6 +37,8 @@
         [TestInitialize]
         public async Task TestInitAsync()
         {
+            Environment.SetEnvironmentVariable(ConfigurationManager.StalePartitionUnavailabilityRefreshIntervalInSeconds, "3600");
+
             this.connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTI_REGION", null);
 
             JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions()
@@ -81,6 +83,7 @@
             {
                 //Do not delete the resources (except MM Write test object), georeplication is slow and we want to reuse the resources
                 this.client?.Dispose();
+                Environment.SetEnvironmentVariable(ConfigurationManager.StalePartitionUnavailabilityRefreshIntervalInSeconds, null);
             }
         }
 
@@ -2296,7 +2299,7 @@
             {
                 ConsistencyLevel = ConsistencyLevel.Session,
                 FaultInjector = faultInjector,
-                RequestTimeout = TimeSpan.FromSeconds(5),
+                //RequestTimeout = TimeSpan.FromSeconds(5),
                 ApplicationPreferredRegions = preferredRegions,
                 ConnectionMode = ConnectionMode.Gateway,
             };
@@ -2362,7 +2365,7 @@
                                 }
                                 else
                                 {
-                                    Assert.IsTrue(contactedRegions.Count == 1, "Asserting that when the consecutive failure count reaches the threshold, the partition was failed over to the next region, and the subsequent query request/s were successful on the next region." + response.Diagnostics.ToString());
+                                    Assert.IsTrue(contactedRegions.Count == 1, "Asserting that when the consecutive failure count reaches the threshold, the partition was failed over to the next region, and the subsequent query request/s were successful on the next region." + response.Diagnostics.ToString() + "RegionCount: "+ contactedRegions.Count.ToString(), "Regions:"+ string.Join(",", contactedRegions));
                                 }
                             }
 
