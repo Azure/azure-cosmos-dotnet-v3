@@ -1260,7 +1260,6 @@ namespace Microsoft.Azure.Cosmos
                         suffix: this.ApplicationName);
         }
 
-
         /// <summary>
         /// This generates a key that added to the user agent to make it 
         /// possible to determine if the SDK has region failover enabled.
