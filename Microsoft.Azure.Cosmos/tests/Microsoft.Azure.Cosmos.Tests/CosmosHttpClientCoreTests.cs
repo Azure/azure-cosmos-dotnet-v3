@@ -606,7 +606,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 if (count <= 1)
                 {
-                    Assert.AreEqual(new TimeSpan(0,0,5), availableRetries.Current.requestTimeout);
+                    Assert.AreEqual(new TimeSpan(0,0,6), availableRetries.Current.requestTimeout);
                 }
                 else if (count == 2)
                 {
@@ -630,15 +630,15 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 if (count == 0)
                 {
-                    Assert.AreEqual(new TimeSpan(0, 0,0, 0, 500), availableRetries.Current.requestTimeout);
+                    Assert.AreEqual(new TimeSpan(0, 0, 1), availableRetries.Current.requestTimeout);
                 }
                 else if (count == 1)
                 {
-                    Assert.AreEqual(new TimeSpan(0, 0, 1), availableRetries.Current.requestTimeout);
+                    Assert.AreEqual(new TimeSpan(0, 0, 5), availableRetries.Current.requestTimeout);
                 }
                 else if (count == 2)
                 {
-                    Assert.AreEqual(new TimeSpan(0, 0, 5), availableRetries.Current.requestTimeout);
+                    Assert.AreEqual(new TimeSpan(0, 0, 6), availableRetries.Current.requestTimeout);
                 }
                 count++;
             }
