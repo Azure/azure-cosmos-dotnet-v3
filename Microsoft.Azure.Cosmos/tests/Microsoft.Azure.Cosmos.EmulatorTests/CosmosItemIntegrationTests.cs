@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Net;
@@ -2356,8 +2357,15 @@
                             }
                             else if (isRegion2Available)
                             {
-                                Console.WriteLine("Current Attempt: " + attemptCount + ", Threshold: " + thresholdCounter + ", RegionCount: " + contactedRegions.Count.ToString() + ", Regions:" + string.Join(",", contactedRegions) + response.Diagnostics.ToString());
-
+                                try
+                                {
+                                    Trace.TraceInformation("Current Attempt: " + attemptCount + ", Threshold: " + thresholdCounter + ", RegionCount: " + contactedRegions.Count.ToString() + ", Regions:" + string.Join(",", contactedRegions) + response.Diagnostics.ToString());
+                                    Console.WriteLine("Current Attempt: " + attemptCount + ", Threshold: " + thresholdCounter + ", RegionCount: " + contactedRegions.Count.ToString() + ", Regions:" + string.Join(",", contactedRegions) + response.Diagnostics.ToString());
+                                }
+                                catch
+                                {
+                                    continue;
+                                }
                                 //if (thresholdCounter <= ppcbDefaultThreshold)
                                 //{
                                 //    Assert.IsTrue(contactedRegions.Count == 2, "Asserting that when the query request succeeds before the consecutive failure count reaches the threshold, the partition didn't fail over to the next region, and the request was retried." + response.Diagnostics.ToString());
