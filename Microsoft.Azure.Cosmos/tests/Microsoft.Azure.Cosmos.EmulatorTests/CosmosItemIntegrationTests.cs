@@ -2365,7 +2365,7 @@
                                 }
                                 else
                                 {
-                                    Assert.IsTrue(contactedRegions.Count == 1, "Asserting that when the consecutive failure count reaches the threshold, the partition was failed over to the next region, and the subsequent query request/s were successful on the next region." + response.Diagnostics.ToString() + "RegionCount: "+ contactedRegions.Count.ToString(), "Regions:"+ string.Join(",", contactedRegions));
+                                    Assert.IsTrue(contactedRegions.Count == 1, "Asserting that when the consecutive failure count reaches the threshold, the partition was failed over to the next region, and the subsequent query request/s were successful on the next region." + response.Diagnostics.ToString() + "RegionCount: " + contactedRegions.Count.ToString() + "Regions:" + string.Join(",", contactedRegions));
                                 }
                             }
 
