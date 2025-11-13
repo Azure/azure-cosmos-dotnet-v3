@@ -112,7 +112,9 @@ namespace Microsoft.Azure.Cosmos.Linq
             expression = this.EvaluateMemberAccess(expression);
             
             if (expression.NodeType == ExpressionType.Constant)
+            {
                 return expression;
+            }
         
             LambdaExpression lambda = Expression.Lambda(expression);
         
