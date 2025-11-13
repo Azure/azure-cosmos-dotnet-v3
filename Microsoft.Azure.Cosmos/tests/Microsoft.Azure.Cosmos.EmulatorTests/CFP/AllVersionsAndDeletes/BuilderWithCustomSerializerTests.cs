@@ -695,9 +695,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                 }
             };
 
-            CosmosClient cosmosClient = //isMultiMaster 
-                        //? new CosmosClient(accountEndpoint, options) 
-                         new CosmosClient(defaultEndpoint, authKey, options);
+            CosmosClient cosmosClient = isMultiMaster 
+                        ? new CosmosClient(accountEndpoint, options) 
+                        : new CosmosClient(defaultEndpoint, authKey, options);
     
             Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync(id: Guid.NewGuid().ToString());
             Container leaseContainer = await database.CreateContainerIfNotExistsAsync(containerProperties: new ContainerProperties(id: "leases", partitionKeyPath: "/id"));
