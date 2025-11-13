@@ -15,13 +15,6 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-### <a name="3.54.2"/> [3.54.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.54.2) - 2025-11-13
-#### Fixed
-
-- [5476](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5476) HttpTimeoutPolicy Improvements Phase 1: Fixes QueryPlan requests retry gaps
-- [5482](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5482) HttpTimeoutPolicy Improvements Phase 2: Refactors Code to Separate out Retry Policy Timeouts for point-reads and non-point-reads on PPAF
-
-
 ### <a name="3.55.1-preview.0"/> [3.55.1-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.55.1-preview.0) - 2025-10-27
 
 ### <a name="3.54.1"/> [3.54.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.54.1) - 2025-10-27
