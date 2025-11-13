@@ -9,27 +9,27 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class HttpTimeoutPolicyForPartitionFailover : HttpTimeoutPolicy
     {
-        public static readonly HttpTimeoutPolicy InstanceShouldThrow503OnTimeoutForQuery = new HttpTimeoutPolicyForPartitionFailover(isQuery: true);
-        public static readonly HttpTimeoutPolicy InstanceShouldThrow503OnTimeoutForReads = new HttpTimeoutPolicyForPartitionFailover(isQuery: false);
-        private readonly bool isQuery;
+        public static readonly HttpTimeoutPolicy InstanceShouldThrow503OnTimeoutForNonPointReads = new HttpTimeoutPolicyForPartitionFailover(isPointRead: false);
+        public static readonly HttpTimeoutPolicy InstanceShouldThrow503OnTimeoutForPointReads = new HttpTimeoutPolicyForPartitionFailover(isPointRead: true);
+        private readonly bool isPointRead;
         private static readonly string Name = nameof(HttpTimeoutPolicyDefault);
 
-        private HttpTimeoutPolicyForPartitionFailover(bool isQuery)
+        private HttpTimeoutPolicyForPartitionFailover(bool isPointRead)
         {
-            this.isQuery = isQuery;
+            this.isPointRead = isPointRead;
         }
 
         // Timeouts and delays are based on the following rationale:
-        // For reads: 3 agressive attempts with timeouts of 1s, 6s, and 6s respectively.
-        // For queries: 3 attempts with timeouts of 6s, 6s, and 10s respectively.
-        private readonly IReadOnlyList<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> TimeoutsAndDelaysForReads = new List<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)>()
+        // For point reads: 3 attempts with timeouts of 1s, 6s, and 6s respectively.
+        // For non-point reads: 3 attempts with timeouts of 6s, 6s, and 10s respectively.
+        private readonly IReadOnlyList<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> TimeoutsAndDelaysForPointReads = new List<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)>()
         {
             (TimeSpan.FromSeconds(1), TimeSpan.Zero),
             (TimeSpan.FromSeconds(6), TimeSpan.Zero),
             (TimeSpan.FromSeconds(6), TimeSpan.Zero),
         };
 
-        private readonly IReadOnlyList<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> TimeoutsAndDelaysForQueries = new List<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)>()
+        private readonly IReadOnlyList<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> TimeoutsAndDelaysForNonPointReads = new List<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)>()
         {
             (TimeSpan.FromSeconds(6), TimeSpan.Zero),
             (TimeSpan.FromSeconds(6), TimeSpan.Zero),
@@ -38,11 +38,11 @@ namespace Microsoft.Azure.Cosmos
 
         public override string TimeoutPolicyName => HttpTimeoutPolicyForPartitionFailover.Name;
 
-        public override int TotalRetryCount => this.isQuery ? this.TimeoutsAndDelaysForQueries.Count : this.TimeoutsAndDelaysForReads.Count;
+        public override int TotalRetryCount => this.isPointRead ? this.TimeoutsAndDelaysForPointReads.Count : this.TimeoutsAndDelaysForNonPointReads.Count;
 
         public override IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> GetTimeoutEnumerator()
         {
-            return this.isQuery ? this.TimeoutsAndDelaysForQueries.GetEnumerator() : this.TimeoutsAndDelaysForReads.GetEnumerator();
+            return this.isPointRead ? this.TimeoutsAndDelaysForPointReads.GetEnumerator() : this.TimeoutsAndDelaysForNonPointReads.GetEnumerator();
         }
 
         public override bool ShouldRetryBasedOnResponse(HttpMethod requestHttpMethod, HttpResponseMessage responseMessage)

@@ -57,10 +57,9 @@ namespace Microsoft.Azure.Cosmos
                 {
                     if (isPartitionLevelFailoverEnabled)
                     {
-                        return documentServiceRequest.OperationType == OperationType.Query ||
-                               documentServiceRequest.OperationType == OperationType.SqlQuery
-                            ? HttpTimeoutPolicyForPartitionFailover.InstanceShouldThrow503OnTimeoutForQuery
-                            : HttpTimeoutPolicyForPartitionFailover.InstanceShouldThrow503OnTimeoutForReads;
+                        return documentServiceRequest.OperationType == OperationType.Read 
+                            ? HttpTimeoutPolicyForPartitionFailover.InstanceShouldThrow503OnTimeoutForPointReads
+                            : HttpTimeoutPolicyForPartitionFailover.InstanceShouldThrow503OnTimeoutForNonPointReads;
                     }
                     else
                     {
