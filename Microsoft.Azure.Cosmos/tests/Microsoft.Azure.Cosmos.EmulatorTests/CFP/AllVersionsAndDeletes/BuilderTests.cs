@@ -69,7 +69,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                             Assert.IsTrue(DateTime.TryParse(s: change.Metadata.ConflictResolutionTimestamp.ToString(), out _), message: "Invalid csrt must be a datetime value.");
                             Assert.IsTrue(change.Metadata.Lsn > 0, message: "Invalid lsn must be a long value.");
                             Assert.IsFalse(change.Metadata.IsTimeToLiveExpired);
-
+                            Assert.IsNull(change.Metadata.Id);
+                            Assert.IsNull(change.Metadata.PartitionKey);
                             // previous
                             Assert.IsNull(change.Previous);
                         }
@@ -84,10 +85,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                             Assert.IsTrue(change.Metadata.IsTimeToLiveExpired);
 
                             // previous
-                            Assert.AreEqual(expected: "1", actual: change.Previous.id.ToString());
-                            Assert.AreEqual(expected: "1", actual: change.Previous.pk.ToString());
-                            Assert.AreEqual(expected: "Testing TTL on CFP.", actual: change.Previous.description.ToString());
-                            Assert.AreEqual(expected: ttlInSeconds, actual: change.Previous.ttl);
+                            Assert.AreEqual(expected: "1", actual: change.Metadata.Id.ToString());
+                            Assert.AreEqual(expected: "1", actual: change.Metadata.PartitionKey.Values.FirstOrDefault());
+                            Assert.IsNull(change.Previous);
 
                             // stop after reading delete since it is the last document in feed.
                             stopwatch.Stop();
@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
         [TestMethod]
         [Owner("philipthomas-MSFT")]
         [Description("Scenario: When a document is created, then updated, and finally deleted, there should be 3 changes that will appear for that " +
-            "document when using ChangeFeedProcessor with AllVersionsAndDeletes set as the ChangeFeedMode.")]
+            "document when using ChangeFeedProcessor with AllVersionsAndDeletes set as the ChangeFeedMode and enablePreviousImageForDeleteInFFCF true")]
         public async Task WhenADocumentIsCreatedThenUpdatedThenDeletedTestsAsync()
         {
             ContainerInternal monitoredContainer = await this.CreateMonitoredContainer(ChangeFeedMode.AllVersionsAndDeletes);
@@ -155,6 +155,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
             ChangeFeedProcessor processor = monitoredContainer
                 .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName: "processor", onChangesDelegate: (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItem<dynamic>> docs, CancellationToken token) =>
                 {
+                    string metadataId = default;
+                    string metadataPk = default;
                     string id = default;
                     string pk = default;
                     string description = default;
@@ -171,14 +173,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                         }
                         else
                         {
-                            id = change.Previous.id.ToString();
-                            pk = change.Previous.pk.ToString();
-                            description = change.Previous.description.ToString();
+                            metadataId = change.Metadata.Id.ToString();
+                            metadataPk = change.Metadata.PartitionKey.Values.FirstOrDefault().ToString();
                         }
 
                         ChangeFeedOperationType operationType = change.Metadata.OperationType;
                         long previousLsn = change.Metadata.PreviousLsn;
-                        DateTime m = change.Metadata.ConflictResolutionTimestamp;
+                        DateTime? m = change.Metadata.ConflictResolutionTimestamp;
                         long lsn = change.Metadata.Lsn;
                         bool isTimeToLiveExpired = change.Metadata.IsTimeToLiveExpired;
                     }
@@ -211,8 +212,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
 
                     ChangeFeedItem<dynamic> deleteChange = docs.ElementAt(2);
                     Assert.IsNull(deleteChange.Current.id);
+                    Assert.AreEqual(expected: "1", actual: deleteChange.Metadata.Id.ToString());
+                    Assert.AreEqual(expected: "1", actual: deleteChange.Metadata.PartitionKey.Values.FirstOrDefault());
                     Assert.AreEqual(expected: deleteChange.Metadata.OperationType, actual: ChangeFeedOperationType.Delete);
-                    Assert.AreEqual(expected: replaceChange.Metadata.Lsn, actual: deleteChange.Metadata.PreviousLsn);
                     Assert.IsNotNull(deleteChange.Previous);
                     Assert.AreEqual(expected: "1", actual: deleteChange.Previous.id.ToString());
                     Assert.AreEqual(expected: "1", actual: deleteChange.Previous.pk.ToString());
