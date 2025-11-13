@@ -110,16 +110,21 @@ namespace Microsoft.Azure.Cosmos.Linq
         private Expression EvaluateConstant(Expression expression)
         {
             expression = this.EvaluateMemberAccess(expression);
-
+            
             if (expression.NodeType == ExpressionType.Constant)
-            {
                 return expression;
-            }
-
+        
             LambdaExpression lambda = Expression.Lambda(expression);
+        
+            // Avoid DynamicMethod emission (no JIT’ed codegen)
+        #if NET6_0_OR_GREATER
+            Delegate function = lambda.Compile(preferInterpretation: true);
+        #else
+            // Older TFMs don’t have the flag.
             Delegate function = lambda.Compile();
-
-            return Expression.Constant(function.DynamicInvoke(null), expression.Type);
+        #endif
+        
+            return Expression.Constant(del.DynamicInvoke(null), expression.Type);
         }
     }
 }
