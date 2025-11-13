@@ -604,7 +604,7 @@ namespace Microsoft.Azure.Cosmos
             string originalConfigValue = Environment.GetEnvironmentVariable("MinimumIntervalForNonForceRefreshLocationInMS");
             Environment.SetEnvironmentVariable("MinimumIntervalForNonForceRefreshLocationInMS", "1000");
 
-            // Setup dummpy read locations for the database account
+            // Setup dummy read locations for the database account
             Collection<AccountRegion> readableLocations = new Collection<AccountRegion>();
 
             AccountRegion writeLocation = new AccountRegion
@@ -654,6 +654,7 @@ namespace Microsoft.Azure.Cosmos
             databaseAccount.ReadLocationsInternal = readableLocations;
 
             globalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(databaseAccount);
+            await globalEndpointManager.RefreshLocationAsync(forceRefresh: true);
             Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], new Uri(readLocation2.Endpoint));
 
             //Add location 1 back to read locations and validate that location 1 becomes the read endpoint again.
