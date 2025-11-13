@@ -124,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             Delegate function = lambda.Compile();
         #endif
         
-            return Expression.Constant(del.DynamicInvoke(null), expression.Type);
+            return Expression.Constant(function.DynamicInvoke(null), expression.Type);
         }
     }
 }
