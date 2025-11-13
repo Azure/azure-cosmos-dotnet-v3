@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Net;
@@ -81,6 +82,7 @@
             {
                 //Do not delete the resources (except MM Write test object), georeplication is slow and we want to reuse the resources
                 this.client?.Dispose();
+                Environment.SetEnvironmentVariable(ConfigurationManager.StalePartitionUnavailabilityRefreshIntervalInSeconds, null);
             }
         }
 
@@ -722,8 +724,7 @@
             finally
             {
                 Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelCircuitBreakerEnabled, null);
-                Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerConsecutiveFailureCountForReads, null);
-
+                Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerTimeoutCounterResetWindowInMinutes, null);
                 await this.TryDeleteItems(itemsList);
             }
         }
@@ -1095,8 +1096,6 @@
             finally
             {
                 Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelCircuitBreakerEnabled, null);
-                Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerConsecutiveFailureCountForReads, null);
-
                 await this.TryDeleteItems(itemsList);
             }
         }
@@ -2347,6 +2346,131 @@
                 {
                     // Ignore - document already deleted
                 }
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("MultiRegion")]
+        [Owner("pkolluri")]
+        [Timeout(70000)]
+        public async Task QueryItemAsync_WithCircuitBreakerEnabledMultiRegionAndServiceResponseDelay_ShouldFailOverToNextRegionAsync()
+        {
+            // Arrange.
+            Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelCircuitBreakerEnabled, "True");
+            Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerConsecutiveFailureCountForReads, "1");
+
+            // Enabling fault injection rule to simulate a 503 service unavailable scenario.
+            string serviceResponseDelayRuleId = "response-delay-rule-" + Guid.NewGuid().ToString();
+            FaultInjectionRule serviceResponseDelayRuleFromRegion1 = new FaultInjectionRuleBuilder(
+                id: serviceResponseDelayRuleId,
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithOperationType(FaultInjectionOperationType.QueryItem)
+                        .WithConnectionType(FaultInjectionConnectionType.Gateway)
+                        .WithRegion(region1)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
+                        .WithDelay(TimeSpan.FromSeconds(70))
+                        .Build())
+                .Build();
+
+            serviceResponseDelayRuleFromRegion1.Disable();
+
+            List<FaultInjectionRule> rules = new List<FaultInjectionRule> { serviceResponseDelayRuleFromRegion1};
+            FaultInjector faultInjector = new FaultInjector(rules);
+
+            List<string> preferredRegions = new List<string> { region1, region2, region3 };
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+            {
+                ConsistencyLevel = ConsistencyLevel.Session,
+                FaultInjector = faultInjector,
+                ApplicationPreferredRegions = preferredRegions,
+                ConnectionMode = ConnectionMode.Gateway,
+            };
+
+            List<CosmosIntegrationTestObject> itemsList = new()
+            {
+                new() { Id = "smTestId2", Pk = "smpk1" },
+            };
+
+            try
+            {
+                using CosmosClient cosmosClient = new(connectionString: this.connectionString, clientOptions: cosmosClientOptions);
+                Database database = cosmosClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
+
+                // Act and Assert.
+                await this.TryCreateItems(itemsList);
+
+                //Must Ensure the data is replicated to all regions
+                await Task.Delay(3000);
+
+                bool isRegion1Available = true;
+                bool isRegion2Available = true;
+
+                int thresholdCounter = 0;
+                int totalIterations = 7;
+                int ppcbDefaultThreshold = 1;
+                int firstRegionServiceUnavailableAttempt = 1;
+
+                for (int attemptCount = 1; attemptCount <= totalIterations; attemptCount++)
+                {
+                    try
+                    {
+                        string sqlQueryText = $"SELECT * FROM c WHERE c.id = '{itemsList[0].Id}'";
+                        using FeedIterator<CosmosIntegrationTestObject> feedIterator = container.GetItemQueryIterator<CosmosIntegrationTestObject>(sqlQueryText, requestOptions: new QueryRequestOptions());
+
+                        while (feedIterator.HasMoreResults)
+                        {
+                            FeedResponse<CosmosIntegrationTestObject> response = await feedIterator.ReadNextAsync();
+                            Assert.AreEqual(System.Net.HttpStatusCode.OK, response.StatusCode);
+                            IReadOnlyList<(string regionName, Uri uri)> contactedRegionMapping = response.Diagnostics.GetContactedRegions();
+                            HashSet<string> contactedRegions = new(contactedRegionMapping.Select(r => r.regionName));
+
+                            if (isRegion1Available && isRegion2Available)
+                            {
+                                Assert.IsTrue(contactedRegions.Count == 1, "Assert that, when no failure happened, the query request is being served from region 1.");
+                                Assert.IsTrue(contactedRegions.Contains(region1));
+
+                                // Simulating service unavailable on region 1.
+                                if (attemptCount == firstRegionServiceUnavailableAttempt)
+                                {
+                                    isRegion1Available = false;
+                                    serviceResponseDelayRuleFromRegion1.Enable();
+                                }
+                            }
+                            else if (isRegion2Available)
+                            {
+                                if (thresholdCounter <= ppcbDefaultThreshold)
+                                {
+                                    Assert.IsTrue(contactedRegions.Count == 2, "Asserting that when the query request succeeds before the consecutive failure count reaches the threshold, the partition didn't fail over to the next region, and the request was retried.");
+                                    Assert.IsTrue(contactedRegions.Contains(region1) && contactedRegions.Contains(region2), "Asserting that both region 1 and region 2 were contacted.");
+                                    thresholdCounter++;
+                                }
+                                else
+                                {
+                                    Assert.IsTrue(contactedRegions.Count == 1, "Asserting that when the consecutive failure count reaches the threshold, the partition was failed over to the next region, and the subsequent query request/s were successful on the next region");
+                                }
+                            }
+                        }
+                    }
+                    catch (CosmosException ce)
+                    {
+                        Assert.Fail("Query operation should succeed with successful failover to next region." + ce.Diagnostics.ToString());
+                    }
+                    catch (Exception ex)
+                    {
+                        Assert.Fail($"Unhandled Exception was thrown during Query operation call. Message: {ex.Message}");
+                    }
+                }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelCircuitBreakerEnabled, null);
+                Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerConsecutiveFailureCountForReads, null);
+
+                await this.TryDeleteItems(itemsList);
             }
         }
 
