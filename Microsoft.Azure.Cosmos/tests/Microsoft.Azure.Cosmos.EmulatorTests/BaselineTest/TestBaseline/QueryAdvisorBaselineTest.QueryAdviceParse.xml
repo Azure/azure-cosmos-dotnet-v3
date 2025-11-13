@@ -7,7 +7,7 @@
  WHERE CONTAINS(r.name, "Abc") ]]></Query>
     </Input>
     <Output>
-      <QueryAdvice><![CDATA[QA1002: Instead of CONTAINS, consider using STARTSWTIH or computed properties, which may improve performance. For more information, please visit https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/query/queryadvisor/QA1002
+      <QueryAdvice><![CDATA[QA1002: If you are matching on a string prefix, consider using STARTSWITH. For more information, please visit https://aka.ms/CosmosDB/QueryAdvisor/QA1002
 ]]></QueryAdvice>
     </Output>
   </Result>
@@ -19,8 +19,8 @@
   WHERE GetCurrentTimestamp() > 10 ]]></Query>
     </Input>
     <Output>
-      <QueryAdvice><![CDATA[QA1009: Instead of using GetCurrentTimestamp, consider using GetCurrentTimestampStatic, which may improve performance. For more information, please visit https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/query/queryadvisor/QA1009
-QA1008: Instead of using GetCurrentTicks, consider using GetCurrentTicksStatic, which may improve performance. For more information, please visit https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/query/queryadvisor/QA1008
+      <QueryAdvice><![CDATA[QA1009: Consider using GetCurrentTimestampStatic instead of GetCurrentTimestamp in the WHERE clause . For more information, please visit https://aka.ms/CosmosDB/QueryAdvisor/QA1009
+QA1008: Consider using GetCurrentTicksStatic instead of GetCurrentTicks in the WHERE clause. For more information, please visit https://aka.ms/CosmosDB/QueryAdvisor/QA1008
 ]]></QueryAdvice>
     </Output>
   </Result>
