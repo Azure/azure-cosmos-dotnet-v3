@@ -695,9 +695,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                 }
             };
 
-            CosmosClient cosmosClient = isMultiMaster 
-                        ? new CosmosClient(accountEndpoint, options) 
-                        : new CosmosClient(defaultEndpoint, authKey, options);
+            CosmosClient cosmosClient = //isMultiMaster 
+                        //? new CosmosClient(accountEndpoint, options) 
+                         new CosmosClient(defaultEndpoint, authKey, options);
     
             Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync(id: Guid.NewGuid().ToString());
             Container leaseContainer = await database.CreateContainerIfNotExistsAsync(containerProperties: new ContainerProperties(id: "leases", partitionKeyPath: "/id"));
@@ -767,20 +767,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                     Assert.IsNull(deleteChange.Current.id);
                     Assert.AreEqual(expected: deleteChange.Metadata.OperationType, actual: ChangeFeedOperationType.Delete);
                     Assert.AreEqual(expected: replaceChange.Metadata.Lsn, actual: deleteChange.Metadata.PreviousLsn);
-
+                    Assert.Fail();
                     if (isMultiMaster)
                     {
                         Assert.IsNull(deleteChange.Previous);
-                        Assert.AreEqual(expected: "1", actual: deleteChange.Metadata.Id.ToString());
-                        Assert.AreEqual(expected: "1", actual: deleteChange.Metadata.PartitionKey.Values.FirstOrDefault().ToString());
                     }
                     else
                     {
                         Assert.IsNotNull(deleteChange.Previous);
-                        Assert.AreEqual(expected: "1", actual: deleteChange.Metadata.Id.ToString());
-                        Assert.AreEqual(expected: "1", actual: deleteChange.Metadata.PartitionKey.Values.FirstOrDefault().ToString());
+                        Assert.AreEqual(expected: "1", actual: deleteChange.Previous.id.ToString());
                     }
-                    
+                    Assert.AreEqual(expected: "1", actual: deleteChange.Metadata.Id.ToString());
+                    Assert.AreEqual(expected: "1", actual: deleteChange.Metadata.PartitionKey.Values.FirstOrDefault().ToString());
+
                     Assert.IsTrue(condition: createChange.Metadata.ConflictResolutionTimestamp < replaceChange.Metadata.ConflictResolutionTimestamp, message: "The create operation must happen before the replace operation.");
                     Assert.IsTrue(condition: replaceChange.Metadata.ConflictResolutionTimestamp < deleteChange.Metadata.ConflictResolutionTimestamp, message: "The replace operation must happen before the delete operation.");
                     Assert.IsTrue(condition: createChange.Metadata.Lsn < replaceChange.Metadata.Lsn, message: "The create operation must happen before the replace operation.");
@@ -948,7 +947,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
 
             if (changeFeedMode == ChangeFeedMode.AllVersionsAndDeletes)
             {
-                properties.ChangeFeedPolicy.FullFidelityRetention = TimeSpan.FromMinutes(5);
+                //properties.ChangeFeedPolicy.FullFidelityRetention = TimeSpan.FromMinutes(5);
                 properties.DefaultTimeToLive = -1;
             }
 
