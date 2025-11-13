@@ -50,6 +50,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [5422](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5422) Diagnostics: Fixes race condition that can cause InvalidOperationException in CosmosOperationCancelledException.ToString()
 - [5427](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5427) PPAF: Fixes issue where setting RequestTimeout to 0 second will cause PPAF dynamic enablement to break
 
+### <a name="3.54.0-preview.3"/> [3.54.0-preview.3](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.54.0-preview.3) - 2025-11-13
+
+### <a name="3.53.3"/> [3.53.3](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.53.3) - 2025-11-13
+#### Fixed
+
+- [5476](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5476) HttpTimeoutPolicy Improvements Phase 1: Fixes QueryPlan requests retry gaps
+- [5482](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5482) HttpTimeoutPolicy Improvements Phase 2: Refactors Code to Separate out Retry Policy Timeouts for point-reads and non-point-reads on PPAF
+
 ## <a name="3.54.0-preview.2"/> [3.54.0-preview.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.54.0-preview.2) - 2025-10-7
 
 ### <a name="3.53.2"/> [3.53.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.53.2) - 2025-10-7
