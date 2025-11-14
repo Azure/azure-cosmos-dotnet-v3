@@ -11,32 +11,43 @@ namespace Microsoft.Azure.Cosmos
     {
         public bool shouldRetry;
         public bool shouldThrow503OnTimeout;
+        public bool isPointRead;
         private static readonly string Name = nameof(HttpTimeoutPolicyForThinClient);
-        public static readonly HttpTimeoutPolicy InstanceShouldRetryAndThrow503OnTimeout = new HttpTimeoutPolicyForThinClient(true, true);
-        public static readonly HttpTimeoutPolicy InstanceShouldNotRetryAndThrow503OnTimeout = new HttpTimeoutPolicyForThinClient(true, false);
+        public static readonly HttpTimeoutPolicy InstanceShouldRetryAndThrow503OnTimeoutForPointReads = new HttpTimeoutPolicyForThinClient(shouldThrow503OnTimeout: true, shouldRetry: true, isPointRead: true);
+        public static readonly HttpTimeoutPolicy InstanceShouldRetryAndThrow503OnTimeoutForNonPointReads = new HttpTimeoutPolicyForThinClient(shouldThrow503OnTimeout: true, shouldRetry: true, isPointRead: false);
+        public static readonly HttpTimeoutPolicy InstanceShouldNotRetryAndThrow503OnTimeoutForWrites = new HttpTimeoutPolicyForThinClient(shouldThrow503OnTimeout: true, shouldRetry: false, isPointRead: false);
 
         private HttpTimeoutPolicyForThinClient(
             bool shouldThrow503OnTimeout,
-            bool shouldRetry)
+            bool shouldRetry,
+            bool isPointRead)
         {
             this.shouldThrow503OnTimeout = shouldThrow503OnTimeout;
             this.shouldRetry = shouldRetry;
+            this.isPointRead = isPointRead;
         }
 
-        private readonly IReadOnlyList<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> TimeoutsAndDelays = new List<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)>()
+        private readonly IReadOnlyList<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> TimeoutsAndDelaysForPointReads = new List<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)>()
         {
-            (TimeSpan.FromSeconds(.5), TimeSpan.Zero),
-            (TimeSpan.FromSeconds(1), TimeSpan.Zero),
-            (TimeSpan.FromSeconds(5), TimeSpan.Zero),
+            (TimeSpan.FromSeconds(6), TimeSpan.Zero),
+            (TimeSpan.FromSeconds(6), TimeSpan.Zero),
+            (TimeSpan.FromSeconds(10), TimeSpan.Zero),
+        };
+
+        private readonly IReadOnlyList<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> TimeoutsAndDelaysForNonPointReads = new List<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)>()
+        {
+            (TimeSpan.FromSeconds(6), TimeSpan.Zero),
+            (TimeSpan.FromSeconds(6), TimeSpan.Zero),
+            (TimeSpan.FromSeconds(10), TimeSpan.Zero),
         };
 
         public override string TimeoutPolicyName => HttpTimeoutPolicyForThinClient.Name;
 
-        public override int TotalRetryCount => this.TimeoutsAndDelays.Count;
+        public override int TotalRetryCount => this.isPointRead ? this.TimeoutsAndDelaysForPointReads.Count : this.TimeoutsAndDelaysForNonPointReads.Count;
 
         public override IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> GetTimeoutEnumerator()
         {
-            return this.TimeoutsAndDelays.GetEnumerator();
+            return this.isPointRead ? this.TimeoutsAndDelaysForPointReads.GetEnumerator() : this.TimeoutsAndDelaysForNonPointReads.GetEnumerator();
         }
 
         public override bool ShouldRetryBasedOnResponse(HttpMethod requestHttpMethod, HttpResponseMessage responseMessage)
