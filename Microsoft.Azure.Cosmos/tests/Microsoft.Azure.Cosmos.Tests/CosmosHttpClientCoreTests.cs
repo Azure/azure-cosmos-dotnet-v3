@@ -640,6 +640,38 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
+        [TestMethod]
+        public void HttpTimeoutPolicyForParitionFailoverConfigurableTimeoutForReads()
+        {
+            Environment.SetEnvironmentVariable(ConfigurationManager.HttpFirstRetryTimeoutForPPAFPointReads, "4");
+            try
+            {
+                HttpTimeoutPolicy httpTimeoutPolicyForQuery = HttpTimeoutPolicy.GetTimeoutPolicy(
+                        documentServiceRequest: CosmosHttpClientCoreTests.CreateDocumentServiceRequestByOperation(ResourceType.Document, OperationType.Read),
+                        isPartitionLevelFailoverEnabled: true,
+                        isThinClientEnabled: false);
+                IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> availableRetries = httpTimeoutPolicyForQuery.GetTimeoutEnumerator();
+
+                int count = 0;
+                while (availableRetries.MoveNext())
+                {
+                    if (count == 0)
+                    {
+                        Assert.AreEqual(new TimeSpan(0, 0, 4), availableRetries.Current.requestTimeout);
+                    }
+                    else if (count == 1 || count == 2)
+                    {
+                        Assert.AreEqual(new TimeSpan(0, 0, 6), availableRetries.Current.requestTimeout);
+                    }
+                    count++;
+                }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.HttpFirstRetryTimeoutForPPAFPointReads, null);
+            }
+        }
+
         private static DocumentServiceRequest CreateDocumentServiceRequestByOperation(
             ResourceType resourceType,
             OperationType operationType)
