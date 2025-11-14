@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
         private static readonly string Name = nameof(HttpTimeoutPolicyForThinClient);
         public static readonly HttpTimeoutPolicy InstanceShouldRetryAndThrow503OnTimeoutForPointReads = new HttpTimeoutPolicyForThinClient(shouldThrow503OnTimeout: true, shouldRetry: true, isPointRead: true);
         public static readonly HttpTimeoutPolicy InstanceShouldRetryAndThrow503OnTimeoutForNonPointReads = new HttpTimeoutPolicyForThinClient(shouldThrow503OnTimeout: true, shouldRetry: true, isPointRead: false);
-        public static readonly HttpTimeoutPolicy InstanceShouldNotRetryAndThrow503OnTimeout = new HttpTimeoutPolicyForThinClient(shouldThrow503OnTimeout: true, shouldRetry: false, isPointRead: false);
+        public static readonly HttpTimeoutPolicy InstanceShouldNotRetryAndThrow503OnTimeoutForWrites = new HttpTimeoutPolicyForThinClient(shouldThrow503OnTimeout: true, shouldRetry: false, isPointRead: false);
 
         private HttpTimeoutPolicyForThinClient(
             bool shouldThrow503OnTimeout,

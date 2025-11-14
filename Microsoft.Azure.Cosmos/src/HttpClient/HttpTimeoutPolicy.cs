@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos
                     }
                     else
                     {
-                        return HttpTimeoutPolicyForThinClient.InstanceShouldNotRetryAndThrow503OnTimeout;
+                        return HttpTimeoutPolicyForThinClient.InstanceShouldNotRetryAndThrow503OnTimeoutForWrites;
                     }
                 }
                 // Data Plane Reads.
