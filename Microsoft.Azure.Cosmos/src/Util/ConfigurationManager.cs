@@ -125,11 +125,6 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal static readonly string UseLengthAwareRangeComparator = "AZURE_COSMOS_USE_LENGTH_AWARE_RANGE_COMPARATOR";
 
-        /// <summary>
-        /// A read-only string containing the environment variable name for capturing the http first retry timeout in seconds applicable for PPAF point reads
-        /// </summary>
-        internal static readonly string HttpFirstRetryTimeoutForPPAFPointReads = "AZURE_COSMOS_PPAF_POINT_READS_HTTP_FIRST_RETY_TIMEOUT_IN_SECONDS";
-
         public static T GetEnvironmentVariable<T>(string variable, T defaultValue)
         {
             string value = Environment.GetEnvironmentVariable(variable);
@@ -405,21 +400,6 @@ namespace Microsoft.Azure.Cosmos
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.UseLengthAwareRangeComparator,
                         defaultValue: defaultValue);
-        }
-
-        /// <summary>
-        /// Gets http retry timeout value for first retry in case of PPAF point reads.
-        /// The default value is 1 second. The user can set the respective
-        /// environment variable 'AZURE_COSMOS_PPAF_POINT_READS_HTTP_FIRST_RETY_TIMEOUT_IN_SECONDS'
-        /// to override the value.
-        /// </summary>
-        /// <returns>An integer representing the refresh interval in seconds.</returns>
-        public static int GetHttpFirstRetryTimeoutForPPAFPointReadsInSeconds()
-        {
-            return ConfigurationManager
-                    .GetEnvironmentVariable(
-                        variable: ConfigurationManager.HttpFirstRetryTimeoutForPPAFPointReads,
-                        defaultValue: 1);
         }
     }
 }
