@@ -16,6 +16,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     {
         private readonly Container container;
 
+        internal JsonProcessor DefaultJsonProcessor { get; private set; } = JsonProcessor.Newtonsoft;
+
         public CosmosSerializer CosmosSerializer { get; }
 
         public Encryptor Encryptor { get; }
@@ -632,7 +634,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     queryDefinition,
                     continuationToken,
                     requestOptions),
-                this.ResponseFactory);
+                this.ResponseFactory,
+                this.Encryptor,
+                this.CosmosSerializer,
+                requestOptions);
         }
 
         public override FeedIterator<T> GetItemQueryIterator<T>(
@@ -645,7 +650,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     queryText,
                     continuationToken,
                     requestOptions),
-                this.ResponseFactory);
+                this.ResponseFactory,
+                this.Encryptor,
+                this.CosmosSerializer,
+                requestOptions);
         }
 
         public override Task<ContainerResponse> ReadContainerAsync(
@@ -725,7 +733,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     continuationToken,
                     requestOptions),
                 this.Encryptor,
-                this.CosmosSerializer);
+                requestOptions);
         }
 
         public override FeedIterator GetItemQueryStreamIterator(
@@ -739,7 +747,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     continuationToken,
                     requestOptions),
                 this.Encryptor,
-                this.CosmosSerializer);
+                requestOptions);
         }
 
         public override Task<ThroughputResponse> ReplaceThroughputAsync(
@@ -772,7 +780,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     continuationToken,
                     requestOptions),
                 this.Encryptor,
-                this.CosmosSerializer);
+                requestOptions);
         }
 
         public override FeedIterator<T> GetItemQueryIterator<T>(
@@ -787,7 +795,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     queryDefinition,
                     continuationToken,
                     requestOptions),
-                this.ResponseFactory);
+                this.ResponseFactory,
+                this.Encryptor,
+                this.CosmosSerializer,
+                requestOptions);
         }
 
         public override ChangeFeedEstimator GetChangeFeedEstimator(
@@ -808,7 +819,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     changeFeedMode,
                     changeFeedRequestOptions),
                 this.Encryptor,
-                this.CosmosSerializer);
+                changeFeedRequestOptions);
         }
 
         public override FeedIterator<T> GetChangeFeedIterator<T>(
@@ -821,7 +832,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     changeFeedStartFrom,
                     changeFeedMode,
                     changeFeedRequestOptions),
-                this.ResponseFactory);
+                this.ResponseFactory,
+                this.Encryptor,
+                this.CosmosSerializer,
+                changeFeedRequestOptions);
         }
 
         public override Task<ItemResponse<T>> PatchItemAsync<T>(
@@ -918,6 +932,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     Stream decryptedChanges = await EncryptionProcessor.DeserializeAndDecryptResponseAsync(
                         changes,
                         this.Encryptor,
+                        this.DefaultJsonProcessor,
                         cancellationToken);
 
                     // Call the original passed in delegate
@@ -940,6 +955,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     Stream decryptedChanges = await EncryptionProcessor.DeserializeAndDecryptResponseAsync(
                         changes,
                         this.Encryptor,
+                        this.DefaultJsonProcessor,
                         cancellationToken);
 
                     // Call the original passed in delegate
@@ -1009,6 +1025,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         }
 #endif
 
+#if NET8_0_OR_GREATER
+        public void UseStreamingJsonProcessingByDefault()
+        {
+            this.DefaultJsonProcessor = JsonProcessor.Stream;
+        }
+#endif
+
         private async Task<ResponseMessage> ReadManyItemsHelperAsync(
            IReadOnlyList<(string id, PartitionKey partitionKey)> items,
            ReadManyRequestOptions readManyRequestOptions = null,
@@ -1022,6 +1045,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Stream decryptedContent = await EncryptionProcessor.DeserializeAndDecryptResponseAsync(
                 responseMessage.Content,
                 this.Encryptor,
+                readManyRequestOptions.GetJsonProcessor(this.DefaultJsonProcessor),
                 cancellationToken);
 
             return new DecryptedResponseMessage(responseMessage, decryptedContent);
