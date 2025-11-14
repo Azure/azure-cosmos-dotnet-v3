@@ -32,18 +32,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         internal int HighestNonOfflinePkRangeId { get; private set; }
 
-        public CollectionRoutingMap(
-            CollectionRoutingMap collectionRoutingMap,
-            string changeFeedNextIfNoneMatch)
-        {
-            this.rangeById = new Dictionary<string, Tuple<PartitionKeyRange, ServiceIdentity>>(collectionRoutingMap.rangeById);
-            this.orderedPartitionKeyRanges = new List<PartitionKeyRange>(collectionRoutingMap.orderedPartitionKeyRanges);
-            this.orderedRanges = new List<Range<string>>(collectionRoutingMap.orderedRanges);
-            this.goneRanges = new HashSet<string>(collectionRoutingMap.goneRanges);
-            this.HighestNonOfflinePkRangeId = collectionRoutingMap.HighestNonOfflinePkRangeId;
-            this.CollectionUniqueId = collectionRoutingMap.CollectionUniqueId;
-            this.ChangeFeedNextIfNoneMatch = changeFeedNextIfNoneMatch;
-        }
+        private readonly (IComparer<Range<string>> MinComparer, IComparer<Range<string>> MaxComparer) comparers;
 
         private CollectionRoutingMap(
             Dictionary<string, Tuple<PartitionKeyRange, ServiceIdentity>> rangeById,
@@ -82,6 +71,13 @@ namespace Microsoft.Azure.Cosmos.Routing
                     }
                     return range.Status == PartitionKeyRangeStatus.Offline ? CollectionRoutingMap.InvalidPkRangeId : pkId;
                 });
+
+            //LengthAwareComparer is the default Range comparer and flag <see cref="ConfigurationManager.UseLengthAwareRangeComparator"/>  is used to ovverride the default comparer to legacy Min/Max comparer.
+            bool useLengthAwareComparer = ConfigurationManager.IsLengthAwareRangeComparatorEnabled();
+
+            this.comparers = useLengthAwareComparer
+                ? (Range<string>.LengthAwareMinComparer.Instance, Range<string>.LengthAwareMaxComparer.Instance)
+                : (Range<string>.MinComparer.Instance, Range<string>.MaxComparer.Instance);
         }
 
         public static CollectionRoutingMap TryCreateCompleteRoutingMap(
@@ -142,13 +138,13 @@ namespace Microsoft.Azure.Cosmos.Routing
             // Then within that two positions, check for overlapping partition key ranges
             foreach (Range<string> providedRange in providedPartitionKeyRanges)
             {
-                int minIndex = this.orderedRanges.BinarySearch(providedRange, Range<string>.MinComparer.Instance);
+                int minIndex = this.orderedRanges.BinarySearch(providedRange, this.comparers.MinComparer);
                 if (minIndex < 0)
                 {
                     minIndex = Math.Max(0, (~minIndex) - 1);
                 }
 
-                int maxIndex = this.orderedRanges.BinarySearch(providedRange, Range<string>.MaxComparer.Instance);
+                int maxIndex = this.orderedRanges.BinarySearch(providedRange, this.comparers.MaxComparer);
                 if (maxIndex < 0)
                 {
                     maxIndex = Math.Min(this.OrderedPartitionKeyRanges.Count - 1, ~maxIndex);
