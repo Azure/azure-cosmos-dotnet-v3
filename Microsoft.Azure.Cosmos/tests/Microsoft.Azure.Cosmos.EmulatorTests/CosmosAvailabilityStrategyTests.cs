@@ -727,6 +727,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         await changeFeedProcessor.StartAsync();
                         await Task.Delay(1000);
 
+                        rule.Enable();
+                        
                         CosmosIntegrationTestObject testObject = new CosmosIntegrationTestObject
                         {
                             Id = "item4",
@@ -734,8 +736,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             Other = Guid.NewGuid().ToString()
                         };
                         await container.UpsertItemAsync<CosmosIntegrationTestObject>(testObject);
-
-                        rule.Enable();
 
                         await Task.Delay(15000);
 
