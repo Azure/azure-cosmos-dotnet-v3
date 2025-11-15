@@ -31,7 +31,7 @@ internal sealed class NewtonsoftAdapter : IMdeJsonProcessorAdapter
         return this.jObjectProcessor.EncryptAsync(input, encryptor, options, cancellationToken);
     }
 
-    public Task EncryptAsync(Stream input, Stream output, Encryptor encryptor, EncryptionOptions options, CancellationToken cancellationToken)
+    public Task EncryptAsync(Stream input, Stream output, Encryptor encryptor, EncryptionOptions options, JsonProcessor jsonProcessor, CancellationToken cancellationToken)
     {
         throw new NotSupportedException("This overload is only supported for Stream JsonProcessor");
     }
