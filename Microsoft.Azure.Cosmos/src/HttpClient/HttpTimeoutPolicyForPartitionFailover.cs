@@ -20,13 +20,13 @@ namespace Microsoft.Azure.Cosmos
         }
 
         // Timeouts and delays are based on the following rationale:
-        // For point reads: 3 attempts with timeouts of 1s, 6s, and 6s respectively.
+        // For point reads: 3 attempts with timeouts of 6s, 6s, and 10s respectively.
         // For non-point reads: 3 attempts with timeouts of 6s, 6s, and 10s respectively.
         private readonly IReadOnlyList<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> TimeoutsAndDelaysForPointReads = new List<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)>()
         {
-            (TimeSpan.FromSeconds(1), TimeSpan.Zero),
             (TimeSpan.FromSeconds(6), TimeSpan.Zero),
             (TimeSpan.FromSeconds(6), TimeSpan.Zero),
+            (TimeSpan.FromSeconds(10), TimeSpan.Zero),
         };
 
         private readonly IReadOnlyList<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> TimeoutsAndDelaysForNonPointReads = new List<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)>()

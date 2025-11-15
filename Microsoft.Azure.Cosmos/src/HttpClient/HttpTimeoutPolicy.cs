@@ -48,9 +48,16 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (isThinClientEnabled)
                 {
-                    return documentServiceRequest.IsReadOnlyRequest
-                        ? HttpTimeoutPolicyForThinClient.InstanceShouldRetryAndThrow503OnTimeout
-                        : HttpTimeoutPolicyForThinClient.InstanceShouldNotRetryAndThrow503OnTimeout;
+                    if (documentServiceRequest.IsReadOnlyRequest)
+                    {
+                        return documentServiceRequest.OperationType == OperationType.Read
+                            ? HttpTimeoutPolicyForThinClient.InstanceShouldRetryAndThrow503OnTimeoutForPointReads
+                            : HttpTimeoutPolicyForThinClient.InstanceShouldRetryAndThrow503OnTimeoutForNonPointReads;
+                    }
+                    else
+                    {
+                        return HttpTimeoutPolicyForThinClient.InstanceShouldNotRetryAndThrow503OnTimeoutForWrites;
+                    }
                 }
                 // Data Plane Reads.
                 else if (documentServiceRequest.IsReadOnlyRequest)
