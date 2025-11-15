@@ -39,7 +39,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         [TestMethod]
-        public async Task InvalidPathToEncrypt()
+        [DynamicData(nameof(JsonProcessors))]
+
+        internal async Task InvalidPathToEncrypt(JsonProcessor jsonProcessor)
         {
             TestDoc testDoc = TestDoc.Create();
             EncryptionOptions encryptionOptionsWithInvalidPathToEncrypt = new ()
@@ -53,6 +55,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                     testDoc.ToStream(),
                     LegacyEncryptionProcessorTests.mockEncryptor.Object,
                     encryptionOptionsWithInvalidPathToEncrypt,
+                    jsonProcessor,
                     new CosmosDiagnosticsContext(),
                     CancellationToken.None);
 
@@ -73,12 +76,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         [TestMethod]
-        public async Task EncryptDecryptPropertyWithNullValue()
+        [DynamicData(nameof(JsonProcessors))]
+        internal async Task EncryptDecryptPropertyWithNullValue(JsonProcessor jsonProcessor)
         {
             TestDoc testDoc = TestDoc.Create();
             testDoc.SensitiveStr = null;
 
-            JObject encryptedDoc = await LegacyEncryptionProcessorTests.VerifyEncryptionSucceeded(testDoc);
+            JObject encryptedDoc = await LegacyEncryptionProcessorTests.VerifyEncryptionSucceeded(testDoc, jsonProcessor);
 
             (JObject decryptedDoc, DecryptionContext decryptionContext) = await EncryptionProcessor.DecryptAsync(
                 encryptedDoc,
@@ -94,11 +98,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         [TestMethod]
-        public async Task ValidateEncryptDecryptDocument()
+        [DynamicData(nameof(JsonProcessors))]
+        internal async Task ValidateEncryptDecryptDocument(JsonProcessor jsonProcessor)
         {
             TestDoc testDoc = TestDoc.Create();
 
-            JObject encryptedDoc = await LegacyEncryptionProcessorTests.VerifyEncryptionSucceeded(testDoc);
+            JObject encryptedDoc = await LegacyEncryptionProcessorTests.VerifyEncryptionSucceeded(testDoc, jsonProcessor);
 
             (JObject decryptedDoc, DecryptionContext decryptionContext) = await EncryptionProcessor.DecryptAsync(
                 encryptedDoc,
@@ -114,7 +119,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         [TestMethod]
-        public async Task ValidateDecryptStream()
+        [DynamicData(nameof(JsonProcessors))]
+        internal async Task ValidateDecryptStream(JsonProcessor jsonProcessor)
         {
             TestDoc testDoc = TestDoc.Create();
 
@@ -122,6 +128,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 testDoc.ToStream(),
                 LegacyEncryptionProcessorTests.mockEncryptor.Object,
                 LegacyEncryptionProcessorTests.encryptionOptions,
+                jsonProcessor,
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
@@ -157,12 +164,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.IsNull(decryptionContext);
         }
 
-        private static async Task<JObject> VerifyEncryptionSucceeded(TestDoc testDoc)
+        private static async Task<JObject> VerifyEncryptionSucceeded(TestDoc testDoc, JsonProcessor jsonProcessor)
         {
             Stream encryptedStream = await EncryptionProcessor.EncryptAsync(
                 testDoc.ToStream(),
                 LegacyEncryptionProcessorTests.mockEncryptor.Object,
                 LegacyEncryptionProcessorTests.encryptionOptions,
+                jsonProcessor,
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
@@ -212,6 +220,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             else
             {
                 Assert.IsTrue(TestDoc.PathsToEncrypt.Exists(path => !decryptionInfo.PathsDecrypted.Contains(path)));
+            }
+        }
+
+        public static IEnumerable<object[]> JsonProcessors
+        {
+            get
+            {
+                    yield return new object[] { JsonProcessor.Newtonsoft };
+#if NET8_0_OR_GREATER
+                    yield return new object[] { JsonProcessor.Stream };
+#endif
             }
         }
     }
