@@ -97,6 +97,115 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await db.DeleteAsync();
         }
 
+        /// <summary>
+        /// Validates that 404 with substatus 0 is returned when an item doesn't exist,
+        /// and 404 with substatus 1003 is returned when the container doesn't exist.
+        /// This allows disambiguation between item not found vs owner resource (container/database) not found.
+        /// </summary>
+        [TestMethod]
+        public async Task ValidateSubStatusCodeForItemNotFoundVsContainerNotFound()
+        {
+            // Create a test database and container
+            Database db = await CosmosNotFoundTests.client.CreateDatabaseAsync("NotFoundTest" + Guid.NewGuid().ToString());
+            Container container = await db.CreateContainerAsync("NotFoundTest" + Guid.NewGuid().ToString(), "/pk", 500);
+
+            // Test 1: Item doesn't exist in existing container - should return 404 with substatus 0
+            ResponseMessage response = await container.ReadItemStreamAsync(
+                partitionKey: new Cosmos.PartitionKey(DoesNotExist), 
+                id: DoesNotExist);
+            
+            Assert.IsNotNull(response);
+            Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
+            Assert.AreEqual(0, (int)response.Headers.SubStatusCode, 
+                "SubStatusCode should be 0 when item doesn't exist in an existing container");
+
+            // Test 2: Container doesn't exist - should return 404 with substatus 1003
+            Container nonExistentContainer = db.GetContainer(DoesNotExist);
+            response = await nonExistentContainer.ReadItemStreamAsync(
+                partitionKey: new Cosmos.PartitionKey(DoesNotExist), 
+                id: DoesNotExist);
+            
+            Assert.IsNotNull(response);
+            Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
+            Assert.AreEqual(1003, (int)response.Headers.SubStatusCode, 
+                "SubStatusCode should be 1003 when container doesn't exist (owner resource not found)");
+
+            // Test 3: Database doesn't exist - should also return 404 with substatus 1003
+            Database nonExistentDb = CosmosNotFoundTests.client.GetDatabase(DoesNotExist);
+            Container containerInNonExistentDb = nonExistentDb.GetContainer(DoesNotExist);
+            response = await containerInNonExistentDb.ReadItemStreamAsync(
+                partitionKey: new Cosmos.PartitionKey(DoesNotExist), 
+                id: DoesNotExist);
+            
+            Assert.IsNotNull(response);
+            Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
+            Assert.AreEqual(1003, (int)response.Headers.SubStatusCode, 
+                "SubStatusCode should be 1003 when database doesn't exist (owner resource not found)");
+
+            // Cleanup
+            await db.DeleteAsync();
+        }
+
+        /// <summary>
+        /// Validates that CosmosException exposes the substatus code when thrown,
+        /// allowing developers to distinguish between different types of 404 errors.
+        /// </summary>
+        [TestMethod]
+        public async Task ValidateCosmosExceptionSubStatusCodeForNotFound()
+        {
+            // Create a test database and container
+            Database db = await CosmosNotFoundTests.client.CreateDatabaseAsync("NotFoundTest" + Guid.NewGuid().ToString());
+            Container container = await db.CreateContainerAsync("NotFoundTest" + Guid.NewGuid().ToString(), "/pk", 500);
+
+            // Test 1: Item doesn't exist in existing container - CosmosException should have substatus 0
+            try
+            {
+                ItemResponse<dynamic> response = await container.ReadItemAsync<dynamic>(
+                    partitionKey: new Cosmos.PartitionKey(DoesNotExist),
+                    id: DoesNotExist);
+                Assert.Fail("Expected CosmosException to be thrown");
+            }
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
+                Assert.AreEqual(0, ex.SubStatusCode, 
+                    "SubStatusCode should be 0 when item doesn't exist in an existing container");
+            }
+
+            // Test 2: Container doesn't exist - CosmosException should have substatus 1003
+            Container nonExistentContainer = db.GetContainer(DoesNotExist);
+            try
+            {
+                ItemResponse<dynamic> response = await nonExistentContainer.ReadItemAsync<dynamic>(
+                    partitionKey: new Cosmos.PartitionKey(DoesNotExist),
+                    id: DoesNotExist);
+                Assert.Fail("Expected CosmosException to be thrown");
+            }
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
+                Assert.AreEqual(1003, ex.SubStatusCode, 
+                    "SubStatusCode should be 1003 when container doesn't exist (owner resource not found)");
+            }
+
+            // Test 3: Database doesn't exist - CosmosException should have substatus 1003
+            Database nonExistentDb = CosmosNotFoundTests.client.GetDatabase(DoesNotExist);
+            Container containerInNonExistentDb = nonExistentDb.GetContainer(DoesNotExist);
+            try
+            {
+                ItemResponse<dynamic> response = await containerInNonExistentDb.ReadItemAsync<dynamic>(
+                    partitionKey: new Cosmos.PartitionKey(DoesNotExist),
+                    id: DoesNotExist);
+                Assert.Fail("Expected CosmosException to be thrown");
+            }
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
+                Assert.AreEqual(1003, ex.SubStatusCode, 
+                    "SubStatusCode should be 1003 when database doesn't exist (owner resource not found)");
+            }
+
+            // Cleanup
+            await db.DeleteAsync();
+        }
+
         private async Task ContainerOperations(Database database, bool dbNotExist)
         {
             // Create should fail if the database does not exist
