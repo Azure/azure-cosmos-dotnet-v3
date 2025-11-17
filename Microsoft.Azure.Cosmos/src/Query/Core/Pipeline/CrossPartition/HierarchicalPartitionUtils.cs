@@ -5,10 +5,13 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition
 {
     using System;
+    using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Microsoft.Azure.Documents.Routing;
 
     internal static class HierarchicalPartitionUtils
     {
+        private static readonly bool IsLengthAwareComparisonEnabled = ConfigurationManager.IsLengthAwareRangeComparatorEnabled();
         /// <summary>
         /// Updates the FeedRange to limit the scope of incoming feedRange to logical partition within a single physical partition.
         /// Generally speaking, a subpartitioned container can experience split partition at any level of hierarchical partition key.
@@ -50,7 +53,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition
                                 String overlappingMax;
                                 bool maxInclusive;
 
-                                if (Documents.Routing.Range<String>.MinComparer.Instance.Compare(
+                                //LengthAwareComparer is the default Range comparer and flag <see cref="ConfigurationManager.UseLengthAwareRangeComparator"/>  is used to ovverride the default comparer to legacy Min/Max comparer.
+                                IComparer<Range<string>> minComparer = IsLengthAwareComparisonEnabled
+                                    ? Documents.Routing.Range<string>.LengthAwareMinComparer.Instance
+                                    : Documents.Routing.Range<string>.MinComparer.Instance;
+
+                                IComparer<Range<string>> maxComparer = IsLengthAwareComparisonEnabled
+                                    ? Documents.Routing.Range<string>.LengthAwareMaxComparer.Instance
+                                    : Documents.Routing.Range<string>.MaxComparer.Instance;
+
+                                if (minComparer.Compare(
                                         epkForPartitionKey,
                                         feedRangeEpk.Range) < 0)
                                 {
@@ -63,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition
                                     minInclusive = epkForPartitionKey.IsMinInclusive;
                                 }
 
-                                if (Documents.Routing.Range<String>.MaxComparer.Instance.Compare(
+                                if (maxComparer.Compare(
                                         epkForPartitionKey,
                                         feedRangeEpk.Range) > 0)
                                 {
