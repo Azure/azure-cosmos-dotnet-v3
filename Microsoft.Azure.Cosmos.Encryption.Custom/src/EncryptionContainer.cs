@@ -157,8 +157,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             streamPayload = await EncryptionProcessor.EncryptAsync(
                 streamPayload,
                 this.Encryptor,
-                encryptionItemRequestOptions.EncryptionOptions,
-                requestOptions,
+                encryptionItemRequestOptions,
                 diagnosticsContext,
                 cancellationToken);
 
@@ -416,7 +415,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             streamPayload = await EncryptionProcessor.EncryptAsync(
                 streamPayload,
                 this.Encryptor,
-                encryptionItemRequestOptions.EncryptionOptions,
+                encryptionItemRequestOptions,
                 diagnosticsContext,
                 cancellationToken);
 
@@ -550,7 +549,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             streamPayload = await EncryptionProcessor.EncryptAsync(
                 streamPayload,
                 this.Encryptor,
-                encryptionItemRequestOptions.EncryptionOptions,
+                encryptionItemRequestOptions,
                 diagnosticsContext,
                 cancellationToken);
 

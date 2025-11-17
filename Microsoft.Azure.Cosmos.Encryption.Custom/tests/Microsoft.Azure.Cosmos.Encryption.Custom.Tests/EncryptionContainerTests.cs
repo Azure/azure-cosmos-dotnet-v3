@@ -21,6 +21,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     [TestClass]
     public class EncryptionContainerTests
     {
+        private const string NewtonsoftProcessorName = "Newtonsoft";
+    #if NET8_0_OR_GREATER
+        private const string StreamProcessorName = "Stream";
+    #endif
+
         private Mock<Container> innerContainerMock;
         private Mock<Encryptor> encryptorMock;
         private Mock<CosmosResponseFactory> responseFactoryMock;
@@ -41,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         [DataTestMethod]
         [DynamicData(nameof(GetSupportedJsonProcessorsData), DynamicDataSourceType.Method)]
-        public async Task GetItemQueryStreamIterator_ReturnsEncryptionFeedIteratorAsync(JsonProcessor jsonProcessor)
+        public async Task GetItemQueryStreamIterator_ReturnsEncryptionFeedIteratorAsync(string jsonProcessor)
         {
             QueryDefinition queryDefinition = new QueryDefinition("SELECT * FROM c");
             QueryRequestOptions requestOptions = CreateRequestOptionsWithOverride(jsonProcessor);
@@ -76,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         [DataTestMethod]
         [DynamicData(nameof(GetSupportedJsonProcessorsData), DynamicDataSourceType.Method)]
-        public async Task GetItemQueryIterator_ReturnsTypedEncryptionFeedIteratorAsync(JsonProcessor jsonProcessor)
+        public async Task GetItemQueryIterator_ReturnsTypedEncryptionFeedIteratorAsync(string jsonProcessor)
         {
             QueryDefinition queryDefinition = new QueryDefinition("SELECT * FROM c");
             QueryRequestOptions requestOptions = CreateRequestOptionsWithOverride(jsonProcessor);
@@ -100,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             FeedResponse<DecryptableItem> feedResponse = await typedIterator.ReadNextAsync();
             DecryptableItem decryptableItem = feedResponse.Resource.Single();
 
-            if (jsonProcessor == JsonProcessor.Newtonsoft)
+            if (string.Equals(jsonProcessor, NewtonsoftProcessorName, StringComparison.Ordinal))
             {
                 Assert.IsInstanceOfType(decryptableItem, typeof(DecryptableItemCore));
             }
@@ -147,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         [DataTestMethod]
         [DynamicData(nameof(GetSupportedJsonProcessorsData), DynamicDataSourceType.Method)]
-        public async Task GetChangeFeedIterator_ReturnsTypedEncryptionFeedIteratorAsync(JsonProcessor jsonProcessor)
+        public async Task GetChangeFeedIterator_ReturnsTypedEncryptionFeedIteratorAsync(string jsonProcessor)
         {
             ChangeFeedStartFrom startFrom = ChangeFeedStartFrom.Beginning();
             ChangeFeedMode mode = ChangeFeedMode.Incremental;
@@ -176,7 +181,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             FeedResponse<DecryptableItem> feedResponse = await typedIterator.ReadNextAsync();
             DecryptableItem decryptableItem = feedResponse.Resource.Single();
 
-            if (jsonProcessor == JsonProcessor.Newtonsoft)
+            if (string.Equals(jsonProcessor, NewtonsoftProcessorName, StringComparison.Ordinal))
             {
                 Assert.IsInstanceOfType(decryptableItem, typeof(DecryptableItemCore));
             }
@@ -285,7 +290,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         [DataTestMethod]
         [DynamicData(nameof(GetSupportedJsonProcessorsData), DynamicDataSourceType.Method)]
-        public async Task GetItemQueryIterator_ForNonDecryptableType_UsesResponseFactoryAsync(JsonProcessor jsonProcessor)
+        public async Task GetItemQueryIterator_ForNonDecryptableType_UsesResponseFactoryAsync(string jsonProcessor)
         {
             QueryDefinition queryDefinition = new QueryDefinition("SELECT * FROM c");
             QueryRequestOptions requestOptions = CreateRequestOptionsWithOverride(jsonProcessor);
@@ -435,7 +440,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             return response;
         }
 
-        private static QueryRequestOptions CreateRequestOptionsWithOverride(JsonProcessor jsonProcessor)
+        private static QueryRequestOptions CreateRequestOptionsWithOverride(string jsonProcessor)
         {
             return new QueryRequestOptions
             {
@@ -443,7 +448,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             };
         }
 
-        private static Dictionary<string, object> CreateJsonProcessorPropertyBag(JsonProcessor jsonProcessor)
+        private static Dictionary<string, object> CreateJsonProcessorPropertyBag(string jsonProcessor)
         {
             return new Dictionary<string, object>
             {
@@ -454,9 +459,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         public static IEnumerable<object[]> GetSupportedJsonProcessorsData()
         {
 #if NET8_0_OR_GREATER
-            yield return new object[] { JsonProcessor.Stream };
+            yield return new object[] { StreamProcessorName };
 #endif
-            yield return new object[] { JsonProcessor.Newtonsoft };
+            yield return new object[] { NewtonsoftProcessorName };
         }
 
         private static string CreateFeedPayload()

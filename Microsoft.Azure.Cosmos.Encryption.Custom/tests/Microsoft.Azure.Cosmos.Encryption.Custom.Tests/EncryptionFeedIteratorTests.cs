@@ -16,9 +16,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     [TestClass]
     public class EncryptionFeedIteratorTests
     {
+        // Use string-based processor identifiers to avoid compile-time dependency on the internal JsonProcessor enum.
+        private const string JsonProcessorPropertyBagKey = "encryption-json-processor";
+        private const string NewtonsoftProcessorName = "Newtonsoft";
+#if NET8_0_OR_GREATER
+        private const string StreamProcessorName = "Stream";
+#endif
+
         [DataTestMethod]
         [DynamicData(nameof(GetSupportedJsonProcessorsData), DynamicDataSourceType.Method)]
-        public void HasMoreResults_DelegatesToInnerIterator(JsonProcessor jsonProcessor)
+        public void HasMoreResults_DelegatesToInnerIterator(string jsonProcessor)
         {
             Mock<FeedIterator> innerIterator = new Mock<FeedIterator>();
             innerIterator.SetupGet(iterator => iterator.HasMoreResults).Returns(true);
@@ -41,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         [DataTestMethod]
         [DynamicData(nameof(GetSupportedJsonProcessorsData), DynamicDataSourceType.Method)]
-        public async Task ReadNextAsync_SuccessfulResponse_ReturnsDecryptedResponseMessage(JsonProcessor jsonProcessor)
+        public async Task ReadNextAsync_SuccessfulResponse_ReturnsDecryptedResponseMessage(string jsonProcessor)
         {
             JObject firstDocument = new ()
             {
@@ -77,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         [DataTestMethod]
         [DynamicData(nameof(GetSupportedJsonProcessorsData), DynamicDataSourceType.Method)]
-        public async Task ReadNextAsync_UnsuccessfulResponse_ReturnsOriginalResponseMessage(JsonProcessor jsonProcessor)
+        public async Task ReadNextAsync_UnsuccessfulResponse_ReturnsOriginalResponseMessage(string jsonProcessor)
         {
             ResponseMessage response = this.CreateResponseMessage(HttpStatusCode.NotFound, new { message = "not-found" });
 
@@ -135,11 +142,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 };
 
                 using ResponseMessage newtonsoftResponse = await ExecuteAsync(
-                    JsonProcessor.Newtonsoft,
+                    NewtonsoftProcessorName,
                     () => this.CreateResponseMessage(HttpStatusCode.OK, payload));
 
                 using ResponseMessage streamResponse = await ExecuteAsync(
-                    JsonProcessor.Stream,
+                    StreamProcessorName,
                     () => this.CreateResponseMessage(HttpStatusCode.OK, payload));
 
                 JToken newtonsoftPayload = TestCommon.FromStream<JToken>(newtonsoftResponse.Content);
@@ -159,8 +166,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 ResponseMessage newtonsoftResponseMessage = this.CreateResponseMessage(statusCode, new { message = "error" });
                 ResponseMessage streamResponseMessage = this.CreateResponseMessage(statusCode, new { message = "error" });
 
-                ResponseMessage newtonsoftResult = await ExecuteAsync(JsonProcessor.Newtonsoft, () => newtonsoftResponseMessage);
-                ResponseMessage streamResult = await ExecuteAsync(JsonProcessor.Stream, () => streamResponseMessage);
+                ResponseMessage newtonsoftResult = await ExecuteAsync(NewtonsoftProcessorName, () => newtonsoftResponseMessage);
+                ResponseMessage streamResult = await ExecuteAsync(StreamProcessorName, () => streamResponseMessage);
 
                 Assert.AreSame(newtonsoftResponseMessage, newtonsoftResult, "Newtonsoft processor should return original response on errors.");
                 Assert.AreSame(streamResponseMessage, streamResult, "Stream processor should return original response on errors.");
@@ -169,14 +176,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 streamResponseMessage.Dispose();
             }
 
-            async Task<ResponseMessage> ExecuteAsync(JsonProcessor processor, System.Func<ResponseMessage> responseFactory)
+            async Task<ResponseMessage> ExecuteAsync(string processorName, System.Func<ResponseMessage> responseFactory)
             {
                 Mock<FeedIterator> iterator = new Mock<FeedIterator>();
                 iterator
                     .Setup(feed => feed.ReadNextAsync(It.IsAny<CancellationToken>()))
                     .ReturnsAsync(() => responseFactory());
 
-                EncryptionFeedIterator feedIterator = this.CreateFeedIterator(iterator.Object, processor);
+                EncryptionFeedIterator feedIterator = this.CreateFeedIterator(iterator.Object, processorName);
                 return await feedIterator.ReadNextAsync();
             }
         }
@@ -212,7 +219,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             {
                 Properties = new Dictionary<string, object>
                 {
-                    { "encryption-json-processor", JsonProcessor.Stream },
+                    { JsonProcessorPropertyBagKey, StreamProcessorName },
                 },
             };
 
@@ -235,9 +242,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 #endif
 
-        private EncryptionFeedIterator CreateFeedIterator(FeedIterator innerIterator, JsonProcessor jsonProcessor)
+        private EncryptionFeedIterator CreateFeedIterator(FeedIterator innerIterator, string jsonProcessor)
         {
-            return new EncryptionFeedIterator(innerIterator, new NoOpEncryptor(), jsonProcessor);
+            ItemRequestOptions requestOptions = new ItemRequestOptions
+            {
+                Properties = new Dictionary<string, object>
+                {
+                    { JsonProcessorPropertyBagKey, jsonProcessor },
+                },
+            };
+
+            return new EncryptionFeedIterator(innerIterator, new NoOpEncryptor(), requestOptions);
         }
 
         private ResponseMessage CreateResponseMessage(HttpStatusCode statusCode, object payload)
@@ -323,9 +338,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         public static IEnumerable<object[]> GetSupportedJsonProcessorsData()
         {
 #if NET8_0_OR_GREATER
-            yield return new object[] { JsonProcessor.Stream };
+            yield return new object[] { StreamProcessorName };
 #endif
-            yield return new object[] { JsonProcessor.Newtonsoft };
+            yield return new object[] { NewtonsoftProcessorName };
         }
 
     }

@@ -38,13 +38,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Stream input,
             Encryptor encryptor,
             EncryptionOptions encryptionOptions,
+            JsonProcessor jsonProcessor,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             ValidateInputForEncrypt(
                 input,
                 encryptor,
-                encryptionOptions);
+                encryptionOptions,
+                jsonProcessor);
 
             if (!encryptionOptions.PathsToEncrypt.Any())
             {
@@ -53,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 #pragma warning disable CS0618 // Type or member is obsolete
             return encryptionOptions.EncryptionAlgorithm switch
             {
-                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized => await MdeEncryptionProcessor.EncryptAsync(input, encryptor, encryptionOptions, diagnosticsContext, cancellationToken),
+                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized => await MdeEncryptionProcessor.EncryptAsync(input, encryptor, encryptionOptions, jsonProcessor, diagnosticsContext, cancellationToken),
                 CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized => await AeAesEncryptionProcessor.EncryptAsync(input, encryptor, encryptionOptions, cancellationToken),
                 _ => throw new NotSupportedException($"Encryption Algorithm : {encryptionOptions.EncryptionAlgorithm} is not supported."),
             };
@@ -63,35 +65,55 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         public static Task<Stream> EncryptAsync(
             Stream input,
             Encryptor encryptor,
-            EncryptionOptions encryptionOptions,
-            RequestOptions requestOptions,
+            EncryptionItemRequestOptions requestOptions,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            requestOptions.ResolveJsonProcessorSelection(encryptionOptions);
-            return EncryptAsync(input, encryptor, encryptionOptions, diagnosticsContext, cancellationToken);
+            return EncryptAsync(
+                input,
+                encryptor,
+                requestOptions.EncryptionOptions,
+                requestOptions.GetJsonProcessor(),
+                diagnosticsContext,
+                cancellationToken);
         }
 
+        public static Task<Stream> EncryptAsync(
+            Stream input,
+            Encryptor encryptor,
+            EncryptionTransactionalBatchItemRequestOptions requestOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            return EncryptAsync(
+                input,
+                encryptor,
+                requestOptions.EncryptionOptions,
+                requestOptions.GetJsonProcessor(),
+                diagnosticsContext,
+                cancellationToken);
+        }
+
+#if NET8_0_OR_GREATER
         public static async Task EncryptAsync(
             Stream input,
             Stream output,
             Encryptor encryptor,
             EncryptionOptions encryptionOptions,
+            JsonProcessor jsonProcessor,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             ValidateInputForEncrypt(
                 input,
                 encryptor,
-                encryptionOptions);
+                encryptionOptions,
+                jsonProcessor);
 
             if (!encryptionOptions.PathsToEncrypt.Any())
             {
-#if NET8_0_OR_GREATER
                 await input.CopyToAsync(output, cancellationToken);
-#else
-                await input.CopyToAsync(output);
-#endif
+
                 return;
             }
 
@@ -100,15 +122,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 throw new NotSupportedException($"Streaming mode is only allowed for {nameof(CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)}");
             }
 
-#if NET8_0_OR_GREATER
-            if (encryptionOptions.JsonProcessor != JsonProcessor.Stream)
+            if (jsonProcessor != JsonProcessor.Stream)
             {
                 throw new NotSupportedException($"Streaming mode is only allowed for {nameof(JsonProcessor.Stream)}");
             }
-#endif
 
-            await MdeEncryptionProcessor.EncryptAsync(input, output, encryptor, encryptionOptions, diagnosticsContext, cancellationToken);
+            await MdeEncryptionProcessor.EncryptAsync(input, output, encryptor, encryptionOptions, jsonProcessor, diagnosticsContext, cancellationToken);
         }
+#endif
 
         /// <remarks>
         /// If there isn't any data that needs to be decrypted, input stream will be returned without any modification.
@@ -305,13 +326,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         private static void ValidateInputForEncrypt(
             Stream input,
             Encryptor encryptor,
-            EncryptionOptions encryptionOptions)
+            EncryptionOptions encryptionOptions,
+            JsonProcessor jsonProcessor)
         {
             ArgumentValidation.ThrowIfNull(input);
             ArgumentValidation.ThrowIfNull(encryptor);
             ArgumentValidation.ThrowIfNull(encryptionOptions);
 
-            encryptionOptions.Validate();
+            encryptionOptions.Validate(jsonProcessor);
         }
 
         private static JObject RetrieveItem(

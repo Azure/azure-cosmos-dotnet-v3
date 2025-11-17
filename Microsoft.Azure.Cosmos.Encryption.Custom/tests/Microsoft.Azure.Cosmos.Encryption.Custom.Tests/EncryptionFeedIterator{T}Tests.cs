@@ -1,6 +1,7 @@
 ﻿namespace Microsoft.Azure.Cosmos.Encryption.Tests
 {
     using System;
+    using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Encryption.Custom;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -8,13 +9,13 @@
     [TestClass]
     public class EncryptionFeedIteratorTTests
     {
+        private const string JsonProcessorPropertyBagKey = "encryption-json-processor";
+
         [DataTestMethod]
-        [DataRow(JsonProcessor.Newtonsoft)]
-#if NET8_0_OR_GREATER
-        [DataRow(JsonProcessor.Stream)]
-#endif
-        public void Ctor_Throws_OnNullParam(JsonProcessor jsonProcessor)
+        [DynamicData(nameof(GetJsonProcessorValues), DynamicDataSourceType.Method)]
+        public void Ctor_Throws_OnNullParam(int jsonProcessorValue)
         {
+            JsonProcessor jsonProcessor = (JsonProcessor)Enum.ToObject(typeof(JsonProcessor), jsonProcessorValue);
             Encryptor encryptor = Mock.Of<Encryptor>();
             EncryptionFeedIterator iterator = new (Mock.Of<FeedIterator>(), encryptor, jsonProcessor);
             CosmosResponseFactory responseFactory = Mock.Of<CosmosResponseFactory>();
@@ -32,12 +33,10 @@
         }
 
         [DataTestMethod]
-        [DataRow(JsonProcessor.Newtonsoft)]
-#if NET8_0_OR_GREATER
-        [DataRow(JsonProcessor.Stream)]
-#endif
-        public void Ctor_WithRequestOptions_Throws_OnNullParam(JsonProcessor jsonProcessor)
+        [DynamicData(nameof(GetJsonProcessorValues), DynamicDataSourceType.Method)]
+        public void Ctor_WithRequestOptions_Throws_OnNullParam(int jsonProcessorValue)
         {
+            JsonProcessor jsonProcessor = (JsonProcessor)Enum.ToObject(typeof(JsonProcessor), jsonProcessorValue);
             FeedIterator mockFeedIterator = Mock.Of<FeedIterator>();
             Encryptor mockEncryptor = Mock.Of<Encryptor>();
             CosmosResponseFactory responseFactory = Mock.Of<CosmosResponseFactory>();
@@ -47,7 +46,7 @@
             {
                 Properties = new System.Collections.Generic.Dictionary<string, object>
                 {
-                    { "encryption-json-processor", jsonProcessor }
+                    { JsonProcessorPropertyBagKey, GetProcessorName(jsonProcessor) }
                 }
             };
 
@@ -91,6 +90,20 @@
                 requestOptions: null);
 
             Assert.IsNotNull(result);
+        }
+        private static string GetProcessorName(JsonProcessor jsonProcessor)
+        {
+            string processorName = jsonProcessor.ToString();
+
+            return processorName;
+        }
+
+        public static IEnumerable<object[]> GetJsonProcessorValues()
+        {
+            yield return new object[] { (int)JsonProcessor.Newtonsoft };
+#if NET8_0_OR_GREATER
+            yield return new object[] { (int)JsonProcessor.Stream };
+#endif
         }
     }
 }

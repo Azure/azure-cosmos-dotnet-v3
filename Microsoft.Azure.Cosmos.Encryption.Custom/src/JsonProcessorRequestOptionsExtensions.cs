@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
     using System;
-    using System.Collections.Generic;
     using Microsoft.Azure.Cosmos;
 
     /// <summary>
@@ -18,38 +17,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// The property bag key used to store the JsonProcessor override in RequestOptions.Properties.
         /// </summary>
         internal const string JsonProcessorPropertyBagKey = "encryption-json-processor";
-
-        /// <summary>
-        /// Resolves and validates the JsonProcessor selection for the given encryption options.
-        /// Applies any override from RequestOptions.Properties and validates compatibility with the encryption algorithm.
-        /// </summary>
-        /// <param name="requestOptions">The request options that may contain a JsonProcessor override.</param>
-        /// <param name="encryptionOptions">The encryption options to configure.</param>
-        /// <exception cref="NotSupportedException">Thrown when an unsupported combination of algorithm and processor is detected.</exception>
-        internal static void ResolveJsonProcessorSelection(this RequestOptions requestOptions, EncryptionOptions encryptionOptions)
-        {
-#pragma warning disable CS0618 // legacy algorithm still supported
-            if (encryptionOptions == null)
-            {
-                return;
-            }
-
-            bool hasOverride = TryReadJsonProcessorOverride(requestOptions, out JsonProcessor overrideProcessor);
-            if (hasOverride)
-            {
-                encryptionOptions.JsonProcessor = overrideProcessor;
-            }
-
-            // Normalize unsupported combinations
-            if (encryptionOptions.EncryptionAlgorithm == CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized &&
-                encryptionOptions.JsonProcessor != JsonProcessor.Newtonsoft)
-            {
-                throw new NotSupportedException("JsonProcessor.Stream is not supported for AE AES encryption algorithm.");
-            }
-
-            SynchronizeJsonProcessorProperty(requestOptions, encryptionOptions.JsonProcessor, hasOverride);
-#pragma warning restore CS0618
-        }
 
         /// <summary>
         /// Attempts to read a JsonProcessor override from the RequestOptions.Properties dictionary.
@@ -69,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     jsonProcessor = enumVal;
                     return true;
                 }
-                else if (value is string s && Enum.TryParse<JsonProcessor>(s, true, out JsonProcessor parsed))
+                else if (value is string s && Enum.TryParse(s, true, out JsonProcessor parsed))
                 {
                     jsonProcessor = parsed;
                     return true;
@@ -87,36 +54,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
 
             return defaultJsonProcessor;
-        }
-
-        private static void SynchronizeJsonProcessorProperty(this RequestOptions requestOptions, JsonProcessor selectedProcessor, bool hasOverride)
-        {
-            if (requestOptions == null)
-            {
-                return;
-            }
-
-            if (!hasOverride && selectedProcessor == JsonProcessor.Newtonsoft)
-            {
-                return;
-            }
-
-            Dictionary<string, object> properties;
-            if (requestOptions.Properties != null)
-            {
-                properties = new Dictionary<string, object>(capacity: requestOptions.Properties.Count);
-                foreach (KeyValuePair<string, object> kvp in requestOptions.Properties)
-                {
-                    properties[kvp.Key] = kvp.Value;
-                }
-            }
-            else
-            {
-                properties = new Dictionary<string, object>();
-            }
-
-            properties[JsonProcessorPropertyBagKey] = selectedProcessor;
-            requestOptions.Properties = properties;
         }
     }
 }

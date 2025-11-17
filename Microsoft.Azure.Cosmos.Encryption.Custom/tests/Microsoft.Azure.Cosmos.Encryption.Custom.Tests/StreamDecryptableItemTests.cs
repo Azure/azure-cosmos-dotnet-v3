@@ -79,24 +79,27 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         public async Task GetItemAsync_WithEncryptedStream_DecryptsSuccessfully()
         {
             TestDoc originalDoc = TestDoc.Create();
-            EncryptionOptions encryptionOptions = new EncryptionOptions()
+            EncryptionItemRequestOptions requestOptions = new ()
             {
-                DataEncryptionKeyId = dekId,
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
-                PathsToEncrypt = TestDoc.PathsToEncrypt
+                EncryptionOptions = new ()
+                {
+                    DataEncryptionKeyId = dekId,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
+                    PathsToEncrypt = TestDoc.PathsToEncrypt
+                }
             };
 
             Stream encryptedStreamForCore = await EncryptionProcessor.EncryptAsync(
                 originalDoc.ToStream(),
                 mockEncryptor.Object,
-                encryptionOptions,
+                requestOptions,
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
             Stream encryptedStreamForStream = await EncryptionProcessor.EncryptAsync(
                 originalDoc.ToStream(),
                 mockEncryptor.Object,
-                encryptionOptions,
+                requestOptions,
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
@@ -153,24 +156,27 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         public async Task GetItemAsync_VerifyDecryptionContextEquivalence()
         {
             TestDoc originalDoc = TestDoc.Create();
-            EncryptionOptions encryptionOptions = new EncryptionOptions()
+            EncryptionItemRequestOptions requestOptions = new ()
             {
-                DataEncryptionKeyId = dekId,
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
-                PathsToEncrypt = TestDoc.PathsToEncrypt
+                EncryptionOptions = new ()
+                {
+                    DataEncryptionKeyId = dekId,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
+                    PathsToEncrypt = TestDoc.PathsToEncrypt
+                }
             };
 
             Stream encryptedStreamForCore = await EncryptionProcessor.EncryptAsync(
                 originalDoc.ToStream(),
                 mockEncryptor.Object,
-                encryptionOptions,
+                requestOptions,
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
             Stream encryptedStreamForStream = await EncryptionProcessor.EncryptAsync(
                 originalDoc.ToStream(),
                 mockEncryptor.Object,
-                encryptionOptions,
+                requestOptions,
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
@@ -207,17 +213,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         public async Task GetItemAsync_WithInvalidDek_ThrowsEncryptionException()
         {
             TestDoc originalDoc = TestDoc.Create();
-            EncryptionOptions encryptionOptions = new EncryptionOptions()
+            EncryptionItemRequestOptions requestOptions = new ()
             {
-                DataEncryptionKeyId = dekId,
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
-                PathsToEncrypt = TestDoc.PathsToEncrypt
+                EncryptionOptions = new ()
+                {
+                    DataEncryptionKeyId = dekId,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
+                    PathsToEncrypt = TestDoc.PathsToEncrypt
+                }
             };
 
             Stream encryptedStream = await EncryptionProcessor.EncryptAsync(
                 originalDoc.ToStream(),
                 mockEncryptor.Object,
-                encryptionOptions,
+                requestOptions,
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
@@ -237,24 +246,27 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         public async Task GetItemAsync_ExceptionHandling_EquivalentToDecryptableItemCore()
         {
             TestDoc originalDoc = TestDoc.Create();
-            EncryptionOptions encryptionOptions = new EncryptionOptions()
-            {
-                DataEncryptionKeyId = dekId,
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
-                PathsToEncrypt = TestDoc.PathsToEncrypt
+            EncryptionItemRequestOptions requestOptions = new ()
+            { 
+                EncryptionOptions = new ()
+                {
+                    DataEncryptionKeyId = dekId,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
+                    PathsToEncrypt = TestDoc.PathsToEncrypt
+                }
             };
 
             Stream encryptedStreamForCore = await EncryptionProcessor.EncryptAsync(
                 originalDoc.ToStream(),
                 mockEncryptor.Object,
-                encryptionOptions,
+                requestOptions,
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
             Stream encryptedStreamForStream = await EncryptionProcessor.EncryptAsync(
                 originalDoc.ToStream(),
                 mockEncryptor.Object,
-                encryptionOptions,
+                requestOptions,
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
@@ -493,6 +505,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 document.ToStream(),
                 encryptor,
                 CreateEncryptionOptions(),
+                JsonProcessor.Newtonsoft,
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None).ConfigureAwait(false);
 

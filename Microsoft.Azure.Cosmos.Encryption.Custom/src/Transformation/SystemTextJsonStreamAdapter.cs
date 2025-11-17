@@ -27,9 +27,9 @@ internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
         return ms;
     }
 
-    public Task EncryptAsync(Stream input, Stream output, Encryptor encryptor, EncryptionOptions options, CancellationToken cancellationToken)
+    public Task EncryptAsync(Stream input, Stream output, Encryptor encryptor, EncryptionOptions options, JsonProcessor jsonProcessor, CancellationToken cancellationToken)
     {
-        if (options.JsonProcessor != JsonProcessor.Stream)
+        if (jsonProcessor != JsonProcessor.Stream)
         {
             throw new NotSupportedException("This overload is only supported for Stream JsonProcessor");
         }
