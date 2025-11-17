@@ -1,7 +1,12 @@
 ﻿namespace Microsoft.Azure.Cosmos.Encryption.Custom.Performance.Tests
 {
+    using System;
+    using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
+    using System.Threading;
     using BenchmarkDotNet.Attributes;
+    using Microsoft.Azure.Cosmos.Encryption.Custom;
     using Microsoft.Data.Encryption.Cryptography;
 #if NET8_0_OR_GREATER
     using Microsoft.IO;
@@ -11,27 +16,6 @@
     [RPlotExporter]
     public partial class EncryptionBenchmark
     {
-        private static class RequestOptionsOverrideHelper
-        {
-            public static RequestOptions? Create(JsonProcessor processor)
-            {
-#if NET8_0_OR_GREATER
-                if (processor == JsonProcessor.Newtonsoft)
-                {
-                    return null;
-                }
-                return new ItemRequestOptions
-                {
-                    Properties = new System.Collections.Generic.Dictionary<string, object>
-                    {
-                        { "encryption-json-processor", processor.ToString() }
-                    }
-                };
-#else
-                return null;
-#endif
-            }
-        }
     private static readonly byte[] DekData = Enumerable.Repeat((byte)0, 32).ToArray();
         private static readonly DataEncryptionKeyProperties DekProperties = new(
                 "id",
@@ -47,6 +31,7 @@
         private CosmosEncryptor? encryptor;
 
         private EncryptionOptions? encryptionOptions;
+        private EncryptionItemRequestOptions? encryptionRequestOptions;
         private byte[]? encryptedData;
         private byte[]? plaintext;
 
@@ -70,19 +55,25 @@
             Mock<DataEncryptionKeyProvider> keyProvider = new();
             keyProvider
                 .Setup(x => x.FetchDataEncryptionKeyWithoutRawKeyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .Returns(async () => await MdeEncryptionAlgorithm.CreateAsync(DekProperties, EncryptionType.Randomized, StoreProvider.Object, cacheTimeToLive: TimeSpan.MaxValue, false, default));
+                .Returns(async () => await MdeEncryptionAlgorithm.CreateAsync(
+                    DekProperties,
+                    Data.Encryption.Cryptography.EncryptionType.Randomized,
+                    StoreProvider.Object,
+                    cacheTimeToLive: TimeSpan.MaxValue,
+                    withRawKey: false,
+                    cancellationToken: default));
 
             this.encryptor = new(keyProvider.Object);
             this.encryptionOptions = this.CreateEncryptionOptions();
+            this.encryptionRequestOptions = RequestOptionsOverrideHelper.Create(this.encryptionOptions, this.JsonProcessor.ToString());
             this.plaintext = this.LoadTestDoc();
 
             Stream encryptedStream = await EncryptionProcessor.EncryptAsync(
-                 new MemoryStream(this.plaintext),
-                 this.encryptor,
-                 this.encryptionOptions,
-                 this.JsonProcessor,
-                 new CosmosDiagnosticsContext(),
-                 CancellationToken.None);
+                new MemoryStream(this.plaintext),
+                this.encryptor,
+                this.encryptionRequestOptions,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None);
 
             using MemoryStream memoryStream = new ();
             encryptedStream.CopyTo(memoryStream);
@@ -94,12 +85,11 @@
         public async Task Encrypt()
         {
             await EncryptionProcessor.EncryptAsync(
-                 new MemoryStream(this.plaintext!),
-                 this.encryptor,
-                 this.encryptionOptions,
-                 this.JsonProcessor,
-                 new CosmosDiagnosticsContext(),
-                 CancellationToken.None);
+                new MemoryStream(this.plaintext!),
+                this.encryptor,
+                this.encryptionRequestOptions!,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None);
         }
 
 #if NET8_0_OR_GREATER
@@ -111,8 +101,8 @@
                 new MemoryStream(this.plaintext!),
                 rms,
                 this.encryptor,
-                this.encryptionOptions,
-                 this.JsonProcessor,
+                this.encryptionOptions!,
+                this.JsonProcessor,
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
         }
@@ -165,6 +155,40 @@
             resourceStream.Read(buffer, 0, buffer.Length);
 
             return buffer;
+        }
+
+        private static class RequestOptionsOverrideHelper
+        {
+            public static RequestOptions? Create(JsonProcessor processor)
+            {
+#if NET8_0_OR_GREATER
+                if (processor == JsonProcessor.Newtonsoft)
+                {
+                    return null;
+                }
+                return new ItemRequestOptions
+                {
+                    Properties = new Dictionary<string, object>
+                    {
+                        { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, processor.ToString() }
+                    }
+                };
+#else
+                return null;
+#endif
+            }
+
+            public static EncryptionItemRequestOptions Create(EncryptionOptions encryptionOptions, string processor)
+            {
+                return new EncryptionItemRequestOptions
+                {
+                    EncryptionOptions = encryptionOptions,
+                    Properties = new Dictionary<string, object>
+                    {
+                        { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, processor }
+                    }
+                };
+            }
         }
     }
 }

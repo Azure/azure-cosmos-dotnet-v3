@@ -29,39 +29,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         private static readonly MdeEncryptionProcessor MdeEncryptionProcessor = new ();
 
-        /// <remarks>
-        /// If there isn't any PathsToEncrypt, input stream will be returned without any modification.
-        /// Else input stream will be disposed, and a new stream is returned.
-        /// In case of an exception, input stream won't be disposed, but position will be end of stream.
-        /// </remarks>
-        public static async Task<Stream> EncryptAsync(
-            Stream input,
-            Encryptor encryptor,
-            EncryptionOptions encryptionOptions,
-            JsonProcessor jsonProcessor,
-            CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken)
-        {
-            ValidateInputForEncrypt(
-                input,
-                encryptor,
-                encryptionOptions,
-                jsonProcessor);
-
-            if (!encryptionOptions.PathsToEncrypt.Any())
-            {
-                return input;
-            }
-#pragma warning disable CS0618 // Type or member is obsolete
-            return encryptionOptions.EncryptionAlgorithm switch
-            {
-                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized => await MdeEncryptionProcessor.EncryptAsync(input, encryptor, encryptionOptions, jsonProcessor, diagnosticsContext, cancellationToken),
-                CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized => await AeAesEncryptionProcessor.EncryptAsync(input, encryptor, encryptionOptions, cancellationToken),
-                _ => throw new NotSupportedException($"Encryption Algorithm : {encryptionOptions.EncryptionAlgorithm} is not supported."),
-            };
-#pragma warning restore CS0618 // Type or member is obsolete
-        }
-
         public static Task<Stream> EncryptAsync(
             Stream input,
             Encryptor encryptor,
@@ -283,6 +250,39 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             DecryptionContext decryptionContext = await DecryptInternalAsync(encryptor, diagnosticsContext, document, encryptionPropertiesJObj, cancellationToken);
 
             return (document, decryptionContext);
+        }
+
+        /// <remarks>
+        /// If there isn't any PathsToEncrypt, input stream will be returned without any modification.
+        /// Else input stream will be disposed, and a new stream is returned.
+        /// In case of an exception, input stream won't be disposed, but position will be end of stream.
+        /// </remarks>
+        private static async Task<Stream> EncryptAsync(
+            Stream input,
+            Encryptor encryptor,
+            EncryptionOptions encryptionOptions,
+            JsonProcessor jsonProcessor,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            ValidateInputForEncrypt(
+                input,
+                encryptor,
+                encryptionOptions,
+                jsonProcessor);
+
+            if (!encryptionOptions.PathsToEncrypt.Any())
+            {
+                return input;
+            }
+#pragma warning disable CS0618 // Type or member is obsolete
+            return encryptionOptions.EncryptionAlgorithm switch
+            {
+                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized => await MdeEncryptionProcessor.EncryptAsync(input, encryptor, encryptionOptions, jsonProcessor, diagnosticsContext, cancellationToken),
+                CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized => await AeAesEncryptionProcessor.EncryptAsync(input, encryptor, encryptionOptions, cancellationToken),
+                _ => throw new NotSupportedException($"Encryption Algorithm : {encryptionOptions.EncryptionAlgorithm} is not supported."),
+            };
+#pragma warning restore CS0618 // Type or member is obsolete
         }
 
         private static async Task<DecryptionContext> DecryptInternalAsync(Encryptor encryptor, CosmosDiagnosticsContext diagnosticsContext, JObject itemJObj, JObject encryptionPropertiesJObj, CancellationToken cancellationToken)

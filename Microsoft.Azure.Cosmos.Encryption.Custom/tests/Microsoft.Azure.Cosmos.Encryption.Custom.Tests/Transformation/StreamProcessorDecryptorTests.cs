@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Encryption.Custom;
+    using Microsoft.Azure.Cosmos.Encryption.Custom.Tests;
     using Microsoft.Azure.Cosmos.Encryption.Custom.Transformation;
     using EncryptionCrypto = Data.Encryption.Cryptography;
     using Newtonsoft.Json.Linq;
@@ -758,6 +759,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
                 PathsToEncrypt = FeedDoc.PathsToEncrypt,
             };
 
+            EncryptionItemRequestOptions encryptionRequest = RequestOptionsOverrideHelper.Create(options, JsonProcessor.Stream);
+
             List<FeedDoc> sourceDocs = new(documentCount);
             List<JObject> encryptedDocuments = new(documentCount);
             for (int i = 0; i < documentCount; i++)
@@ -770,8 +773,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
                 using Stream encryptedDoc = await EncryptionProcessor.EncryptAsync(
                         docStream,
                         cosmosEncryptor,
-                        options,
-                        JsonProcessor.Stream,
+                        encryptionRequest,
                         CosmosDiagnosticsContext.Create(null),
                         CancellationToken.None).ConfigureAwait(false);
 

@@ -501,11 +501,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         private static async Task<Stream> CreateEncryptedStreamAsync(TestDoc document, Encryptor encryptor)
         {
+            EncryptionItemRequestOptions requestOptions = new EncryptionItemRequestOptions
+            {
+                EncryptionOptions = CreateEncryptionOptions()
+            };
+
             Stream encryptedStream = await EncryptionProcessor.EncryptAsync(
                 document.ToStream(),
                 encryptor,
-                CreateEncryptionOptions(),
-                JsonProcessor.Newtonsoft,
+                requestOptions,
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None).ConfigureAwait(false);
 
