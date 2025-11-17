@@ -543,11 +543,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                         .Attach()
                     .WithVectorIndex()
                         .Path(vector2Path, VectorIndexType.QuantizedFlat)
+                        .WithQuantizerType(Documents.QuantizerType.Product)
                         .WithQuantizationByteSize(3)
                         .WithVectorIndexShardKey(new string[] { "/Country" })
                         .Attach()
                     .WithVectorIndex()
                         .Path(vector3Path, VectorIndexType.DiskANN)
+                        .WithQuantizerType(Documents.QuantizerType.Spherical)
                         .WithQuantizationByteSize(2)
                         .WithIndexingSearchListSize(35)
                         .WithVectorIndexShardKey(new string[] { "/ZipCode" })
@@ -557,7 +559,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
 
             Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
             mockContainers.Verify(c => c.CreateContainerAsync(
-                    It.Is<ContainerProperties>((settings) => settings.VectorEmbeddingPolicy.Embeddings.Count == 3
+                    It.Is<ContainerProperties>((settings) => 
+                        settings.VectorEmbeddingPolicy.Embeddings.Count == 3
                         && vector1Path.Equals(settings.VectorEmbeddingPolicy.Embeddings[0].Path)
                         && VectorDataType.Int8.Equals(settings.VectorEmbeddingPolicy.Embeddings[0].DataType)
                         && DistanceFunction.DotProduct.Equals(settings.VectorEmbeddingPolicy.Embeddings[0].DistanceFunction)
@@ -569,7 +572,23 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                         && vector3Path.Equals(settings.VectorEmbeddingPolicy.Embeddings[2].Path)
                         && VectorDataType.Float32.Equals(settings.VectorEmbeddingPolicy.Embeddings[2].DataType)
                         && DistanceFunction.Euclidean.Equals(settings.VectorEmbeddingPolicy.Embeddings[2].DistanceFunction)
-                        && 400.Equals(settings.VectorEmbeddingPolicy.Embeddings[2].Dimensions)),
+                        && 400.Equals(settings.VectorEmbeddingPolicy.Embeddings[2].Dimensions)
+                        && settings.IndexingPolicy.VectorIndexes.Count == 3
+                        && vector1Path.Equals(settings.IndexingPolicy.VectorIndexes[0].Path)
+                        && VectorIndexType.Flat.Equals(settings.IndexingPolicy.VectorIndexes[0].Type)
+                        && settings.IndexingPolicy.VectorIndexes[0].QuantizerType == null
+                        && vector2Path.Equals(settings.IndexingPolicy.VectorIndexes[1].Path)
+                        && VectorIndexType.QuantizedFlat.Equals(settings.IndexingPolicy.VectorIndexes[1].Type)
+                        && Documents.QuantizerType.Product.Equals(settings.IndexingPolicy.VectorIndexes[1].QuantizerType)
+                        && 3.Equals(settings.IndexingPolicy.VectorIndexes[1].QuantizationByteSize)
+                        && settings.IndexingPolicy.VectorIndexes[1].VectorIndexShardKey.SequenceEqual(new string[] { "/Country" })
+                        && vector3Path.Equals(settings.IndexingPolicy.VectorIndexes[2].Path)
+                        && VectorIndexType.DiskANN.Equals(settings.IndexingPolicy.VectorIndexes[2].Type)
+                        && Documents.QuantizerType.Spherical.Equals(settings.IndexingPolicy.VectorIndexes[2].QuantizerType)
+                        && 2.Equals(settings.IndexingPolicy.VectorIndexes[2].QuantizationByteSize)
+                        && 35.Equals(settings.IndexingPolicy.VectorIndexes[2].IndexingSearchListSize)
+                        && settings.IndexingPolicy.VectorIndexes[2].VectorIndexShardKey.SequenceEqual(new string[] { "/ZipCode" })
+                    ),
                     It.IsAny<int?>(),
                     It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()), Times.Once);
