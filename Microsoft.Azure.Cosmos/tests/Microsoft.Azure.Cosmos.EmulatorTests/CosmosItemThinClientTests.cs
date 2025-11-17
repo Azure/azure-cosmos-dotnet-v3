@@ -244,9 +244,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task CreateItemsTestWithThinClientFlagEnabledAndAccountDisabled()
         {
             Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
-            string authKey = Utils.ConfigurationManager.AppSettings["MasterKey"];
-            string endpoint = Utils.ConfigurationManager.AppSettings["GatewayEndpoint"];
-            AzureKeyCredential masterKeyCredential = new AzureKeyCredential(authKey);
 
             JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
             {
@@ -257,8 +254,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.cosmosSystemTextJsonSerializer = new MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer(jsonSerializerOptions);
 
             this.client = new CosmosClient(
-                  endpoint,
-                  masterKeyCredential,
+                  this.connectionString,
                   new CosmosClientOptions()
                   {
                       ConnectionMode = ConnectionMode.Gateway,
