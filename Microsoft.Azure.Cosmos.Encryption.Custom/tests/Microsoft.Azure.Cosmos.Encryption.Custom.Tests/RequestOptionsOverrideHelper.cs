@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             {
                 Properties = new Dictionary<string, object>
                 {
-                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, processor }
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, processor.ToString() }
                 }
             };
             return requestOptions;

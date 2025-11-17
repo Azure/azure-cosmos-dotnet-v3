@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             {
                 Properties = new Dictionary<string, object>
                 {
-                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Stream }
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, "Stream" }
                 }
             };
 
@@ -77,55 +77,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         }
 
         [TestMethod]
-        public void ResolveSelection_UnsupportedCombination_Throws()
-        {
-#pragma warning disable CS0618 // testing legacy path rejection for Stream processor
-            EncryptionOptions opts = new()
-            {
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
-                JsonProcessor = JsonProcessor.Stream
-            };
-#pragma warning restore CS0618
-            RequestOptions ro = new ItemRequestOptions();
-
-            Assert.ThrowsException<NotSupportedException>(() => ro.ResolveJsonProcessorSelection(opts));
-        }
-
-        [TestMethod]
-        public void ResolveSelection_OverrideApplied()
-        {
-            EncryptionOptions opts = new()
-            {
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
-                JsonProcessor = JsonProcessor.Newtonsoft
-            };
-            RequestOptions ro = new ItemRequestOptions
-            {
-                Properties = new Dictionary<string, object>
-                {
-                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Stream }
-                }
-            };
-
-            ro.ResolveJsonProcessorSelection(opts);
-            Assert.AreEqual(JsonProcessor.Stream, opts.JsonProcessor);
-        }
-
-        [TestMethod]
-        public void ResolveSelection_NoOverride_NoChange()
-        {
-            EncryptionOptions opts = new()
-            {
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
-                JsonProcessor = JsonProcessor.Newtonsoft
-            };
-            RequestOptions ro = new ItemRequestOptions();
-
-            ro.ResolveJsonProcessorSelection(opts);
-            Assert.AreEqual(JsonProcessor.Newtonsoft, opts.JsonProcessor);
-        }
-
-        [TestMethod]
         public void TryReadOverride_NullRequestOptions_Default()
         {
             RequestOptions roNull = null;
@@ -151,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 Properties = new Dictionary<string, object>
                 {
                     // Intentionally different casing pattern; should not match for perf (no ToUpper/ToLower)
-                    { "Encryption-Json-Processor", JsonProcessor.Stream }
+                    { "Encryption-Json-Processor", "Stream" }
                 }
             };
 
@@ -167,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             {
                 Properties = new Dictionary<string, object>
                 {
-                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey + "-extra", JsonProcessor.Stream }
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey + "-extra", "Stream" }
                 }
             };
 
