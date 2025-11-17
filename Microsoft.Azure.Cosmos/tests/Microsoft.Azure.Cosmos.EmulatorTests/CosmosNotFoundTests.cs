@@ -103,10 +103,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// This allows disambiguation between item not found vs owner resource (container/database) not found.
         /// </summary>
         [TestMethod]
-        public async Task ValidateSubStatusCodeForItemNotFoundVsContainerNotFound()
+        [DataRow(true, DisplayName = "Gateway mode")]
+        [DataRow(false, DisplayName = "Direct mode")]
+        public async Task ValidateSubStatusCodeForItemNotFoundVsContainerNotFound(bool useGateway)
         {
+            // Create a test client with the specified mode
+            using CosmosClient testClient = TestCommon.CreateCosmosClient(useGateway);
+
             // Create a test database and container
-            Database db = await CosmosNotFoundTests.client.CreateDatabaseAsync("NotFoundTest" + Guid.NewGuid().ToString());
+            Database db = await testClient.CreateDatabaseAsync("NotFoundTest" + Guid.NewGuid().ToString());
             Container container = await db.CreateContainerAsync("NotFoundTest" + Guid.NewGuid().ToString(), "/pk", 500);
 
             // Test 1: Item doesn't exist in existing container - should return 404 with substatus 0
@@ -131,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 "SubStatusCode should be 1003 when container doesn't exist (owner resource not found)");
 
             // Test 3: Database doesn't exist - should also return 404 with substatus 1003
-            Database nonExistentDb = CosmosNotFoundTests.client.GetDatabase(DoesNotExist);
+            Database nonExistentDb = testClient.GetDatabase(DoesNotExist);
             Container containerInNonExistentDb = nonExistentDb.GetContainer(DoesNotExist);
             response = await containerInNonExistentDb.ReadItemStreamAsync(
                 partitionKey: new Cosmos.PartitionKey(DoesNotExist), 
@@ -151,10 +156,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// allowing developers to distinguish between different types of 404 errors.
         /// </summary>
         [TestMethod]
-        public async Task ValidateCosmosExceptionSubStatusCodeForNotFound()
+        [DataRow(true, DisplayName = "Gateway mode")]
+        [DataRow(false, DisplayName = "Direct mode")]
+        public async Task ValidateCosmosExceptionSubStatusCodeForNotFound(bool useGateway)
         {
+            // Create a test client with the specified mode
+            using CosmosClient testClient = TestCommon.CreateCosmosClient(useGateway);
+
             // Create a test database and container
-            Database db = await CosmosNotFoundTests.client.CreateDatabaseAsync("NotFoundTest" + Guid.NewGuid().ToString());
+            Database db = await testClient.CreateDatabaseAsync("NotFoundTest" + Guid.NewGuid().ToString());
             Container container = await db.CreateContainerAsync("NotFoundTest" + Guid.NewGuid().ToString(), "/pk", 500);
 
             // Test 1: Item doesn't exist in existing container - CosmosException should have substatus 0
@@ -187,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             // Test 3: Database doesn't exist - CosmosException should have substatus 1003
-            Database nonExistentDb = CosmosNotFoundTests.client.GetDatabase(DoesNotExist);
+            Database nonExistentDb = testClient.GetDatabase(DoesNotExist);
             Container containerInNonExistentDb = nonExistentDb.GetContainer(DoesNotExist);
             try
             {
