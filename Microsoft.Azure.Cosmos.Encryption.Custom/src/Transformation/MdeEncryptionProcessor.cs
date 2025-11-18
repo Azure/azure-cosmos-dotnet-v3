@@ -5,11 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 {
     using System;
-    using System.Collections.Generic;
     using System.IO;
-#if NET8_0_OR_GREATER
-    using System.Text.Json.Nodes;
-#endif
     using System.Threading;
     using System.Threading.Tasks;
     using Newtonsoft.Json.Linq;
@@ -22,29 +18,29 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         internal StreamProcessor StreamProcessor { get; set; } = new StreamProcessor();
 #endif
 
-        private readonly Dictionary<JsonProcessor, Func<IMdeJsonProcessorAdapter>> adapterFactories;
+        private readonly Lazy<IMdeJsonProcessorAdapter> newtonsoftAdapter;
+#if NET8_0_OR_GREATER
+        private readonly Lazy<IMdeJsonProcessorAdapter> streamAdapter;
+#endif
 
         public MdeEncryptionProcessor()
         {
-            this.adapterFactories = new Dictionary<JsonProcessor, Func<IMdeJsonProcessorAdapter>>
-            {
-                [JsonProcessor.Newtonsoft] = () => new NewtonsoftAdapter(this.JObjectEncryptionProcessor),
+            this.newtonsoftAdapter = new Lazy<IMdeJsonProcessorAdapter>(() => new NewtonsoftAdapter(this.JObjectEncryptionProcessor));
 #if NET8_0_OR_GREATER
-                [JsonProcessor.Stream] = () => new SystemTextJsonStreamAdapter(this.StreamProcessor),
+            this.streamAdapter = new Lazy<IMdeJsonProcessorAdapter>(() => new SystemTextJsonStreamAdapter(this.StreamProcessor));
 #endif
-            };
         }
 
         public async Task<Stream> EncryptAsync(
             Stream input,
             Encryptor encryptor,
             EncryptionOptions encryptionOptions,
+            JsonProcessor jsonProcessor,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken token)
         {
             ArgumentValidation.ThrowIfNull(diagnosticsContext);
 
-            JsonProcessor jsonProcessor = encryptionOptions.JsonProcessor;
             using IDisposable selectionScope = diagnosticsContext.CreateScope(CosmosDiagnosticsContext.ScopeEncryptModeSelectionPrefix + jsonProcessor);
 
             IMdeJsonProcessorAdapter adapter = this.GetAdapter(jsonProcessor);
@@ -111,17 +107,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             Stream output,
             Encryptor encryptor,
             EncryptionOptions encryptionOptions,
+            JsonProcessor jsonProcessor,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             ArgumentValidation.ThrowIfNull(diagnosticsContext);
 
 #if NET8_0_OR_GREATER
-            if (encryptionOptions.JsonProcessor == JsonProcessor.Stream)
+            if (jsonProcessor == JsonProcessor.Stream)
             {
                 using IDisposable selectionScope = diagnosticsContext.CreateScope(CosmosDiagnosticsContext.ScopeEncryptModeSelectionPrefix + JsonProcessor.Stream);
                 IMdeJsonProcessorAdapter adapter = this.GetAdapter(JsonProcessor.Stream);
-                await adapter.EncryptAsync(input, output, encryptor, encryptionOptions, cancellationToken);
+                await adapter.EncryptAsync(input, output, encryptor, encryptionOptions, jsonProcessor, cancellationToken);
                 return;
             }
 #endif
@@ -175,22 +172,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             return JsonProcessor.Newtonsoft;
         }
 
-        private readonly Dictionary<JsonProcessor, IMdeJsonProcessorAdapter> adapterCache = new Dictionary<JsonProcessor, IMdeJsonProcessorAdapter>();
-
         private IMdeJsonProcessorAdapter GetAdapter(JsonProcessor jsonProcessor)
         {
-            if (!this.adapterCache.TryGetValue(jsonProcessor, out IMdeJsonProcessorAdapter adapter))
+            return jsonProcessor switch
             {
-                if (!this.adapterFactories.TryGetValue(jsonProcessor, out Func<IMdeJsonProcessorAdapter> factory))
-                {
-                    throw new NotSupportedException($"JsonProcessor '{jsonProcessor}' is not supported on this platform. Supported processors: {string.Join(", ", this.adapterFactories.Keys)}");
-                }
-
-                adapter = factory();
-                this.adapterCache[jsonProcessor] = adapter;
-            }
-
-            return adapter;
+                JsonProcessor.Newtonsoft => this.newtonsoftAdapter.Value,
+#if NET8_0_OR_GREATER
+                JsonProcessor.Stream => this.streamAdapter.Value,
+#endif
+                _ => throw new NotSupportedException($"JsonProcessor '{jsonProcessor}' is not supported on this platform. " +
+                                                     $"Supported processors: {string.Join(", ", Enum.GetNames(typeof(JsonProcessor)))}")
+            };
         }
     }
 }

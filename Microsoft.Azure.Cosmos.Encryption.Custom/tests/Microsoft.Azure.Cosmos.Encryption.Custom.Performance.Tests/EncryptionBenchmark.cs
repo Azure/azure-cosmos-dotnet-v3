@@ -24,7 +24,7 @@
                 {
                     Properties = new System.Collections.Generic.Dictionary<string, object>
                     {
-                        { "encryption-json-processor", processor }
+                        { "encryption-json-processor", processor.ToString() }
                     }
                 };
 #else
@@ -58,7 +58,7 @@
 #else
         [Params(JsonProcessor.Newtonsoft)]
 #endif
-        public JsonProcessor JsonProcessor { get; set; }
+        internal JsonProcessor JsonProcessor { get; set; }
 
         [GlobalSetup]
         public async Task Setup()
@@ -80,6 +80,7 @@
                  new MemoryStream(this.plaintext),
                  this.encryptor,
                  this.encryptionOptions,
+                 this.JsonProcessor,
                  new CosmosDiagnosticsContext(),
                  CancellationToken.None);
 
@@ -96,6 +97,7 @@
                  new MemoryStream(this.plaintext!),
                  this.encryptor,
                  this.encryptionOptions,
+                 this.JsonProcessor,
                  new CosmosDiagnosticsContext(),
                  CancellationToken.None);
         }
@@ -110,6 +112,7 @@
                 rms,
                 this.encryptor,
                 this.encryptionOptions,
+                 this.JsonProcessor,
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
         }
@@ -148,7 +151,6 @@
                 DataEncryptionKeyId = "dekId",
                 EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
                 PathsToEncrypt = TestDoc.PathsToEncrypt,
-                JsonProcessor = this.JsonProcessor,
             };
 
             return options;
