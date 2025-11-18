@@ -234,7 +234,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 {
                     Path = "/vector2",
                     Type = Cosmos.VectorIndexType.QuantizedFlat,
-                    QuantizerType = QuantizerType.Product,
+                    QuantizerType = Cosmos.QuantizerType.Product,
                     VectorIndexShardKey = new[] { "/Country" },
                     QuantizationByteSize = 3,
                 },
@@ -242,7 +242,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 {
                     Path = "/vector3",
                     Type = Cosmos.VectorIndexType.DiskANN,
-                    QuantizerType = QuantizerType.Spherical,
+                    QuantizerType = Cosmos.QuantizerType.Spherical,
                     VectorIndexShardKey = new[] { "/ZipCode" },
                     QuantizationByteSize = 2,
                     IndexingSearchListSize = 5,
@@ -267,13 +267,13 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Assert.AreEqual("/vector2", vectorIndexes[1].Path);
             Assert.AreEqual(Cosmos.VectorIndexType.QuantizedFlat, vectorIndexes[1].Type);
-            Assert.AreEqual(QuantizerType.Product, vectorIndexes[1].QuantizerType);
+            Assert.AreEqual(Cosmos.QuantizerType.Product, vectorIndexes[1].QuantizerType);
             Assert.AreEqual(3, vectorIndexes[1].QuantizationByteSize);
             CollectionAssert.AreEqual(new string[] { "/Country" }, vectorIndexes[1].VectorIndexShardKey);
 
             Assert.AreEqual("/vector3", vectorIndexes[2].Path);
             Assert.AreEqual(Cosmos.VectorIndexType.DiskANN, vectorIndexes[2].Type);
-            Assert.AreEqual(QuantizerType.Spherical, vectorIndexes[2].QuantizerType);
+            Assert.AreEqual(Cosmos.QuantizerType.Spherical, vectorIndexes[2].QuantizerType);
             Assert.AreEqual(2, vectorIndexes[2].QuantizationByteSize);
             Assert.AreEqual(5, vectorIndexes[2].IndexingSearchListSize);
             CollectionAssert.AreEqual(new string[] { "/ZipCode" }, vectorIndexes[2].VectorIndexShardKey);
@@ -287,7 +287,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 Path = "/vector",
                 Type = Cosmos.VectorIndexType.DiskANN,
-                QuantizerType = QuantizerType.Product,
+                QuantizerType = Cosmos.QuantizerType.Product,
                 QuantizationByteSize = 2,
                 IndexingSearchListSize = 100
             };
@@ -304,7 +304,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             // Verify round-trip
             Assert.AreEqual(vectorIndexProduct.Path, deserializedProduct.Path);
             Assert.AreEqual(vectorIndexProduct.Type, deserializedProduct.Type);
-            Assert.AreEqual(QuantizerType.Product, deserializedProduct.QuantizerType);
+            Assert.AreEqual(Cosmos.QuantizerType.Product, deserializedProduct.QuantizerType);
             Assert.AreEqual(vectorIndexProduct.QuantizationByteSize, deserializedProduct.QuantizationByteSize);
             Assert.AreEqual(vectorIndexProduct.IndexingSearchListSize, deserializedProduct.IndexingSearchListSize);
 
@@ -313,7 +313,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 Path = "/embedding",
                 Type = Cosmos.VectorIndexType.QuantizedFlat,
-                QuantizerType = QuantizerType.Spherical,
+                QuantizerType = Cosmos.QuantizerType.Spherical,
                 QuantizationByteSize = 3,
                 VectorIndexShardKey = new[] { "/region" }
             };
@@ -330,7 +330,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             // Verify round-trip
             Assert.AreEqual(vectorIndexSpherical.Path, deserializedSpherical.Path);
             Assert.AreEqual(vectorIndexSpherical.Type, deserializedSpherical.Type);
-            Assert.AreEqual(QuantizerType.Spherical, deserializedSpherical.QuantizerType);
+            Assert.AreEqual(Cosmos.QuantizerType.Spherical, deserializedSpherical.QuantizerType);
             Assert.AreEqual(vectorIndexSpherical.QuantizationByteSize, deserializedSpherical.QuantizationByteSize);
             CollectionAssert.AreEqual(vectorIndexSpherical.VectorIndexShardKey, deserializedSpherical.VectorIndexShardKey);
 

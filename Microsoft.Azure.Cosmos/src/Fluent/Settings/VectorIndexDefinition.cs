@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         internal
 #endif
         VectorIndexDefinition<T> WithQuantizerType(
-            Documents.QuantizerType quantizerType)
+            QuantizerType quantizerType)
         {
             this.vectorIndexPath.QuantizerType = quantizerType;
             return this;
