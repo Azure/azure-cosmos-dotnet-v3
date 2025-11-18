@@ -156,16 +156,35 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             string previouslyResolvedCollectionRid = request?.RequestContext?.ResolvedCollectionRid;
 
-            ContainerProperties properties = await resolveContainerProvider();
-
-            if (this.sessionContainer != null &&
-                previouslyResolvedCollectionRid != null &&
-                previouslyResolvedCollectionRid != properties.ResourceId)
+            try
             {
-                this.sessionContainer.ClearTokenByResourceId(previouslyResolvedCollectionRid);
-            }
+                ContainerProperties properties = await resolveContainerProvider();
 
-            return properties;
+                if (this.sessionContainer != null &&
+                    previouslyResolvedCollectionRid != null &&
+                    previouslyResolvedCollectionRid != properties.ResourceId)
+                {
+                    this.sessionContainer.ClearTokenByResourceId(previouslyResolvedCollectionRid);
+                }
+
+                return properties;
+            }
+            catch (DocumentClientException ex)
+            {
+                // When collection resolution fails with 404, set the appropriate substatus code.
+                // - For document/item operations: Set substatus 1003 (OwnerResourceNotFound) to distinguish
+                //   "container doesn't exist" from "item doesn't exist" (substatus 0).
+                // - For container operations: Leave substatus as 0 because the container itself is the
+                //   resource that doesn't exist (not an "owner" resource issue).
+                if (ex.StatusCode == System.Net.HttpStatusCode.NotFound && 
+                    ex.GetSubStatus() == SubStatusCodes.Unknown &&
+                    request?.ResourceType != ResourceType.Collection)
+                {
+                    ex.Headers[WFConstants.BackendHeaders.SubStatus] = ((uint)SubStatusCodes.OwnerResourceNotFound).ToString(System.Globalization.CultureInfo.InvariantCulture);
+                }
+
+                throw;
+            }
         }
 
         private async Task<ContainerProperties> ReadCollectionAsync(
@@ -237,14 +256,6 @@ namespace Microsoft.Azure.Cosmos.Routing
                         catch (DocumentClientException ex)
                         {
                             childTrace.AddDatum("Exception Message", ex.Message);
-
-                            // When a collection read fails with 404, it means the owner resource (container/database) doesn't exist.
-                            // Ensure the substatus code is set to 1003 (OwnerResourceNotFound) to distinguish from item-not-found scenarios.
-                            if (ex.StatusCode == System.Net.HttpStatusCode.NotFound && ex.GetSubStatus() == SubStatusCodes.Unknown)
-                            {
-                                ex.Headers[WFConstants.BackendHeaders.SubStatus] = ((uint)SubStatusCodes.OwnerResourceNotFound).ToString(System.Globalization.CultureInfo.InvariantCulture);
-                            }
-                            
                             throw;
                         }
                     }
