@@ -4,11 +4,11 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
     using System.Collections.Generic;
     using System.IO;
     using System.Net.Http;
     using System.Net.Http.Headers;
+    using System.Text.Json;
     using System.Threading.Tasks;
 
     /// <summary>
@@ -71,44 +71,61 @@ namespace Microsoft.Azure.Cosmos
         {
             Stream content = await responseMessage.Content.ReadAsStreamAsync();
 
-            // Deserialize the JSON content into a dictionary.
-            Dictionary<string, object> responseJson;
-            using (StreamReader streamReader = new StreamReader(content))
-            using (Newtonsoft.Json.JsonTextReader jsonReader = new Newtonsoft.Json.JsonTextReader(streamReader))
+            using (content)
             {
-                Newtonsoft.Json.JsonSerializer serializer = new Newtonsoft.Json.JsonSerializer();
-                responseJson = serializer.Deserialize<Dictionary<string, object>>(jsonReader);
-            }
-
-            // Parse the rerank scores, latency, and token usage from the response.
-            return new SemanticRerankResult(
-                ParseRerankScores(responseJson["Scores"]),
-                responseJson.ContainsKey("latency") ? Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(responseJson["latency"].ToString()) : null,
-                responseJson.ContainsKey("token_usage") ? Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(responseJson["token_usage"].ToString()) : null,
-                responseMessage.Headers);
-        }
-
-        /// <summary>
-        /// Parses the rerank scores from the provided object.
-        /// </summary>
-        /// <param name="rerankScoresObj">The object containing rerank scores, expected to be a JArray.</param>
-        /// <returns>A read-only list of <see cref="RerankScore"/> objects.</returns>
-        private static IReadOnlyList<RerankScore> ParseRerankScores(object rerankScoresObj)
-        {
-            List<RerankScore> rerankScores = new List<RerankScore>();
-            if (rerankScoresObj is Newtonsoft.Json.Linq.JArray rerankScoresArray)
-            {
-                foreach (Newtonsoft.Json.Linq.JToken item in rerankScoresArray)
+                using (JsonDocument doc = await JsonDocument.ParseAsync(content))
                 {
-                    // Extract document, score, and index from each item.
-                    object document = item["document"];
-                    double score = item["score"] != null ? item.Value<double>("score") : 0.0;
-                    int index = item["index"] != null ? item.Value<int>("index") : -1;
-                    RerankScore rerankScore = new RerankScore(document, score, index);
-                    rerankScores.Add(rerankScore);
+                    JsonElement root = doc.RootElement;
+
+                    // Parse Scores
+                    List<RerankScore> rerankScores = new List<RerankScore>();
+                    if (root.TryGetProperty("Scores", out JsonElement scoresElement) && scoresElement.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (JsonElement item in scoresElement.EnumerateArray())
+                        {
+                            object document = null;
+                            if (item.TryGetProperty("document", out JsonElement docElement))
+                            {
+                                // Try to deserialize as an object
+                                switch (docElement.ValueKind)
+                                {
+                                    case JsonValueKind.Object:
+                                        document = JsonSerializer.Deserialize<Dictionary<string, object>>(docElement.GetRawText());
+                                        break;
+                                    case JsonValueKind.Null:
+                                        document = null;
+                                        break;
+                                }
+                            }
+
+                            double score = item.TryGetProperty("score", out JsonElement scoreElement) && scoreElement.TryGetDouble(out double s) ? s : 0.0;
+                            int index = item.TryGetProperty("index", out JsonElement indexElement) && indexElement.TryGetInt32(out int i) ? i : -1;
+
+                            rerankScores.Add(new RerankScore(document, score, index));
+                        }
+                    }
+
+                    // Parse latency
+                    Dictionary<string, object> latency = null;
+                    if (root.TryGetProperty("latency", out JsonElement latencyElement) && latencyElement.ValueKind == JsonValueKind.Object)
+                    {
+                        latency = JsonSerializer.Deserialize<Dictionary<string, object>>(latencyElement.GetRawText());
+                    }
+
+                    // Parse token_usage
+                    Dictionary<string, object> tokenUsage = null;
+                    if (root.TryGetProperty("token_usage", out JsonElement tokenUsageElement) && tokenUsageElement.ValueKind == JsonValueKind.Object)
+                    {
+                        tokenUsage = JsonSerializer.Deserialize<Dictionary<string, object>>(tokenUsageElement.GetRawText());
+                    }
+
+                    return new SemanticRerankResult(
+                        rerankScores,
+                        latency,
+                        tokenUsage,
+                        responseMessage.Headers);
                 }
             }
-            return rerankScores;
         }
     }
 }

@@ -1683,8 +1683,10 @@ namespace Microsoft.Azure.Cosmos
         /// Rerank a list of documents using semantic reranking.
         /// This method uses a semantic reranker to score and reorder the provided documents
         /// based on their relevance to the given reranking context.
+        /// 
+        /// The sematic reranking requests will not use the regular request flow and not use the default SDK retry policies.
         /// </summary>
-        /// <param name="rerankContext"> The context or query string to use for reranking the documents.</param>
+        /// <param name="rerankContext"> The context (ex: query string) to use for reranking the documents.</param>
         /// <param name="documents"> A list of documents to be reranked</param>
         /// <param name="options"> (Optional) The options for the semantic reranking request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>

@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using System.Net.Http;
     using System.Net.Http.Headers;
@@ -27,7 +28,9 @@ namespace Microsoft.Azure.Cosmos
         private const string inferenceUserAgent = "cosmos-inference-dotnet";
         // Default scope for AAD authentication.
         private const string inferenceServiceDefaultScope = "https://dbinference.azure.com/.default";
+        private const int inferenceServiceDefaultMaxConnectionLimit = 50;
 
+        private readonly int inferenceServiceMaxConnectionLimit;
         private readonly string inferenceServiceBaseUrl;
         private readonly Uri inferenceEndpoint;
         private readonly HttpClient httpClient;
@@ -49,9 +52,13 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("Set environment variable AZURE_COSMOS_SEMANTIC_RERANKER_INFERENCE_ENDPOINT to use inference service");
             }
 
+            this.inferenceServiceMaxConnectionLimit = ConfigurationManager.GetEnvironmentVariable<int?>(
+                "AZURE_COSMOS_SEMANTIC_RERANKER_INFERENCE_SERVICE_MAX_CONNECTION_LIMIT",
+                inferenceServiceDefaultMaxConnectionLimit) ?? inferenceServiceDefaultMaxConnectionLimit;
+
             // Create and configure HttpClient for inference requests.
             HttpMessageHandler httpMessageHandler = CosmosHttpClientCore.CreateHttpClientHandler(
-                        gatewayModeMaxConnectionLimit: client.DocumentClient.ConnectionPolicy.MaxConnectionLimit,
+                        gatewayModeMaxConnectionLimit: this.inferenceServiceMaxConnectionLimit,
                         webProxy: null,
                         serverCertificateCustomValidationCallback: client.DocumentClient.ConnectionPolicy.ServerCertificateCustomValidationCallback);
 
