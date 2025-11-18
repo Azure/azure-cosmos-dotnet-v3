@@ -35,12 +35,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             Stream input,
             Encryptor encryptor,
             EncryptionOptions encryptionOptions,
+            JsonProcessor jsonProcessor,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken token)
         {
             ArgumentValidation.ThrowIfNull(diagnosticsContext);
 
-            JsonProcessor jsonProcessor = encryptionOptions.JsonProcessor;
             using IDisposable selectionScope = diagnosticsContext.CreateScope(CosmosDiagnosticsContext.ScopeEncryptModeSelectionPrefix + jsonProcessor);
 
             IMdeJsonProcessorAdapter adapter = this.GetAdapter(jsonProcessor);
@@ -107,17 +107,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             Stream output,
             Encryptor encryptor,
             EncryptionOptions encryptionOptions,
+            JsonProcessor jsonProcessor,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             ArgumentValidation.ThrowIfNull(diagnosticsContext);
 
 #if NET8_0_OR_GREATER
-            if (encryptionOptions.JsonProcessor == JsonProcessor.Stream)
+            if (jsonProcessor == JsonProcessor.Stream)
             {
                 using IDisposable selectionScope = diagnosticsContext.CreateScope(CosmosDiagnosticsContext.ScopeEncryptModeSelectionPrefix + JsonProcessor.Stream);
                 IMdeJsonProcessorAdapter adapter = this.GetAdapter(JsonProcessor.Stream);
-                await adapter.EncryptAsync(input, output, encryptor, encryptionOptions, cancellationToken);
+                await adapter.EncryptAsync(input, output, encryptor, encryptionOptions, jsonProcessor, cancellationToken);
                 return;
             }
 #endif
