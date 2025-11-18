@@ -102,13 +102,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// and 404 with substatus 1003 is returned when the container doesn't exist (Direct mode only).
         /// This allows disambiguation between item not found vs owner resource (container/database) not found.
         /// 
+        /// This test uses streaming APIs (ReadItemStreamAsync).
+        /// 
         /// Note: Gateway mode has a known limitation where it cannot always distinguish between 
         /// item-not-found and container-not-found scenarios. Direct mode properly sets substatus 1003.
         /// </summary>
         [TestMethod]
         [DataRow(true, DisplayName = "Gateway mode")]
         [DataRow(false, DisplayName = "Direct mode")]
-        public async Task ValidateSubStatusCodeForItemNotFoundVsContainerNotFound(bool useGateway)
+        public async Task ValidateSubStatusCodeForItemNotFoundVsContainerNotFound_StreamingAPI(bool useGateway)
         {
             // Create a test client with the specified mode
             using CosmosClient testClient = TestCommon.CreateCosmosClient(useGateway);
@@ -173,13 +175,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// Validates that CosmosException exposes the substatus code when thrown,
         /// allowing developers to distinguish between different types of 404 errors.
         /// 
+        /// This test uses non-streaming/typed APIs (ReadItemAsync).
+        /// 
         /// Note: Gateway mode has a known limitation where it cannot always distinguish between 
         /// item-not-found and container-not-found scenarios. Direct mode properly sets substatus 1003.
         /// </summary>
         [TestMethod]
         [DataRow(true, DisplayName = "Gateway mode")]
         [DataRow(false, DisplayName = "Direct mode")]
-        public async Task ValidateCosmosExceptionSubStatusCodeForNotFound(bool useGateway)
+        public async Task ValidateCosmosExceptionSubStatusCodeForNotFound_TypedAPI(bool useGateway)
         {
             // Create a test client with the specified mode
             using CosmosClient testClient = TestCommon.CreateCosmosClient(useGateway);
