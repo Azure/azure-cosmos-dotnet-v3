@@ -237,6 +237,14 @@ namespace Microsoft.Azure.Cosmos.Routing
                         catch (DocumentClientException ex)
                         {
                             childTrace.AddDatum("Exception Message", ex.Message);
+
+                            // When a collection read fails with 404, it means the owner resource (container/database) doesn't exist.
+                            // Ensure the substatus code is set to 1003 (OwnerResourceNotFound) to distinguish from item-not-found scenarios.
+                            if (ex.StatusCode == System.Net.HttpStatusCode.NotFound && ex.GetSubStatus() == SubStatusCodes.Unknown)
+                            {
+                                ex.Headers[WFConstants.BackendHeaders.SubStatus] = ((uint)SubStatusCodes.OwnerResourceNotFound).ToString(System.Globalization.CultureInfo.InvariantCulture);
+                            }
+                            
                             throw;
                         }
                     }
