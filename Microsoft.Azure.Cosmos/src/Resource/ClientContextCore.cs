@@ -469,6 +469,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
+        /// <inheritdoc/>
         internal override async Task<SemanticRerankResult> SemanticRerankAsync(
             string rerankContext,
             IEnumerable<string> documents,

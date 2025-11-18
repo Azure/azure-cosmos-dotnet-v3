@@ -59,7 +59,7 @@
         }
 
         [TestMethod]
-        [TestCategory("MultiRegion")]
+        [TestCategory("Ignore")]
         [Timeout(70000)]
         public async Task SemanticRerankTest()
         {

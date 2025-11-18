@@ -133,6 +133,18 @@ namespace Microsoft.Azure.Cosmos
             string containerLinkUri,
             CancellationToken cancellationToken);
 
+        /// <summary>
+        /// Rerank a list of documents using semantic reranking.
+        /// This method uses a semantic reranker to score and reorder the provided documents
+        /// based on their relevance to the given reranking context.
+        /// 
+        /// The sematic reranking requests will not use the regular request flow and not use the default SDK retry policies.
+        /// </summary>
+        /// <param name="rerankContext"> The context (ex: query string) to use for reranking the documents.</param>
+        /// <param name="documents"> A list of documents to be reranked</param>
+        /// <param name="options"> (Optional) The options for the semantic reranking request.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns> The reranking results, typically including the reranked documents and their scores. </returns>
         internal abstract Task<SemanticRerankResult> SemanticRerankAsync(
             string rerankContext,
             IEnumerable<string> documents,
@@ -142,6 +154,8 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Creates, or gets if already created, the inference service for this client
         /// This will have a seperate http client that is used to make calls to the inference end point
+        /// 
+        /// This method exists in the client context so the infernece service can be easily disposed when the client is disposed
         /// </summary>
         /// <returns>the inferenceService</returns>
         internal abstract InferenceService GetOrCreateInferenceService();
