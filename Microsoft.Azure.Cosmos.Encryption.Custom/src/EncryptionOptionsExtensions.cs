@@ -10,11 +10,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
     internal static class EncryptionOptionsExtensions
     {
-        internal static void Validate(this EncryptionOptions options)
+        internal static void Validate(this EncryptionOptions options, JsonProcessor jsonProcessor)
         {
             ArgumentValidation.ThrowIfNullOrWhiteSpace(options.DataEncryptionKeyId, nameof(options.DataEncryptionKeyId));
             ArgumentValidation.ThrowIfNullOrWhiteSpace(options.EncryptionAlgorithm, nameof(options.EncryptionAlgorithm));
             ArgumentValidation.ThrowIfNull(options.PathsToEncrypt, nameof(options.PathsToEncrypt));
+
+            options.ValidateJsonProcessor(jsonProcessor);
 
             if (options.PathsToEncrypt is not HashSet<string> && options.PathsToEncrypt.Distinct().Count() != options.PathsToEncrypt.Count())
             {
@@ -33,6 +35,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     throw new InvalidOperationException($"{nameof(options.PathsToEncrypt)} includes a invalid path: '{path}'.");
                 }
             }
+        }
+
+        public static void ValidateJsonProcessor(this EncryptionOptions options, JsonProcessor jsonProcessor)
+        {
+#if NET8_0_OR_GREATER
+#pragma warning disable CS0618 // Type or member is obsolete
+            if (jsonProcessor != JsonProcessor.Newtonsoft && options.EncryptionAlgorithm == CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized)
+            {
+                throw new NotSupportedException("JsonProcessor.Stream is not supported for AE AES encryption algorithm.");
+            }
+#pragma warning restore CS0618 // Type or member is obsolete
+#endif
         }
     }
 }

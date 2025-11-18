@@ -592,6 +592,101 @@ namespace Microsoft.Azure.Cosmos.Tests
                 expectedNumberOfRetrys: 3);
         }
 
+        [TestMethod]
+        public void HttpTimeoutPolicyForParitionFailoverForQueries()
+        {
+            HttpTimeoutPolicy httpTimeoutPolicyForQuery = HttpTimeoutPolicy.GetTimeoutPolicy(
+                    documentServiceRequest: CosmosHttpClientCoreTests.CreateDocumentServiceRequestByOperation(ResourceType.Document, OperationType.Query),
+                    isPartitionLevelFailoverEnabled: true,
+                    isThinClientEnabled: false);
+            IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> availableRetries = httpTimeoutPolicyForQuery.GetTimeoutEnumerator();
+
+            int count = 0;
+            while (availableRetries.MoveNext())
+            {
+                if (count <= 1)
+                {
+                    Assert.AreEqual(new TimeSpan(0,0,6), availableRetries.Current.requestTimeout);
+                }
+                else if (count == 2)
+                {
+                    Assert.AreEqual(new TimeSpan(0, 0, 10), availableRetries.Current.requestTimeout);
+                }
+                count++;
+            }
+        }
+
+        [TestMethod]
+        public void HttpTimeoutPolicyForParitionFailoverForReads()
+        {
+            HttpTimeoutPolicy httpTimeoutPolicyForPointReads = HttpTimeoutPolicy.GetTimeoutPolicy(
+                    documentServiceRequest: CosmosHttpClientCoreTests.CreateDocumentServiceRequestByOperation(ResourceType.Document, OperationType.Read),
+                    isPartitionLevelFailoverEnabled: true,
+                    isThinClientEnabled: false);
+            IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> availableRetries = httpTimeoutPolicyForPointReads.GetTimeoutEnumerator();
+
+            int count = 0;
+            while (availableRetries.MoveNext())
+            {
+                if (count <= 1)
+                {
+                    Assert.AreEqual(new TimeSpan(0, 0, 6), availableRetries.Current.requestTimeout);
+                }
+                else if (count == 2)
+                {
+                    Assert.AreEqual(new TimeSpan(0, 0, 10), availableRetries.Current.requestTimeout);
+                }
+                count++;
+            }
+        }
+
+        [TestMethod]
+        public void HttpTimeoutPolicyWhenThinClientEnabledForPointReads()
+        {
+            HttpTimeoutPolicy httpTimeoutPolicyForPointReads = HttpTimeoutPolicy.GetTimeoutPolicy(
+                    documentServiceRequest: CosmosHttpClientCoreTests.CreateDocumentServiceRequestByOperation(ResourceType.Document, OperationType.Read),
+                    isPartitionLevelFailoverEnabled: false,
+                    isThinClientEnabled: true);
+            IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> availableRetries = httpTimeoutPolicyForPointReads.GetTimeoutEnumerator();
+
+            int count = 0;
+            while (availableRetries.MoveNext())
+            {
+                if (count <= 1)
+                {
+                    Assert.AreEqual(new TimeSpan(0, 0, 6), availableRetries.Current.requestTimeout);
+                }
+                else if (count == 2)
+                {
+                    Assert.AreEqual(new TimeSpan(0, 0, 10), availableRetries.Current.requestTimeout);
+                }
+                count++;
+            }
+        }
+
+        [TestMethod]
+        public void HttpTimeoutPolicyWhenThinClientEnabledForNonPointReads()
+        {
+            HttpTimeoutPolicy httpTimeoutPolicyForQuery = HttpTimeoutPolicy.GetTimeoutPolicy(
+                    documentServiceRequest: CosmosHttpClientCoreTests.CreateDocumentServiceRequestByOperation(ResourceType.Document, OperationType.Query),
+                    isPartitionLevelFailoverEnabled: false,
+                    isThinClientEnabled: true);
+            IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> availableRetries = httpTimeoutPolicyForQuery.GetTimeoutEnumerator();
+
+            int count = 0;
+            while (availableRetries.MoveNext())
+            {
+                if (count <= 1)
+                {
+                    Assert.AreEqual(new TimeSpan(0, 0, 6), availableRetries.Current.requestTimeout);
+                }
+                else if (count == 2)
+                {
+                    Assert.AreEqual(new TimeSpan(0, 0, 10), availableRetries.Current.requestTimeout);
+                }
+                count++;
+            }
+        }
 
         private static DocumentServiceRequest CreateDocumentServiceRequestByOperation(
             ResourceType resourceType,
