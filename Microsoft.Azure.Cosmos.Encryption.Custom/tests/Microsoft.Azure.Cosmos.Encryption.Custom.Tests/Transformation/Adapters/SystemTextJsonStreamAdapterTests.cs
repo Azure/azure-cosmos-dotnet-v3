@@ -35,7 +35,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
                 EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
 #pragma warning restore CS0618
                 PathsToEncrypt = new[] { "/Sensitive" },
-                JsonProcessor = JsonProcessor.Stream,
             };
         }
 
@@ -59,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
             using Stream input = TestCommon.ToStream(new { id = "1", Sensitive = "secret" });
             using MemoryStream output = new ();
 
-            await adapter.EncryptAsync(input, output, mockEncryptor.Object, defaultOptions, CancellationToken.None);
+            await adapter.EncryptAsync(input, output, mockEncryptor.Object, defaultOptions, JsonProcessor.Stream, CancellationToken.None);
 
             output.Position = 0;
             using JsonDocument doc = JsonDocument.Parse(output);
@@ -80,11 +79,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
                 EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
 #pragma warning restore CS0618
                 PathsToEncrypt = new[] { "/Sensitive" },
-                JsonProcessor = JsonProcessor.Newtonsoft,
             };
 
             await Assert.ThrowsExceptionAsync<NotSupportedException>(
-                () => adapter.EncryptAsync(input, output, mockEncryptor.Object, wrongOptions, CancellationToken.None));
+                () => adapter.EncryptAsync(input, output, mockEncryptor.Object, wrongOptions, JsonProcessor.Newtonsoft, CancellationToken.None));
         }
 
         [TestMethod]
