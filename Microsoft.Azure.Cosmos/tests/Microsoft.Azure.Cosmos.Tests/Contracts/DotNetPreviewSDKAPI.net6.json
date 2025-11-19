@@ -1208,6 +1208,11 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.VectorIndexDefinition`1[T] WithQuantizationByteSize(Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Microsoft.Azure.Cosmos.Fluent.VectorIndexDefinition`1[T] WithQuantizerType(Microsoft.Azure.Cosmos.QuantizerType)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.VectorIndexDefinition`1[T] WithQuantizerType(Microsoft.Azure.Cosmos.QuantizerType);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Microsoft.Azure.Cosmos.Fluent.VectorIndexDefinition`1[T] WithVectorIndexShardKey(System.String[])": {
           "Type": "Method",
           "Attributes": [],
@@ -1327,6 +1332,31 @@
       },
       "NestedTypes": {}
     },
+    "Microsoft.Azure.Cosmos.QuantizerType;System.Enum;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:True;IsClass:False;IsValueType:True;IsNested:False;IsGenericType:False;IsSerializable:True": {
+      "Subclasses": {},
+      "Members": {
+        "Int32 value__": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Int32 value__;IsInitOnly:False;IsStatic:False;"
+        },
+        "Microsoft.Azure.Cosmos.QuantizerType Product[System.Runtime.Serialization.EnumMemberAttribute(Value = \"product\")]": {
+          "Type": "Field",
+          "Attributes": [
+            "EnumMemberAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.QuantizerType Product;IsInitOnly:False;IsStatic:True;"
+        },
+        "Microsoft.Azure.Cosmos.QuantizerType Spherical[System.Runtime.Serialization.EnumMemberAttribute(Value = \"spherical\")]": {
+          "Type": "Field",
+          "Attributes": [
+            "EnumMemberAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.QuantizerType Spherical;IsInitOnly:False;IsStatic:True;"
+        }
+      },
+      "NestedTypes": {}
+    },
     "Microsoft.Azure.Cosmos.RequestOptions;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
@@ -1405,10 +1435,32 @@
           ],
           "MethodInfo": "Int32 QuantizationByteSize;CanRead:True;CanWrite:True;Int32 get_QuantizationByteSize();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_QuantizationByteSize(Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "System.Nullable`1[Microsoft.Azure.Cosmos.QuantizerType] get_QuantizerType()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.QuantizerType] get_QuantizerType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Nullable`1[Microsoft.Azure.Cosmos.QuantizerType] QuantizerType[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"quantizerType\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonConverterAttribute",
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.QuantizerType] QuantizerType;CanRead:True;CanWrite:True;System.Nullable`1[Microsoft.Azure.Cosmos.QuantizerType] get_QuantizerType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_QuantizerType(System.Nullable`1[Microsoft.Azure.Cosmos.QuantizerType]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Void set_QuantizationByteSize(Int32)": {
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Void set_QuantizationByteSize(Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_QuantizerType(System.Nullable`1[Microsoft.Azure.Cosmos.QuantizerType])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_QuantizerType(System.Nullable`1[Microsoft.Azure.Cosmos.QuantizerType]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
