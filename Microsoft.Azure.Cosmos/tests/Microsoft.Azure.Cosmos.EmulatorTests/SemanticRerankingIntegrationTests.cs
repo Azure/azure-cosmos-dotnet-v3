@@ -58,6 +58,7 @@
             this.client?.Dispose();
         }
 
+#if PREVIEW
         [TestMethod]
         [TestCategory("Ignore")]
         [Timeout(70000)]
@@ -113,5 +114,6 @@
             Assert.IsNotNull(results.Latency);
             Assert.IsNotNull(results.TokenUseage);
         }
+#endif
     }
 }

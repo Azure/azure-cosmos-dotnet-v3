@@ -1679,6 +1679,7 @@ namespace Microsoft.Azure.Cosmos
             string processorName,
             ChangeFeedStreamHandlerWithManualCheckpoint onChangesDelegate);
 
+#if PREVIEW
         /// <summary>
         /// Rerank a list of documents using semantic reranking.
         /// This method uses a semantic reranker to score and reorder the provided documents
@@ -1691,16 +1692,12 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="options"> (Optional) The options for the semantic reranking request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns> The reranking results, typically including the reranked documents and their scores. </returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        abstract Task<SemanticRerankResult> SemanticRerankAsync(
+        public abstract Task<SemanticRerankResult> SemanticRerankAsync(
             string rerankContext,
             IEnumerable<string> documents,
             IDictionary<string, object> options = null,
             CancellationToken cancellationToken = default);
+#endif
 
         /// <summary>
         /// Deletes all items in the Container with the specified <see cref="PartitionKey"/> value.
