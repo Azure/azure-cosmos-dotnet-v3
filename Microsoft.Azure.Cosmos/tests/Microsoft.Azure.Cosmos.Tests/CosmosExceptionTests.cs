@@ -457,6 +457,108 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        /// <summary>
+        /// Validates that substatus code 1003 (OwnerResourceNotFound) can be used to distinguish
+        /// between a regular 404 (item not found) and a 404 where the parent resource doesn't exist.
+        /// </summary>
+        [TestMethod]
+        public void ValidateSubStatusCode1003ForOwnerResourceNotFound()
+        {
+            // Test creating a NotFoundException with substatus code 1003
+            string testMessage = "Owner resource not found";
+            string activityId = Guid.NewGuid().ToString();
+            int ownerNotFoundSubStatus = 1003; // SubStatusCodes.OwnerResourceNotFound
+            double requestCharge = 1.0;
+
+            CosmosException exception = CosmosExceptionFactory.CreateNotFoundException(
+                testMessage,
+                new Headers()
+                {
+                    SubStatusCodeLiteral = ownerNotFoundSubStatus.ToString(),
+                    ActivityId = activityId,
+                    RequestCharge = requestCharge
+                });
+
+            Assert.AreEqual(HttpStatusCode.NotFound, exception.StatusCode);
+            Assert.AreEqual(ownerNotFoundSubStatus, exception.SubStatusCode);
+            Assert.AreEqual(ownerNotFoundSubStatus.ToString(), exception.Headers.SubStatusCodeLiteral);
+            Assert.AreEqual(testMessage, exception.ResponseBody);
+            Assert.AreEqual(activityId, exception.ActivityId);
+            Assert.AreEqual(requestCharge, exception.RequestCharge);
+
+            // Verify the exception message contains all the relevant information
+            Assert.IsTrue(exception.Message.Contains("404"));
+            Assert.IsTrue(exception.Message.Contains("1003"));
+            Assert.IsTrue(exception.ToString().Contains(testMessage));
+        }
+
+        /// <summary>
+        /// Validates that substatus code 0 distinguishes a regular item not found from owner not found.
+        /// </summary>
+        [TestMethod]
+        public void ValidateSubStatusCode0ForRegularItemNotFound()
+        {
+            // Test creating a NotFoundException with substatus code 0 (regular item not found)
+            string testMessage = "Item not found";
+            string activityId = Guid.NewGuid().ToString();
+            int itemNotFoundSubStatus = 0;
+            double requestCharge = 1.0;
+
+            CosmosException exception = CosmosExceptionFactory.CreateNotFoundException(
+                testMessage,
+                new Headers()
+                {
+                    SubStatusCodeLiteral = itemNotFoundSubStatus.ToString(),
+                    ActivityId = activityId,
+                    RequestCharge = requestCharge
+                });
+
+            Assert.AreEqual(HttpStatusCode.NotFound, exception.StatusCode);
+            Assert.AreEqual(itemNotFoundSubStatus, exception.SubStatusCode);
+            Assert.AreEqual(itemNotFoundSubStatus.ToString(), exception.Headers.SubStatusCodeLiteral);
+            Assert.AreEqual(testMessage, exception.ResponseBody);
+            Assert.AreEqual(activityId, exception.ActivityId);
+            Assert.AreEqual(requestCharge, exception.RequestCharge);
+
+            // Verify the exception message contains all the relevant information
+            Assert.IsTrue(exception.Message.Contains("404"));
+            Assert.IsTrue(exception.Message.Contains("0"));
+            Assert.IsTrue(exception.ToString().Contains(testMessage));
+        }
+
+        /// <summary>
+        /// Validates that ResponseMessage correctly exposes substatus codes for 404 errors.
+        /// </summary>
+        [TestMethod]
+        public void ValidateResponseMessageSubStatusCodeForNotFound()
+        {
+            // Create ResponseMessage with 404 and substatus 0 (item not found)
+            Headers headersItemNotFound = new Headers()
+            {
+                SubStatusCodeLiteral = "0",
+                ActivityId = Guid.NewGuid().ToString()
+            };
+
+            ResponseMessage responseItemNotFound = new ResponseMessage(HttpStatusCode.NotFound)
+            {
+                Headers = { }
+            };
+            responseItemNotFound.Headers.SubStatusCodeLiteral = "0";
+
+            Assert.AreEqual(HttpStatusCode.NotFound, responseItemNotFound.StatusCode);
+            Assert.AreEqual(0, (int)responseItemNotFound.Headers.SubStatusCode);
+
+            // Create ResponseMessage with 404 and substatus 1003 (owner resource not found)
+            ResponseMessage responseOwnerNotFound = new ResponseMessage(HttpStatusCode.NotFound)
+            {
+                Headers = { }
+            };
+            responseOwnerNotFound.Headers.SubStatusCodeLiteral = "1003";
+
+            Assert.AreEqual(HttpStatusCode.NotFound, responseOwnerNotFound.StatusCode);
+            Assert.AreEqual(1003, (int)responseOwnerNotFound.Headers.SubStatusCode);
+        }
+
         private void ValidateExceptionInfo(
             CosmosException exception,
             HttpStatusCode httpStatusCode,
