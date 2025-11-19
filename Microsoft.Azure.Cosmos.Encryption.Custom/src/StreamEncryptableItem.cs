@@ -1,4 +1,4 @@
-﻿// ------------------------------------------------------------
+// ------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
@@ -9,21 +9,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     using Newtonsoft.Json.Linq;
 
     /// <summary>
-    /// Stream APIs cannot be used to follow lazy decryption method and to retrieve the decryption information.
-    /// Instead, typed APIs can be used with EncryptableItemStream as input type, which takes item input in the form of stream.
+    /// Stream-only APIs cannot provide lazy decryption metadata.
+    /// Instead, typed APIs can be used with StreamEncryptableItem as the input type, which takes item input in the form of a stream and keeps the lazy-decryption contract.
+    /// The provided stream is disposed when the StreamEncryptableItem instance is disposed.
     /// </summary>
     /// <example>
-    /// This example takes in a item in stream format, encrypts it and writes to Cosmos container.
+    /// This example takes in an item in stream format, encrypts it and writes to a Cosmos container.
     /// <code language="c#">
     /// <![CDATA[
-    ///     ItemResponse<EncryptableItemStream> createResponse = await encryptionContainer.CreateItemAsync<EncryptableItemStream>(
-    ///         new EncryptableItemStream(streamPayload),
+    ///     ItemResponse<StreamEncryptableItem> createResponse = await encryptionContainer.CreateItemAsync<StreamEncryptableItem>(
+    ///         new StreamEncryptableItem(streamPayload),
     ///         new PartitionKey("streamPartitionKey"),
     ///         EncryptionItemRequestOptions);
     ///
     ///     if (!createResponse.IsSuccessStatusCode)
     ///     {
-    ///         //Handle and log exception
+    ///         // Handle and log exception
     ///         return;
     ///     }
     ///
@@ -31,8 +32,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// ]]>
     /// </code>
     /// </example>
-    public sealed class EncryptableItemStream : EncryptableItem, IDisposable
+    public sealed class StreamEncryptableItem : EncryptableItem, IDisposable
     {
+        private const string DecryptableItemAlreadyInitializedMessage = "Decryptable content is already initialized.";
         private DecryptableItemCore decryptableItem = null;
 
         /// <summary>
@@ -44,10 +46,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         public override DecryptableItem DecryptableItem => this.decryptableItem ?? throw new InvalidOperationException("Decryptable content is not initialized.");
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="EncryptableItemStream"/> class.
+        /// Initializes a new instance of the <see cref="StreamEncryptableItem"/> class.
         /// </summary>
         /// <param name="input">Input item stream.</param>
-        public EncryptableItemStream(Stream input)
+        public StreamEncryptableItem(Stream input)
         {
             this.StreamPayload = input ?? throw new ArgumentNullException(nameof(input));
         }
@@ -58,9 +60,24 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Encryptor encryptor,
             CosmosSerializer cosmosSerializer)
         {
+            if (decryptableContent == null)
+            {
+                throw new ArgumentNullException(nameof(decryptableContent));
+            }
+
+            if (encryptor == null)
+            {
+                throw new ArgumentNullException(nameof(encryptor));
+            }
+
+            if (cosmosSerializer == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosSerializer));
+            }
+
             if (this.decryptableItem != null)
             {
-                throw new InvalidOperationException();
+                throw new InvalidOperationException(DecryptableItemAlreadyInitializedMessage);
             }
 
             this.decryptableItem = new DecryptableItemCore(
@@ -78,6 +95,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <inheritdoc/>
         protected internal override Stream ToStream(CosmosSerializer serializer)
         {
+            _ = serializer; // serializer intentionally unused for stream-backed payloads
             return this.StreamPayload;
         }
     }

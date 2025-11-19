@@ -383,8 +383,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
 
             // stream
             TestDoc testDoc1 = TestDoc.Create();
-            ItemResponse<EncryptableItemStream> createResponseStream = await encryptionContainer.CreateItemAsync(
-                new EncryptableItemStream(TestCommon.ToStream(testDoc1)),
+            ItemResponse<StreamEncryptableItem> createResponseStream = await encryptionContainer.CreateItemAsync(
+                new StreamEncryptableItem(TestCommon.ToStream(testDoc1)),
                 new PartitionKey(testDoc1.PK),
                 GetRequestOptions(dekId, TestDoc.PathsToEncrypt));
 
@@ -609,8 +609,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             testDoc.NonSensitive = Guid.NewGuid().ToString();
             testDoc.Sensitive = Guid.NewGuid().ToString();
 
-            ItemResponse<EncryptableItemStream> upsertResponseStream = await encryptionContainer.UpsertItemAsync(
-                new EncryptableItemStream(TestCommon.ToStream(testDoc)),
+            ItemResponse<StreamEncryptableItem> upsertResponseStream = await encryptionContainer.UpsertItemAsync(
+                new StreamEncryptableItem(TestCommon.ToStream(testDoc)),
                 new PartitionKey(testDoc.PK),
                 GetRequestOptions(dekId, TestDoc.PathsToEncrypt));
 
@@ -624,8 +624,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             testDoc.NonSensitive = Guid.NewGuid().ToString();
             testDoc.Sensitive = Guid.NewGuid().ToString();
 
-            ItemResponse<EncryptableItemStream> replaceResponseStream = await encryptionContainer.ReplaceItemAsync(
-                new EncryptableItemStream(TestCommon.ToStream(testDoc)),
+            ItemResponse<StreamEncryptableItem> replaceResponseStream = await encryptionContainer.ReplaceItemAsync(
+                new StreamEncryptableItem(TestCommon.ToStream(testDoc)),
                 testDoc.Id,
                 new PartitionKey(testDoc.PK),
                 GetRequestOptions(dekId, TestDoc.PathsToEncrypt, upsertResponseStream.ETag));
