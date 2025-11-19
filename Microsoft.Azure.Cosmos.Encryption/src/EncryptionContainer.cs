@@ -732,14 +732,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
 #if ENCRYPTIONPREVIEW
-
         public override Task<SemanticRerankResult> SemanticRerankAsync(
             string rerankContext,
             IEnumerable<string> documents,
             IDictionary<string, object> options = null,
             CancellationToken cancellationToken = default)
         {
-            throw NotImplementedException("Semantic Reranking is not supported in the Encryption package);
+            return this.Container.SemanticRerankAsync(
+                rerankContext,
+                documents,
+                options,
+                cancellationToken);
         }
 
         public override async Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
