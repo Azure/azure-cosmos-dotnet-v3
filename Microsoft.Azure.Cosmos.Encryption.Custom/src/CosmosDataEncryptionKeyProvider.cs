@@ -10,7 +10,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     using Microsoft.Data.Encryption.Cryptography;
 
     /// <summary>
-    /// Default implementation for a provider to get a data encryption key - wrapped keys are stored in a Cosmos DB container.
+    /// Default implementation for a provider to get a data encryption key (DEK). Wrapped DEKs are stored as items in a Cosmos DB container.
+    /// Container requirements:
+    ///  - Partition key path must be <c>/id</c> (DEK <c>id</c> used as partition key).
+    ///  - Use a dedicated container to isolate access control and throughput.
+    ///  - Disable TTL to avoid accidental key deletion.
+    /// Usage pattern: construct <see cref="CosmosDataEncryptionKeyProvider"/>, call <see cref="InitializeAsync(Database,string,CancellationToken)"/> or <see cref="Initialize(Container)"/> once at startup, then use <see cref="DataEncryptionKeyContainer"/> for DEK operations.
+    /// Concurrency: initialization is single-assignment (uses <see cref="System.Threading.Interlocked"/>) so concurrent calls after success throw <see cref="InvalidOperationException"/>. Fetch/create operations are safe concurrently.
+    /// Resilience: if the container is deleted or unavailable after initialization, operations surface the underlying exception (for example NotFound). Automatic re-creation is not attempted.
     /// See https://aka.ms/CosmosClientEncryption for more information on client-side encryption support in Azure Cosmos DB.
     /// </summary>
     public sealed class CosmosDataEncryptionKeyProvider : DataEncryptionKeyProvider
@@ -132,18 +139,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         }
 
         /// <summary>
-        /// Initialize Cosmos DB container for CosmosDataEncryptionKeyProvider to store wrapped DEKs
+        /// Ensures the Cosmos DB container for storing wrapped DEKs exists (creating it if needed) and initializes this provider with that container.
+        /// This must be invoked exactly once before any fetch/create operations.
         /// </summary>
-        /// <param name="database">Database</param>
-        /// <param name="containerId">Container id</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>A task to await on.</returns>
+        /// <param name="database">The Cosmos DB <see cref="Database"/> in which the DEK container should exist.</param>
+        /// <param name="containerId">The identifier of the DEK container. If the container does not exist it will be created with partition key path <c>/id</c>.</param>
+        /// <param name="cancellationToken">An optional cancellation token.</param>
+        /// <returns>A task representing the asynchronous initialization.</returns>
         public async Task InitializeAsync(
             Database database,
             string containerId,
             CancellationToken cancellationToken = default)
         {
-            if (this.container != null)
+            if (Volatile.Read(ref this.container) != null)
             {
                 throw new InvalidOperationException($"{nameof(CosmosDataEncryptionKeyProvider)} has already been initialized.");
             }
@@ -163,7 +171,35 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     nameof(containerId));
             }
 
-            this.container = containerResponse.Container;
+            this.SetContainer(containerResponse.Container);
+        }
+
+        /// <summary>
+        /// Initializes the provider with an already created Cosmos DB container that meets the required partition key definition (<c>/id</c>).
+        /// </summary>
+        /// <param name="container">Existing Cosmos DB container containing wrapped DEKs or ready to store them.</param>
+        public void Initialize(Container container)
+        {
+            if (container == null)
+            {
+                throw new ArgumentNullException(nameof(container));
+            }
+
+            this.SetContainer(container);
+        }
+
+        /// <summary>
+        /// Sets the backing Cosmos <see cref="Container"/> exactly once.
+        /// Throws if already initialized to prevent accidental reassignment.
+        /// </summary>
+        /// <param name="container">The container to associate with this provider.</param>
+        private void SetContainer(Container container)
+        {
+            Container previous = Interlocked.CompareExchange(ref this.container, container, null);
+            if (previous != null)
+            {
+                throw new InvalidOperationException($"{nameof(CosmosDataEncryptionKeyProvider)} has already been initialized.");
+            }
         }
 
         /// <inheritdoc/>
