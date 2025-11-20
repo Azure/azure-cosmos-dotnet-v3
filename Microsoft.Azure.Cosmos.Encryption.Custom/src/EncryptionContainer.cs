@@ -1008,7 +1008,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         }
 #endif
 
-#if PREVIEW
+#if PREVIEW && SDKPROJECTREF
         public override Task<SemanticRerankResult> SemanticRerankAsync(
             string rerankContext,
             IEnumerable<string> documents,
