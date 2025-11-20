@@ -1015,7 +1015,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             IDictionary<string, object> options = null,
             CancellationToken cancellationToken = default)
         {
-            return this.Container.SemanticRerankAsync(
+            return this.container.SemanticRerankAsync(
                 rerankContext,
                 documents,
                 options,
