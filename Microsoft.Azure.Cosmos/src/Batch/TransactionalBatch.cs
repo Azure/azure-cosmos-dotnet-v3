@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.IO;
     using System.Net;
     using System.Threading;
@@ -283,5 +284,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<TransactionalBatchResponse> ExecuteAsync(
            TransactionalBatchRequestOptions requestOptions,
            CancellationToken cancellationToken = default);
+
+        public abstract TransactionalBatch ConditionalCheck<T>(string v, Func<object, bool> value, ItemRequestOptions itemRequestOptions);
     }
 }
