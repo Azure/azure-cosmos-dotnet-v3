@@ -270,7 +270,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     };
 
                     return storeResponse;
-                case FaultInjectionServerErrorType.Unautherized:
+                case FaultInjectionServerErrorType.Unauthorized:
                     INameValueCollection unauthorizedHeaders = args.RequestHeaders;
                     unauthorizedHeaders.Set(WFConstants.BackendHeaders.LocalLSN, lsn);
                     storeResponse = new StoreResponse()
@@ -564,7 +564,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
 
                     return httpResponse;
-                case FaultInjectionServerErrorType.Unautherized:
+                case FaultInjectionServerErrorType.Unauthorized:
                     httpResponse = new HttpResponseMessage
                     {
                         Version = isProxyCall
