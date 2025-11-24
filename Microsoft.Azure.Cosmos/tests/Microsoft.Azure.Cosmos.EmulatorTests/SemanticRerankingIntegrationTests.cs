@@ -69,7 +69,6 @@
 
             string search_text = "integrated pull-up bar";
 
-            // Fix: Use string interpolation instead of raw string literal and 'f' prefix
             string queryString = $@"
                 SELECT TOP 15 c.id, c.Name, c.Brand, c.Description
                 FROM c

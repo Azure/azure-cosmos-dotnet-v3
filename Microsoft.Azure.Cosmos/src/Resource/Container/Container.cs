@@ -1742,7 +1742,18 @@ namespace Microsoft.Azure.Cosmos
         ///     documents,
         ///     options);
         ///
-        /// // results.RerankScores[0] will contain the best result for the query
+        /// // get the best resulting document from the query
+        /// results.RerankScores.First().Document;
+        /// // or the index of the document in the original list
+        /// results.RerankScores.First().Index;
+        /// // or the reranking score 
+        /// results.RerankScores.First().Score;
+        /// 
+        /// // get the latency information from the reranking operation
+        /// Dictonary<string, object. latencyInfo = results.Latency;
+        /// 
+        /// // get the token usage information from the reranking operation
+        /// Dictonary<string, object> tokenUseageInfo = results.TokenUseage;
         /// ]]>
         /// </code>
         /// </example>
