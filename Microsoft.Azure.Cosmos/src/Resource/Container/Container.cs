@@ -1695,6 +1695,57 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="options"> (Optional) The options for the semantic reranking request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns> The reranking results, typically including the reranked documents and their scores. </returns>
+        /// /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// // Sample code to demonstrate Semantic Reranking
+        /// // Assume 'container' is an instance of Cosmos.Container
+        /// // This example queries items from a fitness store with full-text search and then reranks them semantically.
+        /// string search_text = "integrated pull-up bar";
+        ///
+        /// string queryString = $@"
+        ///     SELECT TOP 15 c.id, c.Name, c.Brand, c.Description
+        ///     FROM c
+        ///     WHERE FullTextContains(c.Description, ""{search_text}"")
+        ///     ORDER BY RANK FullTextScore(c.Description, ""{search_text}"")
+        ///     ";
+        ///
+        /// string reranking_context = "most economical with multiple pulley adjustmnets and ideal for home gyms";
+        ///
+        /// List<string> documents = new List<string>();
+        /// FeedIterator<dynamic> resultSetIterator = container.GetItemQueryIterator<dynamic>(
+        ///     new QueryDefinition(queryString),
+        ///     requestOptions: new QueryRequestOptions()
+        ///     {
+        ///         MaxItemCount = 15,
+        ///     });
+        ///
+        /// while (resultSetIterator.HasMoreResults)
+        /// {
+        ///     FeedResponse<dynamic> response = await resultSetIterator.ReadNextAsync();
+        ///     foreach (JsonElement item in response)
+        ///     {
+        ///         documents.Add(item.ToString());
+        ///     }
+        /// }
+        ///
+        /// Dictionary<string, dynamic> options = new Dictionary<string, dynamic>
+        /// {
+        ///     { "return_documents", true },
+        ///     { "top_k", 10 },
+        ///     { "batch_size", 32 },
+        ///     { "sort", true }
+        /// };
+        ///
+        /// SemanticRerankResult results = await container.SemanticRerankAsync(
+        ///     reranking_context,
+        ///     documents,
+        ///     options);
+        ///
+        /// // results.RerankScores[0] will contain the best result for the query
+        /// ]]>
+        /// </code>
+        /// </example>
         public abstract Task<SemanticRerankResult> SemanticRerankAsync(
             string rerankContext,
             IEnumerable<string> documents,
