@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 string token = await this.tokenCredentialCache.GetTokenAsync(trace);
 
-                string inferenceToken = InferenceTokenPrefix + token;
+                string inferenceToken = $"{InferenceTokenPrefix}{token}";
                 headersCollection.Add(HttpConstants.HttpHeaders.Authorization, inferenceToken);
             }
         }
