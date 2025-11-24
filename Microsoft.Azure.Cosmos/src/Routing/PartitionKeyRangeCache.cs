@@ -213,10 +213,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                     lastStatusCode = response.StatusCode;
                     changeFeedNextIfNoneMatch = response.Headers[HttpConstants.HttpHeaders.ETag];
 
-                    DefaultTrace.TraceInformation("PartitionKeyRangeCache GetRoutingMapForCollectionAsync collectionRid: {0}, StatusCode: {1}, SubstatusCode {2}, ChangeFeedNextIfNoneMatch ETag: {3}, RegionsContacted {4}", 
+                    DefaultTrace.TraceInformation("PartitionKeyRangeCache GetRoutingMapForCollectionAsync collectionRid: {0}, StatusCode: {1}, SubstatusCode {2}, request Etag {3}, response ETag: {4}, RegionsContacted {5}", 
                         collectionRid,
                         lastStatusCode,
                         response.GetSubStatusCodes(),
+                        headers[HttpConstants.HttpHeaders.IfNoneMatch],
                         changeFeedNextIfNoneMatch,
                         response.RequestStats.RegionsContacted != null
                             ? string.Join(", ", response.RequestStats.RegionsContacted)
