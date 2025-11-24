@@ -93,6 +93,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (exception is CosmosException cosmosException)
             {
+                DefaultTrace.TraceInformation("MetadataRequestThrottleRetryPolicy: Evaluating retry for CosmosException with StatusCode: {0}, SubStatusCode: {1}.", cosmosException.StatusCode, cosmosException.SubStatusCode);
                 return this.ShouldRetryInternalAsync(
                     cosmosException.StatusCode, 
                     (SubStatusCodes)cosmosException.SubStatusCode,
@@ -102,6 +103,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (exception is DocumentClientException clientException)
             {
+                DefaultTrace.TraceInformation("MetadataRequestThrottleRetryPolicy: Evaluating retry for DocumentClientException with StatusCode: {0}, SubStatusCode: {1}.", clientException.StatusCode, clientException.GetSubStatus());
                 return this.ShouldRetryInternalAsync(
                     clientException.StatusCode,
                     clientException.GetSubStatus(),
@@ -193,7 +195,7 @@ namespace Microsoft.Azure.Cosmos
 
             Uri metadataLocationEndpoint = this.globalEndpointManager.ResolveServiceEndpoint(request);
 
-            DefaultTrace.TraceInformation("MetadataRequestThrottleRetryPolicy: Routing the metadata request to: {0} for operation type: {1} and resource type: {2}.", metadataLocationEndpoint, request.OperationType, request.ResourceType);
+            DefaultTrace.TraceInformation("MetadataRequestThrottleRetryPolicy: Routing the metadata request to: {0} for operation type: {1} and resource type: {2} for collection: {3} with collection rid {4}.", metadataLocationEndpoint, request.OperationType, request.ResourceType, request.CollectionName, request.ResourceId);
             request.RequestContext.RouteToLocation(metadataLocationEndpoint);
         }
 
