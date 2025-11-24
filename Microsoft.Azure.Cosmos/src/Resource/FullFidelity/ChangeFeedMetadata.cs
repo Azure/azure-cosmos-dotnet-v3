@@ -28,12 +28,12 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         [System.Text.Json.Serialization.JsonIgnore]
         [Newtonsoft.Json.JsonIgnore]
-        public DateTime? ConflictResolutionTimestamp => this.ConflictResolutionTimestampInSeconds.HasValue ? UnixEpoch.AddSeconds(this.ConflictResolutionTimestampInSeconds.Value) : null;
+        public DateTime ConflictResolutionTimestamp => UnixEpoch.AddSeconds(this.ConflictResolutionTimestampInSeconds);
 
         [System.Text.Json.Serialization.JsonInclude]
         [System.Text.Json.Serialization.JsonPropertyName(ChangeFeedMetadataFields.ConflictResolutionTimestamp)]
-        [JsonProperty(PropertyName = ChangeFeedMetadataFields.ConflictResolutionTimestamp)]
-        internal double? ConflictResolutionTimestampInSeconds { get; set; }
+        [JsonProperty(PropertyName = ChangeFeedMetadataFields.ConflictResolutionTimestamp, Required = Required.Always)]
+        internal double ConflictResolutionTimestampInSeconds { get; set; }
 
         /// <summary>
         /// The current change's logical sequence number.
