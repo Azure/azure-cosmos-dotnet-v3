@@ -1685,7 +1685,10 @@ namespace Microsoft.Azure.Cosmos
         /// This method uses a semantic reranker to score and reorder the provided documents
         /// based on their relevance to the given reranking context.
         /// 
-        /// The sematic reranking requests will not use the regular request flow and not use the default SDK retry policies.
+        /// The sematic reranking requests will not use the regular request flow and have it's own client. This will not use the default SDK retry policies.
+        /// 
+        /// To use this feature, you must set up a Semantic Reranker resource in Azure and provide the endpoint and key via the environment variable: "AZURE_COSMOS_SEMANTIC_RERANKER_INFERENCE_ENDPOINT"
+        /// By default the Semantic Reranking will have a default max connection limit of 50, to change this set the enviroment variable "AZURE_COSMOS_SEMANTIC_RERANKER_INFERENCE_SERVICE_MAX_CONNECTION_LIMIT" to the desired value before creating the CosmosClient.
         /// </summary>
         /// <param name="rerankContext"> The context (ex: query string) to use for reranking the documents.</param>
         /// <param name="documents"> A list of documents to be reranked</param>

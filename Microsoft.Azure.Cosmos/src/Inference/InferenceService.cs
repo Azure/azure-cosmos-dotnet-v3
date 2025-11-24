@@ -33,8 +33,9 @@ namespace Microsoft.Azure.Cosmos
         private readonly int inferenceServiceMaxConnectionLimit;
         private readonly string inferenceServiceBaseUrl;
         private readonly Uri inferenceEndpoint;
-        private readonly HttpClient httpClient;
-        private readonly AuthorizationTokenProvider cosmosAuthorization;
+
+        private HttpClient httpClient;
+        private AuthorizationTokenProvider cosmosAuthorization;
 
         private bool disposedValue;
 
@@ -76,6 +77,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // Set up token credential for authorization.
+            // This is done to ensure the correct scope, which is different than the scope of the client, is used for the inference service.
             AuthorizationTokenProviderTokenCredential defaultOperationTokenProvider = client.DocumentClient.cosmosAuthorization as AuthorizationTokenProviderTokenCredential;
             TokenCredential tokenCredential = defaultOperationTokenProvider.tokenCredential;
 
@@ -188,6 +190,8 @@ namespace Microsoft.Azure.Cosmos
                 {
                     this.httpClient.Dispose();
                     this.cosmosAuthorization.Dispose();
+                    this.httpClient = null;
+                    this.cosmosAuthorization = null;
                 }
 
                 this.disposedValue = true;
