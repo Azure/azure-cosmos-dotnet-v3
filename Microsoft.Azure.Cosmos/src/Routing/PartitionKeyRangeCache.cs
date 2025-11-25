@@ -217,9 +217,9 @@ namespace Microsoft.Azure.Cosmos.Routing
                         collectionRid,
                         lastStatusCode,
                         response.GetSubStatusCodes(),
-                        headers[HttpConstants.HttpHeaders.IfNoneMatch],
+                        headers.GetHeaderValue<string>(HttpConstants.HttpHeaders.IfNoneMatch),
                         changeFeedNextIfNoneMatch,
-                        response.RequestStats.RegionsContacted != null
+                        response.RequestStats?.RegionsContacted != null
                             ? string.Join(", ", response.RequestStats.RegionsContacted)
                             : string.Empty);
 
