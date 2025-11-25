@@ -267,12 +267,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 if (isPreferredLocationsEmpty)
                 {
                     Assert.IsTrue(traceDiagnostic.ToString()
-                        .Contains($"\"Hedge Context\":[\"{region1}\",\"{region2}\",\"{region3}\"]"));
+                        .Contains($"\"Hedge Context\":[\"{region1}\",\"{region2}\",\"{region3}\"]"),
+                            $"{traceDiagnostic} does not contain expected regions \"{region1}\", \"{region2}\", \"{region3}\"");
                 }
                 else
                 {
                     Assert.IsTrue(traceDiagnostic.ToString()
-                        .Contains($"\"Hedge Context\":[\"{region1}\",\"{region2}\"]"));
+                        .Contains($"\"Hedge Context\":[\"{region1}\",\"{region2}\"]"), 
+                            $"{traceDiagnostic} does not contain expected regions \"{region1}\", \"{region2}\"");
                 }
             }
             ;
@@ -727,6 +729,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         await changeFeedProcessor.StartAsync();
                         await Task.Delay(1000);
 
+                        rule.Enable();
+                        
                         CosmosIntegrationTestObject testObject = new CosmosIntegrationTestObject
                         {
                             Id = "item4",
@@ -734,8 +738,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             Other = Guid.NewGuid().ToString()
                         };
                         await container.UpsertItemAsync<CosmosIntegrationTestObject>(testObject);
-
-                        rule.Enable();
 
                         await Task.Delay(15000);
 
