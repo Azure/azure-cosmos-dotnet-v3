@@ -267,12 +267,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 if (isPreferredLocationsEmpty)
                 {
                     Assert.IsTrue(traceDiagnostic.ToString()
-                        .Contains($"\"Hedge Context\":[\"{region1}\",\"{region2}\",\"{region3}\"]"));
+                        .Contains($"\"Hedge Context\":[\"{region1}\",\"{region2}\",\"{region3}\"]"),
+                            $"{traceDiagnostic} does not contain expected regions \"{region1}\", \"{region2}\", \"{region3}\"");
                 }
                 else
                 {
                     Assert.IsTrue(traceDiagnostic.ToString()
-                        .Contains($"\"Hedge Context\":[\"{region1}\",\"{region2}\"]"));
+                        .Contains($"\"Hedge Context\":[\"{region1}\",\"{region2}\"]"), 
+                            $"{traceDiagnostic} does not contain expected regions \"{region1}\", \"{region2}\"");
                 }
             }
             ;
