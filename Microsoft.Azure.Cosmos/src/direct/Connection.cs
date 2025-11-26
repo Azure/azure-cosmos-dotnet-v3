@@ -71,6 +71,10 @@ namespace Microsoft.Azure.Documents.Rntbd
         // Used only for integration tests
         private readonly RemoteCertificateValidationCallback remoteCertificateValidationCallback;
 
+#if NET6_0_OR_GREATER
+        private readonly SslClientAuthenticationOptions sslClientAuthenticationOptions;
+#endif
+
         private bool disposed = false;
 
         private TcpClient tcpClient;
@@ -121,6 +125,9 @@ namespace Microsoft.Azure.Documents.Rntbd
             TimeSpan idleTimeout,
             MemoryStreamPool memoryStreamPool,
             RemoteCertificateValidationCallback remoteCertificateValidationCallback,
+#if NET6_0_OR_GREATER
+            SslClientAuthenticationOptions sslClientAuthenticationOptions,
+#endif
             Func<string, Task<IPAddress>> dnsResolutionFunction)
         {
             Debug.Assert(serverUri.PathAndQuery.Equals("/", StringComparison.Ordinal), serverUri.AbsoluteUri,
@@ -149,6 +156,10 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             this.memoryStreamPool = memoryStreamPool;
             this.remoteCertificateValidationCallback = remoteCertificateValidationCallback;
+
+#if NET6_0_OR_GREATER
+            this.sslClientAuthenticationOptions = sslClientAuthenticationOptions;
+#endif
 
             this.healthChecker = new (
                 sendDelayLimit: sendHangDetectionTime,
@@ -641,9 +652,22 @@ namespace Microsoft.Azure.Documents.Rntbd
                     TransportErrorCode.SslNegotiationTimeout);
                 this.UpdateLastSendAttemptTime();
 
+#if NET6_0_OR_GREATER
+                if (this.sslClientAuthenticationOptions != null)
+                {
+                    this.sslClientAuthenticationOptions.TargetHost = host;
+                    await sslStream.AuthenticateAsClientAsync(this.sslClientAuthenticationOptions);
+                }
+                else
+                {
+                    await sslStream.AuthenticateAsClientAsync(host, clientCertificates: null,
+                        enabledSslProtocols: Connection.TlsProtocols, checkCertificateRevocation: false);
+                }
+
+#else
                 await sslStream.AuthenticateAsClientAsync(host, clientCertificates: null,
                     enabledSslProtocols: Connection.TlsProtocols, checkCertificateRevocation: false);
-
+#endif
                 this.UpdateLastSendTime();
                 this.UpdateLastReceiveTime();
                 args.OpenTimeline.RecordSslHandshakeFinishTime();

@@ -83,6 +83,9 @@ namespace Microsoft.Azure.Documents.Rntbd
             bool enableChannelMultiplexing,
             MemoryStreamPool memoryStreamPool,
             RemoteCertificateValidationCallback remoteCertificateValidationCallback,
+#if NET6_0_OR_GREATER
+            SslClientAuthenticationOptions sslClientAuthenticationOptions,
+#endif
             Func<string, Task<IPAddress>> dnsResolutionFunction,
             IChaosInterceptor chaosInterceptor)
         {
@@ -92,6 +95,9 @@ namespace Microsoft.Azure.Documents.Rntbd
                 idleTimeout,
                 memoryStreamPool,
                 remoteCertificateValidationCallback,
+#if NET6_0_OR_GREATER
+                sslClientAuthenticationOptions,
+#endif
                 dnsResolutionFunction);
             this.userAgent = userAgent;
             this.connectionStateListener = connectionStateListener;

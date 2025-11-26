@@ -22,6 +22,9 @@ namespace Microsoft.Azure.Documents.Rntbd
             RntbdConstants.CallerId callerId, bool enableChannelMultiplexing,
             MemoryStreamPool memoryStreamPool,
             RemoteCertificateValidationCallback remoteCertificateValidationCallback,
+#if NET6_0_OR_GREATER
+            SslClientAuthenticationOptions sslClientAuthenticationOptions,
+#endif
             Func<string, Task<IPAddress>> dnsResolutionFunction)
         {
             Debug.Assert(userAgent != null);
@@ -56,6 +59,9 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.MaxConcurrentOpeningConnectionCount = maxConcurrentOpeningConnectionCount;
             this.MemoryStreamPool = memoryStreamPool;
             this.RemoteCertificateValidationCallback = remoteCertificateValidationCallback;
+#if NET6_0_OR_GREATER
+            this.SslClientAuthenticationOptions = sslClientAuthenticationOptions;
+#endif
             this.DnsResolutionFunction = dnsResolutionFunction;
         }
 
@@ -106,6 +112,10 @@ namespace Microsoft.Azure.Documents.Rntbd
         public MemoryStreamPool MemoryStreamPool { get; private set; }
 
         public RemoteCertificateValidationCallback RemoteCertificateValidationCallback { get; private set; }
+
+#if NET6_0_OR_GREATER
+        public SslClientAuthenticationOptions SslClientAuthenticationOptions { get; private set; }
+#endif
 
         public Func<string, Task<System.Net.IPAddress>> DnsResolutionFunction { get; private set; }
     }

@@ -6,10 +6,12 @@
     using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using System.Net.Security;
     using System.Reflection;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Moq.Protected;
@@ -19,6 +21,7 @@
     {
         private ContainerInternal Container = null;
         private const string PartitionKey = "/pk";
+        private SslClientAuthenticationOptions sslOptions = null;
 
         [TestInitialize]
         public async Task TestInitialize()
@@ -71,6 +74,9 @@
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions
             {
                 HttpClientFactory = () => new HttpClient(httpClientHandlerHelper),
+                StoreClientFactory = new StoreClientFactory(Protocol.Tcp,
+                requestTimeoutInSeconds: 10,
+                maxConcurrentConnectionOpenRequests: 10),
             };
 
             CosmosClient cosmosClient = await CosmosClient.CreateAndInitializeAsync(endpoint, authKey, containers, cosmosClientOptions);

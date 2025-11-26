@@ -52,6 +52,9 @@ namespace Microsoft.Azure.Documents
             int rntbdMaxConcurrentOpeningConnectionCount = ushort.MaxValue, // Optional for Rntbd
             MemoryStreamPool memoryStreamPool = null,
             RemoteCertificateValidationCallback remoteCertificateValidationCallback = null,
+#if NET6_0_OR_GREATER
+            SslClientAuthenticationOptions sslClientAuthenticationOptions = null,
+#endif
             Func<string, Task<System.Net.IPAddress>> dnsResolutionFunction = null,  // optional override
             DistributedTracingOptions distributedTracingOptions = null, // Distributed Tracing Configuration
             IChaosInterceptor chaosInterceptor = null) // Fault Injection
@@ -221,6 +224,9 @@ namespace Microsoft.Azure.Documents
                         MaxConcurrentOpeningConnectionCount = rntbdMaxConcurrentOpeningConnectionCount,
                         MemoryStreamPool = memoryStreamPool,
                         RemoteCertificateValidationCallback = remoteCertificateValidationCallback,
+#if NET6_0_OR_GREATER
+                        SslClientAuthenticationOptions = sslClientAuthenticationOptions,
+#endif
                         DnsResolutionFunction = dnsResolutionFunction,
                         DistributedTracingOptions = distributedTracingOptions
                     },
@@ -249,6 +255,9 @@ namespace Microsoft.Azure.Documents
                         MaxConcurrentOpeningConnectionCount = rntbdMaxConcurrentOpeningConnectionCount,
                         MemoryStreamPool = memoryStreamPool,
                         RemoteCertificateValidationCallback = remoteCertificateValidationCallback,
+#if NET6_0_OR_GREATER
+                        SslClientAuthenticationOptions = sslClientAuthenticationOptions,
+#endif
                         DnsResolutionFunction = dnsResolutionFunction,
                         DistributedTracingOptions = distributedTracingOptions
                     },

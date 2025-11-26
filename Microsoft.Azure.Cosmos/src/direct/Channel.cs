@@ -54,6 +54,9 @@ namespace Microsoft.Azure.Documents.Rntbd
                 channelProperties.EnableChannelMultiplexing,
                 channelProperties.MemoryStreamPool,
                 channelProperties.RemoteCertificateValidationCallback,
+#if NET6_0_OR_GREATER
+                channelProperties.SslClientAuthenticationOptions,
+#endif
                 channelProperties.DnsResolutionFunction,
                 chaosInterceptor);
             this.timerPool = channelProperties.RequestTimerPool;
