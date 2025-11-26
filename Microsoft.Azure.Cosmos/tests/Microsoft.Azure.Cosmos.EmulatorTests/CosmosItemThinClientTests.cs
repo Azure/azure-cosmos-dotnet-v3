@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Text.Json;
     using System.Text.Json.Serialization;
     using System.Threading.Tasks;
+    using global::Azure;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -115,6 +116,76 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [TestCategory("ThinClient")]
+        public async Task RegionalDatabaseAccountNameIsEmptyInPayload()
+        {
+            byte[] capturedPayload = null;
+            Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
+            this.connectionString = Environment.GetEnvironmentVariable("COSMOSDB_THINCLIENT");
+
+            // Initialize the serializer locally
+            JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = null,
+                PropertyNameCaseInsensitive = true,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            };
+            CosmosSystemTextJsonSerializer serializer = new CosmosSystemTextJsonSerializer(jsonSerializerOptions);
+
+            CosmosClientBuilder builder = new CosmosClientBuilder(this.connectionString)
+                .WithConnectionModeGateway()
+                .WithCustomSerializer(serializer)
+                .WithSendingRequestEventArgs(async (sender, e) =>
+                {
+                    if (e.HttpRequest.Version == new Version(2, 0))
+                    {
+                        if (e.HttpRequest.Content != null)
+                        {
+                            capturedPayload = await e.HttpRequest.Content.ReadAsByteArrayAsync();
+                        }
+                    }
+                });
+
+            using CosmosClient client = builder.Build();
+            string uniqueDbName = "TestRegional_" + Guid.NewGuid().ToString();
+            Database database = await client.CreateDatabaseIfNotExistsAsync(uniqueDbName);
+            string uniqueContainerName = "TestRegionalContainer_" + Guid.NewGuid().ToString();
+            Container container = await database.CreateContainerIfNotExistsAsync(uniqueContainerName, "/pk");
+
+            string pk = "pk_regional";
+            TestObject testItem = this.GenerateItems(pk).First();
+
+            // Act
+            ItemResponse<TestObject> response = await container.CreateItemAsync(testItem, new PartitionKey(testItem.Pk));
+            Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+
+            // Assert
+            Assert.IsNotNull(capturedPayload, "The request payload was not captured.");
+
+
+            // The RNTBD protocol serializes an empty string as a token with a length of 0.
+            // For `regionalDatabaseAccountName`, which is a SmallString (type 0x02), this is
+            // serialized as two bytes: 0x02 (type) and 0x00 (length).
+            // This byte pair represents an empty string value in RNTBD’s small-string encoding.
+            byte[] emptyStringToken = { 0x02, 0x00 };
+
+            bool foundEmptyStringToken = false;
+            for (int i = 0; i <= capturedPayload.Length - emptyStringToken.Length; i++)
+            {
+                if (capturedPayload[i] == emptyStringToken[0] && capturedPayload[i + 1] == emptyStringToken[1])
+                {
+                    foundEmptyStringToken = true;
+                    break;
+                }
+            }
+
+            Assert.IsTrue(foundEmptyStringToken, "The RNTBD payload should contain a token representing an empty string for the regional account name.");
+
+            // Cleanup
+            await database.DeleteAsync();
+        }
+
+        [TestMethod]
+        [TestCategory("ThinClient")]
         public async Task HttpRequestVersionIsTwoPointZeroWhenUsingThinClientMode()
         {
             Version expectedGatewayVersion = new(1, 1);
@@ -173,12 +244,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task CreateItemsTestWithThinClientFlagEnabledAndAccountDisabled()
         {
             Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
-            string connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTI_REGION", string.Empty);
-
-            if (string.IsNullOrEmpty(connectionString))
-            {
-                Assert.Fail("Set environment variable COSMOSDB_MULTI_REGION to run the tests");
-            }
+            string authKey = Utils.ConfigurationManager.AppSettings["MasterKey"];
+            string endpoint = Utils.ConfigurationManager.AppSettings["GatewayEndpoint"];
+            AzureKeyCredential masterKeyCredential = new AzureKeyCredential(authKey);
 
             JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
             {
@@ -189,7 +257,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.cosmosSystemTextJsonSerializer = new MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer(jsonSerializerOptions);
 
             this.client = new CosmosClient(
-                  connectionString,
+                  endpoint,
+                  masterKeyCredential,
                   new CosmosClientOptions()
                   {
                       ConnectionMode = ConnectionMode.Gateway,
