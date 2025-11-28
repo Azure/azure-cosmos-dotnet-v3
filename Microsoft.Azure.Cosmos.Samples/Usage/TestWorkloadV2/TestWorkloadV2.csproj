@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <AssemblyName>TestWorkloadV2</AssemblyName>
     <RootNamespace>TestWorkloadV2</RootNamespace>
     <LangVersion>latest</LangVersion>
@@ -21,6 +21,7 @@
 	<PackageReference Include="MongoDB.Driver" Version="*" />
 	<PackageReference Include="npgsql" Version="*" />
 	<PackageReference Include="Azure.Storage.Blobs" Version="*" />
+	<PackageReference Include="Azure.Identity" Version="*" />
   </ItemGroup>
   <ItemGroup>
     <None Include="AppSettings.json">

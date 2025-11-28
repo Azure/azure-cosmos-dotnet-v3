@@ -7,6 +7,8 @@
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Azure.Core;
+    using Azure.Identity;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Extensions.Configuration;
@@ -25,6 +27,7 @@
             public bool? AllowBulkExecution { get; set; }
             public bool? OmitContentInWriteResponse { get; set; }
             public string ApplicationRegion { get; set; }
+            public bool? UseEntraIdAuth { get; set; }
         }
 
         private Configuration configuration;
@@ -42,7 +45,7 @@
 
             string connectionString = configurationRoot.GetValue<string>(this.configuration.ConnectionStringRef);
 
-            this.client = this.GetClientInstance(connectionString);
+            this.client = this.GetClientInstance(connectionString, this.configuration.UseEntraIdAuth);
             this.configuration.ConnectionStringForLogging = this.client.Endpoint.ToString();
 
             this.container = this.client.GetDatabase(this.configuration.DatabaseName).GetContainer(this.configuration.ContainerName);
@@ -158,16 +161,23 @@
         }
 
 
-        private CosmosClient GetClientInstance(string connectionString)
+        private CosmosClient GetClientInstance(string connectionString, bool? useEntraIdAuth)
         {
-            return new CosmosClient(connectionString, new CosmosClientOptions()
+            CosmosClientOptions clientOptions = new()
             {
                 ConnectionMode = this.configuration.IsGatewayMode.HasValue && this.configuration.IsGatewayMode.Value ? ConnectionMode.Gateway : ConnectionMode.Direct,
                 AllowBulkExecution = this.configuration.AllowBulkExecution ?? false,
                 MaxRetryAttemptsOnRateLimitedRequests = 0,
                 PortReuseMode = PortReuseMode.ReuseUnicastPort,
                 ApplicationRegion = this.configuration.ApplicationRegion == string.Empty ? null : this.configuration.ApplicationRegion
-            });
+            };
+
+            if (useEntraIdAuth.HasValue && useEntraIdAuth.Value)
+            {
+                return new CosmosClient(connectionString, new DefaultAzureCredential(), clientOptions);
+            }
+
+            return new CosmosClient(connectionString, clientOptions);
         }
 
         private static async Task CleanupContainerAsync(Container container)
