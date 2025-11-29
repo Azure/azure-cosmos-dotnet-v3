@@ -15,6 +15,16 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.57.0-preview.0"/> [3.57.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.57.0-preview.0) - 2025-11-25
+#### Added
+- [5445](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5445) Semantic Rerank: Adds Semantic Rerank API
+
+### <a name="3.56.0"/> [3.56.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.56.0) - 2025-11-25
+
+#### Fixed
+
+- [5550](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5550) Owner not found: Fixes substatus code 1003 for item operations when container doesn't exist (Direct mode)
+
 ### <a name="3.56.0-preview.0"/> [3.56.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.56.0-preview.0) - 2025-11-14
 #### Fixed
 - [5260](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5260) HPK: Fixes Lengthaware normalized EPK comparators as default (only in preview)
