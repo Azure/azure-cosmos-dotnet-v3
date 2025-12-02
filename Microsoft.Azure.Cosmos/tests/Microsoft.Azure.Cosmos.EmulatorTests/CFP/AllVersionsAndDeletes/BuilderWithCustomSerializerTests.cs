@@ -529,6 +529,48 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
         }
 
         [TestMethod]
+        [Owner("trivediyash")]
+        [Description("Validates that ConflictResolutionTimestampInSeconds getter throws JsonException when value is zero.")]
+        public void ValidateConflictResolutionTimestampInSecondsGetterThrowsOnZeroTest()
+        {
+            ChangeFeedMetadata metadata = new()
+            {
+                Lsn = 374,
+                OperationType = ChangeFeedOperationType.Create
+            };
+
+            // Accessing the getter should throw JsonException when the value is zero (default)
+            System.Text.Json.JsonException exception = Assert.ThrowsException<System.Text.Json.JsonException>(() =>
+            {
+                double value = metadata.ConflictResolutionTimestampInSeconds;
+            });
+
+            Assert.IsTrue(exception.Message.Contains("crts"));
+            Assert.IsTrue(exception.Message.Contains("cannot be zero"));
+        }
+
+        [TestMethod]
+        [Owner("trivediyash")]
+        [Description("Validates that ConflictResolutionTimestampInSeconds setter throws JsonException when attempting to set zero.")]
+        public void ValidateConflictResolutionTimestampInSecondsSetterThrowsOnZeroTest()
+        {
+            ChangeFeedMetadata metadata = new()
+            {
+                Lsn = 374,
+                OperationType = ChangeFeedOperationType.Create
+            };
+
+            // Setting the value to zero should throw JsonException
+            System.Text.Json.JsonException exception = Assert.ThrowsException<System.Text.Json.JsonException>(() =>
+            {
+                metadata.ConflictResolutionTimestampInSeconds = 0;
+            });
+
+            Assert.IsTrue(exception.Message.Contains("crts"));
+            Assert.IsTrue(exception.Message.Contains("cannot be zero"));
+        }
+
+        [TestMethod]
         [Timeout(300000)]
         [TestCategory("LongRunning")]
         [Owner("philipthomas-MSFT")]
