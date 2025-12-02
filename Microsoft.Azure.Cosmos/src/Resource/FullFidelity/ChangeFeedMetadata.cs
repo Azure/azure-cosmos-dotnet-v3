@@ -38,7 +38,15 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = ChangeFeedMetadataFields.ConflictResolutionTimestamp, Required = Required.Always)]
         internal double ConflictResolutionTimestampInSeconds 
         { 
-            get => this.conflictResolutionTimestampInSeconds;
+            get
+            {
+                if (this.conflictResolutionTimestampInSeconds == 0)
+                {
+                    throw new System.Text.Json.JsonException(
+                        $"{ChangeFeedMetadataFields.ConflictResolutionTimestamp} not set.");
+                }
+                return this.conflictResolutionTimestampInSeconds;
+            }
             set
             {
                 if (value == 0)
