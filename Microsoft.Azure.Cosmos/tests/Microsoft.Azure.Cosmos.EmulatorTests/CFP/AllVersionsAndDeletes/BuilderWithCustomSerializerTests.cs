@@ -546,7 +546,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
             });
 
             Assert.IsTrue(exception.Message.Contains("crts"));
-            Assert.IsTrue(exception.Message.Contains("cannot be zero"));
+            Assert.IsTrue(exception.Message.Contains("not set"));
         }
 
         [TestMethod]
