@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos
         { 
             get
             {
-                if (this.conflictResolutionTimestampInSeconds == 0)
+                if (this.conflictResolutionTimestampInSeconds <= 0)
                 {
                     throw new System.Text.Json.JsonException(
                         $"{ChangeFeedMetadataFields.ConflictResolutionTimestamp} not set.");

@@ -530,7 +530,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
 
         [TestMethod]
         [Owner("trivediyash")]
-        [Description("Validates that ConflictResolutionTimestampInSeconds getter throws JsonException when value is zero.")]
+        [Description("Validates that ConflictResolutionTimestampInSeconds getter throws JsonException when value is zero or negative.")]
         public void ValidateConflictResolutionTimestampInSecondsGetterThrowsOnZeroTest()
         {
             ChangeFeedMetadata metadata = new()
@@ -547,6 +547,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
 
             Assert.IsTrue(exception.Message.Contains("crts"));
             Assert.IsTrue(exception.Message.Contains("not set"));
+
+            // Test with negative value - deserialize JSON with negative crts
+            string jsonWithNegativeCrts = @"{
+                ""lsn"": 374,
+                ""crts"": -100,
+                ""operationType"": ""Create""
+            }";
+
+            ChangeFeedMetadata metadataWithNegative = System.Text.Json.JsonSerializer.Deserialize<ChangeFeedMetadata>(jsonWithNegativeCrts);
+
+            // Accessing the getter should throw JsonException when the value is negative
+            System.Text.Json.JsonException negativeException = Assert.ThrowsException<System.Text.Json.JsonException>(() =>
+            {
+                double value = metadataWithNegative.ConflictResolutionTimestampInSeconds;
+            });
+
+            Assert.IsTrue(negativeException.Message.Contains("crts"));
+            Assert.IsTrue(negativeException.Message.Contains("not set"));
         }
 
         [TestMethod]
@@ -568,6 +586,45 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
 
             Assert.IsTrue(exception.Message.Contains("crts"));
             Assert.IsTrue(exception.Message.Contains("cannot be zero"));
+        }
+
+        [TestMethod]
+        [Owner("trivediyash")]
+        [Description("Validates that deserializing ChangeFeedMetadata without crts field throws JsonException when accessing ConflictResolutionTimestampInSeconds.")]
+        public void ValidateDeserializationWithoutCrtsFieldThrowsOnAccessTest()
+        {
+            // JSON without the "crts" field - this should deserialize but accessing ConflictResolutionTimestampInSeconds should throw
+            string jsonWithoutCrts = @"{
+                ""lsn"": 374,
+                ""operationType"": ""Create"",
+                ""previousImageLSN"": 0,
+                ""timeToLiveExpired"": false
+            }";
+
+            // Deserialize the JSON - this should succeed
+            ChangeFeedMetadata metadata = System.Text.Json.JsonSerializer.Deserialize<ChangeFeedMetadata>(jsonWithoutCrts);
+
+            Assert.IsNotNull(metadata);
+            Assert.AreEqual(expected: 374, actual: metadata.Lsn);
+            Assert.AreEqual(expected: ChangeFeedOperationType.Create, actual: metadata.OperationType);
+
+            // Accessing ConflictResolutionTimestampInSeconds should throw because the value is zero (not set)
+            System.Text.Json.JsonException exception = Assert.ThrowsException<System.Text.Json.JsonException>(() =>
+            {
+                double value = metadata.ConflictResolutionTimestampInSeconds;
+            });
+
+            Assert.IsTrue(exception.Message.Contains("crts"));
+            Assert.IsTrue(exception.Message.Contains("not set"));
+
+            // Accessing ConflictResolutionTimestamp should also throw since it uses ConflictResolutionTimestampInSeconds
+            System.Text.Json.JsonException timestampException = Assert.ThrowsException<System.Text.Json.JsonException>(() =>
+            {
+                DateTime timestamp = metadata.ConflictResolutionTimestamp;
+            });
+
+            Assert.IsTrue(timestampException.Message.Contains("crts"));
+            Assert.IsTrue(timestampException.Message.Contains("not set"));
         }
 
         [TestMethod]
