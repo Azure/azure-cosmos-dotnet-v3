@@ -705,7 +705,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
             Assert.AreEqual(expected: ChangeFeedOperationType.Create, actual: metadata.OperationType);
 
             // Accessing ConflictResolutionTimestampInSeconds should throw because the value is zero (not set)
-            // The getter checks for <= 0, so this covers both zero and negative values
             System.Text.Json.JsonException exception = Assert.ThrowsException<System.Text.Json.JsonException>(() =>
             {
                 double value = metadata.ConflictResolutionTimestampInSeconds;
