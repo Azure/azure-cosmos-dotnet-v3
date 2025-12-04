@@ -3960,7 +3960,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     ItemResponse<ToDoActivity> readResponse =
                         await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.pk));
-
+                    Console.WriteLine(readResponse.Diagnostics.ToString());
                     Assert.IsNotNull(readResponse);
                     Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
                     Assert.IsNotNull(readResponse.Resource);
@@ -4131,6 +4131,203 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, null);
             }
+        }
+
+        [TestMethod]
+        public async Task ItemPatchWithLongNumericStringPathTest()
+        {
+            // Create a test document with a flexible structure to hold dynamic properties
+            var testDocument = new
+            {
+                id = Guid.NewGuid().ToString(),
+                pk = "test-partition-key",
+                strings = new Dictionary<string, object>() 
+                { 
+                    { "6767676712345678901234567890", "test_value" },
+                    { "0a", "abc" }
+                },
+                lists = new List<string>() { "initial_value" },
+                description = "Test document for long numeric string paths"
+            };
+
+            // Create the document in the container
+            await this.Container.CreateItemAsync(testDocument, new Cosmos.PartitionKey(testDocument.pk));
+
+
+            System.Index i  = new System.Index(0);
+            Dictionary<string, object> initialStrings = testDocument.strings;
+            Console.WriteLine($"ElementAt :{initialStrings.ElementAt(i)}");
+            initialStrings.Add("12345678900987654321", "v");
+
+
+
+            ItemResponse<dynamic> readResponse1 = await this.Container.ReadItemAsync<dynamic>(
+                testDocument.id,
+                new Cosmos.PartitionKey(testDocument.pk));
+
+            Assert.AreEqual(HttpStatusCode.OK, readResponse1.StatusCode);
+            Assert.IsNotNull(readResponse1.Resource);
+
+            // Verify that the value was added to the strings object with the long numeric key
+            dynamic doc1 = readResponse1.Resource;
+            Newtonsoft.Json.Linq.JObject stringsObj1 = doc1.strings;
+            Console.WriteLine("!");
+            // The key should exist and have the correct value
+            foreach (JToken key in stringsObj1.Children())
+            {
+                Console.WriteLine(key.ToString());
+            }
+            Console.WriteLine("!");
+
+
+
+            Console.WriteLine("A-Start");
+            string longNumericString = "12345678901234567890"; 
+            string testValue = "test_value_for_long_numeric_key";
+
+            //what is max index value? 
+            //why do we accept it as a string before that and not after
+            List<PatchOperation> patchOperations = new List<PatchOperation>
+            {
+                PatchOperation.Add($"/strings/~1{longNumericString}", testValue),
+                PatchOperation.Add("/strings/0", "newval"),
+                PatchOperation.Add($"/lists/-", "second_value_in_list"),
+                PatchOperation.Add($"/lists/0", "third_value_in_list")
+            };
+
+            // Execute the patch operation 
+            ContainerInternal containerInternal = (ContainerInternal)this.Container;
+            ItemResponse<dynamic> response = await containerInternal.PatchItemAsync<dynamic>(
+                id: testDocument.id,
+                partitionKey: new Cosmos.PartitionKey(testDocument.pk),
+                patchOperations: patchOperations);
+
+            // Verify the patch operation succeeded
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.IsNotNull(response.Resource);
+
+            // Read the document back to verify the patch was applied correctly
+            ItemResponse<dynamic> readResponse = await this.Container.ReadItemAsync<dynamic>(
+                testDocument.id,
+                new Cosmos.PartitionKey(testDocument.pk));
+
+            Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
+            Assert.IsNotNull(readResponse.Resource);
+
+            // Verify that the value was added to the strings object with the long numeric key
+            dynamic doc = readResponse.Resource;
+            Newtonsoft.Json.Linq.JObject stringsObj = doc.strings;
+            Console.WriteLine("A-End\nKeys:");
+
+            // The key should exist and have the correct value
+            foreach (JToken key in stringsObj.Children())
+            {
+                Console.WriteLine(key.ToString());
+            }
+            Console.WriteLine("listtest");
+            foreach (JToken item in doc.lists.Children())
+            {
+                Console.WriteLine(item.ToString());
+            }
+            Console.WriteLine("\n\n\n\n\n");
+
+            Assert.IsTrue(stringsObj.ContainsKey($"/{longNumericString}"));
+            Assert.AreEqual(testValue, stringsObj[$"/{longNumericString}"].ToString());
+
+            Console.WriteLine("B-Start");
+            // Test with an even longer numeric string (30 characters)
+            string veryLongNumericString = "123456789012345678901234567890";
+            string testValue2 = "test_value_for_very_long_numeric_key";
+
+            patchOperations.Clear();
+            patchOperations.Add(PatchOperation.Add($"/strings/~0{veryLongNumericString}", testValue2));
+
+            response = await containerInternal.PatchItemAsync<dynamic>(
+                id: testDocument.id,
+                partitionKey: new Cosmos.PartitionKey(testDocument.pk),
+                patchOperations: patchOperations);
+
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+
+            // Verify the second patch operation as well
+            readResponse = await this.Container.ReadItemAsync<dynamic>(
+                testDocument.id,
+                new Cosmos.PartitionKey(testDocument.pk));
+
+            doc = readResponse.Resource;
+            stringsObj = doc.strings;
+            Console.WriteLine("B-End\nKeys:");
+            foreach (JToken key in stringsObj.Children())
+            {
+                Console.WriteLine(key.ToString());
+            }
+
+            Console.WriteLine("\n\n\n\n\n");
+
+            Console.WriteLine("C-Start");
+            // Test that shorter numeric strings still work (should not be affected by the fix)
+            string shortNumericString = "123456789"; // 9 characters
+            string testValue3 = "test_value_for_short_numeric_key";
+
+            patchOperations.Clear();
+            patchOperations.Add(PatchOperation.Add($"/strings/{shortNumericString}", testValue3));
+
+            response = await containerInternal.PatchItemAsync<dynamic>(
+                id: testDocument.id,
+                partitionKey: new Cosmos.PartitionKey(testDocument.pk),
+                patchOperations: patchOperations);
+
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+
+            // Verify that short numeric strings still work correctly
+            readResponse = await this.Container.ReadItemAsync<dynamic>(
+                testDocument.id,
+                new Cosmos.PartitionKey(testDocument.pk));
+
+            doc = readResponse.Resource;
+            stringsObj = doc.strings;
+            Console.WriteLine("C-End\nKeys:");
+            foreach (JToken key in stringsObj.Children())
+            {
+                Console.WriteLine(key.ToString());
+            }
+
+            Console.WriteLine("\n\n\n\n\n");
+
+            Assert.IsTrue(stringsObj.ContainsKey(shortNumericString));
+            Assert.AreEqual(testValue3, stringsObj[shortNumericString].ToString());
+            Console.WriteLine("D-Start");
+            // Test that mixed alphanumeric strings work (should not be affected)
+            string mixedString = "abc123456789012345678901234567890def";
+            string testValue4 = "test_value_for_mixed_key";
+
+            patchOperations.Clear();
+            patchOperations.Add(PatchOperation.Add($"/strings/{mixedString}", testValue4));
+
+            response = await containerInternal.PatchItemAsync<dynamic>(
+                id: testDocument.id,
+                partitionKey: new Cosmos.PartitionKey(testDocument.pk),
+                patchOperations: patchOperations);
+
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+
+            // Verify that short numeric strings still work correctly
+            readResponse = await this.Container.ReadItemAsync<dynamic>(
+                testDocument.id,
+                new Cosmos.PartitionKey(testDocument.pk));
+
+            doc = readResponse.Resource;
+            stringsObj = doc.strings;
+            Console.WriteLine("D-End\nKeys:");
+            foreach (JToken key in stringsObj.Children())
+            {
+                Console.WriteLine(key.ToString());
+            }
+
+            Console.WriteLine("\n\n\n\n\n");
+
+            Assert.IsTrue(stringsObj.ContainsKey(shortNumericString));
+            Assert.AreEqual(testValue3, stringsObj[shortNumericString].ToString());
         }
 
         private async Task<(CosmosClient client, Cosmos.Database db, Container container)> CreateTestResourcesAsync()
