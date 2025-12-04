@@ -2,23 +2,22 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 {
     using System.IO;
     using System.Text.Json;
+    using Microsoft.Azure.Cosmos.Services.Management.Tests;
     using Microsoft.Azure.Cosmos.Tests.Poco.STJ;
-    using Microsoft.Azure.Cosmos.Tests.Serializer;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>
-    /// Tests for the sample serializer that uses <see cref="Azure.Core.Serialization.JsonObjectSerializer"/>.
-    /// This serializer requires explicit typeof(T) in Serialize() calls to preserve polymorphic serialization.
+    /// Tests for the serializer that uses <see cref="SystemTextJsonSerializer"/>.
     /// </summary>
     [TestClass]
-    public sealed class SampleCosmosSystemTextJsonSerializerTest
+    public sealed class SystemTextJsonSerializerTests
     {
-        private SampleCosmosSystemTextJsonSerializer sampleSerializer;
+        private SystemTextJsonSerializer systemTextJsonSerializer;
 
         [TestInitialize]
         public void SetUp()
         {
-            this.sampleSerializer = new SampleCosmosSystemTextJsonSerializer(new JsonSerializerOptions());
+            this.systemTextJsonSerializer = new SystemTextJsonSerializer(new JsonSerializerOptions());
         }
 
         [TestMethod]
@@ -33,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             };
 
             // Act.
-            Stream serializedStream = this.sampleSerializer.ToStream(circle);
+            Stream serializedStream = this.systemTextJsonSerializer.ToStream(circle);
             using StreamReader reader = new(serializedStream);
             string json = reader.ReadToEnd();
 
@@ -58,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             };
 
             // Act.
-            Stream serializedStream = this.sampleSerializer.ToStream(rectangle);
+            Stream serializedStream = this.systemTextJsonSerializer.ToStream(rectangle);
             using StreamReader reader = new(serializedStream);
             string json = reader.ReadToEnd();
 
@@ -83,8 +82,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             };
 
             // Act.
-            Stream serializedStream = this.sampleSerializer.ToStream(original);
-            Shape deserialized = this.sampleSerializer.FromStream<Shape>(serializedStream);
+            Stream serializedStream = this.systemTextJsonSerializer.ToStream(original);
+            Shape deserialized = this.systemTextJsonSerializer.FromStream<Shape>(serializedStream);
 
             // Assert.
             Assert.IsNotNull(deserialized);

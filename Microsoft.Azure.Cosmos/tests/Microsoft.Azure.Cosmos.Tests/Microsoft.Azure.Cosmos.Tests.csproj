@@ -46,6 +46,7 @@
 
   <ItemGroup>
     <Compile Include="..\Microsoft.Azure.Cosmos.EmulatorTests\Utils\LocalEmulatorTokenCredential.cs" Link="Utils\LocalEmulatorTokenCredential.cs" />
+    <Compile Include="..\Microsoft.Azure.Cosmos.EmulatorTests\Linq\SystemTextJsonSerializer.cs" Link="Linq\SystemTextJsonSerializer.cs" />
   </ItemGroup>
 
   <ItemGroup>
