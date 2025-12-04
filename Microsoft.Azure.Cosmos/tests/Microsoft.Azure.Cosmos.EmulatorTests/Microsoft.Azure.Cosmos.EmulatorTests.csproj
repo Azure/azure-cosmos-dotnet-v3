@@ -3,7 +3,7 @@
     <IsTestProject>true</IsTestProject>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <Platform>AnyCPU</Platform>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <IsPackable>false</IsPackable>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <RootNamespace>Microsoft.Azure.Cosmos</RootNamespace>
@@ -11,7 +11,7 @@
     <IsEmulatorTest>true</IsEmulatorTest>
     <EmulatorFlavor>master</EmulatorFlavor>
     <DisableCopyEmulator>True</DisableCopyEmulator>
-	<LangVersion>$(LangVersion)</LangVersion>
+	<LangVersion>preview</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
