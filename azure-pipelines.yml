@@ -15,8 +15,8 @@ pr:
     - 'Microsoft.Azure.Cosmos/contracts/**/*'
 
 variables:
-  DebugArguments: ' --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=Ignore" --verbosity normal '
-  ReleaseArguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Ignore" --verbosity normal '
+  DebugArguments: ' --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional" --verbosity normal '
+  ReleaseArguments: ' --filter "TestCategory!=Quarantine" --verbosity normal '
   VmImage: windows-latest # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
 
 
