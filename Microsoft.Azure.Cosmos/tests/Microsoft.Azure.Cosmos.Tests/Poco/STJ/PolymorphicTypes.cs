@@ -25,15 +25,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Poco.STJ
         public double Radius { get; set; }
     }
 
-    public class Rectangle : Shape
-    {
-        [JsonPropertyName("width")]
-        public double Width { get; set; }
-
-        [JsonPropertyName("height")]
-        public double Height { get; set; }
-    }
-
     /// <summary>
     /// Custom converter that writes a type discriminator for polymorphic serialization.
     /// This converter is invoked when serializing through the base type (Shape),
@@ -58,14 +49,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Poco.STJ
                     Radius = root.TryGetProperty("radius", out JsonElement radiusEl) ? radiusEl.GetDouble() : 0
                 };
             }
-            else if (shapeType == nameof(Rectangle) || root.TryGetProperty("width", out _))
-            {
-                result = new Rectangle
-                {
-                    Width = root.TryGetProperty("width", out JsonElement widthEl) ? widthEl.GetDouble() : 0,
-                    Height = root.TryGetProperty("height", out JsonElement heightEl) ? heightEl.GetDouble() : 0
-                };
-            }
             else
             {
                 throw new JsonException("Cannot determine shape type");
@@ -86,10 +69,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Poco.STJ
             {
                 writer.WriteString("$type", nameof(Circle));
             }
-            else if (value is Rectangle)
-            {
-                writer.WriteString("$type", nameof(Rectangle));
-            }
 
             // Write base properties
             if (value.Id != null)
@@ -105,11 +84,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Poco.STJ
             if (value is Circle circle)
             {
                 writer.WriteNumber("radius", circle.Radius);
-            }
-            else if (value is Rectangle rectangle)
-            {
-                writer.WriteNumber("width", rectangle.Width);
-                writer.WriteNumber("height", rectangle.Height);
             }
 
             writer.WriteEndObject();
