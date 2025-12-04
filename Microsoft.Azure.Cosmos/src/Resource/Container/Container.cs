@@ -1679,6 +1679,91 @@ namespace Microsoft.Azure.Cosmos
             string processorName,
             ChangeFeedStreamHandlerWithManualCheckpoint onChangesDelegate);
 
+#if PREVIEW
+        /// <summary>
+        /// Rerank a list of documents using semantic reranking.
+        /// This method uses a semantic reranker to score and reorder the provided documents
+        /// based on their relevance to the given reranking context.
+        /// 
+        /// The sematic reranking requests will not use the regular request flow and have it's own client. This will not use the default SDK retry policies.
+        /// 
+        /// To use this feature, you must set up a Semantic Reranker resource in Azure and provide the endpoint and key via the environment variable: "AZURE_COSMOS_SEMANTIC_RERANKER_INFERENCE_ENDPOINT"
+        /// By default the Semantic Reranking will have a default max connection limit of 50, to change this set the enviroment variable "AZURE_COSMOS_SEMANTIC_RERANKER_INFERENCE_SERVICE_MAX_CONNECTION_LIMIT" to the desired value before creating the CosmosClient.
+        /// </summary>
+        /// <param name="rerankContext"> The context (ex: query string) to use for reranking the documents.</param>
+        /// <param name="documents"> A list of documents to be reranked</param>
+        /// <param name="options"> (Optional) The options for the semantic reranking request.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns> The reranking results, typically including the reranked documents and their scores. </returns>
+        /// /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// // Sample code to demonstrate Semantic Reranking
+        /// // Assume 'container' is an instance of Cosmos.Container
+        /// // This example queries items from a fitness store with full-text search and then reranks them semantically.
+        /// string search_text = "integrated pull-up bar";
+        ///
+        /// string queryString = $@"
+        ///     SELECT TOP 15 c.id, c.Name, c.Brand, c.Description
+        ///     FROM c
+        ///     WHERE FullTextContains(c.Description, ""{search_text}"")
+        ///     ORDER BY RANK FullTextScore(c.Description, ""{search_text}"")
+        ///     ";
+        ///
+        /// string reranking_context = "most economical with multiple pulley adjustmnets and ideal for home gyms";
+        ///
+        /// List<string> documents = new List<string>();
+        /// FeedIterator<dynamic> resultSetIterator = container.GetItemQueryIterator<dynamic>(
+        ///     new QueryDefinition(queryString),
+        ///     requestOptions: new QueryRequestOptions()
+        ///     {
+        ///         MaxItemCount = 15,
+        ///     });
+        ///
+        /// while (resultSetIterator.HasMoreResults)
+        /// {
+        ///     FeedResponse<dynamic> response = await resultSetIterator.ReadNextAsync();
+        ///     foreach (JsonElement item in response)
+        ///     {
+        ///         documents.Add(item.ToString());
+        ///     }
+        /// }
+        ///
+        /// Dictionary<string, dynamic> options = new Dictionary<string, dynamic>
+        /// {
+        ///     { "return_documents", true },
+        ///     { "top_k", 10 },
+        ///     { "batch_size", 32 },
+        ///     { "sort", true }
+        /// };
+        ///
+        /// SemanticRerankResult results = await container.SemanticRerankAsync(
+        ///     reranking_context,
+        ///     documents,
+        ///     options);
+        ///
+        /// // get the best resulting document from the query
+        /// results.RerankScores.First().Document;
+        /// // or the index of the document in the original list
+        /// results.RerankScores.First().Index;
+        /// // or the reranking score 
+        /// results.RerankScores.First().Score;
+        /// 
+        /// // get the latency information from the reranking operation
+        /// Dictonary<string, object. latencyInfo = results.Latency;
+        /// 
+        /// // get the token usage information from the reranking operation
+        /// Dictonary<string, object> tokenUseageInfo = results.TokenUseage;
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract Task<SemanticRerankResult> SemanticRerankAsync(
+            string rerankContext,
+            IEnumerable<string> documents,
+            IDictionary<string, object> options = null,
+            CancellationToken cancellationToken = default);
+#endif
+
         /// <summary>
         /// Deletes all items in the Container with the specified <see cref="PartitionKey"/> value.
         /// Starts an asynchronous Cosmos DB background operation which deletes all items in the Container with the specified value. 

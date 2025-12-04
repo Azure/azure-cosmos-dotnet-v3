@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Net;
     using Microsoft.Azure.Cosmos.Resource.FullFidelity;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
@@ -28,12 +29,34 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         [System.Text.Json.Serialization.JsonIgnore]
         [Newtonsoft.Json.JsonIgnore]
-        public DateTime? ConflictResolutionTimestamp => this.ConflictResolutionTimestampInSeconds.HasValue ? UnixEpoch.AddSeconds(this.ConflictResolutionTimestampInSeconds.Value) : null;
+        public DateTime ConflictResolutionTimestamp => UnixEpoch.AddSeconds(this.ConflictResolutionTimestampInSeconds);
+
+        private double conflictResolutionTimestampInSeconds;
 
         [System.Text.Json.Serialization.JsonInclude]
         [System.Text.Json.Serialization.JsonPropertyName(ChangeFeedMetadataFields.ConflictResolutionTimestamp)]
-        [JsonProperty(PropertyName = ChangeFeedMetadataFields.ConflictResolutionTimestamp)]
-        internal double? ConflictResolutionTimestampInSeconds { get; set; }
+        [JsonProperty(PropertyName = ChangeFeedMetadataFields.ConflictResolutionTimestamp, Required = Required.Always)]
+        internal double ConflictResolutionTimestampInSeconds 
+        { 
+            get
+            {
+                if (this.conflictResolutionTimestampInSeconds <= 0)
+                {
+                    throw new System.Text.Json.JsonException(
+                        $"{ChangeFeedMetadataFields.ConflictResolutionTimestamp} not set.");
+                }
+                return this.conflictResolutionTimestampInSeconds;
+            }
+            set
+            {
+                if (value == 0)
+                {
+                    throw new System.Text.Json.JsonException(
+                        $"{ChangeFeedMetadataFields.ConflictResolutionTimestamp} cannot be zero.");
+                }
+                this.conflictResolutionTimestampInSeconds = value;
+            }
+        }
 
         /// <summary>
         /// The current change's logical sequence number.
