@@ -243,7 +243,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ConnectionMode = ConnectionMode.Direct,
                 ApplicationPreferredRegions = isPreferredLocationsEmpty ? new List<string>() : new List<string>() { region1, region2 },
                 AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
-                        threshold: TimeSpan.FromMilliseconds(300),
+                        threshold: TimeSpan.FromMilliseconds(150),
                         thresholdStep: TimeSpan.FromMilliseconds(50)),
                 Serializer = this.cosmosSystemTextJsonSerializer
             };
