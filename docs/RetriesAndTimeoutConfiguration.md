@@ -16,7 +16,7 @@ There are three retries allowed
 ### Timeout config - Direct
 | OperationType      | Network Request Timeout | Connection Timeout |
 | -----------------  |:----------------------- |:------------------ |
-| All Tcp calls      | 5s                      | 5s                 |
+| All Tcp calls      | 6s                      | 6s                 |
 
 
 ### Retry config
@@ -42,3 +42,7 @@ With PPAF enabled, the SDK will also enable threshold-based availability strateg
 | -----------------  |-------------------------|------------------- |
 | Point-Read         | 6s, 6s, 10s             | 65s                |
 | Non-Point-Read     | 6s, 6s, 10s             | 65s                |
+
+### DocumentClient 
+Request timeout : 6s
+Change Feed Lease Expiration Interval = 60s
