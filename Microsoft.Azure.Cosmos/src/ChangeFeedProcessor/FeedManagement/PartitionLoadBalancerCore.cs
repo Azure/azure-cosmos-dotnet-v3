@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                             catch (Exception e)
                             {
                                 Extensions.TraceException(e);
-                                DefaultTrace.TraceError($"Failed to acquire lease: Id={lease.Id}, Owner={lease.Owner ?? "null"}, IsExpired={isExpiredLease}, Timestamp={lease.Timestamp}");
+                                DefaultTrace.TraceError($"Failed to acquire lease: Id={lease.Id}, Owner={lease.Owner ?? "null"}, Timestamp={lease.Timestamp}");
                             }
                         }
                     }
