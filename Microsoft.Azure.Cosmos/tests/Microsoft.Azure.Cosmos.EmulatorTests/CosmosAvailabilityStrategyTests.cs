@@ -214,7 +214,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
-                        .WithDelay(TimeSpan.FromMilliseconds(300))
+                        .WithDelay(TimeSpan.FromMilliseconds(200))
                         .Build())
                 .WithDuration(TimeSpan.FromMinutes(90))
                 .Build();
@@ -228,7 +228,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
-                        .WithDelay(TimeSpan.FromMilliseconds(3000))
+                        .WithDelay(TimeSpan.FromMilliseconds(5000))
                         .Build())
                 .WithDuration(TimeSpan.FromMinutes(90))
                 .Build();
@@ -243,7 +243,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ConnectionMode = ConnectionMode.Direct,
                 ApplicationPreferredRegions = isPreferredLocationsEmpty ? new List<string>() : new List<string>() { region1, region2 },
                 AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
-                        threshold: TimeSpan.FromMilliseconds(300),
+                        threshold: TimeSpan.FromMilliseconds(150),
                         thresholdStep: TimeSpan.FromMilliseconds(50)),
                 Serializer = this.cosmosSystemTextJsonSerializer
             };
