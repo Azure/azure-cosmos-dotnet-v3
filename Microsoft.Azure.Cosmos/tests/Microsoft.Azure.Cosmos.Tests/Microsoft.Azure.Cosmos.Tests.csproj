@@ -46,9 +46,11 @@
 
   <ItemGroup>
     <Compile Include="..\Microsoft.Azure.Cosmos.EmulatorTests\Utils\LocalEmulatorTokenCredential.cs" Link="Utils\LocalEmulatorTokenCredential.cs" />
+    <Compile Include="..\Microsoft.Azure.Cosmos.EmulatorTests\Linq\SystemTextJsonSerializer.cs" Link="Linq\SystemTextJsonSerializer.cs" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Azure.Core" Version="1.44.1" />
     <PackageReference Include="FluentAssertions" Version="5.10.3" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.1.1" />
     <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="6.7.1" />
