@@ -89,14 +89,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                             catch (Exception e)
                             {
                                 Extensions.TraceException(e);
-                                DefaultTrace.TraceError($"Failed to acquire lease: Id={lease.Id}, Owner={lease.Owner ?? "null"}, Timestamp={lease.Timestamp}");
+                                DefaultTrace.TraceError("Failed to acquire lease: Id={0}, Owner={1}, Timestamp={2}", lease.Id, lease.Owner, lease.Timestamp);
                             }
                         }
                     }
                     catch (Exception e)
                     {
                         Extensions.TraceException(e);
-                        DefaultTrace.TraceError($"Partition load balancer iteration failed - LeaseAcquireInterval: {this.leaseAcquireInterval}");
+                        DefaultTrace.TraceError("Partition load balancer iteration failed - LeaseAcquireInterval: {0}", this.leaseAcquireInterval);
                     }
 
                     await Task.Delay(this.leaseAcquireInterval, this.cancellationTokenSource.Token).ConfigureAwait(false);
