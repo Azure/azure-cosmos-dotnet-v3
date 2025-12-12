@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos
                                     case JsonValueKind.String:
                                         document = docElement.GetString();
                                         break;
-                                    case JsonValueKind.Null:
+                                    default:
                                         break;
                                 }
                             }
