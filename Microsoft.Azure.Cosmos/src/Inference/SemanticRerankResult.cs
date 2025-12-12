@@ -83,14 +83,17 @@ namespace Microsoft.Azure.Cosmos
                     {
                         foreach (JsonElement item in scoresElement.EnumerateArray())
                         {
-                            object document = null;
+                            string document = string.Empty;
                             if (item.TryGetProperty("document", out JsonElement docElement))
                             {
                                 // Try to deserialize as an object
                                 switch (docElement.ValueKind)
                                 {
                                     case JsonValueKind.Object:
-                                        document = JsonSerializer.Deserialize<Dictionary<string, object>>(docElement.GetRawText());
+                                        document = docElement.GetRawText();
+                                        break;
+                                    case JsonValueKind.String:
+                                        document = docElement.GetString();
                                         break;
                                     case JsonValueKind.Null:
                                         document = null;
