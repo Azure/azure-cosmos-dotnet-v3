@@ -1287,6 +1287,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             List<LinqTestInput> inputs = new List<LinqTestInput>
             {
+                //// Memory Span Conversion
+                //new LinqTestInput("Contains in constant list", b => getQuery(b).Select(doc => constantList.Contains(doc.StringField))),
+                //new LinqTestInput("Contains in constant array", b => getQuery(b).Select(doc => constantArray.Contains(doc.StringField))),
                 // Concat
                 new LinqTestInput("Concat 2", b => getQuery(b).Select(doc => string.Concat(doc.StringField, "str"))),
                 new LinqTestInput("Concat 3", b => getQuery(b).Select(doc => string.Concat(doc.StringField, "str1", "str2"))),
