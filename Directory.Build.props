@@ -1,6 +1,6 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<PropertyGroup>
-		<ClientOfficialVersion>3.56.0</ClientOfficialVersion>
+		<ClientOfficialVersion>3.56.1</ClientOfficialVersion>
 		<ClientPreviewVersion>3.57.0</ClientPreviewVersion>
 		<ClientPreviewSuffixVersion>preview.1</ClientPreviewSuffixVersion>
 		<DirectVersion>3.41.3</DirectVersion>
