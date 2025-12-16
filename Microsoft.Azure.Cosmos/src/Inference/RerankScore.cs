@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the document content or identifier that was reranked.
         /// </summary>
-        public object Document { get; }
+        public string Document { get; }
 
         /// <summary>
         /// Gets the score assigned to the document after reranking.
@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="document">The document content or identifier.</param>
         /// <param name="score">The reranked score for the document.</param>
         /// <param name="index">The original index of the document.</param>
-        public RerankScore(object document, double score, int index)
+        public RerankScore(string document, double score, int index)
         {
             this.Document = document;
             this.Score = score;
