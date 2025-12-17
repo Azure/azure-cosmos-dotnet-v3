@@ -155,8 +155,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             streamPayload = await EncryptionProcessor.EncryptAsync(
                 streamPayload,
                 this.Encryptor,
-                encryptionItemRequestOptions.EncryptionOptions,
-                requestOptions,
+                encryptionItemRequestOptions,
                 diagnosticsContext,
                 cancellationToken);
 
@@ -414,7 +413,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             streamPayload = await EncryptionProcessor.EncryptAsync(
                 streamPayload,
                 this.Encryptor,
-                encryptionItemRequestOptions.EncryptionOptions,
+                encryptionItemRequestOptions,
                 diagnosticsContext,
                 cancellationToken);
 
@@ -548,7 +547,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             streamPayload = await EncryptionProcessor.EncryptAsync(
                 streamPayload,
                 this.Encryptor,
-                encryptionItemRequestOptions.EncryptionOptions,
+                encryptionItemRequestOptions,
                 diagnosticsContext,
                 cancellationToken);
 
@@ -1005,6 +1004,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return this.container.IsFeedRangePartOfAsync(
                 x,
                 y,
+                cancellationToken);
+        }
+#endif
+
+#if PREVIEW && SDKPROJECTREF
+        public override Task<SemanticRerankResult> SemanticRerankAsync(
+            string rerankContext,
+            IEnumerable<string> documents,
+            IDictionary<string, object> options = null,
+            CancellationToken cancellationToken = default)
+        {
+            return this.container.SemanticRerankAsync(
+                rerankContext,
+                documents,
+                options,
                 cancellationToken);
         }
 #endif

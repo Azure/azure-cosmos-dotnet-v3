@@ -897,7 +897,14 @@ namespace Microsoft.Azure.Cosmos
                                                       ResourceType.Document,
                                                       HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout,
                                                       clientSideRequestStatistics,
-                                                      CancellationToken.None);
+                                                      CancellationToken.None,
+                                                      documentServiceRequest: new DocumentServiceRequest(
+                                                                                OperationType.Read,
+                                                                                ResourceType.Document,
+                                                                                $"dbs/dummy_db_id/colls/dummy_ct_id",
+                                                                                body: null,
+                                                                                AuthorizationTokenType.PrimaryMasterKey,
+                                                                                headers: null));
 
                 Assert.AreEqual(clientSideRequestStatistics.HttpResponseStatisticsList.Count, 2);
                 // The duration is calculated using date times which can cause the duration to be slightly off. This allows for up to 15 Ms of variance.

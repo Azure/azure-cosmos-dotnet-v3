@@ -39,7 +39,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                ""crts"": 1722511591,
                ""operationType"": ""delete"",
                ""timeToLiveExpired"": true,
-               ""previousImageLSN"": 16
+               ""previousImageLSN"": 16,
+               ""id"": ""1"",
+               ""partitionKey"": {
+                ""pk"": ""1""
+               }
               },
               ""previous"": {
                ""id"": ""1"",
@@ -92,6 +96,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                 Assert.IsTrue(deletedChange.Metadata.IsTimeToLiveExpired);
                 Assert.IsNotNull(deletedChange.Previous);
                 Assert.AreEqual(expected: "Testing TTL on CFP.", actual: deletedChange.Previous.description);
+                Assert.AreEqual(expected: "1", actual: deletedChange.Metadata.Id.ToString());
+                Assert.AreEqual(expected: "1", actual: deletedChange.Metadata.PartitionKey.Values.FirstOrDefault().ToString());
                 Assert.AreEqual(expected: "1", actual: deletedChange.Previous.id);
                 Assert.AreEqual(expected: 5, actual: deletedChange.Previous.ttl);
             }
@@ -216,7 +222,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                ""lsn"": 376,
                ""operationType"": ""delete"",
                ""previousImageLSN"": 375,
-               ""timeToLiveExpired"": false
+               ""timeToLiveExpired"": false,
+               ""id"": ""1"",
+               ""partitionKey"": {
+                ""pk"": ""1""
+               }
               },
               ""previous"": {
                ""id"": ""1"",
@@ -295,8 +305,170 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                 Assert.IsFalse(deletedChange.Metadata.IsTimeToLiveExpired);
                 Assert.IsNotNull(deletedChange.Previous);
                 Assert.AreEqual(expected: "test after replace", actual: deletedChange.Previous.description);
+                Assert.AreEqual(expected: "1", actual: deletedChange.Metadata.Id.ToString());
+                Assert.AreEqual(expected: "1", actual: deletedChange.Metadata.PartitionKey.Values.FirstOrDefault().ToString());
                 Assert.AreEqual(expected: "1", actual: deletedChange.Previous.id);
                 Assert.AreEqual(expected: 0, actual: deletedChange.Previous.ttl);
+            }
+        }
+
+        [TestMethod]
+        [Owner("trivediyash")]
+        [Description("Validating to deserization using NSJ and STJ of ChangeFeedItem with HPK (Hierarchical Partition Key) with Create, Replace, and Delete payload.")]
+        [DataRow(true)]
+        [DataRow(false)]
+        public void ValidateNSJAndSTJSerializationOfChangeFeedItemWithHPKTest(bool propertyNameCaseInsensitive)
+        {
+            string json = @"[
+             {
+              ""current"": {
+               ""id"": ""1"",
+               ""pk1"": ""value1"",
+               ""pk2"": ""value2"",
+               ""pk3"": ""value3"",
+               ""description"": ""original test with HPK"",
+               ""_rid"": ""HpxDAL+dzLQBAAAAAAAAAA=="",
+               ""_self"": ""dbs/HpxDAA==/colls/HpxDAL+dzLQ=/docs/HpxDAL+dzLQBAAAAAAAAAA==/"",
+               ""_etag"": ""\""00000000-0000-0000-e384-28095c1a01da\"""",
+               ""_attachments"": ""attachments/"",
+               ""_ts"": 1722455970
+              },
+              ""metadata"": {
+               ""crts"": 1722455970,
+               ""lsn"": 374,
+               ""operationType"": ""create"",
+               ""previousImageLSN"": 0,
+               ""timeToLiveExpired"": false
+              }
+             },
+             {
+              ""current"": {
+               ""id"": ""1"",
+               ""pk1"": ""value1"",
+               ""pk2"": ""value2"",
+               ""pk3"": ""value3"",
+               ""description"": ""test after replace with HPK"",
+               ""_rid"": ""HpxDAL+dzLQBAAAAAAAAAA=="",
+               ""_self"": ""dbs/HpxDAA==/colls/HpxDAL+dzLQ=/docs/HpxDAL+dzLQBAAAAAAAAAA==/"",
+               ""_etag"": ""\""00000000-0000-0000-e384-28a5abdd01da\"""",
+               ""_attachments"": ""attachments/"",
+               ""_ts"": 1722455971
+              },
+              ""metadata"": {
+               ""crts"": 1722455971,
+               ""lsn"": 375,
+               ""operationType"": ""replace"",
+               ""previousImageLSN"": 374,
+               ""timeToLiveExpired"": false
+              }
+             },
+             {
+              ""current"": {},
+              ""metadata"": {
+               ""crts"": 1722455972,
+               ""lsn"": 376,
+               ""operationType"": ""delete"",
+               ""previousImageLSN"": 375,
+               ""timeToLiveExpired"": false,
+               ""id"": ""1"",
+               ""partitionKey"": {
+                ""pk1"": ""value1"",
+                ""pk2"": ""value2"",
+                ""pk3"": ""value3""
+               }
+              },
+              ""previous"": {
+               ""id"": ""1"",
+               ""pk1"": ""value1"",
+               ""pk2"": ""value2"",
+               ""pk3"": ""value3"",
+               ""description"": ""test after replace with HPK"",
+               ""_rid"": ""HpxDAL+dzLQBAAAAAAAAAA=="",
+               ""_self"": ""dbs/HpxDAA==/colls/HpxDAL+dzLQ=/docs/HpxDAL+dzLQBAAAAAAAAAA==/"",
+               ""_etag"": ""\""00000000-0000-0000-e384-28a5abdd01da\"""",
+               ""_attachments"": ""attachments/"",
+               ""_ts"": 1722455971
+              }
+             }
+            ]";
+
+            ValidateSystemTextJsonDeserialization(json, propertyNameCaseInsensitive);
+            ValidateNewtonsoftJsonDeserialization(json);
+
+            static void ValidateNewtonsoftJsonDeserialization(string json)
+            {
+                ValidateDeserialization(JsonConvert.DeserializeObject<List<ChangeFeedItem<ToDoActivityWithHPK>>>(json));
+            }
+
+            static void ValidateSystemTextJsonDeserialization(string json, bool propertyNameCaseInsensitive)
+            {
+                ValidateDeserialization(System.Text.Json.JsonSerializer.Deserialize<List<ChangeFeedItem<ToDoActivityWithHPK>>>(
+                    json: json,
+                    options: new JsonSerializerOptions()
+                    {
+                        PropertyNameCaseInsensitive = propertyNameCaseInsensitive
+                    }));
+            }
+
+            static void ValidateDeserialization(List<ChangeFeedItem<ToDoActivityWithHPK>> activities)
+            {
+                Assert.IsNotNull(activities);
+
+                ChangeFeedItem<ToDoActivityWithHPK> createdUpdate = activities.ElementAt(0);
+                Assert.IsNotNull(createdUpdate);
+                Assert.IsNotNull(createdUpdate.Current);
+                Assert.AreEqual(expected: "original test with HPK", actual: createdUpdate.Current.description);
+                Assert.AreEqual(expected: "1", actual: createdUpdate.Current.id);
+                Assert.AreEqual(expected: "value1", actual: createdUpdate.Current.pk1);
+                Assert.AreEqual(expected: "value2", actual: createdUpdate.Current.pk2);
+                Assert.AreEqual(expected: "value3", actual: createdUpdate.Current.pk3);
+                Assert.IsNotNull(createdUpdate.Metadata);
+                Assert.AreEqual(expected: DateTime.Parse("7/31/2024 7:59:30 PM"), actual: createdUpdate.Metadata.ConflictResolutionTimestamp);
+                Assert.AreEqual(expected: 374, actual: createdUpdate.Metadata.Lsn);
+                Assert.AreEqual(expected: ChangeFeedOperationType.Create, actual: createdUpdate.Metadata.OperationType);
+                Assert.AreEqual(expected: 0, actual: createdUpdate.Metadata.PreviousLsn);
+                Assert.IsFalse(createdUpdate.Metadata.IsTimeToLiveExpired);
+                Assert.IsNull(createdUpdate.Previous); // No Previous for a Create change.
+
+                ChangeFeedItem<ToDoActivityWithHPK> replacedChange = activities.ElementAt(1);
+                Assert.IsNotNull(replacedChange);
+                Assert.IsNotNull(replacedChange.Current);
+                Assert.AreEqual(expected: "test after replace with HPK", actual: replacedChange.Current.description);
+                Assert.AreEqual(expected: "1", actual: replacedChange.Current.id);
+                Assert.AreEqual(expected: "value1", actual: replacedChange.Current.pk1);
+                Assert.AreEqual(expected: "value2", actual: replacedChange.Current.pk2);
+                Assert.AreEqual(expected: "value3", actual: replacedChange.Current.pk3);
+                Assert.IsNotNull(replacedChange.Metadata);
+                Assert.AreEqual(expected: DateTime.Parse("7/31/2024 7:59:31 PM"), actual: replacedChange.Metadata.ConflictResolutionTimestamp);
+                Assert.AreEqual(expected: 375, actual: replacedChange.Metadata.Lsn);
+                Assert.AreEqual(expected: ChangeFeedOperationType.Replace, actual: replacedChange.Metadata.OperationType);
+                Assert.AreEqual(expected: 374, actual: replacedChange.Metadata.PreviousLsn);
+                Assert.IsFalse(replacedChange.Metadata.IsTimeToLiveExpired);
+                Assert.IsNull(replacedChange.Previous); // No Previous for a Replace change.
+
+                ChangeFeedItem<ToDoActivityWithHPK> deletedChange = activities.ElementAt(2);
+                Assert.IsNotNull(deletedChange);
+                Assert.IsNotNull(deletedChange.Current); // Current is not null, but no data.
+                Assert.AreEqual(expected: default, actual: deletedChange.Current.description); // No current description for Delete
+                Assert.AreEqual(expected: default, actual: deletedChange.Current.id); // No current id for Delete
+                Assert.IsNotNull(deletedChange.Metadata);
+                Assert.AreEqual(expected: DateTime.Parse("7/31/2024 7:59:32 PM"), actual: deletedChange.Metadata.ConflictResolutionTimestamp);
+                Assert.AreEqual(expected: 376, actual: deletedChange.Metadata.Lsn);
+                Assert.AreEqual(expected: ChangeFeedOperationType.Delete, actual: deletedChange.Metadata.OperationType);
+                Assert.AreEqual(expected: 375, actual: deletedChange.Metadata.PreviousLsn);
+                Assert.IsFalse(deletedChange.Metadata.IsTimeToLiveExpired);
+                Assert.IsNotNull(deletedChange.Previous);
+                Assert.AreEqual(expected: "test after replace with HPK", actual: deletedChange.Previous.description);
+                Assert.AreEqual(expected: "1", actual: deletedChange.Metadata.Id.ToString());
+                Assert.IsNotNull(deletedChange.Metadata.PartitionKey);
+                Assert.AreEqual(expected: 3, actual: deletedChange.Metadata.PartitionKey.Count);
+                Assert.AreEqual(expected: "value1", actual: deletedChange.Metadata.PartitionKey["pk1"].ToString());
+                Assert.AreEqual(expected: "value2", actual: deletedChange.Metadata.PartitionKey["pk2"].ToString());
+                Assert.AreEqual(expected: "value3", actual: deletedChange.Metadata.PartitionKey["pk3"].ToString());
+                Assert.AreEqual(expected: "1", actual: deletedChange.Previous.id);
+                Assert.AreEqual(expected: "value1", actual: deletedChange.Previous.pk1);
+                Assert.AreEqual(expected: "value2", actual: deletedChange.Previous.pk2);
+                Assert.AreEqual(expected: "value3", actual: deletedChange.Previous.pk3);
             }
         }
 
@@ -313,18 +485,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                 Lsn = 374,
                 OperationType = ChangeFeedOperationType.Create,
                 IsTimeToLiveExpired = true,
-                ConflictResolutionTimestamp = DateTime.Parse("7/31/2024 7:59:30 PM")
+                ConflictResolutionTimestampInSeconds = 1722455970
             };
 
             string json = System.Text.Json.JsonSerializer.Serialize<ChangeFeedMetadata>(
                 value: metadata,
                 options: new JsonSerializerOptions
                 {
-                    PropertyNameCaseInsensitive = propertyNameCaseInsensitive
+                    PropertyNameCaseInsensitive = propertyNameCaseInsensitive,
+                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
                 });
 
             Assert.AreEqual(
-                expected: @"{""crts"":1722455970,""timeToLiveExpired"":true,""lsn"":374,""operationType"":""Create"",""previousImageLSN"":15}",
+                expected: @"{""crts"":1722455970,""lsn"":374,""operationType"":""Create"",""previousImageLSN"":15,""timeToLiveExpired"":true}",
                 actual: json);
         }
 
@@ -339,19 +512,119 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
             {
                 Lsn = 374,
                 OperationType = ChangeFeedOperationType.Create,
-                ConflictResolutionTimestamp = DateTime.Parse("7/31/2024 7:59:30 PM")
+                ConflictResolutionTimestampInSeconds = 1722455970
             };
 
             string json = System.Text.Json.JsonSerializer.Serialize<ChangeFeedMetadata>(
                 value: metadata,
                 options: new JsonSerializerOptions
                 {
-                    PropertyNameCaseInsensitive = propertyNameCaseInsensitive
+                    PropertyNameCaseInsensitive = propertyNameCaseInsensitive,
+                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
                 });
 
             Assert.AreEqual(
-                expected: @"{""crts"":1722455970,""timeToLiveExpired"":false,""lsn"":374,""operationType"":""Create"",""previousImageLSN"":0}",
+                expected: @"{""crts"":1722455970,""lsn"":374,""operationType"":""Create"",""previousImageLSN"":0,""timeToLiveExpired"":false}",
                 actual: json);
+        }
+
+        [TestMethod]
+        [Owner("trivediyash")]
+        [Description("Validates that ConflictResolutionTimestampInSeconds getter throws JsonException when value is zero or negative.")]
+        public void ValidateConflictResolutionTimestampInSecondsGetterThrowsOnZeroTest()
+        {
+            ChangeFeedMetadata metadata = new()
+            {
+                Lsn = 374,
+                OperationType = ChangeFeedOperationType.Create
+            };
+
+            // Accessing the getter should throw JsonException when the value is zero (default)
+            System.Text.Json.JsonException exception = Assert.ThrowsException<System.Text.Json.JsonException>(() =>
+            {
+                double value = metadata.ConflictResolutionTimestampInSeconds;
+            });
+
+            Assert.IsTrue(exception.Message.Contains("crts"));
+            Assert.IsTrue(exception.Message.Contains("not set"));
+
+            // Test with negative value - deserialize JSON with negative crts
+            string jsonWithNegativeCrts = @"{
+                ""lsn"": 374,
+                ""crts"": -100,
+                ""operationType"": ""Create""
+            }";
+
+            ChangeFeedMetadata metadataWithNegative = System.Text.Json.JsonSerializer.Deserialize<ChangeFeedMetadata>(jsonWithNegativeCrts);
+
+            // Accessing the getter should throw JsonException when the value is negative
+            System.Text.Json.JsonException negativeException = Assert.ThrowsException<System.Text.Json.JsonException>(() =>
+            {
+                double value = metadataWithNegative.ConflictResolutionTimestampInSeconds;
+            });
+
+            Assert.IsTrue(negativeException.Message.Contains("crts"));
+            Assert.IsTrue(negativeException.Message.Contains("not set"));
+        }
+
+        [TestMethod]
+        [Owner("trivediyash")]
+        [Description("Validates that ConflictResolutionTimestampInSeconds setter throws JsonException when attempting to set zero.")]
+        public void ValidateConflictResolutionTimestampInSecondsSetterThrowsOnZeroTest()
+        {
+            ChangeFeedMetadata metadata = new()
+            {
+                Lsn = 374,
+                OperationType = ChangeFeedOperationType.Create
+            };
+
+            // Setting the value to zero should throw JsonException
+            System.Text.Json.JsonException exception = Assert.ThrowsException<System.Text.Json.JsonException>(() =>
+            {
+                metadata.ConflictResolutionTimestampInSeconds = 0;
+            });
+
+            Assert.IsTrue(exception.Message.Contains("crts"));
+            Assert.IsTrue(exception.Message.Contains("cannot be zero"));
+        }
+
+        [TestMethod]
+        [Owner("trivediyash")]
+        [Description("Validates that deserializing ChangeFeedMetadata without crts field throws JsonException when accessing ConflictResolutionTimestampInSeconds.")]
+        public void ValidateDeserializationWithoutCrtsFieldThrowsOnAccessTest()
+        {
+            // JSON without the "crts" field - this should deserialize but accessing ConflictResolutionTimestampInSeconds should throw
+            string jsonWithoutCrts = @"{
+                ""lsn"": 374,
+                ""operationType"": ""Create"",
+                ""previousImageLSN"": 0,
+                ""timeToLiveExpired"": false
+            }";
+
+            // Deserialize the JSON - this should succeed
+            ChangeFeedMetadata metadata = System.Text.Json.JsonSerializer.Deserialize<ChangeFeedMetadata>(jsonWithoutCrts);
+
+            Assert.IsNotNull(metadata);
+            Assert.AreEqual(expected: 374, actual: metadata.Lsn);
+            Assert.AreEqual(expected: ChangeFeedOperationType.Create, actual: metadata.OperationType);
+
+            // Accessing ConflictResolutionTimestampInSeconds should throw because the value is zero (not set)
+            System.Text.Json.JsonException exception = Assert.ThrowsException<System.Text.Json.JsonException>(() =>
+            {
+                double value = metadata.ConflictResolutionTimestampInSeconds;
+            });
+
+            Assert.IsTrue(exception.Message.Contains("crts"));
+            Assert.IsTrue(exception.Message.Contains("not set"));
+
+            // Accessing ConflictResolutionTimestamp should also throw since it uses ConflictResolutionTimestampInSeconds
+            System.Text.Json.JsonException timestampException = Assert.ThrowsException<System.Text.Json.JsonException>(() =>
+            {
+                DateTime timestamp = metadata.ConflictResolutionTimestamp;
+            });
+
+            Assert.IsTrue(timestampException.Message.Contains("crts"));
+            Assert.IsTrue(timestampException.Message.Contains("not set"));
         }
 
         [TestMethod]
@@ -376,7 +649,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
             Container leaseContainer = await database.CreateContainerIfNotExistsAsync(containerProperties: new ContainerProperties(id: "leases", partitionKeyPath: "/id"));
             ContainerInternal monitoredContainer = await this.CreateMonitoredContainer(ChangeFeedMode.AllVersionsAndDeletes, database);
             Exception exception = default;
-            int ttlInSeconds = 5;
+            int ttlInSeconds = 1;
             Stopwatch stopwatch = new();
             ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
 
@@ -401,6 +674,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                             Assert.IsTrue(DateTime.TryParse(s: change.Metadata.ConflictResolutionTimestamp.ToString(), out _), message: "Invalid csrt must be a datetime value.");
                             Assert.IsTrue(change.Metadata.Lsn > 0, message: "Invalid lsn must be a long value.");
                             Assert.IsFalse(change.Metadata.IsTimeToLiveExpired);
+                            Assert.IsNull(change.Metadata.Id);
+                            Assert.IsNull(change.Metadata.PartitionKey);
 
                             // previous
                             Assert.IsNull(change.Previous);
@@ -414,12 +689,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                             Assert.IsTrue(DateTime.TryParse(s: change.Metadata.ConflictResolutionTimestamp.ToString(), out _), message: "Invalid csrt must be a datetime value.");
                             Assert.IsTrue(change.Metadata.Lsn > 0, message: "Invalid lsn must be a long value.");
                             Assert.IsTrue(change.Metadata.IsTimeToLiveExpired);
+                            Assert.AreEqual(expected: "1", actual: change.Metadata.Id.ToString());
+                            Assert.AreEqual(expected: "1", actual: change.Metadata.PartitionKey.Values.FirstOrDefault());
 
                             // previous
-                            Assert.AreEqual(expected: "1", actual: change.Previous.id.ToString());
-                            Assert.AreEqual(expected: "1", actual: change.Previous.pk.ToString());
-                            Assert.AreEqual(expected: "Testing TTL on CFP.", actual: change.Previous.description.ToString());
-                            Assert.AreEqual(expected: ttlInSeconds, actual: change.Previous.ttl);
+                            Assert.IsNull(change.Previous);
 
                             // stop after reading delete since it is the last document in feed.
                             stopwatch.Stop();
@@ -482,21 +756,48 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
         }
 
         [TestMethod]
+        [TestCategory("ChangeFeed")]
         [Owner("philipthomas-MSFT")]
         [Description("Scenario: When a document is created, then updated, and finally deleted, there should be 3 changes that will appear for that " +
-            "document when using ChangeFeedProcessor with AllVersionsAndDeletes set as the ChangeFeedMode.")]
+            "document when using ChangeFeedProcessor with AllVersionsAndDeletes set as the ChangeFeedMode. This test runs against the Cosmos DB Emulator" +
+            " which has enablePreviousImageForDeleteInFFCF set to true.")]
         [DataRow(true)]
         [DataRow(false)]
-        public async Task WhenADocumentIsCreatedThenUpdatedThenDeletedTestsAsync(bool propertyNameCaseInsensitive)
+        public async Task WhenADocumentIsCreatedThenUpdatedThenDeletedTestsAsyncEmulator(bool propertyNameCaseInsensitive)
         {
-            CosmosClient cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) =>
-                cosmosClientBuilder.WithSystemTextJsonSerializerOptions(
-                    new JsonSerializerOptions()
-                    {
-                        PropertyNameCaseInsensitive = propertyNameCaseInsensitive
-                    }),
-                    useCustomSeralizer: false);
+            await this.WhenADocumentIsCreatedThenUpdatedThenDeletedTestsAsync(propertyNameCaseInsensitive);
+        }
+        
+        [TestMethod]
+        [TestCategory("MultiMaster")]
+        [Owner("philipthomas-MSFT")]
+        [Description("Scenario: When a document is created, then updated, and finally deleted, there should be 3 changes that will appear for that " +
+            "document when using ChangeFeedProcessor with AllVersionsAndDeletes set as the ChangeFeedMode. This test runs against a live multi-region" +
+            " Cosmos DB account which has does not have enablePreviousImageForDeleteInFFCF set.")]
+        [DataRow(true)]
+        [DataRow(false)]
+        public async Task WhenADocumentIsCreatedThenUpdatedThenDeletedTestsAsyncLiveAccount(bool propertyNameCaseInsensitive)
+        {
+            await this.WhenADocumentIsCreatedThenUpdatedThenDeletedTestsAsync(propertyNameCaseInsensitive, true);
+        }
 
+        private async Task WhenADocumentIsCreatedThenUpdatedThenDeletedTestsAsync(bool propertyNameCaseInsensitive, bool isMultiMaster = false)
+        {
+            (string defaultEndpoint, string authKey) = TestCommon.GetAccountInfo();
+            string accountEndpoint = TestCommon.GetMultiRegionConnectionString();
+
+            CosmosClientOptions options = new CosmosClientOptions()
+            {
+                UseSystemTextJsonSerializerWithOptions = new JsonSerializerOptions()
+                {
+                    PropertyNameCaseInsensitive = propertyNameCaseInsensitive
+                }
+            };
+
+            CosmosClient cosmosClient = isMultiMaster 
+                        ? new CosmosClient(accountEndpoint, options) 
+                        : new CosmosClient(defaultEndpoint, authKey, options);
+    
             Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync(id: Guid.NewGuid().ToString());
             Container leaseContainer = await database.CreateContainerIfNotExistsAsync(containerProperties: new ContainerProperties(id: "leases", partitionKeyPath: "/id"));
             ContainerInternal monitoredContainer = await this.CreateMonitoredContainer(ChangeFeedMode.AllVersionsAndDeletes, database);
@@ -508,6 +809,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                 {
                     Logger.LogLine($"@ {DateTime.Now}, {nameof(docs)} -> {System.Text.Json.JsonSerializer.Serialize(docs)}");
 
+                    string metadataId = default;
+                    string metadataPk = default;
                     string id = default;
                     string pk = default;
                     string description = default;
@@ -522,14 +825,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                         }
                         else
                         {
-                            id = change.Previous.id.ToString();
-                            pk = change.Previous.pk.ToString();
-                            description = change.Previous.description.ToString();
+                            metadataId = change.Metadata.Id.ToString();
+                            metadataPk = change.Metadata.PartitionKey.Values.FirstOrDefault().ToString();
                         }
 
                         ChangeFeedOperationType operationType = change.Metadata.OperationType;
                         long previousLsn = change.Metadata.PreviousLsn;
-                        DateTime m = change.Metadata.ConflictResolutionTimestamp;
+                        DateTime? m = change.Metadata.ConflictResolutionTimestamp;
                         long lsn = change.Metadata.Lsn;
                         bool isTimeToLiveExpired = change.Metadata.IsTimeToLiveExpired;
                     }
@@ -564,10 +866,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                     Assert.IsNull(deleteChange.Current.id);
                     Assert.AreEqual(expected: deleteChange.Metadata.OperationType, actual: ChangeFeedOperationType.Delete);
                     Assert.AreEqual(expected: replaceChange.Metadata.Lsn, actual: deleteChange.Metadata.PreviousLsn);
-                    Assert.IsNotNull(deleteChange.Previous);
-                    Assert.AreEqual(expected: "1", actual: deleteChange.Previous.id.ToString());
-                    Assert.AreEqual(expected: "1", actual: deleteChange.Previous.pk.ToString());
-                    Assert.AreEqual(expected: "test after replace", actual: deleteChange.Previous.description.ToString());
+
+                    if (isMultiMaster)
+                    {
+                        Assert.IsNull(deleteChange.Previous);
+                    }
+                    else
+                    {
+                        Assert.IsNotNull(deleteChange.Previous);
+                        Assert.AreEqual(expected: "1", actual: deleteChange.Previous.id.ToString());
+                    }
+                    Assert.AreEqual(expected: "1", actual: deleteChange.Metadata.Id.ToString());
+                    Assert.AreEqual(expected: "1", actual: deleteChange.Metadata.PartitionKey.Values.FirstOrDefault().ToString());
 
                     Assert.IsTrue(condition: createChange.Metadata.ConflictResolutionTimestamp < replaceChange.Metadata.ConflictResolutionTimestamp, message: "The create operation must happen before the replace operation.");
                     Assert.IsTrue(condition: replaceChange.Metadata.ConflictResolutionTimestamp < deleteChange.Metadata.ConflictResolutionTimestamp, message: "The replace operation must happen before the delete operation.");
@@ -736,7 +1046,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
 
             if (changeFeedMode == ChangeFeedMode.AllVersionsAndDeletes)
             {
-                properties.ChangeFeedPolicy.FullFidelityRetention = TimeSpan.FromMinutes(5);
+                //properties.ChangeFeedPolicy.FullFidelityRetention = TimeSpan.FromMinutes(5);
                 properties.DefaultTimeToLive = -1;
             }
 
