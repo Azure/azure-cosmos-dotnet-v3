@@ -236,9 +236,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
 
             int newLength = (int)value;
+            int oldLength = this.length;
+
             if (newLength > this.capacity)
             {
                 this.EnsureCapacity(newLength);
+            }
+
+            // SECURITY FIX: Zero the newly exposed region when expanding length
+            // to prevent leaking pool garbage data
+            if (newLength > oldLength && this.clearOnReturn)
+            {
+                Array.Clear(this.buffer, oldLength, newLength - oldLength);
             }
 
             this.length = newLength;
@@ -265,6 +274,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 this.EnsureCapacity(newPosition);
             }
 
+            // SECURITY FIX: Zero any gap between current length and write position
+            // to prevent leaking pool garbage when writing beyond the current length
+            if (this.position > this.length && this.clearOnReturn)
+            {
+                Array.Clear(this.buffer, this.length, this.position - this.length);
+            }
+
             Buffer.BlockCopy(buffer, offset, this.buffer, this.position, count);
             this.position = newPosition;
             if (this.position > this.length)
@@ -288,6 +304,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             if (newPosition > this.capacity)
             {
                 this.EnsureCapacity(newPosition);
+            }
+
+            // SECURITY FIX: Zero any gap between current length and write position
+            // to prevent leaking pool garbage when writing beyond the current length
+            if (this.position > this.length && this.clearOnReturn)
+            {
+                Array.Clear(this.buffer, this.length, this.position - this.length);
             }
 
             buffer.CopyTo(this.buffer.AsSpan(this.position));
@@ -398,9 +421,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     // the buffer for reuse. If the pool releases the buffer instead, clearArray is ignored.
                     // By clearing explicitly here, we guarantee sensitive encryption data is zeroed regardless
                     // of ArrayPool's internal retention policy.
-                    if (this.clearOnReturn && this.length > 0)
+                    //
+                    // SECURITY FIX: Clear up to capacity (not length) to handle SetLength(0) scenario.
+                    // When SetLength(0) is called, this.length becomes 0, but sensitive data may still
+                    // exist in the buffer beyond position 0. We must clear the entire capacity to ensure
+                    // no sensitive data leaks back to the pool.
+                    if (this.clearOnReturn && this.capacity > 0)
                     {
-                        Array.Clear(this.buffer, 0, this.length);
+                        Array.Clear(this.buffer, 0, this.capacity);
                     }
 
                     ArrayPool<byte>.Shared.Return(this.buffer, this.clearOnReturn);
@@ -441,13 +469,29 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             byte[] newBuffer = ArrayPool<byte>.Shared.Rent(newCapacity);
 
+            // SECURITY FIX: Clear the new buffer to prevent exposing pool garbage.
+            // Rented buffers from ArrayPool may contain data from previous usage.
+            if (this.clearOnReturn)
+            {
+                Array.Clear(newBuffer, 0, newBuffer.Length);
+            }
+
             if (this.length > 0)
             {
                 Buffer.BlockCopy(this.buffer, 0, newBuffer, 0, this.length);
             }
 
+            // SECURITY FIX: Clear the entire old buffer (up to capacity, not just length)
+            // to ensure sensitive data beyond the current length is also cleared before
+            // returning to the pool. This handles the case where sensitive data exists
+            // beyond the current length due to SetLength shrinking.
             if (this.buffer.Length > 0)
             {
+                if (this.clearOnReturn)
+                {
+                    Array.Clear(this.buffer, 0, this.capacity);
+                }
+
                 ArrayPool<byte>.Shared.Return(this.buffer, this.clearOnReturn);
             }
 

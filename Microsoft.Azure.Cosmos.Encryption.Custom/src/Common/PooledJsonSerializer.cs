@@ -175,8 +175,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <summary>
         /// Serializes an object to a pooled byte array.
         /// Returns the rented array and the actual length written.
-        /// The array must be returned to ArrayPool.Shared by the caller.
         /// </summary>
+        /// <remarks>
+        /// <para><strong>CRITICAL - Caller Responsibility:</strong></para>
+        /// <para>
+        /// The returned byte array is rented from ArrayPool.Shared and MUST be returned by the caller
+        /// using ArrayPool&lt;byte&gt;.Shared.Return(buffer, clearArray: true) to prevent memory leaks.
+        /// Since this is an encryption library handling sensitive data, always use clearArray: true
+        /// when returning the buffer.
+        /// </para>
+        /// <para><strong>Exception Safety:</strong></para>
+        /// <para>
+        /// If this method throws an exception, all rented resources are automatically cleaned up.
+        /// The caller is only responsible for returning the buffer if the method succeeds.
+        /// </para>
+        /// </remarks>
         public static (byte[] Buffer, int Length) SerializeToPooledArray<T>(T value, JsonSerializerOptions options = null)
         {
             using RentArrayBufferWriter bufferWriter = new ();
@@ -190,9 +203,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             // Copy to a separate rented buffer since bufferWriter will be disposed
             byte[] result = ArrayPool<byte>.Shared.Rent(length);
-            Buffer.BlockCopy(buffer, 0, result, 0, length);
-
-            return (result, length);
+            try
+            {
+                Buffer.BlockCopy(buffer, 0, result, 0, length);
+                return (result, length);
+            }
+            catch
+            {
+                // Critical: Return the rented buffer to prevent memory leak if BlockCopy throws.
+                // Use clearArray: true for security since this is an encryption library handling sensitive data.
+                ArrayPool<byte>.Shared.Return(result, clearArray: true);
+                throw;
+            }
         }
     }
 }

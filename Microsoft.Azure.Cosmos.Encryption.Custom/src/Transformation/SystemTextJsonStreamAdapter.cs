@@ -23,8 +23,17 @@ internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
     public async Task<Stream> EncryptAsync(Stream input, Encryptor encryptor, EncryptionOptions options, CancellationToken cancellationToken)
     {
         PooledMemoryStream ms = new ();
-        await this.streamProcessor.EncryptStreamAsync(input, ms, encryptor, options, cancellationToken);
-        return ms;
+        try
+        {
+            await this.streamProcessor.EncryptStreamAsync(input, ms, encryptor, options, cancellationToken);
+            return ms;  // Ownership transfers successfully
+        }
+        catch
+        {
+            // CRITICAL: Dispose PooledMemoryStream on exception to prevent memory leak
+            await ms.DisposeAsync();
+            throw;  // Rethrow to preserve original exception
+        }
     }
 
     public Task EncryptAsync(Stream input, Stream output, Encryptor encryptor, EncryptionOptions options, JsonProcessor jsonProcessor, CancellationToken cancellationToken)
@@ -46,14 +55,23 @@ internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
         }
 
         PooledMemoryStream ms = new ();
-        DecryptionContext context = await this.streamProcessor.DecryptStreamAsync(input, ms, encryptor, properties, diagnosticsContext, cancellationToken);
-        if (context == null)
+        try
         {
-            await ms.DisposeAsync();
-            return (input, null);
-        }
+            DecryptionContext context = await this.streamProcessor.DecryptStreamAsync(input, ms, encryptor, properties, diagnosticsContext, cancellationToken);
+            if (context == null)
+            {
+                await ms.DisposeAsync();
+                return (input, null);
+            }
 
-        return (ms, context);
+            return (ms, context);  // Ownership transfers successfully
+        }
+        catch
+        {
+            // CRITICAL: Dispose PooledMemoryStream on exception to prevent memory leak
+            await ms.DisposeAsync();
+            throw;  // Rethrow to preserve original exception
+        }
     }
 
     public async Task<DecryptionContext> DecryptAsync(Stream input, Stream output, Encryptor encryptor, CosmosDiagnosticsContext diagnosticsContext, CancellationToken cancellationToken)
