@@ -24,7 +24,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
     [TestCategory("ChangeFeedProcessor")]
     public class BuilderWithCustomSerializerTests
     {
-        [TestMethod]
+        internal CosmosClient cosmosClient;
+        internal Database database;
+
+        [TestCleanup]
+        public async Task Cleanup()
+        {
+            try
+            {
+                if (this.database != null)
+                {
+                    await this.database.DeleteAsync();
+                }
+            }
+            catch (Exception)
+            {
+                // Ignore exceptions during cleanup
+            }
+            
+            this.cosmosClient?.Dispose();
+        }
+
+            [TestMethod]
         [Owner("philipthomas")]
         [Description("Validating to deserization of ChangeFeedItem with a Delete payload with TimeToLiveExpired set to true.")]
         [DataRow(true)]
@@ -794,13 +815,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                 }
             };
 
-            CosmosClient cosmosClient = isMultiMaster 
+            this.cosmosClient = isMultiMaster 
                         ? new CosmosClient(accountEndpoint, options) 
                         : new CosmosClient(defaultEndpoint, authKey, options);
     
-            Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync(id: Guid.NewGuid().ToString());
-            Container leaseContainer = await database.CreateContainerIfNotExistsAsync(containerProperties: new ContainerProperties(id: "leases", partitionKeyPath: "/id"));
-            ContainerInternal monitoredContainer = await this.CreateMonitoredContainer(ChangeFeedMode.AllVersionsAndDeletes, database);
+            this.database = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(id: Guid.NewGuid().ToString());
+            Container leaseContainer = await this.database.CreateContainerIfNotExistsAsync(containerProperties: new ContainerProperties(id: "leases", partitionKeyPath: "/id"));
+            ContainerInternal monitoredContainer = await this.CreateMonitoredContainer(ChangeFeedMode.AllVersionsAndDeletes, this.database);
             ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
             Exception exception = default;
 
@@ -919,12 +940,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                 Assert.Fail(exception.ToString());
             }
 
-            if (database != null)
+            if (this.database != null)
             {
-                await database.DeleteAsync();
+                await  this.database.DeleteAsync();
             }
-
-            cosmosClient?.Dispose();
         }
 
         private static async Task RevertLeaseDocumentsToLegacyWithNoMode(
