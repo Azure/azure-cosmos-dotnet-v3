@@ -159,6 +159,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                                 encryptPropertyName = null;
                                 encryptionPayloadWriter = null;
+                                bufferWriter?.Dispose();
                                 bufferWriter = null;
                             }
 
@@ -187,6 +188,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                                 encryptPropertyName = null;
                                 encryptionPayloadWriter = null;
+                                bufferWriter?.Dispose();
                                 bufferWriter = null;
                             }
 
