@@ -14,6 +14,32 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// A MemoryStream that uses ArrayPool for its underlying buffer to reduce GC pressure.
     /// The buffer is returned to the pool when the stream is disposed.
     /// </summary>
+    /// <remarks>
+    /// <para><strong>Thread Safety:</strong></para>
+    /// <para>
+    /// This class is NOT thread-safe. All operations must be synchronized externally if the stream
+    /// is accessed from multiple threads concurrently. Concurrent reads, writes, or property access
+    /// without synchronization will result in data corruption or exceptions.
+    /// </para>
+    /// <para><strong>Disposal Requirements:</strong></para>
+    /// <para>
+    /// CRITICAL: This stream MUST be disposed to return rented ArrayPool buffers. Failure to dispose
+    /// will leak pooled memory and eventually exhaust the ArrayPool. Always use try-finally or using
+    /// statements to ensure disposal, especially when exceptions may occur.
+    /// </para>
+    /// <para><strong>GetBuffer() Safety:</strong></para>
+    /// <para>
+    /// WARNING: GetBuffer() returns the internal ArrayPool buffer which may be larger than the stream
+    /// length and may be reused after disposal. The returned buffer becomes INVALID after Dispose() is
+    /// called. Never cache the buffer reference beyond the stream's lifetime. Always use the Length
+    /// property to determine the valid data range (0 to Length-1).
+    /// </para>
+    /// <para><strong>Performance Considerations:</strong></para>
+    /// <para>
+    /// The clearOnReturn parameter controls whether the buffer is zeroed when returned to the pool.
+    /// Set to false only when the buffer never contains sensitive data. Default is true for security.
+    /// </para>
+    /// </remarks>
     internal sealed class PooledMemoryStream : Stream
     {
         private const int MaxArrayLength = 0X7FFFFFC7; // From Array.MaxLength
@@ -231,12 +257,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             this.ValidateArguments(buffer, offset, count);
             this.EnsureNotDisposed();
 
-            int newPosition = this.position + count;
-            if (newPosition < 0)
+            long newPositionLong = (long)this.position + count;
+            if (newPositionLong > int.MaxValue)
             {
                 throw new IOException("Stream too long");
             }
 
+            int newPosition = (int)newPositionLong;
             if (newPosition > this.capacity)
             {
                 this.EnsureCapacity(newPosition);
@@ -255,12 +282,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             this.EnsureNotDisposed();
 
-            int newPosition = this.position + buffer.Length;
-            if (newPosition < 0)
+            long newPositionLong = (long)this.position + buffer.Length;
+            if (newPositionLong > int.MaxValue)
             {
                 throw new IOException("Stream too long");
             }
 
+            int newPosition = (int)newPositionLong;
             if (newPosition > this.capacity)
             {
                 this.EnsureCapacity(newPosition);

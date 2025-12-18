@@ -47,29 +47,43 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             RentArrayBufferWriter bufferWriter = null;
             bool firstTokenValidated = false;
 
-            while (!isFinalBlock)
+            try
             {
-                int dataLength = await inputStream.ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), cancellationToken);
-                int dataSize = dataLength + leftOver;
-                isFinalBlock = dataSize == 0;
-
-                long bytesConsumed = TransformEncryptBuffer(buffer.AsSpan(0, dataSize));
-
-                leftOver = dataSize - (int)bytesConsumed;
-
-                if (leftOver == dataSize)
+                while (!isFinalBlock)
                 {
-                    byte[] newBuffer = arrayPoolManager.Rent(buffer.Length * 2);
-                    buffer.AsSpan().CopyTo(newBuffer);
-                    buffer = newBuffer;
+                    int dataLength = await inputStream.ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), cancellationToken);
+                    int dataSize = dataLength + leftOver;
+                    isFinalBlock = dataSize == 0;
+
+                    long bytesConsumed = TransformEncryptBuffer(buffer.AsSpan(0, dataSize));
+
+                    leftOver = dataSize - (int)bytesConsumed;
+
+                    if (leftOver == dataSize)
+                    {
+                        byte[] newBuffer = arrayPoolManager.Rent(buffer.Length * 2);
+                        buffer.AsSpan().CopyTo(newBuffer);
+                        buffer = newBuffer;
+                    }
+                    else if (leftOver != 0)
+                    {
+                        buffer.AsSpan(dataSize - leftOver, leftOver).CopyTo(buffer);
+                    }
                 }
-                else if (leftOver != 0)
-                {
-                    buffer.AsSpan(dataSize - leftOver, leftOver).CopyTo(buffer);
-                }
+
+                await inputStream.DisposeAsync();
             }
+            finally
+            {
+                if (encryptionPayloadWriter != null)
+                {
+                    await encryptionPayloadWriter.DisposeAsync();
+                }
 
-            await inputStream.DisposeAsync();
+#pragma warning disable VSTHRD103 // Call async methods when in an async method
+                bufferWriter?.Dispose();
+#pragma warning restore VSTHRD103 // Call async methods when in an async method
+            }
 
             EncryptionProperties encryptionProperties = new (
                 encryptionFormatVersion: EncryptionFormatVersion.Mde,
@@ -144,11 +158,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                 writer.WriteBase64StringValue(encryptedBytes);
 
                                 encryptPropertyName = null;
-#pragma warning disable VSTHRD103 // Call async methods when in an async method - this method cannot be async, Utf8JsonReader is ref struct
-                                encryptionPayloadWriter.Dispose();
-#pragma warning restore VSTHRD103 // Call async methods when in an async method
                                 encryptionPayloadWriter = null;
-                                bufferWriter.Dispose();
                                 bufferWriter = null;
                             }
 
@@ -176,11 +186,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                 writer.WriteBase64StringValue(encryptedBytes);
 
                                 encryptPropertyName = null;
-#pragma warning disable VSTHRD103 // Call async methods when in an async method - this method cannot be async, Utf8JsonReader is ref struct
-                                encryptionPayloadWriter.Dispose();
-#pragma warning restore VSTHRD103 // Call async methods when in an async method
                                 encryptionPayloadWriter = null;
-                                bufferWriter.Dispose();
                                 bufferWriter = null;
                             }
 
