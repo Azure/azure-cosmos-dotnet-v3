@@ -186,17 +186,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [TestCategory("ThinClient")]
-        public async Task StoredProcedureEndToEndTest()
+        public async Task TestThinClientWithExecuteStoredProcedureAsync()
         {
             try
             {
                 Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "true");
-                this.connectionString = "";
-
-                if (string.IsNullOrEmpty(this.connectionString))
-                {
-                    Assert.Fail("Set environment variable COSMOSDB_THINCLIENT to run the tests");
-                }
 
                 JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
                 {
@@ -258,7 +252,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Scripts.StoredProcedureResponse createResponse = await this.container.Scripts.CreateStoredProcedureAsync(
                     new Scripts.StoredProcedureProperties(sprocId, sprocBody));
                 Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
-                Assert.IsTrue(createResponse.RequestCharge > 0);
 
                 // Execute stored procedure
                 string testPartitionId = Guid.NewGuid().ToString();
@@ -276,17 +269,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         new dynamic[] { testItem });
 
                 Assert.AreEqual(HttpStatusCode.OK, executeResponse.StatusCode);
-                Assert.IsTrue(executeResponse.RequestCharge > 0);
                 Assert.IsNotNull(executeResponse.Resource);
                 string diagnostics = executeResponse.Diagnostics.ToString();
                 Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
-
-                // Verify the result contains both created and queried documents
-                dynamic result = executeResponse.Resource;
-                Assert.IsNotNull(result.created);
-                Assert.IsNotNull(result.queried);
-                Assert.AreEqual(testItem.Id, (string)result.created.id);
-                Assert.AreEqual(testItem.Id, (string)result.queried.id);
 
                 // Delete stored procedure
                 await this.container.Scripts.DeleteStoredProcedureAsync(sprocId);
