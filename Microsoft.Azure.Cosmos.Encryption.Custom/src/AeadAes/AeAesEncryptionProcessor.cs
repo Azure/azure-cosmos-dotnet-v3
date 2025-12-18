@@ -45,7 +45,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             MemoryStream memoryStream = EncryptionProcessor.BaseSerializer.ToStream<JObject>(toEncryptJObj);
             Debug.Assert(memoryStream != null);
-            Debug.Assert(memoryStream.TryGetBuffer(out _));
             plainText = memoryStream.ToArray();
 
             cipherText = await encryptor.EncryptAsync(

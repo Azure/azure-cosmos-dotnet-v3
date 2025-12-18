@@ -37,9 +37,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// </remarks>
     internal static class PooledJsonSerializer
     {
+        /// <summary>
+        /// Default JSON serialization options with security hardening.
+        /// </summary>
+        /// <remarks>
+        /// MaxDepth is set to 64 to protect against Denial of Service (DoS) attacks from deeply nested JSON structures.
+        /// This prevents stack overflow and excessive memory consumption. See: https://github.com/advisories/GHSA-5crp-9r3c-p9vr
+        /// </remarks>
         private static readonly JsonSerializerOptions DefaultOptions = new ()
         {
             DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+            MaxDepth = 64,
         };
 
         /// <summary>
@@ -47,9 +55,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// </summary>
         public static PooledMemoryStream SerializeToPooledStream<T>(T value, JsonSerializerOptions options = null)
         {
+            // Always clear buffers for security - this is an encryption library handling sensitive data
             PooledMemoryStream stream = new (
                 capacity: PooledStreamConfiguration.StreamInitialCapacity,
-                clearOnReturn: PooledStreamConfiguration.ClearArraysOnReturn);
+                clearOnReturn: true);
 
             try
             {

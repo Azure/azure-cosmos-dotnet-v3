@@ -27,17 +27,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// will leak pooled memory and eventually exhaust the ArrayPool. Always use try-finally or using
     /// statements to ensure disposal, especially when exceptions may occur.
     /// </para>
-    /// <para><strong>GetBuffer() Safety:</strong></para>
+    /// <para><strong>Security Considerations:</strong></para>
     /// <para>
-    /// WARNING: GetBuffer() returns the internal ArrayPool buffer which may be larger than the stream
-    /// length and may be reused after disposal. The returned buffer becomes INVALID after Dispose() is
-    /// called. Never cache the buffer reference beyond the stream's lifetime. Always use the Length
-    /// property to determine the valid data range (0 to Length-1).
-    /// </para>
-    /// <para><strong>Performance Considerations:</strong></para>
-    /// <para>
-    /// The clearOnReturn parameter controls whether the buffer is zeroed when returned to the pool.
-    /// Set to false only when the buffer never contains sensitive data. Default is true for security.
+    /// GetBuffer() and TryGetBuffer() are internal-only to prevent external code from accessing pooled
+    /// buffers that may contain sensitive cryptographic material. External callers must use ToArray()
+    /// which returns a safe copy. Buffers are always cleared (zeroed) before returning to the pool when
+    /// used for encryption operations, which is enforced by using the default clearOnReturn: true parameter.
+    /// This defense-in-depth approach ensures sensitive data never remains in pooled memory.
     /// </para>
     /// </remarks>
     internal sealed class PooledMemoryStream : Stream
@@ -346,7 +342,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <summary>
         /// Gets the underlying buffer. Only valid before disposal.
         /// </summary>
-        public byte[] GetBuffer()
+        /// <remarks>
+        /// SECURITY: This method is internal to prevent external code from accessing pooled buffers
+        /// that may contain sensitive cryptographic material. External callers should use ToArray()
+        /// which returns a safe copy. This method is only exposed internally for testing buffer
+        /// clearing behavior.
+        /// </remarks>
+        internal byte[] GetBuffer()
         {
             this.EnsureNotDisposed();
             return this.buffer;
@@ -355,7 +357,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <summary>
         /// Tries to get the written portion of the buffer without copying.
         /// </summary>
-        public bool TryGetBuffer(out ArraySegment<byte> buffer)
+        /// <remarks>
+        /// SECURITY: This method is internal to prevent external code from accessing pooled buffers
+        /// that may contain sensitive cryptographic material. External callers should use ToArray()
+        /// which returns a safe copy. This method is only exposed internally for testing buffer
+        /// clearing behavior.
+        /// </remarks>
+        internal bool TryGetBuffer(out ArraySegment<byte> buffer)
         {
             this.EnsureNotDisposed();
             buffer = new ArraySegment<byte>(this.buffer, 0, this.length);
@@ -385,6 +393,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 if (this.buffer != null && this.buffer.Length > 0)
                 {
+                    // Defense-in-depth: Explicitly clear sensitive data before returning to pool.
+                    // ArrayPool.Return's clearArray parameter only clears when the pool decides to retain
+                    // the buffer for reuse. If the pool releases the buffer instead, clearArray is ignored.
+                    // By clearing explicitly here, we guarantee sensitive encryption data is zeroed regardless
+                    // of ArrayPool's internal retention policy.
+                    if (this.clearOnReturn && this.length > 0)
+                    {
+                        Array.Clear(this.buffer, 0, this.length);
+                    }
+
                     ArrayPool<byte>.Shared.Return(this.buffer, this.clearOnReturn);
                     this.buffer = null;
                 }
@@ -402,11 +420,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 return;
             }
 
-            int newCapacity = Math.Max(requiredCapacity, this.capacity * 2);
-
-            // Prevent overflow
-            if ((uint)newCapacity > MaxArrayLength)
+            int newCapacity;
+            try
             {
+                // Use checked arithmetic to detect integer overflow when doubling capacity
+                newCapacity = checked(this.capacity * 2);
+                newCapacity = Math.Max(requiredCapacity, newCapacity);
+
+                // Ensure we don't exceed the maximum array length
+                if (newCapacity > MaxArrayLength)
+                {
+                    newCapacity = Math.Max(requiredCapacity, MaxArrayLength);
+                }
+            }
+            catch (OverflowException)
+            {
+                // If doubling capacity overflows, cap at MaxArrayLength
                 newCapacity = Math.Max(requiredCapacity, MaxArrayLength);
             }
 
