@@ -135,7 +135,8 @@ namespace Microsoft.Azure.Cosmos
         //Auth
         internal readonly AuthorizationTokenProvider cosmosAuthorization;
 
-        private bool isThinClientEnabled = ConfigurationManager.IsThinClientEnabled(defaultValue: false);
+        private readonly bool isThinClientFeatureFlagEnabled = ConfigurationManager.IsThinClientEnabled(defaultValue: false);
+        private bool isThinClientEnabled;
 
         // Gateway has backoff/retry logic to hide transient errors.
         private RetryPolicy retryPolicy;
@@ -6538,6 +6539,13 @@ namespace Microsoft.Azure.Cosmos
                         "GET",
                         AuthorizationTokenType.PrimaryMasterKey);
 
+                    if (this.isThinClientFeatureFlagEnabled)
+                    {
+                        request.Headers.Add(
+                            ThinClientConstants.EnableThinClientEndpointDiscoveryHeaderName,
+                            true.ToString());
+                    }
+
                     foreach (string key in headersCollection.AllKeys())
                     {
                         request.Headers.Add(key, headersCollection[key]);
@@ -6822,7 +6830,7 @@ namespace Microsoft.Azure.Cosmos
                     connectionPolicy: this.ConnectionPolicy,
                     httpClient: this.httpClient,
                     cancellationToken: this.cancellationTokenSource.Token,
-                    isThinClientEnabled: this.isThinClientEnabled);
+                    isThinClientEnabled: this.isThinClientFeatureFlagEnabled);
 
             this.accountServiceConfiguration = new CosmosAccountServiceConfiguration(accountReader.InitializeReaderAsync);
 

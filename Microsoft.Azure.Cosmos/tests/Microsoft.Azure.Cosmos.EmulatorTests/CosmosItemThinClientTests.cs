@@ -12,9 +12,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Net.Http;
     using System.Text.Json;
     using System.Text.Json.Serialization;
+    using System.Threading;
     using System.Threading.Tasks;
     using global::Azure;
-    using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.MultiRegionSetupHelpers;
@@ -120,7 +120,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             byte[] capturedPayload = null;
             Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
-            this.connectionString = Environment.GetEnvironmentVariable("COSMOSDB_THINCLIENT");
 
             // Initialize the serializer locally
             JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
@@ -330,11 +329,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task CreateItemsTestWithThinClientFlagDisabledAccountEnabled()
         {
             Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "False");
-
-            if (string.IsNullOrEmpty(this.connectionString))
-            {
-                Assert.Fail("Set environment variable COSMOSDB_THINCLIENT to run the tests");
-            }
 
             JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
             {
@@ -746,6 +740,112 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             for (int i = 0; i < items.Count; i++)
             {
                 Assert.AreEqual(HttpStatusCode.Created, batchResponse[i].StatusCode);
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("ThinClient")]
+        public async Task RegionalFailoverWithHttpRequestException_EnsuresThinClientHeaderInRefreshRequest()
+        {
+            // Arrange
+            Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
+
+            bool headerFoundInRefreshRequest = false;
+            int accountRefreshCount = 0;
+            bool hasThrown = false;
+
+            JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = null,
+                PropertyNameCaseInsensitive = true,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            };
+            CosmosSystemTextJsonSerializer serializer = new CosmosSystemTextJsonSerializer(jsonSerializerOptions);
+
+            FaultInjectionDelegatingHandler faultHandler = new FaultInjectionDelegatingHandler(
+                (request) =>
+                {
+                    // Check for account refresh requests (GET to "/" with HTTP/1.1)
+                    if (request.Method == HttpMethod.Get &&
+                        request.RequestUri.AbsolutePath == "/" &&
+                        request.Version == new Version(1, 1))
+                    {
+                        accountRefreshCount++;
+
+                        // Only check header after we've thrown the exception
+                        if (hasThrown)
+                        {
+                            if (request.Headers.TryGetValues(
+                                ThinClientConstants.EnableThinClientEndpointDiscoveryHeaderName,
+                                out IEnumerable<string> headerValues))
+                            {
+                                if (headerValues.Contains("True"))
+                                {
+                                    headerFoundInRefreshRequest = true;
+                                }
+                            }
+                        }
+                    }
+
+                    // Throw HttpRequestException only ONCE on ThinClient POST requests
+                    if (!hasThrown &&
+                        request.Method == HttpMethod.Post &&
+                        request.Version == new Version(2, 0))
+                    {
+                        hasThrown = true;
+                        throw new HttpRequestException("Simulated endpoint failure");
+                    }
+                });
+
+            CosmosClientBuilder builder = new CosmosClientBuilder(this.connectionString)
+                .WithConnectionModeGateway()
+                .WithCustomSerializer(serializer)
+                .WithHttpClientFactory(() => new HttpClient(faultHandler));
+
+            using CosmosClient client = builder.Build();
+
+            string uniqueDbName = "TestFailoverDb_" + Guid.NewGuid().ToString();
+            Database database = await client.CreateDatabaseIfNotExistsAsync(uniqueDbName);
+            string uniqueContainerName = "TestFailoverContainer_" + Guid.NewGuid().ToString();
+            Container container = await database.CreateContainerIfNotExistsAsync(uniqueContainerName, "/pk");
+
+            string pk = "pk_failover_test";
+            TestObject testItem = this.GenerateItems(pk).First();
+
+            // Act - CreateItemAsync will fail once, then SDK retries and succeeds
+            ItemResponse<TestObject> response = await container.CreateItemAsync(testItem, new PartitionKey(testItem.Pk));
+
+            // Assert
+            Assert.AreEqual(HttpStatusCode.Created, response.StatusCode, "Request should succeed after retry");
+            Assert.IsTrue(hasThrown, "Exception should have been thrown once");
+            Assert.IsTrue(headerFoundInRefreshRequest, "Account refresh after HttpRequestException should contain thin client header");
+
+            // Cleanup
+            await database.DeleteAsync();
+        }
+
+        /// <summary>
+        /// DelegatingHandler that intercepts HTTP requests and can inject faults
+        /// </summary>
+        private class FaultInjectionDelegatingHandler : DelegatingHandler
+        {
+            private readonly Action<HttpRequestMessage> requestCallback;
+
+            public FaultInjectionDelegatingHandler(Action<HttpRequestMessage> requestCallback)
+                : base(new HttpClientHandler())
+            {
+                this.requestCallback = requestCallback;
+            }
+
+            protected override Task<HttpResponseMessage> SendAsync(
+                HttpRequestMessage request,
+                CancellationToken cancellationToken)
+            {
+                // Invoke callback which can inspect request or throw exceptions
+                this.requestCallback?.Invoke(request);
+
+                // If no exception was thrown, proceed with the actual request
+                return base.SendAsync(request, cancellationToken);
             }
         }
     }
