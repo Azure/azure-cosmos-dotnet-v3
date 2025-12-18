@@ -1452,22 +1452,22 @@
           "Attributes": [],
           "MethodInfo": "Int32 Index;CanRead:True;CanWrite:False;Int32 get_Index();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Object Document": {
+        "System.String Document": {
           "Type": "Property",
           "Attributes": [],
-          "MethodInfo": "System.Object Document;CanRead:True;CanWrite:False;System.Object get_Document();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.String Document;CanRead:True;CanWrite:False;System.String get_Document();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Object get_Document()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "System.String get_Document()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "System.Object get_Document();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.String get_Document();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Void .ctor(System.Object, Double, Int32)": {
+        "Void .ctor(System.String, Double, Int32)": {
           "Type": "Constructor",
           "Attributes": [],
-          "MethodInfo": "Void .ctor(System.Object, Double, Int32)"
+          "MethodInfo": "Void .ctor(System.String, Double, Int32)"
         }
       },
       "NestedTypes": {}
