@@ -224,13 +224,14 @@ namespace Microsoft.Azure.Cosmos
                     request.RequestContext.RouteToLocation(this.retryContext.RetryLocationIndex, this.retryContext.RetryRequestOnPreferredLocations);
                 }
             }
+#if !INTERNAL
             // If previous attempt failed with 404/1002, add the hub-region-processing-only header
             if (this.addHubRegionProcessingOnlyHeader)
             {
                 request.Headers.Add(HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion, bool.TrueString);
                 this.addHubRegionProcessingOnlyHeader = false;
             }
-
+#endif
             // Resolve the endpoint for the request and pin the resolution to the resolved endpoint
             // This enables marking the endpoint unavailability on endpoint failover/unreachability
             this.locationEndpoint = this.isThinClientEnabled
