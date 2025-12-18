@@ -15,6 +15,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// <summary>
     /// Provides optimized System.Text.Json serialization/deserialization using ArrayPool-backed buffers.
     /// </summary>
+    /// <remarks>
+    /// <para><strong>Thread Safety:</strong></para>
+    /// <para>
+    /// All methods are thread-safe and can be called concurrently from multiple threads. Each invocation
+    /// creates independent PooledMemoryStream instances, and JsonSerializer.Serialize/Deserialize are
+    /// thread-safe when using separate stream instances.
+    /// </para>
+    /// <para><strong>Disposal Requirements:</strong></para>
+    /// <para>
+    /// Methods returning PooledMemoryStream transfer ownership to the caller. The caller MUST dispose
+    /// the returned stream to prevent memory leaks. Methods accepting Stream parameters do NOT dispose
+    /// the input stream - disposal remains the caller's responsibility.
+    /// </para>
+    /// <para><strong>Performance Considerations:</strong></para>
+    /// <para>
+    /// Uses ArrayPool-backed buffers configured via PooledStreamConfiguration. Reduces GC pressure
+    /// compared to standard MemoryStream. Deserialization reads directly from input streams without
+    /// intermediate buffering when possible.
+    /// </para>
+    /// </remarks>
     internal static class PooledJsonSerializer
     {
         private static readonly JsonSerializerOptions DefaultOptions = new ()

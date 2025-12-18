@@ -9,6 +9,27 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// Configuration settings for pooled stream and buffer allocations used during
     /// System.Text.Json serialization/deserialization operations in encryption/decryption.
     /// </summary>
+    /// <remarks>
+    /// <para><strong>Thread Safety:</strong></para>
+    /// <para>
+    /// Reading property values is thread-safe. Writing property values (StreamInitialCapacity,
+    /// BufferWriterInitialCapacity, ClearArraysOnReturn) is NOT thread-safe and should only be
+    /// performed during application startup before any encryption/decryption operations begin.
+    /// Concurrent writes or reads during writes may result in torn reads or inconsistent state.
+    /// </para>
+    /// <para><strong>Configuration Timing:</strong></para>
+    /// <para>
+    /// IMPORTANT: Configure these properties once at application startup. Changing values during
+    /// runtime while encryption/decryption operations are in progress may cause inconsistent behavior
+    /// as some operations will use old values while others use new values.
+    /// </para>
+    /// <para><strong>Security Considerations:</strong></para>
+    /// <para>
+    /// ClearArraysOnReturn controls whether sensitive data is zeroed before buffers return to the pool.
+    /// Setting this to false improves performance but may leave plaintext data in memory. Only disable
+    /// for non-sensitive workloads or when other security measures (like memory encryption) are in place.
+    /// </para>
+    /// </remarks>
     internal static class PooledStreamConfiguration
     {
         /// <summary>
