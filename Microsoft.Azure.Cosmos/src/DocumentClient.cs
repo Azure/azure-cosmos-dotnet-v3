@@ -6539,6 +6539,9 @@ namespace Microsoft.Azure.Cosmos
                         "GET",
                         AuthorizationTokenType.PrimaryMasterKey);
 
+                    // Added the thinclient endpoint discovery header for account data refresh requests.
+                    // This header signals to the service that the client supports thin client mode
+                    // and needs thinclient-specific endpoint information in the response.
                     if (this.isThinClientFeatureFlagEnabled)
                     {
                         request.Headers.Add(
