@@ -259,6 +259,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             DecryptionContext context = await MdeEncryptionProcessor.DecryptStreamAsync(input, ms, encryptor, properties.EncryptionProperties, diagnosticsContext, cancellationToken);
             if (context == null)
             {
+                // CRITICAL: Must dispose PooledMemoryStream to prevent memory leak
+                await ms.DisposeAsync();
                 input.Position = 0;
                 return (input, null);
             }
