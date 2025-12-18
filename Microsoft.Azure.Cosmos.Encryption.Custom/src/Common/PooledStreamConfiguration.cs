@@ -13,9 +13,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// <para><strong>Thread Safety:</strong></para>
     /// <para>
     /// Reading property values is thread-safe. Writing property values (StreamInitialCapacity,
-    /// BufferWriterInitialCapacity, ClearArraysOnReturn) is NOT thread-safe and should only be
-    /// performed during application startup before any encryption/decryption operations begin.
-    /// Concurrent writes or reads during writes may result in torn reads or inconsistent state.
+    /// BufferWriterInitialCapacity) is NOT thread-safe and should only be performed during
+    /// application startup before any encryption/decryption operations begin. Concurrent writes
+    /// or reads during writes may result in torn reads or inconsistent state.
     /// </para>
     /// <para><strong>Configuration Timing:</strong></para>
     /// <para>
@@ -25,9 +25,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// </para>
     /// <para><strong>Security Considerations:</strong></para>
     /// <para>
-    /// ClearArraysOnReturn controls whether sensitive data is zeroed before buffers return to the pool.
-    /// Setting this to false improves performance but may leave plaintext data in memory. Only disable
-    /// for non-sensitive workloads or when other security measures (like memory encryption) are in place.
+    /// Buffer arrays are always cleared before being returned to the pool to prevent sensitive
+    /// plaintext data from remaining in memory. This security measure cannot be disabled.
     /// </para>
     /// </remarks>
     internal static class PooledStreamConfiguration
@@ -76,16 +75,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// Typically does not need to be adjusted unless encrypting very large individual properties.
         /// </remarks>
         public static int BufferWriterInitialCapacity { get; set; } = DefaultBufferWriterInitialCapacity;
-
-        /// <summary>
-        /// Gets or sets a value indicating whether to clear arrays when returning them to the pool.
-        /// Default is true for security reasons.
-        /// </summary>
-        /// <remarks>
-        /// Setting this to false can improve performance but may leave sensitive data in memory.
-        /// Only disable if you have other security measures in place.
-        /// </remarks>
-        public static bool ClearArraysOnReturn { get; set; } = true;
     }
 }
 #endif

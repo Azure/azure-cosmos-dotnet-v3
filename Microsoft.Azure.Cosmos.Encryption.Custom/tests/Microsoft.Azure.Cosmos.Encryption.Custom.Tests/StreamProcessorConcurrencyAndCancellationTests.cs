@@ -157,7 +157,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             Stream encrypted = await EncryptionProcessor.EncryptAsync(TestCommon.ToStream(doc), mockEncryptor.Object, options, JsonProcessor.Stream, new CosmosDiagnosticsContext(), CancellationToken.None);
 
             // Wrap encrypted stream in slow stream (must be seekable; we copy bytes)
-            byte[] bytes = ((MemoryStream)encrypted).ToArray();
+            byte[] bytes;
+            if (encrypted is MemoryStream ms)
+            {
+                bytes = ms.ToArray();
+            }
+            else if (encrypted is PooledMemoryStream pms)
+            {
+                bytes = pms.ToArray();
+            }
+            else
+            {
+                // Fallback for other stream types
+                using var memStream = new MemoryStream();
+                await encrypted.CopyToAsync(memStream);
+                bytes = memStream.ToArray();
+            }
             SlowCancelableStream slow = new(bytes, chunkSize: 64, perReadDelayMs: 1);
             using CancellationTokenSource cts = new();
             Task<(Stream, DecryptionContext)> decryptTask = EncryptionProcessor.DecryptAsync(
