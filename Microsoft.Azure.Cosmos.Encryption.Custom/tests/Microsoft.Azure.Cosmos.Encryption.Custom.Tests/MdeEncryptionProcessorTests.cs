@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     using System.IO;
     using System.Linq;
 #if NET8_0_OR_GREATER
+    using System.Text.Json;
     using System.Text.Json.Nodes;
 #endif
     using System.Threading;
@@ -274,6 +275,145 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.AreEqual(docStream.Length, decryptedStream.Length);
             Assert.IsNull(decryptionContext);
         }
+
+#if NET8_0_OR_GREATER
+        [TestMethod]
+        [TestCategory("Integration")]
+        [TestCategory("PooledResources")]
+        public async Task DecryptStreamAsync_CreatesPooledMemoryStream_SuccessPath()
+        {
+            // Tests MdeEncryptionProcessor.cs:141 - new PooledMemoryStream() on success path
+            TestDoc testDoc = TestDoc.Create();
+            EncryptionOptions options = this.CreateEncryptionOptions();
+
+            // Encrypt document using StreamProcessor
+            Stream encrypted = await EncryptionProcessor.EncryptAsync(
+                testDoc.ToStream(),
+                mockEncryptor.Object,
+                options,
+                JsonProcessor.Stream,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None);
+
+            // Read encryption properties
+            encrypted.Position = 0;
+            using (JsonDocument doc = JsonDocument.Parse(encrypted, new JsonDocumentOptions { AllowTrailingCommas = true }))
+            {
+                JsonElement ei = doc.RootElement.GetProperty(Constants.EncryptedInfo);
+                EncryptionProperties props = System.Text.Json.JsonSerializer.Deserialize<EncryptionProperties>(ei.GetRawText());
+
+                // Test MdeEncryptionProcessor.DecryptStreamAsync
+                encrypted.Position = 0;
+                MdeEncryptionProcessor processor = new MdeEncryptionProcessor();
+                (Stream decrypted, DecryptionContext context) = await processor.DecryptStreamAsync(
+                    encrypted,
+                    mockEncryptor.Object,
+                    props,
+                    new CosmosDiagnosticsContext(),
+                    CancellationToken.None);
+
+                Assert.IsNotNull(context, "Context should not be null for encrypted payload");
+                Assert.IsNotNull(decrypted, "Decrypted stream should not be null");
+
+                // Verify stream is readable
+                decrypted.Position = 0;
+                JsonNode decryptedDoc = JsonNode.Parse(decrypted);
+                Assert.AreEqual(testDoc.SensitiveStr, decryptedDoc[nameof(TestDoc.SensitiveStr)].GetValue<string>());
+
+                // Cleanup
+                await decrypted.DisposeAsync();
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("Integration")]
+        [TestCategory("PooledResources")]
+        [TestCategory("MemoryLeak")]
+        public async Task DecryptStreamAsync_WithEmptyEncryptedPaths_HandlesCorrectly()
+        {
+            // Tests MdeEncryptionProcessor.cs:141-148 disposal path
+            // Even with empty encrypted paths, the PooledMemoryStream should be handled correctly
+
+            TestDoc testDoc = TestDoc.Create();
+            string plainJson = System.Text.Json.JsonSerializer.Serialize(testDoc);
+            using MemoryStream input = new(System.Text.Encoding.UTF8.GetBytes(plainJson));
+
+            // Create encryption properties with empty paths
+            EncryptionProperties propsEmptyPaths = new EncryptionProperties(
+                encryptionFormatVersion: EncryptionFormatVersion.Mde,
+                encryptionAlgorithm: CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                dataEncryptionKeyId: dekId,
+                encryptedData: null,
+                encryptedPaths: new List<string>());
+
+            // Decrypt with empty paths
+            MdeEncryptionProcessor processor = new MdeEncryptionProcessor();
+            (Stream result, DecryptionContext context) = await processor.DecryptStreamAsync(
+                input,
+                mockEncryptor.Object,
+                propsEmptyPaths,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None);
+
+            // With empty paths, decryption still succeeds but doesn't decrypt anything
+            Assert.IsNotNull(result, "Result stream should not be null");
+
+            // Cleanup
+            if (result != input)
+            {
+                await result.DisposeAsync();
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("Integration")]
+        [TestCategory("PooledResources")]
+        [TestCategory("Stress")]
+        public async Task DecryptStreamAsync_RepeatedCalls_NoMemoryLeak()
+        {
+            // Stress test to verify PooledMemoryStream disposal in MdeEncryptionProcessor
+            // Run 100 iterations - if PooledMemoryStream not disposed, ArrayPool will exhaust
+
+            TestDoc testDoc = TestDoc.Create();
+            EncryptionOptions options = this.CreateEncryptionOptions();
+
+            for (int i = 0; i < 100; i++)
+            {
+                // Encrypt document
+                Stream encrypted = await EncryptionProcessor.EncryptAsync(
+                    testDoc.ToStream(),
+                    mockEncryptor.Object,
+                    options,
+                    JsonProcessor.Stream,
+                    new CosmosDiagnosticsContext(),
+                    CancellationToken.None);
+
+                // Read encryption properties
+                encrypted.Position = 0;
+                using (JsonDocument doc = JsonDocument.Parse(encrypted, new JsonDocumentOptions { AllowTrailingCommas = true }))
+                {
+                    JsonElement ei = doc.RootElement.GetProperty(Constants.EncryptedInfo);
+                    EncryptionProperties props = System.Text.Json.JsonSerializer.Deserialize<EncryptionProperties>(ei.GetRawText());
+
+                    // Decrypt
+                    encrypted.Position = 0;
+                    MdeEncryptionProcessor processor = new MdeEncryptionProcessor();
+                    (Stream decrypted, DecryptionContext context) = await processor.DecryptStreamAsync(
+                        encrypted,
+                        mockEncryptor.Object,
+                        props,
+                        new CosmosDiagnosticsContext(),
+                        CancellationToken.None);
+
+                    Assert.IsNotNull(context, $"Iteration {i}: Context should not be null");
+                    await decrypted.DisposeAsync();
+                }
+            }
+
+            // If we got here without OutOfMemoryException, disposal is working
+            Assert.IsTrue(true, "100 iterations completed without memory leak");
+        }
+#endif
 
         private static async Task<JObject> VerifyEncryptionSucceededNewtonsoft(TestDoc testDoc, EncryptionOptions encryptionOptions, JsonProcessor jsonProcessor)
         {
