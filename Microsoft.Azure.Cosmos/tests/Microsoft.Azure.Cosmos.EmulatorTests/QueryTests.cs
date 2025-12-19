@@ -52,18 +52,40 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             this.client = TestCommon.CreateClient(true, defaultConsistencyLevel: ConsistencyLevel.Session);
 
+            // Create HttpMessageHandler with SSL certificate bypass for local emulators (like vNext)
+            HttpClientHandler httpHandler = new HttpClientHandler
+            {
+                ServerCertificateCustomValidationCallback = (message, cert, chain, errors) =>
+                {
+                    // Only bypass validation for localhost/127.0.0.1 (emulator endpoints)
+                    if (message.RequestUri.Host == "localhost" || message.RequestUri.Host == "127.0.0.1")
+                    {
+                        return true;
+                    }
+                    // For non-local endpoints, use default validation
+                    return errors == System.Net.Security.SslPolicyErrors.None;
+                }
+            };
+
+            // Create Gateway mode connection policy for vNext emulator (which only supports Gateway mode)
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy
+            {
+                ConnectionMode = ConnectionMode.Gateway,
+                ConnectionProtocol = Protocol.Https
+            };
+
             // The Public emulator has only 1 MasterKey, no read-only keys
             this.primaryReadonlyClient = new DocumentClient(
                          new Uri(ConfigurationManager.AppSettings["GatewayEndpoint"]),
                          ConfigurationManager.AppSettings["MasterKey"],
-                         (HttpMessageHandler)null,
-                         connectionPolicy: null);
+                         httpHandler,
+                         connectionPolicy: connectionPolicy);
 
             this.secondaryReadonlyClient = new DocumentClient(
                          new Uri(ConfigurationManager.AppSettings["GatewayEndpoint"]),
                          ConfigurationManager.AppSettings["MasterKey"],
-                         (HttpMessageHandler)null,
-                         connectionPolicy: null);
+                         httpHandler,
+                         connectionPolicy: connectionPolicy);
 
             this.CleanUp();
         }

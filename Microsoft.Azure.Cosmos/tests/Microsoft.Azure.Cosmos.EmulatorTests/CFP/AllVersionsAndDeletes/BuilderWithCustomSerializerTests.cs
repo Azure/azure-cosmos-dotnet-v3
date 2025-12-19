@@ -791,7 +791,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                 UseSystemTextJsonSerializerWithOptions = new JsonSerializerOptions()
                 {
                     PropertyNameCaseInsensitive = propertyNameCaseInsensitive
-                }
+                },
+                HttpClientFactory = () => TestCommon.CreateHttpClientWithCertificateBypass()
             };
 
             CosmosClient cosmosClient = isMultiMaster 
