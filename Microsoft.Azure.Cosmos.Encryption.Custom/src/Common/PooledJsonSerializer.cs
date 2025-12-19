@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             // Always clear buffers for security - this is an encryption library handling sensitive data
             PooledMemoryStream stream = new (
-                capacity: PooledStreamConfiguration.StreamInitialCapacity,
+                capacity: PooledStreamConfiguration.Current.StreamInitialCapacity,
                 clearOnReturn: true);
 
             try
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// </summary>
         public static RentArrayBufferWriter SerializeToBufferWriter<T>(T value, JsonSerializerOptions options = null)
         {
-            RentArrayBufferWriter bufferWriter = new (PooledStreamConfiguration.BufferWriterInitialCapacity);
+            RentArrayBufferWriter bufferWriter = new (PooledStreamConfiguration.Current.BufferWriterInitialCapacity);
 
             try
             {

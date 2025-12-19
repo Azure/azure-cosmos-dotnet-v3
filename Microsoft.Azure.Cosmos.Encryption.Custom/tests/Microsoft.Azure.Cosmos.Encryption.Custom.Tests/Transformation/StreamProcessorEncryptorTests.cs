@@ -29,7 +29,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         public static void Init(TestContext ctx)
         {
             _ = ctx;
-            StreamProcessor.InitialBufferSize = 8; // exercise buffer growth
+            // Exercise buffer growth with small initial buffer size
+            PooledStreamConfiguration.SetConfiguration(new PooledStreamConfiguration { StreamProcessorBufferSize = 8 });
 
             mockEncryptor = TestEncryptorFactory.CreateMde(DekId, out mockDek);
         }
@@ -221,7 +222,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             StreamProcessor sp = new StreamProcessor();
             // Assert
             Assert.IsNotNull(sp.Encryptor); // covers getter sequence point
-            Assert.IsTrue(StreamProcessor.InitialBufferSize > 0);
+            Assert.IsTrue(PooledStreamConfiguration.Current.StreamProcessorBufferSize > 0);
         }
 
         [TestMethod]

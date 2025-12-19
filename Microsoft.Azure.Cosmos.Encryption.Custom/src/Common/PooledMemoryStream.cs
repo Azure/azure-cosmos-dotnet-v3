@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             // Use configuration default if not specified
             if (capacity < 0)
             {
-                capacity = PooledStreamConfiguration.StreamInitialCapacity;
+                capacity = PooledStreamConfiguration.Current.StreamInitialCapacity;
             }
 
             if (capacity < 0)
