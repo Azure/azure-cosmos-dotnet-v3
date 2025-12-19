@@ -1490,14 +1490,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             ThroughputProperties tp = ThroughputProperties.CreateManualThroughput(400);
 
-            Cosmos.Database db = await client.CreateDatabaseIfNotExistsAsync(
-                "db",
-                tp);
-
-            Container container = await db.CreateContainerIfNotExistsAsync(
-                "contianer",
-                "/pk",
-                400);
+            Container container = client.GetContainer(
+                MultiRegionSetupHelpers.dbName, 
+                MultiRegionSetupHelpers.containerName);
 
             _ = await container.ReadContainerAsync();
 
