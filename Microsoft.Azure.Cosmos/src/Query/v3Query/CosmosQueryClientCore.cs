@@ -282,7 +282,7 @@ namespace Microsoft.Azure.Cosmos
                     throw new NotFoundException($"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}: GetTargetPartitionKeyRanges(collectionResourceId:{collectionResourceId}, providedRanges: {string.Join(",", providedRanges)} failed due to stale cache");
                 }
 
-                return ranges;
+                return Query.Core.Pipeline.CrossPartition.QueryRangeUtils.LimitPartitionKeyRangesToProvidedRanges(ranges, providedRanges);
             }
         }
 
