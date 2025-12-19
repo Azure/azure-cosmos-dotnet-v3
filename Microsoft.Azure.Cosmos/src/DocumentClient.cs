@@ -1059,7 +1059,7 @@ namespace Microsoft.Azure.Cosmos
                 this.ConnectionPolicy.EnablePartitionLevelFailover = this.accountServiceConfiguration.AccountProperties.EnablePartitionLevelFailover.Value;
             }
 
-            this.isThinClientEnabled = (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway) &&
+            this.isThinClientEnabled = this.isThinClientFeatureFlagEnabled && (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway) &&
                 (this.accountServiceConfiguration.AccountProperties?.ThinClientWritableLocationsInternal?.Count ?? 0) > 0;
             this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker |= this.ConnectionPolicy.EnablePartitionLevelFailover;
             this.ConnectionPolicy.UserAgentContainer.AppendFeatures(this.GetUserAgentFeatures());
@@ -6544,9 +6544,7 @@ namespace Microsoft.Azure.Cosmos
                     // and needs thinclient-specific endpoint information in the response.
                     if (this.isThinClientFeatureFlagEnabled)
                     {
-                        request.Headers.Add(
-                            ThinClientConstants.EnableThinClientEndpointDiscoveryHeaderName,
-                            true.ToString());
+                        headersCollection[ThinClientConstants.EnableThinClientEndpointDiscoveryHeaderName] = true.ToString();
                     }
 
                     foreach (string key in headersCollection.AllKeys())
