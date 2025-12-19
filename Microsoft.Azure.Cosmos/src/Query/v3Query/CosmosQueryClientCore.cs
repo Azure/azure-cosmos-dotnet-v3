@@ -231,14 +231,16 @@ namespace Microsoft.Azure.Cosmos
             using (ITrace childTrace = trace.StartChild("Get Overlapping Feed Ranges", TraceComponent.Routing, Tracing.TraceLevel.Info))
             {
                 IRoutingMapProvider routingMapProvider = await this.GetRoutingMapProviderAsync();
-                List<Range<string>> ranges = await feedRangeInternal.GetEffectiveRangesAsync(routingMapProvider, collectionResourceId, partitionKeyDefinition, trace);
+                List<Range<string>> providedRanges = await feedRangeInternal.GetEffectiveRangesAsync(routingMapProvider, collectionResourceId, partitionKeyDefinition, trace);
 
-                return await this.GetTargetPartitionKeyRangesAsync(
+                List<PartitionKeyRange> ranges = await this.GetTargetPartitionKeyRangesAsync(
                     resourceLink,
                     collectionResourceId,
-                    ranges,
+                    providedRanges,
                     forceRefresh,
                     childTrace);
+
+                return QueryRangeUtils.LimitPartitionKeyRangesToProvidedRanges(ranges, providedRanges);
             }
         }
 
@@ -282,7 +284,7 @@ namespace Microsoft.Azure.Cosmos
                     throw new NotFoundException($"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}: GetTargetPartitionKeyRanges(collectionResourceId:{collectionResourceId}, providedRanges: {string.Join(",", providedRanges)} failed due to stale cache");
                 }
 
-                return Query.Core.Pipeline.CrossPartition.QueryRangeUtils.LimitPartitionKeyRangesToProvidedRanges(ranges, providedRanges);
+                return ranges;
             }
         }
 
