@@ -1488,8 +1488,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         enableMultiWriteRegionHedge: false)
                 });
 
-            ThroughputProperties tp = ThroughputProperties.CreateManualThroughput(400);
-
             Container container = client.GetContainer(
                 MultiRegionSetupHelpers.dbName, 
                 MultiRegionSetupHelpers.containerName);
