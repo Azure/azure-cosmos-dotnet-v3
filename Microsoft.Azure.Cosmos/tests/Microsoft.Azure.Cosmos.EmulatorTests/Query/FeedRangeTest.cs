@@ -1,19 +1,17 @@
-﻿namespace Microsoft.Azure.Cosmos.Query
+﻿namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 {
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
-    using System.Text;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.EmulatorTests.Query;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json.Linq;
 
     [TestClass]
-    public class FeedRangeTest : QueryTestsBase
+    public class QueryFeedRangeTest : QueryTestsBase
     {
         private static readonly List<string> SampleDocuments = new List<string>
         {
@@ -39,7 +37,7 @@
             {
                 Paths = new Collection<string> { "/tenant", "/user", "/session" },
                 Kind = PartitionKind.MultiHash,
-                Version = PartitionKeyDefinitionVersion.V2
+                Version = Documents.PartitionKeyDefinitionVersion.V2
             };
 
         private static PartitionKeyDefinition SinglePartitionKeyDefinition =>
@@ -47,7 +45,7 @@
             {
                 Paths = new Collection<string> { "/tenant" },
                 Kind = PartitionKind.Hash,
-                Version = PartitionKeyDefinitionVersion.V2
+                Version = Documents.PartitionKeyDefinitionVersion.V2
             };
 
         [TestMethod]
@@ -405,10 +403,10 @@
         {
             // Get the EPK ranges from the FeedRange
             IReadOnlyList<Documents.Routing.Range<string>> epkRanges = await ((FeedRangeInternal)feedRange).GetEffectiveRangesAsync(
-                await this.Client.DocumentClient.GetPartitionKeyRangeCacheAsync(Tracing.NoOpTrace.Singleton),
+                await this.Client.DocumentClient.GetPartitionKeyRangeCacheAsync(Cosmos.Tracing.NoOpTrace.Singleton),
                 null,
                 partitionKeyDefinition,
-                Tracing.NoOpTrace.Singleton);
+                Cosmos.Tracing.NoOpTrace.Singleton);
 
             int validCount = 0;
             int invalidCount = 0;
