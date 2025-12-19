@@ -39,7 +39,9 @@ namespace Microsoft.Azure.Cosmos
         private Uri locationEndpoint;
         private RetryContext retryContext;
         private DocumentServiceRequest documentServiceRequest;
+#if !INTERNAL
         private bool addHubRegionProcessingOnlyHeader;
+#endif
 
         public ClientRetryPolicy(
             GlobalEndpointManager globalEndpointManager,
@@ -331,7 +333,9 @@ namespace Microsoft.Azure.Cosmos
             if (statusCode == HttpStatusCode.NotFound
                 && subStatusCode == SubStatusCodes.ReadSessionNotAvailable)
             {
+#if !INTERNAL
                 this.addHubRegionProcessingOnlyHeader = true;
+#endif
                 return this.ShouldRetryOnSessionNotAvailable(this.documentServiceRequest);
             }
             
