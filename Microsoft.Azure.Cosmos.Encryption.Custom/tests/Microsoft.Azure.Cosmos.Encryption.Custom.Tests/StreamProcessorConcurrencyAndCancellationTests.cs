@@ -49,8 +49,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         public async Task EncryptDecrypt_LargePayload_StreamProcessor()
         {
             // Force small initial buffer to exercise multiple resizes while handling a large single property.
-            int original = Transformation.StreamProcessor.InitialBufferSize;
-            Transformation.StreamProcessor.InitialBufferSize = 32; // tiny to trigger many growths
+            PooledStreamConfiguration original = PooledStreamConfiguration.Current;
+            PooledStreamConfiguration.SetConfiguration(new PooledStreamConfiguration { StreamProcessorBufferSize = 32 }); // tiny to trigger many growths
             try
             {
                 string largeValue = new string('x', 250_000); // ~250 KB
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             }
             finally
             {
-                Transformation.StreamProcessor.InitialBufferSize = original;
+                PooledStreamConfiguration.SetConfiguration(original);
             }
         }
 

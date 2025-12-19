@@ -36,7 +36,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             _ = testContext;
 
 #if NET8_0_OR_GREATER
-            StreamProcessor.InitialBufferSize = 16; //we force smallest possible initial buffer to make sure both secondary reads and resize paths are executed
+            // Force smallest possible initial buffer to make sure both secondary reads and resize paths are executed
+            PooledStreamConfiguration.SetConfiguration(new PooledStreamConfiguration { StreamProcessorBufferSize = 16 });
 #endif
 
             mockEncryptor = TestEncryptorFactory.CreateMde(dekId, out _);
