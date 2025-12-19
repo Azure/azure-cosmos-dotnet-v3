@@ -1450,6 +1450,96 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [TestMethod]
+        [TestCategory("MultiMaster")]
+        public async Task UpsertRequestOptionsTest()
+        {
+            FaultInjectionRule responseDelay = new FaultInjectionRuleBuilder(
+                id: "responseDely",
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithRegion(region2)
+                        .WithOperationType(FaultInjectionOperationType.UpsertItem)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
+                        .WithDelay(TimeSpan.FromMilliseconds(600))
+                        .Build())
+                .WithDuration(TimeSpan.FromMinutes(90))
+                .WithHitLimit(2)
+                .Build();
+
+            responseDelay.Disable();
+
+            FaultInjector injector = new FaultInjector(new List<FaultInjectionRule>() { responseDelay });
+
+            CosmosClient client = new CosmosClient(
+                this.connectionString,
+                new CosmosClientOptions()
+                {
+                    ApplicationPreferredRegions = new List<string> { region2, region1 },
+                    ConnectionMode = ConnectionMode.Direct,
+                    AllowBulkExecution = true,
+                    ConsistencyLevel = Cosmos.ConsistencyLevel.Session,
+                    FaultInjector = injector,
+                    AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
+                        threshold: TimeSpan.FromMilliseconds(100),
+                        thresholdStep: TimeSpan.FromMilliseconds(50),
+                        enableMultiWriteRegionHedge: false)
+                });
+
+            ThroughputProperties tp = ThroughputProperties.CreateManualThroughput(400);
+
+            Cosmos.Database db = await client.CreateDatabaseIfNotExistsAsync(
+                "db",
+                tp);
+
+            Container container = await db.CreateContainerIfNotExistsAsync(
+                "contianer",
+                "/pk",
+                400);
+
+            _ = await container.ReadContainerAsync();
+
+            CosmosIntegrationTestObject test = new CosmosIntegrationTestObject()
+            {
+                Id = "testId",
+                Pk = "pk",
+                Other = "moreInfo" + Guid.NewGuid().ToString()
+            };
+
+            responseDelay.Enable();
+
+            AvailabilityStrategy writeStrat = AvailabilityStrategy.CrossRegionHedgingStrategy(
+                TimeSpan.FromMilliseconds(100),
+                TimeSpan.FromMilliseconds(50),
+                true);
+
+            ItemRequestOptions options = new ItemRequestOptions()
+            {
+                AvailabilityStrategy = writeStrat,
+            };
+
+            try
+            {
+                ItemResponse<CosmosIntegrationTestObject> ir = await container.UpsertItemAsync(test, requestOptions: options);
+                CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
+                Assert.IsNotNull(traceDiagnostic);
+
+                Assert.IsFalse(traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object _));
+                Assert.IsTrue((int)ir.StatusCode < 400);
+            }
+            catch (CosmosException ex)
+            {
+                Assert.Fail(ex.Message);
+                throw;
+            }
+            finally
+            {
+                responseDelay.Disable();
+            }
+        }
+
         private static async Task HandleChangesAsync(
             ChangeFeedProcessorContext context,
             IReadOnlyCollection<CosmosIntegrationTestObject> changes,
