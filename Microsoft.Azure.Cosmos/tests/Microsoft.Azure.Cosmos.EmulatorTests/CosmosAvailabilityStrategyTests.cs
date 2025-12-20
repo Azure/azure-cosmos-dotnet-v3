@@ -1459,7 +1459,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 condition:
                     new FaultInjectionConditionBuilder()
                         .WithRegion(region2)
-                        .WithOperationType(FaultInjectionOperationType.UpsertItem)
+                        .WithOperationType(FaultInjectionOperationType.Batch)
                         .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
@@ -1478,9 +1478,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 new CosmosClientOptions()
                 {
                     ApplicationPreferredRegions = new List<string> { region2, region1 },
-                    ConnectionMode = ConnectionMode.Direct,
                     AllowBulkExecution = true,
-                    ConsistencyLevel = Cosmos.ConsistencyLevel.Session,
+                    Serializer = this.cosmosSystemTextJsonSerializer,
                     FaultInjector = injector,
                     AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
                         threshold: TimeSpan.FromMilliseconds(100),
@@ -1498,7 +1497,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Id = "testId",
                 Pk = "pk",
-                Other = "moreInfo" + Guid.NewGuid().ToString()
+                Other = "moreInfo" + DateTime.Now.ToString()
             };
 
             responseDelay.Enable();
@@ -1515,11 +1514,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             try
             {
-                ItemResponse<CosmosIntegrationTestObject> ir = await container.UpsertItemAsync(test, requestOptions: options);
+                ItemResponse<CosmosIntegrationTestObject> ir = await container.UpsertItemAsync<CosmosIntegrationTestObject>(
+                    test,
+                    requestOptions: options);
                 CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
                 Assert.IsNotNull(traceDiagnostic);
-
-                Assert.IsFalse(traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object _));
+                Assert.IsTrue(traceDiagnostic.ToString()
+                    .Contains($"\"Hedge Context\":[\"{region2}\",\"{region1}\"]"));
                 Assert.IsTrue((int)ir.StatusCode < 400);
             }
             catch (CosmosException ex)
