@@ -491,21 +491,15 @@
 
         private static bool IsEpkWithinRange(string epk, Documents.Routing.Range<string> range)
         {
-            // Check if epk >= range.Min
-            bool isAboveMin = string.Compare(epk, range.Min, StringComparison.Ordinal) >= 0;
-            if (!range.IsMinInclusive)
-            {
-                isAboveMin = string.Compare(epk, range.Min, StringComparison.Ordinal) > 0;
-            }
+            // Check if epk is >= or > range.Min depending on IsMinInclusive
+            int minComparisonValue = string.Compare(epk, range.Min, StringComparison.Ordinal);
+            bool isMinWithinRange = range.IsMinInclusive ? (minComparisonValue >= 0) : (minComparisonValue > 0);
 
-            // Check if epk < range.Max
-            bool isBelowMax = string.Compare(epk, range.Max, StringComparison.Ordinal) < 0;
-            if (range.IsMaxInclusive)
-            {
-                isBelowMax = string.Compare(epk, range.Max, StringComparison.Ordinal) <= 0;
-            }
+            // Check if epk is < or <= range.Max depending on IsMaxInclusive
+            int maxComparisonValue = string.Compare(epk, range.Max, StringComparison.Ordinal);
+            bool isMaxWithinRange = range.IsMaxInclusive ? (maxComparisonValue <= 0) : (maxComparisonValue < 0);
 
-            return isAboveMin && isBelowMax;
+            return isMinWithinRange && isMaxWithinRange;
         }
     }
 }
