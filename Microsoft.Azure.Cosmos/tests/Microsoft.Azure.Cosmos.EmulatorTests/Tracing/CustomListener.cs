@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             "db.name",
             "db.collection.name",
             "azure.cosmosdb.connection.mode",
-            "azure.cosmosdb.contacted_regions",
+            "azure.cosmosdb.operation.contacted_regions",
             "azure.cosmosdb.consistency.level",
             "db.operation.batch.size",
             "db.query.text",
