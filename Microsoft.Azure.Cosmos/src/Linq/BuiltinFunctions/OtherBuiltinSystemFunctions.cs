@@ -17,9 +17,9 @@ namespace Microsoft.Azure.Cosmos.Linq
 
     internal static class OtherBuiltinSystemFunctions
     {
-        private class RRFVisit : SqlBuiltinFunctionVisitor
+        private class RRFVisitor : SqlBuiltinFunctionVisitor
         {
-            public RRFVisit()
+            public RRFVisitor()
                 : base("RRF",
                     true,
                     new List<Type[]>()
@@ -87,9 +87,9 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
         }
 
-        private class FullTextScoreVisit : SqlBuiltinFunctionVisitor
+        private class FullTextScoreVisitor : SqlBuiltinFunctionVisitor
         {
-            public FullTextScoreVisit()
+            public FullTextScoreVisitor()
                 : base("FullTextScore",
                     true,
                     new List<Type[]>()
@@ -124,9 +124,9 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
         }
 
-        private class VectorDistanceVisit : SqlBuiltinFunctionVisitor
+        private class VectorDistanceVisitor : SqlBuiltinFunctionVisitor
         {
-            public VectorDistanceVisit()
+            public VectorDistanceVisitor()
                 : base("VectorDistance",
                     true,
                     new List<Type[]>()
@@ -173,12 +173,74 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
         }
 
+        private class ArrayContainsAllAnyVisitor : SqlBuiltinFunctionVisitor
+        {
+            public ArrayContainsAllAnyVisitor(string sqlName)
+                : base(sqlName,
+                    true,
+                    new List<Type[]>()
+                    {
+                        new Type[]{typeof(object), typeof(object[])}
+                    })
+            {
+            }
+
+            protected override SqlScalarExpression VisitImplicit(MethodCallExpression methodCallExpression, TranslationContext context)
+            {
+                if (methodCallExpression.Arguments.Count != 2)
+                {
+                    return null;
+                }
+
+                List<SqlScalarExpression> arguments = new List<SqlScalarExpression>
+                {
+                    // First argument: the array to search in
+                    ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Arguments[0], context)
+                };
+
+                // Unwrap the second argument based on its type
+                Expression secondArgument = methodCallExpression.Arguments[1];
+
+                switch (secondArgument)
+                {
+                    case NewArrayExpression arrayExpression:
+                        // Unwrap inline array initialization (e.g., new[] { 1, 2, 3 })
+                        foreach (Expression element in arrayExpression.Expressions)
+                        {
+                            arguments.Add(ExpressionToSql.VisitNonSubqueryScalarExpression(element, context));
+                        }
+                        break;
+
+                    case ConstantExpression constantExpression when constantExpression.Value is Array constantArray:
+                        // Unwrap constant array
+                        foreach (object element in constantArray)
+                        {
+                            Expression constantElementExpression = Expression.Constant(element, element?.GetType() ?? typeof(object));
+                            arguments.Add(ExpressionToSql.VisitNonSubqueryScalarExpression(constantElementExpression, context));
+                        }
+                        break;
+
+                    default:
+                        return null;
+                }
+
+                return SqlFunctionCallScalarExpression.CreateBuiltin(this.SqlName, arguments.ToArray());
+            }
+
+            protected override SqlScalarExpression VisitExplicit(MethodCallExpression methodCallExpression, TranslationContext context)
+            {
+                return null;
+            }
+        }
+
         private static Dictionary<string, BuiltinFunctionVisitor> FunctionsDefinitions { get; set; }
 
         static OtherBuiltinSystemFunctions()
         {
             FunctionsDefinitions = new Dictionary<string, BuiltinFunctionVisitor>
             {
+                [nameof(CosmosLinqExtensions.ArrayContainsAll)] = new ArrayContainsAllAnyVisitor(sqlName: "ARRAY_CONTAINS_ALL"),
+                [nameof(CosmosLinqExtensions.ArrayContainsAny)] = new ArrayContainsAllAnyVisitor(sqlName: "ARRAY_CONTAINS_ANY"),
                 [nameof(CosmosLinqExtensions.DocumentId)] = new SqlBuiltinFunctionVisitor(
                     sqlName: "DOCUMENTID",
                     isStatic: true,
@@ -186,9 +248,9 @@ namespace Microsoft.Azure.Cosmos.Linq
                     {
                         new Type[]{typeof(object)},
                     }),
-                [nameof(CosmosLinqExtensions.RRF)] = new RRFVisit(),
-                [nameof(CosmosLinqExtensions.FullTextScore)] = new FullTextScoreVisit(),
-                [nameof(CosmosLinqExtensions.VectorDistance)] = new VectorDistanceVisit(),
+                [nameof(CosmosLinqExtensions.FullTextScore)] = new FullTextScoreVisitor(),
+                [nameof(CosmosLinqExtensions.RRF)] = new RRFVisitor(),
+                [nameof(CosmosLinqExtensions.VectorDistance)] = new VectorDistanceVisitor(),
             };
         }
 

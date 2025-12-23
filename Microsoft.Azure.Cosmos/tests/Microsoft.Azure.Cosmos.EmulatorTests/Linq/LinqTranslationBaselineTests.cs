@@ -105,6 +105,13 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             return objA.Equals(objB);
         }
 
+        private static Guid GuidFromInt(int value)
+        {
+            byte[] bytes = new byte[16];
+            BitConverter.GetBytes(value).CopyTo(bytes, 0);
+            return new Guid(bytes);
+        }
+
         internal class DataObject : LinqTestObject
         {
             public double NumericField;
@@ -1380,6 +1387,290 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
+        public void TestArrayContainsAll()
+        {
+            const int Records = 10;
+            const int MaxAbsValue = 10;
+            const int MaxArraySize = 50;
+
+            int index = 0;
+            Func<Random, DataObject> createDataObj = (random) =>
+            {
+                DataObject obj = new DataObject();
+                obj.ArrayField = new int[index + 1];
+                for (int i = 0; i < obj.ArrayField.Length; ++i)
+                {
+                    obj.ArrayField[i] = i;
+                }
+                obj.EnumerableField = new List<int>();
+                for (int i = 0; i < index + MaxArraySize; ++i)
+                {
+                    obj.EnumerableField.Add(i - MaxArraySize - MaxAbsValue);
+                }
+                obj.NumericField = (index * MaxAbsValue * 2) - MaxAbsValue;
+                obj.Id = GuidFromInt(index).ToString();
+                obj.Pk = "Test";
+                index++;
+                return obj;
+            };
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                new LinqTestInput("no parameters",
+                    b => getQuery(b).Where(doc => doc.ArrayField.ArrayContainsAll()).Select(doc => doc.ArrayField),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("params with 1 int",
+                    b => getQuery(b).Where(doc => doc.ArrayField.ArrayContainsAll(1)).Select(doc => doc.ArrayField),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("params with 3 ints",
+                    b => getQuery(b).Where(doc => doc.ArrayField.ArrayContainsAll(1, 2, 3)).Select(doc => doc.ArrayField),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("params with 5 ints",
+                    b => getQuery(b).Where(doc => doc.ArrayField.ArrayContainsAll(1, 2, 3, int.MaxValue, int.MinValue )).Select(doc => doc.ArrayField),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("params with mixed types",
+                    b => getQuery(b).Where(doc => doc.ArrayField.ArrayContainsAll(
+                        1,
+                        "hello",
+                        null,
+                        55f,
+                        10.123456789d,
+                        new object[] {
+                            "world",
+                            new object[] { "nested array", new { A = int.MaxValue, B = int.MinValue } } })).Select(doc => doc.ArrayField),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("same field",
+                    b => getQuery(b).Where(doc => doc.ArrayField.ArrayContainsAll(doc.ArrayField)).Select(doc => doc.ArrayField),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("params with mixed types",
+                    b => getQuery(b).Where(doc => new object[] {
+                        1,
+                        "hello",
+                        null,
+                        55f,
+                        10.123456789d,
+                        new object[] {
+                            "world",
+                            new object[] { "nested array", new { A = int.MaxValue, B = int.MinValue } } }
+                        }.ArrayContainsAll(doc.ArrayField)).Select(doc => doc.ArrayField),
+                    skipVerification: true,
+                    serializeOutput: true),
+
+                new LinqTestInput("use document fields",
+                    b => getQuery(b).Where(doc => doc.ArrayField.ArrayContainsAll(new object[] { doc.Id, doc.IntField, doc.GuidField })).Select(doc => doc.ArrayField),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("params with mixed types using document fields",
+                    b => getQuery(b).Where(doc => doc.ArrayField.ArrayContainsAll(
+                        1,
+                        doc.StringField,
+                        null,
+                        doc.VectorFloatField,
+                        10.123456789d,
+                        new object[] {
+                            "world",
+                            new object[] { doc.ToString(), new { A = doc.StringField2.StartsWith("abc"), B = int.MinValue } } }))
+                        .Select(doc => doc.ArrayField),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("use document fields",
+                    b => getQuery(b).Where(doc => new object[] { doc.Id, doc.IntField, doc.GuidField }.ArrayContainsAll(doc.Id, doc.IntField, doc.GuidField)).Select(doc =>  new object[] { doc.Id, doc.IntField, doc.GuidField }),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("use document fields",
+                    b => getQuery(b).Where(doc => new object[] { doc.Id, doc.IntField, doc.GuidField, doc.ArrayField }.ArrayContainsAll(new object[] { doc.ArrayField })).Select(doc => new object[] { doc.Id, doc.IntField, doc.GuidField, doc.ArrayField }),
+                    skipVerification: true,
+                    serializeOutput: true),
+
+                new LinqTestInput("use non-array field",
+                    b => getQuery(b).Where(doc => doc.StringField.ArrayContainsAll(new object[] { doc.Id, doc.IntField, doc.GuidField })).Select(doc => doc.StringField),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("use non-array field",
+                    b => getQuery(b).Where(doc => doc.StringField.ArrayContainsAll(doc.VectorFloatField)).Select(doc => doc.StringField),
+                    skipVerification: true,
+                    serializeOutput: true),
+
+                new LinqTestInput("composite condition",
+                    b => getQuery(b).Where(doc =>
+                        doc.ArrayField.ArrayContainsAll(new object[] { doc.Id, doc.IntField, doc.GuidField }) ||
+                        doc.StringField.StartsWith("abc") &&
+                        doc.EnumerableField.ArrayContainsAll(doc.ArrayField)).Select(doc => new object[] { doc.Id, doc.IntField, doc.GuidField, doc.StringField, doc.EnumerableField }),
+                    skipVerification: true,
+                    serializeOutput: true),
+
+                new LinqTestInput("projection",
+                    b => getQuery(b).Select(doc => new object[] { doc.ArrayField, doc.ArrayField.ArrayContainsAll(
+                        1,
+                        doc.StringField,
+                        null,
+                        doc.VectorFloatField,
+                        10.123456789d,
+                        new object[] {
+                            "world",
+                            new object[] { doc.ToString(), new { A = doc.StringField2.StartsWith("abc"), B = int.MinValue } } }) }),
+                    skipVerification: true,
+                    serializeOutput: true),
+
+                new LinqTestInput("join",
+                    b => getQuery(b).SelectMany(doc => doc.ArrayField).Select(item => new object[] { item, new[] { item }.ArrayContainsAll(item.ToString()) }),
+                    skipVerification: true,
+                    serializeOutput: true),
+            };
+
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
+        public void TestArrayContainsAny()
+        {
+            const int Records = 10;
+            const int MaxAbsValue = 10;
+            const int MaxArraySize = 50;
+
+            int index = 0;
+            Func<Random, DataObject> createDataObj = (random) =>
+            {
+                DataObject obj = new DataObject();
+                obj.ArrayField = new int[index + 1];
+                for (int i = 0; i < obj.ArrayField.Length; ++i)
+                {
+                    obj.ArrayField[i] = i;
+                }
+                obj.EnumerableField = new List<int>();
+                for (int i = 0; i < index + MaxArraySize; ++i)
+                {
+                    obj.EnumerableField.Add(i - MaxArraySize - MaxAbsValue);
+                }
+                obj.NumericField = (index * MaxAbsValue * 2) - MaxAbsValue;
+                obj.Id = GuidFromInt(index).ToString();
+                obj.Pk = "Test";
+                index++;
+                return obj;
+            };
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                new LinqTestInput("no parameters",
+                    b => getQuery(b).Where(doc => doc.ArrayField.ArrayContainsAny()).Select(doc => doc.ArrayField),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("params with 1 int",
+                    b => getQuery(b).Where(doc => doc.ArrayField.ArrayContainsAny(1)).Select(doc => doc.ArrayField),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("params with 3 ints",
+                    b => getQuery(b).Where(doc => doc.ArrayField.ArrayContainsAny(1, 2, 3)).Select(doc => doc.ArrayField),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("params with 5 ints",
+                    b => getQuery(b).Where(doc => doc.ArrayField.ArrayContainsAny(1, 2, 3, int.MaxValue, int.MinValue )).Select(doc => doc.ArrayField),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("params with mixed types",
+                    b => getQuery(b).Where(doc => doc.ArrayField.ArrayContainsAny(
+                        1,
+                        "hello",
+                        null,
+                        55f,
+                        10.123456789d,
+                        new object[] {
+                            "world",
+                            new object[] { "nested array", new { A = int.MaxValue, B = int.MinValue } } })).Select(doc => doc.ArrayField),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("same field",
+                    b => getQuery(b).Where(doc => doc.ArrayField.ArrayContainsAny(doc.ArrayField)).Select(doc => doc.ArrayField),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("params with mixed types",
+                    b => getQuery(b).Where(doc => new object[] {
+                        1,
+                        "hello",
+                        null,
+                        55f,
+                        10.123456789d,
+                        new object[] {
+                            "world",
+                            new object[] { "nested array", new { A = int.MaxValue, B = int.MinValue } } }
+                        }.ArrayContainsAny(doc.ArrayField)).Select(doc => doc.ArrayField),
+                    skipVerification: true,
+                    serializeOutput: true),
+
+                new LinqTestInput("use document fields",
+                    b => getQuery(b).Where(doc => doc.ArrayField.ArrayContainsAny(new object[] { doc.Id, doc.IntField, doc.GuidField })).Select(doc => doc.ArrayField),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("params with mixed types using document fields",
+                    b => getQuery(b).Where(doc => doc.ArrayField.ArrayContainsAny(
+                        1,
+                        doc.StringField,
+                        null,
+                        doc.VectorFloatField,
+                        10.123456789d,
+                        new object[] {
+                            "world",
+                            new object[] { doc.ToString(), new { A = doc.StringField2.StartsWith("abc"), B = int.MinValue } } }))
+                        .Select(doc => doc.ArrayField),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("use document fields",
+                    b => getQuery(b).Where(doc => new object[] { doc.Id, doc.IntField, doc.GuidField }.ArrayContainsAny(doc.Id, doc.IntField, doc.GuidField)).Select(doc =>  new object[] { doc.Id, doc.IntField, doc.GuidField }),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("use document fields",
+                    b => getQuery(b).Where(doc => new object[] { doc.Id, doc.IntField, doc.GuidField, doc.ArrayField }.ArrayContainsAny(new object[] { doc.ArrayField })).Select(doc => new object[] { doc.Id, doc.IntField, doc.GuidField, doc.ArrayField }),
+                    skipVerification: true,
+                    serializeOutput: true),
+
+                new LinqTestInput("use non-array field",
+                    b => getQuery(b).Where(doc => doc.StringField.ArrayContainsAny(new object[] { doc.Id, doc.IntField, doc.GuidField })).Select(doc => doc.StringField),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("use non-array field",
+                    b => getQuery(b).Where(doc => doc.StringField.ArrayContainsAny(doc.VectorFloatField)).Select(doc => doc.StringField),
+                    skipVerification: true,
+                    serializeOutput: true),
+
+                new LinqTestInput("composite condition",
+                    b => getQuery(b).Where(doc =>
+                        doc.ArrayField.ArrayContainsAny(new object[] { doc.Id, doc.IntField, doc.GuidField }) ||
+                        doc.StringField.StartsWith("abc") &&
+                        doc.EnumerableField.ArrayContainsAny(doc.ArrayField)).Select(doc => new object[] { doc.Id, doc.IntField, doc.GuidField, doc.StringField, doc.EnumerableField }),
+                    skipVerification: true,
+                    serializeOutput: true),
+
+                new LinqTestInput("projection",
+                    b => getQuery(b).Select(doc => new object[] { doc.ArrayField, doc.ArrayField.ArrayContainsAny(
+                        1,
+                        doc.StringField,
+                        null,
+                        doc.VectorFloatField,
+                        10.123456789d,
+                        new object[] {
+                            "world",
+                            new object[] { doc.ToString(), new { A = doc.StringField2.StartsWith("abc"), B = int.MinValue } } }) }),
+                    skipVerification: true,
+                    serializeOutput: true),
+
+                new LinqTestInput("join",
+                    b => getQuery(b).SelectMany(doc => doc.ArrayField).Select(item => new object[] { item, new[] { item }.ArrayContainsAny(item.ToString()) }),
+                    skipVerification: true,
+                    serializeOutput: true),
+            };
+
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
         public void TestArrayFunctions()
         {
             const int Records = 100;
@@ -1435,7 +1726,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 new LinqTestInput("Empty list not contains", b => getQuery(b).Select(doc => !emptyList.Contains((int)doc.NumericField))),
                 // Count
                 new LinqTestInput("Count ArrayField", b => getQuery(b).Select(doc => doc.ArrayField.Count())),
-                new LinqTestInput("Count EnumerableField", b => getQuery(b).Select(doc => doc.EnumerableField.Count()))
+                new LinqTestInput("Count EnumerableField", b => getQuery(b).Select(doc => doc.EnumerableField.Count())),
+
+                // Unsupported:
+                // Contains
+                new LinqTestInput("Contains with EqualityComparer", b => getQuery(b).Select(doc => !doc.EnumerableField.Contains(1, EqualityComparer<int>.Default))),
             };
             this.ExecuteTestSuite(inputs);
         }
