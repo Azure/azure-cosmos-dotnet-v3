@@ -1391,7 +1391,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         {
             const int Records = 10;
             const int MaxAbsValue = 10;
-            const int MaxArraySize = 50;
+            const int MaxArraySize = 5;
 
             int index = 0;
             Func<Random, DataObject> createDataObj = (random) =>
@@ -1405,7 +1405,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 obj.EnumerableField = new List<int>();
                 for (int i = 0; i < index + MaxArraySize; ++i)
                 {
-                    obj.EnumerableField.Add(i - MaxArraySize - MaxAbsValue);
+                    obj.EnumerableField.Add(i - MaxArraySize);
                 }
                 obj.NumericField = (index * MaxAbsValue * 2) - MaxAbsValue;
                 obj.Id = GuidFromInt(index).ToString();
@@ -1460,6 +1460,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                             "world",
                             new object[] { "nested array", new { A = int.MaxValue, B = int.MinValue } } }
                         }.ArrayContainsAll(doc.ArrayField)).Select(doc => doc.ArrayField),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("use enumerable field",
+                    b => getQuery(b).Where(doc => doc.EnumerableField.ArrayContainsAll(5, 6, 7)).Select(doc => doc.EnumerableField),
                     skipVerification: true,
                     serializeOutput: true),
 
@@ -1533,7 +1537,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         {
             const int Records = 10;
             const int MaxAbsValue = 10;
-            const int MaxArraySize = 50;
+            const int MaxArraySize = 5;
 
             int index = 0;
             Func<Random, DataObject> createDataObj = (random) =>
@@ -1547,7 +1551,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 obj.EnumerableField = new List<int>();
                 for (int i = 0; i < index + MaxArraySize; ++i)
                 {
-                    obj.EnumerableField.Add(i - MaxArraySize - MaxAbsValue);
+                    obj.EnumerableField.Add(i - MaxArraySize);
                 }
                 obj.NumericField = (index * MaxAbsValue * 2) - MaxAbsValue;
                 obj.Id = GuidFromInt(index).ToString();
@@ -1602,6 +1606,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                             "world",
                             new object[] { "nested array", new { A = int.MaxValue, B = int.MinValue } } }
                         }.ArrayContainsAny(doc.ArrayField)).Select(doc => doc.ArrayField),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("use enumerable field",
+                    b => getQuery(b).Where(doc => doc.EnumerableField.ArrayContainsAny(5, 6, 7, 100)).Select(doc => doc.EnumerableField),
                     skipVerification: true,
                     serializeOutput: true),
 
