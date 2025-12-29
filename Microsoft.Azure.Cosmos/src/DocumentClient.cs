@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos
         internal readonly AuthorizationTokenProvider cosmosAuthorization;
 
         private readonly bool isThinClientFeatureFlagEnabled = ConfigurationManager.IsThinClientEnabled(defaultValue: false);
-        private bool isThinClientEnabled;
+        internal bool isThinClientEnabled;
 
         // Gateway has backoff/retry logic to hide transient errors.
         private RetryPolicy retryPolicy;
