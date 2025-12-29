@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Documents.Routing;
 
@@ -135,12 +136,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
             foreach (Range<string> providedRange in providedRanges)
             {
-                if (minComparer.Compare(providedRange, new Range<string>(overallMin, overallMin, true, true)) < 0)
+                // ProvidedRanges are user input, which can be generally deserialized from a json representation of FeedRangeInternal.
+                // FeedRangeInternal allows min/max to be included or excluded.
+                // However PartitionKeyRange assumes min is inclusive and max is exclusive.
+                // This is also similar to backend behavior where EPK ranges are always min-inclusive and max-exclusive.
+                // Therefore, despite the possible customization at FeedRangeInternal level, we only support min-inclusive and max-exclusive ranges.
+                // Ideally this validation should be done at the public API. Since that is not present, we only assert below.
+                Debug.Assert(providedRange.IsMinInclusive, "QueryRangeUtils Assert!", "Only min-inclusive ranges are supported!");
+                Debug.Assert(!providedRange.IsMaxInclusive, "QueryRangeUtils Assert!", "Only max-exclusive ranges are supported!");
+
+                if (minComparer.Compare(providedRange, CreateSingleValueRange(overallMin)) < 0)
                 {
                     overallMin = providedRange.Min;
                 }
 
-                if (maxComparer.Compare(providedRange, new Range<string>(overallMax, overallMax, true, true)) > 0)
+                if (maxComparer.Compare(providedRange, CreateSingleValueRange(overallMax)) > 0)
                 {
                     overallMax = providedRange.Max;
                 }
@@ -154,15 +164,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                 string trimmedMax = range.MaxExclusive;
 
                 // Trim min: use the greater of range.Min and overallMin
-                if (minComparer.Compare(new Range<string>(range.MinInclusive, range.MinInclusive, true, true),
-                                        new Range<string>(overallMin, overallMin, true, true)) < 0)
+                if (minComparer.Compare(CreateSingleValueRange(range.MinInclusive), CreateSingleValueRange(overallMin)) < 0)
                 {
                     trimmedMin = overallMin;
                 }
 
                 // Trim max: use the lesser of range.Max and overallMax
-                if (maxComparer.Compare(new Range<string>(range.MaxExclusive, range.MaxExclusive, true, true),
-                                        new Range<string>(overallMax, overallMax, true, true)) > 0)
+                if (maxComparer.Compare(CreateSingleValueRange(range.MaxExclusive), CreateSingleValueRange(overallMax)) > 0)
                 {
                     trimmedMax = overallMax;
                 }
@@ -179,5 +187,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
             return trimmedRanges;
         }
+
+        private static Range<string> CreateSingleValueRange(string singleValue) => new Range<string>(
+            singleValue,
+            singleValue,
+            isMinInclusive: true,
+            isMaxInclusive: true);
     }
 }
