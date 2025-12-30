@@ -517,7 +517,7 @@
 
             List<CosmosIntegrationTestObject> itemsList = new ()
             {
-                new() { Id = "smTestId1", Pk = "smpk1" },
+                new() { Id = Guid.NewGuid().ToString(), Pk = "smpk1" },
             };
 
             try
@@ -646,7 +646,7 @@
 
             List<CosmosIntegrationTestObject> itemsList = new()
             {
-                new() { Id = "smTestId1", Pk = "smpk1" },
+                new() { Id = Guid.NewGuid().ToString(), Pk = "smpk1" },
             };
 
             try
@@ -931,7 +931,7 @@
 
             List<CosmosIntegrationTestObject> itemsList = new()
             {
-                new() { Id = "smTestId1", Pk = "smpk1" },
+                new() { Id = Guid.NewGuid().ToString(), Pk = "smpk1" },
             };
 
             try

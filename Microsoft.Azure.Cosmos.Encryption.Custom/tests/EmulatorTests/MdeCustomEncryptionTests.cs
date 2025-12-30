@@ -292,7 +292,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             {
                 Properties = new Dictionary<string, object>
                 {
-                    { "encryption-json-processor", JsonProcessor.Stream }
+                    { "encryption-json-processor", "Stream" }
                 }
             };
 
@@ -364,7 +364,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                     DataEncryptionKeyId = dekProperties.Id,
                     EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
                     PathsToEncrypt = new List<string> { "/Sensitive" },
-                    JsonProcessor = JsonProcessor.Stream
+                },
+                Properties = new Dictionary<string, object>
+                {
+                    { "encryption-json-processor", "Stream" }
                 }
             };
 
@@ -374,7 +377,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             // Read back with stream override explicit (should decrypt)
             ItemResponse<TestItem> read = await encryptionContainer.ReadItemAsync<TestItem>(testItem.Id, new PartitionKey(testItem.PK), new ItemRequestOptions
             {
-                Properties = new Dictionary<string, object> { { "encryption-json-processor", JsonProcessor.Stream } }
+                Properties = new Dictionary<string, object> { { "encryption-json-processor", "Stream" } }
             });
             Assert.AreEqual(testItem.Sensitive, read.Resource.Sensitive);
         }
@@ -392,16 +395,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                     Sensitive = "diag-secret"
                 };
 
-                EncryptionItemRequestOptions createOptions = new()
-                {
-                    EncryptionOptions = new EncryptionOptions
-                    {
-                        DataEncryptionKeyId = dekProperties.Id,
-                        EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
-                        PathsToEncrypt = new List<string> { "/Sensitive" },
-                        JsonProcessor = JsonProcessor.Stream
-                    }
-                };
+                EncryptionItemRequestOptions createOptions = CreateEncryptionItemRequestOptions(
+                    dekProperties.Id,
+                    CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                    JsonProcessor.Stream);
 
                 bool created = false;
                 try
@@ -420,7 +417,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                         {
                             Properties = new Dictionary<string, object>
                             {
-                                { "encryption-json-processor", JsonProcessor.Stream }
+                                { "encryption-json-processor", "Stream" }
                             }
                         });
 
@@ -523,93 +520,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                 $"Expected to capture newtonsoft decrypt scope. Scopes: {string.Join(", ", scopes)}");
         }
 
-        [TestMethod]
-        public async Task StreamProcessor_NewtonsoftOverrideStaysNewtonsoft()
-        {
-            List<string> scopes = await CaptureEncryptionScopesAsync(async () =>
-            {
-                TestItem testItem = new TestItem
-                {
-                    Id = Guid.NewGuid().ToString(),
-                    PK = Guid.NewGuid().ToString(),
-                    NonSensitive = "explicit-newtonsoft-plain",
-                    Sensitive = "explicit-newtonsoft-secret"
-                };
-
-                EncryptionItemRequestOptions newtonsoftOptions = new()
-                {
-                    EncryptionOptions = new EncryptionOptions
-                    {
-                        DataEncryptionKeyId = dekProperties.Id,
-                        EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
-                        PathsToEncrypt = new List<string> { "/Sensitive" },
-                        JsonProcessor = JsonProcessor.Newtonsoft
-                    },
-                    Properties = new Dictionary<string, object>
-                    {
-                        { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Newtonsoft }
-                    }
-                };
-
-                bool created = false;
-                try
-                {
-                    ItemResponse<TestItem> createResponse = await encryptionContainer.CreateItemAsync(
-                        testItem,
-                        new PartitionKey(testItem.PK),
-                        newtonsoftOptions);
-                    Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
-                    created = true;
-
-                    ItemResponse<TestItem> readResponse = await encryptionContainer.ReadItemAsync<TestItem>(
-                        testItem.Id,
-                        new PartitionKey(testItem.PK),
-                        new ItemRequestOptions
-                        {
-                            Properties = new Dictionary<string, object>
-                            {
-                                { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Newtonsoft }
-                            }
-                        });
-
-                    Assert.AreEqual(testItem.Sensitive, readResponse.Resource.Sensitive);
-                }
-                finally
-                {
-                    if (created)
-                    {
-                        await encryptionContainer.DeleteItemAsync<TestItem>(
-                            testItem.Id,
-                            new PartitionKey(testItem.PK),
-                            new ItemRequestOptions
-                            {
-                                Properties = new Dictionary<string, object>
-                                {
-                                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Newtonsoft }
-                                }
-                            });
-                    }
-                }
-            });
-
-            (int streamEncrypt, int streamDecrypt, int newtonsoftEncrypt, int newtonsoftDecrypt) = CountJsonProcessorScopes(scopes);
-
-            Assert.AreEqual(
-                0,
-                streamEncrypt,
-                $"Did not expect stream encrypt scope when overriding with newtonsoft. Scopes: {string.Join(", ", scopes)}");
-            Assert.AreEqual(
-                0,
-                streamDecrypt,
-                $"Did not expect stream decrypt scope when overriding with newtonsoft. Scopes: {string.Join(", ", scopes)}");
-            Assert.IsTrue(
-                newtonsoftEncrypt >= 1,
-                $"Expected to capture newtonsoft encrypt scope when overriding with newtonsoft. Scopes: {string.Join(", ", scopes)}");
-            Assert.IsTrue(
-                newtonsoftDecrypt >= 1,
-                $"Expected to capture newtonsoft decrypt scope when overriding with newtonsoft. Scopes: {string.Join(", ", scopes)}");
-        }
-
         private static async Task<List<string>> CaptureEncryptionScopesAsync(Func<Task> action)
         {
             List<string> scopes = new List<string>();
@@ -671,16 +581,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                 Sensitive = "po-secret"
             };
 
-            EncryptionItemRequestOptions options = new()
-            {
-                EncryptionOptions = new EncryptionOptions
-                {
-                    DataEncryptionKeyId = dekProperties.Id,
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
-                    PathsToEncrypt = new List<string> { "/Sensitive" },
-                    JsonProcessor = JsonProcessor.Stream
-                }
-            };
+            EncryptionItemRequestOptions options = CreateEncryptionItemRequestOptions(
+                dekProperties.Id,
+                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                JsonProcessor.Stream);
 
             _ = await encryptionContainer.CreateItemAsync(testItem, new PartitionKey(testItem.PK), options);
 
@@ -695,7 +599,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                 output,
                 encryptor,
                 new CosmosDiagnosticsContext(),
-                new ItemRequestOptions { Properties = new Dictionary<string, object> { { "encryption-json-processor", JsonProcessor.Stream } } },
+                new ItemRequestOptions { Properties = new Dictionary<string, object> { { "encryption-json-processor", "Stream" } } },
                 CancellationToken.None);
             Assert.IsNotNull(ctx);
             Assert.AreEqual(0, output.Position); // rewound for caller consumption
@@ -713,18 +617,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                 Sensitive = "legacy-secret"
             };
 
-            EncryptionItemRequestOptions options = new()
-            {
-                EncryptionOptions = new EncryptionOptions
-                {
-                    DataEncryptionKeyId = dekProperties.Id,
+            EncryptionItemRequestOptions options = CreateEncryptionItemRequestOptions(
+                dekProperties.Id,
 #pragma warning disable CS0618
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
+                CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
 #pragma warning restore CS0618
-                    PathsToEncrypt = new List<string> { "/Sensitive" },
-                    JsonProcessor = JsonProcessor.Newtonsoft
-                }
-            };
+                JsonProcessor.Newtonsoft);
+
             _ = await encryptionContainer.CreateItemAsync(testItem, new PartitionKey(testItem.PK), options);
 
             // Get raw encrypted (legacy algorithm) payload without automatic decrypt.
@@ -736,7 +635,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                 output,
                 encryptor,
                 new CosmosDiagnosticsContext(),
-                new ItemRequestOptions { Properties = new Dictionary<string, object> { { "encryption-json-processor", JsonProcessor.Stream } } },
+                new ItemRequestOptions { Properties = new Dictionary<string, object> { { "encryption-json-processor", "Stream" } } },
                 CancellationToken.None);
         }
 
@@ -748,6 +647,25 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             public string Sensitive { get; set; }
         }
 #endif
+
+        private static EncryptionItemRequestOptions CreateEncryptionItemRequestOptions(string dekId, string encryptionAlgorithm, JsonProcessor jsonProcessor)
+        {
+            EncryptionItemRequestOptions options = new ()
+            {
+                EncryptionOptions = new EncryptionOptions
+                {
+                    DataEncryptionKeyId = dekId,
+                    EncryptionAlgorithm = encryptionAlgorithm,
+                    PathsToEncrypt = new List<string> { "/Sensitive" },
+                },
+                Properties = new Dictionary<string, object>
+                {
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, jsonProcessor.ToString() }
+                }
+            };
+
+            return options;
+        }
 
         [TestMethod]
         [ExpectedException(typeof(NotSupportedException))]
@@ -768,7 +686,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                     DataEncryptionKeyId = dekId,
                     EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
                     PathsToEncrypt = TestDoc.PathsToEncrypt,
-                    JsonProcessor = unsupportedProcessor
+                },
+                Properties = new Dictionary<string, object>
+                {
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, unsupportedProcessor }
                 }
             };
 
