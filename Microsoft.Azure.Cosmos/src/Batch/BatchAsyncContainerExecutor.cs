@@ -268,7 +268,11 @@ namespace Microsoft.Azure.Cosmos
             {
                 using (Stream serverRequestPayload = serverRequest.TransferBodyStream())
                 {
-                    RequestOptions requestOptions = itemRequestOptions != null ? itemRequestOptions.ShallowCopy() : new RequestOptions();
+                    RequestOptions requestOptions = new RequestOptions();
+                    if (itemRequestOptions != null && itemRequestOptions.AvailabilityStrategy != null)
+                    {
+                        requestOptions.AvailabilityStrategy = itemRequestOptions.AvailabilityStrategy;
+                    }
                     Debug.Assert(serverRequestPayload != null, "Server request payload expected to be non-null");
                     ResponseMessage responseMessage = await this.cosmosClientContext.ProcessResourceOperationStreamAsync(
                         this.cosmosContainer.LinkUri,
