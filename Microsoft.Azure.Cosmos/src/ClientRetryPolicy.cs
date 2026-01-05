@@ -23,16 +23,25 @@ namespace Microsoft.Azure.Cosmos
         private const int RetryIntervalInMS = 1000; // Once we detect failover wait for 1 second before retrying request.
         private const int MaxRetryCount = 120;
         private const int MaxServiceUnavailableRetryCount = 1;
+        private const int MaxCaeRevocationRetryCount = 1;
+        
+        /// <summary>
+        /// SubStatus code for AAD Emergency Token Revocation.
+        /// When received, the request should fail immediately without retry.
+        /// </summary>
+        private const int EmergencyRevocationSubStatus = 5013;
 
         private readonly IDocumentClientRetryPolicy throttlingRetry;
         private readonly GlobalEndpointManager globalEndpointManager;
         private readonly GlobalPartitionEndpointManager partitionKeyRangeLocationCache;
         private readonly bool enableEndpointDiscovery;
         private readonly bool isThinClientEnabled;
-        private int failoverRetryCount;
+        private readonly AuthorizationTokenProvider authorizationTokenProvider;
 
+        private int failoverRetryCount;
         private int sessionTokenRetryCount;
         private int serviceUnavailableRetryCount;
+        private int caeRevocationRetryCount;
         private bool isReadRequest;
         private bool canUseMultipleWriteLocations;
         private bool isMultiMasterWriteRequest;
@@ -45,7 +54,8 @@ namespace Microsoft.Azure.Cosmos
             GlobalPartitionEndpointManager partitionKeyRangeLocationCache,
             RetryOptions retryOptions,
             bool enableEndpointDiscovery,
-            bool isThinClientEnabled)
+            bool isThinClientEnabled,
+            AuthorizationTokenProvider authorizationTokenProvider = null)
         {
             this.throttlingRetry = new ResourceThrottleRetryPolicy(
                 retryOptions.MaxRetryAttemptsOnThrottledRequests,
@@ -57,9 +67,11 @@ namespace Microsoft.Azure.Cosmos
             this.enableEndpointDiscovery = enableEndpointDiscovery;
             this.sessionTokenRetryCount = 0;
             this.serviceUnavailableRetryCount = 0;
+            this.caeRevocationRetryCount = 0;
             this.canUseMultipleWriteLocations = false;
             this.isMultiMasterWriteRequest = false;
             this.isThinClientEnabled = isThinClientEnabled;
+            this.authorizationTokenProvider = authorizationTokenProvider;
         }
 
         /// <summary> 
@@ -278,7 +290,7 @@ namespace Microsoft.Azure.Cosmos
                     if (this.retryContext != null && this.retryContext.RouteToHub)
                     {
                         forceRefresh = true;
-                        
+
                     }
 
                     ShouldRetryResult retryResult = await this.ShouldRetryOnEndpointFailureAsync(
@@ -334,10 +346,70 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // Recieved 500 status code or lease not found
-            if ((statusCode == HttpStatusCode.InternalServerError && this.isReadRequest)
+            if ((statusCode == HttpStatusCode.InternalServerError && this.isReadRequest)        
                 || (statusCode == HttpStatusCode.Gone && subStatusCode == SubStatusCodes.LeaseNotFound))
             {
                 return this.ShouldRetryOnUnavailableEndpointStatusCodes();
+            }
+
+            // Handle 401 Unauthorized - Check for AAD token revocation scenarios
+            if (statusCode == HttpStatusCode.Unauthorized)
+            {
+                return this.HandleUnauthorizedResponse(subStatusCode);
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Handles 401 Unauthorized responses for AAD token revocation scenarios.
+        /// - Emergency Revocation (401/5013): Fail immediately, no retry, no cache reset
+        /// - CAE Revocation (401 with claims challenge): Reset cache and retry once
+        /// </summary>
+        private ShouldRetryResult HandleUnauthorizedResponse(SubStatusCodes? subStatusCode)
+        {
+            // Emergency Revocation (401/5013): Fail immediately without any action
+            // The token has been revoked at the server level - no point in retrying or refreshing
+            if (subStatusCode.HasValue && (int)subStatusCode.Value == EmergencyRevocationSubStatus)
+            {
+                DefaultTrace.TraceWarning(
+                    "ClientRetryPolicy: Emergency token revocation (401/5013) detected. " +
+                    "Request will NOT be retried. SubStatus={0}",
+                    (int)subStatusCode.Value);
+
+                return ShouldRetryResult.NoRetry();
+            }
+
+            // CAE Revocation: Only handle if using TokenCredential and we have a valid request
+            if (this.documentServiceRequest == null ||
+                !(this.authorizationTokenProvider is AuthorizationTokenProviderTokenCredential tokenProvider))
+            {
+                // Not using AAD authentication, let other handlers deal with this
+                return null;
+            }
+
+            // Check if we've exceeded max CAE retry count
+            if (this.caeRevocationRetryCount >= MaxCaeRevocationRetryCount)
+            {
+                DefaultTrace.TraceWarning(
+                    "ClientRetryPolicy: CAE revocation max retry count ({0}) exceeded. Not retrying.",
+                    MaxCaeRevocationRetryCount);
+
+                return ShouldRetryResult.NoRetry();
+            }
+
+            // Attempt to handle CAE revocation (extracts claims and resets cache)
+            if (tokenProvider.TryHandleCaeRevocation(
+                HttpStatusCode.Unauthorized,
+                this.documentServiceRequest.Headers))
+            {
+                this.caeRevocationRetryCount++;
+
+                DefaultTrace.TraceInformation(
+                    "ClientRetryPolicy: CAE revocation handled. Retrying with fresh token. RetryCount={0}",
+                    this.caeRevocationRetryCount);
+
+                return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
             }
 
             return null;

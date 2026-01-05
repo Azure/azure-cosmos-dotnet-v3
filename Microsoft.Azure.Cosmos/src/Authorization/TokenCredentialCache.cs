@@ -51,6 +51,7 @@ namespace Microsoft.Azure.Cosmos
         private AccessToken? cachedAccessToken = null;
         private bool isBackgroundTaskRunning = false;
         private bool isDisposed = false;
+        private string? cachedClaimsChallenge = null;
 
         internal TokenCredentialCache(
             TokenCredential tokenCredential,
@@ -125,6 +126,30 @@ namespace Microsoft.Azure.Cosmos
             this.isDisposed = true;
         }
 
+        /// <summary>
+        /// Resets the cached token and stores claims challenge for CAE.
+        /// The stored claims will be merged with client capabilities (cp1) in the next token request.
+        /// </summary>
+        /// <param name="claimsChallenge">Optional CAE claims challenge (base64-encoded) to merge with client capabilities</param>
+        internal void ResetCachedToken(string? claimsChallenge = null)
+        {
+            if (this.isDisposed)
+            {
+                return;
+            }
+
+            lock (this.backgroundRefreshLock)
+            {
+                this.cachedAccessToken = null;
+                this.currentRefreshOperation = null;
+                this.isBackgroundTaskRunning = false;
+                this.cachedClaimsChallenge = claimsChallenge;
+            }
+
+            DefaultTrace.TraceInformation(
+                $"TokenCredentialCache: Token cache reset due to AAD revocation signal. HasClaims={claimsChallenge != null}");
+        }
+
         private async Task<AccessToken> GetNewTokenAsync(
             ITrace trace)
         {
@@ -161,6 +186,84 @@ namespace Microsoft.Azure.Cosmos
             return await currentTask;
         }
 
+        /// <summary>
+        /// Merges claims with client capabilities for token requests.
+        /// For CAE Revocation: Returns cp1 + claims challenge
+        /// For Normal requests: Returns only cp1
+        /// </summary>
+        /// <param name="claimsChallenge">The base64-encoded claims challenge from WWW-Authenticate header (null for emergency revocation)</param>
+        /// <returns>JSON string with client capabilities and optional claims (NOT base64-encoded)</returns>
+        internal static string MergeClaimsWithClientCapabilities(string? claimsChallenge)
+        {
+            const string clientCapabilitiesJson = "{\"access_token\":{\"xms_cc\":{\"values\":[\"cp1\"]}}}";
+
+            // Emergency Revocation or Normal request: Return only cp1 capability
+            if (string.IsNullOrEmpty(claimsChallenge))
+            {
+                return clientCapabilitiesJson;
+            }
+
+            // CAE Revocation: Merge claims challenge with cp1
+            try
+            {
+                byte[] claimsBytes = Convert.FromBase64String(claimsChallenge);
+                string claimsJson = System.Text.Encoding.UTF8.GetString(claimsBytes);
+
+                int accessTokenIndex = claimsJson.IndexOf("\"access_token\"", StringComparison.Ordinal);
+                if (accessTokenIndex < 0)
+                {
+                    DefaultTrace.TraceWarning("TokenCredentialCache: CAE claims challenge missing 'access_token' key, using client capabilities only");
+                    return clientCapabilitiesJson;
+                }
+
+                int openBraceIndex = claimsJson.IndexOf('{', accessTokenIndex);
+                if (openBraceIndex < 0)
+                {
+                    DefaultTrace.TraceWarning("TokenCredentialCache: Malformed CAE claims challenge, using client capabilities only");
+                    return clientCapabilitiesJson;
+                }
+
+                // Find the matching closing brace
+                int braceCount = 1;
+                int currentIndex = openBraceIndex + 1;
+                int closeBraceIndex = -1;
+
+                while (currentIndex < claimsJson.Length && braceCount > 0)
+                {
+                    if (claimsJson[currentIndex] == '{')
+                    {
+                        braceCount++;
+                    }
+                    else if (claimsJson[currentIndex] == '}')
+                    {
+                        braceCount--;
+                        if (braceCount == 0)
+                        {
+                            closeBraceIndex = currentIndex;
+                            break;
+                        }
+                    }
+                    currentIndex++;
+                }
+
+                if (closeBraceIndex < 0)
+                {
+                    return clientCapabilitiesJson;
+                }
+
+                string mergedJson = claimsJson.Substring(0, closeBraceIndex) +
+                                    ",\"xms_cc\":{\"values\":[\"cp1\"]}" +
+                                    claimsJson.Substring(closeBraceIndex);
+
+                return mergedJson;
+            }
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceWarning($"TokenCredentialCache: Failed to merge CAE claims challenge: {ex.Message}. Using client capabilities only.");
+                return clientCapabilitiesJson;
+            }
+        }
+
         private async ValueTask<AccessToken> RefreshCachedTokenWithRetryHelperAsync(
             ITrace trace)
         {
@@ -176,7 +279,6 @@ namespace Microsoft.Azure.Cosmos
                     {
                         DefaultTrace.TraceInformation(
                             "Stop RefreshTokenWithIndefiniteRetries because cancellation is requested");
-
                         break;
                     }
 
@@ -189,6 +291,26 @@ namespace Microsoft.Azure.Cosmos
                         {
                             tokenRequestContext = this.scopeProvider.GetTokenRequestContext();
 
+                            string mergedClaims = MergeClaimsWithClientCapabilities(this.cachedClaimsChallenge);
+
+                            if (string.IsNullOrEmpty(this.cachedClaimsChallenge))
+                            {
+                                DefaultTrace.TraceInformation(
+                                    $"Requesting AAD token with CAE client capabilities (cp1). Retry={retry}");
+                            }
+                            else
+                            {
+                                DefaultTrace.TraceInformation(
+                                    $"Requesting AAD token for CAE revocation with claims challenge and client capabilities (cp1). Retry={retry}");
+                            }
+
+                            tokenRequestContext = new TokenRequestContext(
+                                scopes: tokenRequestContext.Scopes,
+                                parentRequestId: tokenRequestContext.ParentRequestId,
+                                claims: mergedClaims,
+                                tenantId: tokenRequestContext.TenantId,
+                                isCaeEnabled: tokenRequestContext.IsCaeEnabled);
+
                             this.cachedAccessToken = await this.tokenCredential.GetTokenAsync(
                                 requestContext: tokenRequestContext,
                                 cancellationToken: this.cancellationToken);
@@ -200,8 +322,13 @@ namespace Microsoft.Azure.Cosmos
 
                             if (this.cachedAccessToken.Value.ExpiresOn < DateTimeOffset.UtcNow)
                             {
-                                throw new ArgumentOutOfRangeException($"TokenCredential.GetTokenAsync returned a token that is already expired. Current Time:{DateTime.UtcNow:O}; Token expire time:{this.cachedAccessToken.Value.ExpiresOn:O}");
+                                throw new ArgumentOutOfRangeException(
+                                    $"TokenCredential.GetTokenAsync returned a token that is already expired. " +
+                                    $"Current Time:{DateTime.UtcNow:O}; Token expire time:{this.cachedAccessToken.Value.ExpiresOn:O}");
                             }
+
+                            // Clear claims challenge after successful token acquisition
+                            this.cachedClaimsChallenge = null;
 
                             if (!this.userDefinedBackgroundTokenCredentialRefreshInterval.HasValue)
                             {
@@ -241,7 +368,12 @@ namespace Microsoft.Azure.Cosmos
                                 $"Exception at {DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)}",
                                 exception.Message);
 
-                            DefaultTrace.TraceError($"TokenCredential.GetToken() failed with RequestFailedException. scope = {string.Join(";", tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException.Message}");
+                            DefaultTrace.TraceError(
+                                $"TokenCredential.GetTokenAsync() failed. " +
+                                $"scope = {string.Join(";", tokenRequestContext.Scopes)}, " +
+                                $"hasClaimsChallenge = {this.cachedClaimsChallenge != null}, " +
+                                $"retry = {retry}, " +
+                                $"Exception = {lastException.Message}");
 
                             // Don't retry on auth failures
                             if (exception is RequestFailedException requestFailedException &&
@@ -249,8 +381,10 @@ namespace Microsoft.Azure.Cosmos
                                     requestFailedException.Status == (int)HttpStatusCode.Forbidden))
                             {
                                 this.cachedAccessToken = default;
+                                this.cachedClaimsChallenge = null;
                                 throw;
                             }
+
                             bool didFallback = this.scopeProvider.TryFallback(exception);
 
                             if (didFallback)
@@ -265,6 +399,8 @@ namespace Microsoft.Azure.Cosmos
                 {
                     throw new ArgumentException("Last exception is null.");
                 }
+
+                this.cachedClaimsChallenge = null;
 
                 // The retries have been exhausted. Throw the last exception.
                 throw lastException;

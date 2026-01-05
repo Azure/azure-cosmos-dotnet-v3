@@ -1075,7 +1075,8 @@ namespace Microsoft.Azure.Cosmos
                 globalEndpointManager: this.GlobalEndpointManager,
                 connectionPolicy: this.ConnectionPolicy,
                 partitionKeyRangeLocationCache: this.PartitionKeyRangeLocation,
-                isThinClientEnabled: this.isThinClientEnabled);
+                isThinClientEnabled: this.isThinClientEnabled,
+                this.cosmosAuthorization);
 
             this.ResetSessionTokenRetryPolicy = this.retryPolicy;
 
