@@ -22,6 +22,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
     [TestCategory("ChangeFeedProcessor")]
     public class BuilderTests : BaseChangeFeedClientHelper
     {
+        private readonly List<Container> containersToCleanup = new List<Container>();
+
         [TestInitialize]
         public async Task TestInitialize()
         {
@@ -31,7 +33,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
         [TestCleanup]
         public async Task Cleanup()
         {
-            await this.TestCleanup();
+            foreach (Container container in this.containersToCleanup)
+            {
+                try
+                {
+                    await container.DeleteContainerStreamAsync(
+                        cancellationToken: this.cancellationToken);
+                }
+                catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    // Container already deleted, ignore
+                }
+            }
+            this.containersToCleanup.Clear();
+
+            await base.TestCleanup();
         }
 
         [TestMethod]
@@ -591,6 +607,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                 throughput: 10000,
                 cancellationToken: this.cancellationToken);
 
+            this.containersToCleanup.Add(response.Container);
             return (ContainerInternal)response;
         }
 

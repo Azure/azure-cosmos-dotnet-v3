@@ -35,6 +35,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         [TestCleanup]
         public async Task Cleanup()
         {
+            if (this.Container != null)
+            {
+                try
+                {
+                    await this.Container.DeleteContainerStreamAsync(
+                        cancellationToken: this.cancellationToken);
+                }
+                catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    // Container already deleted, ignore
+                }
+            }
+
             await base.TestCleanup();
         }
 

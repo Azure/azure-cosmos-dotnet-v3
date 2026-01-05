@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 {
+    using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
 
@@ -23,6 +24,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                 cancellationToken: this.cancellationToken);
 
             this.LeaseContainer = response;
+        }
+
+        public new async Task TestCleanup()
+        {
+            if (this.LeaseContainer != null)
+            {
+                try
+                {
+                    await this.LeaseContainer.DeleteContainerStreamAsync(
+                        cancellationToken: this.cancellationToken);
+                }
+                catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+                {
+                    // Container already deleted, ignore
+                }
+            }
+
+            await base.TestCleanup();
         }
     }
 }
