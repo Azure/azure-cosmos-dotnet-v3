@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos
         private RetryContext retryContext;
         private DocumentServiceRequest documentServiceRequest;
 #if !INTERNAL
-        private bool addHubRegionProcessingOnlyHeader;
+        private volatile bool addHubRegionProcessingOnlyHeader;
 #endif
 
         public ClientRetryPolicy(
