@@ -39,6 +39,7 @@ namespace Microsoft.Azure.Cosmos
     ///         {
     ///             "path": "/embeddings/vector",
     ///             "type": "DiskANN",
+    ///             "quantizerType": "product",  // or "spherical"
     ///             "quantizationByteSize": 2,
     ///             "indexingSearchListSize": 100,
     ///             "vectorIndexShardKey": ["/Country"]
@@ -67,6 +68,20 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = "type")]
         [JsonConverter(typeof(StringEnumConverter))]
         public VectorIndexType Type { get; set; }
+
+        /// <summary>
+        /// Gets or sets the quantizer type for the vector index path. This is only applicable for the quantizedFlat and diskann vector index types.
+        /// Allowed values are "product" and "spherical".
+        /// </summary>
+        [JsonProperty(PropertyName = Constants.Properties.QuantizerType, NullValueHandling = NullValueHandling.Ignore)]
+        [JsonConverter(typeof(StringEnumConverter))]
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        QuantizerType? QuantizerType
+        { get; set; }
 
         /// <summary>
         /// Gets or sets the quantization byte size for the vector index path. This is only applicable for the quantizedFlat and diskann vector index types.
