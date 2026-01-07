@@ -718,6 +718,7 @@ If you have a scenario where tokens generated from the newer SDKs are used by an
 - [#3787](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3787) Connectivity: Fixes ConnectionBroken and adds support for Burst Capacity
 
 ### <a name="3.32.2"/> [3.32.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.32.2) - 2023-03-10
+**Note**: If users on this version face an `IndexOutOfRangeException` and observe connections getting unexpectedly closed, they should upgrade to version `3.32.3` or higher, where this issue has been resolved.
 ### <a name="3.32.2-preview"/> [3.32.2-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.32.2-preview) - 2023-03-10
 
 #### Fixed
@@ -725,12 +726,14 @@ If you have a scenario where tokens generated from the newer SDKs are used by an
 - [#3749](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3749) Query: Fixes regression from LINQ custom serializer fix. Introduced in 3.32.0 PR [3749](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3749)
 
 ### <a name="3.32.1"/> [3.32.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.32.1) - 2023-03-01
+**Note**: If users on this version face an `IndexOutOfRangeException` and observe connections getting unexpectedly closed, they should upgrade to version `3.32.3` or higher, where this issue has been resolved.
 ### <a name="3.32.1-preview"/> [3.32.1-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.32.1-preview) - 2023-03-01
 
 #### Fixed
 - [#3732](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3732) ReadMany: Fixes BadRequest when using Ids with single quotes
 
 ### <a name="3.32.0"/> [3.32.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.32.0) - 2023-02-03
+**Note**: If users on this version face an `IndexOutOfRangeException` and observe connections getting unexpectedly closed, they should upgrade to version `3.32.3` or higher, where this issue has been resolved.
 #### Fixed
 - [#3466](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3466) ClientRetryPolicy: Fixes behavior to Meta-data write operations in multimaster accounts
 - [#3498](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3498) PartitionKey: Fixes NullRef in toString handling for None for PartitionKey.ToString()
