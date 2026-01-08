@@ -403,46 +403,7 @@
                             }
 
         [TestMethod]
-        public async Task ClientRetryPolicy_EmergencyRevocation_ShouldNotRetry()
-        {
-            // Arrange
-            const bool enableEndpointDiscovery = true;
-            using GlobalEndpointManager endpointManager = this.Initialize(
-                useMultipleWriteLocations: false,
-                enableEndpointDiscovery: enableEndpointDiscovery,
-                isPreferredLocationsListEmpty: false);
-
-            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
-                endpointManager,
-                this.partitionKeyRangeLocationCache,
-                new Cosmos.RetryOptions(),
-                enableEndpointDiscovery,
-                isThinClientEnabled: false,
-                authorizationTokenProvider: null);
-
-            DocumentServiceRequest request = this.CreateRequest(isReadRequest: false, isMasterResourceType: false);
-            retryPolicy.OnBeforeSendRequest(request);
-
-            Mock<INameValueCollection> headers = new Mock<INameValueCollection>();
-            DocumentClientException emergencyRevocationException = new DocumentClientException(
-                message: "Emergency token revocation",
-                innerException: null,
-                statusCode: HttpStatusCode.Unauthorized,
-                substatusCode: (SubStatusCodes)5013,
-                requestUri: request.RequestContext.LocationEndpointToRoute,
-                responseHeaders: headers.Object);
-
-            // Act
-            ShouldRetryResult result = await retryPolicy.ShouldRetryAsync(
-                emergencyRevocationException,
-                CancellationToken.None);
-
-            // Assert
-            Assert.IsFalse(result.ShouldRetry, "Emergency revocation (401/5013) should NOT retry");
-        }
-
-        [TestMethod]
-        public async Task ClientRetryPolicy_CaeRevocation_ShouldRetryOnceWithTokenCredential()
+        public async Task ClientRetryPolicy_TokenRevocationWithClaims_ShouldRetryOnceWithTokenCredential()
         {
             // Arrange
             const bool enableEndpointDiscovery = true;
@@ -470,11 +431,10 @@
                 authorizationTokenProvider: tokenProvider);
 
             DocumentServiceRequest request = this.CreateRequest(isReadRequest: false, isMasterResourceType: false);
-    
-            // IMPORTANT: Set up request headers with WWW-Authenticate (simulating what would be in the request after being processed)
-            // This is necessary because ClientRetryPolicy.HandleUnauthorizedResponse() checks request.Headers, not response headers
+
+            // Set up request headers with WWW-Authenticate containing claims
             request.Headers[HttpConstants.HttpHeaders.WwwAuthenticate] = "Bearer error=\"insufficient_claims\", claims=\"eyJhY2Nlc3NfdG9rZW4iOnt9fQ==\"";
-    
+
             retryPolicy.OnBeforeSendRequest(request);
 
             Mock<INameValueCollection> responseHeaders = new Mock<INameValueCollection>();
@@ -482,21 +442,21 @@
                 .Setup(x => x[HttpConstants.HttpHeaders.WwwAuthenticate])
                 .Returns("Bearer error=\"insufficient_claims\", claims=\"eyJhY2Nlc3NfdG9rZW4iOnt9fQ==\"");
 
-            DocumentClientException caeException = new DocumentClientException(
-                message: "CAE token revocation",
+            DocumentClientException revocationException = new DocumentClientException(
+                message: "AAD token revocation",
                 innerException: null,
                 statusCode: HttpStatusCode.Unauthorized,
-                substatusCode: SubStatusCodes.Unknown,
+                substatusCode: SubStatusCodes.Unknown, // ✅ No special substatus
                 requestUri: request.RequestContext.LocationEndpointToRoute,
                 responseHeaders: responseHeaders.Object);
 
             // Act & Assert - First attempt should retry
-            ShouldRetryResult firstResult = await retryPolicy.ShouldRetryAsync(caeException, CancellationToken.None);
-            Assert.IsTrue(firstResult.ShouldRetry, "CAE revocation should retry on first attempt");
+            ShouldRetryResult firstResult = await retryPolicy.ShouldRetryAsync(revocationException, CancellationToken.None);
+            Assert.IsTrue(firstResult.ShouldRetry, "Token revocation with claims should retry on first attempt");
 
             // Second attempt should NOT retry (max count exceeded)
-            ShouldRetryResult secondResult = await retryPolicy.ShouldRetryAsync(caeException, CancellationToken.None);
-            Assert.IsFalse(secondResult.ShouldRetry, "CAE revocation should NOT retry after max count exceeded");
+            ShouldRetryResult secondResult = await retryPolicy.ShouldRetryAsync(revocationException, CancellationToken.None);
+            Assert.IsFalse(secondResult.ShouldRetry, "Token revocation should NOT retry after max count exceeded");
         }
 
         [TestMethod]

@@ -127,10 +127,10 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Resets the cached token and stores claims challenge for CAE.
+        /// Resets the cached token and stores claims challenge for AAD token revocation.
         /// The stored claims will be merged with client capabilities (cp1) in the next token request.
         /// </summary>
-        /// <param name="claimsChallenge">Optional CAE claims challenge (base64-encoded) to merge with client capabilities</param>
+        /// <param name="claimsChallenge">Optional claims challenge (base64-encoded) from WWW-Authenticate header to merge with client capabilities</param>
         internal void ResetCachedToken(string? claimsChallenge = null)
         {
             if (this.isDisposed)
@@ -151,7 +151,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private async Task<AccessToken> GetNewTokenAsync(
-            ITrace trace)
+           ITrace trace)
         {
             // Use a local variable to avoid the possibility the task gets changed
             // between the null check and the await operation.
@@ -188,22 +188,22 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Merges claims with client capabilities for token requests.
-        /// For CAE Revocation: Returns cp1 + claims challenge
+        /// For Token Revocation: Returns cp1 + claims challenge
         /// For Normal requests: Returns only cp1
         /// </summary>
-        /// <param name="claimsChallenge">The base64-encoded claims challenge from WWW-Authenticate header (null for emergency revocation)</param>
+        /// <param name="claimsChallenge">The base64-encoded claims challenge from WWW-Authenticate header (null for normal requests)</param>
         /// <returns>JSON string with client capabilities and optional claims (NOT base64-encoded)</returns>
         internal static string MergeClaimsWithClientCapabilities(string? claimsChallenge)
         {
             const string clientCapabilitiesJson = "{\"access_token\":{\"xms_cc\":{\"values\":[\"cp1\"]}}}";
 
-            // Emergency Revocation or Normal request: Return only cp1 capability
+            // Return only cp1 capability
             if (string.IsNullOrEmpty(claimsChallenge))
             {
                 return clientCapabilitiesJson;
             }
 
-            // CAE Revocation: Merge claims challenge with cp1
+            // Token Revocation: Merge claims challenge with cp1
             try
             {
                 byte[] claimsBytes = Convert.FromBase64String(claimsChallenge);
@@ -259,7 +259,7 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceWarning($"TokenCredentialCache: Failed to merge CAE claims challenge: {ex.Message}. Using client capabilities only.");
+                DefaultTrace.TraceWarning($"TokenCredentialCache: Failed to merge claims challenge: {ex.Message}. Using client capabilities only.");
                 return clientCapabilitiesJson;
             }
         }
@@ -301,7 +301,7 @@ namespace Microsoft.Azure.Cosmos
                             else
                             {
                                 DefaultTrace.TraceInformation(
-                                    $"Requesting AAD token for CAE revocation with claims challenge and client capabilities (cp1). Retry={retry}");
+                                    $"Requesting AAD token for revocation with claims challenge and client capabilities (cp1). Retry={retry}");
                             }
 
                             tokenRequestContext = new TokenRequestContext(

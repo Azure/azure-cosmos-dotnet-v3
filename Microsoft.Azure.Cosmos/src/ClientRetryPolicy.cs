@@ -24,12 +24,6 @@ namespace Microsoft.Azure.Cosmos
         private const int MaxRetryCount = 120;
         private const int MaxServiceUnavailableRetryCount = 1;
         private const int MaxCaeRevocationRetryCount = 1;
-        
-        /// <summary>
-        /// SubStatus code for AAD Emergency Token Revocation.
-        /// When received, the request should fail immediately without retry.
-        /// </summary>
-        private const int EmergencyRevocationSubStatus = 5013;
 
         private readonly IDocumentClientRetryPolicy throttlingRetry;
         private readonly GlobalEndpointManager globalEndpointManager;
@@ -352,10 +346,10 @@ namespace Microsoft.Azure.Cosmos
                 return this.ShouldRetryOnUnavailableEndpointStatusCodes();
             }
 
-            // Handle 401 Unauthorized - Check for AAD token revocation scenarios
+            // Handle 401 Unauthorized - Check for AAD token revocation with claims challenge
             if (statusCode == HttpStatusCode.Unauthorized)
             {
-                return this.HandleUnauthorizedResponse(subStatusCode);
+                return this.HandleUnauthorizedResponse();
             }
 
             return null;
@@ -363,28 +357,13 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Handles 401 Unauthorized responses for AAD token revocation scenarios.
-        /// - Emergency Revocation (401/5013): Fail immediately, no retry, no cache reset
-        /// - CAE Revocation (401 with claims challenge): Reset cache and retry once
+        /// Checks for claims challenge in WWW-Authenticate header, resets cache, and retries with fresh token.
         /// </summary>
-        private ShouldRetryResult HandleUnauthorizedResponse(SubStatusCodes? subStatusCode)
+        private ShouldRetryResult HandleUnauthorizedResponse()
         {
-            // Emergency Revocation (401/5013): Fail immediately without any action
-            // The token has been revoked at the server level - no point in retrying or refreshing
-            if (subStatusCode.HasValue && (int)subStatusCode.Value == EmergencyRevocationSubStatus)
-            {
-                DefaultTrace.TraceWarning(
-                    "ClientRetryPolicy: Emergency token revocation (401/5013) detected. " +
-                    "Request will NOT be retried. SubStatus={0}",
-                    (int)subStatusCode.Value);
-
-                return ShouldRetryResult.NoRetry();
-            }
-
-            // CAE Revocation: Only handle if using TokenCredential and we have a valid request
             if (this.documentServiceRequest == null ||
                 !(this.authorizationTokenProvider is AuthorizationTokenProviderTokenCredential tokenProvider))
             {
-                // Not using AAD authentication, let other handlers deal with this
                 return null;
             }
 
@@ -392,21 +371,21 @@ namespace Microsoft.Azure.Cosmos
             if (this.caeRevocationRetryCount >= MaxCaeRevocationRetryCount)
             {
                 DefaultTrace.TraceWarning(
-                    "ClientRetryPolicy: CAE revocation max retry count ({0}) exceeded. Not retrying.",
+                    "ClientRetryPolicy: Token revocation max retry count ({0}) exceeded. Not retrying.",
                     MaxCaeRevocationRetryCount);
 
                 return ShouldRetryResult.NoRetry();
             }
 
-            // Attempt to handle CAE revocation (extracts claims and resets cache)
-            if (tokenProvider.TryHandleCaeRevocation(
+            // Attempt to handle token revocation (extracts claims and resets cache)
+            if (tokenProvider.TryHandleTokenRevocation(
                 HttpStatusCode.Unauthorized,
                 this.documentServiceRequest.Headers))
             {
                 this.caeRevocationRetryCount++;
 
                 DefaultTrace.TraceInformation(
-                    "ClientRetryPolicy: CAE revocation handled. Retrying with fresh token. RetryCount={0}",
+                    "ClientRetryPolicy: AAD token revocation handled. Retrying with fresh token. RetryCount={0}",
                     this.caeRevocationRetryCount);
 
                 return ShouldRetryResult.RetryAfter(TimeSpan.Zero);

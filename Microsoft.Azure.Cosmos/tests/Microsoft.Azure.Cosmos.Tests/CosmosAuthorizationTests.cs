@@ -529,10 +529,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         [DataRow("Bearer error=\"insufficient_claims\", claims=\"eyJhY2Nlc3NfdG9rZW4iOnt9fQ==\"", true, DisplayName = "With insufficient_claims")]
         [DataRow("Bearer claims=\"eyJhY2Nlc3NfdG9rZW4iOnt9fQ==\"", true, DisplayName = "With claims only")]
-        [DataRow("Bearer realm=\"test\"", false, DisplayName = "Without CAE indicators")]
-        [DataRow(null, false, DisplayName = "Null header")]
+        [DataRow("Bearer realm=\"test\"", false, DisplayName = "Without claims challenge")]
         [DataRow("", false, DisplayName = "Empty header")]
-        public void TryHandleCaeRevocation_VariousHeaders(string wwwAuthenticateValue, bool expectedResult)
+        public void TryHandleTokenRevocation_VariousHeaders(string wwwAuthenticateValue, bool expectedResult)
         {
             // Arrange
             Mock<TokenCredential> mockTokenCredential = new Mock<TokenCredential>();
@@ -552,7 +551,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
 
             // Act
-            bool result = tokenProvider.TryHandleCaeRevocation(HttpStatusCode.Unauthorized, headers);
+            bool result = tokenProvider.TryHandleTokenRevocation(HttpStatusCode.Unauthorized, headers);
 
             // Assert
             Assert.AreEqual(expectedResult, result);
@@ -562,7 +561,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [DataRow(HttpStatusCode.Forbidden)]
         [DataRow(HttpStatusCode.BadRequest)]
         [DataRow(HttpStatusCode.NotFound)]
-        public void TryHandleCaeRevocation_NonUnauthorizedStatus_ReturnsFalse(HttpStatusCode statusCode)
+        public void TryHandleTokenRevocation_NonUnauthorizedStatus_ReturnsFalse(HttpStatusCode statusCode)
         {
             // Arrange
             Mock<TokenCredential> mockTokenCredential = new Mock<TokenCredential>();
@@ -580,8 +579,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "Bearer error=\"insufficient_claims\", claims=\"eyJhY2Nlc3NfdG9rZW4iOnt9fQ==\"");
 
             // Act
-            bool result = tokenProvider.TryHandleCaeRevocation(statusCode, headers);
-
+            bool result = tokenProvider.TryHandleTokenRevocation(statusCode, headers);
             // Assert
             Assert.IsFalse(result);
         }

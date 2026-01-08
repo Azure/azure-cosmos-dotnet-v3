@@ -119,13 +119,13 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Attempts to handle CAE (Continuous Access Evaluation) token revocation.
-        /// Extracts claims challenge from WWW-Authenticate header and resets cache for retry.
+        /// Attempts to handle AAD token revocation by checking for claims challenge.
+        /// Extracts claims from WWW-Authenticate header and resets cache for retry with fresh token.
         /// </summary>
         /// <param name="statusCode">HTTP status code from the response</param>
         /// <param name="headers">Response headers containing WWW-Authenticate</param>
-        /// <returns>True if CAE revocation detected and request should be retried; false otherwise</returns>
-        internal bool TryHandleCaeRevocation(
+        /// <returns>True if claims challenge detected and request should be retried; false otherwise</returns>
+        internal bool TryHandleTokenRevocation(
             HttpStatusCode statusCode,
             INameValueCollection headers)
         {
@@ -140,11 +140,11 @@ namespace Microsoft.Azure.Cosmos
                 return false;
             }
 
-            // Check for CAE claims challenge indicators
-            bool hasCaeIndicators = wwwAuth.IndexOf("insufficient_claims", StringComparison.OrdinalIgnoreCase) >= 0
+            // Check for claims challenge indicators
+            bool hasClaimsChallenge = wwwAuth.IndexOf("insufficient_claims", StringComparison.OrdinalIgnoreCase) >= 0
                 || wwwAuth.IndexOf("claims=", StringComparison.OrdinalIgnoreCase) >= 0;
 
-            if (!hasCaeIndicators)
+            if (!hasClaimsChallenge)
             {
                 return false;
             }
@@ -155,7 +155,7 @@ namespace Microsoft.Azure.Cosmos
             this.tokenCredentialCache.ResetCachedToken(claimsChallenge);
 
             DefaultTrace.TraceInformation(
-                "AAD CAE revocation detected. Token cache reset with claims challenge. " +
+                "AAD token revocation detected (claims challenge present). Token cache reset. " +
                 "Request will be retried with fresh token including claims. HasClaims={0}",
                 claimsChallenge != null);
 

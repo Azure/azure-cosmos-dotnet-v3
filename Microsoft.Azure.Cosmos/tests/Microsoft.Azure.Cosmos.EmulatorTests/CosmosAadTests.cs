@@ -446,7 +446,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task AadCaeRevocation_WithMockedServerResponse_ShouldTriggerTokenRefresh()
+        public async Task AadTokenRevocation_WithMockedServerResponse_ShouldTriggerTokenRefresh()
         {
             string databaseId = Guid.NewGuid().ToString();
             string containerId = Guid.NewGuid().ToString();
@@ -539,93 +539,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task AadEmergencyRevocation_WithMockedServerResponse_ShouldFailImmediately()
-        {
-            string databaseId = Guid.NewGuid().ToString();
-            string containerId = Guid.NewGuid().ToString();
-
-            using CosmosClient setupClient = TestCommon.CreateCosmosClient();
-            Database database = await setupClient.CreateDatabaseAsync(databaseId);
-
-            try
-            {
-                await database.CreateContainerAsync(containerId, "/id");
-                (string endpoint, string authKey) = TestCommon.GetAccountInfo();
-
-                int tokenRequestCount = 0;
-                int docRequestCount = 0;
-
-                LocalEmulatorTokenCredential tokenCredential = new LocalEmulatorTokenCredential(
-                    expectedScope: "https://127.0.0.1/.default",
-                    masterKey: authKey,
-                    getTokenCallback: (context, token) => tokenRequestCount++);
-
-                HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper
-                {
-                    ResponseIntercepter = (response, request) =>
-                    {
-                        bool isDocumentCreate = request.Method == HttpMethod.Post
-                            && request.RequestUri.PathAndQuery.Contains("/docs");
-
-                        if (isDocumentCreate)
-                        {
-                            docRequestCount++;
-
-                            // Always return emergency revocation for document requests
-                            HttpResponseMessage emergencyResponse = new HttpResponseMessage(HttpStatusCode.Unauthorized)
-                            {
-                                RequestMessage = request,
-                                Content = new StringContent("{\"message\":\"Emergency revocation\"}")
-                            };
-                            emergencyResponse.Headers.Add("x-ms-substatus", "5013");
-
-                            return Task.FromResult(emergencyResponse);
-                        }
-
-                        return Task.FromResult(response);
-                    }
-                };
-
-                CosmosClientOptions clientOptions = new CosmosClientOptions()
-                {
-                    ConnectionMode = ConnectionMode.Gateway,
-                    HttpClientFactory = () => new HttpClient(httpHandler),
-                };
-
-                using CosmosClient aadClient = new CosmosClient(endpoint, tokenCredential, clientOptions);
-
-                Container aadContainer = aadClient.GetContainer(databaseId, containerId);
-
-                int tokenCountBeforeDocOp = tokenRequestCount;
-
-                ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
-
-                try
-                {
-                    await aadContainer.CreateItemAsync(item, new PartitionKey(item.id));
-                    Assert.Fail("Expected CosmosException for emergency revocation");
-                }
-                catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized)
-                {
-                    Assert.AreEqual(5013, (int)ex.SubStatusCode, "Should have 5013 substatus");
-                }
-
-                // Should only have 1 document request (no retry for emergency)
-                Assert.AreEqual(1, docRequestCount, "Emergency revocation should NOT trigger retry");
-
-                // Token should NOT be re-requested for emergency revocation
-                int tokensRequestedDuringDocOp = tokenRequestCount - tokenCountBeforeDocOp;
-                Assert.AreEqual(0, tokensRequestedDuringDocOp,
-                    $"Token should NOT be refreshed for emergency revocation. Tokens requested: {tokensRequestedDuringDocOp}");
-            }
-            finally
-            {
-                await database?.DeleteStreamAsync();
-            }
-        }
-
-        [TestMethod]
-        public async Task AadCaeRevocation_ExceedsMaxRetry_ShouldFail()
+        public async Task AadTokenRevocation_ExceedsMaxRetry_ShouldFail()
         {
             string databaseId = Guid.NewGuid().ToString();
             string containerId = Guid.NewGuid().ToString();
