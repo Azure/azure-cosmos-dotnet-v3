@@ -135,7 +135,8 @@ namespace Microsoft.Azure.Cosmos
         //Auth
         internal readonly AuthorizationTokenProvider cosmosAuthorization;
 
-        private bool isThinClientEnabled = ConfigurationManager.IsThinClientEnabled(defaultValue: false);
+        private readonly bool isThinClientFeatureFlagEnabled = ConfigurationManager.IsThinClientEnabled(defaultValue: false);
+        internal bool isThinClientEnabled;
 
         // Gateway has backoff/retry logic to hide transient errors.
         private RetryPolicy retryPolicy;
@@ -1058,7 +1059,7 @@ namespace Microsoft.Azure.Cosmos
                 this.ConnectionPolicy.EnablePartitionLevelFailover = this.accountServiceConfiguration.AccountProperties.EnablePartitionLevelFailover.Value;
             }
 
-            this.isThinClientEnabled = (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway) &&
+            this.isThinClientEnabled = this.isThinClientFeatureFlagEnabled && (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway) &&
                 (this.accountServiceConfiguration.AccountProperties?.ThinClientWritableLocationsInternal?.Count ?? 0) > 0;
             this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker |= this.ConnectionPolicy.EnablePartitionLevelFailover;
             this.ConnectionPolicy.UserAgentContainer.AppendFeatures(this.GetUserAgentFeatures());
@@ -6539,6 +6540,14 @@ namespace Microsoft.Azure.Cosmos
                         "GET",
                         AuthorizationTokenType.PrimaryMasterKey);
 
+                    // Added the thinclient endpoint discovery header for account data refresh requests.
+                    // This header signals to the service that the client supports thin client mode
+                    // and needs thinclient-specific endpoint information in the response.
+                    if (this.isThinClientFeatureFlagEnabled)
+                    {
+                        headersCollection[ThinClientConstants.EnableThinClientEndpointDiscoveryHeaderName] = true.ToString();
+                    }
+
                     foreach (string key in headersCollection.AllKeys())
                     {
                         request.Headers.Add(key, headersCollection[key]);
@@ -6823,7 +6832,7 @@ namespace Microsoft.Azure.Cosmos
                     connectionPolicy: this.ConnectionPolicy,
                     httpClient: this.httpClient,
                     cancellationToken: this.cancellationTokenSource.Token,
-                    isThinClientEnabled: this.isThinClientEnabled);
+                    isThinClientEnabled: this.isThinClientFeatureFlagEnabled);
 
             this.accountServiceConfiguration = new CosmosAccountServiceConfiguration(accountReader.InitializeReaderAsync);
 
