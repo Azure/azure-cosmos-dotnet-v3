@@ -36,6 +36,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly int maxBatchOperationCount;
         private readonly InterlockIncrementCheck interlockIncrementCheck = new InterlockIncrementCheck();
         private readonly CosmosClientContext clientContext;
+        private readonly ItemRequestOptions options;
         private long currentSize = 0;
         private bool dispatched = false;
         private bool isClientEncrypted = false;
@@ -49,7 +50,8 @@ namespace Microsoft.Azure.Cosmos
             CosmosSerializerCore serializerCore,
             BatchAsyncBatcherExecuteDelegate executor,
             BatchAsyncBatcherRetryDelegate retrier,
-            CosmosClientContext clientContext)
+            CosmosClientContext clientContext,
+            ItemRequestOptions options = null)
         {
             if (maxBatchOperationCount < 1)
             {
@@ -68,6 +70,7 @@ namespace Microsoft.Azure.Cosmos
             this.maxBatchOperationCount = maxBatchOperationCount;
             this.serializerCore = serializerCore ?? throw new ArgumentNullException(nameof(serializerCore));
             this.clientContext = clientContext;
+            this.options = options;
         }
 
         public virtual bool TryAdd(ItemBatchOperation operation)
@@ -166,7 +169,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     ValueStopwatch stopwatch = ValueStopwatch.StartNew();
 
-                    PartitionKeyRangeBatchExecutionResult result = await this.executor(serverRequest, trace, cancellationToken);
+                    PartitionKeyRangeBatchExecutionResult result = await this.executor(serverRequest, trace, this.options, cancellationToken);
 
                     int numThrottle = result.ServerResponse.Any(r => r.StatusCode == (System.Net.HttpStatusCode)StatusCodes.TooManyRequests) ? 1 : 0;
                     partitionMetric.Add(
@@ -245,6 +248,7 @@ namespace Microsoft.Azure.Cosmos
     internal delegate Task<PartitionKeyRangeBatchExecutionResult> BatchAsyncBatcherExecuteDelegate(
         PartitionKeyRangeServerBatchRequest request,
         ITrace trace,
+        ItemRequestOptions requestOptions,
         CancellationToken cancellationToken);
 
     /// <summary>

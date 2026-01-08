@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
                 operation, 
                 trace, 
                 cancellationToken).ConfigureAwait(false);
-            BatchAsyncStreamer streamer = this.GetOrAddStreamerForPartitionKeyRange(resolvedPartitionKeyRangeId);
+            BatchAsyncStreamer streamer = this.GetOrAddStreamerForPartitionKeyRange(resolvedPartitionKeyRangeId, itemRequestOptions);
 
             ItemBatchOperationContext context = new ItemBatchOperationContext(
                 resolvedPartitionKeyRangeId,
@@ -260,6 +260,7 @@ namespace Microsoft.Azure.Cosmos
         private async Task<PartitionKeyRangeBatchExecutionResult> ExecuteAsync(
             PartitionKeyRangeServerBatchRequest serverRequest,
             ITrace trace,
+            ItemRequestOptions itemRequestOptions,
             CancellationToken cancellationToken)
         {
             SemaphoreSlim limiter = this.GetOrAddLimiterForPartitionKeyRange(serverRequest.PartitionKeyRangeId);
@@ -267,12 +268,17 @@ namespace Microsoft.Azure.Cosmos
             {
                 using (Stream serverRequestPayload = serverRequest.TransferBodyStream())
                 {
+                    RequestOptions requestOptions = new RequestOptions();
+                    if (itemRequestOptions != null && itemRequestOptions.AvailabilityStrategy != null)
+                    {
+                        requestOptions.AvailabilityStrategy = itemRequestOptions.AvailabilityStrategy;
+                    }
                     Debug.Assert(serverRequestPayload != null, "Server request payload expected to be non-null");
                     ResponseMessage responseMessage = await this.cosmosClientContext.ProcessResourceOperationStreamAsync(
                         this.cosmosContainer.LinkUri,
                         ResourceType.Document,
                         OperationType.Batch,
-                        new RequestOptions(),
+                        requestOptions,
                         cosmosContainerCore: this.cosmosContainer,
                         feedRange: null,
                         streamPayload: serverRequestPayload,
@@ -296,7 +302,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private BatchAsyncStreamer GetOrAddStreamerForPartitionKeyRange(string partitionKeyRangeId)
+        private BatchAsyncStreamer GetOrAddStreamerForPartitionKeyRange(string partitionKeyRangeId, ItemRequestOptions options = null)
         {
             if (this.streamersByPartitionKeyRange.TryGetValue(partitionKeyRangeId, out BatchAsyncStreamer streamer))
             {
@@ -312,7 +318,8 @@ namespace Microsoft.Azure.Cosmos
                 this.cosmosClientContext.SerializerCore,
                 this.ExecuteAsync,
                 this.ReBatchAsync,
-                this.cosmosClientContext);
+                this.cosmosClientContext,
+                options);
             if (!this.streamersByPartitionKeyRange.TryAdd(partitionKeyRangeId, newStreamer))
             {
                 newStreamer.Dispose();
