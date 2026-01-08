@@ -17,9 +17,9 @@ namespace Microsoft.Azure.Cosmos.Linq
 
     internal static class OtherBuiltinSystemFunctions
     {
-        private class RRFVisitor : SqlBuiltinFunctionVisitor
+        private class RrfVisitor : SqlBuiltinFunctionVisitor
         {
-            public RRFVisitor()
+            public RrfVisitor()
                 : base("RRF",
                     true,
                     new List<Type[]>()
@@ -249,7 +249,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                         new Type[]{typeof(object)},
                     }),
                 [nameof(CosmosLinqExtensions.FullTextScore)] = new FullTextScoreVisitor(),
-                [nameof(CosmosLinqExtensions.RRF)] = new RRFVisitor(),
+                [nameof(CosmosLinqExtensions.RRF)] = new RrfVisitor(),
                 [nameof(CosmosLinqExtensions.VectorDistance)] = new VectorDistanceVisitor(),
             };
         }
