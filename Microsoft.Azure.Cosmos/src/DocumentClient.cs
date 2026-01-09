@@ -125,6 +125,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly bool IsLocalQuorumConsistency = false;
         private readonly bool isReplicaAddressValidationEnabled;
         private readonly bool enableAsyncCacheExceptionNoSharing;
+        private readonly bool useLengthAwareRangeComparator;
 
         //Fault Injection
         private readonly IChaosInterceptorFactory chaosInterceptorFactory;
@@ -457,6 +458,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cosmosClientTelemetryOptions">This is distributed tracing flag</param>
         /// <param name="chaosInterceptorFactory">This is the chaos interceptor used for fault injection</param>
         /// <param name="enableAsyncCacheExceptionNoSharing">A boolean flag indicating if stack trace optimization is enabled.</param>
+        /// <param name="useLengthAwareRangeComparer">A boolean flag indicating if length-aware range comparators should be used for EPK range comparisons.</param>
         /// <remarks>
         /// The service endpoint can be obtained from the Azure Management Portal.
         /// If you are connecting using one of the Master Keys, these can be obtained along with the endpoint from the Azure Management Portal
@@ -486,7 +488,8 @@ namespace Microsoft.Azure.Cosmos
                               RemoteCertificateValidationCallback remoteCertificateValidationCallback = null,
                               CosmosClientTelemetryOptions cosmosClientTelemetryOptions = null,
                               IChaosInterceptorFactory chaosInterceptorFactory = null,
-                              bool enableAsyncCacheExceptionNoSharing = true)
+                              bool enableAsyncCacheExceptionNoSharing = true,
+                              bool useLengthAwareRangeComparer = true)
         {
             if (sendingRequestEventArgs != null)
             {
@@ -514,6 +517,7 @@ namespace Microsoft.Azure.Cosmos
                 enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
             this.chaosInterceptorFactory = chaosInterceptorFactory;
             this.chaosInterceptor = chaosInterceptorFactory?.CreateInterceptor(this);
+            this.useLengthAwareRangeComparator = useLengthAwareRangeComparer;
 
             this.Initialize(
                 serviceEndpoint: serviceEndpoint,

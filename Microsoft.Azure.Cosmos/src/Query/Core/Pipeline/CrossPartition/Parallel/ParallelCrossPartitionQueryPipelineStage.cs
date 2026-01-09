@@ -137,7 +137,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
             ContainerQueryProperties containerQueryProperties,
             int maxConcurrency,
             PrefetchPolicy prefetchPolicy,
-            CosmosElement continuationToken)
+            CosmosElement continuationToken,
+            bool useLengthAwareRangeComparer)
         {
             if (targetRanges == null)
             {
@@ -159,7 +160,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
 
             CrossPartitionRangePageAsyncEnumerator<QueryPage, QueryState> crossPartitionPageEnumerator = new CrossPartitionRangePageAsyncEnumerator<QueryPage, QueryState>(
                 feedRangeProvider: documentContainer,
-                createPartitionRangeEnumerator: ParallelCrossPartitionQueryPipelineStage.MakeCreateFunction(documentContainer, sqlQuerySpec, queryPaginationOptions, partitionKey, containerQueryProperties),
+                createPartitionRangeEnumerator: ParallelCrossPartitionQueryPipelineStage.MakeCreateFunction(documentContainer, sqlQuerySpec, queryPaginationOptions, partitionKey, containerQueryProperties, useLengthAwareRangeComparer),
                 comparer: Comparer.Singleton,
                 maxConcurrency: maxConcurrency,
                 prefetchPolicy: prefetchPolicy,
@@ -245,13 +246,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
             SqlQuerySpec sqlQuerySpec,
             QueryExecutionOptions queryPaginationOptions,
             Cosmos.PartitionKey? partitionKey,
-            ContainerQueryProperties containerQueryProperties) => (FeedRangeState<QueryState> feedRangeState) => new QueryPartitionRangePageAsyncEnumerator(
+            ContainerQueryProperties containerQueryProperties,
+            bool useLengthAwareRangeComparer) => (FeedRangeState<QueryState> feedRangeState) => new QueryPartitionRangePageAsyncEnumerator(
                 queryDataSource,
                 sqlQuerySpec,
                 feedRangeState,
                 partitionKey,
                 queryPaginationOptions,
-                containerQueryProperties);
+                containerQueryProperties,
+                useLengthAwareRangeComparer);
 
         private sealed class Comparer : IComparer<PartitionRangePageAsyncEnumerator<QueryPage, QueryState>>
         {

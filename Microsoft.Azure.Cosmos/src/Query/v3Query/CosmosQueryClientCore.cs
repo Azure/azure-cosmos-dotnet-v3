@@ -240,7 +240,7 @@ namespace Microsoft.Azure.Cosmos
                     forceRefresh,
                     childTrace);
 
-                return QueryRangeUtils.LimitPartitionKeyRangesToProvidedRanges(ranges, providedRanges);
+                return QueryRangeUtils.LimitPartitionKeyRangesToProvidedRanges(ranges, providedRanges, this.clientContext.ClientOptions.UseLengthAwareRangeComparer);
             }
         }
 
