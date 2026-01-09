@@ -403,7 +403,9 @@
         }
 
         [TestMethod]
-        public async Task ClientRetryPolicy_AddsHubRegionProcessingOnlyHeader_On404_1002()
+        [DataRow(true, DisplayName = "Read request - Hub region header persists across retries after 404/1002")]
+        [DataRow(false, DisplayName = "Write request - Hub region header persists across retries after 404/1002")]
+        public async Task ClientRetryPolicy_HubRegionHeader_AddedOn404_1002_AndPersistsAcrossRetries(bool isReadRequest)
         {
             // Arrange
             const bool enableEndpointDiscovery = true;
@@ -420,31 +422,46 @@
                 enableEndpointDiscovery,
                 isThinClientEnabled: false);
 
-            DocumentServiceRequest request1 = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+            DocumentServiceRequest request = this.CreateRequest(isReadRequest: isReadRequest, isMasterResourceType: false);
 
-            Assert.IsNull(request1.Headers.GetValues(HubRegionHeader), "Header should not exist before any retry.");
+            // First attempt - header should not exist
+            retryPolicy.OnBeforeSendRequest(request);
+            Assert.IsNull(request.Headers.GetValues(HubRegionHeader), "Header should not exist on initial request before any 404/1002 error.");
 
-            DocumentClientException simulatedException = new DocumentClientException(
+            // Simulate 404/1002 error
+            DocumentClientException sessionNotAvailableException = new DocumentClientException(
                 message: "Simulated 404/1002 ReadSessionNotAvailable",
                 innerException: null,
                 statusCode: HttpStatusCode.NotFound,
                 substatusCode: SubStatusCodes.ReadSessionNotAvailable,
-                requestUri: request1.RequestContext.LocationEndpointToRoute,
+                requestUri: request.RequestContext.LocationEndpointToRoute,
                 responseHeaders: new DictionaryNameValueCollection());
 
-            // Act: policy detects error and sets flag
-            ShouldRetryResult shouldRetry = await retryPolicy.ShouldRetryAsync(simulatedException, CancellationToken.None);
+            ShouldRetryResult shouldRetry = await retryPolicy.ShouldRetryAsync(sessionNotAvailableException, CancellationToken.None);
+            Assert.IsTrue(shouldRetry.ShouldRetry, "Should retry on 404/1002.");
 
-            retryPolicy.OnBeforeSendRequest(request1);
-            string[] headerValues = request1.Headers.GetValues(HubRegionHeader);
-            Assert.IsNotNull(headerValues, "Expected header to be added after 404/1002 retry signal.");
-            Assert.AreEqual(1, headerValues.Length, "Header should have exactly one value.");
-            Assert.AreEqual(bool.TrueString, headerValues[0], "Header value should be 'True'.");
+            // Verify header is added and persists across multiple retry attempts
+            for (int retryAttempt = 1; retryAttempt <= 3; retryAttempt++)
+            {
+                retryPolicy.OnBeforeSendRequest(request);
+                string[] headerValues = request.Headers.GetValues(HubRegionHeader);
+                Assert.IsNotNull(headerValues, $"Header should be present on retry attempt {retryAttempt}.");
+                Assert.AreEqual(1, headerValues.Length, $"Header should have exactly one value on retry attempt {retryAttempt}.");
+                Assert.AreEqual(bool.TrueString, headerValues[0], $"Header value should be 'True' on retry attempt {retryAttempt}.");
 
-            // Header not applied to a new request
-            DocumentServiceRequest request2 = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
-            retryPolicy.OnBeforeSendRequest(request2);
-            Assert.IsNull(request2.Headers.GetValues(HubRegionHeader), "Header should not be set on a new request after flag is reset.");
+                if (retryAttempt < 3)
+                {
+                    DocumentClientException serviceUnavailableException = new DocumentClientException(
+                        message: "Simulated 503 ServiceUnavailable",
+                        innerException: null,
+                        statusCode: HttpStatusCode.ServiceUnavailable,
+                        substatusCode: SubStatusCodes.Unknown,
+                        requestUri: request.RequestContext.LocationEndpointToRoute,
+                        responseHeaders: new DictionaryNameValueCollection());
+
+                    await retryPolicy.ShouldRetryAsync(serviceUnavailableException, CancellationToken.None);
+                }
+            }
         }
 
         private async Task ValidateConnectTimeoutTriggersClientRetryPolicyAsync(
