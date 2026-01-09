@@ -151,7 +151,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                 partitionKey: inputParameters.PartitionKey,
                 containerQueryProperties: containerQueryProperties,
                 continuationToken: inputParameters.InitialUserContinuationToken,
-                cancellationToken: cancellationToken);
+                cancellationToken: cancellationToken,
+                useLengthAwareRangeComparer: inputParameters.UseLengthAwareRangeComparer);
 
             if (pipelineStage.Failed)
             {
@@ -242,7 +243,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                 QueryExecutionOptions queryPaginationOptions,
                 ContainerQueryProperties containerQueryProperties,
                 CosmosElement continuationToken,
-                CancellationToken cancellationToken)
+                CancellationToken cancellationToken,
+                bool useLengthAwareRangeComparer)
             {
                 if (targetRange == null)
                 {
@@ -277,7 +279,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                     feedRangeState,
                     partitionKey,
                     queryPaginationOptions,
-                    containerQueryProperties);
+                    containerQueryProperties,
+                    useLengthAwareRangeComparer);
 
                 OptimisticDirectExecutionQueryPipelineImpl stage = new OptimisticDirectExecutionQueryPipelineImpl(partitionPageEnumerator);
                 return TryCatch<IQueryPipelineStage>.FromResult(stage);

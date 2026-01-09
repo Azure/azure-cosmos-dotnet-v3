@@ -725,7 +725,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     nonStreamingOrderBy: nonStreamingOrderBy,
                     continuationToken: null,
                     containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
-                    emitRawOrderByPayload: false);
+                    emitRawOrderByPayload: false,
+                    useLengthAwareRangeComparer: true);
 
             Assert.IsTrue(pipelineStage.Succeeded);
 
