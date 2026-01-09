@@ -5,12 +5,14 @@
 namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 {
     using System;
+    using System.ClientModel;
     using System.Collections.Generic;
     using System.IO;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;

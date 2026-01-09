@@ -70,7 +70,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Query
                     nonStreamingOrderBy: nonStreamingOrderBy,
                     continuationToken: null,
                     containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
-                    emitRawOrderByPayload: false);
+                    emitRawOrderByPayload: false,
+                    useLengthAwareRangeComparer: true);
 
             IQueryPipelineStage pipeline = pipelineStage.Result;
 
