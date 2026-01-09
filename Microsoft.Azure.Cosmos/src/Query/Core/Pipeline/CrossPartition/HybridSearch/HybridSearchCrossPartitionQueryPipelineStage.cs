@@ -92,7 +92,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             IReadOnlyList<FeedRangeEpk> allRanges,
             int maxItemCount,
             bool isContinuationExpected,
-            int maxConcurrency)
+            int maxConcurrency,
+            bool useLengthAwareRangeComparer)
         {
             TryCatch<IQueryPipelineStage> ComponentPipelineFactory(QueryInfo rewrittenQueryInfo)
             {
@@ -110,7 +111,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                     emitRawOrderByPayload: true,
                     isContinuationExpected: isContinuationExpected,
                     maxConcurrency: maxConcurrency,
-                    requestContinuationToken: null);
+                    requestContinuationToken: null,
+                    useLengthAwareRangeComparer: useLengthAwareRangeComparer);
             }
 
             State state;
@@ -133,7 +135,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                     containerQueryProperties: containerQueryProperties,
                     prefetchPolicy: PrefetchPolicy.PrefetchAll,
                     maxConcurrency: maxConcurrency,
-                    continuationToken: null);
+                    continuationToken: null,
+                    useLengthAwareRangeComparer: useLengthAwareRangeComparer);
 
                 if (tryCatchGlobalStatisticsPipeline.Failed)
                 {
