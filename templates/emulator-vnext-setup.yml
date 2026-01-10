@@ -1,0 +1,63 @@
+# File: templates/emulator-vnext-setup.yml
+# Setup for Azure Cosmos DB Linux-based vNExt emulator (Docker)
+# This emulator only supports Gateway mode and runs in a Docker container
+# Note: Tests must use SSL certificate bypass handler (configured in TestCommon.GetDefaultConfiguration)
+
+steps:
+  - pwsh: |
+      Write-Host "Pulling Azure Cosmos DB vNExt Emulator Docker image" -ForegroundColor green
+      docker pull mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-preview
+      
+      Write-Host "Starting Azure Cosmos DB vNExt Emulator in Docker" -ForegroundColor green
+      # Start the emulator with HTTPS protocol (required for .NET SDK)
+      # Port 8081: Cosmos DB endpoint
+      # Port 1234: Data Explorer (optional, but included for debugging)
+      docker run --detach `
+        --name cosmos-emulator-vnext `
+        --publish 8081:8081 `
+        --publish 1234:1234 `
+        mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-preview `
+        --protocol https
+      
+      Write-Host "Waiting for vNExt Emulator to be ready..." -ForegroundColor green
+      
+      # Wait for the emulator to be ready (check endpoint availability)
+      $maxRetries = 30
+      $retryCount = 0
+      $ready = $false
+      
+      while (-not $ready -and $retryCount -lt $maxRetries) {
+        Start-Sleep -Seconds 10
+        $retryCount++
+        
+        try {
+          # Try to connect to the emulator endpoint (ignore cert validation for now)
+          $response = Invoke-WebRequest -Uri "https://localhost:8081/" -SkipCertificateCheck -ErrorAction SilentlyContinue
+          if ($response.StatusCode -eq 200 -or $response.StatusCode -eq 401 -or $response.StatusCode -eq 403) {
+            $ready = $true
+            Write-Host "vNExt Emulator is ready!" -ForegroundColor green
+          }
+        }
+        catch {
+          Write-Host "Retry $retryCount/$maxRetries - Emulator not ready yet..." -ForegroundColor Yellow
+        }
+      }
+      
+      if (-not $ready) {
+        Write-Error "vNExt Emulator failed to start after $maxRetries retries"
+        docker logs cosmos-emulator-vnext
+        exit 1
+      }
+      
+      Write-Host "vNExt Emulator is running and ready for tests" -ForegroundColor green
+      docker ps | Select-String "cosmos-emulator-vnext"
+      
+    displayName: Setup Azure Cosmos DB vNExt Emulator (Docker)
+    failOnStderr: false
+    errorActionPreference: continue
+
+  - pwsh: |
+      Write-Host "vNExt Emulator is running on https://localhost:8081" -ForegroundColor green
+      Write-Host "Data Explorer is available at http://localhost:1234" -ForegroundColor green
+      Write-Host "Note: vNExt emulator only supports Gateway mode" -ForegroundColor yellow
+    displayName: vNExt Emulator Information
