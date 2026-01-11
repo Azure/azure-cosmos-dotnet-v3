@@ -28,6 +28,7 @@
         private static Uri Location1Endpoint = new Uri("https://location1.documents.azure.com");
         private static Uri Location2Endpoint = new Uri("https://location2.documents.azure.com");
 
+        private const string HubRegionHeader = "x-ms-cosmos-hub-region-processing-only";
         private ReadOnlyCollection<string> preferredLocations;
         private AccountProperties databaseAccount;
         private GlobalPartitionEndpointManager partitionKeyRangeLocationCache;
@@ -399,6 +400,68 @@
         public async Task ClientRetryPolicy_NoRetry_MultiMaster_Write_NoPreferredLocationsAsync()
         {
             await this.ValidateConnectTimeoutTriggersClientRetryPolicyAsync(isReadRequest: false, useMultipleWriteLocations: true, usesPreferredLocations: false, true);
+        }
+
+        [TestMethod]
+        [DataRow(true, DisplayName = "Read request - Hub region header persists across retries after 404/1002")]
+        [DataRow(false, DisplayName = "Write request - Hub region header persists across retries after 404/1002")]
+        public async Task ClientRetryPolicy_HubRegionHeader_AddedOn404_1002_AndPersistsAcrossRetries(bool isReadRequest)
+        {
+            // Arrange
+            const bool enableEndpointDiscovery = true;
+
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: true,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false);
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                endpointManager,
+                this.partitionKeyRangeLocationCache,
+                new RetryOptions(),
+                enableEndpointDiscovery,
+                isThinClientEnabled: false);
+
+            DocumentServiceRequest request = this.CreateRequest(isReadRequest: isReadRequest, isMasterResourceType: false);
+
+            // First attempt - header should not exist
+            retryPolicy.OnBeforeSendRequest(request);
+            Assert.IsNull(request.Headers.GetValues(HubRegionHeader), "Header should not exist on initial request before any 404/1002 error.");
+
+            // Simulate 404/1002 error
+            DocumentClientException sessionNotAvailableException = new DocumentClientException(
+                message: "Simulated 404/1002 ReadSessionNotAvailable",
+                innerException: null,
+                statusCode: HttpStatusCode.NotFound,
+                substatusCode: SubStatusCodes.ReadSessionNotAvailable,
+                requestUri: request.RequestContext.LocationEndpointToRoute,
+                responseHeaders: new DictionaryNameValueCollection());
+
+            ShouldRetryResult shouldRetry = await retryPolicy.ShouldRetryAsync(sessionNotAvailableException, CancellationToken.None);
+            Assert.IsTrue(shouldRetry.ShouldRetry, "Should retry on 404/1002.");
+
+            // Verify header is added and persists across multiple retry attempts
+            for (int retryAttempt = 1; retryAttempt <= 3; retryAttempt++)
+            {
+                retryPolicy.OnBeforeSendRequest(request);
+                string[] headerValues = request.Headers.GetValues(HubRegionHeader);
+                Assert.IsNotNull(headerValues, $"Header should be present on retry attempt {retryAttempt}.");
+                Assert.AreEqual(1, headerValues.Length, $"Header should have exactly one value on retry attempt {retryAttempt}.");
+                Assert.AreEqual(bool.TrueString, headerValues[0], $"Header value should be 'True' on retry attempt {retryAttempt}.");
+
+                if (retryAttempt < 3)
+                {
+                    DocumentClientException serviceUnavailableException = new DocumentClientException(
+                        message: "Simulated 503 ServiceUnavailable",
+                        innerException: null,
+                        statusCode: HttpStatusCode.ServiceUnavailable,
+                        substatusCode: SubStatusCodes.Unknown,
+                        requestUri: request.RequestContext.LocationEndpointToRoute,
+                        responseHeaders: new DictionaryNameValueCollection());
+
+                    await retryPolicy.ShouldRetryAsync(serviceUnavailableException, CancellationToken.None);
+                }
+            }
         }
 
         private async Task ValidateConnectTimeoutTriggersClientRetryPolicyAsync(
