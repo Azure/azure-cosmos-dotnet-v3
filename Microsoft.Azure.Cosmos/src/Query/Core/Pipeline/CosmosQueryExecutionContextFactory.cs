@@ -455,7 +455,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                   containerQueryProperties,
                   inputParameters.Properties,
                   inputParameters.InitialFeedRange,
-                  trace);
+                  trace,
+                  inputParameters.UseLengthAwareRangeComparer);
 
             List<Documents.PartitionKeyRange> allRanges = await cosmosQueryContext.QueryClient.GetTargetPartitionKeyRangesAsync(
                 cosmosQueryContext.ResourceLink,
@@ -631,7 +632,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             IReadOnlyDictionary<string, object> properties,
             FeedRangeInternal feedRangeInternal,
             ITrace trace,
-            bool useLengthAwareRangeComparer = true)
+            bool useLengthAwareRangeComparer)
         {
             List<Documents.PartitionKeyRange> targetRanges;
             if (containerQueryProperties.EffectiveRangesForPartitionKey != null)
@@ -782,7 +783,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     containerQueryProperties,
                     inputParameters.Properties,
                     inputParameters.InitialFeedRange,
-                    trace);
+                    trace,
+                    inputParameters.UseLengthAwareRangeComparer);
             }
             else
             {
@@ -843,7 +845,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 bool isHybridSearchQueryPlanOptimizationDisabled,
                 bool enableDistributedQueryGatewayMode,
                 TestInjections testInjections,
-                bool useLengthAwareRangeComparer = true)
+                bool useLengthAwareRangeComparer)
             {
                 this.SqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));
                 this.InitialUserContinuationToken = initialUserContinuationToken;
@@ -877,7 +879,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 bool isHybridSearchQueryPlanOptimizationDisabled,
                 bool enableDistributedQueryGatewayMode,
                 TestInjections testInjections,
-                bool useLengthAwareRangeComparer = true)
+                bool useLengthAwareRangeComparer)
             {
                 if (sqlQuerySpec == null)
                 {

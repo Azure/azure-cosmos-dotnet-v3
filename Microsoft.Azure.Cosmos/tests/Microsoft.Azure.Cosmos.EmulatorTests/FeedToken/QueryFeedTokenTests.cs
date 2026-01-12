@@ -73,7 +73,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         containerQueryProperties: containerQueryProperties,
                         properties: null,
                         feedRangeInternal: feedToken as FeedRangeInternal,
-                        NoOpTrace.Singleton);
+                        NoOpTrace.Singleton,
+                        useLengthAwareRangeComparer: false);
 
                     Assert.IsTrue(partitionKeyRanges.Count == 1, "Only 1 partition key range should be selected since the FeedRange represents a single range.");
                 }

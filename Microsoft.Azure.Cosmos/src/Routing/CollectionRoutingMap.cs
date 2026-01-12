@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             List<PartitionKeyRange> orderedPartitionKeyRanges,
             string collectionUniqueId,
             string changeFeedNextIfNoneMatch,
-            bool useLengthAwareRangeComparer = true)
+            bool useLengthAwareRangeComparer)
         {
             this.rangeById = rangeById;
             this.orderedPartitionKeyRanges = orderedPartitionKeyRanges;
@@ -81,8 +81,8 @@ namespace Microsoft.Azure.Cosmos.Routing
         public static CollectionRoutingMap TryCreateCompleteRoutingMap(
             IEnumerable<Tuple<PartitionKeyRange, ServiceIdentity>> ranges,
             string collectionUniqueId,
-            string changeFeedNextIfNoneMatch = null,
-            bool useLengthAwareRangeComparer = true)
+            bool useLengthAwareRangeComparer,
+            string changeFeedNextIfNoneMatch = null)
         {
             Dictionary<string, Tuple<PartitionKeyRange, ServiceIdentity>> rangeById =
                 new Dictionary<string, Tuple<PartitionKeyRange, ServiceIdentity>>(StringComparer.Ordinal);
@@ -212,7 +212,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         public CollectionRoutingMap TryCombine(
             IEnumerable<Tuple<PartitionKeyRange, ServiceIdentity>> ranges,
             string changeFeedNextIfNoneMatch,
-            bool useLengthAwareComparer = true)
+            bool useLengthAwareComparer)
         {
             HashSet<string> newGoneRanges = new HashSet<string>(ranges.SelectMany(tuple => tuple.Item1.Parents ?? Enumerable.Empty<string>()));
             newGoneRanges.UnionWith(this.goneRanges);

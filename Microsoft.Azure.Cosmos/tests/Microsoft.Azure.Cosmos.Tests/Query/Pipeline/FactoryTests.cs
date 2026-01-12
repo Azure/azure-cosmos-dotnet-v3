@@ -34,7 +34,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 maxItemCount: 10,
                 isContinuationExpected: true,
                 maxConcurrency: 10,
-                requestContinuationToken: default); ;
+                requestContinuationToken: default,
+                useLengthAwareRangeComparer: false); ;
             Assert.IsTrue(monadicCreatePipeline.Succeeded);
         }
     }
