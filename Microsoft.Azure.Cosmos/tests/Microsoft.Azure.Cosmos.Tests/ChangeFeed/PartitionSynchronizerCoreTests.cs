@@ -63,6 +63,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 Mock.Of<Documents.IStoreModel>(),
                 new Mock<Common.CollectionCache>(false).Object,
                 this.endpointManager,
+                false,
                 false);
 
             List<Documents.PartitionKeyRange> resultingRanges = new List<Documents.PartitionKeyRange>()
@@ -128,6 +129,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 Mock.Of<Documents.IStoreModel>(),
                 new Mock<Common.CollectionCache>(false).Object,
                 this.endpointManager,
+                false,
                 false);
 
             List<Documents.PartitionKeyRange> resultingRanges = new List<Documents.PartitionKeyRange>()
@@ -198,6 +200,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 Mock.Of<Documents.IStoreModel>(),
                 new Mock<Common.CollectionCache>(false).Object,
                 this.endpointManager,
+                false,
                 false);
 
             List<Documents.PartitionKeyRange> resultingRanges = new List<Documents.PartitionKeyRange>()
@@ -258,6 +261,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 Mock.Of<Documents.IStoreModel>(),
                 new Mock<Common.CollectionCache>(false).Object,
                 this.endpointManager,
+                false,
                 false);
 
             List<Documents.PartitionKeyRange> resultingRanges = new List<Documents.PartitionKeyRange>()
@@ -308,6 +312,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 Mock.Of<Documents.IStoreModel>(),
                 new Mock<Common.CollectionCache>(false).Object,
                 this.endpointManager,
+                false,
                 false);
 
             List<Documents.PartitionKeyRange> resultingRanges = new List<Documents.PartitionKeyRange>()
@@ -355,6 +360,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 Mock.Of<Documents.IStoreModel>(),
                 new Mock<Common.CollectionCache>(false).Object,
                 this.endpointManager,
+                false,
                 false);
 
             List<Documents.PartitionKeyRange> resultingRanges = new List<Documents.PartitionKeyRange>()
@@ -408,6 +414,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 Mock.Of<Documents.IStoreModel>(),
                 new Mock<Common.CollectionCache>(false).Object,
                 this.endpointManager,
+                false,
                 false);
 
             List<Documents.PartitionKeyRange> resultingRanges = new List<Documents.PartitionKeyRange>()

@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             bool isContinuationExpected,
             int maxConcurrency,
             CosmosElement requestContinuationToken,
-            bool useLengthAwareRangeComparer = true)
+            bool useLengthAwareRangeComparer)
         {
             if (documentContainer == null)
             {

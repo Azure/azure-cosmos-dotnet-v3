@@ -138,7 +138,8 @@
                 enableOptimisticDirectExecution: queryRequestOptions.EnableOptimisticDirectExecution,
                 isHybridSearchQueryPlanOptimizationDisabled: queryRequestOptions.IsHybridSearchQueryPlanOptimizationDisabled,
                 enableDistributedQueryGatewayMode: queryRequestOptions.EnableDistributedQueryGatewayMode,
-                testInjections: queryRequestOptions.TestSettings);
+                testInjections: queryRequestOptions.TestSettings,
+                useLengthAwareRangeComparer: false);
 
             List<PartitionKeyRange> targetPkRanges = new();
             foreach (FeedRangeEpk feedRangeEpk in containerRanges)

@@ -38,8 +38,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             IStoreModel storeModel,
             CollectionCache collectionCache,
             IGlobalEndpointManager endpointManager,
-            bool enableAsyncCacheExceptionNoSharing = true,
-            bool useLengthAwareRangeComparer = true)
+            bool useLengthAwareRangeComparer,
+            bool enableAsyncCacheExceptionNoSharing = true)
         {
             this.routingMapCache = new AsyncCacheNonBlocking<string, CollectionRoutingMap>(
                     keyEqualityComparer: StringComparer.Ordinal,
@@ -245,6 +245,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 routingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(
                     tuples.Where(tuple => !goneRanges.Contains(tuple.Item1.Id)),
                     string.Empty,
+                    false,
                     changeFeedNextIfNoneMatch);
             }
             else

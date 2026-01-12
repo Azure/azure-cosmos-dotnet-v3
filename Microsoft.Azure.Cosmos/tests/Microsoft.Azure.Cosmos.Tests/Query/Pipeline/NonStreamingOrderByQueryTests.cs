@@ -681,7 +681,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 ranges,
                 isContinuationExpected: true,
                 maxConcurrency: MaxConcurrency,
-                requestContinuationToken: null);
+                requestContinuationToken: null,
+                useLengthAwareRangeComparer: false);
 
             Assert.IsTrue(tryCreatePipeline.Succeeded);
             return RunPipelineStage(tryCreatePipeline.Result, pageSize);

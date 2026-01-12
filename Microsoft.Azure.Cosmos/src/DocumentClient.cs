@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly bool IsLocalQuorumConsistency = false;
         private readonly bool isReplicaAddressValidationEnabled;
         private readonly bool enableAsyncCacheExceptionNoSharing;
-        private readonly bool useLengthAwareRangeComparator;
+        private readonly bool useLengthAwareRangeComparer;
 
         //Fault Injection
         private readonly IChaosInterceptorFactory chaosInterceptorFactory;
@@ -517,7 +517,7 @@ namespace Microsoft.Azure.Cosmos
                 enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
             this.chaosInterceptorFactory = chaosInterceptorFactory;
             this.chaosInterceptor = chaosInterceptorFactory?.CreateInterceptor(this);
-            this.useLengthAwareRangeComparator = useLengthAwareRangeComparer;
+            this.useLengthAwareRangeComparer = useLengthAwareRangeComparer;
 
             this.Initialize(
                 serviceEndpoint: serviceEndpoint,
@@ -1105,7 +1105,7 @@ namespace Microsoft.Azure.Cosmos
                     retryPolicy: this.retryPolicy,
                     telemetryToServiceHelper: this.telemetryToServiceHelper,
                     enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
-            this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache, this.GlobalEndpointManager, this.enableAsyncCacheExceptionNoSharing);
+            this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache, this.GlobalEndpointManager, this.useLengthAwareRangeComparer, this.enableAsyncCacheExceptionNoSharing);
             this.ResetSessionTokenRetryPolicy = new ResetSessionTokenRetryPolicyFactory(this.sessionContainer, this.collectionCache, this.retryPolicy);
 
             gatewayStoreModel.SetCaches(this.partitionKeyRangeCache, this.collectionCache);
