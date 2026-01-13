@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         // Executor just returns a reponse matching the Id with Etag
         private readonly BatchAsyncBatcherExecuteDelegate Executor
-            = async (PartitionKeyRangeServerBatchRequest request, ITrace trace, CancellationToken cancellationToken) =>
+            = async (PartitionKeyRangeServerBatchRequest request, ITrace trace, ItemRequestOptions options, CancellationToken cancellationToken) =>
             {
                 List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
                 ItemBatchOperation[] arrayOperations = new ItemBatchOperation[request.Operations.Count];
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return new PartitionKeyRangeBatchExecutionResult(request.PartitionKeyRangeId, request.Operations, batchresponse);
             };
 
-        private readonly BatchAsyncBatcherExecuteDelegate ExecutorWithFailure = (PartitionKeyRangeServerBatchRequest request, ITrace trace, CancellationToken cancellationToken) => throw expectedException;
+        private readonly BatchAsyncBatcherExecuteDelegate ExecutorWithFailure = (PartitionKeyRangeServerBatchRequest request, ITrace trace, ItemRequestOptions options, CancellationToken cancellationToken) => throw expectedException;
 
         private readonly BatchAsyncBatcherRetryDelegate Retrier = (ItemBatchOperation operation, CancellationToken cancellation) => Task.CompletedTask;
 
