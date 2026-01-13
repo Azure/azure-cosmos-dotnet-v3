@@ -5,20 +5,15 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using Microsoft.Azure.Cosmos.Serialization.HybridRow;
-    using Microsoft.Azure.Documents;
+    //using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Represents an operation on a document whichwill be executed as a part of a distributed transaction.
     /// </summary>
-    internal class DistributedTransactionOperation : IDisposable
+    internal class DistributedTransactionOperation
     {
-#pragma warning disable IDE0044 // Add readonly modifier
-        private bool isDisposed;
-#pragma warning restore IDE0044 // Add readonly modifier
-
         public DistributedTransactionOperation(
-            OperationType operationType,
+            Documents.OperationType operationType,
             PartitionKey partitionKey,
             string database,
             string container)
@@ -35,14 +30,6 @@ namespace Microsoft.Azure.Cosmos
 
         public string Container { get; internal set; }
 
-        public OperationType OperationType { get; internal set; }
-
-        /// <summary>
-        /// Disposes the current DistributedTransactionOperation instance
-        /// </summary>
-        public void Dispose()
-        {
-            this.Dispose(true);
-        }
+        public Documents.OperationType OperationType { get; internal set; }
     }
 }

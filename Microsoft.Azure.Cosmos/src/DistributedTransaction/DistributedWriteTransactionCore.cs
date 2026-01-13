@@ -31,6 +31,17 @@ namespace Microsoft.Azure.Cosmos
             return this;
         }
 
+        public override DistributedTransaction Replace<T>(string database, string collection, PartitionKey partitionKey)
+        {
+            this.operations.Add(
+                new DistributedTransactionOperation(
+                    operationType: OperationType.Replace,
+                    partitionKey,
+                    database,
+                    collection));
+            return this;
+        }
+
         public override DistributedTransaction Delete(string database, string collection, PartitionKey partitionKey)
         {
             this.operations.Add(
@@ -47,17 +58,6 @@ namespace Microsoft.Azure.Cosmos
             this.operations.Add(
                 new DistributedTransactionOperation(
                     operationType: OperationType.Patch,
-                    partitionKey,
-                    database,
-                    collection));
-            return this;
-        }
-
-        public override DistributedTransaction Replace<T>(string database, string collection, PartitionKey partitionKey)
-        {
-            this.operations.Add(
-                new DistributedTransactionOperation(
-                    operationType: OperationType.Replace,
                     partitionKey,
                     database,
                     collection));
