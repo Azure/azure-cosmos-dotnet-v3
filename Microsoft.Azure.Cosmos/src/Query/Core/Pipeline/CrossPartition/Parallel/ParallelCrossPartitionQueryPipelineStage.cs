@@ -146,7 +146,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
 
             if (targetRanges.Count == 0)
             {
-                throw new ArgumentException($"{nameof(targetRanges)} must have some elements");
+                return TryCatch<IQueryPipelineStage>.FromResult(new EmptyQueryPipelineStage());
             }
 
             TryCatch<CrossFeedRangeState<QueryState>> monadicExtractState = MonadicExtractState(continuationToken, targetRanges);
