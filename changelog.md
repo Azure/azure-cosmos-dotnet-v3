@@ -15,6 +15,29 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.58.0-preview.0"/> [3.58.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.58.0-preview.0) - 2026-1-15
+
+#### Added
+- [5528](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5528) Semantic Reranking: Refactors RerankResult.Document to return string type
+
+### <a name="3.57.0"/> [3.57.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.57.0) - 2026-1-15
+
+#### Added
+- [5511](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5511) Tracing: Adds tracing improvements for pkrange refresh calls
+- [5529](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5529) [Thin Client Integration]: Adds support for store procedure in thinclient mode.
+- [5535](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5535) [Thin Client Integration]: Adds thinclient header for refresh account data requests.
+
+#### Fixed
+
+- [5512](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5512) ChangeFeed: Fixes crts field being nullable
+- [5517](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5517) SystemTextSerializer: Fixes serialization type in ToStream method
+- [5498](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5498) Query: Fixes hybrid search query plan optimization to be enabled by default
+- [5543](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5543) Query: Fixes GetItemQueryIterator to honor the supplied (optional) FeedRange
+- [5541](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5541) Upsert/Batch: Fixes bug where RequestOptions are not honored for Upsert requests in Bulk Mode
+- [5544](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5544) Query : Fixes LINQ API to support builtin functions - ARRAY_CONTAINS_ALL and ARRAY_CONTAINS_ANY
+- [5539](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5539) Docs: Fixes ApplicationPreferredRegions remarks typo
+
+
 ### <a name="3.57.0-preview.1"/> [3.57.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.57.0-preview.1) - 2025-12-16
 #### Fixed
 - [5528](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5528) Semantic Reranking: Refactors RerankResult.Document to return string type
