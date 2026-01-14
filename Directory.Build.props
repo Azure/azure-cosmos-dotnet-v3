@@ -1,9 +1,9 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<PropertyGroup>
-		<ClientOfficialVersion>3.53.1</ClientOfficialVersion>
-		<ClientPreviewVersion>3.54.0</ClientPreviewVersion>
+		<ClientOfficialVersion>3.56.1</ClientOfficialVersion>
+		<ClientPreviewVersion>3.57.0</ClientPreviewVersion>
 		<ClientPreviewSuffixVersion>preview.1</ClientPreviewSuffixVersion>
-		<DirectVersion>3.40.3</DirectVersion>
+		<DirectVersion>3.41.3</DirectVersion>
 		<FaultInjectionVersion>1.0.0</FaultInjectionVersion>
 		<FaultInjectionSuffixVersion>beta.0</FaultInjectionSuffixVersion>
 		<EncryptionOfficialVersion>2.0.5</EncryptionOfficialVersion>

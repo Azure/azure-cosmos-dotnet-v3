@@ -49,6 +49,42 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         /// <summary>
+        /// Returns whether all values are present in the array.
+        /// </summary>
+        /// <param name="obj">The array object</param>
+        /// <param name="values">values to search</param>
+        /// <returns>Returns true if all values are present; otherwise, false.</returns>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// var documentIdQuery = documents.Where(root => root.DocumentId());
+        /// ]]>
+        /// </code>
+        /// </example>
+        public static bool ArrayContainsAll<T>(this IEnumerable<T> obj, params object[] values)
+        {
+            throw new NotImplementedException(ClientResources.TypeCheckExtensionFunctionsNotImplemented);
+        }
+
+        /// <summary>
+        /// Returns whether any values are present in the array.
+        /// </summary>
+        /// <param name="obj">The array object</param>
+        /// <param name="values">values to search</param>
+        /// <returns>Returns true if any values are present; otherwise, false.</returns>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// var documentIdQuery = documents.Where(root => root.DocumentId());
+        /// ]]>
+        /// </code>
+        /// </example>
+        public static bool ArrayContainsAny<T>(this IEnumerable<T> obj, params object[] values)
+        {
+            throw new NotImplementedException(ClientResources.TypeCheckExtensionFunctionsNotImplemented);
+        }
+
+        /// <summary>
         /// Returns the integer identifier corresponding to a specific item within a physical partition.
         /// This method is to be used in LINQ expressions only and will be evaluated on server.
         /// There's no implementation provided in the client library.

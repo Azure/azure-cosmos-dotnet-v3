@@ -270,7 +270,27 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     };
 
                     return storeResponse;
-
+                case FaultInjectionServerErrorType.Unauthorized:
+                    INameValueCollection unauthorizedHeaders = args.RequestHeaders;
+                    unauthorizedHeaders.Set(WFConstants.BackendHeaders.LocalLSN, lsn);
+                    storeResponse = new StoreResponse()
+                    {
+                        Status = 401,
+                        Headers = unauthorizedHeaders,
+                        ResponseBody = new MemoryStream(FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Unauthorized, rule: {ruleId}"))
+                    };
+                    return storeResponse;
+                case FaultInjectionServerErrorType.AadTokenRevoked:
+                    INameValueCollection aadTokenRevokedHeaders = args.RequestHeaders;
+                    aadTokenRevokedHeaders.Set(WFConstants.BackendHeaders.LocalLSN, lsn);
+                    aadTokenRevokedHeaders.Set(WFConstants.BackendHeaders.SubStatus, "5013");
+                    storeResponse = new StoreResponse()
+                    {
+                        Status = 401,
+                        Headers = aadTokenRevokedHeaders,
+                        ResponseBody = new MemoryStream(FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Aad Token Revoked, rule: {ruleId}"))
+                    };
+                    return storeResponse;
                 default:
                     throw new ArgumentException($"Server error type {this.serverErrorType} is not supported");
             }
@@ -544,7 +564,43 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
 
                     return httpResponse;
-
+                case FaultInjectionServerErrorType.Unauthorized:
+                    httpResponse = new HttpResponseMessage
+                    {
+                        Version = isProxyCall
+                            ? new Version(2, 0)
+                            : new Version(1, 1),
+                        StatusCode = HttpStatusCode.Unauthorized,
+                        Content = new FauntInjectionHttpContent(
+                            new MemoryStream(
+                                isProxyCall
+                                    ? FaultInjectionResponseEncoding.GetBytes(
+                                        GetProxyResponseMessageString((int)StatusCodes.Unauthorized, (int)SubStatusCodes.Unknown, "Unauthorized", ruleId))
+                                    : FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Unauthorized, rule: {ruleId}"))),
+                    };
+                    this.SetHttpHeaders(httpResponse, headers, isProxyCall);
+                    httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
+                    return httpResponse;
+                case FaultInjectionServerErrorType.AadTokenRevoked:
+                    httpResponse = new HttpResponseMessage
+                    {
+                        Version = isProxyCall
+                            ? new Version(2, 0)
+                            : new Version(1, 1),
+                        StatusCode = HttpStatusCode.Unauthorized,
+                        Content = new FauntInjectionHttpContent(
+                            new MemoryStream(
+                                isProxyCall
+                                    ? FaultInjectionResponseEncoding.GetBytes(
+                                        GetProxyResponseMessageString((int)StatusCodes.Unauthorized, 5013, "AadTokenRevoked", ruleId))
+                                    : FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: AadTokenRevoked, rule: {ruleId}"))),
+                    };
+                    this.SetHttpHeaders(httpResponse, headers, isProxyCall);
+                    httpResponse.Headers.Add(
+                        WFConstants.BackendHeaders.SubStatus,
+                        "5013");
+                    httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
+                    return httpResponse;
                 default:
                     throw new ArgumentException($"Server error type {this.serverErrorType} is not supported");
             }

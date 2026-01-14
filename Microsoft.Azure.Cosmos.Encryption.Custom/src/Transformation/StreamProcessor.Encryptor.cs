@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
 namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 {
     using System;
@@ -30,14 +30,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionOptions.DataEncryptionKeyId, encryptionOptions.EncryptionAlgorithm, cancellationToken);
 
-            bool compressionEnabled = encryptionOptions.CompressionOptions.Algorithm != CompressionOptions.CompressionAlgorithm.None;
-
-            BrotliCompressor compressor = encryptionOptions.CompressionOptions.Algorithm == CompressionOptions.CompressionAlgorithm.Brotli
-                ? new BrotliCompressor(encryptionOptions.CompressionOptions.CompressionLevel) : null;
-
             HashSet<string> pathsToEncrypt = encryptionOptions.PathsToEncrypt as HashSet<string> ?? new (encryptionOptions.PathsToEncrypt, StringComparer.Ordinal);
-
-            Dictionary<string, int> compressedPaths = new ();
 
             using Utf8JsonWriter writer = new (outputStream);
 
@@ -52,19 +45,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             Utf8JsonWriter encryptionPayloadWriter = null;
             string encryptPropertyName = null;
             RentArrayBufferWriter bufferWriter = null;
+            bool firstTokenValidated = false;
 
             while (!isFinalBlock)
             {
                 int dataLength = await inputStream.ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), cancellationToken);
                 int dataSize = dataLength + leftOver;
                 isFinalBlock = dataSize == 0;
-                long bytesConsumed = 0;
 
-                bytesConsumed = TransformEncryptBuffer(buffer.AsSpan(0, dataSize));
+                long bytesConsumed = TransformEncryptBuffer(buffer.AsSpan(0, dataSize));
 
                 leftOver = dataSize - (int)bytesConsumed;
 
-                // we need to scale out buffer
                 if (leftOver == dataSize)
                 {
                     byte[] newBuffer = arrayPoolManager.Rent(buffer.Length * 2);
@@ -80,13 +72,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             await inputStream.DisposeAsync();
 
             EncryptionProperties encryptionProperties = new (
-                encryptionFormatVersion: compressionEnabled ? 4 : 3,
+                encryptionFormatVersion: EncryptionFormatVersion.Mde,
                 encryptionOptions.EncryptionAlgorithm,
                 encryptionOptions.DataEncryptionKeyId,
                 encryptedData: null,
-                pathsEncrypted,
-                encryptionOptions.CompressionOptions.Algorithm,
-                compressedPaths);
+                pathsEncrypted);
 
             writer.WritePropertyName(this.encryptionPropertiesNameBytes);
             JsonSerializer.Serialize(writer, encryptionProperties);
@@ -101,9 +91,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                 while (reader.Read())
                 {
-                    Utf8JsonWriter currentWriter = encryptionPayloadWriter ?? writer;
-
                     JsonTokenType tokenType = reader.TokenType;
+
+                    if (!firstTokenValidated)
+                    {
+                        // The first non-None token must be StartObject for streaming encryption.
+                        if (tokenType == JsonTokenType.StartObject)
+                        {
+                            firstTokenValidated = true;
+                        }
+                        else if (tokenType == JsonTokenType.Comment || tokenType == JsonTokenType.None)
+                        {
+                            continue; // skip and keep waiting for first structural token
+                        }
+                        else
+                        {
+                            throw new NotSupportedException("Streaming encryption requires a JSON object root. Root arrays or primitive values are not supported.");
+                        }
+                    }
+
+                    Utf8JsonWriter currentWriter = encryptionPayloadWriter ?? writer;
 
                     switch (tokenType)
                     {
@@ -262,13 +269,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             {
                 byte[] processedBytes = payload;
                 int processedBytesLength = payloadSize;
-
-                if (compressor != null && payloadSize >= encryptionOptions.CompressionOptions.MinimalCompressedLength)
-                {
-                    byte[] compressedBytes = arrayPoolManager.Rent(BrotliCompressor.GetMaxCompressedSize(payloadSize));
-                    processedBytesLength = compressor.Compress(compressedPaths, encryptPropertyName, processedBytes, payloadSize, compressedBytes);
-                    processedBytes = compressedBytes;
-                }
 
                 (byte[] encryptedBytes, int encryptedBytesCount) = this.Encryptor.Encrypt(encryptionKey, typeMarker, processedBytes, processedBytesLength, arrayPoolManager);
 
