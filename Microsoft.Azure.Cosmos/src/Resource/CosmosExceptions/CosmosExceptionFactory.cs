@@ -34,6 +34,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 httpStatusCode = HttpStatusCode.InternalServerError;
             }
 
+#pragma warning disable CDX1002 // DontUseExceptionStackTrace
             return CosmosExceptionFactory.Create(
                 httpStatusCode,
                 dce.Message,
@@ -42,6 +43,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 trace,
                 dce.Error,
                 dce.InnerException);
+#pragma warning restore CDX1002 // DontUseExceptionStackTrace
         }
 
         internal static CosmosException Create(
@@ -79,6 +81,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 errorMessage = string.IsNullOrEmpty(errorMessage) ? contentMessage : $"Error Message: {errorMessage}; Content {contentMessage};";
             }
 
+#pragma warning disable CDX1002 // DontUseExceptionStackTrace
             return CosmosExceptionFactory.Create(
                 responseMessage.StatusCode,
                 errorMessage,
@@ -87,6 +90,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 responseMessage.Trace,
                 error,
                 responseMessage.CosmosException?.InnerException);
+#pragma warning restore CDX1002 // DontUseExceptionStackTrace
         }
 
         internal static CosmosException Create(

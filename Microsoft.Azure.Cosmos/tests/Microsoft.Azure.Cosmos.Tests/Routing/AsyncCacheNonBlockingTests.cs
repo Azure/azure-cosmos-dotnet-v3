@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         [ExpectedException(typeof(NotFoundException))]
         public async Task ValidateNegativeScenario(bool forceRefresh)
         {
-            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>();
+            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>(enableAsyncCacheExceptionNoSharing: false);
             await asyncCache.GetAsync(
                 "test",
                 async (_) =>
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         [TestMethod]
         public async Task ValidateMultipleBackgroundRefreshesScenario()
         {
-            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>();
+            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>(enableAsyncCacheExceptionNoSharing: false);
 
             string expectedValue = "ResponseValue";
             string response = await asyncCache.GetAsync(
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         [ExpectedException(typeof(NotFoundException))]
         public async Task ValidateNegativeNotAwaitedScenario()
         {
-            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>();
+            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>(enableAsyncCacheExceptionNoSharing: false);
             Task task1 = asyncCache.GetAsync(
                 "test",
                 async (_) =>
@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         public async Task ValidateNotFoundOnBackgroundRefreshRemovesFromCacheScenario()
         {
             string value1 = "Response1Value";
-            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>();
+            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>(enableAsyncCacheExceptionNoSharing: false);
             string response1 = await asyncCache.GetAsync(
                 "test",
                 async (_) =>
@@ -171,7 +171,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         [Owner("jawilley")]
         public async Task ValidateAsyncCacheNonBlocking()
         {
-            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>();
+            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>(enableAsyncCacheExceptionNoSharing: false);
             string result = await asyncCache.GetAsync(
                 "test",
                 (_) => Task.FromResult("test2"),
@@ -212,7 +212,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         [Owner("jawilley")]
         public async Task ValidateCacheValueIsRemovedAfterException()
         {
-            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>();
+            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>(enableAsyncCacheExceptionNoSharing: false);
             string result = await asyncCache.GetAsync(
                 key: "test",
                 singleValueInitFunc: (_) => Task.FromResult("test2"),
@@ -268,7 +268,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         [Owner("jawilley")]
         public async Task ValidateConcurrentCreateAsyncCacheNonBlocking()
         {
-            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>();
+            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>(enableAsyncCacheExceptionNoSharing: false);
             int totalLazyCalls = 0;
 
             List<Task> tasks = new List<Task>();
@@ -292,7 +292,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         [Owner("jawilley")]
         public async Task ValidateConcurrentCreateWithFailureAsyncCacheNonBlocking()
         {
-            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>();
+            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>(enableAsyncCacheExceptionNoSharing: false);
             int totalLazyCalls = 0;
 
             Random random = new Random();
@@ -331,7 +331,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         [Owner("jawilley")]
         public async Task ValidateExceptionScenariosCacheNonBlocking()
         {
-            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>();
+            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>(enableAsyncCacheExceptionNoSharing: false);
             int totalLazyCalls = 0;
 
             try
@@ -402,7 +402,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         public async Task Refresh_WhenRefreshRequestedForAnExistingKey_ShouldRefreshTheCache()
         {
             // Arrange.
-            AsyncCacheNonBlocking<string, string> asyncCache = new();
+            AsyncCacheNonBlocking<string, string> asyncCache = new (enableAsyncCacheExceptionNoSharing: false);
 
             // Act and Assert.
             string result = await asyncCache.GetAsync(
@@ -437,7 +437,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         public async Task Refresh_WhenThrowsDocumentClientException_ShouldRemoveKeyFromTheCache()
         {
             // Arrange.
-            AsyncCacheNonBlocking<string, string> asyncCache = new();
+            AsyncCacheNonBlocking<string, string> asyncCache = new (enableAsyncCacheExceptionNoSharing: false);
 
             // Act and Assert.
             string result = await asyncCache.GetAsync(
@@ -491,7 +491,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         public async Task Refresh_WhenThrowsOtherException_ShouldNotRemoveKeyFromTheCache()
         {
             // Arrange.
-            AsyncCacheNonBlocking<string, string> asyncCache = new();
+            AsyncCacheNonBlocking<string, string> asyncCache = new (enableAsyncCacheExceptionNoSharing: false);
 
             // Act and Assert.
             string result = await asyncCache.GetAsync(
@@ -530,6 +530,52 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 (_) => false);
 
             Assert.AreEqual("value1", result);
+        }
+
+        [TestMethod]
+        [DataRow(true)]
+        [DataRow(false)]
+        public async Task ValidateCacheGetAsyncExceptionPostProcessing(bool enabled)
+        {
+            // Arrange
+            Exception testException = new TimeoutException("Simulated timeout exception");
+            CancellationToken cancellationToken = CancellationToken.None;
+
+            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>(enableAsyncCacheExceptionNoSharing: enabled);
+
+            Random random = new Random();
+            List<Task> tasks = new List<Task>();
+            for (int i = 0; i < 50; i++)
+            {
+                // Insert a random delay to simulate multiple request coming at different times
+                await Task.Delay(random.Next(0, 5));
+                tasks.Add(Task.Run(async () =>
+                {
+                    try
+                    {
+                        await asyncCache.GetAsync(
+                            key: "testKey",
+                            singleValueInitFunc: async (_) =>
+                            {
+                                await Task.Delay(5);
+                                throw testException;
+                            },
+                            forceRefresh: (_) => false);
+                        Assert.Fail();
+                    }
+                    catch (TimeoutException dce)
+                    {
+                        if (enabled)
+                        {
+                            Assert.IsFalse(Object.ReferenceEquals(dce, testException));
+                        }
+                        else
+                        {
+                            Assert.IsTrue(Object.ReferenceEquals(dce, testException));
+                        }
+                    }
+                }));
+            }
         }
     }
 }

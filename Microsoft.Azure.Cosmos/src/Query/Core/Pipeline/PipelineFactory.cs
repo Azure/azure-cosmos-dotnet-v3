@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
             if (targetRanges.Count == 0)
             {
-                throw new ArgumentException($"{nameof(targetRanges)} must not be empty.");
+                return TryCatch<IQueryPipelineStage>.FromResult(new EmptyQueryPipelineStage());
             }
 
             if (queryInfo == null && hybridSearchQueryInfo == null)
@@ -165,7 +165,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                 }
                 else if (queryInfo.HasLimit && (queryInfo.Limit.Value > 0))
                 {
-                    top = (queryInfo.Offset ?? 0) + queryInfo.Limit.Value;
+                    top = Math.Min((queryInfo.Offset ?? 0) + queryInfo.Limit.Value, int.MaxValue);
                 }
                 else
                 {

@@ -52,6 +52,11 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             batchAsyncOperationContext.Complete(null, result);
 
+            if (result.Trace is Trace rootLevelTrace)
+            {
+                rootLevelTrace.SetWalkingStateRecursively();
+            }
+
             Assert.AreEqual(result, await batchAsyncOperationContext.OperationTask);
             Assert.AreEqual(2, result.Trace.Children.Count, "The final trace should have the initial trace, plus the retries, plus the final trace");
             Assert.AreEqual(rootTrace, result.Trace, "The first trace child should be the initial root");
@@ -92,6 +97,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
             batchAsyncOperationContext.Complete(null, result);
+
+            if (result.Trace is Trace rootLevelTrace)
+            {
+                rootLevelTrace.SetWalkingStateRecursively();
+            }
 
             Assert.AreEqual(result, await batchAsyncOperationContext.OperationTask);
             Assert.AreEqual(1, result.Trace.Children.Count, "The final trace should have the initial trace, plus the final trace, since the result is not retried, it should not capture it");
@@ -287,7 +297,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             public ClientWithSplitDetection()
             {
-                this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(MockBehavior.Strict, null, null, null, null);
+                this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(MockBehavior.Strict, null, null, null, null, false);
                 this.partitionKeyRangeCache.Setup(
                         m => m.TryGetOverlappingRangesAsync(
                             It.IsAny<string>(),

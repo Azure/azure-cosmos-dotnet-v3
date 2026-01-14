@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Net;
     using System.Net.Http;
-    using System.Net.Http.Headers;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
@@ -19,45 +18,74 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
+    using Microsoft.Azure.Documents.FaultInjection;
     using Newtonsoft.Json;
 
     // Marking it as non-sealed in order to unit test it using Moq framework
     internal class GatewayStoreModel : IStoreModelExtension, IDisposable
     {
+        private readonly bool isThinClientEnabled;
         private static readonly string sessionConsistencyAsString = ConsistencyLevel.Session.ToString();
-
-        private readonly GlobalEndpointManager endpointManager;
-        private readonly DocumentClientEventSource eventSource;
+        private readonly GlobalPartitionEndpointManager globalPartitionEndpointManager;
         private readonly ISessionContainer sessionContainer;
-        private readonly ConsistencyLevel defaultConsistencyLevel;
+        private readonly DocumentClientEventSource eventSource;
+        private readonly IChaosInterceptor chaosInterceptor;
 
+        internal readonly GlobalEndpointManager endpointManager;
+        internal readonly ConsistencyLevel defaultConsistencyLevel;
+
+        // Store Clients to send requests to the gateway and/ or thin client endpoints.
+        private ThinClientStoreClient thinClientStoreClient;
         private GatewayStoreClient gatewayStoreClient;
 
         // Caches to resolve the PartitionKeyRange from request. For Session Token Optimization.
-        private ClientCollectionCache clientCollectionCache;
         private PartitionKeyRangeCache partitionKeyRangeCache;
+        private ClientCollectionCache clientCollectionCache;
 
         public GatewayStoreModel(
-            GlobalEndpointManager endpointManager,
-            ISessionContainer sessionContainer,
-            ConsistencyLevel defaultConsistencyLevel,
-            DocumentClientEventSource eventSource,
-            JsonSerializerSettings serializerSettings,
-            CosmosHttpClient httpClient)
+             GlobalEndpointManager endpointManager,
+             ISessionContainer sessionContainer,
+             ConsistencyLevel defaultConsistencyLevel,
+             DocumentClientEventSource eventSource,
+             JsonSerializerSettings serializerSettings,
+             CosmosHttpClient httpClient,
+             GlobalPartitionEndpointManager globalPartitionEndpointManager,
+             bool isThinClientEnabled,
+             UserAgentContainer userAgentContainer = null,
+             IChaosInterceptor chaosInterceptor = null)
         {
             this.endpointManager = endpointManager;
             this.sessionContainer = sessionContainer;
             this.defaultConsistencyLevel = defaultConsistencyLevel;
             this.eventSource = eventSource;
-
+            this.globalPartitionEndpointManager = globalPartitionEndpointManager;
+            this.chaosInterceptor = chaosInterceptor;
             this.gatewayStoreClient = new GatewayStoreClient(
                 httpClient,
                 this.eventSource,
+                globalPartitionEndpointManager,
                 serializerSettings);
+            this.isThinClientEnabled = isThinClientEnabled;
+
+            if (isThinClientEnabled)
+            {
+                this.thinClientStoreClient = new ThinClientStoreClient(
+                    httpClient,
+                    userAgentContainer,
+                    this.eventSource,
+                    globalPartitionEndpointManager,
+                    serializerSettings,
+                    this.chaosInterceptor);
+            }
+
+            this.globalPartitionEndpointManager.SetBackgroundConnectionPeriodicRefreshTask(
+                this.MarkEndpointsToHealthyAsync);
         }
 
         public virtual async Task<DocumentServiceResponse> ProcessMessageAsync(DocumentServiceRequest request, CancellationToken cancellationToken = default)
         {
+            DocumentServiceResponse response;
+
             await GatewayStoreModel.ApplySessionTokenAsync(
                 request,
                 this.defaultConsistencyLevel,
@@ -65,23 +93,72 @@ namespace Microsoft.Azure.Cosmos
                 this.partitionKeyRangeCache,
                 this.clientCollectionCache,
                 this.endpointManager);
-
-            DocumentServiceResponse response;
             try
             {
-                Uri physicalAddress = GatewayStoreClient.IsFeedRequest(request.OperationType) ? this.GetFeedUri(request) : this.GetEntityUri(request);
-                // Collect region name only for document resources
-                if (request.ResourceType.Equals(ResourceType.Document) && this.endpointManager.TryGetLocationForGatewayDiagnostics(request.RequestContext.LocationEndpointToRoute, out string regionName))
+                if (request.ResourceType.Equals(ResourceType.Document) &&
+                this.endpointManager.TryGetLocationForGatewayDiagnostics(request.RequestContext.LocationEndpointToRoute, out string regionName))
                 {
                     request.RequestContext.RegionName = regionName;
                 }
-                response = await this.gatewayStoreClient.InvokeAsync(request, request.ResourceType, physicalAddress, cancellationToken);
+
+                bool isPPAFEnabled = this.IsPartitionLevelFailoverEnabled();
+                // This is applicable for both per partition automatic failover and per partition circuit breaker.
+                if ((isPPAFEnabled || this.isThinClientEnabled)
+                    && !ReplicatedResourceClient.IsMasterResource(request.ResourceType)
+                    && (request.ResourceType.IsPartitioned() || request.ResourceType == ResourceType.StoredProcedure))
+                {
+                    (bool isSuccess, PartitionKeyRange partitionKeyRange) = await TryResolvePartitionKeyRangeAsync(
+                        request: request,
+                        sessionContainer: this.sessionContainer,
+                        partitionKeyRangeCache: this.partitionKeyRangeCache,
+                        clientCollectionCache: this.clientCollectionCache,
+                        refreshCache: false);
+
+                    request.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
+
+                    if (isPPAFEnabled)
+                    {
+                        this.globalPartitionEndpointManager.TryAddPartitionLevelLocationOverride(request);
+                    }
+                }
+
+                bool canUseThinClient =
+                    this.thinClientStoreClient != null &&
+                    GatewayStoreModel.IsOperationSupportedByThinClient(request);
+
+                Uri physicalAddress = ThinClientStoreClient.IsFeedRequest(request.OperationType)
+                        ? this.GetFeedUri(request)
+                        : this.GetEntityUri(request);
+
+                if (canUseThinClient)
+                {
+                    Uri thinClientEndpoint = this.endpointManager.ResolveThinClientEndpoint(request);
+
+                    AccountProperties account = await this.GetDatabaseAccountPropertiesAsync();
+
+                    response = await this.thinClientStoreClient.InvokeAsync(
+                        request,
+                        request.ResourceType,
+                        physicalAddress,
+                        thinClientEndpoint,
+                        account.Id,
+                        this.clientCollectionCache,
+                        cancellationToken);
+                }
+                else
+                {
+                    response = await this.gatewayStoreClient.InvokeAsync(
+                        request,
+                        request.ResourceType,
+                        physicalAddress,
+                        cancellationToken);
+                }
             }
             catch (DocumentClientException exception)
             {
                 if ((!ReplicatedResourceClient.IsMasterResource(request.ResourceType)) &&
                     (exception.StatusCode == HttpStatusCode.PreconditionFailed || exception.StatusCode == HttpStatusCode.Conflict
-                    || (exception.StatusCode == HttpStatusCode.NotFound && exception.GetSubStatus() != SubStatusCodes.ReadSessionNotAvailable)))
+                     || (exception.StatusCode == HttpStatusCode.NotFound && exception.GetSubStatus() != SubStatusCodes.ReadSessionNotAvailable)))
                 {
                     await this.CaptureSessionTokenAndHandleSplitAsync(exception.StatusCode, exception.GetSubStatus(), request, exception.Headers);
                 }
@@ -113,8 +190,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 long longValue;
-                IEnumerable<string> headerValues;
-                if (responseMessage.Headers.TryGetValues(HttpConstants.HttpHeaders.MaxMediaStorageUsageInMB, out headerValues) &&
+                if (responseMessage.Headers.TryGetValues(HttpConstants.HttpHeaders.MaxMediaStorageUsageInMB, out IEnumerable<string> headerValues) &&
                     (headerValues.Count() != 0))
                 {
                     if (long.TryParse(headerValues.First(), out longValue))
@@ -163,8 +239,8 @@ namespace Microsoft.Azure.Cosmos
             return databaseAccount;
         }
 
-        public void SetCaches(PartitionKeyRangeCache partitionKeyRangeCache, 
-                              ClientCollectionCache clientCollectionCache)
+        public void SetCaches(PartitionKeyRangeCache partitionKeyRangeCache,
+            ClientCollectionCache clientCollectionCache)
         {
             this.clientCollectionCache = clientCollectionCache;
             this.partitionKeyRangeCache = partitionKeyRangeCache;
@@ -175,7 +251,7 @@ namespace Microsoft.Azure.Cosmos
             this.Dispose(true);
         }
 
-        private async Task CaptureSessionTokenAndHandleSplitAsync(
+        internal async Task CaptureSessionTokenAndHandleSplitAsync(
             HttpStatusCode? statusCode,
             SubStatusCodes subStatusCode,
             DocumentServiceRequest request,
@@ -343,6 +419,12 @@ namespace Microsoft.Azure.Cosmos
             return new Tuple<bool, string>(false, null);
         }
 
+        private bool IsPartitionLevelFailoverEnabled()
+        {
+            return this.globalPartitionEndpointManager.IsPartitionLevelCircuitBreakerEnabled()
+                || this.globalPartitionEndpointManager.IsPartitionLevelAutomaticFailoverEnabled();
+        }
+
         private static async Task<Tuple<bool, PartitionKeyRange>> TryResolvePartitionKeyRangeAsync(
             DocumentServiceRequest request,
             ISessionContainer sessionContainer,
@@ -423,6 +505,30 @@ namespace Microsoft.Azure.Cosmos
             return new Tuple<bool, PartitionKeyRange>(true, partitonKeyRange);
         }
 
+        /// <summary>
+        /// Attempts to mark the unhealthy endpoints for a faulty partition to healthy state, un-deterministically. This is done
+        /// specifically for the gateway mode to get the faulty partition failed back to the original location.
+        /// </summary>
+        /// <param name="pkRangeUriMappings">A dictionary mapping partition key ranges to their corresponding collection resource ID, original failed location, and health status.</param>
+        public Task MarkEndpointsToHealthyAsync(
+            Dictionary<PartitionKeyRange, Tuple<string, Uri, TransportAddressHealthState.HealthStatus>> pkRangeUriMappings)
+        {
+            foreach (PartitionKeyRange pkRange in pkRangeUriMappings?.Keys)
+            {
+                string collectionRid = pkRangeUriMappings[pkRange].Item1;
+                Uri originalFailedLocation = pkRangeUriMappings[pkRange].Item2;
+
+                DefaultTrace.TraceVerbose("Un-deterministically marking the original failed endpoint: {0}, for the PkRange: {1}, collectionRid: {2} back to healthy.",
+                    originalFailedLocation,
+                    pkRange.Id,
+                    collectionRid);
+
+                pkRangeUriMappings[pkRange] = new Tuple<string, Uri, TransportAddressHealthState.HealthStatus>(collectionRid, originalFailedLocation, TransportAddressHealthState.HealthStatus.Connected);
+            }
+
+            return Task.CompletedTask;
+        }
+
         // DEVNOTE: This can be replace with ReplicatedResourceClient.IsMasterOperation on next Direct sync
         internal static bool IsMasterOperation(
             ResourceType resourceType,
@@ -445,10 +551,60 @@ namespace Microsoft.Azure.Cosmos
                    operationType != Documents.OperationType.ExecuteJavaScript;
         }
 
-        private void Dispose(bool disposing)
+        internal static bool IsOperationSupportedByThinClient(DocumentServiceRequest request)
+        {
+            // Document operations
+            if (request.ResourceType == ResourceType.Document
+                && (request.OperationType == OperationType.Batch
+                || request.OperationType == OperationType.Patch
+                || request.OperationType == OperationType.Create
+                || request.OperationType == OperationType.Read
+                || request.OperationType == OperationType.Upsert
+                || request.OperationType == OperationType.Replace
+                || request.OperationType == OperationType.Delete
+                || request.OperationType == OperationType.Query))
+            {
+                return true;
+            }
+
+            // Stored Procedure execution
+            if (request.ResourceType == ResourceType.StoredProcedure
+                && request.OperationType == OperationType.ExecuteJavaScript)
+            {
+                return true;
+            }
+
+            return false;
+        }
+        private async Task<AccountProperties> GetDatabaseAccountPropertiesAsync()
+        {
+            AccountProperties accountProperties = await this.endpointManager.GetDatabaseAccountAsync();
+            if (accountProperties != null)
+            {
+                return accountProperties;
+            }
+
+            throw new InvalidOperationException("Failed to retrieve AccountProperties. The response was null.");
+        }
+
+        protected virtual void Dispose(bool disposing)
         {
             if (disposing)
             {
+                if (this.thinClientStoreClient != null)
+                {
+                    try
+                    {
+                        this.thinClientStoreClient.Dispose();
+                    }
+                    catch (Exception exception)
+                    {
+                        DefaultTrace.TraceWarning("Exception {0} thrown during dispose of HttpClient, this could happen if there are inflight request during the dispose of client",
+                            exception.Message);
+                    }
+
+                    this.thinClientStoreClient = null;
+                }
                 if (this.gatewayStoreClient != null)
                 {
                     try
@@ -458,7 +614,7 @@ namespace Microsoft.Azure.Cosmos
                     catch (Exception exception)
                     {
                         DefaultTrace.TraceWarning("Exception {0} thrown during dispose of HttpClient, this could happen if there are inflight request during the dispose of client",
-                            exception);
+                            exception.Message);
                     }
 
                     this.gatewayStoreClient = null;
@@ -466,7 +622,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private Uri GetEntityUri(DocumentServiceRequest entity)
+        internal Uri GetEntityUri(DocumentServiceRequest entity)
         {
             string contentLocation = entity.Headers[HttpConstants.HttpHeaders.ContentLocation];
 
@@ -478,7 +634,7 @@ namespace Microsoft.Azure.Cosmos
             return new Uri(this.endpointManager.ResolveServiceEndpoint(entity), PathsHelper.GeneratePath(entity.ResourceType, entity, false));
         }
 
-        private Uri GetFeedUri(DocumentServiceRequest request)
+        internal Uri GetFeedUri(DocumentServiceRequest request)
         {
             return new Uri(this.endpointManager.ResolveServiceEndpoint(request), PathsHelper.GeneratePath(request.ResourceType, request, true));
         }

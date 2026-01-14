@@ -656,7 +656,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             using GlobalEndpointManager endpointManager = new(mockDocumentClient.Object, new ConnectionPolicy());
 
-            Mock<Common.CollectionCache> collectionCache = new Mock<Common.CollectionCache>(MockBehavior.Strict);
+            Mock<Common.CollectionCache> collectionCache = new Mock<Common.CollectionCache>(MockBehavior.Strict, false);
             collectionCache.Setup(c => c.ResolveCollectionAsync(It.IsAny<DocumentServiceRequest>(), default, trace))
                 .ReturnsAsync(containerProperties);
 
@@ -666,7 +666,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new Mock<ICosmosAuthorizationTokenProvider>().Object,
                 new Mock<IStoreModel>().Object,
                 collectionCache.Object,
-                endpointManager);
+                endpointManager,
+                false);
             partitionKeyRangeCache.Setup(c => c.TryLookupAsync(collectionRid, null, It.IsAny<DocumentServiceRequest>(), trace))
                 .ReturnsAsync(collectionRoutingMap);
 

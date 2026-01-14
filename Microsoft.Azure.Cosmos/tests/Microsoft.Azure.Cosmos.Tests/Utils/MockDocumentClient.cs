@@ -28,10 +28,11 @@ namespace Microsoft.Azure.Cosmos.Tests
         Mock<PartitionKeyRangeCache> partitionKeyRangeCache;
         private readonly Cosmos.ConsistencyLevel accountConsistencyLevel;
 
-        public MockDocumentClient(ConnectionPolicy connectionPolicy = null)
+        public MockDocumentClient(ConnectionPolicy connectionPolicy = null, bool thinClient = false)
             : base(new Uri("http://localhost"), MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey, connectionPolicy)
         {
             this.Init();
+            this.isThinClientEnabled = thinClient;
         }
 
         public MockDocumentClient(Cosmos.ConsistencyLevel accountConsistencyLevel, ConnectionPolicy connectionPolicy = null)
@@ -108,7 +109,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         internal override IRetryPolicyFactory ResetSessionTokenRetryPolicy => new RetryPolicy(
             this.MockGlobalEndpointManager.Object,
             new ConnectionPolicy(),
-            new GlobalPartitionEndpointManagerCore(this.MockGlobalEndpointManager.Object));
+            new GlobalPartitionEndpointManagerCore(this.MockGlobalEndpointManager.Object),
+            false);
 
         internal override Task<ClientCollectionCache> GetCollectionCacheAsync(ITrace trace)
         {
@@ -156,7 +158,7 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
 
         private void Init()
         {
-            this.collectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), new ServerStoreModel(null), null, null, null);
+            this.collectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), new ServerStoreModel(null), null, null, null, true);
             const string pkPath = "/pk";
             this.collectionCache.Setup
                     (m =>
@@ -229,7 +231,7 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
 
             using GlobalEndpointManager endpointManager = new(mockDocumentClient.Object, new ConnectionPolicy());
 
-            this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null, endpointManager);
+            this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null, endpointManager, false);
             this.partitionKeyRangeCache.Setup(
                         m => m.TryLookupAsync(
                             It.IsAny<string>(),
@@ -260,7 +262,7 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
             ).Returns((string collectionRid, string pkRangeId, ITrace trace, bool forceRefresh) =>
             Task.FromResult<PartitionKeyRange>(this.ResolvePartitionKeyRangeById(collectionRid, pkRangeId, forceRefresh)));
 
-            this.MockGlobalEndpointManager = new Mock<GlobalEndpointManager>(this, new ConnectionPolicy());
+            this.MockGlobalEndpointManager = new Mock<GlobalEndpointManager>(this, new ConnectionPolicy(), false);
             this.MockGlobalEndpointManager.Setup(gep => gep.ResolveServiceEndpoint(It.IsAny<DocumentServiceRequest>())).Returns(new Uri("http://localhost"));
             this.MockGlobalEndpointManager.Setup(gep => gep.InitializeAccountPropertiesAndStartBackgroundRefresh(It.IsAny<AccountProperties>()));
             SessionContainer sessionContainer = new SessionContainer(this.ServiceEndpoint.Host);
@@ -273,7 +275,6 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
                                                                  this.GlobalEndpointManager,
                                                                  default);
             this.sessionContainer = sessionContainer;
-
         }
     }
 }

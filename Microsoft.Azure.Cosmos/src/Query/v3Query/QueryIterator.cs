@@ -149,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 partitionedQueryExecutionInfo: partitionedQueryExecutionInfo,
                 returnResultsInDeterministicOrder: queryRequestOptions.ReturnResultsInDeterministicOrder,
                 enableOptimisticDirectExecution: queryRequestOptions.EnableOptimisticDirectExecution,
-                isNonStreamingOrderByQueryFeatureDisabled: queryRequestOptions.IsNonStreamingOrderByQueryFeatureDisabled,
+                isHybridSearchQueryPlanOptimizationDisabled: queryRequestOptions.IsHybridSearchQueryPlanOptimizationDisabled,
                 enableDistributedQueryGatewayMode: queryRequestOptions.EnableDistributedQueryGatewayMode && (clientContext.ClientOptions.ConnectionMode == ConnectionMode.Gateway),
                 testInjections: queryRequestOptions.TestSettings);
 
@@ -180,7 +180,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             // If Correlated Id already exists and is different, add a new one in comma separated list
             // Scenario: A new iterator is created with same ContinuationToken and Trace 
-            if (trace.Data.TryGetValue(QueryIterator.CorrelatedActivityIdKeyName, out object correlatedActivityIds))
+            if (trace.TryGetDatum(QueryIterator.CorrelatedActivityIdKeyName, out object correlatedActivityIds))
             {
                 List<string> correlatedIdList = correlatedActivityIds.ToString().Split(',').ToList();
                 if (!correlatedIdList.Contains(this.correlatedActivityId.ToString()))

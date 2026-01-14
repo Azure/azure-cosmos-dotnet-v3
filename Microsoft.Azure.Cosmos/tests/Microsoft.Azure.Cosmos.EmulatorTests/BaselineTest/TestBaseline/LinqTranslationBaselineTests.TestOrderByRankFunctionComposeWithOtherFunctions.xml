@@ -1,0 +1,233 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select + Order By Rank]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.Pk).OrderByRank(doc => doc.FullTextScore(new [] {"test1"}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["Pk"] 
+FROM root 
+ORDER BY RANK FullTextScore(root["Pk"], "test1")]]></SqlQuery>
+      <Results><![CDATA[[
+  "Test",
+  "Test"
+]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Order By Rank + Select]]></Description>
+      <Expression><![CDATA[query.OrderByRank(doc => doc.StringField.FullTextScore(new [] {"test1"})).Select(doc => doc.Pk)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["Pk"] 
+FROM root 
+ORDER BY RANK FullTextScore(root["StringField"], "test1")]]></SqlQuery>
+      <Results><![CDATA[[
+  "Test",
+  "Test"
+]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select + Order By Rank + Select]]></Description>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(stringField = doc.StringField, PartitionKey = doc.Pk)).OrderByRank(doc => doc.stringField.FullTextScore(new [] {"test1"})).Select(doc => doc.PartitionKey)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"stringField": root["StringField"], "PartitionKey": root["Pk"]}["PartitionKey"] 
+FROM root 
+ORDER BY RANK FullTextScore({"stringField": root["StringField"], "PartitionKey": root["Pk"]}["stringField"], "test1")]]></SqlQuery>
+      <Results><![CDATA[[
+  "Test",
+  "Test"
+]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany + Order By Rank]]></Description>
+      <Expression><![CDATA[query.SelectMany(doc => doc.ArrayField).OrderByRank(doc => doc.ToString().FullTextScore(new [] {"test1"}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE doc0 
+FROM root 
+JOIN doc0 IN root["ArrayField"] 
+ORDER BY RANK FullTextScore(ToString(doc0), "test1")]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":23,"end":59},"code":"SC2224","message":"The JOIN operator is not allowed with the ORDER BY RANK clause."},{"severity":"Error","location":{"start":33,"end":59},"code":"SC2223","message":"The FROM clause with the IN operator is not allowed with the ORDER BY RANK clause."}]},0x800A0B00]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Order By Rank + SelectMany]]></Description>
+      <Expression><![CDATA[query.OrderByRank(doc => doc.StringField.FullTextScore(new [] {"test1"})).SelectMany(doc => doc.ArrayField)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE doc0 
+FROM root 
+JOIN doc0 IN root["ArrayField"] 
+ORDER BY RANK FullTextScore(root["StringField"], "test1")]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":23,"end":59},"code":"SC2224","message":"The JOIN operator is not allowed with the ORDER BY RANK clause."},{"severity":"Error","location":{"start":33,"end":59},"code":"SC2223","message":"The FROM clause with the IN operator is not allowed with the ORDER BY RANK clause."}]},0x800A0B00]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Skip + Order By Rank]]></Description>
+      <Expression><![CDATA[query.Skip(1).OrderByRank(doc => doc.StringField.FullTextScore(new [] {"test1"}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r0 
+FROM (
+    SELECT VALUE root 
+    FROM root 
+    OFFSET 1 LIMIT 2147483647) AS r0 
+    ORDER BY RANK FullTextScore(r0["StringField"], "test1")
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":21,"end":76},"code":"SC2225","message":"Subqueries in the FROM clause are not allowed with the ORDER BY RANK clause."},{"severity":"Error","location":{"start":50,"end":75},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Order By Rank + Skip]]></Description>
+      <Expression><![CDATA[query.OrderByRank(doc => doc.StringField.FullTextScore(new [] {"test1"})).Skip(1).Select(doc => doc.Pk)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["Pk"] 
+FROM root 
+ORDER BY RANK FullTextScore(root["StringField"], "test1") 
+OFFSET 1 LIMIT 2147483647]]></SqlQuery>
+      <Results><![CDATA[[]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Take + Order By Rank]]></Description>
+      <Expression><![CDATA[query.Take(1).OrderByRank(doc => doc.StringField.FullTextScore(new [] {"test1"}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE r0 
+FROM (
+    SELECT TOP 1 VALUE root 
+    FROM root) AS r0 
+    ORDER BY RANK FullTextScore(r0["StringField"], "test1")
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":21,"end":56},"code":"SC2225","message":"Subqueries in the FROM clause are not allowed with the ORDER BY RANK clause."},{"severity":"Error","location":{"start":29,"end":34},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Order By Rank + Take]]></Description>
+      <Expression><![CDATA[query.OrderByRank(doc => doc.StringField.FullTextScore(new [] {"test1"})).Take(1).Select(doc => doc.Pk)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT TOP 1 VALUE root["Pk"] 
+FROM root 
+ORDER BY RANK FullTextScore(root["StringField"], "test1")]]></SqlQuery>
+      <Results><![CDATA[[
+  "Test"
+]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy + Order By Rank]]></Description>
+      <Expression><![CDATA[query.GroupBy(doc => doc.StringField, (key, values) => values.Count()).OrderByRank(doc => doc.ToString().FullTextScore(new [] {"test1"}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Group By cannot be followed by other methods]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Order By Rank + GroupBy]]></Description>
+      <Expression><![CDATA[query.OrderByRank(doc => doc.StringField.FullTextScore(new [] {"test1"})).GroupBy(doc => doc.Pk, (key, values) => values.Count())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE COUNT(1) 
+FROM (
+    SELECT VALUE root 
+    FROM root 
+    ORDER BY RANK FullTextScore(root["StringField"], "test1")) AS r0 
+    GROUP BY r0["Pk"] 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":56,"end":113},"code":"SC2228","message":"The ORDER BY RANK clause is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Order By + Order By Rank]]></Description>
+      <Expression><![CDATA[query.OrderBy(doc => doc.NumericField).OrderByRank(doc => doc.StringField.FullTextScore(new [] {"test1"})).Select(doc => doc.Pk)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["Pk"] 
+FROM root 
+ORDER BY RANK FullTextScore(root["StringField"], "test1")]]></SqlQuery>
+      <Results><![CDATA[[
+  "Test",
+  "Test"
+]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Order By Rank + Order By]]></Description>
+      <Expression><![CDATA[query.OrderByRank(doc => doc.StringField.FullTextScore(new [] {"test1"})).OrderBy(doc => doc.NumericField).Select(doc => doc.Pk)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["Pk"] 
+FROM root 
+ORDER BY root["NumericField"] ASC]]></SqlQuery>
+      <Results><![CDATA[[
+  "Test",
+  "Test"
+]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Where + Order By Rank]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.NumericField > 0)).OrderByRank(doc => doc.StringField.FullTextScore(new [] {"test1"})).Select(doc => doc.Pk)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["Pk"] 
+FROM root 
+WHERE (root["NumericField"] > 0) 
+ORDER BY RANK FullTextScore(root["StringField"], "test1")]]></SqlQuery>
+      <Results><![CDATA[[
+  "Test",
+  "Test"
+]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Order By Rank + Where]]></Description>
+      <Expression><![CDATA[query.OrderByRank(doc => doc.StringField.FullTextScore(new [] {"test1"})).Where(doc => (doc.NumericField > 0)).Select(doc => doc.Pk)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["Pk"] 
+FROM root 
+WHERE (root["NumericField"] > 0) 
+ORDER BY RANK FullTextScore(root["StringField"], "test1")]]></SqlQuery>
+      <Results><![CDATA[[
+  "Test",
+  "Test"
+]]]></Results>
+    </Output>
+  </Result>
+</Results>

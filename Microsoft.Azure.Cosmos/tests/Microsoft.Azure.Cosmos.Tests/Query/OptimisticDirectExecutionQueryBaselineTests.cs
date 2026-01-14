@@ -827,6 +827,7 @@
                 allowNonValueAggregateQuery: true,
                 hasLogicalPartitionKey: false,
                 allowDCount: true,
+                hybridSearchSkipOrderByRewrite: false,
                 useSystemPrefix: false,
                 geospatialType: Cosmos.GeospatialType.Geography);
 
@@ -1027,7 +1028,7 @@
                 partitionedQueryExecutionInfo: null,
                 returnResultsInDeterministicOrder: null,
                 enableOptimisticDirectExecution: queryRequestOptions.EnableOptimisticDirectExecution,
-                isNonStreamingOrderByQueryFeatureDisabled: queryRequestOptions.IsNonStreamingOrderByQueryFeatureDisabled,
+                isHybridSearchQueryPlanOptimizationDisabled: queryRequestOptions.IsHybridSearchQueryPlanOptimizationDisabled,
                 enableDistributedQueryGatewayMode: queryRequestOptions.EnableDistributedQueryGatewayMode,
                 testInjections: queryRequestOptions.TestSettings);
 
@@ -1357,6 +1358,7 @@
             bool allowNonValueAggregateQuery,
             bool hasLogicalPartitionKey,
             bool allowDCount,
+            bool hybridSearchQuerySkipOrderByRewrite,
             bool useSystemPrefix,
             Cosmos.GeospatialType geospatialType,
             CancellationToken cancellationToken)

@@ -42,12 +42,8 @@
 		<NoWarn>NU5125</NoWarn>
 		<Optimize Condition="'$(Configuration)'=='Release'">true</Optimize>
 		<LangVersion>$(LangVersion)</LangVersion>
-		<PackageLicenseFile>LICENSE</PackageLicenseFile>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 	</PropertyGroup>
-
-	<ItemGroup>
-		<None Include="..\..\LICENSE" Pack="true" PackagePath="" Visible="false" />
-	</ItemGroup>
 	
 	<ItemGroup>
 		<AdditionalFiles Include="stylecop.json" />
@@ -133,11 +129,8 @@
 		<PackageReference Include="System.Diagnostics.DiagnosticSource" Version="8.0.1" />
 		<PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
 		<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="6.0.0" />
-		<PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="16.0.102" PrivateAssets="All" />
 		<PackageReference Include="Newtonsoft.Json" Version="10.0.2" NoWarn="NU1903" PrivateAssets="All" />
-		<PackageReference Include="System.Net.Http" Version="4.3.4" />
-		<PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
-		<PackageReference Include="StyleCop.Analyzers" Version="1.1.118" PrivateAssets="All" />
+
 
 		<!--Direct Dependencies-->
 		<PackageReference Include="System.Configuration.ConfigurationManager" Version="6.0.0" />
@@ -150,7 +143,13 @@
 		<PackageReference Include="System.ValueTuple" Version="4.5.0" />
 		<PackageReference Include="Microsoft.Bcl.HashCode" Version="1.1.0" />
 	</ItemGroup>
-	
+
+  <!-- Code Analyzers -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Codex.Analyzers" Version="1.0.5" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="16.0.102" PrivateAssets="All" />
+    <PackageReference Include="StyleCop.Analyzers" Version="1.1.118" PrivateAssets="All" />
+  </ItemGroup>	
 
 	<ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
 		<None Include="$(OutputPath)\Cosmos.CRTCompat.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" />

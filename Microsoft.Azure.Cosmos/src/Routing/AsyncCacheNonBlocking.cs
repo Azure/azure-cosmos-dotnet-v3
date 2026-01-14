@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal sealed class AsyncCacheNonBlocking<TKey, TValue> : IDisposable
     {
+        private readonly bool enableAsyncCacheExceptionNoSharing;
         private readonly CancellationTokenSource cancellationTokenSource;
         private readonly ConcurrentDictionary<TKey, AsyncLazyWithRefreshTask<TValue>> values;
         private readonly Func<Exception, bool> removeFromCacheOnBackgroundRefreshException;
@@ -30,7 +31,8 @@ namespace Microsoft.Azure.Cosmos
         public AsyncCacheNonBlocking(
             Func<Exception, bool> removeFromCacheOnBackgroundRefreshException = null,
             IEqualityComparer<TKey> keyEqualityComparer = null,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default,
+            bool enableAsyncCacheExceptionNoSharing = true)
         {
             this.keyEqualityComparer = keyEqualityComparer ?? EqualityComparer<TKey>.Default;
             this.values = new ConcurrentDictionary<TKey, AsyncLazyWithRefreshTask<TValue>>(this.keyEqualityComparer);
@@ -38,10 +40,13 @@ namespace Microsoft.Azure.Cosmos
             this.cancellationTokenSource = cancellationToken == default
                 ? new CancellationTokenSource()
                 : CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            this.enableAsyncCacheExceptionNoSharing = enableAsyncCacheExceptionNoSharing;
         }
 
-        public AsyncCacheNonBlocking()
-            : this(removeFromCacheOnBackgroundRefreshException: null, keyEqualityComparer: null)
+        public AsyncCacheNonBlocking(bool enableAsyncCacheExceptionNoSharing = true)
+            : this(removeFromCacheOnBackgroundRefreshException: null,
+                  keyEqualityComparer: null,
+                  enableAsyncCacheExceptionNoSharing: enableAsyncCacheExceptionNoSharing)
         {
         }
 
@@ -113,9 +118,18 @@ namespace Microsoft.Azure.Cosmos
                             "AsyncCacheNonBlocking Failed GetAsync. key: {0}, tryRemoved: {1}, Exception: {2}",
                             key,
                             removed,
-                            e);
+                            e.Message);
                     }
 
+                    if (this.enableAsyncCacheExceptionNoSharing)
+                    {
+                        // Creates a shallow copy of specific exception types to prevent stack trace proliferation 
+                        // and rethrows them, doesn't process other exceptions.
+                        if (ExceptionHandlingUtility.TryCloneException(e, out Exception clone))
+                        {
+                            throw clone;
+                        }
+                    }
                     throw;
                 }
 
@@ -152,10 +166,20 @@ namespace Microsoft.Azure.Cosmos
                 DefaultTrace.TraceError(
                             "AsyncCacheNonBlocking Failed GetAsync with key: {0}, Exception: {1}",
                             key.ToString(),
-                            e.ToString());
+                            e.Message);
 
                 // Remove the failed task from the dictionary so future requests can send other calls..
                 this.values.TryRemove(key, out _);
+
+                if (this.enableAsyncCacheExceptionNoSharing)
+                {
+                    // Creates a shallow copy of specific exception types to prevent stack trace proliferation
+                    // and rethrows them, doesn't process other exceptions.
+                    if (ExceptionHandlingUtility.TryCloneException(e, out Exception clone))
+                    {
+                        throw clone;
+                    }
+                }
                 throw;
             }
         }
@@ -196,7 +220,7 @@ namespace Microsoft.Azure.Cosmos
 
                 Task continuationTask = backgroundRefreshTask
                     .ContinueWith(
-                        task => DefaultTrace.TraceVerbose("Failed to refresh addresses in the background with exception: {0}", task.Exception),
+                        task => DefaultTrace.TraceVerbose("Failed to refresh addresses in the background with exception: {0}", task.Exception.Message),
                         TaskContinuationOptions.OnlyOnFaulted);
             }
         }
@@ -238,7 +262,7 @@ namespace Microsoft.Azure.Cosmos
                         key,
                         operationName,
                         removed,
-                        ex);
+                        ex.Message);
                 }
 
                 throw;
@@ -415,7 +439,7 @@ namespace Microsoft.Azure.Cosmos
                 catch (ObjectDisposedException exception)
                 {
                     // Need to access the exception to avoid unobserved exception
-                    DefaultTrace.TraceInformation($"AsyncCacheNonBlocking was already disposed: {0}", exception);
+                    DefaultTrace.TraceInformation($"AsyncCacheNonBlocking was already disposed: {0}", exception.Message);
                 }
 
                 this.isDisposed = true;

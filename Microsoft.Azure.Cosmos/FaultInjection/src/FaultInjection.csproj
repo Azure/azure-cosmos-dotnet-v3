@@ -36,12 +36,8 @@
 		<DebugType>portable</DebugType>
 		<IncludeSymbols>false</IncludeSymbols>
 		<IncludeSource>false</IncludeSource>
-		<PackageLicenseFile>LICENSE</PackageLicenseFile>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 	</PropertyGroup>
-
-	<ItemGroup>
-		<None Include="..\LICENSE" Pack="true" PackagePath="" Visible="false" />
-	</ItemGroup>
 
 	<ItemGroup>
 		<AdditionalFiles Include="stylecop.json" />
@@ -66,8 +62,8 @@
 	  <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 	  <PackageReference Include="System.Text.Json" Version="8.0.5" />
 	</ItemGroup>
-	
-	<PropertyGroup Condition=" '$(ProjectRef)' != 'True' ">
+
+  <PropertyGroup Condition=" '$(ProjectRef)' != 'True' ">
 		<SignAssembly>true</SignAssembly>
 		<DelaySign>true</DelaySign>
 		<AssemblyOriginatorKeyFile>..\..\..\35MSSharedLib1024.snk</AssemblyOriginatorKeyFile>

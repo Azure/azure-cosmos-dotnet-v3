@@ -613,12 +613,12 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 return false;
             }
 
-            if (!SequenceEquals(first.OrderByItems, second.OrderByItems))
+            if (first.Rank != second.Rank)
             {
                 return false;
             }
 
-            return true;
+            return SequenceEquals(first.OrderByItems, second.OrderByItems);
         }
 
         public override bool Visit(SqlOrderByItem first, SqlObject secondAsObject)

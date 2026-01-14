@@ -30,5 +30,10 @@ namespace Microsoft.Azure.Cosmos.Json
         /// Enables support for writing 64-bit unsigned integers (UInt64).
         /// </summary>
         EnableUInt64Values = 1 << 1,
+
+        /// <summary>
+        /// Enables support for writing Base64-encoded strings.
+        /// </summary>
+        EnableBase64Strings = 1 << 2
     }
 }

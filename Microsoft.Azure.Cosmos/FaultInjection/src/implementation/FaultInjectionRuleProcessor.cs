@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private async Task<IFaultInjectionRuleInternal> GetEffectiveServerErrorRule(FaultInjectionRule rule)
         {
             FaultInjectionServerErrorType errorType = ((FaultInjectionServerErrorResult)rule.GetResult()).GetServerErrorType();
-            FaultInjectionConditionInternal effectiveCondition = new FaultInjectionConditionInternal();
+            FaultInjectionConditionInternal effectiveCondition = new FaultInjectionConditionInternal(this.globalEndpointManager);
 
             FaultInjectionOperationType operationType = rule.GetCondition().GetOperationType();
             if ((operationType != FaultInjectionOperationType.All) && this.CanErrorLimitToOperation(errorType))
@@ -189,7 +189,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     result.GetDelay(),
                     result.GetSuppressServiceRequests(),
                     result.GetInjectionRate(),
-                    this.applicationContext));
+                    this.applicationContext, 
+                    this.globalEndpointManager));
         }
 
         private async Task<IFaultInjectionRuleInternal> GetEffectiveConnectionErrorRule(FaultInjectionRule rule)

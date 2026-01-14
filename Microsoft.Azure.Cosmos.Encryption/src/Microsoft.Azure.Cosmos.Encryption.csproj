@@ -17,7 +17,7 @@
     <Title>Microsoft Azure Cosmos DB client-side encryption library</Title>
     <PackageId>Microsoft.Azure.Cosmos.Encryption</PackageId>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/Azure/azure-cosmos-dotnet-v3</PackageProjectUrl>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -29,19 +29,15 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(SdkProjectRef)' != 'True' AND '$(IsPreview)' != 'True' ">
-    <PackageReference Include="Microsoft.Azure.Cosmos" Version="[3.35.4,3.37.0]" />
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="[3.51.0,)" />
   </ItemGroup>
 
   <ItemGroup>
     <None Include="..\..\Icon.png" Pack="true" PackagePath=""/>
   </ItemGroup>
 
-  <ItemGroup>
-    <None Include="..\..\LICENSE" Pack="true" PackagePath="" Visible="false" />
-  </ItemGroup>
-
   <ItemGroup Condition=" '$(SdkProjectRef)' != 'True' AND '$(IsPreview)' == 'True' ">
-    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.37.0-preview" />
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.52.0-preview.0" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(SdkProjectRef)' == 'True' ">

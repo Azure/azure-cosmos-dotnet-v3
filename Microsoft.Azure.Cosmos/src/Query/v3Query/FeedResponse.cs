@@ -5,7 +5,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System.Collections;
     using System.Collections.Generic;
-    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// The user contract for the various feed responses that serialized the responses to a type.
@@ -60,7 +59,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The query advice.
         /// </value>
-        internal virtual string QueryAdvice => null;
+        public virtual string QueryAdvice => null;
 
         /// <summary>
         /// Request Message for this feed response

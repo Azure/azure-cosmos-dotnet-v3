@@ -89,12 +89,7 @@ namespace Microsoft.Azure.Cosmos
         /// reduce latency and increase availability. Currently there is one type of availability strategy, parallel request hedging.
         /// If there is a globally enabled availability strategy, setting one in the request options will override the global one.
         /// </summary>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        AvailabilityStrategy AvailabilityStrategy { get; set; }
+        public AvailabilityStrategy AvailabilityStrategy { get; set; }
 
         /// <summary>
         /// Gets or sets the boolean to use effective partition key routing in the cosmos db request.
@@ -124,7 +119,12 @@ namespace Microsoft.Azure.Cosmos
         /// <see cref="RequestOptions.ThroughputBucket"/> cannot be set in RequestOptions.
         /// </remarks>
         /// <seealso href="https://aka.ms/cosmsodb-bucketing"/>
-        internal int? ThroughputBucket { get; set; }
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        int? ThroughputBucket { get; set; }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties

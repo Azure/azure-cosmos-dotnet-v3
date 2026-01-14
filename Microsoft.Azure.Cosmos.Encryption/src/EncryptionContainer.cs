@@ -732,6 +732,21 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
 #if ENCRYPTIONPREVIEW
+#if SDKPROJECTREF
+        public override Task<SemanticRerankResult> SemanticRerankAsync(
+            string rerankContext,
+            IEnumerable<string> documents,
+            IDictionary<string, object> options = null,
+            CancellationToken cancellationToken = default)
+        {
+            return this.Container.SemanticRerankAsync(
+                rerankContext,
+                documents,
+                options,
+                cancellationToken);
+        }
+
+#endif
         public override async Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
             Cosmos.PartitionKey partitionKey,
             RequestOptions requestOptions = null,
@@ -753,15 +768,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             return this.Container.GetPartitionKeyRangesAsync(feedRange, cancellationToken);
         }
-#endif
 
-#if SDKPROJECTREF
-        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
-            string processorName,
-            ChangeFeedHandler<ChangeFeedItem<T>> onChangesDelegate)
+        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(string processorName, ChangeFeedHandler<ChangeFeedItem<T>> onChangesDelegate)
         {
             throw new NotImplementedException();
         }
+#endif
+
+#if SDKPROJECTREF
 
         public override Task<bool> IsFeedRangePartOfAsync(
             Cosmos.FeedRange x,

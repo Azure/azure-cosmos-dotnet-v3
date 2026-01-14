@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Json
     using System;
     using System.Collections.Generic;
     using System.Globalization;
-    using System.Linq;
     using System.Text;
     using Microsoft.Azure.Cosmos.Core.Utf8;
     using RMResources = Documents.RMResources;
@@ -49,11 +48,13 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <param name="jsonSerializationFormat">The JsonSerializationFormat of the writer.</param>
         /// <param name="writeOptions">The write options the control the write behavior.</param>
         /// <param name="initialCapacity">Initial capacity to help avoid intermediary allocations.</param>
+        /// <param name="jsonStringDictionary">The dictionary to use for user string encoding.</param>
         /// <returns>A JsonWriter that can write in a particular JsonSerializationFormat</returns>
         public static IJsonWriter Create(
             JsonSerializationFormat jsonSerializationFormat,
             JsonWriteOptions writeOptions = JsonWriteOptions.None,
-            int initialCapacity = 256)
+            int initialCapacity = 256,
+            IJsonStringDictionary jsonStringDictionary = null)
         {
             return jsonSerializationFormat switch
             {
@@ -61,7 +62,9 @@ namespace Microsoft.Azure.Cosmos.Json
                 JsonSerializationFormat.Binary => new JsonBinaryWriter(
                     enableNumberArrays: writeOptions.HasFlag(JsonWriteOptions.EnableNumberArrays),
                     enableUint64Values: writeOptions.HasFlag(JsonWriteOptions.EnableUInt64Values),
-                    initialCapacity: initialCapacity),
+                    enableBase64Strings: writeOptions.HasFlag(JsonWriteOptions.EnableBase64Strings),
+                    initialCapacity: initialCapacity,
+                    jsonStringDictionary: jsonStringDictionary),
                 _ => throw new ArgumentException(
                         string.Format(
                             CultureInfo.CurrentCulture,

@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Collections.Generic;
     using System.Runtime.InteropServices;
     using System.Text;
-    using System.Xml.Linq;
     using Microsoft.Azure.Cosmos.Core.Utf8;
 
     /// <summary>
@@ -57,7 +56,10 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 JsonTextNavigatorNode CreateRootNode()
                 {
-                    IJsonReader jsonTextReader = JsonReader.Create(buffer: buffer);
+                    IJsonReader jsonTextReader = JsonReader.Create(
+                                buffer: buffer,
+                                jsonStringDictionary: null);
+
                     if (!(jsonTextReader is IJsonTextReaderPrivateImplementation jsonTextReaderExtensions))
                     {
                         throw new InvalidOperationException($"{nameof(jsonTextReader)} needs to implement {nameof(IJsonTextReaderPrivateImplementation)}.");

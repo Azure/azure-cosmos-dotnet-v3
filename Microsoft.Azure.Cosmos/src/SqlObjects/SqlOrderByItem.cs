@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
     {
         private SqlOrderByItem(
             SqlScalarExpression expression,
-            bool isDescending)
+            bool? isDescending)
         {
             this.Expression = expression ?? throw new ArgumentNullException(nameof(expression));
             this.IsDescending = isDescending;
@@ -25,11 +25,11 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
 
         public SqlScalarExpression Expression { get; }
 
-        public bool IsDescending { get; }
+        public bool? IsDescending { get; }
 
         public static SqlOrderByItem Create(
             SqlScalarExpression expression,
-            bool isDescending)
+            bool? isDescending)
         {
             return new SqlOrderByItem(expression, isDescending);
         }

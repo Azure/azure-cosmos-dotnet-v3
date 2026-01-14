@@ -43,34 +43,34 @@ namespace Microsoft.Azure.Cosmos.Json
             JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String,
 
             // String Values [0x68, 0x70)
-            JsonTokenType.String,  // <empty> 0x68
-            JsonTokenType.String,  // <empty> 0x69
-            JsonTokenType.String,  // <empty> 0x6A
-            JsonTokenType.String,  // <empty> 0x6B
-            JsonTokenType.String,  // <empty> 0x6C
-            JsonTokenType.String,  // <empty> 0x6D
-            JsonTokenType.String,  // <empty> 0x6E
-            JsonTokenType.String,  // <empty> 0x6F
+            JsonTokenType.NotStarted,   // <empty> 0x68
+            JsonTokenType.NotStarted,   // <empty> 0x69
+            JsonTokenType.NotStarted,   // <empty> 0x6A
+            JsonTokenType.NotStarted,   // <empty> 0x6B
+            JsonTokenType.NotStarted,   // <empty> 0x6C
+            JsonTokenType.NotStarted,   // <empty> 0x6D
+            JsonTokenType.NotStarted,   // <empty> 0x6E
+            JsonTokenType.NotStarted,   // <empty> 0x6F
 
             // String Values [0x70, 0x78)
-            JsonTokenType.String,  // <empty> 0x70
-            JsonTokenType.String,  // <empty> 0x71
-            JsonTokenType.String,  // <empty> 0x72
-            JsonTokenType.String,  // <empty> 0x73
-            JsonTokenType.String,  // <empty> 0x74
-            JsonTokenType.String,  // StrGL (Lowercase GUID string)
-            JsonTokenType.String,  // StrGU (Uppercase GUID string)
-            JsonTokenType.String,  // StrGQ (Double-quoted lowercase GUID string)
+            JsonTokenType.NotStarted,   // <empty> 0x70
+            JsonTokenType.String,       // Standard Base64-encoded string with 1-byte length and 1-byte padding length
+            JsonTokenType.String,       // Standard Base64-encoded string with 2-byte length and 1-byte padding length
+            JsonTokenType.String,       // URL-safe Base64-encoded string with 1-byte length and 1-byte padding length
+            JsonTokenType.String,       // URL-safe Base64-encoded string with 2-byte length and 1-byte padding length
+            JsonTokenType.String,       // Lowercase GUID string
+            JsonTokenType.String,       // Uppercase GUID string
+            JsonTokenType.String,       // Double-quoted lowercase GUID string
 
             // Compressed strings [0x78, 0x80)
-            JsonTokenType.String,  // String 1-byte length - Lowercase hexadecimal digits encoded as 4-bit characters
-            JsonTokenType.String,  // String 1-byte length - Uppercase hexadecimal digits encoded as 4-bit characters
-            JsonTokenType.String,  // String 1-byte length - Date-time character set encoded as 4-bit characters
-            JsonTokenType.String,  // String 1-byte Length - 4-bit packed characters relative to a base value
-            JsonTokenType.String,  // String 1-byte Length - 5-bit packed characters relative to a base value
-            JsonTokenType.String,  // String 1-byte Length - 6-bit packed characters relative to a base value
-            JsonTokenType.String,  // String 1-byte Length - 7-bit packed characters
-            JsonTokenType.String,  // String 2-byte Length - 7-bit packed characters
+            JsonTokenType.String,       // String 1-byte length - Lowercase hexadecimal digits encoded as 4-bit characters
+            JsonTokenType.String,       // String 1-byte length - Uppercase hexadecimal digits encoded as 4-bit characters
+            JsonTokenType.String,       // String 1-byte length - Date-time character set encoded as 4-bit characters
+            JsonTokenType.String,       // String 1-byte Length - 4-bit packed characters relative to a base value
+            JsonTokenType.String,       // String 1-byte Length - 5-bit packed characters relative to a base value
+            JsonTokenType.String,       // String 1-byte Length - 6-bit packed characters relative to a base value
+            JsonTokenType.String,       // String 1-byte Length - 7-bit packed characters
+            JsonTokenType.String,       // String 2-byte Length - 7-bit packed characters
 
             // TypeMarker-encoded string length (64 values)
             JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String,
@@ -173,6 +173,11 @@ namespace Microsoft.Azure.Cosmos.Json
             private readonly JsonBinaryMemoryReader jsonBinaryBuffer;
 
             /// <summary>
+            /// Dictionary used for user string encoding.
+            /// </summary>
+            private readonly IJsonStringDictionary jsonStringDictionary;
+
+            /// <summary>
             /// For binary there is no end of token marker in the actual binary, but the JsonReader interface still needs to surface ObjectEndToken and ArrayEndToken.
             /// To accommodate for this we have a progress stack to let us know how many bytes there are left to read for all levels of nesting. 
             /// With this information we know that we are at the end of a context and can now surface an end object / array token.
@@ -185,14 +190,16 @@ namespace Microsoft.Azure.Cosmos.Json
             private int currentTokenPosition;
 
             public JsonBinaryReader(
-                ReadOnlyMemory<byte> buffer)
-                : this(buffer, indexToStartFrom: null)
+                ReadOnlyMemory<byte> buffer,
+                IJsonStringDictionary jsonStringDictionary = null)
+                : this(buffer, indexToStartFrom: null, jsonStringDictionary: jsonStringDictionary)
             {
             }
 
             internal JsonBinaryReader(
                 ReadOnlyMemory<byte> rootBuffer,
-                int? indexToStartFrom = null)
+                int? indexToStartFrom = null,
+                IJsonStringDictionary jsonStringDictionary = null)
             {
                 if (rootBuffer.IsEmpty)
                 {
@@ -225,6 +232,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 // offset for the 0x80 binary type marker
                 this.jsonBinaryBuffer = new JsonBinaryMemoryReader(readerBuffer);
                 this.arrayAndObjectEndStack = new ArrayAndObjectEndStack();
+                this.jsonStringDictionary = jsonStringDictionary;
             }
 
             #region IJsonReader
@@ -361,7 +369,8 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 return JsonBinaryEncoding.GetUtf8StringValue(
                     this.rootBuffer,
-                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition));
+                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition),
+                    this.jsonStringDictionary);
             }
 
             /// <inheritdoc />
@@ -377,6 +386,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 return JsonBinaryEncoding.TryGetBufferedStringValue(
                     this.rootBuffer,
                     this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition),
+                    this.jsonStringDictionary,
                     out bufferedUtf8StringValue);
             }
 
@@ -539,7 +549,8 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 return JsonBinaryEncoding.GetUtf8SpanValue(
                     this.rootBuffer,
-                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition));
+                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition),
+                    this.jsonStringDictionary);
             }
             #endregion
 

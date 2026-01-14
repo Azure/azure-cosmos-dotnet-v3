@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
     using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.FaultInjection;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest;
     using Microsoft.Azure.Cosmos.Telemetry;
@@ -45,10 +46,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
         private static readonly TimeSpan delayTime = TimeSpan.FromSeconds(2);
         private static readonly RequestHandler requestHandler = new RequestHandlerSleepHelper(delayTime);
 
-        private static readonly int TotalTestMethod = typeof(EndToEndTraceWriterBaselineTests).GetMethods().Where(m => m.GetCustomAttributes(typeof(TestMethodAttribute), false).Length > 0).Count();
-        
-        private static int MethodCount = 0;
-        
         [ClassInitialize]
         public static async Task ClassInitAsync(TestContext _)
         {
@@ -126,33 +123,34 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
         }
 
-        [TestCleanup]
-        public async Task CleanUp()
+        [ClassCleanup]
+        public static async Task CleanUp()
         {
             await EndToEndTraceWriterBaselineTests.ClassCleanupAsync();
+        }
+
+        [TestCleanup]
+        public void TestCleanup()
+        {
+            EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
         }
         
         public static async Task ClassCleanupAsync()
         {
-            EndToEndTraceWriterBaselineTests.MethodCount++;
-
-            if (EndToEndTraceWriterBaselineTests.MethodCount == EndToEndTraceWriterBaselineTests.TotalTestMethod)
+            if (database != null)
             {
-                if (database != null)
-                {
-                    await EndToEndTraceWriterBaselineTests.database.DeleteStreamAsync();
-                }
-                
-                EndToEndTraceWriterBaselineTests.client?.Dispose();
-                EndToEndTraceWriterBaselineTests.bulkClient?.Dispose();
-                EndToEndTraceWriterBaselineTests.miscCosmosClient?.Dispose();
-
-                Util.DisposeOpenTelemetryAndCustomListeners();
-
-                EndToEndTraceWriterBaselineTests.testListener.Dispose();
-
-                Environment.SetEnvironmentVariable("OTEL_SEMCONV_STABILITY_OPT_IN", null);
+                await EndToEndTraceWriterBaselineTests.database.DeleteStreamAsync();
             }
+            
+            EndToEndTraceWriterBaselineTests.client?.Dispose();
+            EndToEndTraceWriterBaselineTests.bulkClient?.Dispose();
+            EndToEndTraceWriterBaselineTests.miscCosmosClient?.Dispose();
+
+            Util.DisposeOpenTelemetryAndCustomListeners();
+
+            EndToEndTraceWriterBaselineTests.testListener.Dispose();
+
+            Environment.SetEnvironmentVariable("OTEL_SEMCONV_STABILITY_OPT_IN", null);
         }
         
         private static void AssertAndResetActivityInformation()
@@ -499,7 +497,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
         public async Task QueryAsync()
         {
             List<Input> inputs = new List<Input>();
-            QueryRequestOptions requestOptions = new QueryRequestOptions() { IsNonStreamingOrderByQueryFeatureDisabled = true };
+            QueryRequestOptions requestOptions = new QueryRequestOptions() { IsHybridSearchQueryPlanOptimizationDisabled = true };
 
             int startLineNumber;
             int endLineNumber;
@@ -717,6 +715,59 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
         }
 
         [TestMethod]
+        public async Task ValidateCorrectSubStatusCodeTestAsync()
+        {
+            FaultInjectionCondition condition = new FaultInjectionConditionBuilder()
+                .WithConnectionType(FaultInjectionConnectionType.Direct)
+                .WithOperationType(FaultInjectionOperationType.ReadItem)
+                .Build();
+
+            FaultInjectionServerErrorResult result = new FaultInjectionServerErrorResultBuilder(FaultInjectionServerErrorType.ReadSessionNotAvailable)
+                .Build();
+
+            FaultInjectionRule rule = new FaultInjectionRuleBuilder("readSessionNotAvailable", condition, result)
+                .Build();
+
+            FaultInjector injector = new FaultInjector(new List<FaultInjectionRule> { rule });
+
+            rule.Disable();
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                ConsistencyLevel = ConsistencyLevel.Eventual,
+                FaultInjector = injector,
+            };
+            
+            (string endpoint, string authKey) = TestCommon.GetAccountInfo();
+
+            using (CosmosClient client = new CosmosClient(endpoint, authKey, clientOptions))
+            {
+
+                Database testDatabase = await client.CreateDatabaseAsync("testDatabase");
+                Container testContainer = await testDatabase.CreateContainerAsync(new ContainerProperties("testContainer", "/pk"));
+
+                ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+                await testContainer.CreateItemAsync(testItem, new PartitionKey(testItem.pk));
+
+                rule.Enable();
+
+                try
+                {
+                    ItemResponse<ToDoActivity> _ = await testContainer.ReadItemAsync<ToDoActivity>(testItem.id, new PartitionKey(testItem.pk));
+                }
+                catch (CosmosException ex)
+                {
+                    Assert.IsTrue(ex.Diagnostics.ToString().Contains("ReadSessionNotAvailable"));
+                }
+                finally
+                {
+                    await testDatabase.DeleteAsync();
+                }
+            }
+        }
+
+        [TestMethod]
         public async Task ValidateInvalidCredentialsTraceAsync()
         {
             string authKey = Utils.ConfigurationManager.AppSettings["MasterKey"];
@@ -766,6 +817,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
         }
 
         [TestMethod]
+        [TestCategory("Flaky")]
         public async Task TypedPointOperationsAsync()
         {
             List<Input> inputs = new List<Input>();
@@ -1810,6 +1862,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
 
             public IReadOnlyDictionary<string, object> Data => this.data;
 
+            public bool IsBeingWalked => true; // needs to return true to allow materialization
+
             public IReadOnlyList<(string, Uri)> RegionsContacted => new List<(string, Uri)>();
 
             public void AddDatum(string key, TraceDatum traceDatum)
@@ -1868,6 +1922,11 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 }
 
                 this.data[key] = "Redacted To Not Change The Baselines From Run To Run";
+            }
+
+            bool ITrace.TryGetDatum(string key, out object datum)
+            {
+                return this.data.TryGetValue(key, out datum);
             }
         }
 

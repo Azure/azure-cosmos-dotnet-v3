@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -123,8 +122,28 @@ namespace Microsoft.Azure.Cosmos
         /// The results will be displayed in <c>FeedResponse.QueryAdvice</c>. Please note that this options will incur overhead, so it should be 
         /// enabled only when debugging queries.
         /// </para>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// var queryRequestOptions = new QueryRequestOptions { PopulateQueryAdvice = true};
+        /// 
+        /// // View results in FeedResponse.QueryAdvice
+        /// string queryAdvice = null;
+        /// while (itemQuery.HasMoreResults)
+        ///    {
+        ///        FeedResponse<CosmosElement> page = itemQuery.ReadNextAsync().Result;
+        ///        
+        ///        // query advice is the same across pages so we only need to log it once
+        ///        if (queryAdvice == null)
+        ///        {
+        ///             queryAdvice = page.QueryAdvice; 
+        ///        }
+        ///    }
+        /// ]]>
+        /// </code>
+        /// </example>
         /// </remarks>
-        internal bool? PopulateQueryAdvice { get; set; }
+        public bool? PopulateQueryAdvice { get; set; }
 
         /// <summary>
         /// Gets or sets the consistency level required for the request in the Azure Cosmos DB service.
@@ -208,7 +227,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal FeedRange FeedRange { get; set; }
 
-        internal bool IsNonStreamingOrderByQueryFeatureDisabled { get; set; } = ConfigurationManager.IsNonStreamingOrderByQueryFeatureDisabled(defaultValue: false);
+        internal bool IsHybridSearchQueryPlanOptimizationDisabled { get; set; } = ConfigurationManager.IsHybridSearchQueryPlanOptimizationDisabled(defaultValue: false);
 
         // This is a temporary flag to enable the distributed query gateway mode.
         // This flag will be removed once we have a way for the client to determine

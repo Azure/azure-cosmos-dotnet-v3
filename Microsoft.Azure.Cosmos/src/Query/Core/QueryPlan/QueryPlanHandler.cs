@@ -4,9 +4,6 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 {
     using System;
-    using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -29,6 +26,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             VectorEmbeddingPolicy vectorEmbeddingPolicy,
             bool hasLogicalPartitionKey,
             bool useSystemPrefix,
+            bool isHybridSearchQueryPlanOptimizationDisabled,
             GeospatialType geospatialType,
             CancellationToken cancellationToken)
         {
@@ -51,6 +49,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                 vectorEmbeddingPolicy,
                 hasLogicalPartitionKey,
                 useSystemPrefix,
+                isHybridSearchQueryPlanOptimizationDisabled,
                 geospatialType,
                 cancellationToken);
             if (!tryGetQueryInfo.Succeeded)
@@ -68,6 +67,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             VectorEmbeddingPolicy vectorEmbeddingPolicy,
             bool hasLogicalPartitionKey,
             bool useSystemPrefix,
+            bool isHybridSearchQueryPlanOptimizationDisabled,
             Cosmos.GeospatialType geospatialType,
             CancellationToken cancellationToken = default)
         {
@@ -84,6 +84,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                 hasLogicalPartitionKey: hasLogicalPartitionKey,
                 allowDCount: true,
                 useSystemPrefix: useSystemPrefix,
+                isHybridSearchQueryPlanOptimizationDisabled: isHybridSearchQueryPlanOptimizationDisabled,
                 geospatialType: geospatialType,
                 cancellationToken: cancellationToken);
         }

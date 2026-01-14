@@ -39,6 +39,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly ConcurrentDictionary<Uri, EndpointCache> addressCacheByEndpoint;
         private readonly bool enableTcpConnectionEndpointRediscovery;
         private readonly bool isReplicaAddressValidationEnabled;
+        private readonly bool enableAsyncCacheExceptionNoSharing;
         private readonly IConnectionStateListener connectionStateListener;
         private IOpenConnectionsHandler openConnectionsHandler;
 
@@ -52,7 +53,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             IServiceConfigurationReader serviceConfigReader,
             ConnectionPolicy connectionPolicy,
             CosmosHttpClient httpClient,
-            IConnectionStateListener connectionStateListener)
+            IConnectionStateListener connectionStateListener,
+            bool enableAsyncCacheExceptionNoSharing = true)
         {
             this.endpointManager = endpointManager;
             this.partitionKeyRangeLocationCache = partitionKeyRangeLocationCache;
@@ -72,6 +74,8 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             this.isReplicaAddressValidationEnabled = ConfigurationManager.IsReplicaAddressValidationEnabled(connectionPolicy);
 
+            this.enableAsyncCacheExceptionNoSharing = enableAsyncCacheExceptionNoSharing;
+
             this.maxEndpoints = maxBackupReadEndpoints + 2; // for write and alternate write endpoint (during failover)
 
             this.addressCacheByEndpoint = new ConcurrentDictionary<Uri, EndpointCache>();
@@ -85,6 +89,9 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 this.GetOrAddEndpoint(endpoint);
             }
+
+            this.partitionKeyRangeLocationCache.SetBackgroundConnectionPeriodicRefreshTask(
+                this.TryOpenConnectionToUnhealthyEndpointsAsync);
         }
 
         public async Task OpenAsync(
@@ -233,6 +240,72 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
         /// <summary>
+        /// Attempts to open connections to unhealthy endpoints by validating and opening Rntbd connections
+        /// to the backend replicas. Updates the health status of the endpoints if the connection is successful.
+        /// </summary>
+        /// <param name="pkRangeUriMappings">A dictionary mapping partition key ranges to their corresponding collection resource ID, original failed location, and health status.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        public async Task TryOpenConnectionToUnhealthyEndpointsAsync(
+            Dictionary<PartitionKeyRange, Tuple<string, Uri, TransportAddressHealthState.HealthStatus>> pkRangeUriMappings)
+        {
+            foreach (PartitionKeyRange pkRange in pkRangeUriMappings?.Keys)
+            {
+                string collectionRid = pkRangeUriMappings[pkRange].Item1;
+                Uri originalFailedLocation = pkRangeUriMappings[pkRange].Item2;
+
+                DocumentServiceRequest request = DocumentServiceRequest.CreateFromName(
+                    OperationType.Read,
+                    collectionRid,
+                    ResourceType.Collection,
+                    AuthorizationTokenType.PrimaryMasterKey);
+
+                try
+                {
+                    PartitionAddressInformation addresses = await this.addressCacheByEndpoint[originalFailedLocation]
+                        .AddressCache
+                        .TryGetAddressesAsync(
+                            request,
+                            new PartitionKeyRangeIdentity(collectionRid, pkRange.Id),
+                            request.ServiceIdentity,
+                            false,
+                            CancellationToken.None);
+
+                    PerProtocolPartitionAddressInformation currentAddressInfo = addresses.Get(Protocol.Tcp);
+                    IReadOnlyList<TransportAddressUri> transportAddressUris = currentAddressInfo.ReplicaTransportAddressUris;
+
+                    DefaultTrace.TraceVerbose("Trying to open connection to all the replica addresses for the PkRange: {0}, collectionRid: {1} and originalFailedLocation: {2}",
+                        pkRange.Id,
+                        collectionRid,
+                        originalFailedLocation);
+
+                    await this.openConnectionsHandler.TryOpenRntbdChannelsAsync(transportAddressUris);
+
+                    foreach (TransportAddressUri transportAddressUri in transportAddressUris)
+                    {
+                        if (transportAddressUri.GetCurrentHealthState().GetHealthStatus() == TransportAddressHealthState.HealthStatus.Connected)
+                        {
+                            DefaultTrace.TraceVerbose("Opened connection to replica addresses: {0}, for the PkRange: {1}, collectionRid: {2} and and current health: {3}",
+                                transportAddressUri.Uri,
+                                pkRange.Id,
+                                collectionRid,
+                                transportAddressUri.GetCurrentHealthState().GetHealthStatus());
+
+                            pkRangeUriMappings[pkRange] = new Tuple<string, Uri, TransportAddressHealthState.HealthStatus>(collectionRid, originalFailedLocation, TransportAddressHealthState.HealthStatus.Connected);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    DefaultTrace.TraceWarning("Failed to open connection to all the replica addresses for the PkRange: {0}, collectionRid: {1} and originalFailedLocation: {2}, with exception: {3}",
+                        pkRange.Id,
+                        collectionRid,
+                        originalFailedLocation,
+                        ex.Message);
+                }
+            }
+        }
+
+        /// <summary>
         /// ReplicatedResourceClient will use this API to get the direct connectivity AddressCache for given request.
         /// </summary>
         /// <param name="request"></param>
@@ -275,7 +348,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                         this.openConnectionsHandler,
                         this.connectionStateListener,
                         enableTcpConnectionEndpointRediscovery: this.enableTcpConnectionEndpointRediscovery,
-                        replicaAddressValidationEnabled: this.isReplicaAddressValidationEnabled);
+                        replicaAddressValidationEnabled: this.isReplicaAddressValidationEnabled,
+                        enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
 
                     string location = this.endpointManager.GetLocation(endpoint);
                     AddressResolver addressResolver = new AddressResolver(null, new NullRequestSigner(), location);

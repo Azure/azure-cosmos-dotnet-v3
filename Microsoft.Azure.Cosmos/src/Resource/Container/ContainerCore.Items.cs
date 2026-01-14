@@ -934,7 +934,8 @@ namespace Microsoft.Azure.Cosmos
             // engine, which does not support binary encoded content at the moment. For long term, since trigger operations won't
             // be supported in the backend, avoiding the binary encoding in such cases, will be the ideal approach.
             if (ConfigurationManager.IsBinaryEncodingEnabled()
-                && !ContainerCore.IsTriggerPresentInRequestOptions(requestOptions))
+                && !ContainerCore.IsTriggerPresentInRequestOptions(requestOptions)
+                && !this.ClientContext.ClientOptions.EnableStreamPassThrough)
             {
                 streamPayload = CosmosSerializationUtil.TrySerializeStreamToTargetFormat(
                     targetSerializationFormat: ContainerCore.GetTargetRequestSerializationFormat(),
@@ -957,7 +958,8 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
 
             // Convert Binary Stream to Text.
-            if (targetResponseSerializationFormat.HasValue
+            if (!this.ClientContext.ClientOptions.EnableStreamPassThrough
+                && targetResponseSerializationFormat.HasValue
                 && (requestOptions == null || !requestOptions.EnableBinaryResponseOnPointOperations)
                 && responseMessage?.Content is CloneableStream outputCloneableStream)
             {

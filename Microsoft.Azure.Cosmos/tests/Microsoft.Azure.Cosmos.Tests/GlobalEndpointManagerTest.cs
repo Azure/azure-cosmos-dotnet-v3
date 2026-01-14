@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Tests for <see cref="GlobalEndpointManager"/>
@@ -31,6 +32,7 @@ namespace Microsoft.Azure.Cosmos
         public async Task EndpointFailureMockTest()
         {
             Environment.SetEnvironmentVariable("MinimumIntervalForNonForceRefreshLocationInMS", "100");
+            Environment.SetEnvironmentVariable("UnavailableLocationsExpirationTimeInSeconds", "2");
             try
             {
                 // Setup dummpy read locations for the database account
@@ -85,19 +87,19 @@ namespace Microsoft.Azure.Cosmos
                     //Mark each of the read locations as unavailable and validate that the read endpoint switches to the next preferred region / default endpoint.
                     globalEndpointManager.MarkEndpointUnavailableForRead(globalEndpointManager.ReadEndpoints[0]);
                     await globalEndpointManager.RefreshLocationAsync();
-                    Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], new Uri(readLocation2.Endpoint));
+                    Assert.AreEqual(new Uri(readLocation2.Endpoint), globalEndpointManager.ReadEndpoints[0], "Read endpoint did not switch to location 2 after marking location 1 as unavailable.");
 
                     globalEndpointManager.MarkEndpointUnavailableForRead(globalEndpointManager.ReadEndpoints[0]);
                     await globalEndpointManager.RefreshLocationAsync();
-                    Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], globalEndpointManager.WriteEndpoints[0]);
+                    Assert.AreEqual(globalEndpointManager.WriteEndpoints[0], globalEndpointManager.ReadEndpoints[0]);
 
                     getAccountInfoCount = 0;
-                    //Sleep a second for the unavailable endpoint entry to expire and background refresh timer to kick in
+                    //Sleep 3 seconds for the unavailable endpoint entry to expire and background refresh timer to kick in
                     await Task.Delay(TimeSpan.FromSeconds(3));
                     Assert.IsTrue(getAccountInfoCount > 0, "Callback is not working. There should be at least one call in this time frame.");
 
                     await globalEndpointManager.RefreshLocationAsync();
-                    Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], new Uri(readLocation1.Endpoint));
+                    Assert.AreEqual(new Uri(readLocation1.Endpoint), globalEndpointManager.ReadEndpoints[0], "Read endpoint did not switch back to location 1 after the unavailable entry expired.");
                 }
 
                 Assert.IsTrue(getAccountInfoCount > 0, "Callback is not working. There should be at least one call in this time frame.");
@@ -108,6 +110,7 @@ namespace Microsoft.Azure.Cosmos
             finally
             {
                 Environment.SetEnvironmentVariable("MinimumIntervalForNonForceRefreshLocationInMS", null);
+                Environment.SetEnvironmentVariable("UnavailableLocationsExpirationTimeInSeconds", null);
             }
         }
 
@@ -603,7 +606,7 @@ namespace Microsoft.Azure.Cosmos
             string originalConfigValue = Environment.GetEnvironmentVariable("MinimumIntervalForNonForceRefreshLocationInMS");
             Environment.SetEnvironmentVariable("MinimumIntervalForNonForceRefreshLocationInMS", "1000");
 
-            // Setup dummpy read locations for the database account
+            // Setup dummy read locations for the database account
             Collection<AccountRegion> readableLocations = new Collection<AccountRegion>();
 
             AccountRegion writeLocation = new AccountRegion
@@ -646,14 +649,14 @@ namespace Microsoft.Azure.Cosmos
             using GlobalEndpointManager globalEndpointManager = new GlobalEndpointManager(mockOwner.Object, connectionPolicy);
 
             globalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(databaseAccount);
-            Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], new Uri(readLocation1.Endpoint));
+            Assert.AreEqual(new Uri(readLocation1.Endpoint), globalEndpointManager.ReadEndpoints[0], "Read endpoint is not location 1 as expected.");
 
             //Remove location 1 from read locations and validate that the read endpoint switches to the next preferred location
             readableLocations.Remove(readLocation1);
             databaseAccount.ReadLocationsInternal = readableLocations;
 
             globalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(databaseAccount);
-            Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], new Uri(readLocation2.Endpoint));
+            Assert.AreEqual(new Uri(readLocation2.Endpoint), globalEndpointManager.ReadEndpoints[0], "Read endpoint did not switch to location 2 after removing location 1.");
 
             //Add location 1 back to read locations and validate that location 1 becomes the read endpoint again.
             readableLocations.Add(readLocation1);
@@ -679,9 +682,98 @@ namespace Microsoft.Azure.Cosmos
                 await Task.Delay(500);
             }
 
-            Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], new Uri(readLocation1.Endpoint));
+            ValueStopwatch endpointUpdateStopwatch = ValueStopwatch.StartNew();
+            while (globalEndpointManager.ReadEndpoints[0] != new Uri(readLocation1.Endpoint))
+            {
+                Assert.IsTrue(endpointUpdateStopwatch.Elapsed.TotalSeconds < 1,
+                    $"Read endpoint did not switch back to location 1 after adding it back. Current endpoint: {globalEndpointManager.ReadEndpoints[0]}");
+                await Task.Delay(100);
+            }
 
             Environment.SetEnvironmentVariable("MinimumIntervalForNonForceRefreshLocationInMS", originalConfigValue);
+        }
+
+        [TestMethod]
+        public async Task ThinClientEndpoints_ParsesAndResolves()
+        {
+            // Arrange
+            Collection<AccountRegion> readableLocations = new Collection<AccountRegion>
+            {
+                new AccountRegion { Name = "ReadLocation", Endpoint = "https://readlocation.documents.azure.com" }
+            };
+                    Collection<AccountRegion> writeableLocations = new Collection<AccountRegion>
+            {
+                new AccountRegion { Name = "WriteLocation", Endpoint = "https://writelocation.documents.azure.com" }
+            };
+
+            AccountProperties accountProperties = new AccountProperties
+            {
+                ReadLocationsInternal = readableLocations,
+                WriteLocationsInternal = writeableLocations,
+                AdditionalProperties = new Dictionary<string, Newtonsoft.Json.Linq.JToken>
+                {
+                    {
+                        "thinClientWritableLocations",
+                        JArray.Parse(@"[
+                            { 'name': 'ThinClientRegionWrite', 'databaseAccountEndpoint': 'https://thinclientwrite.documents.azure.com:10650/' }
+                        ]")
+                    },
+                    {
+                        "thinClientReadableLocations",
+                        JArray.Parse(@"[
+                            { 'name': 'ThinClientRegionRead', 'databaseAccountEndpoint': 'https://thinclientread.documents.azure.com:10650/' }
+                        ]")
+                    }
+                }
+            };
+
+            Mock<IDocumentClientInternal> mockOwner = new Mock<IDocumentClientInternal>();
+            mockOwner.Setup(owner => owner.ServiceEndpoint).Returns(new Uri("https://defaultendpoint.net/"));
+
+            // Returning updated accountProperties
+            mockOwner.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(accountProperties);
+
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy
+            {
+                EnableEndpointDiscovery = true,
+                UseMultipleWriteLocations = false,
+            };
+
+            GlobalEndpointManager gem = new GlobalEndpointManager(mockOwner.Object, connectionPolicy);
+            try
+            {
+                // Act: Initialize once
+                gem.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);
+
+                // Forcibly refresh 
+                await gem.RefreshLocationAsync(forceRefresh: true);
+
+                // Create a test DocumentServiceRequest that is read
+                DocumentServiceRequest readRequest = DocumentServiceRequest.Create(
+                    OperationType.Read,
+                    ResourceType.Document,
+                    AuthorizationTokenType.PrimaryMasterKey);
+
+                Uri thinClientReadEndpoint = gem.ResolveThinClientEndpoint(readRequest);
+
+                // Create a test DocumentServiceRequest that is write
+                DocumentServiceRequest writeRequest = DocumentServiceRequest.Create(
+                    OperationType.Create,
+                    ResourceType.Document,
+                    AuthorizationTokenType.PrimaryMasterKey);
+
+                Uri thinClientWriteEndpoint = gem.ResolveThinClientEndpoint(writeRequest);
+
+                // Assert: 
+                Assert.AreEqual("https://thinclientread.documents.azure.com:10650/", thinClientReadEndpoint.AbsoluteUri);
+
+                Assert.AreEqual("https://thinclientwrite.documents.azure.com:10650/", thinClientWriteEndpoint.AbsoluteUri);
+            }
+            finally
+            {
+                gem.Dispose();
+            }
         }
 
         private class TestTraceListener : TraceListener

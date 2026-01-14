@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
     using System.Collections.Generic;
-    using System.ComponentModel;
     using System.Globalization;
     using System.IO;
     using System.Linq;
@@ -187,6 +186,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,
                 hasLogicalPartitionKey: hasLogicalPartitionKey,
                 allowDCount: allowDCount,
+                hybridSearchSkipOrderByRewrite: false,
                 geospatialType: geospatialType,
                 useSystemPrefix: false);
             if (!tryGetPartitionedQueryExecutionInfo.Succeeded)

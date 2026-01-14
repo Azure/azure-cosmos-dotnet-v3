@@ -679,13 +679,16 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         // Ignore Ordering for AnonymousType object
         internal bool ignoreOrder;
 
+        internal bool serializeOutput;
+
         internal LinqTestInput(
             string description, 
             Expression<Func<bool, IQueryable>> expr, 
             bool skipVerification = false, 
             bool ignoreOrder = false,
             string expressionStr = null, 
-            string inputData = null)
+            string inputData = null,
+            bool serializeOutput = false)
             : base(description)
         {
             this.Expression = expr ?? throw new ArgumentNullException($"{nameof(expr)} must not be null.");
@@ -693,6 +696,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             this.ignoreOrder = ignoreOrder;
             this.expressionStr = expressionStr;
             this.inputData = inputData;
+            this.serializeOutput = serializeOutput;
         }
 
         public static string FilterInputExpression(string input)
@@ -848,7 +852,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         }
     }
 
-    class SystemTextJsonLinqSerializer : CosmosLinqSerializer
+    internal class SystemTextJsonLinqSerializer : CosmosLinqSerializer
     {
         private readonly JsonObjectSerializer systemTextJsonSerializer;
         private readonly JsonSerializerOptions jsonSerializerOptions;
@@ -911,45 +915,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             // Do any additional handling of JsonSerializerOptions here.
 
             return memberInfo.Name;
-        }
-    }
-
-    class SystemTextJsonSerializer : CosmosSerializer
-    {
-        private readonly JsonObjectSerializer systemTextJsonSerializer;
-
-        public SystemTextJsonSerializer(JsonSerializerOptions jsonSerializerOptions)
-        {
-            this.systemTextJsonSerializer = new JsonObjectSerializer(jsonSerializerOptions);
-        }
-
-        public override T FromStream<T>(Stream stream)
-        {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
-
-            using (stream)
-            {
-                if (stream.CanSeek && stream.Length == 0)
-                {
-                    return default;
-                }
-
-                if (typeof(Stream).IsAssignableFrom(typeof(T)))
-                {
-                    return (T)(object)stream;
-                }
-
-                return (T)this.systemTextJsonSerializer.Deserialize(stream, typeof(T), default);
-            }
-        }
-
-        public override Stream ToStream<T>(T input)
-        {
-            MemoryStream streamPayload = new MemoryStream();
-            this.systemTextJsonSerializer.Serialize(streamPayload, input, input.GetType(), default);
-            streamPayload.Position = 0;
-            return streamPayload;
         }
     }
 }

@@ -51,6 +51,26 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Configures the quantizer type for the current <see cref="VectorIndexPath"/> definition.
+        /// </summary>
+        /// <param name="quantizerType">
+        /// The quantizer type to be used for vector quantization. This is an optional parameter and applies to index
+        /// types DiskANN and quantizedFlat. Allowed values are Product and Spherical.
+        /// </param>
+        /// <returns>An instance of the current <see cref="VectorIndexDefinition{T}"/>.</returns>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        VectorIndexDefinition<T> WithQuantizerType(
+            QuantizerType quantizerType)
+        {
+            this.vectorIndexPath.QuantizerType = quantizerType;
+            return this;
+        }
+
+        /// <summary>
         /// Configures the quantization byte size for the current <see cref="VectorIndexPath"/> definition.
         /// </summary>
         /// <param name="quantizationByteSize">
@@ -98,7 +118,12 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// applies to index types DiskANN and quantizedFlat.
         /// </param>
         /// <returns>An instance of the current <see cref="VectorIndexDefinition{T}"/>.</returns>
-        internal VectorIndexDefinition<T> WithVectorIndexShardKey(
+#if PREVIEW
+        public
+#else
+        internal
+#endif        
+        VectorIndexDefinition<T> WithVectorIndexShardKey(
             string[] vectorIndexShardKey)
         {
             this.vectorIndexPath.VectorIndexShardKey = vectorIndexShardKey ?? throw new ArgumentNullException(nameof(vectorIndexShardKey));

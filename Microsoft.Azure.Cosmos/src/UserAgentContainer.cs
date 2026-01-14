@@ -12,8 +12,11 @@ namespace Microsoft.Azure.Cosmos
     {
         private const int MaxOperatingSystemString = 30;
         private const int MaxClientId = 10;
+        private const string PipeDelimiter = "|";
+
         private readonly string cosmosBaseUserAgent;
         private readonly string clientId;
+        private static readonly Regex regex = new Regex(@"F\d+\|", RegexOptions.Compiled);
 
         public UserAgentContainer(
             int clientId,
@@ -27,6 +30,47 @@ namespace Microsoft.Azure.Cosmos
                 features: features,
                 regionConfiguration: regionConfiguration);
             this.Suffix = suffix ?? string.Empty;
+        }
+
+        public void AppendFeatures(
+            string features)
+        {
+            if (!string.IsNullOrEmpty(features))
+            {
+                // Here we have 3 scenarios: 
+                // 1. Suffix is empty, we just set it to the features.
+                // 2. Suffix is not empty, we append the features to the existing suffix.
+                // 3. Suffix already contains features, we the new features in the existing suffix.
+                this.Suffix = string.IsNullOrEmpty(this.Suffix)
+                    ? features
+                    : this.HasFeatureFlag()
+                        ? $"{features}{this.Suffix.Substring(this.Suffix.IndexOf(UserAgentContainer.PipeDelimiter))}"
+                        : $"{features}{UserAgentContainer.PipeDelimiter}{this.Suffix}";
+            }
+            else
+            {
+                // Here we have 3 scenarios: 
+                // 1. Suffix is empty, we just set it to empty.
+                // 2. Suffix is not empty, we remove the features from the existing suffix.
+                // 3. Suffix already contains features, we remove the features from the existing suffix.
+                this.Suffix = string.IsNullOrEmpty(this.Suffix)
+                    ? string.Empty
+                    : this.HasFeatureFlag()
+                        //if the suffix contains a feature flag we can assume that the first pipe delimiter marks the end of it
+                        ? this.Suffix.Substring(this.Suffix.IndexOf(UserAgentContainer.PipeDelimiter) + 1)
+                        : this.Suffix;
+            }
+        }
+
+        private bool HasFeatureFlag()
+        {
+            if (string.IsNullOrEmpty(this.Suffix))
+            {
+                return false;
+            }
+
+            // Matches 'F' followed by one or more digits, then a pipe '|'
+            return regex.IsMatch(this.Suffix);
         }
 
         internal override string BaseUserAgent => this.cosmosBaseUserAgent ?? string.Empty;

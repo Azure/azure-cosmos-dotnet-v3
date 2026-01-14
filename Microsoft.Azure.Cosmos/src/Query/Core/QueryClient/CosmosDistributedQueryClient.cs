@@ -130,7 +130,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
                         queryMetricsText,
                         IndexUtilizationInfo.Empty, 
                         ClientSideMetrics.Empty)));
-                trace.AddDatum("Query Metrics", datum);
+                trace.AddDatum(TraceDatumKeys.QueryMetrics, datum);
             }
 
             Headers headers = new Headers(response.Headers);

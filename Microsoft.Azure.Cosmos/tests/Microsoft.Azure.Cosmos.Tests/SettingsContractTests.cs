@@ -18,6 +18,8 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
+    using FullTextPath = Microsoft.Azure.Cosmos.FullTextPath;
+    using FullTextPolicy = Microsoft.Azure.Cosmos.FullTextPolicy;
 
     [TestClass]
     public class SettingsContractTests
@@ -339,7 +341,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void ContainerPropertiesDeserializeWithAdditionalDataTest()
         {
-            string cosmosSerialized = "{\"indexingPolicy\":{\"automatic\":true,\"indexingMode\":\"Consistent\",\"additionalIndexPolicy\":\"indexpolicyvalue\",\"includedPaths\":[{\"path\":\"/included/path\",\"additionalIncludedPath\":\"includedPathValue\",\"indexes\":[]}],\"excludedPaths\":[{\"path\":\"/excluded/path\",\"additionalExcludedPath\":\"excludedPathValue\"}],\"compositeIndexes\":[[{\"path\":\"/composite/path\",\"additionalCompositeIndex\":\"compositeIndexValue\",\"order\":\"ascending\"}]],\"spatialIndexes\":[{\"path\":\"/spatial/path\",\"additionalSpatialIndexes\":\"spatialIndexValue\",\"types\":[]}],\"vectorIndexes\":[{\"path\":\"/vector1\",\"type\":\"flat\",\"additionalVectorIndex\":\"vectorIndexValue1\"},{\"path\":\"/vector2\",\"type\":\"quantizedFlat\",\"additionalVectorIndex\":\"vectorIndexValue2\"},{\"path\":\"/vector3\",\"type\":\"diskANN\"}],\"fullTextIndexes\":[{\"path\":\"/fullTextPath1\",\"additionalFullTextIndex\":\"fullTextIndexValue1\"},{\"path\":\"/fullTextPath2\",\"additionalFullTextIndex\":\"fullTextIndexValue2\"},{\"path\":\"/fullTextPath3\"}]},\"computedProperties\":[{\"name\":\"lowerName\",\"query\":\"SELECT VALUE LOWER(c.name) FROM c\"},{\"name\":\"estimatedTax\",\"query\":\"SELECT VALUE c.salary * 0.2 FROM c\"}],\"geospatialConfig\":{\"type\":\"Geography\",\"additionalGeospatialConfig\":\"geospatialConfigValue\"},\"uniqueKeyPolicy\":{\"additionalUniqueKeyPolicy\":\"uniqueKeyPolicyValue\",\"uniqueKeys\":[{\"paths\":[\"/unique/key/path/1\",\"/unique/key/path/2\"]}]},\"conflictResolutionPolicy\":{\"mode\":\"LastWriterWins\",\"additionalConflictResolutionPolicy\":\"conflictResolutionValue\"},\"clientEncryptionPolicy\":{\"includedPaths\":[{\"path\":\"/path\",\"clientEncryptionKeyId\":\"clientEncryptionKeyId\",\"encryptionType\":\"Randomized\",\"additionalIncludedPath\":\"includedPathValue\",\"encryptionAlgorithm\":\"AEAD_AES_256_CBC_HMAC_SHA256\"}],\"policyFormatVersion\":1,\"additionalEncryptionPolicy\":\"clientEncryptionpolicyValue\"},\"id\":\"2a9f501b-6948-4795-8fd1-797defb5c466\",\"partitionKey\":{\"paths\":[],\"kind\":\"Hash\"},\"vectorEmbeddingPolicy\":{\"vectorEmbeddings\":[{\"path\":\"/vector1\",\"dataType\":\"float32\",\"dimensions\":1200,\"distanceFunction\":\"cosine\"},{\"path\":\"/vector2\",\"dataType\":\"int8\",\"dimensions\":3,\"distanceFunction\":\"dotproduct\"},{\"path\":\"/vector3\",\"dataType\":\"uint8\",\"dimensions\":400,\"distanceFunction\":\"euclidean\"}]},\"fullTextPolicy\": {\"defaultLanguage\": \"en-US\",\"fullTextPaths\": [{\"path\": \"/fullTextPath1\",\"language\": \"en-US\"},{\"path\": \"/fullTextPath2\",\"language\": \"en-US\"},{\"path\": \"/fullTextPath3\",\"language\": \"en-US\"}]}}";
+            string cosmosSerialized = "{\"indexingPolicy\":{\"automatic\":true,\"indexingMode\":\"Consistent\",\"additionalIndexPolicy\":\"indexpolicyvalue\",\"includedPaths\":[{\"path\":\"/included/path\",\"additionalIncludedPath\":\"includedPathValue\",\"indexes\":[]}],\"excludedPaths\":[{\"path\":\"/excluded/path\",\"additionalExcludedPath\":\"excludedPathValue\"}],\"compositeIndexes\":[[{\"path\":\"/composite/path\",\"additionalCompositeIndex\":\"compositeIndexValue\",\"order\":\"ascending\"}]],\"spatialIndexes\":[{\"path\":\"/spatial/path\",\"additionalSpatialIndexes\":\"spatialIndexValue\",\"types\":[]}],\"vectorIndexes\":[{\"path\":\"/vector1\",\"type\":\"flat\",\"additionalVectorIndex\":\"vectorIndexValue1\"},{\"path\":\"/vector2\",\"type\":\"quantizedFlat\",\"additionalVectorIndex\":\"vectorIndexValue2\"},{\"path\":\"/vector3\",\"type\":\"diskANN\"}],\"fullTextIndexes\":[{\"path\":\"/fullTextPath1\",\"additionalFullTextIndex\":\"fullTextIndexValue1\"},{\"path\":\"/fullTextPath2\",\"additionalFullTextIndex\":\"fullTextIndexValue2\"},{\"path\":\"/fullTextPath3\"}]},\"computedProperties\":[{\"name\":\"lowerName\",\"query\":\"SELECT VALUE LOWER(c.name) FROM c\"},{\"name\":\"estimatedTax\",\"query\":\"SELECT VALUE c.salary * 0.2 FROM c\"}],\"geospatialConfig\":{\"type\":\"Geography\",\"additionalGeospatialConfig\":\"geospatialConfigValue\"},\"uniqueKeyPolicy\":{\"additionalUniqueKeyPolicy\":\"uniqueKeyPolicyValue\",\"uniqueKeys\":[{\"paths\":[\"/unique/key/path/1\",\"/unique/key/path/2\"]}]},\"conflictResolutionPolicy\":{\"mode\":\"LastWriterWins\",\"additionalConflictResolutionPolicy\":\"conflictResolutionValue\"},\"clientEncryptionPolicy\":{\"includedPaths\":[{\"path\":\"/path\",\"clientEncryptionKeyId\":\"clientEncryptionKeyId\",\"encryptionType\":\"Randomized\",\"additionalIncludedPath\":\"includedPathValue\",\"encryptionAlgorithm\":\"AEAD_AES_256_CBC_HMAC_SHA256\"}],\"policyFormatVersion\":1,\"additionalEncryptionPolicy\":\"clientEncryptionpolicyValue\"},\"id\":\"2a9f501b-6948-4795-8fd1-797defb5c466\",\"partitionKey\":{\"paths\":[],\"kind\":\"Hash\"},\"vectorEmbeddingPolicy\":{\"vectorEmbeddings\":[{\"path\":\"/vector1\",\"dataType\":\"float32\",\"dimensions\":1200,\"distanceFunction\":\"cosine\"},{\"path\":\"/vector2\",\"dataType\":\"int8\",\"dimensions\":3,\"distanceFunction\":\"dotproduct\"},{\"path\":\"/vector3\",\"dataType\":\"uint8\",\"dimensions\":400,\"distanceFunction\":\"euclidean\"},{\"path\":\"/vector4\",\"dataType\":\"float16\",\"dimensions\":3,\"distanceFunction\":\"dotproduct\"}]},\"fullTextPolicy\": {\"defaultLanguage\": \"en-US\",\"fullTextPaths\": [{\"path\": \"/fullTextPath1\",\"language\": \"en-US\"},{\"path\": \"/fullTextPath2\",\"language\": \"en-US\"},{\"path\": \"/fullTextPath3\",\"language\": \"en-US\"}]}}";
 
             JObject complexObject = JObject.FromObject(new { id = 1, name = new { fname = "fname", lname = "lname" } });
 
@@ -404,11 +406,27 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual("includedPathValue", containerProperties.ClientEncryptionPolicy.IncludedPaths.First().AdditionalProperties["additionalIncludedPath"]);
 
             Assert.IsNotNull(containerProperties.VectorEmbeddingPolicy);
-            Assert.AreEqual(3, containerProperties.VectorEmbeddingPolicy.Embeddings.Count);
+            Assert.AreEqual(4, containerProperties.VectorEmbeddingPolicy.Embeddings.Count);
+
             Assert.AreEqual("/vector1", containerProperties.VectorEmbeddingPolicy.Embeddings[0].Path);
             Assert.AreEqual(Cosmos.VectorDataType.Float32, containerProperties.VectorEmbeddingPolicy.Embeddings[0].DataType);
             Assert.AreEqual(1200, containerProperties.VectorEmbeddingPolicy.Embeddings[0].Dimensions);
             Assert.AreEqual(Cosmos.DistanceFunction.Cosine, containerProperties.VectorEmbeddingPolicy.Embeddings[0].DistanceFunction);
+
+            Assert.AreEqual("/vector2", containerProperties.VectorEmbeddingPolicy.Embeddings[1].Path);
+            Assert.AreEqual(Cosmos.VectorDataType.Int8, containerProperties.VectorEmbeddingPolicy.Embeddings[1].DataType);
+            Assert.AreEqual(3, containerProperties.VectorEmbeddingPolicy.Embeddings[1].Dimensions);
+            Assert.AreEqual(Cosmos.DistanceFunction.DotProduct, containerProperties.VectorEmbeddingPolicy.Embeddings[1].DistanceFunction);
+
+            Assert.AreEqual("/vector3", containerProperties.VectorEmbeddingPolicy.Embeddings[2].Path);
+            Assert.AreEqual(Cosmos.VectorDataType.Uint8, containerProperties.VectorEmbeddingPolicy.Embeddings[2].DataType);
+            Assert.AreEqual(400, containerProperties.VectorEmbeddingPolicy.Embeddings[2].Dimensions);
+            Assert.AreEqual(Cosmos.DistanceFunction.Euclidean, containerProperties.VectorEmbeddingPolicy.Embeddings[2].DistanceFunction);
+
+            Assert.AreEqual("/vector4", containerProperties.VectorEmbeddingPolicy.Embeddings[3].Path);
+            Assert.AreEqual(Cosmos.VectorDataType.Float16, containerProperties.VectorEmbeddingPolicy.Embeddings[3].DataType);
+            Assert.AreEqual(3, containerProperties.VectorEmbeddingPolicy.Embeddings[3].Dimensions);
+            Assert.AreEqual(Cosmos.DistanceFunction.DotProduct, containerProperties.VectorEmbeddingPolicy.Embeddings[3].DistanceFunction);
 
             Assert.IsNotNull(containerProperties.FullTextPolicy);
             Assert.AreEqual("en-US", containerProperties.FullTextPolicy.DefaultLanguage);
@@ -1186,6 +1204,71 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(JTokenType.String, fullTextLanguageDeSerialized.Type, "Full Text Policy serialized language should be a string.");
             Assert.IsTrue(fullTextPath1.Equals(fullTextPathsDeSerialized.Value<JArray>()[0].ToObject<Cosmos.FullTextPath>()));
             Assert.IsTrue(fullTextPath2.Equals(fullTextPathsDeSerialized.Value<JArray>()[1].ToObject<Cosmos.FullTextPath>()));
+        }
+
+        [TestMethod]
+        [DataRow("en-US")]
+        [DataRow("fr-FR")]
+        [DataRow("de-DE")]
+        [DataRow("it-IT")]
+        [DataRow("pt-BR")]
+        [DataRow("pt-PT")]
+        [DataRow("es-ES")]
+        public void FullTextPolicySerializationWithAllSupportedLanguages(string language)
+        {
+            FullTextPolicy fullTextPolicy = new FullTextPolicy
+            {
+                DefaultLanguage = language,
+                FullTextPaths = new Collection<FullTextPath>
+                {
+                    new FullTextPath { Path = "/text1", Language = language },
+                    new FullTextPath { Path = "/text2", Language = "en-US" },
+                    new FullTextPath { Path = "/text3" } // No language specified, should use default
+                }
+            };
+
+            string serialized = CosmosSerialize(fullTextPolicy);
+            Assert.IsNotNull(serialized);
+            Assert.IsTrue(serialized.Contains($"\"defaultLanguage\":\"{language}\""),
+                $"Serialized JSON should contain defaultLanguage: {language}");
+
+            FullTextPolicy deserialized = CosmosDeserialize<FullTextPolicy>(serialized);
+            Assert.IsNotNull(deserialized);
+            Assert.AreEqual(language, deserialized.DefaultLanguage,
+                $"DefaultLanguage mismatch after deserialization for: {language}");
+            Assert.AreEqual(3, deserialized.FullTextPaths.Count);
+            Assert.AreEqual(language, deserialized.FullTextPaths[0].Language);
+            Assert.AreEqual("en-US", deserialized.FullTextPaths[1].Language);
+            Assert.IsNull(deserialized.FullTextPaths[2].Language);
+        }
+
+        [TestMethod]
+        [DataRow("en-US")]
+        [DataRow("fr-FR")]
+        [DataRow("de-DE")]
+        [DataRow("it-IT")]
+        [DataRow("ja-JP")]
+        [DataRow("pt-BR")]
+        [DataRow("pt-PT")]
+        [DataRow("es-ES")]
+        public void FullTextPathSerializationWithAllLanguages(string language)
+        {
+            FullTextPath fullTextPath = new FullTextPath
+            {
+                Path = "/testPath",
+                Language = language
+            };
+
+            string serialized = CosmosSerialize(fullTextPath);
+            Assert.IsNotNull(serialized);
+            Assert.IsTrue(serialized.Contains($"\"language\":\"{language}\""),
+                $"Serialized JSON should contain language: {language}");
+
+            FullTextPath deserialized = CosmosDeserialize<FullTextPath>(serialized);
+            Assert.IsNotNull(deserialized);
+            Assert.AreEqual("/testPath", deserialized.Path);
+            Assert.AreEqual(language, deserialized.Language,
+                $"Language mismatch after deserialization for: {language}");
         }
 
         private static T CosmosDeserialize<T>(string payload)

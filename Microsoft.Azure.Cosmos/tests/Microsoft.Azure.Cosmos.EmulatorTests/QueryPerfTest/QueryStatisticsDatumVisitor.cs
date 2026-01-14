@@ -39,6 +39,11 @@
             this.queryMetrics.GetCosmosElementResponseTime = time;
         }
 
+        public void AddRequestCharge(double rus)
+        {
+            this.queryMetrics.RUCharge = rus;
+        }
+
         public void Visit(QueryMetricsTraceDatum queryMetricsTraceDatum)
         {
             this.queryMetrics.RetrievedDocumentCount = queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics.RetrievedDocumentCount;

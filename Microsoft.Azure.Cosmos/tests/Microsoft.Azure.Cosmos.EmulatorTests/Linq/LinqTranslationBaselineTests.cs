@@ -20,6 +20,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using System.Threading.Tasks;
 
+    using static Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions;
+
     [Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestClass]
     public class LinqTranslationBaselineTests : BaselineTests<LinqTestInput, LinqTestOutput>
     {
@@ -103,6 +105,13 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             return objA.Equals(objB);
         }
 
+        private static Guid GuidFromInt(int value)
+        {
+            byte[] bytes = new byte[16];
+            BitConverter.GetBytes(value).CopyTo(bytes, 0);
+            return new Guid(bytes);
+        }
+
         internal class DataObject : LinqTestObject
         {
             public double NumericField;
@@ -111,6 +120,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             public string StringField;
             public string StringField2;
             public int[] ArrayField;
+            public float[] VectorFloatField;
+            public byte[] VectorInt8Field;
+            public sbyte[] VectorUInt8Field;
             public List<int> EnumerableField;
             public Point Point;
             public int? NullableField;
@@ -386,6 +398,476 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 new LinqTestInput("FullTextContainsAny with group by", b => getQuery(b).GroupBy(doc => doc.StringField.FullTextContainsAny("test"), value => value)),
                 new LinqTestInput("FullTextContainsAny with SelectMany", b => getQuery(b).SelectMany(doc => doc.EnumerableField.Where(number => doc.StringField.FullTextContainsAny("test")).Select(number => number))),
             };
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
+        public void TestVectorDistanceFunction()
+        {
+            const int Records = 2;
+            const int MaxStringLength = 100;
+            static DataObject createDataObj(Random random)
+            {
+                DataObject obj = new DataObject
+                {
+                    StringField = LinqTestsCommon.RandomString(random, random.Next(MaxStringLength)),
+                    Id = Guid.NewGuid().ToString(),
+                    VectorUInt8Field = new sbyte[] {1, 2, 3},
+                    VectorInt8Field = new byte[] { 1, 2, 3 },
+                    VectorFloatField = new float[] { 1, 2.0f, 3.0f },
+                    Pk = "Test"
+                };
+                return obj;
+            }
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                new LinqTestInput("Float VectorDistance + Order By Rank", b => getQuery(b)
+                    .OrderByRank(doc => doc.VectorFloatField.VectorDistance(new float[] {2,3,4}, false, null))
+                    .Select(doc => doc.Pk)),
+                new LinqTestInput("Float VectorDistance + Order By", b => getQuery(b)
+                    .OrderBy(doc => doc.VectorFloatField.VectorDistance(new float[] {2,3,4}, false, null))
+                    .Select(doc => doc.Pk)),
+                new LinqTestInput("Float VectorDistance + Select", b => getQuery(b)
+                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] {2,3,4}, false, null))),
+                new LinqTestInput("Float VectorDistance + Where", b => getQuery(b)
+                    .Where(doc => doc.VectorFloatField.VectorDistance(new float[] {2,3,4}, false, null) > 0)
+                    .Select(doc => doc.Pk)),
+                new LinqTestInput("Float VectorDistance + GroupBy", b => getQuery(b)
+                    .GroupBy(doc => doc.VectorFloatField.VectorDistance(new float[] {2,3,4}, false, null), (key, values) => key)),
+                new LinqTestInput("Float VectorDistance with non null fourth option", b => getQuery(b)
+                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions() { DistanceFunction = DistanceFunction.Cosine, DataType = VectorDataType.Float32, SearchListSizeMultiplier = 20}))),
+                new LinqTestInput("Float VectorDistance with non null fourth option with default SearchListSizeMultiplier", b => getQuery(b)
+                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions() { DistanceFunction = DistanceFunction.Cosine, DataType = VectorDataType.Float32}))),
+                new LinqTestInput("Float VectorDistance with non null fourth option with default DataType", b => getQuery(b)
+                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions() { DistanceFunction = DistanceFunction.Cosine, SearchListSizeMultiplier = 10}))),
+                new LinqTestInput("Float VectorDistance with non null fourth option with default DistanceFunction", b => getQuery(b)
+                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions() { DataType = VectorDataType.Float32, SearchListSizeMultiplier = 10}))),
+                new LinqTestInput("Float VectorDistance with non null fourth option with all default values", b => getQuery(b)
+                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions()))),
+                new LinqTestInput("Float VectorDistance + RRF", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, false, null),
+                                            doc.VectorFloatField.VectorDistance(new float[] { 3, 4, 5 }, false, null)))
+                    .Select(doc => doc.Pk)),
+                new LinqTestInput("Float VectorDistance + RRF + FullTextScore", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, false, null),
+                                            doc.VectorFloatField.FullTextScore("string", "name")))
+                    .Select(doc => doc.Pk)),
+
+                new LinqTestInput("UInt8 VectorDistance + Order By Rank", b => getQuery(b)
+                    .OrderByRank(doc => doc.VectorUInt8Field.VectorDistance(new sbyte[] { 2, 3, 4 }, false, null))
+                    .Select(doc => doc.Pk)),
+                new LinqTestInput("UInt8 VectorDistance + Order By", b => getQuery(b)
+                    .OrderBy(doc => doc.VectorUInt8Field.VectorDistance(new sbyte[] { 2, 3, 4 }, false, null))
+                    .Select(doc => doc.Pk)),
+                new LinqTestInput("UInt8 VectorDistance + Select", b => getQuery(b)
+                    .Select(doc => doc.VectorUInt8Field.VectorDistance(new sbyte[] { 2, 3, 4 }, false, null))),
+                new LinqTestInput("UInt8 VectorDistance + Where", b => getQuery(b)
+                    .Where(doc => doc.VectorUInt8Field.VectorDistance(new sbyte[] { 2, 3, 4 }, false, null) > 0)
+                    .Select(doc => doc.Pk)),
+                new LinqTestInput("UInt8 VectorDistance + GroupBy", b => getQuery(b)
+                    .GroupBy(doc => doc.VectorUInt8Field.VectorDistance(new sbyte[] { 2, 3, 4 }, false, null), (key, values) => key)),
+                new LinqTestInput("UInt8 VectorDistance with non null fourth option", b => getQuery(b)
+                    .Select(doc => doc.VectorUInt8Field.VectorDistance(new sbyte[] { 2, 3, 4 }, true, new VectorDistanceOptions() { DistanceFunction = DistanceFunction.DotProduct, DataType = VectorDataType.Uint8, SearchListSizeMultiplier = 20 }))),
+                new LinqTestInput("UInt8 VectorDistance with non null fourth option with default DistanceFunction", b => getQuery(b)
+                    .Select(doc => doc.VectorUInt8Field.VectorDistance(new sbyte[] { 2, 3, 4 }, true, new VectorDistanceOptions() { DataType = VectorDataType.Uint8, SearchListSizeMultiplier = 20 }))),
+                new LinqTestInput("UInt8 VectorDistance with non null fourth option with default SearchListSizeMultiplier", b => getQuery(b)
+                    .Select(doc => doc.VectorUInt8Field.VectorDistance(new sbyte[] { 2, 3, 4 }, true, new VectorDistanceOptions() { DistanceFunction = DistanceFunction.DotProduct, DataType = VectorDataType.Uint8 }))),
+                new LinqTestInput("UInt8 VectorDistance with non null fourth option with default DistanceFunction and SearchListSizeMultiplier", b => getQuery(b)
+                    .Select(doc => doc.VectorUInt8Field.VectorDistance(new sbyte[] { 2, 3, 4 }, true, new VectorDistanceOptions() { DataType = VectorDataType.Uint8 }))),
+                new LinqTestInput("UInt8 VectorDistance + RRF", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.VectorUInt8Field.VectorDistance(new sbyte[] { 2, 3, 4 }, false, null),
+                                            doc.VectorUInt8Field.VectorDistance(new sbyte[] { 3, 4, 5 }, false, null)))
+                    .Select(doc => doc.Pk)),
+                new LinqTestInput("UInt8 VectorDistance + RRF + non null fourth option with default SearchListSizeMultiplier", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.VectorUInt8Field.VectorDistance(new sbyte[] { 2, 3, 4 }, false, null),
+                                            doc.VectorUInt8Field.VectorDistance(new sbyte[] { 3, 4, 5 }, false, new VectorDistanceOptions() { DistanceFunction = DistanceFunction.DotProduct, DataType = VectorDataType.Uint8 })))
+                    .Select(doc => doc.Pk)),
+                new LinqTestInput("UInt8 VectorDistance + RRF + FullTextScore", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.VectorUInt8Field.VectorDistance(new sbyte[] { 2, 3, 4 }, false, null),
+                                            doc.VectorUInt8Field.FullTextScore("string", "name")))
+                    .Select(doc => doc.Pk)),
+                new LinqTestInput("UInt8 VectorDistance + RRF + FullTextScore + non null fourth option with default DistanceFunction", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.VectorUInt8Field.VectorDistance(new sbyte[] { 2, 3, 4 }, false, new VectorDistanceOptions() { DataType = VectorDataType.Uint8, SearchListSizeMultiplier = 20 }),
+                                            doc.VectorUInt8Field.FullTextScore("string", "name")))
+                    .Select(doc => doc.Pk)),
+
+                new LinqTestInput("Int8 VectorDistance + Order By Rank", b => getQuery(b)
+                    .OrderByRank(doc => doc.VectorInt8Field.VectorDistance(new byte[] { 2, 3, 4 }, false, null))
+                    .Select(doc => doc.Pk)),
+                new LinqTestInput("Int8 VectorDistance + Order By", b => getQuery(b)
+                    .OrderBy(doc => doc.VectorInt8Field.VectorDistance(new byte[] { 2, 3, 4 }, false, null))
+                    .Select(doc => doc.Pk)),
+                new LinqTestInput("Int8 VectorDistance + Select", b => getQuery(b)
+                    .Select(doc => doc.VectorInt8Field.VectorDistance(new byte[] { 2, 3, 4 }, false, null))),
+                new LinqTestInput("Int8 VectorDistance + Where", b => getQuery(b)
+                    .Where(doc => doc.VectorInt8Field.VectorDistance(new byte[] { 2, 3, 4 }, false, null) > 0)
+                    .Select(doc => doc.Pk)),
+                new LinqTestInput("Int8 VectorDistance + GroupBy", b => getQuery(b)
+                    .GroupBy(doc => doc.VectorInt8Field.VectorDistance(new byte[] { 2, 3, 4 }, false, null), (key, values) => key)),
+                new LinqTestInput("Int8 VectorDistance with non null fourth option", b => getQuery(b)
+                    .Select(doc => doc.VectorInt8Field.VectorDistance(new byte[] { 2, 3, 4 }, true, new VectorDistanceOptions() { DistanceFunction = DistanceFunction.Euclidean, DataType = VectorDataType.Int8}))),
+                new LinqTestInput("Int8 VectorDistance + RRF", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.VectorInt8Field.VectorDistance(new byte[] { 2, 3, 4 }, false, null),
+                                            doc.VectorInt8Field.VectorDistance(new byte[] { 3, 4, 5 }, false, null)))
+                    .Select(doc => doc.Pk)),
+                new LinqTestInput("Int8 VectorDistance + RRF + FullTextScore", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.VectorInt8Field.VectorDistance(new byte[] { 2, 3, 4 }, false, null),
+                                            doc.VectorInt8Field.FullTextScore("string", "name")))
+                    .Select(doc => doc.Pk)),
+
+                // Other cases regarding fourth option
+                new LinqTestInput("VectorDistance with empty object", b => getQuery(b)
+                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions{}))),
+                 new LinqTestInput("VectorDistance with empty object 2", b => getQuery(b)
+                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, null))),
+                new LinqTestInput("VectorDistance with default values", b => getQuery(b)
+                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions { DataType = VectorDataType.Float32, DistanceFunction = DistanceFunction.Euclidean, SearchListSizeMultiplier = 10 }))),
+                // ISSUE-TODO-leminh - the following two variations produce different results in the official run.
+                // new LinqTestInput("VectorDistance with non default values 1", b => getQuery(b)
+                //     .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions { DataType = VectorDataType.// Int8, DistanceFunction = DistanceFunction.Cosine, SearchListSizeMultiplier = 20 }))),
+                // new LinqTestInput("VectorDistance with non default values 2", b => getQuery(b)
+                //     .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions { DataType = VectorDataType.Uint8, DistanceFunction = DistanceFunction.DotProduct, SearchListSizeMultiplier = 50 }))),
+                new LinqTestInput("VectorDistance with nullable values", b => getQuery(b)
+                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions { DataType = null, DistanceFunction = null, SearchListSizeMultiplier = null }))),
+                new LinqTestInput("VectorDistance with partial fourth option", b => getQuery(b)
+                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions() { DistanceFunction = DistanceFunction.Euclidean }))),
+                new LinqTestInput("VectorDistance with partial fourth option 2", b => getQuery(b)
+                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions() { SearchListSizeMultiplier = 1 }))),
+
+                // Negative case
+                new LinqTestInput("VectorDistance with fourth option with invalid values 1", b => getQuery(b)
+                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions() { SearchListSizeMultiplier = -100 })))
+            };
+
+            foreach (LinqTestInput input in inputs)
+            {
+                // VectorDistance are not supported client side.
+                // Therefore this method is verified with baseline only.
+                input.skipVerification = true;
+                input.serializeOutput = true;
+            }
+
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
+        public void TestFullTextScoreOrderByRankFunction()
+        {
+            const int Records = 2;
+            const int MaxStringLength = 100;
+            static DataObject createDataObj(Random random)
+            {
+                DataObject obj = new DataObject
+                {
+                    StringField = LinqTestsCommon.RandomString(random, random.Next(MaxStringLength)),
+                    Id = Guid.NewGuid().ToString(),
+                    Pk = "Test"
+                };
+                return obj;
+            }
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                 new LinqTestInput("FullTextScore with 1 element array", b => getQuery(b)
+                    .OrderByRank(doc => doc.StringField.FullTextScore("test1"))
+                    .Select(doc => doc.Pk)),
+                new LinqTestInput("FullTextScore with 3 element array", b => getQuery(b)
+                    .OrderByRank(doc => doc.StringField.FullTextScore("test1", "test2", "test3"))
+                    .Select(doc => doc.Pk)),
+                new LinqTestInput("FullTextScore with 1 element array", b => getQuery(b)
+                    .OrderByRank(doc => doc.StringField.FullTextScore(new string[] { "test1" }))
+                    .Select(doc => doc.Pk)),
+                new LinqTestInput("FullTextScore with 3 element array", b => getQuery(b)
+                    .OrderByRank(doc => doc.StringField.FullTextScore(new string[] { "test1", "test2", "test3" }))
+                    .Select(doc => doc.Pk)),
+
+                // Negative case: FullTextScore in non order by clause
+                new LinqTestInput("FullTextScore in WHERE clause", b => getQuery(b)
+                    .Where(doc => doc.StringField.FullTextScore(new string[] { "test1" }) != 123)),
+                new LinqTestInput("FullTextScore in WHERE clause 2", b => getQuery(b)
+                    .Where(doc => doc.StringField.FullTextScore(new string[] { "test1", "test2", "test3" }) != 123)),
+
+                new LinqTestInput("FullTextScore in WHERE clause", b => getQuery(b)
+                    .Where(doc => doc.StringField.FullTextScore("test1") != 123)),
+                new LinqTestInput("FullTextScore in WHERE clause 2", b => getQuery(b)
+                    .Where(doc => doc.StringField.FullTextScore("test1", "test2", "test3") != 123)),
+            };
+
+            foreach (LinqTestInput input in inputs)
+            {
+                // OrderBy are not supported client side.
+                // Therefore this method is verified with baseline only.
+                input.skipVerification = true;
+                input.serializeOutput = true;
+            }
+
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
+        public void TestRRFOrderByRankFunction()
+        {
+            const int Records = 2;
+            const int MaxStringLength = 100;
+            static DataObject createDataObj(Random random)
+            {
+                DataObject obj = new DataObject
+                {
+                    StringField = LinqTestsCommon.RandomString(random, random.Next(MaxStringLength)),
+                    IntField = 1,
+                    Id = Guid.NewGuid().ToString(),
+                    Pk = "Test"
+                };
+                return obj;
+            }
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                new LinqTestInput("RRF with 2 functions", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" }), 
+                                                doc.StringField2.FullTextScore(new string[] { "test1", "test2", "test3" })))
+                    .Select(doc => doc.Pk)),
+
+                new LinqTestInput("RRF with 3 functions", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" }),
+                                            doc.StringField.FullTextScore(new string[] { "test1", "text2" }),
+                                            doc.StringField2.FullTextScore(new string[] { "test1", "test2", "test3" })))
+                    .Select(doc => doc.Pk)),
+
+                // Negative case: FullTextScore in non order by clause
+                new LinqTestInput("RRF with 1 function", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" })))
+                    .Select(doc => doc.Pk)),
+
+                new LinqTestInput("RRF in WHERE clause", b => getQuery(b)
+                    .Where(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" })) != 123)),
+                new LinqTestInput("RRF in WHERE clause 2", b => getQuery(b)
+                    .Where(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" }),
+                                  doc.StringField2.FullTextScore(new string[] { "test1", "test2", "test3" })) != 123)),
+
+                new LinqTestInput("RRF with non scoring function", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" }), 123))),
+                new LinqTestInput("RRF with non scoring function 2", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" }), doc.IntField * 1.0))),
+                new LinqTestInput("RRF with non scoring function 3", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" }), doc.StringField2.Length))),
+                new LinqTestInput("RRF with non scoring function 4", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" }), doc.ArrayField.Count()))),
+                new LinqTestInput("RRF with RRF", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" }),
+                                            RRF(doc.StringField2.FullTextScore(new string[] { "test1", "test2", "test3" }),
+                                                doc.StringField.FullTextScore(new string[] { "test1", "test2"})))))
+            };
+
+            foreach (LinqTestInput input in inputs)
+            {
+                // OrderBy are not supported client side.
+                // Therefore this method is verified with baseline only.
+                input.skipVerification = true;
+                input.serializeOutput = true;
+            }
+
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
+        public void TestWeightedRRF()
+        {
+            const int Records = 2;
+            const int MaxStringLength = 100;
+            static DataObject createDataObj(Random random)
+            {
+                DataObject obj = new DataObject
+                {
+                    StringField = LinqTestsCommon.RandomString(random, random.Next(MaxStringLength)),
+                    IntField = 1,
+                    Id = Guid.NewGuid().ToString(),
+                    Pk = "Test"
+                };
+                return obj;
+            }
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                // public static double RRF(double[][] scoringFunctions, double[] weights)
+                new LinqTestInput("Standard weighted RRF calls", b => getQuery(b)
+                    .OrderByRank(doc => RRF(new double[]
+                                            {
+                                                doc.StringField.FullTextScore(new string[] { "test1" }),
+                                                doc.StringField.FullTextScore(new string[] { "test1", "text2" })
+                                            },
+                                            new double[] { 1.0, 2.0 } ))
+                    .Select(doc => doc.Pk)),
+
+                new LinqTestInput("Standard weighted RRF calls using anonymous types", b => getQuery(b)
+                    .OrderByRank(doc => RRF(new []
+                                            {
+                                                doc.StringField.FullTextScore(new string[] { "test1" }),
+                                                doc.StringField.FullTextScore(new string[] { "test1", "text2" })
+                                            },
+                                            new [] { 1.0, 2.0 } ))
+                    .Select(doc => doc.Pk)),
+
+                // Negative case: weights are not in an array
+                new LinqTestInput("Weighted RRF with weights and functions not in a list", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" }),
+                                            doc.StringField2.FullTextScore(new string[] { "test1", "test2", "test3" }),
+                                            1.0,
+                                            2.0))
+                    .Select(doc => doc.Pk)),
+                new LinqTestInput("Weighted RRF with weights array first", b => getQuery(b)
+                    .OrderByRank(doc => RRF(new double[] { 1.0, 2.0 },
+                                            new double[]
+                                            {
+                                                doc.StringField.FullTextScore(new string[] { "test1" }),
+                                                doc.StringField.FullTextScore(new string[] { "test1", "text2" })
+                                            }))
+                    .Select(doc => doc.Pk)),
+                new LinqTestInput("Weighted RRF with mixed and matched values/functions in array", b => getQuery(b)
+                    .OrderByRank(doc => RRF(new double[] { 
+                                                1.0, 
+                                                doc.StringField.FullTextScore(new string[] { "test1" }) },
+                                            new double[]
+                                            {
+                                                2.0,
+                                                doc.StringField.FullTextScore(new string[] { "test1", "text2" })
+                                            }))
+                    .Select(doc => doc.Pk)),
+                new LinqTestInput("Weighted RRF with mixed and matched values/functions in array 2", b => getQuery(b)
+                    .OrderByRank(doc => RRF(new double[] { 
+                                                doc.StringField.FullTextScore(new string[] { "test1" }),
+                                                doc.StringField.FullTextScore(new string[] { "test1" }) },
+                                            new double[]
+                                            {
+                                                2.0,
+                                                doc.StringField.FullTextScore(new string[] { "test1", "text2" })
+                                            }))
+                    .Select(doc => doc.Pk)),
+
+
+            };
+
+            foreach (LinqTestInput input in inputs)
+            {
+                // OrderBy are not supported client side.
+                // Therefore this method is verified with baseline only.
+                input.skipVerification = true;
+                input.serializeOutput = true;
+            }
+
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
+        public void TestOrderByRankFunctionComposeWithOtherFunctions()
+        {
+            const int Records = 2;
+            const int MaxStringLength = 100;
+            static DataObject createDataObj(Random random)
+            {
+                DataObject obj = new DataObject
+                {
+                    StringField = LinqTestsCommon.RandomString(random, random.Next(MaxStringLength)),
+                    NumericField = 1,
+                    Id = Guid.NewGuid().ToString(),
+                    Pk = "Test"
+                };
+                return obj;
+            }
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                // Select
+                new LinqTestInput("Select + Order By Rank", b => getQuery(b)
+                    .Select(doc => doc.Pk)
+                    .OrderByRank(doc => doc.FullTextScore(new string[] { "test1" }))),
+
+                new LinqTestInput("Order By Rank + Select", b => getQuery(b)
+                    .OrderByRank(doc => doc.StringField.FullTextScore(new string[] { "test1" }))
+                    .Select(doc => doc.Pk)),
+
+                new LinqTestInput("Select + Order By Rank + Select", b => getQuery(b)
+                    .Select(doc => new { stringField = doc.StringField, PartitionKey = doc.Pk })
+                    .OrderByRank(doc => doc.stringField.FullTextScore(new string[] { "test1" }))
+                    .Select(doc => doc.PartitionKey)),
+
+                // Join
+                new LinqTestInput("SelectMany + Order By Rank", b => getQuery(b)
+                    .SelectMany(doc => doc.ArrayField)
+                    .OrderByRank(doc => doc.ToString().FullTextScore(new string[] { "test1" }))),
+
+                new LinqTestInput("Order By Rank + SelectMany", b => getQuery(b)
+                    .OrderByRank(doc => doc.StringField.FullTextScore(new string[] { "test1" }))
+                    .SelectMany(doc => doc.ArrayField)),
+
+                // Skip
+                new LinqTestInput("Skip + Order By Rank", b => getQuery(b)
+                    .Skip(1)
+                    .OrderByRank(doc => doc.StringField.FullTextScore(new string[] { "test1" }))),
+
+                new LinqTestInput("Order By Rank + Skip", b => getQuery(b)
+                    .OrderByRank(doc => doc.StringField.FullTextScore(new string[] { "test1" }))
+                    .Skip(1)
+                    .Select(doc => doc.Pk)),
+
+                // Take
+                new LinqTestInput("Take + Order By Rank", b => getQuery(b)
+                    .Take(1)
+                    .OrderByRank(doc => doc.StringField.FullTextScore(new string[] { "test1" }))),
+
+                new LinqTestInput("Order By Rank + Take", b => getQuery(b)
+                    .OrderByRank(doc => doc.StringField.FullTextScore(new string[] { "test1" }))
+                    .Take(1)
+                    .Select(doc => doc.Pk)),
+
+                // GroupBy
+                new LinqTestInput("GroupBy + Order By Rank", b => getQuery(b)
+                    .GroupBy(doc => doc.StringField, (key, values) => values.Count())
+                    .OrderByRank(doc => doc.ToString().FullTextScore(new string[] { "test1" }))),
+
+                new LinqTestInput("Order By Rank + GroupBy", b => getQuery(b)
+                    .OrderByRank(doc => doc.StringField.FullTextScore(new string[] { "test1" }))
+                    .GroupBy(doc => doc.Pk, (key, values) => values.Count())),
+                
+                // Order By
+                // $issue-todo-leminh-20250424: There's an issue with OrderBy follows by OrderBy - the most recent order by is the only one that is applied to the query.
+                // This will be addressed in a separate PR
+                new LinqTestInput("Order By + Order By Rank", b => getQuery(b)
+                    .OrderBy(doc => doc.NumericField)
+                    .OrderByRank(doc => doc.StringField.FullTextScore(new string[] { "test1" }))
+                    .Select(doc => doc.Pk)),
+
+                new LinqTestInput("Order By Rank + Order By", b => getQuery(b)
+                    .OrderByRank(doc => doc.StringField.FullTextScore(new string[] { "test1" }))
+                    .OrderBy(doc => doc.NumericField)
+                    .Select(doc => doc.Pk)),
+
+                // Where 
+                new LinqTestInput("Where + Order By Rank", b => getQuery(b)
+                    .Where(doc => doc.NumericField > 0)
+                    .OrderByRank(doc => doc.StringField.FullTextScore(new string[] { "test1" }))
+                    .Select(doc => doc.Pk)),
+
+                new LinqTestInput("Order By Rank + Where", b => getQuery(b)
+                    .OrderByRank(doc => doc.StringField.FullTextScore(new string[] { "test1" }))
+                    .Where(doc => doc.NumericField > 0)
+                    .Select(doc => doc.Pk)),
+            };
+
+            foreach (LinqTestInput input in inputs)
+            {
+                // OrderBy are not supported client side.
+                // Therefore this method is verified with baseline only.
+                input.skipVerification = true;
+                input.serializeOutput = true;
+            }
+
             this.ExecuteTestSuite(inputs);
         }
 
@@ -905,6 +1387,298 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
+        public void TestArrayContainsAll()
+        {
+            const int Records = 10;
+            const int MaxAbsValue = 10;
+            const int MaxArraySize = 5;
+
+            int index = 0;
+            Func<Random, DataObject> createDataObj = (random) =>
+            {
+                DataObject obj = new DataObject();
+                obj.ArrayField = new int[index + 1];
+                for (int i = 0; i < obj.ArrayField.Length; ++i)
+                {
+                    obj.ArrayField[i] = i;
+                }
+                obj.EnumerableField = new List<int>();
+                for (int i = 0; i < index + MaxArraySize; ++i)
+                {
+                    obj.EnumerableField.Add(i - MaxArraySize);
+                }
+                obj.NumericField = (index * MaxAbsValue * 2) - MaxAbsValue;
+                obj.Id = GuidFromInt(index).ToString();
+                obj.Pk = "Test";
+                index++;
+                return obj;
+            };
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                new LinqTestInput("no parameters",
+                    b => getQuery(b).Where(doc => doc.ArrayField.ArrayContainsAll()).Select(doc => doc.ArrayField),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("params with 1 int",
+                    b => getQuery(b).Where(doc => doc.ArrayField.ArrayContainsAll(1)).Select(doc => doc.ArrayField),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("params with 3 ints",
+                    b => getQuery(b).Where(doc => doc.ArrayField.ArrayContainsAll(1, 2, 3)).Select(doc => doc.ArrayField),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("params with 5 ints",
+                    b => getQuery(b).Where(doc => doc.ArrayField.ArrayContainsAll(1, 2, 3, int.MaxValue, int.MinValue )).Select(doc => doc.ArrayField),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("params with mixed types",
+                    b => getQuery(b).Where(doc => doc.ArrayField.ArrayContainsAll(
+                        1,
+                        "hello",
+                        null,
+                        55f,
+                        10.123456789d,
+                        new object[] {
+                            "world",
+                            new object[] { "nested array", new { A = int.MaxValue, B = int.MinValue } } })).Select(doc => doc.ArrayField),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("same field",
+                    b => getQuery(b).Where(doc => doc.ArrayField.ArrayContainsAll(doc.ArrayField)).Select(doc => doc.ArrayField),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("params with mixed types",
+                    b => getQuery(b).Where(doc => new object[] {
+                        1,
+                        "hello",
+                        null,
+                        55f,
+                        10.123456789d,
+                        new object[] {
+                            "world",
+                            new object[] { "nested array", new { A = int.MaxValue, B = int.MinValue } } }
+                        }.ArrayContainsAll(doc.ArrayField)).Select(doc => doc.ArrayField),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("use enumerable field",
+                    b => getQuery(b).Where(doc => doc.EnumerableField.ArrayContainsAll(5, 6, 7)).Select(doc => doc.EnumerableField),
+                    skipVerification: true,
+                    serializeOutput: true),
+
+                new LinqTestInput("use document fields",
+                    b => getQuery(b).Where(doc => doc.ArrayField.ArrayContainsAll(new object[] { doc.Id, doc.IntField, doc.GuidField })).Select(doc => doc.ArrayField),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("params with mixed types using document fields",
+                    b => getQuery(b).Where(doc => doc.ArrayField.ArrayContainsAll(
+                        1,
+                        doc.StringField,
+                        null,
+                        doc.VectorFloatField,
+                        10.123456789d,
+                        new object[] {
+                            "world",
+                            new object[] { doc.ToString(), new { A = doc.StringField2.StartsWith("abc"), B = int.MinValue } } }))
+                        .Select(doc => doc.ArrayField),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("use document fields",
+                    b => getQuery(b).Where(doc => new object[] { doc.Id, doc.IntField, doc.GuidField }.ArrayContainsAll(doc.Id, doc.IntField, doc.GuidField)).Select(doc =>  new object[] { doc.Id, doc.IntField, doc.GuidField }),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("use document fields",
+                    b => getQuery(b).Where(doc => new object[] { doc.Id, doc.IntField, doc.GuidField, doc.ArrayField }.ArrayContainsAll(new object[] { doc.ArrayField })).Select(doc => new object[] { doc.Id, doc.IntField, doc.GuidField, doc.ArrayField }),
+                    skipVerification: true,
+                    serializeOutput: true),
+
+                new LinqTestInput("use non-array field",
+                    b => getQuery(b).Where(doc => doc.StringField.ArrayContainsAll(new object[] { doc.Id, doc.IntField, doc.GuidField })).Select(doc => doc.StringField),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("use non-array field",
+                    b => getQuery(b).Where(doc => doc.StringField.ArrayContainsAll(doc.VectorFloatField)).Select(doc => doc.StringField),
+                    skipVerification: true,
+                    serializeOutput: true),
+
+                new LinqTestInput("composite condition",
+                    b => getQuery(b).Where(doc =>
+                        doc.ArrayField.ArrayContainsAll(new object[] { doc.Id, doc.IntField, doc.GuidField }) ||
+                        doc.StringField.StartsWith("abc") &&
+                        doc.EnumerableField.ArrayContainsAll(doc.ArrayField)).Select(doc => new object[] { doc.Id, doc.IntField, doc.GuidField, doc.StringField, doc.EnumerableField }),
+                    skipVerification: true,
+                    serializeOutput: true),
+
+                new LinqTestInput("projection",
+                    b => getQuery(b).Select(doc => new object[] { doc.ArrayField, doc.ArrayField.ArrayContainsAll(
+                        1,
+                        doc.StringField,
+                        null,
+                        doc.VectorFloatField,
+                        10.123456789d,
+                        new object[] {
+                            "world",
+                            new object[] { doc.ToString(), new { A = doc.StringField2.StartsWith("abc"), B = int.MinValue } } }) }),
+                    skipVerification: true,
+                    serializeOutput: true),
+
+                new LinqTestInput("join",
+                    b => getQuery(b).SelectMany(doc => doc.ArrayField).Select(item => new object[] { item, new[] { item }.ArrayContainsAll(item.ToString()) }),
+                    skipVerification: true,
+                    serializeOutput: true),
+            };
+
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
+        public void TestArrayContainsAny()
+        {
+            const int Records = 10;
+            const int MaxAbsValue = 10;
+            const int MaxArraySize = 5;
+
+            int index = 0;
+            Func<Random, DataObject> createDataObj = (random) =>
+            {
+                DataObject obj = new DataObject();
+                obj.ArrayField = new int[index + 1];
+                for (int i = 0; i < obj.ArrayField.Length; ++i)
+                {
+                    obj.ArrayField[i] = i;
+                }
+                obj.EnumerableField = new List<int>();
+                for (int i = 0; i < index + MaxArraySize; ++i)
+                {
+                    obj.EnumerableField.Add(i - MaxArraySize);
+                }
+                obj.NumericField = (index * MaxAbsValue * 2) - MaxAbsValue;
+                obj.Id = GuidFromInt(index).ToString();
+                obj.Pk = "Test";
+                index++;
+                return obj;
+            };
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                new LinqTestInput("no parameters",
+                    b => getQuery(b).Where(doc => doc.ArrayField.ArrayContainsAny()).Select(doc => doc.ArrayField),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("params with 1 int",
+                    b => getQuery(b).Where(doc => doc.ArrayField.ArrayContainsAny(1)).Select(doc => doc.ArrayField),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("params with 3 ints",
+                    b => getQuery(b).Where(doc => doc.ArrayField.ArrayContainsAny(1, 2, 3)).Select(doc => doc.ArrayField),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("params with 5 ints",
+                    b => getQuery(b).Where(doc => doc.ArrayField.ArrayContainsAny(1, 2, 3, int.MaxValue, int.MinValue )).Select(doc => doc.ArrayField),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("params with mixed types",
+                    b => getQuery(b).Where(doc => doc.ArrayField.ArrayContainsAny(
+                        1,
+                        "hello",
+                        null,
+                        55f,
+                        10.123456789d,
+                        new object[] {
+                            "world",
+                            new object[] { "nested array", new { A = int.MaxValue, B = int.MinValue } } })).Select(doc => doc.ArrayField),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("same field",
+                    b => getQuery(b).Where(doc => doc.ArrayField.ArrayContainsAny(doc.ArrayField)).Select(doc => doc.ArrayField),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("params with mixed types",
+                    b => getQuery(b).Where(doc => new object[] {
+                        1,
+                        "hello",
+                        null,
+                        55f,
+                        10.123456789d,
+                        new object[] {
+                            "world",
+                            new object[] { "nested array", new { A = int.MaxValue, B = int.MinValue } } }
+                        }.ArrayContainsAny(doc.ArrayField)).Select(doc => doc.ArrayField),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("use enumerable field",
+                    b => getQuery(b).Where(doc => doc.EnumerableField.ArrayContainsAny(5, 6, 7, 100)).Select(doc => doc.EnumerableField),
+                    skipVerification: true,
+                    serializeOutput: true),
+
+                new LinqTestInput("use document fields",
+                    b => getQuery(b).Where(doc => doc.ArrayField.ArrayContainsAny(new object[] { doc.Id, doc.IntField, doc.GuidField })).Select(doc => doc.ArrayField),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("params with mixed types using document fields",
+                    b => getQuery(b).Where(doc => doc.ArrayField.ArrayContainsAny(
+                        1,
+                        doc.StringField,
+                        null,
+                        doc.VectorFloatField,
+                        10.123456789d,
+                        new object[] {
+                            "world",
+                            new object[] { doc.ToString(), new { A = doc.StringField2.StartsWith("abc"), B = int.MinValue } } }))
+                        .Select(doc => doc.ArrayField),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("use document fields",
+                    b => getQuery(b).Where(doc => new object[] { doc.Id, doc.IntField, doc.GuidField }.ArrayContainsAny(doc.Id, doc.IntField, doc.GuidField)).Select(doc =>  new object[] { doc.Id, doc.IntField, doc.GuidField }),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("use document fields",
+                    b => getQuery(b).Where(doc => new object[] { doc.Id, doc.IntField, doc.GuidField, doc.ArrayField }.ArrayContainsAny(new object[] { doc.ArrayField })).Select(doc => new object[] { doc.Id, doc.IntField, doc.GuidField, doc.ArrayField }),
+                    skipVerification: true,
+                    serializeOutput: true),
+
+                new LinqTestInput("use non-array field",
+                    b => getQuery(b).Where(doc => doc.StringField.ArrayContainsAny(new object[] { doc.Id, doc.IntField, doc.GuidField })).Select(doc => doc.StringField),
+                    skipVerification: true,
+                    serializeOutput: true),
+                new LinqTestInput("use non-array field",
+                    b => getQuery(b).Where(doc => doc.StringField.ArrayContainsAny(doc.VectorFloatField)).Select(doc => doc.StringField),
+                    skipVerification: true,
+                    serializeOutput: true),
+
+                new LinqTestInput("composite condition",
+                    b => getQuery(b).Where(doc =>
+                        doc.ArrayField.ArrayContainsAny(new object[] { doc.Id, doc.IntField, doc.GuidField }) ||
+                        doc.StringField.StartsWith("abc") &&
+                        doc.EnumerableField.ArrayContainsAny(doc.ArrayField)).Select(doc => new object[] { doc.Id, doc.IntField, doc.GuidField, doc.StringField, doc.EnumerableField }),
+                    skipVerification: true,
+                    serializeOutput: true),
+
+                new LinqTestInput("projection",
+                    b => getQuery(b).Select(doc => new object[] { doc.ArrayField, doc.ArrayField.ArrayContainsAny(
+                        1,
+                        doc.StringField,
+                        null,
+                        doc.VectorFloatField,
+                        10.123456789d,
+                        new object[] {
+                            "world",
+                            new object[] { doc.ToString(), new { A = doc.StringField2.StartsWith("abc"), B = int.MinValue } } }) }),
+                    skipVerification: true,
+                    serializeOutput: true),
+
+                new LinqTestInput("join",
+                    b => getQuery(b).SelectMany(doc => doc.ArrayField).Select(item => new object[] { item, new[] { item }.ArrayContainsAny(item.ToString()) }),
+                    skipVerification: true,
+                    serializeOutput: true),
+            };
+
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
         public void TestArrayFunctions()
         {
             const int Records = 100;
@@ -960,7 +1734,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 new LinqTestInput("Empty list not contains", b => getQuery(b).Select(doc => !emptyList.Contains((int)doc.NumericField))),
                 // Count
                 new LinqTestInput("Count ArrayField", b => getQuery(b).Select(doc => doc.ArrayField.Count())),
-                new LinqTestInput("Count EnumerableField", b => getQuery(b).Select(doc => doc.EnumerableField.Count()))
+                new LinqTestInput("Count EnumerableField", b => getQuery(b).Select(doc => doc.EnumerableField.Count())),
+
+                // Unsupported:
+                // Contains
+                new LinqTestInput("Contains with EqualityComparer", b => getQuery(b).Select(doc => !doc.EnumerableField.Contains(1, EqualityComparer<int>.Default))),
             };
             this.ExecuteTestSuite(inputs);
         }
@@ -1421,7 +2199,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
         public override LinqTestOutput ExecuteTest(LinqTestInput input)
         {
-            return LinqTestsCommon.ExecuteTest(input);
+            return LinqTestsCommon.ExecuteTest(input, input.serializeOutput);
         }
     }
 }

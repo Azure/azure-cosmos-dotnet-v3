@@ -90,6 +90,7 @@ namespace Microsoft.Azure.Cosmos
             this.ApiType = CosmosClientOptions.DefaultApiType;
             this.CustomHandlers = new Collection<RequestHandler>();
             this.CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions();
+            this.SessionRetryOptions = new SessionRetryOptions();
         }
 
         /// <summary>
@@ -121,6 +122,11 @@ namespace Microsoft.Azure.Cosmos
         /// Get or set session container for the client
         /// </summary>
         internal ISessionContainer SessionContainer { get; set; }
+        
+        /// <summary>
+        /// hint which guide SDK-internal retry policies on how early to switch retries to a different region. 
+        /// </summary>
+        internal SessionRetryOptions SessionRetryOptions { get; private set; }
 
         /// <summary>
         /// Gets or sets the location where the application is running. This will influence the SDK's choice for the Azure Cosmos DB service interaction.
@@ -168,7 +174,7 @@ namespace Microsoft.Azure.Cosmos
         /// <para>
         /// During the CosmosClient initialization the account information, including the available regions, is obtained from the <see cref="CosmosClient.Endpoint"/>.
         /// The CosmosClient will use the value of <see cref="ApplicationPreferredRegions"/> to populate the preferred list with the account available regions that intersect with its value.
-        /// If the value of <see cref="ApplicationPreferredRegions"/> contains regions that are not an available region in the account, the values will be ignored. If the these invalid regions are added later to the account, the CosmosClient will use them if they are higher in the preference order.
+        /// If the value of <see cref="ApplicationPreferredRegions"/> contains regions that are not an available region in the account, the values will be ignored. If these invalid regions are added later to the account, the CosmosClient will use them if they are higher in the preference order.
         /// </para>
         /// <para>
         /// If during CosmosClient initialization, the <see cref="CosmosClient.Endpoint"/> is not reachable, the CosmosClient will attempt to recover and obtain the account information issuing requests to the regions in <see cref="ApplicationPreferredRegions"/> in the order that they are listed.
@@ -445,6 +451,21 @@ namespace Microsoft.Azure.Cosmos
         /// <para>This is optimal for latency-sensitive workloads. Does not apply if <see cref="ConnectionMode.Gateway"/> is used.</para>
         /// </remarks>
         internal bool? EnableAdvancedReplicaSelectionForTcp { get; set; }
+
+        /// <summary>
+        /// Gets or sets stack trace optimization to reduce stack trace proliferation in high-concurrency scenarios where exceptions are frequently thrown. 
+        /// When enabled, critical SDK components optimize exception handling to minimize performance overhead.
+        /// The default value is 'true'.
+        /// </summary>
+        internal bool EnableAsyncCacheExceptionNoSharing { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets the boolean flag to skip converting a text stream to binary and vice versa. When enabled, the request and response stream
+        /// would not be converted to the desired target serialization type and will act just like a pass through. This client option will
+        /// remain internal only since the consumer of this flag will be the internal components of the cosmos db ecosystem.
+        /// The default value for this parameter is 'false'.
+        /// </summary>
+        internal bool EnableStreamPassThrough { get; set; } = false;
 
         /// <summary>
         /// (Direct/TCP) Controls the amount of idle time after which unused connections are closed.
@@ -727,9 +748,37 @@ namespace Microsoft.Azure.Cosmos
         public AvailabilityStrategy AvailabilityStrategy { get; set; }
 
         /// <summary>
-        /// Enable partition key level failover
+        /// Provides SessionTokenMismatchRetryPolicy optimization through customer supplied region switch hints,
+        /// which guide SDK-internal retry policies on how early to fallback to the next applicable region.
+        /// With a single-write-region account the next applicable region is the write-region, with a 
+        /// multi-write-region account the next applicable region is the next region in the order of effective 
+        /// preferred regions (same order also used for read/query operations).
         /// </summary>
-        internal bool EnablePartitionLevelFailover { get; set; } = ConfigurationManager.IsPartitionLevelFailoverEnabled(defaultValue: false);
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        bool EnableRemoteRegionPreferredForSessionRetry
+        {
+            get => this.SessionRetryOptions.RemoteRegionPreferred;
+            set => this.SessionRetryOptions.RemoteRegionPreferred = value;
+        }
+
+        /// <summary>
+        /// Enable partition level circuit breaker (aka PPCB). For compute gateway use case, by default per partition automatic failover will be disabled, so does the PPCB.
+        /// If compute gateway chooses to enable PPAF, then the .NET SDK will enable PPCB by default, which will improve the read availability and latency. This would mean
+        /// when PPAF is enabled, the SDK will automatically enable PPCB as well.
+        /// </summary>
+        internal bool EnablePartitionLevelCircuitBreaker { get; set; } = ConfigurationManager.IsPartitionLevelCircuitBreakerEnabled(defaultValue: false);
+
+        /// <summary>
+        /// Flag from gateway to disable partition level failover. Normally, the SDK will enable partition level failover based on the account settings. 
+        /// This flag will be used internally by the compute gateway as by default it will disable partition level failover.
+        /// 
+        /// The default value for this parameter is 'false'.
+        /// </summary>
+        internal bool DisablePartitionLevelFailover { get; set; } = false;
 
         /// <summary>
         /// Quorum Read allowed with eventual consistency account or consistent prefix account.
@@ -945,7 +994,12 @@ namespace Microsoft.Azure.Cosmos
         /// If <see cref="AllowBulkExecution"/> is set to true in CosmosClientOptions, throughput bucket can only be set at client level.
         /// </remarks>
         /// <seealso href="https://aka.ms/cosmsodb-bucketing"/>
-        internal int? ThroughputBucket { get; set; }
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        int? ThroughputBucket { get; set; }
 
         internal IChaosInterceptorFactory ChaosInterceptorFactory { get; set; }
 
@@ -967,10 +1021,10 @@ namespace Microsoft.Azure.Cosmos
         {
             this.ValidateDirectTCPSettings();
             this.ValidateLimitToEndpointSettings();
-            this.ValidatePartitionLevelFailoverSettings();
 
             ConnectionPolicy connectionPolicy = new ConnectionPolicy()
             {
+                ApplicationName = this.ApplicationName,
                 MaxConnectionLimit = this.GatewayModeMaxConnectionLimit,
                 RequestTimeout = this.RequestTimeout,
                 ConnectionMode = this.ConnectionMode,
@@ -978,17 +1032,20 @@ namespace Microsoft.Azure.Cosmos
                 UserAgentContainer = this.CreateUserAgentContainerWithFeatures(clientId),
                 UseMultipleWriteLocations = true,
                 IdleTcpConnectionTimeout = this.IdleTcpConnectionTimeout,
+                SessionRetryOptions = this.SessionRetryOptions,
                 OpenTcpConnectionTimeout = this.OpenTcpConnectionTimeout,
                 MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
                 EnableEndpointDiscovery = !this.LimitToEndpoint,
-                EnablePartitionLevelFailover = this.EnablePartitionLevelFailover,
+                EnablePartitionLevelCircuitBreaker = this.EnablePartitionLevelCircuitBreaker,
+                DisablePartitionLevelFailoverClientLevelOverride = this.DisablePartitionLevelFailover,
                 PortReuseMode = this.portReuseMode,
                 EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery,
                 EnableAdvancedReplicaSelectionForTcp = this.EnableAdvancedReplicaSelectionForTcp,
                 HttpClientFactory = this.httpClientFactory,
                 ServerCertificateCustomValidationCallback = this.ServerCertificateCustomValidationCallback,
-                CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions()
+                CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions(),
+                AvailabilityStrategy = this.AvailabilityStrategy,
             };
 
             if (this.CosmosClientTelemetryOptions != null)
@@ -1142,16 +1199,6 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private void ValidatePartitionLevelFailoverSettings()
-        {
-            if (this.EnablePartitionLevelFailover
-                && string.IsNullOrEmpty(this.ApplicationRegion)
-                && (this.ApplicationPreferredRegions is null || this.ApplicationPreferredRegions.Count == 0))
-            {
-                throw new ArgumentException($"{nameof(this.ApplicationPreferredRegions)} or {nameof(this.ApplicationRegion)} is required when {nameof(this.EnablePartitionLevelFailover)} is enabled.");
-            }
-        }
-
         private void ValidateDirectTCPSettings()
         {
             string settingName = string.Empty;
@@ -1210,25 +1257,7 @@ namespace Microsoft.Azure.Cosmos
                         clientId: clientId,
                         features: featureString,
                         regionConfiguration: regionConfiguration,
-                        suffix: this.GetUserAgentSuffix());
-        }
-
-        internal string GetUserAgentSuffix()
-        {
-            int featureFlag = 0;
-            if (this.EnablePartitionLevelFailover)
-            {
-                featureFlag += (int)UserAgentFeatureFlags.PerPartitionAutomaticFailover;
-            }
-
-            if (featureFlag == 0)
-            {
-                return this.ApplicationName;
-            }
-
-            return string.IsNullOrEmpty(this.ApplicationName) ?
-                $"F{featureFlag:X}" :
-                $"F{featureFlag:X}|{this.ApplicationName}";
+                        suffix: this.ApplicationName);
         }
 
         /// <summary>

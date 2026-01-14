@@ -1,6 +1,5 @@
 ﻿namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
-    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
@@ -13,125 +12,141 @@
 
     internal class MetricsAccumulator
     {
-        private const string BackendKeyValue = "Query Metrics";
-        private const string TransportKeyValue = "Client Side Request Stats";
-        private const string ClientParseTimeNode = "POCO Materialization";
-        private const string ClientDeserializationTimeNode = "Get Cosmos Element Response";
-        private const string TransportNodeName = "Microsoft.Azure.Documents.ServerStoreModel Transport Request";
-
-
-        public void ReadFromTrace<T>(FeedResponse<T> Response, QueryStatisticsDatumVisitor queryStatisticsDatumVisitor)
+        public void ReadFromTrace<T>(FeedResponse<T> response, QueryStatisticsDatumVisitor queryStatisticsDatumVisitor)
         {
-            ITrace trace = ((CosmosTraceDiagnostics)Response.Diagnostics).Value;
+            ITrace trace = ((CosmosTraceDiagnostics)response.Diagnostics).Value;
 
-            //POCO Materialization occurs once per iteration including all the roundtrips
-            List<ITrace> retrieveQueryMetricTraces = this.FindQueryMetrics(trace: trace, nodeNameOrKeyName: ClientParseTimeNode, isKeyName: false);
+            // POCO materialization occurs once per item each roundtrip for calls with status code 200
+            List<ITrace> retrieveQueryMetricTraces = this.ExtractTraces(trace: trace, nodeOrKeyName: TraceDatumKeys.QueryResponseSerialization, isKeyName: false);
             foreach (ITrace queryMetricTrace in retrieveQueryMetricTraces)
             {
                 queryStatisticsDatumVisitor.AddPocoTime(queryMetricTrace.Duration.TotalMilliseconds);
             }
 
-            //Get Cosmos Element Response occurs once per roundtrip for calls with status code 200
-            List<ITrace> retrieveCosmosElementTraces = this.FindQueryMetrics(trace: trace, nodeNameOrKeyName: ClientDeserializationTimeNode, isKeyName: false);
+            // Get cosmos element response occurs once per roundtrip for calls with status code 200
+            List<ITrace> getCosmosElementTraces = this.ExtractTraces(trace: trace, nodeOrKeyName: TraceDatumKeys.GetCosmosElementResponse, isKeyName: false);
 
-            //Query metrics occurs once per roundtrip for calls with status code 200
-            List<ITrace> backendMetrics = this.FindQueryMetrics(trace: trace, nodeNameOrKeyName: BackendKeyValue, isKeyName: true);
+            // Query combinedMetrics occurs once per roundtrip for calls with status code 200
+            List<ITrace> queryMetricsTraces = this.ExtractTraces(trace: trace, nodeOrKeyName: TraceDatumKeys.QueryMetrics, isKeyName: true);
 
-            //Client metrics occurs once per roundtrip for all status codes
-            List<ITrace> transitMetrics = this.FindQueryMetrics(trace: trace, nodeNameOrKeyName: TransportKeyValue, isKeyName: true, currentNodeName: TransportNodeName);
-            List<Tuple<ITrace, ITrace, ITrace>> backendAndClientMetrics = new();
-            int i = 0;
-            int j = 0;
-            int k = 0;
-            foreach (ITrace node in transitMetrics)
+            // Clientside request stats occur once per roundtrip for all status codes
+            List<ITrace> clientSideRequestStatsTraces = this.ExtractTraces(
+                trace: trace, 
+                nodeOrKeyName: TraceDatumKeys.ClientSideRequestStats,
+                isKeyName: true,
+                currentNodeName: TraceDatumKeys.TransportRequest);
+
+            List<QueryCombinedMetricsTraces> combinedMetricsList = new();
+            int getCosmosElementTraceCount = 0;
+            int queryMetricsTraceCount = 0;
+            foreach (ITrace clientSideRequestStatsTrace in clientSideRequestStatsTraces)
             {
-                Debug.Assert(node.Data.Count == 1, "Exactly one transit metric expected");
-                KeyValuePair<string, object> kvp = node.Data.Single();
-                Assert.IsInstanceOfType(kvp.Value, typeof(ClientSideRequestStatisticsTraceDatum));
-                ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum = (ClientSideRequestStatisticsTraceDatum)kvp.Value;
-                foreach (ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics storeResponse in clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList)
+                Debug.Assert(clientSideRequestStatsTrace.Data.Count == 1, "Expected 1 Client Side Request Stats Traces Object");
+
+                KeyValuePair<string, object> clientSideMetrics = clientSideRequestStatsTrace.Data.Single();
+                Assert.IsInstanceOfType(clientSideMetrics.Value, typeof(ClientSideRequestStatisticsTraceDatum));
+                ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum = (ClientSideRequestStatisticsTraceDatum)clientSideMetrics.Value;
+
+                foreach (ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics storeResponseStats in clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList)
                 {
-                    if (storeResponse.StoreResult.StatusCode == StatusCodes.Ok)
+                    if (storeResponseStats.StoreResult.StatusCode == StatusCodes.Ok)
                     {
-                        backendAndClientMetrics.Add(Tuple.Create(retrieveCosmosElementTraces[k], backendMetrics[j], node));
-                        j++;
-                        k++;
+                        combinedMetricsList.Add(new QueryCombinedMetricsTraces(getCosmosElementTraces[getCosmosElementTraceCount], queryMetricsTraces[queryMetricsTraceCount], clientSideRequestStatsTrace));
+                        getCosmosElementTraceCount++;
+                        queryMetricsTraceCount++;
                     }
                     else
                     {
-                        //We add null values to the tuple since status codes other than Ok will not have data for 'Query Metrics' and 'Get Cosmos Element Response'
-                        backendAndClientMetrics.Add(Tuple.Create<ITrace, ITrace, ITrace>(null, null, node));
+                        // Failed requests will only have Client Side Request Stats
+                        combinedMetricsList.Add(new QueryCombinedMetricsTraces(null, null, clientSideRequestStatsTrace));
                     }
                 }
             }
 
-            Debug.Assert(i == transitMetrics.Count, "All 'transit metrics' must be grouped.");
-            Debug.Assert(j == backendMetrics.Count, "All 'backend metrics' must be grouped.");
-            Debug.Assert(k == retrieveCosmosElementTraces.Count, "All 'Get Cosmos Element Response' traces must be grouped.");
-
-            int l = 1;
-            foreach (Tuple<ITrace, ITrace, ITrace> metrics in backendAndClientMetrics)
+            int traceCount = 0;
+            foreach (QueryCombinedMetricsTraces combinedMetrics in combinedMetricsList)
             {
-                if (metrics.Item2 != null)
+                if (combinedMetrics.GetCosmosElementTrace != null)
                 {
-                    Debug.Assert(metrics.Item1 != null, "'Get Cosmos Element Response' is null");
-                    queryStatisticsDatumVisitor.AddGetCosmosElementResponseTime(metrics.Item1.Duration.TotalMilliseconds);
-                    foreach (KeyValuePair<string, object> kvp in metrics.Item2.Data)
+                    queryStatisticsDatumVisitor.AddGetCosmosElementResponseTime(combinedMetrics.GetCosmosElementTrace.Duration.TotalMilliseconds);
+                    queryStatisticsDatumVisitor.AddRequestCharge(response.RequestCharge);
+
+                    foreach (KeyValuePair<string, object> datum in combinedMetrics.QueryMetricsTrace.Data)
                     {
-                        switch (kvp.Value)
+                        switch (datum.Value)
                         {
                             case TraceDatum traceDatum:
                                 traceDatum.Accept(queryStatisticsDatumVisitor);
                                 break;
                             default:
-                                Debug.Fail("Unexpected type", $"Type not supported {metrics.Item2.GetType()}");
+                                Debug.Fail("Unexpected type", $"Type not supported {datum.Value.GetType()}");
                                 break;
                         }
                     }
 
-                    //add metrics to the list except for last roundtrip which is taken care of in ContentSerializationPerformanceTest class
-                    if (l != backendMetrics.Count)
+                    // Add combinedMetrics to the list except for last roundtrip which is taken care of in ContentSerializationPerformanceTest class
+                    if (traceCount < queryMetricsTraces.Count - 1)
                     {
                         queryStatisticsDatumVisitor.PopulateMetrics();
                     }
-                    l++;
                 }
 
-                foreach (KeyValuePair<string, object> kvp in metrics.Item3.Data)
+                foreach (KeyValuePair<string, object> datum in combinedMetrics.ClientSideRequestStatsTrace.Data)
                 {
-                    switch (kvp.Value)
+                    switch (datum.Value)
                     {
                         case TraceDatum traceDatum:
                             traceDatum.Accept(queryStatisticsDatumVisitor);
                             break;
                         default:
-                            Debug.Fail("Unexpected type", $"Type not supported {metrics.Item3.GetType()}");
+                            Debug.Fail("Unexpected type", $"Type not supported {datum.Value.GetType()}");
                             break;
                     }
                 }
+
+                traceCount++;
             }
         }
 
-        private List<ITrace> FindQueryMetrics(ITrace trace, string nodeNameOrKeyName, bool isKeyName, string currentNodeName = null)
+        private List<ITrace> ExtractTraces(ITrace trace, string nodeOrKeyName, bool isKeyName, string currentNodeName = null)
         {
-            List<ITrace> queryMetricsNodes = new();
-            Queue<ITrace> queue = new Queue<ITrace>();
-            queue.Enqueue(trace);
-            while (queue.Count > 0)
+            List<ITrace> traceList = new();
+            Queue<ITrace> traceQueue = new Queue<ITrace>();
+            traceQueue.Enqueue(trace);
+
+            while (traceQueue.Count > 0)
             {
-                ITrace node = queue.Dequeue();
-                if ((isKeyName && node.Data.ContainsKey(nodeNameOrKeyName) && (currentNodeName == null || node.Name == currentNodeName)) ||
-                    (node.Name == nodeNameOrKeyName))
+                ITrace traceObject = traceQueue.Dequeue();
+                if ((isKeyName && traceObject.Data.ContainsKey(nodeOrKeyName) && (currentNodeName == null || traceObject.Name == currentNodeName)) ||
+                    (traceObject.Name == nodeOrKeyName))
                 {
-                    queryMetricsNodes.Add(node);
+                    traceList.Add(traceObject);
                 }
-                foreach (ITrace child in node.Children)
+
+                foreach (ITrace childTraceObject in traceObject.Children)
                 {
-                    queue.Enqueue(child);
+                    traceQueue.Enqueue(childTraceObject);
                 }
             }
 
-            return queryMetricsNodes;
+            return traceList;
+        }
+
+        public readonly struct QueryCombinedMetricsTraces
+        {
+            public QueryCombinedMetricsTraces(ITrace getCosmosElementTrace, ITrace queryMetricsTrace, ITrace clientSideRequestStatsTrace)
+            {
+                Debug.Assert((getCosmosElementTrace == null) == (queryMetricsTrace == null));
+                Debug.Assert(clientSideRequestStatsTrace != null, "Client Side Request Stats cannot be null");
+
+                this.GetCosmosElementTrace = getCosmosElementTrace;
+                this.QueryMetricsTrace = queryMetricsTrace;
+                this.ClientSideRequestStatsTrace = clientSideRequestStatsTrace;
+            }
+
+            public ITrace GetCosmosElementTrace { get; }
+            public ITrace QueryMetricsTrace { get; }
+            public ITrace ClientSideRequestStatsTrace { get; }
         }
     }
 }

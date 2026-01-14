@@ -781,6 +781,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 allowNonValueAggregateQuery: true,
                 hasLogicalPartitionKey: false,
                 allowDCount: true,
+                hybridSearchSkipOrderByRewrite: false,
                 useSystemPrefix: false,
                 geospatialType: Cosmos.GeospatialType.Geography);
 
@@ -904,6 +905,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
 
             public IReadOnlyDictionary<string, object> Data => this.data;
 
+            public bool IsBeingWalked => true; // needs to return true to allow materialization
+
             public IReadOnlyList<(string, Uri)> RegionsContacted => new List<(string, Uri)>();
 
             public void AddDatum(string key, TraceDatum traceDatum)
@@ -950,6 +953,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             public void AddOrUpdateDatum(string key, object value)
             {
                 this.data[key] = value;
+            }
+
+            bool ITrace.TryGetDatum(string key, out object datum)
+            {
+                return this.data.TryGetValue(key, out datum);
             }
         }
     }

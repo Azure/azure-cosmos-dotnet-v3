@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
+    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// AddressCache implementation for client SDK. Supports cross region address routing based on 
@@ -33,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly Uri defaultEndpoint;
         private readonly ConnectionPolicy connectionPolicy;
         private readonly IDocumentClientInternal owner;
-        private readonly AsyncCache<string, AccountProperties> databaseAccountCache = new AsyncCache<string, AccountProperties>();
+        private readonly AsyncCache<string, AccountProperties> databaseAccountCache;
         private readonly TimeSpan MinTimeBetweenAccountRefresh = TimeSpan.FromSeconds(15);
         private readonly int backgroundRefreshLocationTimeIntervalInMS = GlobalEndpointManager.DefaultBackgroundRefreshLocationTimeIntervalInMS;
         private readonly object backgroundAccountRefreshLock = new object();
@@ -42,7 +43,15 @@ namespace Microsoft.Azure.Cosmos.Routing
         private bool isBackgroundAccountRefreshActive = false;
         private DateTime LastBackgroundRefreshUtc = DateTime.MinValue;
 
-        public GlobalEndpointManager(IDocumentClientInternal owner, ConnectionPolicy connectionPolicy)
+        /// <summary>
+        /// Event that is raised when PPAF (Per Partition Automatic Failover) enablement status changes
+        /// </summary>
+        internal event Action<bool>? OnEnablePartitionLevelFailoverConfigChanged;
+
+        public GlobalEndpointManager(
+            IDocumentClientInternal owner,
+            ConnectionPolicy connectionPolicy,
+            bool enableAsyncCacheExceptionNoSharing = true)
         {
             this.locationCache = new LocationCache(
                 new ReadOnlyCollection<string>(connectionPolicy.PreferredLocations),
@@ -56,6 +65,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.connectionPolicy = connectionPolicy;
 
             this.connectionPolicy.PreferenceChanged += this.OnPreferenceChanged;
+            this.databaseAccountCache = new AsyncCache<string, AccountProperties>(enableAsyncCacheExceptionNoSharing);
 
 #if !(NETSTANDARD15 || NETSTANDARD16)
 #if NETSTANDARD20
@@ -94,6 +104,10 @@ namespace Microsoft.Azure.Cosmos.Routing
         public ReadOnlyCollection<Uri> AccountReadEndpoints => this.locationCache.AccountReadEndpoints;
 
         public ReadOnlyCollection<Uri> WriteEndpoints => this.locationCache.WriteEndpoints;
+
+        public ReadOnlyCollection<Uri> ThinClientReadEndpoints => this.locationCache.ThinClientReadEndpoints;
+
+        public ReadOnlyCollection<Uri> ThinClientWriteEndpoints => this.locationCache.ThinClientWriteEndpoints;
 
         public int PreferredLocationCount
         {
@@ -334,16 +348,30 @@ namespace Microsoft.Azure.Cosmos.Routing
                     if (databaseAccount != null)
                     {
                         this.AccountProperties = databaseAccount;
-                        this.CancellationTokenSource.Cancel();
+                        try
+                        {
+                            this.CancellationTokenSource.Cancel();
+                        }
+                        catch (ObjectDisposedException)
+                        {
+                            // Ignore the exception if the cancellation token source is already disposed
+                        }
                     }
                 }
                 catch (Exception e)
                 {
-                    DefaultTrace.TraceInformation("GlobalEndpointManager: Fail to reach gateway endpoint {0}, {1}", endpoint, e.ToString());
+                    DefaultTrace.TraceInformation("GlobalEndpointManager: Fail to reach gateway endpoint {0}, {1}", endpoint, e.Message);
                     if (GetAccountPropertiesHelper.IsNonRetriableException(e))
                     {
                         DefaultTrace.TraceInformation("GlobalEndpointManager: Exception is not retriable");
-                        this.CancellationTokenSource.Cancel();
+                        try
+                        {
+                            this.CancellationTokenSource.Cancel();
+                        }
+                        catch (ObjectDisposedException)
+                        {
+                            // Ignore the exception if the cancellation token source is already disposed
+                        }
                         this.NonRetriableException = e;
                     }
                     else
@@ -400,15 +428,36 @@ namespace Microsoft.Azure.Cosmos.Routing
                     }
                 }
             }
-
             public void Dispose()
             {
-                if (Interlocked.Increment(ref this.disposeCounter) == 1)
-                {
-                    this.CancellationTokenSource?.Cancel();
-                    this.CancellationTokenSource?.Dispose();
-                }
+                // Dispose of unmanaged resources.
+                this.Dispose(true);
+                // Suppress finalization.
+                GC.SuppressFinalize(this);
             }
+            protected virtual void Dispose(bool disposing)
+            {
+                if (Interlocked.Increment(ref this.disposeCounter) != 1)
+                {
+                    return;
+                }
+
+                if (disposing)
+                {
+                    try
+                    {
+                        this.CancellationTokenSource?.Cancel();
+                        this.CancellationTokenSource?.Dispose();
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        // Ignore exceptions during dispose
+                    }
+
+                }
+
+            }
+
         }
 
         public virtual Uri ResolveServiceEndpoint(DocumentServiceRequest request)
@@ -489,12 +538,66 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.connectionPolicy.PreferenceChanged -= this.OnPreferenceChanged;
             if (!this.cancellationTokenSource.IsCancellationRequested)
             {
-                // This can cause task canceled exceptions if the user disposes of the object while awaiting an async call.
-                this.cancellationTokenSource.Cancel();
-                // The background timer task can hit a ObjectDisposedException but it's an async background task
-                // that is never awaited on so it will not be thrown back to the caller.
-                this.cancellationTokenSource.Dispose();
+                try
+                {
+                    // This can cause task canceled exceptions if the user disposes of the object while awaiting an async call.
+                    this.cancellationTokenSource.Cancel();
+                    // The background timer task can hit a ObjectDisposedException but it's an async background task
+                    // that is never awaited on so it will not be thrown back to the caller.
+                    this.cancellationTokenSource.Dispose();
+                }
+                catch (ObjectDisposedException)
+                {
+                    // Ignore the exception if the cancellation token source is already disposed
+
+                }
             }
+        }
+
+        /// <summary>
+        /// Parse thinClientWritableLocations / thinClientReadableLocations from AdditionalProperties. 
+        /// </summary>
+        private static void ParseThinClientLocationsFromAdditionalProperties(AccountProperties databaseAccount)
+        {
+            if (databaseAccount?.AdditionalProperties != null)
+            {
+                if (databaseAccount.AdditionalProperties.TryGetValue("thinClientWritableLocations", out JToken writableToken)
+                    && writableToken is JArray writableArray)
+                {
+                    databaseAccount.ThinClientWritableLocationsInternal = ParseAccountRegionArray(writableArray);
+                }
+
+                if (databaseAccount.AdditionalProperties.TryGetValue("thinClientReadableLocations", out JToken readableToken)
+                    && readableToken is JArray readableArray)
+                {
+                    databaseAccount.ThinClientReadableLocationsInternal = ParseAccountRegionArray(readableArray);
+                }
+            }
+        }
+
+        private static Collection<AccountRegion> ParseAccountRegionArray(JArray array)
+        {
+            Collection<AccountRegion> result = new Collection<AccountRegion>();
+            foreach (JToken token in array)
+            {
+                if (token is not JObject obj)
+                {
+                    continue;
+                }
+
+                string? regionName = obj["name"]?.ToString();
+                string? endpointStr = obj["databaseAccountEndpoint"]?.ToString();
+
+                if (!string.IsNullOrEmpty(regionName) && !string.IsNullOrEmpty(endpointStr))
+                {
+                    result.Add(new AccountRegion
+                    {
+                        Name = regionName,
+                        Endpoint = endpointStr
+                    });
+                }
+            }
+            return result;
         }
 
         public virtual void InitializeAccountPropertiesAndStartBackgroundRefresh(AccountProperties databaseAccount)
@@ -503,6 +606,13 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 return;
             }
+
+            if (!this.connectionPolicy.DisablePartitionLevelFailoverClientLevelOverride && databaseAccount.EnablePartitionLevelFailover.HasValue)
+            {
+                this.connectionPolicy.EnablePartitionLevelFailover = databaseAccount.EnablePartitionLevelFailover.Value;
+            }
+
+            GlobalEndpointManager.ParseThinClientLocationsFromAdditionalProperties(databaseAccount);
 
             this.locationCache.OnDatabaseAccountRead(databaseAccount);
 
@@ -604,7 +714,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     return;
                 }
                 
-                DefaultTrace.TraceCritical("GlobalEndpointManager: StartLocationBackgroundRefreshWithTimer() - Unable to refresh database account from any serviceEndpoint. Exception: {0}", ex.ToString());
+                DefaultTrace.TraceCritical("GlobalEndpointManager: StartLocationBackgroundRefreshWithTimer() - Unable to refresh database account from any serviceEndpoint. Exception: {0}", ex.Message);
             }
 
             // Call itself to create a loop to continuously do background refresh every 5 minutes
@@ -659,13 +769,22 @@ namespace Microsoft.Azure.Cosmos.Routing
                 this.LastBackgroundRefreshUtc = DateTime.UtcNow;
                 AccountProperties accountProperties = await this.GetDatabaseAccountAsync(true);
 
+                if (!this.connectionPolicy.DisablePartitionLevelFailoverClientLevelOverride 
+                    && accountProperties.EnablePartitionLevelFailover.HasValue
+                    && (this.connectionPolicy.EnablePartitionLevelFailover != accountProperties.EnablePartitionLevelFailover.Value))
+                {
+                    this.OnEnablePartitionLevelFailoverConfigChanged?.Invoke(accountProperties.EnablePartitionLevelFailover.Value);
+                }
+
+                GlobalEndpointManager.ParseThinClientLocationsFromAdditionalProperties(accountProperties);
+
                 this.locationCache.OnDatabaseAccountRead(accountProperties);
 
             }
             catch (Exception ex)
             {
                 DefaultTrace.TraceWarning("Failed to refresh database account with exception: {0}. Activity Id: '{1}'",
-                    ex,
+                    ex.Message,
                     System.Diagnostics.Trace.CorrelationManager.ActivityId);
             }
             finally
@@ -676,6 +795,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
             }
         }
+
         internal async Task<AccountProperties> GetDatabaseAccountAsync(bool forceRefresh = false)
         {
 #nullable disable  // Needed because AsyncCache does not have nullable enabled
@@ -713,6 +833,11 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             return this.connectionPolicy.PreferredLocations?.Count > 0 ? 
                 this.connectionPolicy.PreferredLocations : this.locationCache.EffectivePreferredLocations;
+        }
+
+        public Uri ResolveThinClientEndpoint(DocumentServiceRequest request)
+        {
+            return this.locationCache.ResolveThinClientEndpoint(request, request.IsReadOnlyRequest);
         }
     }
 }

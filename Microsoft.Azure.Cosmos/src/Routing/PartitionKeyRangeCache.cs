@@ -36,10 +36,12 @@ namespace Microsoft.Azure.Cosmos.Routing
             ICosmosAuthorizationTokenProvider authorizationTokenProvider,
             IStoreModel storeModel,
             CollectionCache collectionCache,
-            IGlobalEndpointManager endpointManager)
+            IGlobalEndpointManager endpointManager,
+            bool enableAsyncCacheExceptionNoSharing = true)
         {
             this.routingMapCache = new AsyncCacheNonBlocking<string, CollectionRoutingMap>(
-                    keyEqualityComparer: StringComparer.Ordinal);
+                    keyEqualityComparer: StringComparer.Ordinal,
+                    enableAsyncCacheExceptionNoSharing: enableAsyncCacheExceptionNoSharing);
             this.authorizationTokenProvider = authorizationTokenProvider;
             this.storeModel = storeModel;
             this.collectionCache = collectionCache;
@@ -140,7 +142,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         rangesString.Append(range.ToRange().ToString());
                         rangesString.Append(", ");
                     }
-                    DefaultTrace.TraceInformation(string.Format("DocumentClientException in TryLookupAsync Collection: {0}, previousValue: {1} Exception: {2}", collectionRid, rangesString.ToString(), ex.ToString()));
+                    DefaultTrace.TraceInformation(string.Format("DocumentClientException in TryLookupAsync Collection: {0}, previousValue: {1} Exception: {2}", collectionRid, rangesString.ToString(), ex.Message));
                 }
 
                 if (ex.StatusCode == HttpStatusCode.NotFound)
@@ -210,6 +212,16 @@ namespace Microsoft.Azure.Cosmos.Routing
                 {
                     lastStatusCode = response.StatusCode;
                     changeFeedNextIfNoneMatch = response.Headers[HttpConstants.HttpHeaders.ETag];
+
+                    DefaultTrace.TraceInformation("PartitionKeyRangeCache GetRoutingMapForCollectionAsync collectionRid: {0}, StatusCode: {1}, SubstatusCode {2}, request Etag {3}, response ETag: {4}, RegionsContacted {5}", 
+                        collectionRid,
+                        lastStatusCode,
+                        response.GetSubStatusCodes(),
+                        headers.GetHeaderValue<string>(HttpConstants.HttpHeaders.IfNoneMatch),
+                        changeFeedNextIfNoneMatch,
+                        response.RequestStats?.RegionsContacted != null
+                            ? string.Join(", ", response.RequestStats.RegionsContacted)
+                            : string.Empty);
 
                     FeedResource<PartitionKeyRange> feedResource = response.GetResource<FeedResource<PartitionKeyRange>>();
                     if (feedResource != null)
