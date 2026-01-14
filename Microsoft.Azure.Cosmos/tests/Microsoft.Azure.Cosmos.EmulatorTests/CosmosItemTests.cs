@@ -3440,12 +3440,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 try
                 {
                     ItemResponse<ToDoActivity> readResponse = await container.ReadItemAsync<ToDoActivity>(temp.id, new Cosmos.PartitionKey(temp.pk), new ItemRequestOptions() { SessionToken = invalidSessionToken });
-                    Assert.AreEqual(HttpStatusCode.NotFound, readResponse.StatusCode);
                     Assert.Fail("Should had thrown ReadSessionNotAvailable");
                 }
                 catch (CosmosException cosmosException)
                 {
-                    Assert.IsFalse(cosmosException.Message.Contains("The read session is not available for the input session token."), cosmosException.Message);
+                    Assert.IsTrue(cosmosException.Message.Contains("The read session is not available for the input session token."), cosmosException.Message);
                     string exception = cosmosException.ToString();
                     Assert.IsTrue(exception.Contains("Point Operation Statistics"), exception);
                 }
