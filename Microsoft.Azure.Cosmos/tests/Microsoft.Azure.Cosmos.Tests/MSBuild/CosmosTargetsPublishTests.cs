@@ -185,7 +185,7 @@ class Program
 
             using (var process = Process.Start(processInfo))
             {
-                process.WaitForExit(timeout: TimeSpan.FromMinutes(5));
+                process.WaitForExit(TimeSpan.FromMinutes(5).Milliseconds);
                 
                 string output = process.StandardOutput.ReadToEnd();
                 string error = process.StandardError.ReadToEnd();
