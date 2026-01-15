@@ -3396,7 +3396,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ItemResponse<ToDoActivity> readResponse = await container.ReadItemAsync<ToDoActivity>(temp.id, new Cosmos.PartitionKey(temp.pk), new ItemRequestOptions() { SessionToken = invalidSessionToken });
                 
                 Assert.AreEqual(System.Net.HttpStatusCode.NotFound, readResponse.StatusCode);
-                Assert.AreEqual((int)SubStatusCodes.ReadSessionNotAvailable, readResponse.Headers.SubStatusCode);
+                Assert.AreEqual(SubStatusCodes.ReadSessionNotAvailable, readResponse.Headers.SubStatusCode);
                 
                 string diagnostics = readResponse.Diagnostics.ToString();
                 Assert.IsTrue(diagnostics.Contains("Point Operation Statistics"), diagnostics);
