@@ -151,10 +151,9 @@ class Program
             if (process == null)
             {
                 Assert.Fail($"Failed to start dotnet publish process for {runtimeIdentifier}");
-                return null; // This line will never be reached, but satisfies the compiler
             }
 
-            using (process)
+            using (process!)
             {
                 // .NET 6 compatibility: WaitForExit doesn't support TimeSpan parameter
                 process.WaitForExit((int)TimeSpan.FromMinutes(5).TotalMilliseconds);
