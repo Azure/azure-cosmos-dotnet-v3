@@ -1,10 +1,10 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     
   <!-- Only include Windows native DLLs when:
-       1. A RuntimeIdentifier is specified (not a regular build)
-       2. AND it's a Windows RuntimeIdentifier
+       1. RuntimeIdentifier is empty (regular build without RID), OR
+       2. RuntimeIdentifier is specified AND starts with 'win'
   -->
-  <ItemGroup Condition="'$(RuntimeIdentifier)' != '' AND $(RuntimeIdentifier.StartsWith('win'))">
+  <ItemGroup Condition="'$(RuntimeIdentifier)' == '' OR $(RuntimeIdentifier.StartsWith('win'))">
     <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\Microsoft.Azure.Cosmos.ServiceInterop.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <TargetPath>Microsoft.Azure.Cosmos.ServiceInterop.dll</TargetPath>

@@ -185,7 +185,8 @@ class Program
 
             using (var process = Process.Start(processInfo))
             {
-                process.WaitForExit(TimeSpan.FromMinutes(5).Milliseconds);
+                // .NET 6 compatibility: WaitForExit doesn't support TimeSpan parameter
+                process.WaitForExit((int)TimeSpan.FromMinutes(5).TotalMilliseconds);
                 
                 string output = process.StandardOutput.ReadToEnd();
                 string error = process.StandardError.ReadToEnd();
