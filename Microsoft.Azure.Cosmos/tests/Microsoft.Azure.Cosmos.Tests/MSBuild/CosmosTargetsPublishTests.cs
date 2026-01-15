@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
     /// for Windows RuntimeIdentifiers, and not for Linux/macOS targets.
     /// </summary>
     [TestClass]
+    [DoNotParallelize]
     public class CosmosTargetsPublishTests
     {
         private static string testProjectsRoot;
@@ -146,13 +147,15 @@ class Program
             Console.WriteLine($"Executing: {commandLine}");
             Console.WriteLine($"Working directory: {projectDir}");
 
-            using (Process process = Process.Start(processInfo))
+            Process process = Process.Start(processInfo);
+            if (process == null)
             {
-                if (process == null)
-                {
-                    Assert.Fail($"Failed to start dotnet publish process for {runtimeIdentifier}");
-                }
+                Assert.Fail($"Failed to start dotnet publish process for {runtimeIdentifier}");
+                return null; // This line will never be reached, but satisfies the compiler
+            }
 
+            using (process)
+            {
                 // .NET 6 compatibility: WaitForExit doesn't support TimeSpan parameter
                 process.WaitForExit((int)TimeSpan.FromMinutes(5).TotalMilliseconds);
                 
