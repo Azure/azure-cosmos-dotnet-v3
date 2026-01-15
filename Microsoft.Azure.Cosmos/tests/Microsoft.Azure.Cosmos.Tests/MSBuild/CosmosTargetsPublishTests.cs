@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
         };
 
         [ClassInitialize]
-        public static void ClassInitialize(TestContext context)
+        public static void ClassInitialize(TestContext _)
         {
             testProjectsRoot = Path.Combine(Path.GetTempPath(), "CosmosTargetsTests_" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(testProjectsRoot);
@@ -131,7 +131,7 @@ class Program
             string publishDir = Path.Combine(projectDir, "bin", "publish", runtimeIdentifier);
 
             // Run dotnet publish
-            var processInfo = new ProcessStartInfo
+            ProcessStartInfo processInfo = new ProcessStartInfo
             {
                 FileName = "dotnet",
                 Arguments = $"publish \"{projectFile}\" -r {runtimeIdentifier} -c Release -o \"{publishDir}\" --self-contained false",
@@ -146,7 +146,7 @@ class Program
             Console.WriteLine($"Executing: {commandLine}");
             Console.WriteLine($"Working directory: {projectDir}");
 
-            using (var process = Process.Start(processInfo))
+            using (Process process = Process.Start(processInfo))
             {
                 if (process == null)
                 {
