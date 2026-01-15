@@ -15,6 +15,12 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    /// <summary>
+    /// Tests for exception-less behavior in Cosmos DB operations.
+    /// </summary>
+    /// <remarks>
+    /// Reference: https://msdata.visualstudio.com/CosmosDB/_git/CosmosDB?path=/Product/SDK/.net/Microsoft.Azure.Cosmos.Friends/tests/ExceptionLessTests.cs
+    /// </remarks>
     [VisualStudio.TestTools.UnitTesting.TestClass]
     public class ExceptionLessTests
     {
