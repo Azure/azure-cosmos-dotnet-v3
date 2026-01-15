@@ -341,7 +341,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 enableOptimisticDirectExecution: queryRequestOptions.EnableOptimisticDirectExecution,
                 isHybridSearchQueryPlanOptimizationDisabled: queryRequestOptions.IsHybridSearchQueryPlanOptimizationDisabled,
                 enableDistributedQueryGatewayMode: queryRequestOptions.EnableDistributedQueryGatewayMode,
-                testInjections: queryRequestOptions.TestSettings);
+                testInjections: queryRequestOptions.TestSettings,
+                useLengthAwareRangeComparer: false);
 
             string databaseId = "db1234";
             string resourceLink = $"dbs/{databaseId}/colls";
@@ -620,7 +621,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 containerQueryProperties: new ContainerQueryProperties(),
                 isContinuationExpected: true,
                 maxConcurrency: 10,
-                requestContinuationToken: state);
+                requestContinuationToken: state,
+                useLengthAwareRangeComparer: false);
 
             tryCreatePipeline.ThrowIfFailed();
 

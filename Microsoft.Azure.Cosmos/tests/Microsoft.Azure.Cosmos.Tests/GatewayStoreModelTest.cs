@@ -290,7 +290,7 @@ namespace Microsoft.Azure.Cosmos
                            dsr,
                            ConsistencyLevel.Session,
                            new Mock<ISessionContainer>().Object,
-                           partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false).Object,
+                           partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false, false).Object,
                            clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), gatewayStoreModel, null, null, null, false).Object,
                            globalEndpointManager: Mock.Of<IGlobalEndpointManager>());
 
@@ -317,7 +317,7 @@ namespace Microsoft.Azure.Cosmos
                     dsrQueryPlan,
                     ConsistencyLevel.Session,
                     new Mock<ISessionContainer>().Object,
-                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false).Object,
+                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false, false).Object,
                     clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), gatewayStoreModel, null, null, null, false).Object,
                     globalEndpointManager: Mock.Of<IGlobalEndpointManager>());
 
@@ -371,7 +371,7 @@ namespace Microsoft.Azure.Cosmos
                                 dsr,
                                 ConsistencyLevel.Session,
                                 new Mock<ISessionContainer>().Object,
-                                partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false).Object,
+                                partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false, false).Object,
                                 clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), gatewayStoreModel, null, null, null, false).Object,
                                 globalEndpointManager: Mock.Of<IGlobalEndpointManager>());
 
@@ -401,7 +401,7 @@ namespace Microsoft.Azure.Cosmos
                                 dsrNoSessionToken,
                                 ConsistencyLevel.Session,
                                 sessionContainer,
-                                partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false).Object,
+                                partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false, false).Object,
                                 clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), gatewayStoreModel, null, null, null, false).Object,
                                 globalEndpointManager: globalEndpointManager.Object);
 
@@ -442,7 +442,7 @@ namespace Microsoft.Azure.Cosmos
                             It.IsAny<CancellationToken>(),
                             NoOpTrace.Singleton)).Returns(Task.FromResult(containerProperties));
 
-                        Mock<PartitionKeyRangeCache> mockPartitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(MockBehavior.Strict, null, null, null, null, false);
+                        Mock<PartitionKeyRangeCache> mockPartitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(MockBehavior.Strict, null, null, null, null, false, false);
                         mockPartitionKeyRangeCache.Setup(x => x.TryGetPartitionKeyRangeByIdAsync(
                             containerProperties.ResourceId,
                             partitionKeyRangeId,
@@ -489,7 +489,7 @@ namespace Microsoft.Azure.Cosmos
                     dsrSprocExecute,
                     ConsistencyLevel.Session,
                     new Mock<ISessionContainer>().Object,
-                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false).Object,
+                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false, false).Object,
                     clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), gatewayStoreModel, null, null, null, false).Object,
                     globalEndpointManager: Mock.Of<IGlobalEndpointManager>());
 
@@ -528,7 +528,7 @@ namespace Microsoft.Azure.Cosmos
                     dsrNoSessionToken,
                     ConsistencyLevel.Session,
                     sessionContainer,
-                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false).Object,
+                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false, false).Object,
                     clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), gatewayStoreModel, null, null, null, false).Object,
                     globalEndpointManager: globalEndpointManager.Object);
 
@@ -1005,7 +1005,7 @@ namespace Microsoft.Azure.Cosmos
                 isThinClientEnabled: false);
 
             Mock<ClientCollectionCache> clientCollectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), storeModel, null, null, null, false);
-            Mock<PartitionKeyRangeCache> partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, storeModel, clientCollectionCache.Object, endpointManager, false);
+            Mock<PartitionKeyRangeCache> partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, storeModel, clientCollectionCache.Object, endpointManager, false, false);
 
             sessionContainer.SetSessionToken(
                     ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString(),
@@ -1103,7 +1103,7 @@ namespace Microsoft.Azure.Cosmos
 
             Mock<ClientCollectionCache> clientCollectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), storeModel, null, null, null, false);
 
-            Mock<PartitionKeyRangeCache> partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, storeModel, clientCollectionCache.Object, endpointManager, false);
+            Mock<PartitionKeyRangeCache> partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, storeModel, clientCollectionCache.Object, endpointManager, false, false);
             storeModel.SetCaches(partitionKeyRangeCache.Object, clientCollectionCache.Object);
 
             INameValueCollection headers = new RequestNameValueCollection();
@@ -1171,7 +1171,7 @@ namespace Microsoft.Azure.Cosmos
                     documentServiceRequestToChild,
                     ConsistencyLevel.Session,
                     sessionContainer,
-                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false).Object,
+                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false, false).Object,
                     clientCollectionCache: new Mock<ClientCollectionCache>(sessionContainer, gatewayStoreModel, null, null, null, false).Object,
                     globalEndpointManager: globalEndpointManager.Object);
 
@@ -1237,7 +1237,7 @@ namespace Microsoft.Azure.Cosmos
                     documentServiceRequestToChild,
                     ConsistencyLevel.Session,
                     sessionContainer,
-                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false).Object,
+                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false, false).Object,
                     clientCollectionCache: new Mock<ClientCollectionCache>(sessionContainer, gatewayStoreModel, null, null, null, false).Object,
                     globalEndpointManager: globalEndpointManager.Object);
 
@@ -1297,7 +1297,7 @@ namespace Microsoft.Azure.Cosmos
                 storeModel,
                 clientCollectionCache,
                 endpointManager,
-                false).Object;
+                false, false).Object;
 
             storeModel.SetCaches(partitionKeyRangeCache, clientCollectionCache);
 
@@ -1378,7 +1378,7 @@ namespace Microsoft.Azure.Cosmos
                 storeModel,
                 clientCollectionCache,
                 multiEndpointMgr,
-                false).Object;
+                false, false).Object;
 
             storeModel.SetCaches(partitionKeyRangeCache, clientCollectionCache);
 
@@ -1469,7 +1469,7 @@ namespace Microsoft.Azure.Cosmos
                 storeModel,
                 clientCollectionCache,
                 endpointManager,
-                false).Object;
+                false, false).Object;
 
             storeModel.SetCaches(partitionKeyRangeCache, clientCollectionCache);
 
@@ -1553,12 +1553,12 @@ namespace Microsoft.Azure.Cosmos
                 storeModel,
                 mockCollectionCache.Object,
                 endpointManager,
-                false);
+                false, false);
 
             PartitionKeyRange pkRange = new PartitionKeyRange { Id = "0", MinInclusive = "", MaxExclusive = "FF" };
             List<PartitionKeyRange> pkRanges = new List<PartitionKeyRange> { pkRange };
             IEnumerable<Tuple<PartitionKeyRange, ServiceIdentity>> rangeTuples = pkRanges.Select(r => Tuple.Create(r, (ServiceIdentity)null));
-            CollectionRoutingMap routingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(rangeTuples, "testCollectionRid");
+            CollectionRoutingMap routingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(rangeTuples, "testCollectionRid", false);
 
             mockPartitionKeyRangeCache
                 .Setup(c => c.TryLookupAsync(It.IsAny<string>(), It.IsAny<CollectionRoutingMap>(), It.IsAny<DocumentServiceRequest>(), It.IsAny<ITrace>()))
@@ -1725,7 +1725,7 @@ namespace Microsoft.Azure.Cosmos
                 isThinClientEnabled: false);
 
             ClientCollectionCache clientCollectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), storeModel, null, null, null, false).Object;
-            PartitionKeyRangeCache partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, storeModel, clientCollectionCache, endpointManager, false).Object;
+            PartitionKeyRangeCache partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, storeModel, clientCollectionCache, endpointManager, false, false).Object;
             storeModel.SetCaches(partitionKeyRangeCache, clientCollectionCache);
 
             await executeWithGatewayStoreModel(storeModel);
