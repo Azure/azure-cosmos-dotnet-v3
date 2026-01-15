@@ -145,14 +145,17 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
   </ItemGroup>
 </Project>");
 
-            // Create a minimal Program.cs
+            // Create a minimal Program.cs that uses CosmosClient to ensure the SDK is properly referenced
             File.WriteAllText(programFile, @"using System;
+using Microsoft.Azure.Cosmos;
 
 class Program
 {
     static void Main()
     {
-        Console.WriteLine(""Hello from test project"");
+        // Create a dummy CosmosClient to ensure the SDK is used and targets file is applied
+        var client = new CosmosClient(""AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="");
+        Console.WriteLine($""CosmosClient created: {client != null}"");
     }
 }");
 
