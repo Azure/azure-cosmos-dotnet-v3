@@ -6,14 +6,15 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Concurrent;
+    using System.Diagnostics;
     using System.IO;
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.FaultInjection;
     using Newtonsoft.Json;
     using static Microsoft.Azure.Cosmos.ThinClientTransportSerializer;
 
@@ -23,17 +24,29 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class ThinClientStoreClient : GatewayStoreClient
     {
+        private readonly GlobalPartitionEndpointManager globalPartitionEndpointManager;
         private readonly ObjectPool<BufferProviderWrapper> bufferProviderWrapperPool;
+        private readonly UserAgentContainer userAgentContainer;
+        private readonly IChaosInterceptor chaosInterceptor;
 
         public ThinClientStoreClient(
             CosmosHttpClient httpClient,
+            UserAgentContainer userAgentContainer,
             ICommunicationEventSource eventSource,
-            JsonSerializerSettings serializerSettings = null)
+            GlobalPartitionEndpointManager globalPartitionEndpointManager,
+            JsonSerializerSettings serializerSettings = null,
+            IChaosInterceptor chaosInterceptor = null)
             : base(httpClient,
                   eventSource,
+                  globalPartitionEndpointManager,
                   serializerSettings)
         {
             this.bufferProviderWrapperPool = new ObjectPool<BufferProviderWrapper>(() => new BufferProviderWrapper());
+            this.globalPartitionEndpointManager = globalPartitionEndpointManager;
+            this.userAgentContainer = userAgentContainer
+                ?? throw new ArgumentNullException(nameof(userAgentContainer),
+                "UserAgentContainer cannot be null when initializing ThinClientStoreClient.");
+            this.chaosInterceptor = chaosInterceptor;
         }
 
         public override async Task<DocumentServiceResponse> InvokeAsync(
@@ -54,6 +67,19 @@ namespace Microsoft.Azure.Cosmos
                 clientCollectionCache,
                 cancellationToken))
             {
+                if (this.chaosInterceptor != null)
+                {
+                    request.Headers.Set("FAULTINJECTION_IS_PROXY", "true");
+                    (bool hasFault, HttpResponseMessage fiResponseMessage) = await this.chaosInterceptor.OnHttpRequestCallAsync(request, cancellationToken);
+                    if (hasFault)
+                    {
+                        DefaultTrace.TraceInformation("Chaos interceptor injected fault for request: {0}", request);
+                        fiResponseMessage.RequestMessage = responseMessage.RequestMessage;
+                        request.Headers.Remove("FAULTINJECTION_IS_PROXY");
+                        return await ThinClientStoreClient.ParseResponseAsync(fiResponseMessage, request.SerializerSettings ?? base.SerializerSettings, request);
+                    }
+                }
+
                 HttpResponseMessage proxyResponse = await ThinClientTransportSerializer.ConvertProxyResponseAsync(responseMessage);
                 return await ThinClientStoreClient.ParseResponseAsync(proxyResponse, request.SerializerSettings ?? base.SerializerSettings, request);
             }
@@ -126,7 +152,17 @@ namespace Microsoft.Azure.Cosmos
 
                 requestMessage.Content = new StreamContent(contentStream);
                 requestMessage.Content.Headers.ContentLength = contentStream.Length;
-               
+
+                requestMessage.Headers.Clear();
+                requestMessage.Headers.TryAddWithoutValidation(
+                    ThinClientConstants.UserAgent,
+                    this.userAgentContainer.UserAgent);
+
+                Guid activityId = Trace.CorrelationManager.ActivityId;
+                Debug.Assert(activityId != Guid.Empty);
+                requestMessage.Headers.TryAddWithoutValidation(
+                    HttpConstants.HttpHeaders.ActivityId, activityId.ToString());
+
                 requestMessage.RequestUri = thinClientEndpoint;
                 requestMessage.Method = HttpMethod.Post;
 
@@ -151,7 +187,7 @@ namespace Microsoft.Azure.Cosmos
             return base.httpClient.SendHttpAsync(
                 () => this.PrepareRequestForProxyAsync(request, physicalAddress, thinClientEndpoint, globalDatabaseAccountName, clientCollectionCache),
                 resourceType,
-                HttpTimeoutPolicy.GetTimeoutPolicy(request),
+                HttpTimeoutPolicy.GetTimeoutPolicy(request, isThinClientEnabled: true),
                 request.RequestContext.ClientRequestStatistics,
                 cancellationToken,
                 request);

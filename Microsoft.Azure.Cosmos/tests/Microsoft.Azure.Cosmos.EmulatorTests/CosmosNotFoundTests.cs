@@ -97,6 +97,164 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await db.DeleteAsync();
         }
 
+        /// <summary>
+        /// Validates that 404 with substatus 0 is returned when an item doesn't exist,
+        /// and 404 with substatus 1003 is returned when the container doesn't exist (Direct mode only).
+        /// This allows disambiguation between item not found vs owner resource (container/database) not found.
+        /// 
+        /// This test uses streaming APIs (ReadItemStreamAsync).
+        /// 
+        /// Note: Gateway mode has a known limitation where it cannot always distinguish between 
+        /// item-not-found and container-not-found scenarios. Direct mode properly sets substatus 1003.
+        /// </summary>
+        [TestMethod]
+        [DataRow(true, DisplayName = "Gateway mode")]
+        [DataRow(false, DisplayName = "Direct mode")]
+        public async Task ValidateSubStatusCodeForItemNotFoundVsContainerNotFound_StreamingAPI(bool useGateway)
+        {
+            // Create a test client with the specified mode
+            using CosmosClient testClient = TestCommon.CreateCosmosClient(useGateway);
+
+            // Create a test database and container
+            Database db = await testClient.CreateDatabaseAsync("NotFoundTest" + Guid.NewGuid().ToString());
+            Container container = await db.CreateContainerAsync("NotFoundTest" + Guid.NewGuid().ToString(), "/pk", 500);
+
+            // Test 1: Item doesn't exist in existing container - should return 404 with substatus 0
+            ResponseMessage response = await container.ReadItemStreamAsync(
+                partitionKey: new Cosmos.PartitionKey(DoesNotExist), 
+                id: DoesNotExist);
+            
+            Assert.IsNotNull(response);
+            Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
+            Assert.AreEqual(0, (int)response.Headers.SubStatusCode, 
+                "SubStatusCode should be 0 when item doesn't exist in an existing container");
+
+            // Test 2: Container doesn't exist
+            // Direct mode: should return 404 with substatus 1003
+            // Gateway mode: returns 404 with substatus 0 (known limitation)
+            Container nonExistentContainer = db.GetContainer(DoesNotExist);
+            response = await nonExistentContainer.ReadItemStreamAsync(
+                partitionKey: new Cosmos.PartitionKey(DoesNotExist), 
+                id: DoesNotExist);
+            
+            Assert.IsNotNull(response);
+            Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
+            
+            if (!useGateway)
+            {
+                // Direct mode can distinguish container-not-found from item-not-found
+                Assert.AreEqual(1003, (int)response.Headers.SubStatusCode, 
+                    "SubStatusCode should be 1003 when container doesn't exist (owner resource not found)");
+            }
+            else
+            {
+                // Gateway mode limitation: Cannot always distinguish, returns substatus 0
+                Assert.AreEqual(0, (int)response.Headers.SubStatusCode, 
+                    "Gateway mode returns substatus 0 (known limitation - cannot distinguish container-not-found from item-not-found)");
+            }
+
+            // Test 3: Database doesn't exist
+            // Both Direct and Gateway mode should return 404 with substatus 1003 
+            // because the collection cache detects the database doesn't exist
+            Database nonExistentDb = testClient.GetDatabase(DoesNotExist);
+            Container containerInNonExistentDb = nonExistentDb.GetContainer(DoesNotExist);
+            response = await containerInNonExistentDb.ReadItemStreamAsync(
+                partitionKey: new Cosmos.PartitionKey(DoesNotExist), 
+                id: DoesNotExist);
+            
+            Assert.IsNotNull(response);
+            Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
+            Assert.AreEqual(1003, (int)response.Headers.SubStatusCode, 
+                "SubStatusCode should be 1003 when database doesn't exist (owner resource not found)");
+
+            // Cleanup
+            await db.DeleteAsync();
+        }
+
+        /// <summary>
+        /// Validates that CosmosException exposes the substatus code when thrown,
+        /// allowing developers to distinguish between different types of 404 errors.
+        /// 
+        /// This test uses non-streaming/typed APIs (ReadItemAsync).
+        /// 
+        /// Note: Gateway mode has a known limitation where it cannot always distinguish between 
+        /// item-not-found and container-not-found scenarios. Direct mode properly sets substatus 1003.
+        /// </summary>
+        [TestMethod]
+        [DataRow(true, DisplayName = "Gateway mode")]
+        [DataRow(false, DisplayName = "Direct mode")]
+        public async Task ValidateCosmosExceptionSubStatusCodeForNotFound_TypedAPI(bool useGateway)
+        {
+            // Create a test client with the specified mode
+            using CosmosClient testClient = TestCommon.CreateCosmosClient(useGateway);
+
+            // Create a test database and container
+            Database db = await testClient.CreateDatabaseAsync("NotFoundTest" + Guid.NewGuid().ToString());
+            Container container = await db.CreateContainerAsync("NotFoundTest" + Guid.NewGuid().ToString(), "/pk", 500);
+
+            // Test 1: Item doesn't exist in existing container - CosmosException should have substatus 0
+            try
+            {
+                ItemResponse<dynamic> response = await container.ReadItemAsync<dynamic>(
+                    partitionKey: new Cosmos.PartitionKey(DoesNotExist),
+                    id: DoesNotExist);
+                Assert.Fail("Expected CosmosException to be thrown");
+            }
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
+                Assert.AreEqual(0, ex.SubStatusCode, 
+                    "SubStatusCode should be 0 when item doesn't exist in an existing container");
+            }
+
+            // Test 2: Container doesn't exist
+            // Direct mode: CosmosException should have substatus 1003
+            // Gateway mode: CosmosException has substatus 0 (known limitation)
+            Container nonExistentContainer = db.GetContainer(DoesNotExist);
+            try
+            {
+                ItemResponse<dynamic> response = await nonExistentContainer.ReadItemAsync<dynamic>(
+                    partitionKey: new Cosmos.PartitionKey(DoesNotExist),
+                    id: DoesNotExist);
+                Assert.Fail("Expected CosmosException to be thrown");
+            }
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
+                if (!useGateway)
+                {
+                    // Direct mode can distinguish container-not-found from item-not-found
+                    Assert.AreEqual(1003, ex.SubStatusCode, 
+                        "SubStatusCode should be 1003 when container doesn't exist (owner resource not found)");
+                }
+                else
+                {
+                    // Gateway mode limitation: Cannot always distinguish, returns substatus 0
+                    Assert.AreEqual(0, ex.SubStatusCode, 
+                        "Gateway mode returns substatus 0 (known limitation - cannot distinguish container-not-found from item-not-found)");
+                }
+            }
+
+            // Test 3: Database doesn't exist
+            // Both Direct and Gateway mode should return substatus 1003
+            // because the collection cache detects the database doesn't exist
+            Database nonExistentDb = testClient.GetDatabase(DoesNotExist);
+            Container containerInNonExistentDb = nonExistentDb.GetContainer(DoesNotExist);
+            try
+            {
+                ItemResponse<dynamic> response = await containerInNonExistentDb.ReadItemAsync<dynamic>(
+                    partitionKey: new Cosmos.PartitionKey(DoesNotExist),
+                    id: DoesNotExist);
+                Assert.Fail("Expected CosmosException to be thrown");
+            }
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
+                Assert.AreEqual(1003, ex.SubStatusCode, 
+                    "SubStatusCode should be 1003 when database doesn't exist (owner resource not found)");
+            }
+
+            // Cleanup
+            await db.DeleteAsync();
+        }
+
         private async Task ContainerOperations(Database database, bool dbNotExist)
         {
             // Create should fail if the database does not exist
@@ -160,6 +318,52 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 partitionKey: new Cosmos.PartitionKey(randomReplaceItem.pk),
                 id: randomReplaceItem.id,
                 streamPayload: replace));
+        }
+
+        /// <summary>
+        /// Validates that container metadata operations (ReadContainer, DeleteContainer) return 404 with substatus 0
+        /// when the container doesn't exist, as opposed to item operations which return substatus 1003.
+        /// This ensures we don't incorrectly set substatus 1003 for container-level operations.
+        /// </summary>
+        [TestMethod]
+        [DataRow(true, DisplayName = "Gateway mode")]
+        [DataRow(false, DisplayName = "Direct mode")]
+        public async Task ValidateContainerMetadataRequestsHaveSubstatus0(bool useGateway)
+        {
+            // Create a test client with the specified mode
+            using CosmosClient testClient = TestCommon.CreateCosmosClient(useGateway);
+
+            // Create a test database
+            Database db = await testClient.CreateDatabaseAsync("NotFoundTest" + Guid.NewGuid().ToString());
+
+            // Test 1: ReadContainer on non-existent container should return 404 with substatus 0
+            Container nonExistentContainer = db.GetContainer(DoesNotExist);
+            ResponseMessage response = await nonExistentContainer.ReadContainerStreamAsync();
+
+            Assert.IsNotNull(response);
+            Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
+            Assert.AreEqual(0, (int)response.Headers.SubStatusCode,
+                "ReadContainer should return substatus 0 when container doesn't exist (the container itself is the missing resource)");
+
+            // Test 2: DeleteContainer on non-existent container should also return 404 with substatus 0
+            response = await nonExistentContainer.DeleteContainerStreamAsync();
+
+            Assert.IsNotNull(response);
+            Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
+            Assert.AreEqual(0, (int)response.Headers.SubStatusCode,
+                "DeleteContainer should return substatus 0 when container doesn't exist (the container itself is the missing resource)");
+
+            // Test 3: ReplaceContainer on non-existent container should also return 404 with substatus 0
+            ContainerProperties containerSettings = new ContainerProperties(id: DoesNotExist, partitionKeyPath: "/pk");
+            response = await nonExistentContainer.ReplaceContainerStreamAsync(containerSettings);
+
+            Assert.IsNotNull(response);
+            Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
+            Assert.AreEqual(0, (int)response.Headers.SubStatusCode,
+                "ReplaceContainer should return substatus 0 when container doesn't exist (the container itself is the missing resource)");
+
+            // Cleanup
+            await db.DeleteAsync();
         }
 
         private async Task VerifyQueryNotFoundResponse(FeedIterator iterator)

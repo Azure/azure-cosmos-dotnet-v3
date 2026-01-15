@@ -6,6 +6,7 @@
     using System.IO;
     using System.Linq;
     using System.Reflection;
+    using System.Runtime.Versioning;
     using System.Text.RegularExpressions;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -15,14 +16,108 @@
     public class ContractEnforcement
     {
         private static readonly InvariantComparer invariantComparer = new();
+        private const string ContractsFolder = "Contracts/";
+
+        /// <summary>
+        /// Gets the current .NET major version from the executing test assembly's target framework.
+        /// </summary>
+        /// <returns>The major version number (e.g., 6 for net6.0, 8 for net8.0), or null if unable to determine.</returns>
+        public static int? GetCurrentMajorVersion()
+        {
+            // Read the TFM from the current test assembly TargetFrameworkAttribute
+            TargetFrameworkAttribute attr = Assembly.GetExecutingAssembly().GetCustomAttribute<TargetFrameworkAttribute>();
+            if (attr?.FrameworkName == null)
+            {
+                return null;
+            }
+
+            // Example: ".NETCoreApp,Version=v8.0" -> 8
+            FrameworkName fx = new FrameworkName(attr.FrameworkName);
+            return fx.Version.Major;
+        }
 
         private static Assembly GetAssemblyLocally(string name)
         {
             Assembly.Load(name);
             Assembly[] loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
-            return loadedAssemblies
+
+            // Get the target framework of the currently executing test assembly
+            Assembly testAssembly = Assembly.GetExecutingAssembly();
+            TargetFrameworkAttribute testTfmAttr = testAssembly.GetCustomAttribute<TargetFrameworkAttribute>();
+            string testTfmName = testTfmAttr?.FrameworkName;
+
+            // Find all matching assemblies
+            Assembly[] matchingAssemblies = loadedAssemblies
                 .Where((candidate) => candidate.FullName.Contains(name + ","))
-                .FirstOrDefault();
+                .ToArray();
+
+            if (matchingAssemblies.Length == 0)
+            {
+                return null;
+            }
+
+            // If we have multiple matches and know our test TFM, try to find the best match
+            if (matchingAssemblies.Length > 1 && !string.IsNullOrEmpty(testTfmName))
+            {
+                // Try to find an assembly with matching or compatible TFM
+                foreach (Assembly candidate in matchingAssemblies)
+                {
+                    TargetFrameworkAttribute candidateTfmAttr = candidate.GetCustomAttribute<TargetFrameworkAttribute>();
+                    string candidateTfmName = candidateTfmAttr?.FrameworkName;
+
+                    // Direct match or compatible framework
+                    if (candidateTfmName == testTfmName ||
+                        IsCompatibleFramework(candidateTfmName, testTfmName))
+                    {
+                        return candidate;
+                    }
+                }
+            }
+
+            // Fallback to first match
+            return matchingAssemblies.FirstOrDefault();
+        }
+
+        /// <summary>
+        /// Determines if the candidate framework is compatible with the test framework.
+        /// For example, netstandard2.0 is compatible with net6.0 or net8.0.
+        /// </summary>
+        private static bool IsCompatibleFramework(string candidateFramework, string testFramework)
+        {
+            if (string.IsNullOrEmpty(candidateFramework) || string.IsNullOrEmpty(testFramework))
+            {
+                return false;
+            }
+
+            try
+            {
+                FrameworkName candidateFn = new FrameworkName(candidateFramework);
+                FrameworkName testFn = new FrameworkName(testFramework);
+
+                // If candidate is .NETStandard, it's compatible with .NETCoreApp
+                if (candidateFn.Identifier == ".NETStandard" && testFn.Identifier == ".NETCoreApp")
+                {
+                    return true;
+                }
+
+                // Same framework identifier
+                if (candidateFn.Identifier == testFn.Identifier)
+                {
+                    // For .NETCoreApp, prefer exact or higher version match
+                    if (testFn.Identifier == ".NETCoreApp")
+                    {
+                        return candidateFn.Version.Major == testFn.Version.Major;
+                    }
+                    return true;
+                }
+            }
+            catch
+            {
+                // If framework name parsing fails, fall back to false
+                return false;
+            }
+
+            return false;
         }
 
         private sealed class MemberMetadata
@@ -66,6 +161,71 @@
             );
         }
 
+        /// <summary>
+        /// Generates a normalized, deterministic string representation of a CustomAttributeData.
+        /// This ensures that attribute parameters are always in the same order, making the
+        /// contract comparison machine-agnostic and independent of .NET reflection ordering.
+        /// </summary>
+        private static string NormalizeCustomAttributeString(CustomAttributeData attributeData)
+        {
+            // Start with the attribute type name
+            string result = attributeData.AttributeType.ToString();
+
+            // Build lists of constructor args and named args
+            List<string> parts = new List<string>();
+
+            // Add constructor arguments in order (these are positional, so order matters)
+            if (attributeData.ConstructorArguments.Count > 0)
+            {
+                foreach (CustomAttributeTypedArgument arg in attributeData.ConstructorArguments)
+                {
+                    parts.Add(ContractEnforcement.FormatAttributeValue(arg));
+                }
+            }
+
+            // Add named arguments (properties/fields) in sorted order for determinism
+            if (attributeData.NamedArguments.Count > 0)
+            {
+                List<string> namedArgs = new List<string>();
+                foreach (CustomAttributeNamedArgument namedArg in attributeData.NamedArguments)
+                {
+                    namedArgs.Add($"{namedArg.MemberName} = {ContractEnforcement.FormatAttributeValue(namedArg.TypedValue)}");
+                }
+                namedArgs.Sort(StringComparer.Ordinal);
+                parts.AddRange(namedArgs);
+            }
+
+            // Always add parentheses for consistency, even if there are no arguments
+            result += "(" + string.Join(", ", parts) + ")";
+
+            return result;
+        }
+
+        /// <summary>
+        /// Formats an attribute value for consistent string representation.
+        /// </summary>
+        private static string FormatAttributeValue(CustomAttributeTypedArgument arg)
+        {
+            return arg.Value switch
+            {
+                null => "null",
+                string stringValue => $"\"{stringValue}\"",
+                Type typeValue => $"typeof({typeValue})",
+                _ when arg.ArgumentType.IsEnum => ContractEnforcement.FormatEnumValue(arg),
+                _ when arg.ArgumentType.IsPrimitive => $"({arg.ArgumentType.Name}){arg.Value}",
+                _ => arg.Value.ToString()
+            };
+        }
+
+        /// <summary>
+        /// Formats an enum value including both the enum name and numeric value.
+        /// </summary>
+        private static string FormatEnumValue(CustomAttributeTypedArgument arg)
+        {
+            string enumName = Enum.GetName(arg.ArgumentType, arg.Value) ?? arg.Value.ToString();
+            return $"{arg.ArgumentType.Name}.{enumName} = {arg.Value}";
+        }
+
         private static string GenerateNameWithClassAttributes(Type type)
         {
             // FullName contains unwanted assembly artifacts like version when it has a generic type
@@ -97,9 +257,40 @@
 
         }
 
+        /// <summary>
+        /// Normalizes the string representation of a MemberInfo to ensure machine-agnostic output.
+        /// For static methods, ensures the calling convention uses '.' (dot notation).
+        /// For generic methods, includes the generic type parameters in the signature.
+        /// </summary>
+        private static string NormalizeMemberInfoString(MemberInfo memberInfo)
+        {
+            // Only MethodBase (MethodInfo and ConstructorInfo) has calling convention representation issues
+            if (memberInfo is MethodBase methodBase && methodBase.IsStatic && methodBase.DeclaringType != null)
+            {
+                // Normalize to always use ClassName.MethodName format for static methods
+                string declaringTypeName = methodBase.DeclaringType.FullName ?? methodBase.DeclaringType.Name;
+                string returnType = methodBase is MethodInfo mi ? mi.ReturnType.ToString() : "Void";
+                string methodName = methodBase.Name;
+                
+                // Include generic type parameters for generic methods
+                if (methodBase.IsGenericMethod)
+                {
+                    Type[] genericArgs = methodBase.GetGenericArguments();
+                    string genericParams = string.Join(", ", genericArgs.Select(t => t.Name));
+                    methodName = $"{methodName}[{genericParams}]";
+                }
+                
+                string parameters = string.Join(", ", methodBase.GetParameters().Select(p => p.ParameterType.ToString()));
+                
+                return $"{returnType} {declaringTypeName}.{methodName}({parameters})";
+            }
+            
+            return memberInfo.ToString();
+        }
+
         private static string GenerateNameWithMethodAttributes(MethodInfo methodInfo)
         {
-            return $"{methodInfo};{nameof(methodInfo.IsAbstract)}:{(methodInfo.IsAbstract ? bool.TrueString : bool.FalseString)};" +
+            return $"{ContractEnforcement.NormalizeMemberInfoString(methodInfo)};{nameof(methodInfo.IsAbstract)}:{(methodInfo.IsAbstract ? bool.TrueString : bool.FalseString)};" +
                 $"{nameof(methodInfo.IsStatic)}:{(methodInfo.IsStatic ? bool.TrueString : bool.FalseString)};" +
                 $"{nameof(methodInfo.IsVirtual)}:{(methodInfo.IsVirtual ? bool.TrueString : bool.FalseString)};" +
                 $"{nameof(methodInfo.IsGenericMethod)}:{(methodInfo.IsGenericMethod ? bool.TrueString : bool.FalseString)};" +
@@ -109,7 +300,7 @@
 
         private static string GenerateNameWithPropertyAttributes(PropertyInfo propertyInfo)
         {
-            string name = $"{propertyInfo};{nameof(propertyInfo.CanRead)}:{(propertyInfo.CanRead ? bool.TrueString : bool.FalseString)};" +
+            string name = $"{ContractEnforcement.NormalizeMemberInfoString(propertyInfo)};{nameof(propertyInfo.CanRead)}:{(propertyInfo.CanRead ? bool.TrueString : bool.FalseString)};" +
                 $"{nameof(propertyInfo.CanWrite)}:{(propertyInfo.CanWrite ? bool.TrueString : bool.FalseString)};";
 
             MethodInfo getMethodInfo = propertyInfo.GetGetMethod();
@@ -129,7 +320,7 @@
 
         private static string GenerateNameWithFieldAttributes(FieldInfo fieldInfo)
         {
-            return $"{fieldInfo};{nameof(fieldInfo.IsInitOnly)}:{(fieldInfo.IsInitOnly ? bool.TrueString : bool.FalseString)};" +
+            return $"{ContractEnforcement.NormalizeMemberInfoString(fieldInfo)};{nameof(fieldInfo.IsInitOnly)}:{(fieldInfo.IsInitOnly ? bool.TrueString : bool.FalseString)};" +
                 $"{nameof(fieldInfo.IsStatic)}:{(fieldInfo.IsStatic ? bool.TrueString : bool.FalseString)};";
         }
 
@@ -143,7 +334,9 @@
 
             IEnumerable<KeyValuePair<string, MemberInfo>> memberInfos =
                 root.Type.GetMembers(bindingflags)
-                    .Select(memberInfo => new KeyValuePair<string, MemberInfo>($"{memberInfo}{string.Join("-", ContractEnforcement.RemoveDebugSpecificAttributes(memberInfo.CustomAttributes))}", memberInfo))
+                    .Select(memberInfo => new KeyValuePair<string, MemberInfo>(
+                        $"{NormalizeMemberInfoString(memberInfo)}{string.Join("-", ContractEnforcement.RemoveDebugSpecificAttributes(memberInfo.CustomAttributes).Select(attr => "[" + NormalizeCustomAttributeString(attr) + "]"))}",
+                        memberInfo))
                     .OrderBy(o => o.Key, invariantComparer);
             foreach (KeyValuePair<string, MemberInfo> memberInfo in memberInfos)
             {
@@ -171,7 +364,7 @@
                 }
                 else if (memberInfo.Value.MemberType == MemberTypes.Constructor || memberInfo.Value.MemberType == MemberTypes.Event)
                 {
-                    methodSignature = memberInfo.ToString();
+                    methodSignature = ContractEnforcement.NormalizeMemberInfoString(memberInfo.Value);
                 }
 
                 // Certain custom attributes add the following to the string value "d__9" which sometimes changes
@@ -194,52 +387,71 @@
             return root;
         }
 
-        public static void ValidateContractContainBreakingChanges(
+        /// <summary>
+        /// Validates contract changes using framework-specific baselines with automatic path construction.
+        /// Determines the current .NET version and builds file paths from patterns.
+        /// </summary>
+        /// <param name="dllName">The name of the DLL to validate</param>
+        /// <param name="contractType">The type of contract to validate (Standard, Telemetry, or Preview)</param>
+        /// <param name="baselinePattern">The baseline file name pattern (e.g., "DotNetSDKAPI", "DotNetSDKTelemetryAPI")</param>
+        /// <param name="breakingChangesPattern">The breaking changes file name pattern (e.g., "DotNetSDKAPIChanges")</param>
+        /// <param name="officialBaselinePattern">For Preview contracts only: the official baseline pattern (e.g., "DotNetSDKAPI")</param>
+        public static void ValidateContract(
             string dllName,
-            string baselinePath,
-            string breakingChangesPath)
+            ContractType contractType,
+            string baselinePattern,
+            string breakingChangesPattern,
+            string officialBaselinePattern = null)
         {
-            string localJson = GetCurrentContract(dllName);
-            File.WriteAllText($"Contracts/{breakingChangesPath}", localJson);
+            int? currentMajorVersion = GetCurrentMajorVersion();
+            if (!currentMajorVersion.HasValue)
+            {
+                Assert.Fail("Unable to determine target framework version. Framework-specific contract baselines are required.");
+            }
 
+            string baselinePath = $"{baselinePattern}.net{currentMajorVersion}.json";
+            string breakingChangesPath = $"{breakingChangesPattern}.net{currentMajorVersion}.json";
+
+            string currentJson = GetContractJson(dllName, contractType);
+
+            if (contractType == ContractType.Preview)
+            {
+                currentJson = FilterPreviewContract(currentJson, officialBaselinePattern, currentMajorVersion.Value);
+            }
+
+            File.WriteAllText($"{ContractsFolder}{breakingChangesPath}", currentJson);
             string baselineJson = GetBaselineContract(baselinePath);
-            ContractEnforcement.ValidateJsonAreSame(baselineJson, localJson);
+            ValidateJsonAreSame(baselineJson, currentJson);
         }
 
-        public static void ValidateTelemetryContractContainBreakingChanges(
-          string dllName,
-          string baselinePath,
-          string breakingChangesPath)
+        private static string GetContractJson(string dllName, ContractType contractType)
         {
-            string localTelemetryJson = GetCurrentTelemetryContract(dllName);
-            File.WriteAllText($"Contracts/{breakingChangesPath}", localTelemetryJson);
-
-            string telemetryBaselineJson = GetBaselineContract(baselinePath);
-            ContractEnforcement.ValidateJsonAreSame(localTelemetryJson, telemetryBaselineJson);
+            return contractType switch
+            {
+                ContractType.Standard => GetCurrentContract(dllName),
+                ContractType.Telemetry => GetCurrentTelemetryContract(dllName),
+                ContractType.Preview => GetCurrentContract(dllName),
+                _ => throw new ArgumentException($"Unknown contract type: {contractType}", nameof(contractType))
+            };
         }
 
-        public static void ValidatePreviewContractContainBreakingChanges(
-            string dllName,
-            string officialBaselinePath,
-            string previewBaselinePath,
-            string previewBreakingChangesPath)
+        private static string FilterPreviewContract(string currentJson, string officialBaselinePattern, int currentMajorVersion)
         {
-            string currentPreviewJson = ContractEnforcement.GetCurrentContract(
-              dllName);
+            if (string.IsNullOrEmpty(officialBaselinePattern))
+            {
+                throw new ArgumentException(
+                    "officialBaselinePattern is required for Preview contract validation",
+                    nameof(officialBaselinePattern));
+            }
 
-            JObject currentJObject = JObject.Parse(currentPreviewJson);
-            JObject officialBaselineJObject = JObject.Parse(File.ReadAllText("Contracts/" + officialBaselinePath));
+            string officialBaselinePath = $"{officialBaselinePattern}.net{currentMajorVersion}.json";
+            JObject currentContract = JObject.Parse(currentJson);
+            JObject officialContract = JObject.Parse(File.ReadAllText($"{ContractsFolder}{officialBaselinePath}"));
 
-            string currentJsonNoOfficialContract = ContractEnforcement.RemoveDuplicateContractElements(
-                localContract: currentJObject,
-                officialContract: officialBaselineJObject);
+            string filteredJson = RemoveDuplicateContractElements(currentContract, officialContract);
+            Assert.IsNotNull(filteredJson);
 
-            Assert.IsNotNull(currentJsonNoOfficialContract);
-
-            string baselinePreviewJson = ContractEnforcement.GetBaselineContract(previewBaselinePath);
-            File.WriteAllText($"Contracts/{previewBreakingChangesPath}", currentJsonNoOfficialContract);
-
-            ContractEnforcement.ValidateJsonAreSame(baselinePreviewJson, currentJsonNoOfficialContract);
+            return filteredJson;
         }
 
         public static string GetCurrentContract(string dllName)
@@ -280,7 +492,7 @@
 
         public static string GetBaselineContract(string baselinePath)
         {
-            string baselineFile = File.ReadAllText("Contracts/" + baselinePath);
+            string baselineFile = File.ReadAllText($"{ContractsFolder}{baselinePath}");
             return NormalizeJsonString(baselineFile);
         }
 

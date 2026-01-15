@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos
         public abstract string TimeoutPolicyName { get; }
         public abstract int TotalRetryCount { get; }
         public abstract IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> GetTimeoutEnumerator();
-        public abstract bool IsSafeToRetry(HttpMethod httpMethod);
 
         public abstract bool ShouldRetryBasedOnResponse(HttpMethod requestHttpMethod, HttpResponseMessage responseMessage);
 
@@ -21,7 +20,8 @@ namespace Microsoft.Azure.Cosmos
 
         public static HttpTimeoutPolicy GetTimeoutPolicy(
            DocumentServiceRequest documentServiceRequest,
-           bool isPartitionLevelFailoverEnabled = false)
+           bool isPartitionLevelFailoverEnabled = false,
+           bool isThinClientEnabled = false)
         {
             //Query Plan Requests
             if (documentServiceRequest.ResourceType == ResourceType.Document
@@ -43,12 +43,36 @@ namespace Microsoft.Azure.Cosmos
                 return HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout;
             }
 
-            //Data Plane Read
-            if (!HttpTimeoutPolicy.IsMetaData(documentServiceRequest) && documentServiceRequest.IsReadOnlyRequest)
+            //Data Plane Operations
+            if (!HttpTimeoutPolicy.IsMetaData(documentServiceRequest))
             {
-                return isPartitionLevelFailoverEnabled
-                    ? HttpTimeoutPolicyForPartitionFailover.InstanceShouldThrow503OnTimeout
-                    : HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout;
+                if (isThinClientEnabled)
+                {
+                    if (documentServiceRequest.IsReadOnlyRequest)
+                    {
+                        return documentServiceRequest.OperationType == OperationType.Read
+                            ? HttpTimeoutPolicyForThinClient.InstanceShouldRetryAndThrow503OnTimeoutForPointReads
+                            : HttpTimeoutPolicyForThinClient.InstanceShouldRetryAndThrow503OnTimeoutForNonPointReads;
+                    }
+                    else
+                    {
+                        return HttpTimeoutPolicyForThinClient.InstanceShouldNotRetryAndThrow503OnTimeoutForWrites;
+                    }
+                }
+                // Data Plane Reads.
+                else if (documentServiceRequest.IsReadOnlyRequest)
+                {
+                    if (isPartitionLevelFailoverEnabled)
+                    {
+                        return documentServiceRequest.OperationType == OperationType.Read 
+                            ? HttpTimeoutPolicyForPartitionFailover.InstanceShouldThrow503OnTimeoutForPointReads
+                            : HttpTimeoutPolicyForPartitionFailover.InstanceShouldThrow503OnTimeoutForNonPointReads;
+                    }
+                    else
+                    {
+                         return HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout;
+                    }
+                }
             }
 
             //Meta Data Read

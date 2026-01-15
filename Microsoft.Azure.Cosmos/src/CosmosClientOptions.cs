@@ -174,7 +174,7 @@ namespace Microsoft.Azure.Cosmos
         /// <para>
         /// During the CosmosClient initialization the account information, including the available regions, is obtained from the <see cref="CosmosClient.Endpoint"/>.
         /// The CosmosClient will use the value of <see cref="ApplicationPreferredRegions"/> to populate the preferred list with the account available regions that intersect with its value.
-        /// If the value of <see cref="ApplicationPreferredRegions"/> contains regions that are not an available region in the account, the values will be ignored. If the these invalid regions are added later to the account, the CosmosClient will use them if they are higher in the preference order.
+        /// If the value of <see cref="ApplicationPreferredRegions"/> contains regions that are not an available region in the account, the values will be ignored. If these invalid regions are added later to the account, the CosmosClient will use them if they are higher in the preference order.
         /// </para>
         /// <para>
         /// If during CosmosClient initialization, the <see cref="CosmosClient.Endpoint"/> is not reachable, the CosmosClient will attempt to recover and obtain the account information issuing requests to the regions in <see cref="ApplicationPreferredRegions"/> in the order that they are listed.
@@ -773,6 +773,14 @@ namespace Microsoft.Azure.Cosmos
         internal bool EnablePartitionLevelCircuitBreaker { get; set; } = ConfigurationManager.IsPartitionLevelCircuitBreakerEnabled(defaultValue: false);
 
         /// <summary>
+        /// Flag from gateway to disable partition level failover. Normally, the SDK will enable partition level failover based on the account settings. 
+        /// This flag will be used internally by the compute gateway as by default it will disable partition level failover.
+        /// 
+        /// The default value for this parameter is 'false'.
+        /// </summary>
+        internal bool DisablePartitionLevelFailover { get; set; } = false;
+
+        /// <summary>
         /// Quorum Read allowed with eventual consistency account or consistent prefix account.
         /// </summary>
         internal bool EnableUpgradeConsistencyToLocalQuorum { get; set; } = false;
@@ -1030,6 +1038,7 @@ namespace Microsoft.Azure.Cosmos
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
                 EnableEndpointDiscovery = !this.LimitToEndpoint,
                 EnablePartitionLevelCircuitBreaker = this.EnablePartitionLevelCircuitBreaker,
+                DisablePartitionLevelFailoverClientLevelOverride = this.DisablePartitionLevelFailover,
                 PortReuseMode = this.portReuseMode,
                 EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery,
                 EnableAdvancedReplicaSelectionForTcp = this.EnableAdvancedReplicaSelectionForTcp,

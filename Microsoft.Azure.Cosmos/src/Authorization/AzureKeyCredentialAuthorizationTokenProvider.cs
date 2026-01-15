@@ -125,5 +125,10 @@ namespace Microsoft.Azure.Cosmos.Authorization
                 }
             }
         }
+
+        public override ValueTask AddInferenceAuthorizationHeaderAsync(INameValueCollection headersCollection, Uri requestAddress, string verb, AuthorizationTokenType tokenType)
+        {
+            throw new NotImplementedException("AddInferenceAuthorizationHeaderAsync is only valid for AAD");
+        }
     }
 }

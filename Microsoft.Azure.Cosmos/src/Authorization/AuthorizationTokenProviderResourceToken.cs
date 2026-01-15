@@ -92,6 +92,11 @@ namespace Microsoft.Azure.Cosmos
             // Do nothing
         }
 
+        public override ValueTask AddInferenceAuthorizationHeaderAsync(INameValueCollection headersCollection, Uri requestAddress, string verb, AuthorizationTokenType tokenType)
+        {
+            throw new NotImplementedException("AddInferenceAuthorizationHeaderAsync is only valid for AAD");
+        }
+
         // Use C# finalizer syntax for finalization code.
         // This finalizer will run only if the Dispose method does not get called.
         // It gives your base class the opportunity to finalize.

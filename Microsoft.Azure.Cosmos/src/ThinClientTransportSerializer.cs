@@ -113,6 +113,7 @@ namespace Microsoft.Azure.Cosmos
                     activityId,
                     bufferProvider.Provider,
                     accountName,
+                    string.Empty,
                     out _,
                     out _);
 
