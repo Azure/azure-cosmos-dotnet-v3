@@ -50,6 +50,10 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
             }
         }
 
+        /// <summary>
+        /// Tests that Windows native DLLs are not copied when publishing for non-Windows platforms.
+        /// </summary>
+        /// <param name="runtimeIdentifier">The runtime identifier to test (e.g., linux-x64, osx-x64).</param>
         [TestMethod]
         [DataRow("linux-x64")]
         [DataRow("linux-arm64")]
@@ -57,22 +61,26 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
         [DataRow("osx-arm64")]
         public void Publish_WithNonWindowsRuntimeIdentifier_DoesNotCopyWindowsDlls(string runtimeIdentifier)
         {
-            string projectPath = CreateTestProject($"NonWinTest_{runtimeIdentifier}");
-            string publishPath = PublishProject(projectPath, runtimeIdentifier);
+            string projectPath = this.CreateTestProject($"NonWinTest_{runtimeIdentifier}");
+            string publishPath = this.PublishProject(projectPath, runtimeIdentifier);
 
-            AssertWindowsDllsNotPresent(publishPath, runtimeIdentifier);
+            this.AssertWindowsDllsNotPresent(publishPath, runtimeIdentifier);
         }
 
+        /// <summary>
+        /// Tests that Windows native DLLs are copied when publishing for Windows platforms.
+        /// </summary>
+        /// <param name="runtimeIdentifier">The runtime identifier to test (e.g., win-x64, win-x86).</param>
         [TestMethod]
         [DataRow("win-x64")]
         [DataRow("win-x86")]
         [DataRow("win-arm64")]
         public void Publish_WithWindowsRuntimeIdentifier_CopiesWindowsDlls(string runtimeIdentifier)
         {
-            string projectPath = CreateTestProject($"WinTest_{runtimeIdentifier}");
-            string publishPath = PublishProject(projectPath, runtimeIdentifier);
+            string projectPath = this.CreateTestProject($"WinTest_{runtimeIdentifier}");
+            string publishPath = this.PublishProject(projectPath, runtimeIdentifier);
 
-            AssertWindowsDllsPresent(publishPath, runtimeIdentifier);
+            this.AssertWindowsDllsPresent(publishPath, runtimeIdentifier);
         }
 
         private string CreateTestProject(string projectName)
@@ -140,6 +148,11 @@ class Program
 
             using (var process = Process.Start(processInfo))
             {
+                if (process == null)
+                {
+                    Assert.Fail($"Failed to start dotnet publish process for {runtimeIdentifier}");
+                }
+
                 // .NET 6 compatibility: WaitForExit doesn't support TimeSpan parameter
                 process.WaitForExit((int)TimeSpan.FromMinutes(5).TotalMilliseconds);
                 
