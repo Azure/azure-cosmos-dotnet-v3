@@ -33,16 +33,20 @@ namespace Microsoft.Azure.Cosmos
             // Subscribe to the FirstChanceException event
             AppDomain.CurrentDomain.FirstChanceException += this.ExceptionCaptureHandler;
 
-            TraceSource traceSource = (TraceSource)typeof(DefaultTrace).GetProperty("TraceSource").GetValue(null);
-            traceSource.Switch.Level = SourceLevels.All;
-            traceSource.Listeners.Clear();
-            traceSource.Listeners.Add(new ConsoleTraceListener());
+            System.Reflection.PropertyInfo traceSourceProperty = typeof(DefaultTrace).GetProperty("TraceSource");
+            if (traceSourceProperty != null)
+            {
+                TraceSource traceSource = (TraceSource)traceSourceProperty.GetValue(null);
+                traceSource.Switch.Level = SourceLevels.All;
+                traceSource.Listeners.Clear();
+                traceSource.Listeners.Add(new ConsoleTraceListener());
+            }
         }
 
         [TestCleanup]
         public void TestCleanup()
         {
-            // Subscribe to the FirstChanceException event
+            // Unsubscribe from the FirstChanceException event
             AppDomain.CurrentDomain.FirstChanceException -= this.ExceptionCaptureHandler;
             this.Exceptions.Clear();
         }
@@ -121,7 +125,7 @@ namespace Microsoft.Azure.Cosmos
                     int exceptionFlowRetryCount = summaryDiagnostics1.DirectRequestsSummary.Value[(statusCode, subStatusCode)];
                     int exceptionLessFlowRetryCount = summaryDiagnostics2.DirectRequestsSummary.Value[(statusCode, subStatusCode)];
                     Assert.IsTrue(exceptionFlowRetryCount == exceptionLessFlowRetryCount
-                        || (exceptionLessFlowRetryCount > exceptionFlowRetryCount && ((exceptionLessFlowRetryCount - exceptionFlowRetryCount) / exceptionFlowRetryCount * 100) < 10),
+                        || (exceptionFlowRetryCount > 0 && exceptionLessFlowRetryCount > exceptionFlowRetryCount && ((exceptionLessFlowRetryCount - exceptionFlowRetryCount) / exceptionFlowRetryCount * 100) < 10),
                     $"DirectRequestsSummary: {string.Join(Environment.NewLine, summaryDiagnostics1.DirectRequestsSummary.Value.Select(e => $"{e.Key} -> {e.Value}"))} {Environment.NewLine} {string.Join(Environment.NewLine, summaryDiagnostics2.DirectRequestsSummary.Value.Select(e => $"{e.Key} -> {e.Value}"))}");
                 }
 
