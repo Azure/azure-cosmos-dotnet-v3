@@ -178,6 +178,11 @@ class Program
                 CreateNoWindow = true
             };
 
+            // Trace the command being executed for debugging
+            string commandLine = $"{processInfo.FileName} {processInfo.Arguments}";
+            Console.WriteLine($"Executing: {commandLine}");
+            Console.WriteLine($"Working directory: {projectDir}");
+
             using (var process = Process.Start(processInfo))
             {
                 process.WaitForExit(timeout: TimeSpan.FromMinutes(5));
@@ -187,7 +192,11 @@ class Program
 
                 if (process.ExitCode != 0)
                 {
-                    Assert.Fail($"dotnet publish failed for {runtimeIdentifier}.\nOutput: {output}\nError: {error}");
+                    Assert.Fail($"dotnet publish failed for {runtimeIdentifier}.\nCommand: {commandLine}\nOutput: {output}\nError: {error}");
+                }
+                else
+                {
+                    Console.WriteLine($"Publish succeeded for {runtimeIdentifier}. Exit code: {process.ExitCode}");
                 }
             }
 
