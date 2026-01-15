@@ -24,6 +24,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             ITrace trace,
             CancellationToken cancellationToken);
 
+        // ISSUE-TODO-adityasa-2025/12/29 - Reduce Coupling: we should not use PartitionKeyRange as return type for this internal interface.
+        // PartitionKeyRange contains a lot more information (for e.g. RidPrefix, Throughput related information, LSN, parent range id etc),
+        //  none of which is required by callers of these methods. The only information required is min & max values.
+        // Furthermore, the range is always min-inclusive and max-exclusive (since original PartitionKeyRange is such).
+        // Callers ultimately convert the returned PartitionKeyRange into a FeedRangeEpk.
+        // Applies to other methods below as well.
+
         /// <summary>
         /// Returns list of effective partition key ranges for a collection.
         /// </summary>
@@ -80,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
         public abstract void ClearSessionTokenCache(string collectionFullName);
 
         public abstract Task<List<Documents.PartitionKeyRange>> GetTargetPartitionKeyRangeByFeedRangeAsync(
-            string resourceLink,
+            string resourceLink,    
             string collectionResourceId,
             Documents.PartitionKeyDefinition partitionKeyDefinition,
             FeedRangeInternal feedRangeInternal,

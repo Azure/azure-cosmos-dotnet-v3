@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
             if (targetRanges.Count == 0)
             {
-                throw new ArgumentException($"{nameof(targetRanges)} must not be empty.");
+                return TryCatch<IQueryPipelineStage>.FromResult(new EmptyQueryPipelineStage());
             }
 
             if (queryInfo == null && hybridSearchQueryInfo == null)

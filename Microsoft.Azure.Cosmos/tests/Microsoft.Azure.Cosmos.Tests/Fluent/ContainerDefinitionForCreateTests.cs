@@ -575,6 +575,85 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                     It.IsAny<CancellationToken>()), Times.Once);
         }
 
+        [TestMethod]
+        [DataRow("en-US")]
+        [DataRow("fr-FR")]
+        [DataRow("de-DE")]
+        [DataRow("it-IT")]
+        [DataRow("pt-BR")]
+        [DataRow("pt-PT")]
+        [DataRow("es-ES")]
+        public async Task ValidateFullTextPolicyWithAllSupportedLanguages(string language)
+        {
+            string fullTextPath1 = "/fts1", fullTextPath2 = "/fts2";
+
+            Collection<FullTextPath> fullTextPaths = new Collection<FullTextPath>()
+            {
+                new Cosmos.FullTextPath()
+                {
+                    Path = fullTextPath1,
+                    Language = language,
+                },
+                new Cosmos.FullTextPath()
+                {
+                    Path = fullTextPath2,
+                    Language = language,
+                }
+            };
+
+            Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>();
+            mockContainerResponse
+                .Setup(x => x.StatusCode)
+                .Returns(HttpStatusCode.Created);
+
+            Mock<Database> mockDatabase = new Mock<Database>();
+            Mock<CosmosClient> mockClient = new Mock<CosmosClient>();
+            mockDatabase.Setup(m => m.Client).Returns(mockClient.Object);
+            mockDatabase
+                .Setup(c => c.CreateContainerAsync(
+                    It.IsAny<ContainerProperties>(),
+                    It.IsAny<int?>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(mockContainerResponse.Object);
+            mockDatabase
+                .Setup(c => c.Id)
+                .Returns(Guid.NewGuid().ToString());
+
+            ContainerBuilder containerFluentDefinition = new ContainerBuilder(
+                mockDatabase.Object,
+                containerName,
+                partitionKey);
+
+            ContainerResponse response = await containerFluentDefinition
+                .WithFullTextPolicy(
+                    defaultLanguage: language,
+                    fullTextPaths: fullTextPaths)
+                .Attach()
+                .WithIndexingPolicy()
+                    .WithFullTextIndex()
+                        .Path(fullTextPath1)
+                        .Attach()
+                    .WithFullTextIndex()
+                        .Path(fullTextPath2)
+                        .Attach()
+                .Attach()
+                .CreateAsync();
+
+            Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+
+            // Verify the correct language was passed
+            mockDatabase.Verify(c => c.CreateContainerAsync(
+                It.Is<ContainerProperties>((settings) =>
+                    settings.FullTextPolicy.DefaultLanguage == language &&
+                    settings.FullTextPolicy.FullTextPaths.Count == 2 &&
+                    settings.FullTextPolicy.FullTextPaths.All(p => p.Language == language)),
+                It.IsAny<int?>(),
+                It.IsAny<RequestOptions>(),
+                It.IsAny<CancellationToken>()), Times.Once,
+                $"Failed to verify container creation with language: {language}");
+        }
+
         private static CosmosClientContext GetContext()
         {
             Mock<CosmosClientContext> cosmosClientContext = new Mock<CosmosClientContext>();

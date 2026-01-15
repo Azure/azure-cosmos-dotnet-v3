@@ -212,4 +212,14 @@ SELECT VALUE ARRAY_LENGTH(root["EnumerableField"])
 FROM root]]></SqlQuery>
     </Output>
   </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Contains with EqualityComparer]]></Description>
+      <Expression><![CDATA[query.Select(doc => Not(doc.EnumerableField.Contains(1, EqualityComparer`1.Default)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Method 'Contains' is not supported.]]></ErrorMessage>
+    </Output>
+  </Result>
 </Results>

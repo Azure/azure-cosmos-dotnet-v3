@@ -6294,6 +6294,20 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.QueryDefinition Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.ToQueryDefinition[T](System.Linq.IQueryable`1[T]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
         },
+        "System.Boolean Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.ArrayContainsAll[T](System.Collections.Generic.IEnumerable`1[T], System.Object[])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "ExtensionAttribute"
+          ],
+          "MethodInfo": "System.Boolean Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.ArrayContainsAll[T](System.Collections.Generic.IEnumerable`1[T], System.Object[]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Boolean Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.ArrayContainsAny[T](System.Collections.Generic.IEnumerable`1[T], System.Object[])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "ExtensionAttribute"
+          ],
+          "MethodInfo": "System.Boolean Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.ArrayContainsAny[T](System.Collections.Generic.IEnumerable`1[T], System.Object[]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
+        },
         "System.Boolean Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions.FullTextContains(System.Object, System.String)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
