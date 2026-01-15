@@ -51,73 +51,28 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
         }
 
         [TestMethod]
-        [TestCategory("MSBuild")]
-        public void Publish_WithLinuxX64RuntimeIdentifier_DoesNotCopyWindowsDlls()
+        [DataRow("linux-x64")]
+        [DataRow("linux-arm64")]
+        [DataRow("osx-x64")]
+        [DataRow("osx-arm64")]
+        public void Publish_WithNonWindowsRuntimeIdentifier_DoesNotCopyWindowsDlls(string runtimeIdentifier)
         {
-            string projectPath = CreateTestProject("LinuxX64Test");
-            string publishPath = PublishProject(projectPath, "linux-x64");
+            string projectPath = CreateTestProject($"NonWinTest_{runtimeIdentifier}");
+            string publishPath = PublishProject(projectPath, runtimeIdentifier);
 
-            AssertWindowsDllsNotPresent(publishPath, "linux-x64");
+            AssertWindowsDllsNotPresent(publishPath, runtimeIdentifier);
         }
 
         [TestMethod]
-        [TestCategory("MSBuild")]
-        public void Publish_WithLinuxArm64RuntimeIdentifier_DoesNotCopyWindowsDlls()
+        [DataRow("win-x64")]
+        [DataRow("win-x86")]
+        [DataRow("win-arm64")]
+        public void Publish_WithWindowsRuntimeIdentifier_CopiesWindowsDlls(string runtimeIdentifier)
         {
-            string projectPath = CreateTestProject("LinuxArm64Test");
-            string publishPath = PublishProject(projectPath, "linux-arm64");
+            string projectPath = CreateTestProject($"WinTest_{runtimeIdentifier}");
+            string publishPath = PublishProject(projectPath, runtimeIdentifier);
 
-            AssertWindowsDllsNotPresent(publishPath, "linux-arm64");
-        }
-
-        [TestMethod]
-        [TestCategory("MSBuild")]
-        public void Publish_WithOsxX64RuntimeIdentifier_DoesNotCopyWindowsDlls()
-        {
-            string projectPath = CreateTestProject("OsxX64Test");
-            string publishPath = PublishProject(projectPath, "osx-x64");
-
-            AssertWindowsDllsNotPresent(publishPath, "osx-x64");
-        }
-
-        [TestMethod]
-        [TestCategory("MSBuild")]
-        public void Publish_WithOsxArm64RuntimeIdentifier_DoesNotCopyWindowsDlls()
-        {
-            string projectPath = CreateTestProject("OsxArm64Test");
-            string publishPath = PublishProject(projectPath, "osx-arm64");
-
-            AssertWindowsDllsNotPresent(publishPath, "osx-arm64");
-        }
-
-        [TestMethod]
-        [TestCategory("MSBuild")]
-        public void Publish_WithWinX64RuntimeIdentifier_CopiesWindowsDlls()
-        {
-            string projectPath = CreateTestProject("WinX64Test");
-            string publishPath = PublishProject(projectPath, "win-x64");
-
-            AssertWindowsDllsPresent(publishPath, "win-x64");
-        }
-
-        [TestMethod]
-        [TestCategory("MSBuild")]
-        public void Publish_WithWinX86RuntimeIdentifier_CopiesWindowsDlls()
-        {
-            string projectPath = CreateTestProject("WinX86Test");
-            string publishPath = PublishProject(projectPath, "win-x86");
-
-            AssertWindowsDllsPresent(publishPath, "win-x86");
-        }
-
-        [TestMethod]
-        [TestCategory("MSBuild")]
-        public void Publish_WithWinArm64RuntimeIdentifier_CopiesWindowsDlls()
-        {
-            string projectPath = CreateTestProject("WinArm64Test");
-            string publishPath = PublishProject(projectPath, "win-arm64");
-
-            AssertWindowsDllsPresent(publishPath, "win-arm64");
+            AssertWindowsDllsPresent(publishPath, runtimeIdentifier);
         }
 
         private string CreateTestProject(string projectName)
