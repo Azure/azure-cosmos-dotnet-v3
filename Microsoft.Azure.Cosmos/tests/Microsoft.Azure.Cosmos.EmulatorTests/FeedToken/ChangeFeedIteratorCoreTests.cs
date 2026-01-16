@@ -771,7 +771,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
         }
 
         /// <summary>
-        /// This test validates error with Full Fidelity Change Feed and start from beginning.
+        /// This test validates Full Fidelity Change Feed and start from beginning.
         /// </summary>
         [TestMethod]
         public async Task ChangeFeedIteratorCore_WithFullFidelityReadFromBeginning()
@@ -785,13 +785,76 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             int totalDocuments = 10;
             await this.CreateRandomItems(container, totalDocuments, randomPartitionKey: true);
 
-            // FF does not work with StartFromBeginning currently, capture error
             FeedIterator<ToDoActivityWithMetadata> fullFidelityIterator = container.GetChangeFeedIterator<ToDoActivityWithMetadata>(
                 ChangeFeedStartFrom.Beginning(),
                 ChangeFeedMode.AllVersionsAndDeletes);
 
-            CosmosException cosmosException = await Assert.ThrowsExceptionAsync<CosmosException>(() => fullFidelityIterator.ReadNextAsync());
-            Assert.AreEqual(HttpStatusCode.BadRequest, cosmosException.StatusCode, "Full Fidelity Change Feed does not work with StartFromBeginning currently.");
+            int retrievedDocuments = 0;
+            while (fullFidelityIterator.HasMoreResults)
+            {
+                FeedResponse<ToDoActivityWithMetadata> feedResponse =  await fullFidelityIterator.ReadNextAsync(this.cancellationToken);
+                if (feedResponse.StatusCode == HttpStatusCode.NotModified)
+                {
+                    break;
+                }
+
+                retrievedDocuments++;
+            }
+            Assert.AreEqual(totalDocuments, retrievedDocuments);
+        }
+
+        /// <summary>
+        /// This test validates Full Fidelity Change Feed and start from certain time.
+        /// </summary>
+        [TestMethod]
+        public async Task ChangeFeedIteratorCore_WithFullFidelityReadFromCertainTime()
+        {
+            ContainerProperties properties = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: ChangeFeedIteratorCoreTests.PartitionKey);
+            properties.ChangeFeedPolicy.FullFidelityRetention = TimeSpan.FromMinutes(5);
+            ContainerResponse response = await this.database.CreateContainerAsync(
+                properties,
+                cancellationToken: this.cancellationToken);
+            ContainerInternal container = (ContainerInternal)response;
+            int totalDocuments = 10;
+            DateTime feedStartFromTimeT1 = DateTime.UtcNow;
+            await this.CreateRandomItems(container, totalDocuments, randomPartitionKey: true);
+            await Task.Delay(TimeSpan.FromSeconds(1));
+
+            DateTime feedStartFromTimeT2 = DateTime.UtcNow;
+            await this.CreateRandomItems(container, totalDocuments, randomPartitionKey: true);
+            await Task.Delay(TimeSpan.FromSeconds(1));
+
+            FeedIterator<ToDoActivityWithMetadata> fullFidelityIterator = container.GetChangeFeedIterator<ToDoActivityWithMetadata>(
+                ChangeFeedStartFrom.Time(feedStartFromTimeT2),
+                ChangeFeedMode.AllVersionsAndDeletes);
+
+            int retrievedDocuments = 0;
+            while (fullFidelityIterator.HasMoreResults)
+            {
+                FeedResponse<ToDoActivityWithMetadata> feedResponse = await fullFidelityIterator.ReadNextAsync(this.cancellationToken);
+                if (feedResponse.StatusCode == HttpStatusCode.NotModified)
+                {
+                    break;
+                }
+
+                retrievedDocuments++;
+            }
+            Assert.AreEqual(totalDocuments, retrievedDocuments);
+
+            fullFidelityIterator = container.GetChangeFeedIterator<ToDoActivityWithMetadata>(
+                ChangeFeedStartFrom.Time(feedStartFromTimeT1),
+                ChangeFeedMode.AllVersionsAndDeletes);
+
+            while (fullFidelityIterator.HasMoreResults)
+            {
+                FeedResponse<ToDoActivityWithMetadata> feedResponse = await fullFidelityIterator.ReadNextAsync(this.cancellationToken);
+                if (feedResponse.StatusCode == HttpStatusCode.NotModified)
+                {
+                    break;
+                }
+                retrievedDocuments++;
+            }
+            Assert.AreEqual(2 * totalDocuments, retrievedDocuments);
         }
 
         /// <summary>
