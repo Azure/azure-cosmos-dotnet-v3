@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.FaultInjection;
     using Newtonsoft.Json;
     using static Microsoft.Azure.Cosmos.ThinClientTransportSerializer;
 
@@ -23,26 +24,29 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class ThinClientStoreClient : GatewayStoreClient
     {
-        private readonly bool isPartitionLevelFailoverEnabled;
+        private readonly GlobalPartitionEndpointManager globalPartitionEndpointManager;
         private readonly ObjectPool<BufferProviderWrapper> bufferProviderWrapperPool;
         private readonly UserAgentContainer userAgentContainer;
+        private readonly IChaosInterceptor chaosInterceptor;
 
         public ThinClientStoreClient(
             CosmosHttpClient httpClient,
             UserAgentContainer userAgentContainer,
             ICommunicationEventSource eventSource,
-            bool isPartitionLevelFailoverEnabled = false,
-            JsonSerializerSettings serializerSettings = null)
+            GlobalPartitionEndpointManager globalPartitionEndpointManager,
+            JsonSerializerSettings serializerSettings = null,
+            IChaosInterceptor chaosInterceptor = null)
             : base(httpClient,
                   eventSource,
-                  serializerSettings,
-                  isPartitionLevelFailoverEnabled)
+                  globalPartitionEndpointManager,
+                  serializerSettings)
         {
             this.bufferProviderWrapperPool = new ObjectPool<BufferProviderWrapper>(() => new BufferProviderWrapper());
-            this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
+            this.globalPartitionEndpointManager = globalPartitionEndpointManager;
             this.userAgentContainer = userAgentContainer
                 ?? throw new ArgumentNullException(nameof(userAgentContainer),
                 "UserAgentContainer cannot be null when initializing ThinClientStoreClient.");
+            this.chaosInterceptor = chaosInterceptor;
         }
 
         public override async Task<DocumentServiceResponse> InvokeAsync(
@@ -63,6 +67,19 @@ namespace Microsoft.Azure.Cosmos
                 clientCollectionCache,
                 cancellationToken))
             {
+                if (this.chaosInterceptor != null)
+                {
+                    request.Headers.Set("FAULTINJECTION_IS_PROXY", "true");
+                    (bool hasFault, HttpResponseMessage fiResponseMessage) = await this.chaosInterceptor.OnHttpRequestCallAsync(request, cancellationToken);
+                    if (hasFault)
+                    {
+                        DefaultTrace.TraceInformation("Chaos interceptor injected fault for request: {0}", request);
+                        fiResponseMessage.RequestMessage = responseMessage.RequestMessage;
+                        request.Headers.Remove("FAULTINJECTION_IS_PROXY");
+                        return await ThinClientStoreClient.ParseResponseAsync(fiResponseMessage, request.SerializerSettings ?? base.SerializerSettings, request);
+                    }
+                }
+
                 HttpResponseMessage proxyResponse = await ThinClientTransportSerializer.ConvertProxyResponseAsync(responseMessage);
                 return await ThinClientStoreClient.ParseResponseAsync(proxyResponse, request.SerializerSettings ?? base.SerializerSettings, request);
             }

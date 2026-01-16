@@ -897,7 +897,14 @@ namespace Microsoft.Azure.Cosmos
                                                       ResourceType.Document,
                                                       HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout,
                                                       clientSideRequestStatistics,
-                                                      CancellationToken.None);
+                                                      CancellationToken.None,
+                                                      documentServiceRequest: new DocumentServiceRequest(
+                                                                                OperationType.Read,
+                                                                                ResourceType.Document,
+                                                                                $"dbs/dummy_db_id/colls/dummy_ct_id",
+                                                                                body: null,
+                                                                                AuthorizationTokenType.PrimaryMasterKey,
+                                                                                headers: null));
 
                 Assert.AreEqual(clientSideRequestStatistics.HttpResponseStatisticsList.Count, 2);
                 // The duration is calculated using date times which can cause the duration to be slightly off. This allows for up to 15 Ms of variance.
@@ -1275,7 +1282,6 @@ namespace Microsoft.Azure.Cosmos
                 null,
                 GlobalPartitionEndpointManagerNoOp.Instance,
                 isThinClientEnabled: true,
-                isPartitionLevelFailoverEnabled: true,
                 userAgentContainer);
 
             ClientCollectionCache clientCollectionCache = new Mock<ClientCollectionCache>(
@@ -1356,7 +1362,6 @@ namespace Microsoft.Azure.Cosmos
                 serializerSettings: null,
                 httpClient: mockCosmosHttpClient.Object,
                 globalPartitionEndpointManager: GlobalPartitionEndpointManagerNoOp.Instance,
-                isPartitionLevelFailoverEnabled: false,
                 isThinClientEnabled: true,
                 userAgentContainer: userAgentContainer);
 
@@ -1408,7 +1413,6 @@ namespace Microsoft.Azure.Cosmos
                 null,
                 GlobalPartitionEndpointManagerNoOp.Instance,
                 isThinClientEnabled: true,
-                isPartitionLevelFailoverEnabled: true,
                 userAgentContainer);
 
             ReplaceThinClientStoreClientField(storeModel, thinClientStoreClient);
@@ -1450,7 +1454,6 @@ namespace Microsoft.Azure.Cosmos
                 null,
                 GlobalPartitionEndpointManagerNoOp.Instance,
                 isThinClientEnabled: true,
-                isPartitionLevelFailoverEnabled: true,
                 userAgentContainer);
 
             ClientCollectionCache clientCollectionCache = new Mock<ClientCollectionCache>(
@@ -1499,6 +1502,12 @@ namespace Microsoft.Azure.Cosmos
             GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, connectionPolicy);
 
             Mock<GlobalPartitionEndpointManager> globalPartitionEndpointManager = new Mock<GlobalPartitionEndpointManager>();
+
+            globalPartitionEndpointManager
+                .Setup(m => m.IsPartitionLevelAutomaticFailoverEnabled())
+                .Returns(true)
+                .Verifiable();
+
             globalPartitionEndpointManager
                 .Setup(m => m.TryAddPartitionLevelLocationOverride(It.IsAny<DocumentServiceRequest>()))
                 .Returns(true)
@@ -1519,7 +1528,6 @@ namespace Microsoft.Azure.Cosmos
                 httpClient,
                 globalPartitionEndpointManager.Object,
                 isThinClientEnabled: true,
-                isPartitionLevelFailoverEnabled: true,
                 userAgentContainer);
 
             Mock<ClientCollectionCache> mockCollectionCache = new Mock<ClientCollectionCache>(
@@ -1614,7 +1622,6 @@ namespace Microsoft.Azure.Cosmos
                 httpClient,
                 globalPartitionEndpointManager.Object,
                 isThinClientEnabled: true,
-                isPartitionLevelFailoverEnabled: true,
                 userAgentContainer);
 
             TestUtils.SetupCachesInGatewayStoreModel(storeModel, endpointManager);
@@ -1749,6 +1756,7 @@ namespace Microsoft.Azure.Cosmos
                     httpClient: null,
                     eventSource: null,
                     userAgentContainer: new UserAgentContainer(0, "TestFeature", "TestRegion", "TestSuffix"),
+                    globalPartitionEndpointManager: GlobalPartitionEndpointManagerNoOp.Instance,
                     serializerSettings: null)
             {
                 this.invokeAsyncFunc = invokeAsyncFunc;

@@ -46,10 +46,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
         private static readonly TimeSpan delayTime = TimeSpan.FromSeconds(2);
         private static readonly RequestHandler requestHandler = new RequestHandlerSleepHelper(delayTime);
 
-        private static readonly int TotalTestMethod = typeof(EndToEndTraceWriterBaselineTests).GetMethods().Where(m => m.GetCustomAttributes(typeof(TestMethodAttribute), false).Length > 0).Count();
-        
-        private static int MethodCount = 0;
-        
         [ClassInitialize]
         public static async Task ClassInitAsync(TestContext _)
         {
@@ -127,33 +123,34 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
         }
 
-        [TestCleanup]
-        public async Task CleanUp()
+        [ClassCleanup]
+        public static async Task CleanUp()
         {
             await EndToEndTraceWriterBaselineTests.ClassCleanupAsync();
+        }
+
+        [TestCleanup]
+        public void TestCleanup()
+        {
+            EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
         }
         
         public static async Task ClassCleanupAsync()
         {
-            EndToEndTraceWriterBaselineTests.MethodCount++;
-
-            if (EndToEndTraceWriterBaselineTests.MethodCount == EndToEndTraceWriterBaselineTests.TotalTestMethod)
+            if (database != null)
             {
-                if (database != null)
-                {
-                    await EndToEndTraceWriterBaselineTests.database.DeleteStreamAsync();
-                }
-                
-                EndToEndTraceWriterBaselineTests.client?.Dispose();
-                EndToEndTraceWriterBaselineTests.bulkClient?.Dispose();
-                EndToEndTraceWriterBaselineTests.miscCosmosClient?.Dispose();
-
-                Util.DisposeOpenTelemetryAndCustomListeners();
-
-                EndToEndTraceWriterBaselineTests.testListener.Dispose();
-
-                Environment.SetEnvironmentVariable("OTEL_SEMCONV_STABILITY_OPT_IN", null);
+                await EndToEndTraceWriterBaselineTests.database.DeleteStreamAsync();
             }
+            
+            EndToEndTraceWriterBaselineTests.client?.Dispose();
+            EndToEndTraceWriterBaselineTests.bulkClient?.Dispose();
+            EndToEndTraceWriterBaselineTests.miscCosmosClient?.Dispose();
+
+            Util.DisposeOpenTelemetryAndCustomListeners();
+
+            EndToEndTraceWriterBaselineTests.testListener.Dispose();
+
+            Environment.SetEnvironmentVariable("OTEL_SEMCONV_STABILITY_OPT_IN", null);
         }
         
         private static void AssertAndResetActivityInformation()
@@ -1865,6 +1862,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
 
             public IReadOnlyDictionary<string, object> Data => this.data;
 
+            public bool IsBeingWalked => true; // needs to return true to allow materialization
+
             public IReadOnlyList<(string, Uri)> RegionsContacted => new List<(string, Uri)>();
 
             public void AddDatum(string key, TraceDatum traceDatum)
@@ -1923,6 +1922,11 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 }
 
                 this.data[key] = "Redacted To Not Change The Baselines From Run To Run";
+            }
+
+            bool ITrace.TryGetDatum(string key, out object datum)
+            {
+                return this.data.TryGetValue(key, out datum);
             }
         }
 

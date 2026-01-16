@@ -386,8 +386,12 @@ namespace Microsoft.Azure.Cosmos
             bool partitionKeyRangeIdExists = !string.IsNullOrEmpty(this.Headers.PartitionKeyRangeId);
             if (partitionKeyRangeIdExists)
             {
+                OperationType operationType = this.OperationType;
                 // Assert operation type is not write
-                if (this.OperationType != OperationType.Query && this.OperationType != OperationType.ReadFeed && this.OperationType != OperationType.Batch)
+                if (operationType != OperationType.Query
+                    && operationType != OperationType.QueryPlan
+                    && operationType != OperationType.ReadFeed 
+                    && operationType != OperationType.Batch)
                 {
                     throw new ArgumentOutOfRangeException(RMResources.UnexpectedPartitionKeyRangeId);
                 }

@@ -215,6 +215,18 @@ namespace Microsoft.Azure.Cosmos.Linq
                 {
                     FeedResponse<T> response = await localFeedIterator.ReadNextAsync(rootTrace, cancellationToken);
                     headers.RequestCharge += response.RequestCharge;
+
+                    // IndexMetrics only show up on first round trip
+                    if (response.Headers.IndexUtilizationText != null)
+                    {
+                        headers.IndexUtilizationText = response.Headers.IndexUtilizationText;
+                    }
+
+                    if (response.Headers.ActivityId != null && headers.ActivityId == null)
+                    {
+                        headers.ActivityId = response.Headers.ActivityId;
+                    }
+
                     result.AddRange(response);
                 }
             }

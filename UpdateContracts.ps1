@@ -3,21 +3,21 @@
 }
 
 #Run the Cosmos DB SDK GA contract tests
-dotnet test '.\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\Microsoft.Azure.Cosmos.Tests.csproj' --filter "TestCategory=UpdateContract" --configuration Release
+dotnet test '.\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\Microsoft.Azure.Cosmos.Tests.csproj' --filter "TestCategory=UpdateContract" --configuration Release -f net6.0
 
-$updatedContractFile = ".\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\bin\Release\net6.0\Contracts\DotNetSDKAPIChanges.json"
+$updatedContractFile = ".\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\bin\Release\net6.0\Contracts\DotNetSDKAPIChanges.net6.json"
 if(!(Test-Path -Path $updatedContractFile)){
     Write-Error ("The contract file did not get updated with the build. Please fix the test to output the contract file: " + $updatedContractFile)
 }else{
-    Copy-Item -Path $updatedContractFile -Destination ".\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\Contracts\DotNetSDKAPI.json"
+    Copy-Item -Path $updatedContractFile -Destination ".\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\Contracts\DotNetSDKAPI.net6.json"
     Write-Output ("Updated contract " + $updatedContractFile)
 }
 
-$updatedContractFile = ".\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\bin\Release\net6.0\Contracts\DotNetSDKTelemetryAPIChanges.json"
+$updatedContractFile = ".\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\bin\Release\net6.0\Contracts\DotNetSDKTelemetryAPIChanges.net6.json"
 if(!(Test-Path -Path $updatedContractFile)){
     Write-Error ("The contract file did not get updated with the build. Please fix the test to output the contract file: " + $updatedContractFile)
 }else{
-    Copy-Item -Path $updatedContractFile -Destination ".\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\Contracts\DotNetSDKTelemetryAPI.json"
+    Copy-Item -Path $updatedContractFile -Destination ".\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\Contracts\DotNetSDKTelemetryAPI.net6.json"
     Write-Output ("Updated contract " + $updatedContractFile)
 }
 
@@ -30,7 +30,7 @@ if(!(Test-Path -Path $updatedContractFolder)){
 }
 
 #Run the Cosmos DB SDK Emulator contract tests
-dotnet test '.\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.EmulatorTests\Microsoft.Azure.Cosmos.EmulatorTests.csproj' --filter "TestCategory=UpdateContract" --configuration Release
+dotnet test '.\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.EmulatorTests\Microsoft.Azure.Cosmos.EmulatorTests.csproj' --filter "TestCategory=UpdateContract" --configuration Release -f net6.0
 
 $updatedContractFolder = ".\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.EmulatorTests\bin\Release\net6.0\BaselineTest\TestOutput\*"
 if(!(Test-Path -Path $updatedContractFolder)){
@@ -41,34 +41,70 @@ if(!(Test-Path -Path $updatedContractFolder)){
 }
 
 #Run the Cosmos DB SDK Preview contract tests
-dotnet test '.\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\Microsoft.Azure.Cosmos.Tests.csproj' --filter "TestCategory=UpdateContract" --configuration Release -p:IsPreview=true
+dotnet test '.\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\Microsoft.Azure.Cosmos.Tests.csproj' --filter "TestCategory=UpdateContract" --configuration Release -p:IsPreview=true -f net6.0
 
-$updatedContractFile = ".\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\bin\Release\net6.0\Contracts\DotNetPreviewSDKAPIChanges.json"
+$updatedContractFile = ".\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\bin\Release\net6.0\Contracts\DotNetPreviewSDKAPIChanges.net6.json"
 if(!(Test-Path -Path $updatedContractFile)){
     Write-Error ("The contract file did not get updated with the preview build. Please fix the test to output the contract file: " + $updatedContractFile)
 }else{
-    Copy-Item -Path $updatedContractFile -Destination ".\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\Contracts\DotNetPreviewSDKAPI.json"
+    Copy-Item -Path $updatedContractFile -Destination ".\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\Contracts\DotNetPreviewSDKAPI.net6.json"
     Write-Output ("Updated contract " + $updatedContractFile)
 }
 
 #Run the Encryption SDK contract tests
-dotnet test '.\Microsoft.Azure.Cosmos.Encryption\tests\Microsoft.Azure.Cosmos.Encryption.Tests\Microsoft.Azure.Cosmos.Encryption.Tests.csproj' --filter "TestCategory=UpdateContract" --configuration Release
+dotnet test '.\Microsoft.Azure.Cosmos.Encryption\tests\Microsoft.Azure.Cosmos.Encryption.Tests\Microsoft.Azure.Cosmos.Encryption.Tests.csproj' --filter "TestCategory=UpdateContract" --configuration Release -f net6.0
 
-$updatedContractFile = ".\Microsoft.Azure.Cosmos.Encryption\tests\Microsoft.Azure.Cosmos.Encryption.Tests\bin\Release\net6.0\Contracts\DotNetSDKEncryptionAPIChanges.json"
+$updatedContractFile = ".\Microsoft.Azure.Cosmos.Encryption\tests\Microsoft.Azure.Cosmos.Encryption.Tests\bin\Release\net6.0\Contracts\DotNetSDKEncryptionAPIChanges.net6.json"
 if(!(Test-Path -Path $updatedContractFile)){
     Write-Error ("The contract file did not get updated with the build. Please fix the test to output the contract file: " + $updatedContractFile)
 }else{
-    Copy-Item -Path $updatedContractFile -Destination ".\Microsoft.Azure.Cosmos.Encryption\tests\Microsoft.Azure.Cosmos.Encryption.Tests\Contracts\DotNetSDKEncryptionAPI.json"
+    Copy-Item -Path $updatedContractFile -Destination ".\Microsoft.Azure.Cosmos.Encryption\tests\Microsoft.Azure.Cosmos.Encryption.Tests\Contracts\DotNetSDKEncryptionAPI.net6.json"
     Write-Output ("Updated contract " + $updatedContractFile)
 }
 
-#Run the Encryption.Custom SDK contract tests
-dotnet test '.\Microsoft.Azure.Cosmos.Encryption.Custom\tests\Microsoft.Azure.Cosmos.Encryption.Custom.Tests\Microsoft.Azure.Cosmos.Encryption.Custom.Tests.csproj' --filter "TestCategory=UpdateContract" --configuration Release
+try {
+    dotnet test '.\Microsoft.Azure.Cosmos.Encryption\tests\Microsoft.Azure.Cosmos.Encryption.Tests\Microsoft.Azure.Cosmos.Encryption.Tests.csproj' --filter "TestCategory=UpdateContract" --configuration Release -f net8.0
+    $updatedContractFileNet8 = ".\Microsoft.Azure.Cosmos.Encryption\tests\Microsoft.Azure.Cosmos.Encryption.Tests\bin\Release\net8.0\Contracts\DotNetSDKEncryptionAPIChanges.net8.json"
+    if (Test-Path -Path $updatedContractFileNet8) {
+        Copy-Item -Path $updatedContractFileNet8 -Destination ".\Microsoft.Azure.Cosmos.Encryption\tests\Microsoft.Azure.Cosmos.Encryption.Tests\Contracts\DotNetSDKEncryptionAPI.net8.json"
+        Write-Output ("Updated .NET 8 contract " + $updatedContractFileNet8)
+        
+        # Also copy to Debug output directories so tests work in both configurations
+        $debugNet8Path = ".\Microsoft.Azure.Cosmos.Encryption\tests\Microsoft.Azure.Cosmos.Encryption.Tests\bin\Debug\net8.0\Contracts\DotNetSDKEncryptionAPI.net8.json"
+        if (Test-Path -Path (Split-Path $debugNet8Path)) {
+            Copy-Item -Path $updatedContractFileNet8 -Destination $debugNet8Path -Force
+        }
+    }
+} catch {
+    Write-Warning "Unable to run net8.0 Encryption tests to produce .NET 8 baseline. Skipping."
+}
 
-$updatedContractFile = ".\Microsoft.Azure.Cosmos.Encryption.Custom\tests\Microsoft.Azure.Cosmos.Encryption.Custom.Tests\bin\Release\net6.0\Contracts\DotNetSDKEncryptionCustomAPIChanges.json"
+#Run the Encryption.Custom SDK contract tests
+dotnet test '.\Microsoft.Azure.Cosmos.Encryption.Custom\tests\Microsoft.Azure.Cosmos.Encryption.Custom.Tests\Microsoft.Azure.Cosmos.Encryption.Custom.Tests.csproj' --filter "TestCategory=UpdateContract" --configuration Release -f net6.0
+
+$updatedContractFile = ".\Microsoft.Azure.Cosmos.Encryption.Custom\tests\Microsoft.Azure.Cosmos.Encryption.Custom.Tests\bin\Release\net6.0\Contracts\DotNetSDKEncryptionCustomAPIChanges.net6.json"
 if(!(Test-Path -Path $updatedContractFile)){
     Write-Error ("The contract file did not get updated with the build. Please fix the test to output the contract file: " + $updatedContractFile)
 }else{
-    Copy-Item -Path $updatedContractFile -Destination ".\Microsoft.Azure.Cosmos.Encryption.Custom\tests\Microsoft.Azure.Cosmos.Encryption.Custom.Tests\Contracts\DotNetSDKEncryptionCustomAPI.json"
+    Copy-Item -Path $updatedContractFile -Destination ".\Microsoft.Azure.Cosmos.Encryption.Custom\tests\Microsoft.Azure.Cosmos.Encryption.Custom.Tests\Contracts\DotNetSDKEncryptionCustomAPI.net6.json"
     Write-Output ("Updated contract " + $updatedContractFile)
+}
+
+# Try to generate and copy .NET 8 specific baselines if net8 target exists
+try {
+    dotnet test '.\Microsoft.Azure.Cosmos.Encryption.Custom\tests\Microsoft.Azure.Cosmos.Encryption.Custom.Tests\Microsoft.Azure.Cosmos.Encryption.Custom.Tests.csproj' --filter "TestCategory=UpdateContract" --configuration Release -f net8.0
+    # .NET 8 test now generates a framework-specific breaking changes file
+    $updatedContractFileNet8 = ".\Microsoft.Azure.Cosmos.Encryption.Custom\tests\Microsoft.Azure.Cosmos.Encryption.Custom.Tests\bin\Release\net8.0\Contracts\DotNetSDKEncryptionCustomAPIChanges.net8.json"
+    if (Test-Path -Path $updatedContractFileNet8) {
+        Copy-Item -Path $updatedContractFileNet8 -Destination ".\Microsoft.Azure.Cosmos.Encryption.Custom\tests\Microsoft.Azure.Cosmos.Encryption.Custom.Tests\Contracts\DotNetSDKEncryptionCustomAPI.net8.json"
+        Write-Output ("Updated .NET 8 contract " + $updatedContractFileNet8)
+        
+        # Also copy to Debug output directories so tests work in both configurations
+        $debugNet8Path = ".\Microsoft.Azure.Cosmos.Encryption.Custom\tests\Microsoft.Azure.Cosmos.Encryption.Custom.Tests\bin\Debug\net8.0\Contracts\DotNetSDKEncryptionCustomAPI.net8.json"
+        if (Test-Path -Path (Split-Path $debugNet8Path)) {
+            Copy-Item -Path $updatedContractFileNet8 -Destination $debugNet8Path -Force
+        }
+    }
+} catch {
+    Write-Warning "Unable to run net8.0 Encryption.Custom tests to produce .NET 8 baseline. Skipping."
 }

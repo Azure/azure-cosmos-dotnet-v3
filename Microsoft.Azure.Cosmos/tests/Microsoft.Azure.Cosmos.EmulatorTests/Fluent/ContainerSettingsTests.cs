@@ -1306,6 +1306,102 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [Ignore("Marking as ignore until emulator is updated")]
+        [TestMethod]
+        [DataRow("en-US")]
+        [DataRow("fr-FR")]
+        [DataRow("de-DE")]
+        [DataRow("it-IT")]
+        [DataRow("pt-BR")]
+        [DataRow("pt-PT")]
+        [DataRow("es-ES")]
+        public async Task TestFullTextSearchPolicyWithAllSupportedDefaultLanguages(string defaultLanguage)
+        {
+            string fullTextPath1 = "/fts1", fullTextPath2 = "/fts2";
+            string endpoint = "";
+            string key = "";
+
+            string databaseName = "TestDatabaseFullTextPolicy";
+            string containerName = "TestContainerFullTextPolicy_"+ defaultLanguage;
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Direct,
+            };
+            CosmosClient client = new(endpoint, key, clientOptions);
+
+            Database databaseForFullTextSearch = await client.CreateDatabaseIfNotExistsAsync(databaseName);
+            try
+            {
+                string partitionKeyPath = "/pk";
+
+                Collection<FullTextPath> fullTextPaths = new Collection<FullTextPath>()
+                {
+                    new FullTextPath()
+                    {
+                        Path = fullTextPath1,
+                        Language = defaultLanguage,
+                    },
+                    new FullTextPath()
+                    {
+                        Path = fullTextPath2,
+                        Language = defaultLanguage,
+                    }
+                };
+
+                ContainerResponse containerResponse =
+                    await databaseForFullTextSearch.DefineContainer(containerName, partitionKeyPath)
+                        .WithFullTextPolicy(
+                            defaultLanguage: defaultLanguage,
+                            fullTextPaths: fullTextPaths)
+                        .Attach()
+                        .WithIndexingPolicy()
+                            .WithFullTextIndex()
+                                .Path(fullTextPath1)
+                             .Attach()
+                            .WithFullTextIndex()
+                                .Path(fullTextPath2)
+                             .Attach()
+                        .Attach()
+                        .CreateAsync();
+
+                Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode,
+                    $"Failed to create container with default language: {defaultLanguage}");
+                Assert.AreEqual(containerName, containerResponse.Resource.Id);
+                Assert.AreEqual(partitionKeyPath, containerResponse.Resource.PartitionKey.Paths.First());
+
+                ContainerProperties containerSettings = containerResponse.Resource;
+
+                // Validate FullText Policy
+                Assert.IsNotNull(containerSettings.FullTextPolicy,
+                    $"FullTextPolicy is null for language: {defaultLanguage}");
+                Assert.AreEqual(defaultLanguage, containerSettings.FullTextPolicy.DefaultLanguage,
+                    $"DefaultLanguage mismatch for: {defaultLanguage}");
+                Assert.IsNotNull(containerSettings.FullTextPolicy.FullTextPaths);
+                Assert.AreEqual(fullTextPaths.Count, containerSettings.FullTextPolicy.FullTextPaths.Count());
+
+                // Validate each path has the correct language
+                foreach (FullTextPath path in containerSettings.FullTextPolicy.FullTextPaths)
+                {
+                    Assert.AreEqual(defaultLanguage, path.Language,
+                        $"Path language mismatch for default language: {defaultLanguage}");
+                }
+
+                // Validate Full Text Indexes
+                Assert.IsNotNull(containerSettings.IndexingPolicy.FullTextIndexes);
+                Assert.AreEqual(fullTextPaths.Count, containerSettings.IndexingPolicy.FullTextIndexes.Count());
+                Assert.AreEqual(fullTextPath1, containerSettings.IndexingPolicy.FullTextIndexes[0].Path);
+                Assert.AreEqual(fullTextPath2, containerSettings.IndexingPolicy.FullTextIndexes[1].Path);
+
+                // Clean up container after test
+                await containerResponse.Container.DeleteContainerAsync();
+            }
+            finally
+            {
+                await databaseForFullTextSearch.DeleteAsync();
+            }
+        }
+
         private bool VerifyClientEncryptionIncludedPath(ClientEncryptionIncludedPath expected, ClientEncryptionIncludedPath actual)
         {
             return expected.Path == actual.Path &&

@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -228,7 +227,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal FeedRange FeedRange { get; set; }
 
-        internal bool IsHybridSearchQueryPlanOptimizationDisabled { get; set; } = ConfigurationManager.IsHybridSearchQueryPlanOptimizationDisabled(defaultValue: true);
+        internal bool IsHybridSearchQueryPlanOptimizationDisabled { get; set; } = ConfigurationManager.IsHybridSearchQueryPlanOptimizationDisabled(defaultValue: false);
 
         // This is a temporary flag to enable the distributed query gateway mode.
         // This flag will be removed once we have a way for the client to determine
