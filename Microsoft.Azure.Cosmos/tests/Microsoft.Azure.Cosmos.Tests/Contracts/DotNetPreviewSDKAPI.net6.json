@@ -162,18 +162,18 @@
           ],
           "MethodInfo": "System.Collections.Generic.Dictionary`2[System.String,System.Object] PartitionKey;CanRead:True;CanWrite:True;System.Collections.Generic.Dictionary`2[System.String,System.Object] get_PartitionKey();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Nullable`1[System.DateTime] ConflictResolutionTimestamp[System.Text.Json.Serialization.JsonIgnoreAttribute()]-[Newtonsoft.Json.JsonIgnoreAttribute()]": {
+        "System.DateTime ConflictResolutionTimestamp[System.Text.Json.Serialization.JsonIgnoreAttribute()]-[Newtonsoft.Json.JsonIgnoreAttribute()]": {
           "Type": "Property",
           "Attributes": [
             "JsonIgnoreAttribute",
             "JsonIgnoreAttribute"
           ],
-          "MethodInfo": "System.Nullable`1[System.DateTime] ConflictResolutionTimestamp;CanRead:True;CanWrite:False;System.Nullable`1[System.DateTime] get_ConflictResolutionTimestamp();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.DateTime ConflictResolutionTimestamp;CanRead:True;CanWrite:False;System.DateTime get_ConflictResolutionTimestamp();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Nullable`1[System.DateTime] get_ConflictResolutionTimestamp()": {
+        "System.DateTime get_ConflictResolutionTimestamp()": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Nullable`1[System.DateTime] get_ConflictResolutionTimestamp();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.DateTime get_ConflictResolutionTimestamp();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.String get_Id()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -1422,22 +1422,22 @@
           "Attributes": [],
           "MethodInfo": "Int32 Index;CanRead:True;CanWrite:False;Int32 get_Index();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Object Document": {
+        "System.String Document": {
           "Type": "Property",
           "Attributes": [],
-          "MethodInfo": "System.Object Document;CanRead:True;CanWrite:False;System.Object get_Document();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.String Document;CanRead:True;CanWrite:False;System.String get_Document();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Object get_Document()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "System.String get_Document()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "System.Object get_Document();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.String get_Document();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Void .ctor(System.Object, Double, Int32)": {
+        "Void .ctor(System.String, Double, Int32)": {
           "Type": "Constructor",
           "Attributes": [],
-          "MethodInfo": "Void .ctor(System.Object, Double, Int32)"
+          "MethodInfo": "Void .ctor(System.String, Double, Int32)"
         }
       },
       "NestedTypes": {}

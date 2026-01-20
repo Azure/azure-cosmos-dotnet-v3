@@ -823,7 +823,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             return RunQueryCombinationsAsync<CosmosElement>(container, query, queryRequestOptions, queryDrainingMode);
         }
 
-            internal static async Task<List<T>> RunQueryCombinationsAsync<T>(
+        internal static async Task<List<T>> RunQueryCombinationsAsync<T>(
             Container container,
             string query,
             QueryRequestOptions queryRequestOptions,
