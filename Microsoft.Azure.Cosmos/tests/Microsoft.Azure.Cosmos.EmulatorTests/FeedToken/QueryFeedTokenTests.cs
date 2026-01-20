@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     effectivePartitionKeyRanges: null,
                     containerResponse.Resource.PartitionKey,
                     vectorEmbeddingPolicy: null,
-                    containerResponse.Resource.GeospatialConfig.GeospatialType);
+                    containerResponse.Resource.GeospatialConfig.GeospatialType, false);
 
                 IReadOnlyList<FeedRange> feedTokens = await container.GetFeedRangesAsync();
 
@@ -73,8 +73,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         containerQueryProperties: containerQueryProperties,
                         properties: null,
                         feedRangeInternal: feedToken as FeedRangeInternal,
-                        NoOpTrace.Singleton,
-                        useLengthAwareRangeComparer: false);
+                        NoOpTrace.Singleton);
 
                     Assert.IsTrue(partitionKeyRanges.Count == 1, "Only 1 partition key range should be selected since the FeedRange represents a single range.");
                 }

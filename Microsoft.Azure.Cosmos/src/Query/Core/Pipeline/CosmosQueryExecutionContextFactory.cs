@@ -267,8 +267,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                    containerQueryProperties,
                    inputParameters.Properties,
                    inputParameters.InitialFeedRange,
-                   trace,
-                   inputParameters.UseLengthAwareRangeComparer);
+                   trace);
 
             Debug.Assert(targetRanges != null, $"{nameof(CosmosQueryExecutionContextFactory)} Assert!", "targetRanges != null");
 
@@ -455,8 +454,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                   containerQueryProperties,
                   inputParameters.Properties,
                   inputParameters.InitialFeedRange,
-                  trace,
-                  inputParameters.UseLengthAwareRangeComparer);
+                  trace);
 
             List<Documents.PartitionKeyRange> allRanges = await cosmosQueryContext.QueryClient.GetTargetPartitionKeyRangesAsync(
                 cosmosQueryContext.ResourceLink,
@@ -525,8 +523,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 containerQueryProperties: containerQueryProperties,
                 maxConcurrency: inputParameters.MaxConcurrency,
                 prefetchPolicy: PrefetchPolicy.PrefetchSinglePage,
-                continuationToken: inputParameters.InitialUserContinuationToken,
-                inputParameters.UseLengthAwareRangeComparer);
+                continuationToken: inputParameters.InitialUserContinuationToken);
         }
 
         private static TryCatch<IQueryPipelineStage> TryCreateFullQueryPipeline(
@@ -570,8 +567,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 allRanges: allFeedRanges,
                 isContinuationExpected: cosmosQueryContext.IsContinuationExpected,
                 maxConcurrency: inputParameters.MaxConcurrency,
-                requestContinuationToken: inputParameters.InitialUserContinuationToken,
-                useLengthAwareRangeComparer: inputParameters.UseLengthAwareRangeComparer);
+                requestContinuationToken: inputParameters.InitialUserContinuationToken);
         }
 
         private static async Task<PartitionedQueryExecutionInfo> GetPartitionedQueryExecutionInfoAsync(
@@ -631,8 +627,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             ContainerQueryProperties containerQueryProperties,
             IReadOnlyDictionary<string, object> properties,
             FeedRangeInternal feedRangeInternal,
-            ITrace trace,
-            bool useLengthAwareRangeComparer)
+            ITrace trace)
         {
             List<Documents.PartitionKeyRange> targetRanges;
             if (containerQueryProperties.EffectiveRangesForPartitionKey != null)
@@ -783,8 +778,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     containerQueryProperties,
                     inputParameters.Properties,
                     inputParameters.InitialFeedRange,
-                    trace,
-                    inputParameters.UseLengthAwareRangeComparer);
+                    trace);
             }
             else
             {
@@ -844,8 +838,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 bool enableOptimisticDirectExecution,
                 bool isHybridSearchQueryPlanOptimizationDisabled,
                 bool enableDistributedQueryGatewayMode,
-                TestInjections testInjections,
-                bool useLengthAwareRangeComparer)
+                TestInjections testInjections)
             {
                 this.SqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));
                 this.InitialUserContinuationToken = initialUserContinuationToken;
@@ -861,7 +854,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 this.IsHybridSearchQueryPlanOptimizationDisabled = isHybridSearchQueryPlanOptimizationDisabled;
                 this.EnableDistributedQueryGatewayMode = enableDistributedQueryGatewayMode;
                 this.TestInjections = testInjections;
-                this.UseLengthAwareRangeComparer = useLengthAwareRangeComparer;
             }
 
             public static InputParameters Create(
@@ -878,8 +870,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 bool enableOptimisticDirectExecution,
                 bool isHybridSearchQueryPlanOptimizationDisabled,
                 bool enableDistributedQueryGatewayMode,
-                TestInjections testInjections,
-                bool useLengthAwareRangeComparer)
+                TestInjections testInjections)
             {
                 if (sqlQuerySpec == null)
                 {
@@ -918,8 +909,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     enableOptimisticDirectExecution: enableOptimisticDirectExecution,
                     isHybridSearchQueryPlanOptimizationDisabled: isHybridSearchQueryPlanOptimizationDisabled,
                     enableDistributedQueryGatewayMode: enableDistributedQueryGatewayMode,
-                    testInjections: testInjections,
-                    useLengthAwareRangeComparer: useLengthAwareRangeComparer);
+                    testInjections: testInjections);
             }
 
             public SqlQuerySpec SqlQuerySpec { get; }
@@ -954,8 +944,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     this.EnableOptimisticDirectExecution,
                     this.IsHybridSearchQueryPlanOptimizationDisabled,
                     this.EnableDistributedQueryGatewayMode,
-                    this.TestInjections,
-                    this.UseLengthAwareRangeComparer);
+                    this.TestInjections);
             }
         }
 

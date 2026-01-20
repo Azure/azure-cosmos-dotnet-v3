@@ -27,8 +27,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             PartitionKey? partitionKey,
             QueryExecutionOptions queryPaginationOptions,
             string filter,
-            PrefetchPolicy prefetchPolicy,
-            bool useLengthAwareRangeComparer)
+            PrefetchPolicy prefetchPolicy)
         {
             InnerEnumerator enumerator = new InnerEnumerator(
                 queryDataSource,
@@ -37,8 +36,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 feedRangeState,
                 partitionKey,
                 queryPaginationOptions,
-                filter,
-                useLengthAwareRangeComparer);
+                filter);
 
             BufferedPartitionRangePageAsyncEnumeratorBase<OrderByQueryPage, QueryState> bufferedEnumerator = prefetchPolicy switch
             {
@@ -120,8 +118,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 FeedRangeState<QueryState> feedRangeState,
                 PartitionKey? partitionKey,
                 QueryExecutionOptions queryPaginationOptions,
-                string filter,
-                bool useLengthAwareRangeComparer)
+                string filter)
                 : base(feedRangeState)
             {
                 this.queryDataSource = queryDataSource ?? throw new ArgumentNullException(nameof(queryDataSource));
@@ -130,7 +127,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 this.PartitionKey = partitionKey;
                 this.QueryPaginationOptions = queryPaginationOptions ?? QueryExecutionOptions.Default;
                 this.Filter = filter;
-                this.UseLengthAwareRangeComparer = useLengthAwareRangeComparer;
             }
 
             public SqlQuerySpec SqlQuerySpec { get; }
@@ -140,8 +136,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             public QueryExecutionOptions QueryPaginationOptions { get; }
 
             public string Filter { get; }
-
-            public bool UseLengthAwareRangeComparer { get; }
 
             public InnerEnumerator CloneWithMaxPageSize()
             {
@@ -157,15 +151,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     this.FeedRangeState,
                     this.PartitionKey,
                     options,
-                    this.Filter,
-                    this.UseLengthAwareRangeComparer);
+                    this.Filter);
             }
 
             public override ValueTask DisposeAsync() => default;
 
             protected override async Task<TryCatch<OrderByQueryPage>> GetNextPageAsync(ITrace trace, CancellationToken cancellationToken)
             {
-                FeedRangeInternal feedRange = QueryRangeUtils.LimitHpkFeedRangeToPartition(this.PartitionKey, this.FeedRangeState.FeedRange, this.containerQueryProperties, this.UseLengthAwareRangeComparer);
+                FeedRangeInternal feedRange = QueryRangeUtils.LimitHpkFeedRangeToPartition(this.PartitionKey, this.FeedRangeState.FeedRange, this.containerQueryProperties);
 
                 TryCatch<QueryPage> monadicQueryPage = await this.queryDataSource
                     .MonadicQueryAsync(

@@ -85,7 +85,8 @@ namespace Microsoft.Azure.Cosmos
                 effectivePartitionKeyRange,
                 containerProperties.PartitionKey,
                 containerProperties.VectorEmbeddingPolicy,
-                containerProperties.GeospatialConfig.GeospatialType);
+                containerProperties.GeospatialConfig.GeospatialType,
+                this.documentClient.UseLengthAwareRangeComparer);
         }
 
         public override async Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetPartitionedQueryExecutionInfoAsync(

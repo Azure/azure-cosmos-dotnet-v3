@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     using System.Collections.Generic;
     using System.Diagnostics;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents.Routing;
 
     internal static class QueryRangeUtils
@@ -22,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         /// Since such an epk range does not exist at the container level, Service generates a GoneException.
         /// This method restrics the range of each enumerator by intersecting it with physical partition range.
         /// </summary>
-        public static FeedRangeInternal LimitHpkFeedRangeToPartition(PartitionKey? partitionKey, FeedRangeInternal feedRange, ContainerQueryProperties containerQueryProperties, bool useLengthAwareRangeComparer)
+        public static FeedRangeInternal LimitHpkFeedRangeToPartition(PartitionKey? partitionKey, FeedRangeInternal feedRange, ContainerQueryProperties containerQueryProperties)
         {
             // We sadly need to check the partition key, since a user can set a partition key in the request options with a different continuation token.
             // In the future the partition filtering and continuation information needs to be a tightly bounded contract (like cross feed range state).
@@ -55,14 +56,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                                 String overlappingMax;
                                 bool maxInclusive;
 
-                                //LengthAwareComparer is the default Range comparer and flag <see cref="ConfigurationManager.UseLengthAwareRangeComparator"/>  is used to ovverride the default comparer to legacy Min/Max comparer.
-                                IComparer<Range<string>> minComparer = useLengthAwareRangeComparer
-                                    ? Documents.Routing.Range<string>.LengthAwareMinComparer.Instance
-                                    : Documents.Routing.Range<string>.MinComparer.Instance;
-
-                                IComparer<Range<string>> maxComparer = useLengthAwareRangeComparer
-                                    ? Documents.Routing.Range<string>.LengthAwareMaxComparer.Instance
-                                    : Documents.Routing.Range<string>.MaxComparer.Instance;
+                                (IComparer<Range<string>> minComparer, IComparer<Range<string>> maxComparer) = RangeComparerProvider.GetComparers(containerQueryProperties.UseLengthAwareRangeComparer);
 
                                 if (minComparer.Compare(
                                         epkForPartitionKey,
@@ -124,13 +118,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             IReadOnlyList<Documents.Routing.Range<string>> providedRanges,
             bool useLengthAwareComparer = true)
         {
-            IComparer<Range<string>> minComparer = useLengthAwareComparer
-                ? Documents.Routing.Range<string>.LengthAwareMinComparer.Instance
-                : Documents.Routing.Range<string>.MinComparer.Instance;
-
-            IComparer<Range<string>> maxComparer = useLengthAwareComparer
-                ? Documents.Routing.Range<string>.LengthAwareMaxComparer.Instance
-                : Documents.Routing.Range<string>.MaxComparer.Instance;
+            (IComparer<Range<string>> minComparer, IComparer<Range<string>> maxComparer) = RangeComparerProvider.GetComparers(useLengthAwareComparer);
 
             // Compute the overall min and max from providedRanges
             string overallMin = providedRanges[0].Min;

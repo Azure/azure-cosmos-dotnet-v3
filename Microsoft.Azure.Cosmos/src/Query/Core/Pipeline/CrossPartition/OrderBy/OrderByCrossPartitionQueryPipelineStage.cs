@@ -59,8 +59,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             public int MaxConcurrency { get; }
 
-            public bool UseLengthAwareRangeComparer { get; }
-
             public InitializationParameters(
                 IDocumentContainer documentContainer,
                 ContainerQueryProperties containerQueryProperties,
@@ -70,8 +68,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 IReadOnlyList<OrderByColumn> orderByColumns,
                 QueryExecutionOptions queryPaginationOptions,
                 bool emitRawOrderByPayload,
-                int maxConcurrency,
-                bool useLengthAwareRangeComparer)
+                int maxConcurrency)
             {
                 this.DocumentContainer = documentContainer ?? throw new ArgumentNullException(nameof(documentContainer));
                 this.ContainerQueryProperties = containerQueryProperties;
@@ -82,7 +79,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 this.QueryPaginationOptions = queryPaginationOptions ?? throw new ArgumentNullException(nameof(queryPaginationOptions));
                 this.EmitRawOrderByPayload = emitRawOrderByPayload;
                 this.MaxConcurrency = maxConcurrency;
-                this.UseLengthAwareRangeComparer = useLengthAwareRangeComparer;
             }
         }
 
@@ -104,8 +100,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             int maxConcurrency,
             bool nonStreamingOrderBy,
             bool emitRawOrderByPayload,
-            CosmosElement continuationToken,
-            bool useLengthAwareRangeComparer)
+            CosmosElement continuationToken)
         {
             if (documentContainer == null)
             {
@@ -149,8 +144,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     queryPaginationOptions,
                     emitRawOrderByPayload,
                     maxConcurrency,
-                    continuationToken,
-                    useLengthAwareRangeComparer);
+                    continuationToken);
             }
 
             SqlQuerySpec rewrittenQueryForOrderBy = new SqlQuerySpec(
@@ -166,8 +160,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 orderByColumns,
                 queryPaginationOptions,
                 emitRawOrderByPayload,
-                maxConcurrency,
-                useLengthAwareRangeComparer));
+                maxConcurrency));
         }
 
         private static async ValueTask MoveNextAsync_InitializeAsync_HandleSplitAsync(
@@ -177,8 +170,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             OrderByQueryPartitionRangePageAsyncEnumerator uninitializedEnumerator,
             OrderByContinuationToken token,
             ITrace trace,
-            CancellationToken cancellationToken,
-            bool useLengthAwareComparer)
+            CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -222,8 +214,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     partitionKey: null,
                     uninitializedEnumerator.QueryPaginationOptions,
                     uninitializedEnumerator.Filter,
-                    PrefetchPolicy.PrefetchSinglePage,
-                    useLengthAwareComparer);
+                    PrefetchPolicy.PrefetchSinglePage);
                 uninitializedEnumeratorsAndTokens.Enqueue((childPaginator, token));
             }
             else
@@ -241,8 +232,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                         partitionKey: null,
                         uninitializedEnumerator.QueryPaginationOptions,
                         uninitializedEnumerator.Filter,
-                        PrefetchPolicy.PrefetchSinglePage,
-                        useLengthAwareComparer);
+                        PrefetchPolicy.PrefetchSinglePage);
                     uninitializedEnumeratorsAndTokens.Enqueue((childPaginator, token));
                 }
             }
@@ -346,7 +336,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             private QueryState state;
             private bool returnedFinalPage;
-            private bool UseLengthAwareComparer;
 
             private static class Expressions
             {
@@ -367,8 +356,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 bool emitRawOrderByPayload,
                 int maxConcurrency,
                 IEnumerable<(OrderByQueryPartitionRangePageAsyncEnumerator, OrderByContinuationToken)> uninitializedEnumeratorsAndTokens,
-                QueryState state,
-                bool useLengthAwareComparer)
+                QueryState state)
             {
                 this.documentContainer = documentContainer ?? throw new ArgumentNullException(nameof(documentContainer));
                 this.containerQueryProperties = containerQueryProperties;
@@ -379,7 +367,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 this.maxConcurrency = maxConcurrency < 0 ? throw new ArgumentOutOfRangeException($"{nameof(maxConcurrency)} must be a non negative number.") : maxConcurrency;
                 this.uninitializedEnumeratorsAndTokens = new Queue<(OrderByQueryPartitionRangePageAsyncEnumerator, OrderByContinuationToken)>(uninitializedEnumeratorsAndTokens ?? throw new ArgumentNullException(nameof(uninitializedEnumeratorsAndTokens)));
                 this.state = state ?? InitializingQueryState;
-                this.UseLengthAwareComparer = useLengthAwareComparer;
             }
 
             private StreamingOrderByCrossPartitionQueryPipelineStage(
@@ -444,7 +431,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 {
                     if (IsSplitException(uninitializedEnumerator.Current.Exception))
                     {
-                        return await this.MoveNextAsync_InitializeAsync_HandleSplitAsync(uninitializedEnumerator, token: null, trace, cancellationToken, this.UseLengthAwareComparer);
+                        return await this.MoveNextAsync_InitializeAsync_HandleSplitAsync(uninitializedEnumerator, token: null, trace, cancellationToken);
                     }
 
                     this.uninitializedEnumeratorsAndTokens.Enqueue((uninitializedEnumerator, token: null));
@@ -531,7 +518,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 {
                     if (IsSplitException(filterMonad.Exception))
                     {
-                        return await this.MoveNextAsync_InitializeAsync_HandleSplitAsync(uninitializedEnumerator, token, trace, cancellationToken, this.UseLengthAwareComparer);
+                        return await this.MoveNextAsync_InitializeAsync_HandleSplitAsync(uninitializedEnumerator, token, trace, cancellationToken);
                     }
 
                     this.Current = TryCatch<QueryPage>.FromException(filterMonad.Exception);
@@ -571,7 +558,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     {
                         if (IsSplitException(filterMonad.Exception))
                         {
-                            return await this.MoveNextAsync_InitializeAsync_HandleSplitAsync(uninitializedEnumerator, token, trace, cancellationToken, this.UseLengthAwareComparer);
+                            return await this.MoveNextAsync_InitializeAsync_HandleSplitAsync(uninitializedEnumerator, token, trace, cancellationToken);
                         }
                     }
 
@@ -614,8 +601,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 OrderByQueryPartitionRangePageAsyncEnumerator uninitializedEnumerator,
                 OrderByContinuationToken token,
                 ITrace trace,
-                CancellationToken cancellationToken,
-                bool useLengthAwareComparer)
+                CancellationToken cancellationToken)
             {
                 await OrderByCrossPartitionQueryPipelineStage.MoveNextAsync_InitializeAsync_HandleSplitAsync(
                     this.documentContainer,
@@ -624,8 +610,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     uninitializedEnumerator,
                     token,
                     trace,
-                    cancellationToken,
-                    useLengthAwareComparer);
+                    cancellationToken);
 
                 // Recursively retry
                 return await this.MoveNextAsync(trace, cancellationToken);
@@ -863,8 +848,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 QueryExecutionOptions queryPaginationOptions,
                 bool emitRawOrderByPayload,
                 int maxConcurrency,
-                CosmosElement continuationToken,
-                bool useLengthAwareRangeComparer)
+                CosmosElement continuationToken)
             {
                 // TODO (brchon): For now we are not honoring non deterministic ORDER BY queries, since there is a bug in the continuation logic.
                 // We can turn it back on once the bug is fixed.
@@ -887,8 +871,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                             partitionKey,
                             queryPaginationOptions,
                             TrueFilter,
-                            PrefetchPolicy.PrefetchSinglePage,
-                            useLengthAwareRangeComparer),
+                            PrefetchPolicy.PrefetchSinglePage),
                             (OrderByContinuationToken)null))
                         .ToList();
                 }
@@ -977,8 +960,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                                 partitionKey,
                                 queryPaginationOptions,
                                 filter: null,
-                                PrefetchPolicy.PrefetchSinglePage,
-                                useLengthAwareRangeComparer: useLengthAwareRangeComparer);
+                                PrefetchPolicy.PrefetchSinglePage);
 
                             enumeratorsAndTokens.Add((remoteEnumerator, token));
                         }
@@ -1006,8 +988,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                                 partitionKey,
                                 queryPaginationOptions,
                                 filter: null,
-                                PrefetchPolicy.PrefetchSinglePage,
-                                useLengthAwareRangeComparer: useLengthAwareRangeComparer);
+                                PrefetchPolicy.PrefetchSinglePage);
 
                             enumeratorsAndTokens.Add((remoteEnumerator, token));
                         }
@@ -1030,8 +1011,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                                 partitionKey,
                                 queryPaginationOptions,
                                 filter: null,
-                                PrefetchPolicy.PrefetchSinglePage,
-                                useLengthAwareRangeComparer: useLengthAwareRangeComparer);
+                                PrefetchPolicy.PrefetchSinglePage);
 
                             enumeratorsAndTokens.Add((remoteEnumerator, token));
                         }
@@ -1071,8 +1051,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                                     partitionKey,
                                     queryPaginationOptions,
                                     filter,
-                                    PrefetchPolicy.PrefetchSinglePage,
-                                    useLengthAwareRangeComparer: useLengthAwareRangeComparer);
+                                    PrefetchPolicy.PrefetchSinglePage);
 
                                 enumeratorsAndTokens.Add((remoteEnumerator, token));
                             }
@@ -1088,8 +1067,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     emitRawOrderByPayload,
                     maxConcurrency,
                     enumeratorsAndTokens,
-                    continuationToken == null ? null : new QueryState(continuationToken),
-                    useLengthAwareRangeComparer);
+                    continuationToken == null ? null : new QueryState(continuationToken));
                 return TryCatch<IQueryPipelineStage>.FromResult(stage);
             }
 
@@ -1824,8 +1802,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     this.parameters.QueryPaginationOptions,
                     this.parameters.MaxConcurrency,
                     trace,
-                    cancellationToken,
-                    this.parameters.UseLengthAwareRangeComparer);
+                    cancellationToken);
 
                 IReadOnlyList<SortOrder> sortOrders = this.parameters.OrderByColumns.Select(column => column.SortOrder).ToList();
 
@@ -1849,8 +1826,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 IReadOnlyList<OrderByColumn> orderByColumns,
                 QueryExecutionOptions queryPaginationOptions,
                 bool emitRawOrderByPayload,
-                int maxConcurrency,
-                bool useLengthAwareRangeComparer)
+                int maxConcurrency)
             {
                 int pageSize = queryPaginationOptions.PageSizeLimit.GetValueOrDefault(MaximumPageSize) > 0 ?
                     Math.Min(MaximumPageSize, queryPaginationOptions.PageSizeLimit.Value) :
@@ -1865,8 +1841,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     orderByColumns,
                     queryPaginationOptions,
                     emitRawOrderByPayload,
-                    maxConcurrency,
-                    useLengthAwareRangeComparer);
+                    maxConcurrency);
 
                 return new NonStreamingOrderByPipelineStage(
                     parameters,
@@ -1882,20 +1857,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             private readonly Queue<(OrderByQueryPartitionRangePageAsyncEnumerator enumerator, OrderByContinuationToken token)> enumeratorsAndTokens;
 
-            private readonly bool UseLengthAwareComparer;
-
             public TryCatch<OrderByQueryPage> Current { get; private set; }
 
             private OrderByCrossPartitionRangePageEnumerator(
                 IDocumentContainer documentContainer,
                 Queue<(OrderByQueryPartitionRangePageAsyncEnumerator enumerator, OrderByContinuationToken token)> enumeratorsAndTokens,
-                ContainerQueryProperties containerQueryProperties,
-                bool useLengthAwareComparer)
+                ContainerQueryProperties containerQueryProperties)
             {
                 this.documentContainer = documentContainer ?? throw new ArgumentNullException(nameof(documentContainer));
                 this.enumeratorsAndTokens = enumeratorsAndTokens ?? throw new ArgumentNullException(nameof(enumeratorsAndTokens));
                 this.containerQueryProperties = containerQueryProperties;
-                this.UseLengthAwareComparer = useLengthAwareComparer;
             }
 
             public static async Task<ITracingAsyncEnumerator<TryCatch<OrderByQueryPage>>> CreateAsync(
@@ -1907,8 +1878,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 QueryExecutionOptions queryPaginationOptions,
                 int maxConcurrency,
                 ITrace trace,
-                CancellationToken cancellationToken,
-                bool useLengthAwareRangeComparer)
+                CancellationToken cancellationToken)
             {
                 Queue<(OrderByQueryPartitionRangePageAsyncEnumerator enumerator, OrderByContinuationToken token)> enumeratorsAndTokens =
                     new Queue<(OrderByQueryPartitionRangePageAsyncEnumerator enumerator, OrderByContinuationToken token)>(targetRanges.Count);
@@ -1922,8 +1892,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                         partitionKey,
                         queryPaginationOptions,
                         filter: null,
-                        PrefetchPolicy.PrefetchAll,
-                        useLengthAwareRangeComparer);
+                        PrefetchPolicy.PrefetchAll);
 
                     enumeratorsAndTokens.Enqueue(new (enumerator, null));
                 }
@@ -1934,7 +1903,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     trace,
                     cancellationToken);
 
-                return new OrderByCrossPartitionRangePageEnumerator(documentContainer, enumeratorsAndTokens, containerQueryProperties, useLengthAwareRangeComparer);
+                return new OrderByCrossPartitionRangePageEnumerator(documentContainer, enumeratorsAndTokens, containerQueryProperties);
             }
 
             public async ValueTask DisposeAsync()
@@ -1996,8 +1965,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                                     enumerator,
                                     token,
                                     trace,
-                                    cancellationToken,
-                                    this.UseLengthAwareComparer);
+                                    cancellationToken);
                             }
                             else
                             {

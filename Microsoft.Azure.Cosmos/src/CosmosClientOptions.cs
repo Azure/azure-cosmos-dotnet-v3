@@ -479,7 +479,12 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The default value is true.
         /// </value>
-        internal bool UseLengthAwareRangeComparer { get; set; } = true;
+        internal bool UseLengthAwareRangeComparer { get; set; } =
+#if !INTERNAL
+            true;
+#else
+            false;
+#endif
 
         /// <summary>
         /// (Direct/TCP) Controls the amount of idle time after which unused connections are closed.

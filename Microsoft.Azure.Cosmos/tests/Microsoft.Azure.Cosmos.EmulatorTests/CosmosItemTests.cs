@@ -2173,7 +2173,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     //new List<Documents.Routing.Range<string>> { new Documents.Routing.Range<string>("AA", "AA", true, true) },
                     containerResponse.Resource.PartitionKey,
                     vectorEmbeddingPolicy: null,
-                    containerResponse.Resource.GeospatialConfig.GeospatialType);
+                    containerResponse.Resource.GeospatialConfig.GeospatialType, false);
 
                 // There should only be one range since the EPK option is set.
                 List<PartitionKeyRange> partitionKeyRanges = await CosmosQueryExecutionContextFactory.GetTargetPartitionKeyRangesAsync(
@@ -2186,8 +2186,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         {"x-ms-effective-partition-key-string", "AA" }
                     },
                     feedRangeInternal: null,
-                    trace: NoOpTrace.Singleton,
-                    useLengthAwareRangeComparer: false);
+                    trace: NoOpTrace.Singleton);
 
                 Assert.IsTrue(partitionKeyRanges.Count == 1, "Only 1 partition key range should be selected since the EPK option is set.");
 

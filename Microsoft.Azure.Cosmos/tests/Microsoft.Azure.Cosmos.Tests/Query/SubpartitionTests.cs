@@ -138,8 +138,7 @@
                 enableOptimisticDirectExecution: queryRequestOptions.EnableOptimisticDirectExecution,
                 isHybridSearchQueryPlanOptimizationDisabled: queryRequestOptions.IsHybridSearchQueryPlanOptimizationDisabled,
                 enableDistributedQueryGatewayMode: queryRequestOptions.EnableDistributedQueryGatewayMode,
-                testInjections: queryRequestOptions.TestSettings,
-                useLengthAwareRangeComparer: false);
+                testInjections: queryRequestOptions.TestSettings);
 
             List<PartitionKeyRange> targetPkRanges = new();
             foreach (FeedRangeEpk feedRangeEpk in containerRanges)
@@ -336,7 +335,8 @@
                     },
                     SubpartitionTests.CreatePartitionKeyDefinition(),
                     vectorEmbeddingPolicy: null,
-                    Cosmos.GeospatialType.Geometry));
+                    Cosmos.GeospatialType.Geometry,
+                    false));
             }
 
             public override Task<bool> GetClientDisableOptimisticDirectExecutionAsync()

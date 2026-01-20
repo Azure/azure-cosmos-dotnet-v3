@@ -20,7 +20,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
         private readonly QueryExecutionOptions queryPaginationOptions;
         private readonly ContainerQueryProperties containerQueryProperties;
         private readonly Cosmos.PartitionKey? partitionKey;
-        private readonly bool useLengthAwareRangeComparer;
 
         public QueryPartitionRangePageAsyncEnumerator(
             IQueryDataSource queryDataSource,
@@ -28,8 +27,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
             FeedRangeState<QueryState> feedRangeState,
             Cosmos.PartitionKey? partitionKey,
             QueryExecutionOptions queryPaginationOptions,
-            ContainerQueryProperties containerQueryProperties,
-            bool useLengthAwareRangeComparer)
+            ContainerQueryProperties containerQueryProperties)
             : base(feedRangeState)
         {
             this.queryDataSource = queryDataSource ?? throw new ArgumentNullException(nameof(queryDataSource));
@@ -37,7 +35,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
             this.queryPaginationOptions = queryPaginationOptions;
             this.partitionKey = partitionKey;
             this.containerQueryProperties = containerQueryProperties;
-            this.useLengthAwareRangeComparer = useLengthAwareRangeComparer;
         }
 
         public override ValueTask DisposeAsync() => default;
@@ -49,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
                 throw new ArgumentNullException(nameof(trace));
             }
 
-            FeedRangeInternal feedRange = QueryRangeUtils.LimitHpkFeedRangeToPartition(this.partitionKey, this.FeedRangeState.FeedRange, this.containerQueryProperties, this.useLengthAwareRangeComparer);
+            FeedRangeInternal feedRange = QueryRangeUtils.LimitHpkFeedRangeToPartition(this.partitionKey, this.FeedRangeState.FeedRange, this.containerQueryProperties);
             return this.queryDataSource.MonadicQueryAsync(
               sqlQuerySpec: this.sqlQuerySpec,
               feedRangeState: new FeedRangeState<QueryState>(feedRange, this.FeedRangeState.State),

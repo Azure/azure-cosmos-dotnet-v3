@@ -40,8 +40,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             IReadOnlyList<FeedRangeEpk> allRanges,
             bool isContinuationExpected,
             int maxConcurrency,
-            CosmosElement requestContinuationToken,
-            bool useLengthAwareRangeComparer)
+            CosmosElement requestContinuationToken)
         {
             if (documentContainer == null)
             {
@@ -92,8 +91,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                     isContinuationExpected: true,
                     emitRawOrderByPayload: false,
                     maxConcurrency: maxConcurrency,
-                    requestContinuationToken: requestContinuationToken,
-                    useLengthAwareRangeComparer: useLengthAwareRangeComparer);
+                    requestContinuationToken: requestContinuationToken);
             }
             else
             {
@@ -107,8 +105,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                     allRanges: allRanges,
                     maxItemCount: maxItemCount,
                     isContinuationExpected: isContinuationExpected,
-                    maxConcurrency: maxConcurrency,
-                    useLengthAwareRangeComparer: useLengthAwareRangeComparer);
+                    maxConcurrency: maxConcurrency);
 
                 if (hybridSearchQueryInfo.Skip != null)
                 {
@@ -155,8 +152,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             bool emitRawOrderByPayload,
             bool isContinuationExpected,
             int maxConcurrency,
-            CosmosElement requestContinuationToken,
-            bool useLengthAwareRangeComparer)
+            CosmosElement requestContinuationToken)
         {
             // We need to compute the optimal initial page size for order-by queries
             long optimalPageSize = maxItemCount;
@@ -222,8 +218,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                     nonStreamingOrderBy: queryInfo.HasNonStreamingOrderBy,
                     emitRawOrderByPayload: emitRawOrderByPayload,
                     continuationToken: continuationToken,
-                    containerQueryProperties: containerQueryProperties,
-                    useLengthAwareRangeComparer: useLengthAwareRangeComparer);
+                    containerQueryProperties: containerQueryProperties);
             }
             else
             {
@@ -236,8 +231,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                     containerQueryProperties: containerQueryProperties,
                     prefetchPolicy: prefetchPolicy,
                     maxConcurrency: maxConcurrency,
-                    continuationToken: continuationToken,
-                    useLengthAwareRangeComparer: useLengthAwareRangeComparer);
+                    continuationToken: continuationToken);
             }
 
             if (queryInfo.HasAggregates && !queryInfo.HasGroupBy)

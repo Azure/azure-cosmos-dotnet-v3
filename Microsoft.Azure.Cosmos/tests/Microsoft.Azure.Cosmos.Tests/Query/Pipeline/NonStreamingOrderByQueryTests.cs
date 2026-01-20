@@ -681,8 +681,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 ranges,
                 isContinuationExpected: true,
                 maxConcurrency: MaxConcurrency,
-                requestContinuationToken: null,
-                useLengthAwareRangeComparer: false);
+                requestContinuationToken: null);
 
             Assert.IsTrue(tryCreatePipeline.Succeeded);
             return RunPipelineStage(tryCreatePipeline.Result, pageSize);
@@ -726,8 +725,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     nonStreamingOrderBy: nonStreamingOrderBy,
                     continuationToken: null,
                     containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
-                    emitRawOrderByPayload: false,
-                    useLengthAwareRangeComparer: true);
+                    emitRawOrderByPayload: false);
 
             Assert.IsTrue(pipelineStage.Succeeded);
 

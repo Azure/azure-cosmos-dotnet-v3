@@ -81,8 +81,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 nonStreamingOrderBy: false,
                 continuationToken: null,
                 containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
-                emitRawOrderByPayload: false,
-                useLengthAwareRangeComparer: true);
+                emitRawOrderByPayload: false);
             Assert.IsTrue(monadicCreate.Succeeded);
         }
 
@@ -105,8 +104,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 nonStreamingOrderBy: false,
                 continuationToken: CosmosObject.Create(new Dictionary<string, CosmosElement>()),
                 containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
-                emitRawOrderByPayload: false,
-                useLengthAwareRangeComparer: true);
+                emitRawOrderByPayload: false);
             Assert.IsTrue(monadicCreate.Failed);
             Assert.IsTrue(monadicCreate.InnerMostException is MalformedContinuationTokenException);
         }
@@ -130,8 +128,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 nonStreamingOrderBy: false,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>()),
                 containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
-                emitRawOrderByPayload: false,
-                useLengthAwareRangeComparer: true);
+                emitRawOrderByPayload: false);
             Assert.IsTrue(monadicCreate.Failed);
             Assert.IsTrue(monadicCreate.InnerMostException is MalformedContinuationTokenException);
         }
@@ -155,8 +152,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 nonStreamingOrderBy: false,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>() { CosmosString.Create("asdf") }),
                 containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
-                emitRawOrderByPayload: false,
-                useLengthAwareRangeComparer: true); 
+                emitRawOrderByPayload: false); 
             Assert.IsTrue(monadicCreate.Failed);
             Assert.IsTrue(monadicCreate.InnerMostException is MalformedContinuationTokenException);
         }
@@ -199,8 +195,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                         OrderByContinuationToken.ToCosmosElement(orderByContinuationToken)
                         }),
                     containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
-                    emitRawOrderByPayload: false,
-                    useLengthAwareRangeComparer: true);
+                    emitRawOrderByPayload: false);
                 Assert.IsTrue(monadicCreate.Succeeded);
             }
 
@@ -247,8 +242,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                                 OrderByContinuationToken.ToCosmosElement(orderByContinuationToken)
                             }),
                         containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
-                        emitRawOrderByPayload: false,
-                        useLengthAwareRangeComparer: true);
+                        emitRawOrderByPayload: false);
                     Assert.IsTrue(monadicCreate.Succeeded);
                 }
             }
@@ -311,8 +305,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                                 OrderByContinuationToken.ToCosmosElement(orderByContinuationToken2)
                             }),
                         containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
-                        emitRawOrderByPayload: false,
-                        useLengthAwareRangeComparer: true);
+                        emitRawOrderByPayload: false);
                     Assert.IsTrue(monadicCreate.Succeeded);
                 }
             }
@@ -356,8 +349,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                             OrderByContinuationToken.ToCosmosElement(orderByContinuationToken)
                         }),
                     containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
-                    emitRawOrderByPayload: false,
-                    useLengthAwareRangeComparer: true);
+                    emitRawOrderByPayload: false);
                 Assert.IsTrue(monadicCreate.Succeeded);
             }
 
@@ -401,8 +393,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                                 OrderByContinuationToken.ToCosmosElement(orderByContinuationToken)
                             }),
                         containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
-                        emitRawOrderByPayload: false,
-                        useLengthAwareRangeComparer: true);
+                        emitRawOrderByPayload: false);
                     Assert.IsTrue(monadicCreate.Succeeded);
                 }
             }
@@ -456,8 +447,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 nonStreamingOrderBy: false,
                 continuationToken: CosmosElement.Parse(continuationToken),
                 containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
-                emitRawOrderByPayload: false,
-                useLengthAwareRangeComparer: true);
+                emitRawOrderByPayload: false);
             Assert.IsTrue(monadicCreate.Succeeded);
 
             IQueryPipelineStage queryPipelineStage = monadicCreate.Result;
@@ -497,8 +487,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 nonStreamingOrderBy: nonStreamingOrderBy,
                 continuationToken: null,
                 containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
-                emitRawOrderByPayload: false,
-                useLengthAwareRangeComparer: true);
+                emitRawOrderByPayload: false);
             Assert.IsTrue(monadicCreate.Succeeded);
             IQueryPipelineStage queryPipelineStage = monadicCreate.Result;
 
@@ -549,8 +538,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 nonStreamingOrderBy: false,
                 continuationToken: null,
                 containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
-                emitRawOrderByPayload: false,
-                useLengthAwareRangeComparer: true);
+                emitRawOrderByPayload: false);
             Assert.IsTrue(monadicCreate.Succeeded);
             IQueryPipelineStage queryPipelineStage = monadicCreate.Result;
 
@@ -614,8 +602,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     nonStreamingOrderBy: nonStreamingOrderBy,
                     continuationToken: continuationToken,
                     containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
-                    emitRawOrderByPayload: false,
-                    useLengthAwareRangeComparer: true);
+                    emitRawOrderByPayload: false);
                 monadicQueryPipelineStage.ThrowIfFailed();
                 IQueryPipelineStage queryPipelineStage = monadicQueryPipelineStage.Result;
 

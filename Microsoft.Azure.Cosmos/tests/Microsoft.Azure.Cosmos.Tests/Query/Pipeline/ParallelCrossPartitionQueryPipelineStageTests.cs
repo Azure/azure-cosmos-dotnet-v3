@@ -39,8 +39,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
                 maxConcurrency: 10,
                 prefetchPolicy: PrefetchPolicy.PrefetchSinglePage,
-                continuationToken: null,
-                useLengthAwareRangeComparer: true);
+                continuationToken: null);
             Assert.IsTrue(monadicCreate.Succeeded);
         }
 
@@ -58,8 +57,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
                 maxConcurrency: 10,
                 prefetchPolicy: PrefetchPolicy.PrefetchSinglePage,
-                continuationToken: CosmosObject.Create(new Dictionary<string, CosmosElement>()),
-                useLengthAwareRangeComparer: true);
+                continuationToken: CosmosObject.Create(new Dictionary<string, CosmosElement>()));
             Assert.IsTrue(monadicCreate.Failed);
             Assert.IsTrue(monadicCreate.InnerMostException is MalformedContinuationTokenException);
         }
@@ -78,8 +76,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
                 maxConcurrency: 10,
                 prefetchPolicy: PrefetchPolicy.PrefetchSinglePage,
-                continuationToken: CosmosArray.Create(new List<CosmosElement>()),
-                useLengthAwareRangeComparer: true);
+                continuationToken: CosmosArray.Create(new List<CosmosElement>()));
             Assert.IsTrue(monadicCreate.Failed);
             Assert.IsTrue(monadicCreate.InnerMostException is MalformedContinuationTokenException);
         }
@@ -98,8 +95,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
                 maxConcurrency: 10,
                 prefetchPolicy: PrefetchPolicy.PrefetchSinglePage,
-                continuationToken: CosmosArray.Create(new List<CosmosElement>() { CosmosString.Create("asdf") }),
-                useLengthAwareRangeComparer: true);
+                continuationToken: CosmosArray.Create(new List<CosmosElement>() { CosmosString.Create("asdf") }));
             Assert.IsTrue(monadicCreate.Failed);
             Assert.IsTrue(monadicCreate.InnerMostException is MalformedContinuationTokenException);
         }
@@ -122,8 +118,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
                 maxConcurrency: 10,
                 prefetchPolicy: PrefetchPolicy.PrefetchSinglePage,
-                continuationToken: CosmosArray.Create(new List<CosmosElement>() { ParallelContinuationToken.ToCosmosElement(token) }),
-                useLengthAwareRangeComparer: true);
+                continuationToken: CosmosArray.Create(new List<CosmosElement>() { ParallelContinuationToken.ToCosmosElement(token) }));
             Assert.IsTrue(monadicCreate.Succeeded);
         }
 
@@ -153,8 +148,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
                 maxConcurrency: 10,
                 prefetchPolicy: PrefetchPolicy.PrefetchSinglePage,
-                continuationToken: CosmosArray.Create(new List<CosmosElement>() { ParallelContinuationToken.ToCosmosElement(token1), ParallelContinuationToken.ToCosmosElement(token2) }),
-                useLengthAwareRangeComparer: true);
+                continuationToken: CosmosArray.Create(new List<CosmosElement>() { ParallelContinuationToken.ToCosmosElement(token1), ParallelContinuationToken.ToCosmosElement(token2) }));
+
             Assert.IsTrue(monadicCreate.Succeeded);
         }
 
@@ -190,8 +185,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
                     maxConcurrency: 10,
                     prefetchPolicy: aggressivePrefetch ? PrefetchPolicy.PrefetchAll : PrefetchPolicy.PrefetchSinglePage,
-                    continuationToken: continuationToken,
-                    useLengthAwareRangeComparer: true);
+                    continuationToken: continuationToken);
                 Assert.IsTrue(monadicQueryPipelineStage.Succeeded);
                 IQueryPipelineStage queryPipelineStage = monadicQueryPipelineStage.Result;
 

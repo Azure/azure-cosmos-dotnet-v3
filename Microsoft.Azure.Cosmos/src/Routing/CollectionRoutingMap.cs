@@ -72,10 +72,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     }
                     return range.Status == PartitionKeyRangeStatus.Offline ? CollectionRoutingMap.InvalidPkRangeId : pkId;
                 });
-
-            this.comparers = useLengthAwareRangeComparer
-                ? (Range<string>.LengthAwareMinComparer.Instance, Range<string>.LengthAwareMaxComparer.Instance)
-                : (Range<string>.MinComparer.Instance, Range<string>.MaxComparer.Instance);
+            this.comparers = RangeComparerProvider.GetComparers(useLengthAwareRangeComparer);
         }
 
         public static CollectionRoutingMap TryCreateCompleteRoutingMap(
