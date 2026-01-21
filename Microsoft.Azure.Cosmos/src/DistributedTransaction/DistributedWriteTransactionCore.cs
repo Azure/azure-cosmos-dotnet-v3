@@ -5,14 +5,13 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.ClientModel.Primitives;
     using System.Collections.Generic;
+    using System.Linq;
     using Microsoft.Azure.Documents;
 
     internal class DistributedWriteTransactionCore : DistributedWriteTransaction
     {
-        /// <summary>
-        /// List of operations in a distributed transaction
-        /// </summary>
         protected List<DistributedTransactionOperation> operations;
 
         internal DistributedWriteTransactionCore()
@@ -20,67 +19,98 @@ namespace Microsoft.Azure.Cosmos
             this.operations = new List<DistributedTransactionOperation>();
         }
 
-        public override DistributedTransaction Create<T>(string database, string collection, PartitionKey partitionKey)
+        public override DistributedTransaction Create<T>(string database, string collection, PartitionKey partitionKey, T resource)
         {
             this.operations.Add(
-                new DistributedTransactionOperation(
+                new DistributedTransactionOperation<T>(
                     operationType: OperationType.Create,
-                    partitionKey,
+                    operationIndex: this.operations.Count,
                     database,
-                    collection));
+                    collection,
+                    partitionKey,
+                    resource));
             return this;
         }
 
-        public override DistributedTransaction Replace<T>(string database, string collection, PartitionKey partitionKey)
+        public override DistributedTransaction Replace<T>(string database, string collection, PartitionKey partitionKey, string id, T resource)
         {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
             this.operations.Add(
-                new DistributedTransactionOperation(
+                new DistributedTransactionOperation<T>(
                     operationType: OperationType.Replace,
-                    partitionKey,
+                    operationIndex: this.operations.Count,
                     database,
-                    collection));
+                    collection,
+                    partitionKey,
+                    id,
+                    resource));
             return this;
         }
 
-        public override DistributedTransaction Delete(string database, string collection, PartitionKey partitionKey)
+        public override DistributedTransaction Delete(string database, string collection, PartitionKey partitionKey, string id)
         {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
             this.operations.Add(
                 new DistributedTransactionOperation(
                     operationType: OperationType.Delete,
-                    partitionKey,
+                    operationIndex: this.operations.Count,
                     database,
-                    collection));
+                    collection,
+                    partitionKey,
+                    id: id));
             return this;
         }
 
-        public override DistributedTransaction Patch(string database, string collection, PartitionKey partitionKey)
+        public override DistributedTransaction Patch(
+            string database,
+            string collection,
+            PartitionKey partitionKey,
+            string id,
+            IReadOnlyList<PatchOperation> patchOperations)
         {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            if (patchOperations == null || !patchOperations.Any())
+            {
+                throw new ArgumentNullException(nameof(patchOperations));
+            }
+
+            PatchSpec patchSpec = new PatchSpec(patchOperations, new PatchItemRequestOptions());
+
             this.operations.Add(
-                new DistributedTransactionOperation(
+                new DistributedTransactionOperation<PatchSpec>(
                     operationType: OperationType.Patch,
-                    partitionKey,
+                    operationIndex: this.operations.Count,
                     database,
-                    collection));
+                    collection,
+                    partitionKey,
+                    resource: patchSpec));
             return this;
         }
 
-        public override DistributedTransaction Upsert(string database, string collection, PartitionKey partitionKey)
+        public override DistributedTransaction Upsert<T>(string database, string collection, PartitionKey partitionKey, T resource)
         {
             this.operations.Add(
-                new DistributedTransactionOperation(
+                new DistributedTransactionOperation<T>(
                     operationType: OperationType.Upsert,
-                    partitionKey,
+                    operationIndex: this.operations.Count,
                     database,
-                    collection));
+                    collection,
+                    partitionKey,
+                    resource));
             return this;
         }
 
         public override void CommitTransaction()
-        {
-            throw new NotImplementedException();
-        }
-
-        private void ValidateTransaction()
         {
             throw new NotImplementedException();
         }
