@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.ClientModel.Primitives;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
 
     internal class DistributedWriteTransactionCore : DistributedWriteTransaction
@@ -110,9 +111,18 @@ namespace Microsoft.Azure.Cosmos
             return this;
         }
 
-        public override void CommitTransaction()
+        public override Task<DistributedTransactionResponse> CommitTransactionAsync()
         {
-            throw new NotImplementedException();
+            return this.CommitTransactionAsync(this.operations);
+        }
+
+        private Task<DistributedTransactionResponse> CommitTransactionAsync(IReadOnlyList<DistributedTransactionOperation> operations)
+        {
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                collectionCache: null,
+                operations: operations);
+
+            return committer.CommitTransactionAsync();
         }
     }
 }
