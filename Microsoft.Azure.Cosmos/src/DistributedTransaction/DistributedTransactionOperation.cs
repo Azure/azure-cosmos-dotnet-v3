@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
     //using Microsoft.Azure.Documents;
 
     /// <summary>
-    /// Represents an operation on a document whichwill be executed as a part of a distributed transaction.
+    /// Represents an operation on a document which will be executed as a part of a distributed transaction.
     /// </summary>
     internal class DistributedTransactionOperation
     {
@@ -41,6 +41,8 @@ namespace Microsoft.Azure.Cosmos
         public int OperationIndex { get; internal set; } 
 
         public String Id { get; internal set; }
+
+        public string CollectionResourceId { get; internal set; }
     }
 
     internal class DistributedTransactionOperation<T> : DistributedTransactionOperation

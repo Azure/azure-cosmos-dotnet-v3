@@ -5,8 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections.Generic;
-    using System.Text;
+    using System.Threading.Tasks;
 
     /// <summary>
     /// Represents a distributed transaction that will be performed across partitions and/or collections. 
@@ -21,6 +20,6 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Commits the distributed transaction.
         /// </summary>
-        public abstract void CommitTransaction();
+        public abstract Task<DistributedTransactionResponse> CommitTransactionAsync();
     }
 }
