@@ -1,23 +1,25 @@
 ﻿namespace Microsoft.Azure.Cosmos.Client.Tests
 {
     using System;
-    using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Documents;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Globalization;
     using System.Linq;
     using System.Net;
-    using System.Threading;
-    using System.Threading.Tasks;
-    using Microsoft.Azure.Documents.Collections;
-    using Microsoft.Azure.Documents.Client;
-    using Microsoft.Azure.Cosmos.Common;
     using System.Net.Http;
     using System.Reflection;
-    using System.Collections.Concurrent;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Documents;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Microsoft.Azure.Documents.Client;
+    using Microsoft.Azure.Documents.Collections;
+    using Moq;
+
+    using Microsoft.Azure.Cosmos.Common;
+    using global::Azure.Core;
 
     /// <summary>
     /// Tests for <see cref="ClientRetryPolicy"/>
@@ -50,7 +52,7 @@
                 multimasterMetadataWriteRetryTest: true);
 
 
-            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false);
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new Cosmos.RetryOptions(), enableEndpointDiscovery, false);
 
             //Creates a metadata write request
             DocumentServiceRequest request = this.CreateRequest(false, true);
@@ -86,7 +88,6 @@
             retryPolicy.OnBeforeSendRequest(request);
             Assert.AreEqual(request.RequestContext.LocationEndpointToRoute, ClientRetryPolicyTests.Location1Endpoint);
         }
-
         /// <summary>
         /// Test to validate that when 429.3092 is thrown from the service, write requests on
         /// a multi master account should be converted to 503 and retried to the next region.
@@ -110,7 +111,7 @@
             ClientRetryPolicy retryPolicy = new (
                 endpointManager,
                 this.partitionKeyRangeLocationCache,
-                new RetryOptions(),
+                new Cosmos.RetryOptions(),
                 enableEndpointDiscovery,
                 false);
 
@@ -184,7 +185,7 @@
                isPreferredLocationsListEmpty: true);
 
             //Create Retry Policy
-            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false);
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new Cosmos.RetryOptions(), enableEndpointDiscovery, false);
 
             CancellationToken cancellationToken = new CancellationToken();
             Exception serviceUnavailableException = new Exception();
@@ -237,7 +238,7 @@
             ClientRetryPolicy retryPolicy = new (
                 globalEndpointManager: endpointManager,
                 partitionKeyRangeLocationCache: this.partitionKeyRangeLocationCache,
-                retryOptions: new RetryOptions(),
+                retryOptions: new Cosmos.RetryOptions(),
                 enableEndpointDiscovery: enableEndpointDiscovery,
                 isThinClientEnabled: false);
 
@@ -308,7 +309,7 @@
             ClientRetryPolicy retryPolicy = new(
                 globalEndpointManager: endpointManager,
                 partitionKeyRangeLocationCache: this.partitionKeyRangeLocationCache,
-                retryOptions: new RetryOptions(),
+                retryOptions: new Cosmos.RetryOptions(),
                 enableEndpointDiscovery: enableEndpointDiscovery,
                 isThinClientEnabled: false);
 
@@ -399,6 +400,126 @@
         public async Task ClientRetryPolicy_NoRetry_MultiMaster_Write_NoPreferredLocationsAsync()
         {
             await this.ValidateConnectTimeoutTriggersClientRetryPolicyAsync(isReadRequest: false, useMultipleWriteLocations: true, usesPreferredLocations: false, true);
+                            }
+
+        [TestMethod]
+        public async Task ClientRetryPolicy_TokenRevocationWithClaims_ShouldRetryOnceWithTokenCredential()
+        {
+            // Arrange
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false);
+
+            Mock<TokenCredential> mockTokenCredential = new Mock<TokenCredential>();
+            mockTokenCredential
+                .Setup(x => x.GetTokenAsync(It.IsAny<TokenRequestContext>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new AccessToken("test-token", DateTimeOffset.MaxValue));
+
+            using AuthorizationTokenProviderTokenCredential tokenProvider = new AuthorizationTokenProviderTokenCredential(
+                mockTokenCredential.Object,
+                new Uri("https://test-account.documents.azure.com"),
+                backgroundTokenCredentialRefreshInterval: TimeSpan.FromMinutes(5));
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                endpointManager,
+                this.partitionKeyRangeLocationCache,
+                new Cosmos.RetryOptions(),
+                enableEndpointDiscovery,
+                isThinClientEnabled: false,
+                authorizationTokenProvider: tokenProvider);
+
+            DocumentServiceRequest request = this.CreateRequest(isReadRequest: false, isMasterResourceType: false);
+
+            // Set up request headers with WWW-Authenticate containing claims
+            request.Headers[HttpConstants.HttpHeaders.WwwAuthenticate] = "Bearer error=\"insufficient_claims\", claims=\"eyJhY2Nlc3NfdG9rZW4iOnt9fQ==\"";
+
+            retryPolicy.OnBeforeSendRequest(request);
+
+            Mock<INameValueCollection> responseHeaders = new Mock<INameValueCollection>();
+            responseHeaders
+                .Setup(x => x[HttpConstants.HttpHeaders.WwwAuthenticate])
+                .Returns("Bearer error=\"insufficient_claims\", claims=\"eyJhY2Nlc3NfdG9rZW4iOnt9fQ==\"");
+
+            DocumentClientException revocationException = new DocumentClientException(
+                message: "AAD token revocation",
+                innerException: null,
+                statusCode: HttpStatusCode.Unauthorized,
+                substatusCode: SubStatusCodes.Unknown, // ✅ No special substatus
+                requestUri: request.RequestContext.LocationEndpointToRoute,
+                responseHeaders: responseHeaders.Object);
+
+            // Act & Assert - First attempt should retry
+            ShouldRetryResult firstResult = await retryPolicy.ShouldRetryAsync(revocationException, CancellationToken.None);
+            Assert.IsTrue(firstResult.ShouldRetry, "Token revocation with claims should retry on first attempt");
+
+            // Second attempt should NOT retry (max count exceeded)
+            ShouldRetryResult secondResult = await retryPolicy.ShouldRetryAsync(revocationException, CancellationToken.None);
+            Assert.IsFalse(secondResult.ShouldRetry, "Token revocation should NOT retry after max count exceeded");
+        }
+
+        [TestMethod]
+        [DataRow(null, DisplayName = "No WWW-Authenticate header")]
+        [DataRow("Bearer realm=\"test\"", DisplayName = "WWW-Authenticate without claims")]
+        public async Task ClientRetryPolicy_401WithoutCaeIndicators_DoesNotRetry(string wwwAuthenticateValue)
+        {
+            // Arrange
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false);
+
+            Mock<TokenCredential> mockTokenCredential = new Mock<TokenCredential>();
+            mockTokenCredential
+                .Setup(x => x.GetTokenAsync(It.IsAny<TokenRequestContext>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new AccessToken("test-token", DateTimeOffset.MaxValue));
+
+            using AuthorizationTokenProviderTokenCredential tokenProvider = new AuthorizationTokenProviderTokenCredential(
+                mockTokenCredential.Object,
+                new Uri("https://test-account.documents.azure.com"),
+                backgroundTokenCredentialRefreshInterval: TimeSpan.FromMinutes(5));
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                endpointManager,
+                this.partitionKeyRangeLocationCache,
+                new Cosmos.RetryOptions(),
+                enableEndpointDiscovery,
+                isThinClientEnabled: false,
+                authorizationTokenProvider: tokenProvider);
+
+            DocumentServiceRequest request = this.CreateRequest(isReadRequest: false, isMasterResourceType: false);
+
+            // Set up request headers (simulating what ClientRetryPolicy actually checks)
+            if (wwwAuthenticateValue != null)
+            {
+                request.Headers[HttpConstants.HttpHeaders.WwwAuthenticate] = wwwAuthenticateValue;
+            }
+
+            retryPolicy.OnBeforeSendRequest(request);
+
+            Mock<INameValueCollection> headers = new Mock<INameValueCollection>();
+            headers.Setup(x => x[HttpConstants.HttpHeaders.WwwAuthenticate]).Returns(wwwAuthenticateValue);
+
+            DocumentClientException unauthorizedException = new DocumentClientException(
+                message: "Unauthorized",
+                innerException: null,
+                statusCode: HttpStatusCode.Unauthorized,
+                substatusCode: SubStatusCodes.Unknown,
+                requestUri: request.RequestContext.LocationEndpointToRoute,
+                responseHeaders: headers.Object);
+
+            // Act
+            ShouldRetryResult result = await retryPolicy.ShouldRetryAsync(unauthorizedException, CancellationToken.None);
+
+            // Assert
+            // When there are no CAE indicators, HandleUnauthorizedResponse() returns null,
+            // and the request falls through to the throttling retry policy.
+            // The throttling retry policy doesn't handle 401, so it returns NoRetry.
+            Assert.IsNotNull(result, "Should get a result from the throttling retry policy");
+            Assert.IsFalse(result.ShouldRetry, 
+                "401 without CAE indicators should NOT trigger a retry");
         }
 
         private async Task ValidateConnectTimeoutTriggersClientRetryPolicyAsync(
@@ -447,14 +568,14 @@
 
             this.partitionKeyRangeLocationCache = GlobalPartitionEndpointManagerNoOp.Instance;
 
-            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(mockDocumentClientContext.GlobalEndpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery: true, false);
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(mockDocumentClientContext.GlobalEndpointManager, this.partitionKeyRangeLocationCache, new Cosmos.RetryOptions(), enableEndpointDiscovery: true, false);
 
             INameValueCollection headers = new DictionaryNameValueCollection();
             headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.BoundedStaleness.ToString());
 
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 isReadRequest ? OperationType.Read : OperationType.Create,
-                ResourceType.Document,
+                Documents.ResourceType.Document,
                 "dbs/OVJwAA==/colls/OVJwAOcMtA0=/docs/OVJwAOcMtA0BAAAAAAAAAA==/",
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers))
@@ -648,11 +769,11 @@
         {
             if (isReadRequest)
             {
-                return DocumentServiceRequest.Create(OperationType.Read, isMasterResourceType ? ResourceType.Database : ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey);
+                return DocumentServiceRequest.Create(OperationType.Read, isMasterResourceType ? Documents.ResourceType.Database : Documents.ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey);
             }
             else
             {
-                return DocumentServiceRequest.Create(OperationType.Create, isMasterResourceType ? ResourceType.Database : ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey);
+                return DocumentServiceRequest.Create(OperationType.Create, isMasterResourceType ? Documents.ResourceType.Database : Documents.ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey);
             }
         }
 
