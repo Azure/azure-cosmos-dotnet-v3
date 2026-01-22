@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos
             this.operations = new List<DistributedTransactionOperation>();
         }
 
-        public override DistributedTransaction Create<T>(string database, string collection, PartitionKey partitionKey, T resource)
+        public override DistributedWriteTransaction Create<T>(string database, string collection, PartitionKey partitionKey, T resource)
         {
             this.operations.Add(
                 new DistributedTransactionOperation<T>(
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos
             return this;
         }
 
-        public override DistributedTransaction Replace<T>(string database, string collection, PartitionKey partitionKey, string id, T resource)
+        public override DistributedWriteTransaction Replace<T>(string database, string collection, PartitionKey partitionKey, string id, T resource)
         {
             if (string.IsNullOrWhiteSpace(id))
             {
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
             return this;
         }
 
-        public override DistributedTransaction Delete(string database, string collection, PartitionKey partitionKey, string id)
+        public override DistributedWriteTransaction Delete(string database, string collection, PartitionKey partitionKey, string id)
         {
             if (string.IsNullOrWhiteSpace(id))
             {
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
             return this;
         }
 
-        public override DistributedTransaction Patch(
+        public override DistributedWriteTransaction Patch(
             string database,
             string collection,
             PartitionKey partitionKey,
@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos
             return this;
         }
 
-        public override DistributedTransaction Upsert<T>(string database, string collection, PartitionKey partitionKey, T resource)
+        public override DistributedWriteTransaction Upsert<T>(string database, string collection, PartitionKey partitionKey, T resource)
         {
             this.operations.Add(
                 new DistributedTransactionOperation<T>(

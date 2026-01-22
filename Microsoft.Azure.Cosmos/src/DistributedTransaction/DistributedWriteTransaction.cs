@@ -8,33 +8,33 @@ namespace Microsoft.Azure.Cosmos
 
     internal abstract class DistributedWriteTransaction : DistributedTransaction
     {
-        public abstract DistributedTransaction Create<T>(
+        public abstract DistributedWriteTransaction Create<T>(
             string database,
             string collection,
             PartitionKey partitionKey,
             T resource);
 
-        public abstract DistributedTransaction Replace<T>(
+        public abstract DistributedWriteTransaction Replace<T>(
             string database,
             string collection,
             PartitionKey partitionKey,
             string id,
             T resource);
 
-        public abstract DistributedTransaction Delete(
+        public abstract DistributedWriteTransaction Delete(
             string database,
             string collection,
             PartitionKey partitionKey,
             string id);
 
-        public abstract DistributedTransaction Patch(
+        public abstract DistributedWriteTransaction Patch(
             string database,
             string collection,
             PartitionKey partitionKey,
             string id,
             IReadOnlyList<PatchOperation> patchOperations);
 
-        public abstract DistributedTransaction Upsert<T>(
+        public abstract DistributedWriteTransaction Upsert<T>(
             string database,
             string collection,
             PartitionKey partitionKey,

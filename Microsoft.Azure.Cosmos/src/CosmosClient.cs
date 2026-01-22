@@ -1171,7 +1171,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        virtual DistributedTransaction CreateDistributedTransaction()
+        virtual DistributedWriteTransaction CreateDistributedWriteTransaction()
         {
             return new DistributedWriteTransactionCore();
         }
