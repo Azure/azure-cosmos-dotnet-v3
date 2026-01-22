@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Threading;
     using System.Threading.Tasks;
 
     /// <summary>
@@ -20,6 +21,6 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Commits the distributed transaction.
         /// </summary>
-        public abstract Task<DistributedTransactionResponse> CommitTransactionAsync();
+        public abstract Task<DistributedTransactionResponse> CommitTransactionAsync(CancellationToken cancellationToken);
     }
 }
