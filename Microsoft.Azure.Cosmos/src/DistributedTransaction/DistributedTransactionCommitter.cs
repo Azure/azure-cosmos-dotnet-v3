@@ -69,41 +69,38 @@ namespace Microsoft.Azure.Cosmos
             DistributedTransactionRequest transactionRequest,
             CancellationToken cancellationToken)
         {
-            using (Stream requestPayload = this.SerializeTransactionRequest(transactionRequest))
+            using (ITrace trace = Tracing.Trace.GetRootTrace("DistributedTransaction Commit", TraceComponent.Batch, TraceLevel.Info))
             {
-                ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
-                    resourceUri: string.Empty, // DTC endpoint - to be configured
-                    resourceType: ResourceType.Document,
-                    operationType: OperationType.Batch,
-                    requestOptions: null,
-                    cosmosContainerCore: null,
-                    feedRange: null,
-                    streamPayload: requestPayload,
-                    requestEnricher: requestMessage =>
-                    {
-                        // TODO: update HttpHeaders with required headers and populate them here
-                    },
-                    trace: NoOpTrace.Singleton,
-                    cancellationToken: cancellationToken);
+                using (Stream requestPayload = this.SerializeTransactionRequest(transactionRequest))
+                {
+                    ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
+                        resourceUri: string.Empty, // DTC endpoint - to be configured
+                        resourceType: ResourceType.Document,
+                        operationType: OperationType.Batch,
+                        requestOptions: null,
+                        cosmosContainerCore: null,
+                        feedRange: null,
+                        streamPayload: requestPayload,
+                        requestEnricher: requestMessage =>
+                        {
+                            // TODO: update HttpHeaders with required headers and populate them here
+                        },
+                        trace: trace,
+                        cancellationToken: cancellationToken);
 
-                return await this.CreateResponseFromMessageAsync(
-                    responseMessage,
-                    transactionRequest,
-                    cancellationToken);
+                    return await DistributedTransactionResponse.FromResponseMessageAsync(
+                        responseMessage,
+                        transactionRequest.Operations,
+                        this.serializerCore,
+                        trace,
+                        cancellationToken);
+                }
             }
         }
 
         private Stream SerializeTransactionRequest(DistributedTransactionRequest transactionRequest)
         {
             return this.serializerCore.ToStream(transactionRequest);
-        }
-
-        private async Task<DistributedTransactionResponse> CreateResponseFromMessageAsync(
-            ResponseMessage responseMessage,
-            DistributedTransactionRequest transactionRequest,
-            CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
         }
 
 #pragma warning disable IDE0060 // Remove unused parameter

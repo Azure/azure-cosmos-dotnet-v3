@@ -23,7 +23,6 @@ namespace Microsoft.Azure.Cosmos
             this.IdempotencyToken = Guid.NewGuid();
             this.OperationType = operationType;
             this.ResourceType = resourceType;
-            this.Headers = new Dictionary<string, string>();
         }
 
         public Guid IdempotencyToken { get; set; }
@@ -33,7 +32,5 @@ namespace Microsoft.Azure.Cosmos
         public ResourceType ResourceType { get; set; }
 
         public IReadOnlyList<DistributedTransactionOperation> Operations { get; set; }
-
-        public Dictionary<string, string> Headers { get; set; }
     }
 }

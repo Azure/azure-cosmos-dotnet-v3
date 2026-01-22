@@ -29,7 +29,6 @@ namespace Microsoft.Azure.Cosmos
             this.Container = container;
             this.Id = id;
             this.ResourceType = ResourceType.Document;
-            this.Headers = new Dictionary<string, string>();
         }
 
         public PartitionKey PartitionKey { get; internal set; }
@@ -53,8 +52,6 @@ namespace Microsoft.Azure.Cosmos
         public string ETag { get; internal set; }
 
         public ResourceType ResourceType { get; internal set; }
-
-        public Dictionary<string, string> Headers { get; internal set; }
     }
 
     internal class DistributedTransactionOperation<T> : DistributedTransactionOperation

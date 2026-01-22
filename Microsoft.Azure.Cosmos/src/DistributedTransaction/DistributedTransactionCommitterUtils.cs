@@ -42,11 +42,6 @@ namespace Microsoft.Azure.Cosmos
                 {
                     validationErrors.Add($"Operation at index {index}: partition key cannot be null.");
                 }
-
-                if (!IsSupportedOperationType(operation.OperationType))
-                {
-                    validationErrors.Add($"Operation at index {index}: operation type '{operation.OperationType}' is not supported in distributed transactions.");
-                }
             }
 
             if (validationErrors.Count > 0)
@@ -57,15 +52,6 @@ namespace Microsoft.Azure.Cosmos
 
                 throw new ArgumentException(errorMessage);
             }
-        }
-
-        private static bool IsSupportedOperationType(OperationType operationType)
-        {
-            return operationType == OperationType.Create
-                || operationType == OperationType.Replace
-                || operationType == OperationType.Upsert
-                || operationType == OperationType.Delete
-                || operationType == OperationType.Patch;
         }
 
         public static async Task ResolveCollectionRidsAsync(
@@ -92,12 +78,7 @@ namespace Microsoft.Azure.Cosmos
                         ContainerProperties containerProperties = await collectionCache.ResolveCollectionAsync(
                             request,
                             cancellationToken,
-                            NoOpTrace.Singleton);
-
-                        if (containerProperties == null)
-                        {
-                            throw new InvalidOperationException($"Could not resolve collection RID for {collectionPath}");
-                        }
+                            NoOpTrace.Singleton) ?? throw new InvalidOperationException($"Could not resolve collection RID for {collectionPath}");
 
                         foreach (DistributedTransactionOperation operation in group)
                         {
