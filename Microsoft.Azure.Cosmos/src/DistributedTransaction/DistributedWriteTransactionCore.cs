@@ -5,18 +5,21 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.ClientModel.Primitives;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Documents;
 
     internal class DistributedWriteTransactionCore : DistributedWriteTransaction
     {
+        private readonly CosmosClientContext clientContext;
         protected List<DistributedTransactionOperation> operations;
 
-        internal DistributedWriteTransactionCore()
+        internal DistributedWriteTransactionCore(CosmosClientContext clientContext)
         {
+            this.clientContext = clientContext ?? throw new ArgumentNullException(nameof(clientContext));
             this.operations = new List<DistributedTransactionOperation>();
         }
 
@@ -111,18 +114,14 @@ namespace Microsoft.Azure.Cosmos
             return this;
         }
 
-        public override Task<DistributedTransactionResponse> CommitTransactionAsync()
-        {
-            return this.CommitTransactionAsync(this.operations);
-        }
-
-        private Task<DistributedTransactionResponse> CommitTransactionAsync(IReadOnlyList<DistributedTransactionOperation> operations)
+        public override async Task<DistributedTransactionResponse> CommitTransactionAsync(
+            CancellationToken cancellationToken = default)
         {
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
-                collectionCache: null,
-                operations: operations);
+                operations: this.operations,
+                clientContext: this.clientContext);
 
-            return committer.CommitTransactionAsync();
+            return await committer.CommitTransactionAsync(cancellationToken);
         }
     }
 }

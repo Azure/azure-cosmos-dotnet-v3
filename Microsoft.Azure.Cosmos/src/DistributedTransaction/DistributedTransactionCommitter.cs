@@ -6,29 +6,26 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
+    using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
-    /// <summary>
-    /// Provides a comprehensive implementation for committing distributed transactions across multiple containers.
-    /// This class handles the complete lifecycle of distributed transaction coordination, validation, and commitment.
-    /// </summary>
     internal class DistributedTransactionCommitter
     {
-        private readonly CollectionCache collectionCache;
         private readonly IReadOnlyList<DistributedTransactionOperation> operations;
+        private readonly CosmosClientContext clientContext;
+        private readonly CosmosSerializerCore serializerCore;
 
         public DistributedTransactionCommitter(
-            CollectionCache collectionCache,
-            IReadOnlyList<DistributedTransactionOperation> operations)
+            IReadOnlyList<DistributedTransactionOperation> operations,
+            CosmosClientContext clientContext)
         {
-            this.collectionCache = collectionCache ?? throw new ArgumentNullException(nameof(collectionCache));
             this.operations = operations ?? throw new ArgumentNullException(nameof(operations));
+            this.clientContext = clientContext ?? throw new ArgumentNullException(nameof(clientContext));
+            this.serializerCore = this.clientContext.SerializerCore;
         }
 
         public async Task<DistributedTransactionResponse> CommitTransactionAsync(
@@ -36,13 +33,16 @@ namespace Microsoft.Azure.Cosmos
         {
             try
             {
-                await this.ValidateTransactionAsync(this.operations);
+                DistributedTransactionCommitterUtils.ValidateTransaction(this.operations);
 
-                await this.ResolveCollectionRidsAsync(this.operations, cancellationToken);
+                await DistributedTransactionCommitterUtils.ResolveCollectionRidsAsync(
+                    this.operations,
+                    this.clientContext,
+                    cancellationToken);
 
-                DistributedTransactionRequest transactionRequest = new DistributedTransactionRequest(this.operations);
-                
-                return await this.CommitTransactionAsync(transactionRequest, cancellationToken);
+                DistributedTransactionRequest transactionRequest = this.BuildTransactionRequest(this.operations);
+
+                return await this.ExecuteRequestAsync(transactionRequest, cancellationToken);
             }
             catch (Exception ex)
             {
@@ -52,68 +52,66 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private async Task<DistributedTransactionResponse> CommitTransactionAsync(DistributedTransactionRequest transactionRequest, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
-
-        private async Task AbortTransactionAsync(
-            CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
-
-        private async Task ValidateTransactionAsync(
+        private DistributedTransactionRequest BuildTransactionRequest(
             IReadOnlyList<DistributedTransactionOperation> operations)
         {
-            if (operations == null || operations.Count == 0)
+            DistributedTransactionRequest request = new DistributedTransactionRequest(
+                operations: operations,
+                operationType: OperationType.Batch,
+                resourceType: ResourceType.Document);
+
+            // TODO : Serialize resource body and build DTS request payload
+
+            return request;
+        }
+
+        private async Task<DistributedTransactionResponse> ExecuteRequestAsync(
+            DistributedTransactionRequest transactionRequest,
+            CancellationToken cancellationToken)
+        {
+            using (Stream requestPayload = this.SerializeTransactionRequest(transactionRequest))
             {
-                throw new ArgumentException("Distributed transaction must contain at least one operation.");
-            }
+                ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
+                    resourceUri: string.Empty, // DTC endpoint - to be configured
+                    resourceType: ResourceType.Document,
+                    operationType: OperationType.Batch,
+                    requestOptions: null,
+                    cosmosContainerCore: null,
+                    feedRange: null,
+                    streamPayload: requestPayload,
+                    requestEnricher: requestMessage =>
+                    {
+                        // TODO: update HttpHeaders with required headers and populate them here
+                    },
+                    trace: NoOpTrace.Singleton,
+                    cancellationToken: cancellationToken);
 
-            foreach (DistributedTransactionOperation operation in operations)
-            {
-                if (string.IsNullOrEmpty(operation.Database))
-                    throw new ArgumentException("Operation database cannot be null or empty.");
-
-                if (string.IsNullOrEmpty(operation.Container))
-                    throw new ArgumentException("Operation container cannot be null or empty.");
-
-                if (operation.PartitionKey == null)
-                    throw new ArgumentException("Operation partition key cannot be null.");
+                return await this.CreateResponseFromMessageAsync(
+                    responseMessage,
+                    transactionRequest,
+                    cancellationToken);
             }
         }
 
-        private async Task ResolveCollectionRidsAsync(
-            IReadOnlyList<DistributedTransactionOperation> operations,
+        private Stream SerializeTransactionRequest(DistributedTransactionRequest transactionRequest)
+        {
+            return this.serializerCore.ToStream(transactionRequest);
+        }
+
+        private async Task<DistributedTransactionResponse> CreateResponseFromMessageAsync(
+            ResponseMessage responseMessage,
+            DistributedTransactionRequest transactionRequest,
             CancellationToken cancellationToken)
         {
-            IEnumerable<Task> ridResolutionTasks = operations.Select(async operation =>
-            {
-                try
-                {
-                    string collectionPath = $"/dbs/{operation.Database}/colls/{operation.Container}";
+            throw new NotImplementedException();
+        }
 
-                    DocumentServiceRequest request = DocumentServiceRequest.Create(
-                        OperationType.Read,
-                        ResourceType.Collection,
-                        collectionPath,
-                        AuthorizationTokenType.PrimaryMasterKey);
-                    ContainerProperties containerProperties = await this.collectionCache.ResolveCollectionAsync(
-                        request,
-                        cancellationToken,
-                        NoOpTrace.Singleton) ?? throw new InvalidOperationException($"Could not resolve collection RID for {collectionPath}");
-
-                    operation.CollectionResourceId = containerProperties.ResourceId;
-                }
-                catch (Exception ex)
-                {
-                    DefaultTrace.TraceError($"Failed to resolve RID for {operation.Database}/{operation.Container}: {ex.Message}");
-                    throw;
-                }
-            });
-
-            await Task.WhenAll(ridResolutionTasks);
+#pragma warning disable IDE0060 // Remove unused parameter
+        private async Task AbortTransactionAsync(CancellationToken cancellationToken)
+#pragma warning restore IDE0060 // Remove unused parameter
+        {
+            // TODO: Implement transaction abort logic
+            await Task.CompletedTask;
         }
     }
 }

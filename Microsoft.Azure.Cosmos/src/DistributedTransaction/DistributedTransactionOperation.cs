@@ -5,9 +5,9 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
-
-    //using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Represents an operation on a document which will be executed as a part of a distributed transaction.
@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     internal class DistributedTransactionOperation
     {
         public DistributedTransactionOperation(
-            Documents.OperationType operationType,
+            OperationType operationType,
             int operationIndex,
             string database,
             string container,
@@ -28,6 +28,8 @@ namespace Microsoft.Azure.Cosmos
             this.Database = database;
             this.Container = container;
             this.Id = id;
+            this.ResourceType = ResourceType.Document;
+            this.Headers = new Dictionary<string, string>();
         }
 
         public PartitionKey PartitionKey { get; internal set; }
@@ -36,19 +38,29 @@ namespace Microsoft.Azure.Cosmos
 
         public string Container { get; internal set; }
 
-        public Documents.OperationType OperationType { get; internal set; }
+        public OperationType OperationType { get; internal set; }
 
-        public int OperationIndex { get; internal set; } 
+        public int OperationIndex { get; internal set; }
 
-        public String Id { get; internal set; }
+        public string Id { get; internal set; }
 
         public string CollectionResourceId { get; internal set; }
+
+        public Stream ResourceStream { get; internal set; }
+
+        public string SessionToken { get; internal set; }
+
+        public string ETag { get; internal set; }
+
+        public ResourceType ResourceType { get; internal set; }
+
+        public Dictionary<string, string> Headers { get; internal set; }
     }
 
     internal class DistributedTransactionOperation<T> : DistributedTransactionOperation
     {
         public DistributedTransactionOperation(
-            Documents.OperationType operationType,
+            OperationType operationType,
             int operationIndex,
             string database,
             string container,
@@ -60,7 +72,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public DistributedTransactionOperation(
-            Documents.OperationType operationType,
+            OperationType operationType,
             int operationIndex,
             string database,
             string container,
@@ -71,6 +83,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.Resource = resource;
         }
+
         public T Resource { get; internal set; }
     }
 }

@@ -1173,7 +1173,7 @@ namespace Microsoft.Azure.Cosmos
 #endif
         virtual DistributedTransaction CreateDistributedTransaction()
         {
-            return new DistributedWriteTransactionCore();
+            return new DistributedWriteTransactionCore(this.ClientContext);
         }
 
         /// <summary>
