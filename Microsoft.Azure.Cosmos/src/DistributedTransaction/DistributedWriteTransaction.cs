@@ -6,7 +6,12 @@ namespace Microsoft.Azure.Cosmos
 {
     using System.Collections.Generic;
 
-    internal abstract class DistributedWriteTransaction : DistributedTransaction
+#if INTERNAL
+    public 
+#else
+    internal
+#endif
+    abstract class DistributedWriteTransaction : DistributedTransaction
     {
         public abstract DistributedWriteTransaction Create<T>(
             string database,

@@ -5,17 +5,11 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.ClientModel.Primitives;
     using System.Collections.Generic;
     using System.Linq;
     using Microsoft.Azure.Documents;
 
-#if INTERNAL
-    public 
-#else
-    internal
-#endif
-    class DistributedWriteTransactionCore : DistributedWriteTransaction
+    internal class DistributedWriteTransactionCore : DistributedWriteTransaction
     {
         protected List<DistributedTransactionOperation> operations;
 
