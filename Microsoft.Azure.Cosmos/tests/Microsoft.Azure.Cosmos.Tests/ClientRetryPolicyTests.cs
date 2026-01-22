@@ -402,18 +402,25 @@
             await this.ValidateConnectTimeoutTriggersClientRetryPolicyAsync(isReadRequest: false, useMultipleWriteLocations: true, usesPreferredLocations: false, true);
         }
 
+        /// <summary>
+        /// Test to validate that hub region header is added on 404/1002 for single master accounts only,
+        /// and persists across retries. For multi-master accounts, the header should NOT be added.
+        /// </summary>
         [TestMethod]
-        [DataRow(true, DisplayName = "Read request - Hub region header persists across retries after 404/1002")]
-        [DataRow(false, DisplayName = "Write request - Hub region header persists across retries after 404/1002")]
-        public async Task ClientRetryPolicy_HubRegionHeader_AddedOn404_1002_AndPersistsAcrossRetries(bool isReadRequest)
+        [DataRow(true, true, DisplayName = "Read request on single master - Hub region header added on 404/1002")]
+        [DataRow(false, true, DisplayName = "Write request on single master - Hub region header added on 404/1002")]
+        [DataRow(true, false, DisplayName = "Read request on multi-master - Hub region header NOT added on 404/1002")]
+        [DataRow(false, false, DisplayName = "Write request on multi-master - Hub region header NOT added on 404/1002")]
+        public async Task ClientRetryPolicy_HubRegionHeader_AddedOn404_1002_BasedOnAccountType(bool isReadRequest, bool isSingleMaster)
         {
             // Arrange
             const bool enableEndpointDiscovery = true;
 
             using GlobalEndpointManager endpointManager = this.Initialize(
-                useMultipleWriteLocations: true,
+                useMultipleWriteLocations: !isSingleMaster,
                 enableEndpointDiscovery: enableEndpointDiscovery,
-                isPreferredLocationsListEmpty: false);
+                isPreferredLocationsListEmpty: false,
+                enforceSingleMasterSingleWriteLocation: isSingleMaster);
 
             ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
                 endpointManager,
@@ -440,17 +447,28 @@
             ShouldRetryResult shouldRetry = await retryPolicy.ShouldRetryAsync(sessionNotAvailableException, CancellationToken.None);
             Assert.IsTrue(shouldRetry.ShouldRetry, "Should retry on 404/1002.");
 
-            // Verify header is added and persists across multiple retry attempts
+            // Verify header behavior based on account type and that it persists across multiple retry attempts
             for (int retryAttempt = 1; retryAttempt <= 3; retryAttempt++)
             {
                 retryPolicy.OnBeforeSendRequest(request);
                 string[] headerValues = request.Headers.GetValues(HubRegionHeader);
-                Assert.IsNotNull(headerValues, $"Header should be present on retry attempt {retryAttempt}.");
-                Assert.AreEqual(1, headerValues.Length, $"Header should have exactly one value on retry attempt {retryAttempt}.");
-                Assert.AreEqual(bool.TrueString, headerValues[0], $"Header value should be 'True' on retry attempt {retryAttempt}.");
+
+                if (isSingleMaster)
+                {
+                    // For single master accounts, header should be present and persist across retries
+                    Assert.IsNotNull(headerValues, $"Header should be present on retry attempt {retryAttempt} for single master account.");
+                    Assert.AreEqual(1, headerValues.Length, $"Header should have exactly one value on retry attempt {retryAttempt}.");
+                    Assert.AreEqual(bool.TrueString, headerValues[0], $"Header value should be 'True' on retry attempt {retryAttempt}.");
+                }
+                else
+                {
+                    // For multi-master accounts, header should NOT be present
+                    Assert.IsNull(headerValues, $"Header should NOT be present on retry attempt {retryAttempt} for multi-master account.");
+                }
 
                 if (retryAttempt < 3)
                 {
+                    // Simulate another error to trigger next retry
                     DocumentClientException serviceUnavailableException = new DocumentClientException(
                         message: "Simulated 503 ServiceUnavailable",
                         innerException: null,

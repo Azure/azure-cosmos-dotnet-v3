@@ -333,7 +333,11 @@ namespace Microsoft.Azure.Cosmos
                 && subStatusCode == SubStatusCodes.ReadSessionNotAvailable)
             {
 #if !INTERNAL
-                this.addHubRegionProcessingOnlyHeader = true;
+                // Only set the hub region processing header for single master accounts
+                if (!this.canUseMultipleWriteLocations)
+                {
+                    this.addHubRegionProcessingOnlyHeader = true;
+                }
 #endif
                 return this.ShouldRetryOnSessionNotAvailable(this.documentServiceRequest);
             }
