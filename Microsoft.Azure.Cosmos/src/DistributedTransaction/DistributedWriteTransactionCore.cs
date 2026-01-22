@@ -10,7 +10,12 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using Microsoft.Azure.Documents;
 
-    internal class DistributedWriteTransactionCore : DistributedWriteTransaction
+#if INTERNAL
+    public 
+#else
+    internal
+#endif
+    class DistributedWriteTransactionCore : DistributedWriteTransaction
     {
         protected List<DistributedTransactionOperation> operations;
 
