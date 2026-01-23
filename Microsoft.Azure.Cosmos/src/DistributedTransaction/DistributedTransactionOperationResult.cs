@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public virtual string ETag { get; internal set; }
 
-        internal virtual string SessionToken { get; set; }
+        public virtual string SessionToken { get; set; }
 
         /// <summary>
         /// Gets the resource stream associated with the operation result.
