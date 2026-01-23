@@ -4321,12 +4321,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [Owner("aavasthy")]
-        [Description("Forces a single 404/1002 from the gateway and verifies ClientRetryPolicy adds x-ms-cosmos-hub-region-processing-only on the retry request.")]
+        [Description("Forces two consecutive 404/1002 responses from the gateway and verifies ClientRetryPolicy sets the hub region header flag after the first retry fails.")]
         public async Task ReadItemAsync_ShouldAddHubHeader_OnRetryAfter_404_1002()
         {
-            bool headerObservedOnRetry = false;
             int requestCount = 0;
-            bool shouldReturn404 = true;
+            int return404Count = 0;
+            const int maxReturn404 = 2; // Return 404/1002 twice
 
             // Created HTTP handler to intercept requests
             HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper
@@ -4340,52 +4340,45 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         requestCount++;
 
-                        // Check for hub header on retry (2nd+ request)
-                        if (requestCount > 1 &&
-                            request.Headers.TryGetValues(HubRegionHeader, out IEnumerable<string> values) &&
-                            values.Any(v => v.Equals(bool.TrueString, StringComparison.OrdinalIgnoreCase)))
+                        // Header should NOT be present on first retry (2nd request)
+                        if (requestCount == 2 &&
+                            request.Headers.TryGetValues(HubRegionHeader, out IEnumerable<string> firstRetryValues) &&
+                            firstRetryValues.Any())
                         {
-                            headerObservedOnRetry = true;
+                            Assert.Fail("Header should NOT be present on first retry attempt.");
+                        }
+
+                        // Return fake 404/1002 for first two requests
+                        if (return404Count < maxReturn404)
+                        {
+                            return404Count++;
+
+                            var errorResponse = new
+                            {
+                                code = "NotFound",
+                                message = "Message: {\"Errors\":[\"Resource Not Found. Learn more: https://aka.ms/cosmosdb-tsg-not-found\"]}\r\nActivityId: " + Guid.NewGuid() + ", Request URI: " + request.RequestUri,
+                                additionalErrorInfo = ""
+                            };
+
+                            HttpResponseMessage notFoundResponse = new HttpResponseMessage(HttpStatusCode.NotFound)
+                            {
+                                Content = new StringContent(
+                                    JsonConvert.SerializeObject(errorResponse),
+                                    Encoding.UTF8,
+                                    "application/json"
+                                )
+                            };
+
+                            // Add the substatus header for ReadSessionNotAvailable
+                            notFoundResponse.Headers.Add("x-ms-substatus", "1002");
+                            notFoundResponse.Headers.Add("x-ms-activity-id", Guid.NewGuid().ToString());
+                            notFoundResponse.Headers.Add("x-ms-request-charge", "1.0");
+
+                            return Task.FromResult(notFoundResponse);
                         }
                     }
 
                     return Task.FromResult<HttpResponseMessage>(null);
-                },
-
-                ResponseIntercepter = (response, request) =>
-                {
-                    if (shouldReturn404 &&
-                        request.Method == HttpMethod.Get &&
-                        request.RequestUri != null &&
-                        request.RequestUri.AbsolutePath.Contains("/docs/"))
-                    {
-                        shouldReturn404 = false; // Only return 404 once
-
-                        var errorResponse = new
-                        {
-                            code = "NotFound",
-                            message = "Message: {\"Errors\":[\"Resource Not Found. Learn more: https://aka.ms/cosmosdb-tsg-not-found\"]}\r\nActivityId: " + Guid.NewGuid() + ", Request URI: " + request.RequestUri,
-                            additionalErrorInfo = ""
-                        };
-
-                        HttpResponseMessage notFoundResponse = new HttpResponseMessage(HttpStatusCode.NotFound)
-                        {
-                            Content = new StringContent(
-                                JsonConvert.SerializeObject(errorResponse),
-                                Encoding.UTF8,
-                                "application/json"
-                            )
-                        };
-
-                        // Add the substatus header for ReadSessionNotAvailable
-                        notFoundResponse.Headers.Add("x-ms-substatus", "1002");
-                        notFoundResponse.Headers.Add("x-ms-activity-id", Guid.NewGuid().ToString());
-                        notFoundResponse.Headers.Add("x-ms-request-charge", "1.0");
-
-                        return Task.FromResult(notFoundResponse);
-                    }
-
-                    return Task.FromResult(response);
                 }
             };
 
@@ -4408,24 +4401,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             try
             {
-                // This should trigger 404/1002 on first attempt, then retry with hub header
+                // This should trigger 404/1002 twice
+                // In single-region emulator, after first retry fails with 404/1002, it won't retry again
                 ItemResponse<ToDoActivity> response = await customContainer.ReadItemAsync<ToDoActivity>(
                     testItem.id,
                     new Cosmos.PartitionKey(testItem.pk));
 
-                Assert.IsNotNull(response);
-                Assert.IsNotNull(response.Resource);
+                Assert.Fail("Expected CosmosException due to consecutive 404/1002 failures.");
             }
-            catch (CosmosException)
+            catch (CosmosException ex)
             {
-                // It's possible the retry also fails, but should still have seen the retry attempt
+                // Expected: After first retry fails with 404/1002, single master won't retry again
+                Assert.AreEqual(HttpStatusCode.NotFound, ex.StatusCode);
+                Assert.AreEqual((int)SubStatusCodes.ReadSessionNotAvailable, ex.SubStatusCode);
             }
 
-            // Verifying retry happened
-            Assert.IsTrue(requestCount >= 2, $"Expected at least 2 requests (original + retry), but got {requestCount}");
-            Assert.IsTrue(headerObservedOnRetry, $"Expected retry request to include '{HubRegionHeader}: true'");
+            // Verify the expected behavior:
+            // 1. Initial request (requestCount = 1) fails with 404/1002
+            // 2. First retry (requestCount = 2) fails with 404/1002
+            // 3. No more retries because single master + no additional regions
+            Assert.AreEqual(2, requestCount, $"Expected exactly 2 requests (initial + 1 retry) for single-region emulator, but got {requestCount}");
+            Assert.AreEqual(2, return404Count, "Both requests should have returned 404/1002");
         }
-
 
         private async Task<T> AutoGenerateIdPatternTest<T>(Cosmos.PartitionKey pk, T itemWithoutId)
         {

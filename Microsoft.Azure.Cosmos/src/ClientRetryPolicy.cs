@@ -329,19 +329,19 @@ namespace Microsoft.Azure.Cosmos
                     retryOnPreferredLocations: true);
             }
 
-            if (statusCode == HttpStatusCode.NotFound
-                && subStatusCode == SubStatusCodes.ReadSessionNotAvailable)
+            if (statusCode == HttpStatusCode.NotFound && subStatusCode == SubStatusCodes.ReadSessionNotAvailable)
             {
 #if !INTERNAL
                 // Only set the hub region processing header for single master accounts
-                if (!this.canUseMultipleWriteLocations)
+                // Set header only after the first retry attempt fails with 404/1002
+                if (!this.canUseMultipleWriteLocations && this.sessionTokenRetryCount >= 1)
                 {
                     this.addHubRegionProcessingOnlyHeader = true;
                 }
 #endif
                 return this.ShouldRetryOnSessionNotAvailable(this.documentServiceRequest);
             }
-            
+
             // Received 503 due to client connect timeout or Gateway
             if (statusCode == HttpStatusCode.ServiceUnavailable)
             {
