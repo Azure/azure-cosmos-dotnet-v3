@@ -861,7 +861,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             return list;
         }
 
-        private static SqlObjectProperty[] CreateInitializers(ReadOnlyCollection<Expression> arguments, ReadOnlyCollection<MemberInfo> members, TranslationContext context)
+        private static SqlObjectProperty[] CreateInitializers(ReadOnlyCollection<Expression> arguments, IReadOnlyList<MemberInfo> members, TranslationContext context)
         {
             if (arguments.Count != members.Count)
             {
@@ -916,12 +916,22 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             if (inputExpression.Arguments.Count > 0)
             {
-                if (inputExpression.Members == null)
+                IReadOnlyList<MemberInfo> members = inputExpression.Members;
+                if (members == null)
                 {
-                    throw new DocumentQueryException(ClientResources.ConstructorInvocationNotSupported);
+                    MemberInfo[] typeMembers = inputExpression.Type.GetMembers(BindingFlags.Instance | BindingFlags.Public);
+                    members = inputExpression.Constructor.GetParameters().Select(param =>
+                    {
+                        MemberInfo member = typeMembers.FirstOrDefault(x => x.Name.Equals(param.Name, StringComparison.OrdinalIgnoreCase));
+                        if (member == null)
+                        {
+                            throw new DocumentQueryException(ClientResources.ConstructorInvocationNotSupported);
+                        }
+                        return member;
+                    }).ToList();
                 }
 
-                SqlObjectProperty[] propertyBindings = ExpressionToSql.CreateInitializers(inputExpression.Arguments, inputExpression.Members, context);
+                SqlObjectProperty[] propertyBindings = ExpressionToSql.CreateInitializers(inputExpression.Arguments, members, context);
                 SqlObjectCreateScalarExpression create = SqlObjectCreateScalarExpression.Create(propertyBindings);
                 return create;
             }
@@ -934,8 +944,14 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         private static SqlScalarExpression VisitMemberInit(MemberInitExpression inputExpression, TranslationContext context)
         {
-            ExpressionToSql.VisitNew(inputExpression.NewExpression, context); // Return value is ignored
+            SqlScalarExpression newExpression = ExpressionToSql.VisitNew(inputExpression.NewExpression, context);
             SqlObjectProperty[] propertyBindings = ExpressionToSql.VisitBindingList(inputExpression.Bindings, context);
+
+            if ((newExpression as SqlObjectCreateScalarExpression) != null)
+            {
+                propertyBindings = propertyBindings.Concat(((SqlObjectCreateScalarExpression)newExpression).Properties).ToArray();
+            }
+
             SqlObjectCreateScalarExpression create = SqlObjectCreateScalarExpression.Create(propertyBindings);
             return create;
         }
