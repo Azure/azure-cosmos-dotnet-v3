@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos
 
         public int OperationIndex { get; internal set; } 
 
-        public String Id { get; internal set; }
+        public string Id { get; internal set; }
     }
 
     internal class DistributedTransactionOperation<T> : DistributedTransactionOperation

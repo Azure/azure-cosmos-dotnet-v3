@@ -32,6 +32,7 @@ namespace Microsoft.Azure.Cosmos
             this.ETag = other.ETag;
             this.ResourceStream = other.ResourceStream;
             this.SessionToken = other.SessionToken;
+            this.Trace = other.Trace;
         }
 
         /// <summary>
@@ -50,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets a value indicating whether the HTTP status code returned by the operation indicates success.
         /// </summary>
-        public virtual bool isSuccessStatusCode => ((int)this.StatusCode >= 200) && ((int)this.StatusCode <= 299);
+        public virtual bool IsSuccessStatusCode => ((int)this.StatusCode >= 200) && ((int)this.StatusCode <= 299);
 
         /// <summary>
         /// Gets the entity tag (ETag) associated with the operation result.

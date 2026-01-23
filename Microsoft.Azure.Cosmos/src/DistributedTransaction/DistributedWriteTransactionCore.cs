@@ -7,6 +7,8 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
 
     internal class DistributedWriteTransactionCore : DistributedWriteTransaction
@@ -18,8 +20,11 @@ namespace Microsoft.Azure.Cosmos
             this.operations = new List<DistributedTransactionOperation>();
         }
 
-        public override DistributedWriteTransaction Create<T>(string database, string collection, PartitionKey partitionKey, T resource)
+        public override DistributedWriteTransaction CreateItem<T>(string database, string collection, PartitionKey partitionKey, T resource)
         {
+            ValidateContainerReference(database, collection);
+            ValidateResource(resource);
+
             this.operations.Add(
                 new DistributedTransactionOperation<T>(
                     operationType: OperationType.Create,
@@ -31,12 +36,12 @@ namespace Microsoft.Azure.Cosmos
             return this;
         }
 
-        public override DistributedWriteTransaction Replace<T>(string database, string collection, PartitionKey partitionKey, string id, T resource)
+        public override DistributedWriteTransaction ReplaceItem<T>(string database, string collection, PartitionKey partitionKey, string id, T resource)
         {
-            if (string.IsNullOrWhiteSpace(id))
-            {
-                throw new ArgumentNullException(nameof(id));
-            }
+            ValidateContainerReference(database, collection);
+            ValidateItemId(id);
+            ValidateResource(resource);
+
             this.operations.Add(
                 new DistributedTransactionOperation<T>(
                     operationType: OperationType.Replace,
@@ -49,12 +54,11 @@ namespace Microsoft.Azure.Cosmos
             return this;
         }
 
-        public override DistributedWriteTransaction Delete(string database, string collection, PartitionKey partitionKey, string id)
+        public override DistributedWriteTransaction DeleteItem(string database, string collection, PartitionKey partitionKey, string id)
         {
-            if (string.IsNullOrWhiteSpace(id))
-            {
-                throw new ArgumentNullException(nameof(id));
-            }
+            ValidateContainerReference(database, collection);
+            ValidateItemId(id);
+
             this.operations.Add(
                 new DistributedTransactionOperation(
                     operationType: OperationType.Delete,
@@ -66,17 +70,15 @@ namespace Microsoft.Azure.Cosmos
             return this;
         }
 
-        public override DistributedWriteTransaction Patch(
+        public override DistributedWriteTransaction PatchItem(
             string database,
             string collection,
             PartitionKey partitionKey,
             string id,
             IReadOnlyList<PatchOperation> patchOperations)
         {
-            if (string.IsNullOrWhiteSpace(id))
-            {
-                throw new ArgumentNullException(nameof(id));
-            }
+            ValidateContainerReference(database, collection);
+            ValidateItemId(id);
 
             if (patchOperations == null || !patchOperations.Any())
             {
@@ -96,8 +98,11 @@ namespace Microsoft.Azure.Cosmos
             return this;
         }
 
-        public override DistributedWriteTransaction Upsert<T>(string database, string collection, PartitionKey partitionKey, T resource)
+        public override DistributedWriteTransaction UpsertItem<T>(string database, string collection, PartitionKey partitionKey, T resource)
         {
+            ValidateContainerReference(database, collection);
+            ValidateResource(resource);
+
             this.operations.Add(
                 new DistributedTransactionOperation<T>(
                     operationType: OperationType.Upsert,
@@ -109,9 +114,38 @@ namespace Microsoft.Azure.Cosmos
             return this;
         }
 
-        public override void CommitTransaction()
+        public override async Task<DistributedTransactionResponse> CommitTransactionAsync(CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
+        }
+
+        private static void ValidateContainerReference(string database, string collection)
+        {
+            if (string.IsNullOrWhiteSpace(database))
+            {
+                throw new ArgumentNullException(nameof(database));
+            }
+
+            if (string.IsNullOrWhiteSpace(collection))
+            {
+                throw new ArgumentNullException(nameof(collection));
+            }
+        }
+
+        private static void ValidateItemId(string id)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+        }
+
+        private static void ValidateResource<T>(T resource)
+        {
+            if (resource == null)
+            {
+                throw new ArgumentNullException(nameof(resource));
+            }
         }
     }
 }
