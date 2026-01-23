@@ -5,8 +5,6 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections.Generic;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -14,7 +12,7 @@ namespace Microsoft.Azure.Cosmos
     /// Represents a distributed transaction that will be performed across partitions and/or collections. 
     /// </summary>
 #if INTERNAL
-        public 
+    public
 #else
     internal
 #endif
@@ -23,6 +21,8 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Commits the distributed transaction.
         /// </summary>
+        /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
+        /// <returns>A <see cref="Task{TResult}"/> containing a <see cref="DistributedTransactionResponse"/> that represents the result of the transaction.</returns>
         public abstract Task<DistributedTransactionResponse> CommitTransactionAsync(CancellationToken cancellationToken);
     }
 }

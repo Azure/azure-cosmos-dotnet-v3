@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     /// Represents the response for a distributed transaction operation.
     /// </summary>
 #if INTERNAL
-        public 
+    public
 #else
     internal
 #endif

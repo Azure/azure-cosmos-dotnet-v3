@@ -11,10 +11,10 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
 
     /// <summary>
-    /// Represents result of a specific operation in distributed transaction
+    /// Represents result of a specific operation in distributed transaction.
     /// </summary>
 #if INTERNAL
-        public 
+    public
 #else
     internal
 #endif
@@ -59,7 +59,10 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public virtual string ETag { get; internal set; }
 
-        public virtual string SessionToken { get; set; }
+        /// <summary>
+        /// Gets or sets the session token associated with the operation result.
+        /// </summary>
+        public virtual string SessionToken { get; internal set; }
 
         /// <summary>
         /// Gets the resource stream associated with the operation result.
@@ -70,5 +73,5 @@ namespace Microsoft.Azure.Cosmos
         internal virtual SubStatusCodes SubStatusCode { get; set; }
 
         internal ITrace Trace { get; set; }
-        }
+    }
 }
