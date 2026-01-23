@@ -116,6 +116,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override async Task<DistributedTransactionResponse> CommitTransactionAsync(CancellationToken cancellationToken)
         {
+            await Task.CompletedTask;
             throw new NotImplementedException();
         }
 
