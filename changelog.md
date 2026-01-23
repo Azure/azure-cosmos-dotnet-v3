@@ -15,6 +15,26 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.58.0-preview.0"/> [3.58.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.58.0-preview.0) - 2026-1-15
+
+### <a name="3.57.0"/> [3.57.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.57.0) - 2026-1-15
+
+#### Added
+- [5511](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5511) Tracing: Adds tracing improvements for pkrange refresh calls
+- [5515](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5515) [FullTextPolicy]: Adds tests for full text policy multi-language support.
+- [5529](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5529) [Thin Client Integration]: Adds support for store procedure in thinclient mode.
+- [5535](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5535) [Thin Client Integration]: Adds thinclient header for refresh account data requests.
+
+#### Fixed
+
+- [5512](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5512) ChangeFeed: Fixes crts field being nullable
+- [5517](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5517) SystemTextSerializer: Fixes serialization to preserve polymorphic serialization when base type is marked [JsonPolymorphic]
+- [5498](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5498) Query: Fixes hybrid search query plan optimization to be enabled by default
+- [5543](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5543) Query: Fixes GetItemQueryIterator to honor the supplied (optional) FeedRange
+- [5541](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5541) Upsert/Batch: Fixes bug where RequestOptions are not honored for Upsert requests in Bulk Mode
+- [5544](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5544) Query : Fixes LINQ API to support builtin functions - ARRAY_CONTAINS_ALL and ARRAY_CONTAINS_ANY
+
+
 ### <a name="3.57.0-preview.1"/> [3.57.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.57.0-preview.1) - 2025-12-16
 #### Fixed
 - [5528](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5528) Semantic Reranking: Refactors RerankResult.Document to return string type
@@ -59,6 +79,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### <a name="3.54.0"/> [3.54.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.54.0) - 2025-10-2
 
 > Note: FullTextScore query function now expects string value parameters (e.g., FullTextScore(c.text, 'swim','run')); preview array syntax is no longer supported.
+> Updates Direct Package version update to 3.41.3 which includes the following:
+ * Fixes barrier calls to ensure calls don’t reuse stale strong‑write context after AccountRefresh by persisting the initial write endpoint and failing fast on cross‑region retries.
 
 #### Added
 
@@ -718,6 +740,9 @@ If you have a scenario where tokens generated from the newer SDKs are used by an
 - [#3787](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3787) Connectivity: Fixes ConnectionBroken and adds support for Burst Capacity
 
 ### <a name="3.32.2"/> [3.32.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.32.2) - 2023-03-10
+
+> Note: If users on this version face an `IndexOutOfRangeException` and observe connections getting unexpectedly closed, they should upgrade to version `3.32.3` or higher, where this issue has been resolved.
+
 ### <a name="3.32.2-preview"/> [3.32.2-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.32.2-preview) - 2023-03-10
 
 #### Fixed
@@ -725,12 +750,18 @@ If you have a scenario where tokens generated from the newer SDKs are used by an
 - [#3749](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3749) Query: Fixes regression from LINQ custom serializer fix. Introduced in 3.32.0 PR [3749](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3749)
 
 ### <a name="3.32.1"/> [3.32.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.32.1) - 2023-03-01
+
+> Note: If users on this version face an `IndexOutOfRangeException` and observe connections getting unexpectedly closed, they should upgrade to version `3.32.3` or higher, where this issue has been resolved.
+
 ### <a name="3.32.1-preview"/> [3.32.1-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.32.1-preview) - 2023-03-01
 
 #### Fixed
 - [#3732](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3732) ReadMany: Fixes BadRequest when using Ids with single quotes
 
 ### <a name="3.32.0"/> [3.32.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.32.0) - 2023-02-03
+
+> Note: If users on this version face an `IndexOutOfRangeException` and observe connections getting unexpectedly closed, they should upgrade to version `3.32.3` or higher, where this issue has been resolved.
+
 #### Fixed
 - [#3466](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3466) ClientRetryPolicy: Fixes behavior to Meta-data write operations in multimaster accounts
 - [#3498](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3498) PartitionKey: Fixes NullRef in toString handling for None for PartitionKey.ToString()
@@ -1808,6 +1839,7 @@ Below is a list of any know issues affecting the [recommended minimum version](#
 
 | Issue | Impact | Mitigation | Tracking link |
 | --- | --- | --- | --- |
+| Calling `GetItemQueryIterator<T>` with FeedRange | Scenarios that use FeedRange with min excluded or max included while calling `GetItemQueryIterator<T>`. | `FeedIterator<T>` created by calling `GetItemQueryIterator<T>` while supplying FeedRange ignores the max/min inclusion properties. The returned iterator _always_ includes min and excludes max implicitly. This will be tracked and fixed as a separate issue. As a workaround, only use FeedRange values with min included and max excluded. | TBD |
 | Optimistic Direct Execution in case of Partition Split/Merge. | Scenarios that enable optimistic direct execution. | Optimistic Direct Execution may result in incorrect results when partition split/merge occurs in the backend while query execution is in progress. General recommendation is disable optimistic direct execution while executing queries. | [#4971](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4971)  | 
 | Optimistic Direct execution continuation token. | Scenarios that enable optimistic direct execution. | Optimistic Direct Execution may produce a continuation token that is rejected by SDK after partition split. General recommendation is disable optimistic direct execution while executing queries. | [#4972](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4972) | 
 | `FeedIterator` enters an infinite loop after a physical partition split occurs in a container using hierarchical partition keys. | Queries using prefix partition keys.  | Rather than having the PK included in the query request options, filtering on top level hierarchical Pks should be done through where clauses. **NOTE:** This issue has been fixed in version 3.39.0 | [#4326](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4326) | 
