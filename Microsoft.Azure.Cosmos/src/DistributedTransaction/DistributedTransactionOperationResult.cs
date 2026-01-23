@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos
         public virtual string ETag { get; internal set; }
 
         /// <summary>
-        /// Gets or sets the session token associated with the operation result.
+        /// Gets the session token associated with the operation result.
         /// </summary>
         public virtual string SessionToken { get; internal set; }
 
