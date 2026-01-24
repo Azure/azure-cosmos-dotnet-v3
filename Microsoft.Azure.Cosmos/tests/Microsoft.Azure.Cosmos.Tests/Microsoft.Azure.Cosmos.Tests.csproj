@@ -11,6 +11,7 @@
     <RootNamespace>Microsoft.Azure.Cosmos.Tests</RootNamespace>
     <LangVersion>$(LangVersion)</LangVersion>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+	 <DefineConstants>$(DefineConstants);INTERNAL</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
