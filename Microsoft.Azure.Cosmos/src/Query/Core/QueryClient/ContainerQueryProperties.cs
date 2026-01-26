@@ -15,13 +15,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             IReadOnlyList<Range<string>> effectivePartitionKeyRanges,
             PartitionKeyDefinition partitionKeyDefinition,
             Cosmos.VectorEmbeddingPolicy vectorEmbeddingPolicy,
-            Cosmos.GeospatialType geospatialType)
+            Cosmos.GeospatialType geospatialType,
+            bool useLengthAwareRangeComparer)
         {
             this.ResourceId = resourceId;
             this.EffectiveRangesForPartitionKey = effectivePartitionKeyRanges;
             this.PartitionKeyDefinition = partitionKeyDefinition;
             this.VectorEmbeddingPolicy = vectorEmbeddingPolicy;
             this.GeospatialType = geospatialType;
+            this.UseLengthAwareRangeComparer = useLengthAwareRangeComparer;
         }
 
         public string ResourceId { get; }
@@ -35,5 +37,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
         public Cosmos.VectorEmbeddingPolicy VectorEmbeddingPolicy { get; }
 
         public Cosmos.GeospatialType GeospatialType { get; }
+        public bool UseLengthAwareRangeComparer { get; }
     }
 }
