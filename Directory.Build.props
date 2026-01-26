@@ -13,6 +13,7 @@
 		<HybridRowVersion>1.1.0-preview3</HybridRowVersion>
 		<LangVersion>10.0</LangVersion>
 		<AboveDirBuildProps>$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))</AboveDirBuildProps>
+		<DefineConstants>$(DefineConstants);INTERNAL</DefineConstants>
 		<DefineConstants Condition=" '$(IsNightly)' == 'true' or '$(IsPreview)' == 'true' ">$(DefineConstants);PREVIEW;ENCRYPTIONPREVIEW</DefineConstants>
 	</PropertyGroup>
 	<Import Project="$(AboveDirBuildProps)" Condition=" '$(AboveDirBuildProps)' != '' " />
