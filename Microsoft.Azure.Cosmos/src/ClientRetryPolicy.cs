@@ -39,6 +39,9 @@ namespace Microsoft.Azure.Cosmos
         private Uri locationEndpoint;
         private RetryContext retryContext;
         private DocumentServiceRequest documentServiceRequest;
+#if !INTERNAL
+        private volatile bool addHubRegionProcessingOnlyHeader;
+#endif
 
         public ClientRetryPolicy(
             GlobalEndpointManager globalEndpointManager,
@@ -223,7 +226,13 @@ namespace Microsoft.Azure.Cosmos
                     request.RequestContext.RouteToLocation(this.retryContext.RetryLocationIndex, this.retryContext.RetryRequestOnPreferredLocations);
                 }
             }
-
+#if !INTERNAL
+            // If previous attempt failed with 404/1002, add the hub-region-processing-only header to all subsequent retry attempts
+            if (this.addHubRegionProcessingOnlyHeader)
+            {
+                request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion] = bool.TrueString;
+            }
+#endif
             // Resolve the endpoint for the request and pin the resolution to the resolved endpoint
             // This enables marking the endpoint unavailability on endpoint failover/unreachability
             this.locationEndpoint = this.isThinClientEnabled
@@ -320,12 +329,19 @@ namespace Microsoft.Azure.Cosmos
                     retryOnPreferredLocations: true);
             }
 
-            if (statusCode == HttpStatusCode.NotFound
-                && subStatusCode == SubStatusCodes.ReadSessionNotAvailable)
+            if (statusCode == HttpStatusCode.NotFound && subStatusCode == SubStatusCodes.ReadSessionNotAvailable)
             {
+#if !INTERNAL
+                // Only set the hub region processing header for single master accounts
+                // Set header only after the first retry attempt fails with 404/1002
+                if (!this.canUseMultipleWriteLocations && this.sessionTokenRetryCount >= 1)
+                {
+                    this.addHubRegionProcessingOnlyHeader = true;
+                }
+#endif
                 return this.ShouldRetryOnSessionNotAvailable(this.documentServiceRequest);
             }
-            
+
             // Received 503 due to client connect timeout or Gateway
             if (statusCode == HttpStatusCode.ServiceUnavailable)
             {
