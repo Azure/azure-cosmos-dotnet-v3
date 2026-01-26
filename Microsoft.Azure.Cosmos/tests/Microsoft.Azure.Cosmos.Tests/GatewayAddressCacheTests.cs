@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos
                 }
             };
 
-            this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null, null, false);
+            this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null, null, false, false);
             this.partitionKeyRangeCache
                 .Setup(m => m.TryGetOverlappingRangesAsync(
                     It.IsAny<string>(),
@@ -806,7 +806,7 @@ namespace Microsoft.Azure.Cosmos
                 .Returns(Task.FromResult(containerProperties));
 
             string exceptionMessage = "Failed to lookup partition key ranges.";
-            Mock<PartitionKeyRangeCache> partitionKeyRangeCache = new(null, null, null, null, false);
+            Mock<PartitionKeyRangeCache> partitionKeyRangeCache = new(null, null, null, null, false, false);
             partitionKeyRangeCache
                 .Setup(m => m.TryGetOverlappingRangesAsync(
                     It.IsAny<string>(),

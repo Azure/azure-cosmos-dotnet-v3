@@ -660,13 +660,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             collectionCache.Setup(c => c.ResolveCollectionAsync(It.IsAny<DocumentServiceRequest>(), default, trace))
                 .ReturnsAsync(containerProperties);
 
-            CollectionRoutingMap collectionRoutingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(new List<Tuple<PartitionKeyRange, ServiceIdentity>>(), collectionRid);
+            CollectionRoutingMap collectionRoutingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(new List<Tuple<PartitionKeyRange, ServiceIdentity>>(), collectionRid, false);
             Mock<PartitionKeyRangeCache> partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(
                 MockBehavior.Strict,
                 new Mock<ICosmosAuthorizationTokenProvider>().Object,
                 new Mock<IStoreModel>().Object,
                 collectionCache.Object,
                 endpointManager,
+                false,
                 false);
             partitionKeyRangeCache.Setup(c => c.TryLookupAsync(collectionRid, null, It.IsAny<DocumentServiceRequest>(), trace))
                 .ReturnsAsync(collectionRoutingMap);
