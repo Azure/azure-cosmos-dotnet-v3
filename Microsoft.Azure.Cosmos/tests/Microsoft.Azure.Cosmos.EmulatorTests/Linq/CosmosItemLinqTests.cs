@@ -211,6 +211,49 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(itemList[1].id, queriable.ToList()[0].id);
         }
 
+#pragma warning disable IDE1006 // Naming Styles
+        private class Dto
+        {
+            public Dto(string id, int taskNum, string Description)
+            {
+                this.Id = id;
+                this.TaskNum = taskNum;
+                this.description = Description;
+            }
+
+            public string Id;
+
+            public int TaskNum { get; }
+
+            public string description { get; }
+        }
+#pragma warning restore IDE1006 // Naming Styles
+
+        [TestMethod]
+        public async Task ItemLINQQueryWithConstructorProjectionTest()
+        {
+            IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(container: this.Container, pkCount: 2, perPKItemCount: 1, randomPartitionKey: true);
+
+            IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>();
+            IQueryable<Dto> queriable = linqQueryable.Select(item => new Dto(item.id, item.taskNum, item.description));
+
+            FeedIterator<Dto> feedIterator = queriable.ToFeedIterator();
+            List<Dto> results = new();
+            while (feedIterator.HasMoreResults)
+            {
+                FeedResponse<Dto> queryResponse = await feedIterator.ReadNextAsync();
+                results.AddRange(queryResponse);
+            }
+
+            Assert.AreEqual(itemList.Count, results.Count);
+            for (int i = 0; i < itemList.Count; i++)
+            {
+                Assert.AreEqual(itemList[i].id, results[i].Id);
+                Assert.AreEqual(itemList[i].taskNum, results[i].TaskNum);
+                Assert.AreEqual(itemList[i].description, results[i].description);
+            }
+        }
+
         [TestMethod]
         public void ItemLINQQueryWithInvalidContinuationTokenTest()
         {
