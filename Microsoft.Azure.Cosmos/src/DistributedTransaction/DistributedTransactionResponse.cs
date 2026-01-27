@@ -243,6 +243,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Disposes the disposable members held by this class.
         /// </summary>
+        /// <param name="disposing">True to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
         protected virtual void Dispose(bool disposing)
         {
             if (this.isDisposed)
