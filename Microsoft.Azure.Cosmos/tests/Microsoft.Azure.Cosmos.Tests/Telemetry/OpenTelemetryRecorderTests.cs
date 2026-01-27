@@ -62,7 +62,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 "MediaResponse", // Part of dead code
                 "DocumentFeedResponse`1",// Part of dead code
                 "CosmosQuotaResponse",// Part of dead code
-                "StoredProcedureResponse`1" // Not supported as of now
+                "StoredProcedureResponse`1", // Not supported as of now
+                "DistributedTransactionResponse" // // Distributed transaction response in internal as of now
             };
 
             // This dictionary contains a Key-Value pair where the Key represents the Response Type compatible with Open Telemetry Response, and the corresponding Value is a mocked instance.
@@ -88,7 +89,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 { "TriggerResponse", new Mock<TriggerResponse>().Object },
                 { "UserDefinedFunctionResponse", new Mock<UserDefinedFunctionResponse>().Object },
                 { "HedgingResponse", "HedgingResponse" },
-                { "DistributedTransactionResponse", new Mock<DistributedTransactionResponse>().Object  },
             };
 
             Assembly asm = OpenTelemetryRecorderTests.GetAssemblyLocally(DllName);
@@ -173,10 +173,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                         "HedgingResponse",
                         hedgingResponse,
                         "HedgingResponse is only used internally in the CrossRegionHedgingAvailabilityStrategy and is never returned. No support Needed.");
-                }
-                else if (instance is Response<DistributedTransactionResponse> distributedTransactionResponse)
-                {
-                    _ = new OpenTelemetryResponse<DistributedTransactionResponse>(distributedTransactionResponse);
                 }
                 else
                 {
