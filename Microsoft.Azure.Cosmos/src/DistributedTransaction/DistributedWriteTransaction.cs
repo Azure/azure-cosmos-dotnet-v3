@@ -9,7 +9,12 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Represents a distributed transaction that supports write operations across multiple partitions and containers.
     /// </summary>
-    internal abstract class DistributedWriteTransaction : DistributedTransaction
+#if INTERNAL
+    public
+#else
+    internal
+#endif
+    abstract class DistributedWriteTransaction : DistributedTransaction
     {
         /// <summary>
         /// Adds a create operation to the distributed transaction.

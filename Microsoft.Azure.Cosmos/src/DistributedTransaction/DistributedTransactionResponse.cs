@@ -14,7 +14,12 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Represents the response for a distributed transaction operation.
     /// </summary>
-    internal class DistributedTransactionResponse : IReadOnlyList<DistributedTransactionOperationResult>
+#if INTERNAL
+    public
+#else
+    internal
+#endif
+    class DistributedTransactionResponse : IReadOnlyList<DistributedTransactionOperationResult>
     {
         private readonly List<DistributedTransactionOperationResult> results = null;
 

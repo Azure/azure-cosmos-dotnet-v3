@@ -88,6 +88,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 { "TriggerResponse", new Mock<TriggerResponse>().Object },
                 { "UserDefinedFunctionResponse", new Mock<UserDefinedFunctionResponse>().Object },
                 { "HedgingResponse", "HedgingResponse" },
+                { "DistributedTransactionResponse", new Mock<DistributedTransactionResponse>().Object  },
             };
 
             Assembly asm = OpenTelemetryRecorderTests.GetAssemblyLocally(DllName);
@@ -172,6 +173,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                         "HedgingResponse",
                         hedgingResponse,
                         "HedgingResponse is only used internally in the CrossRegionHedgingAvailabilityStrategy and is never returned. No support Needed.");
+                }
+                else if (instance is Response<DistributedTransactionResponse> distributedTransactionResponse)
+                {
+                    _ = new OpenTelemetryResponse<DistributedTransactionResponse>(distributedTransactionResponse);
                 }
                 else
                 {
