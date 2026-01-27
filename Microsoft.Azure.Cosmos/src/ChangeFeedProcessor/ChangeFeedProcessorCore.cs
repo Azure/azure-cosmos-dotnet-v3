@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
     using System.Collections.Generic;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping;
     using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
@@ -20,6 +21,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     internal sealed class ChangeFeedProcessorCore : ChangeFeedProcessor
     {
         private readonly ChangeFeedObserverFactory observerFactory;
+        private readonly SemaphoreSlim runningLock = new SemaphoreSlim(1, 1);
         private ContainerInternal leaseContainer;
         private string instanceName;
         private ContainerInternal monitoredContainer;
@@ -28,6 +30,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         private ChangeFeedProcessorOptions changeFeedProcessorOptions;
         private DocumentServiceLeaseStoreManager documentServiceLeaseStoreManager;
         private bool initialized = false;
+        private bool isRunning = false;
 
         public ChangeFeedProcessorCore(ChangeFeedObserverFactory observerFactory)
         {
@@ -57,21 +60,123 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         public override async Task StartAsync()
         {
-            if (!this.initialized)
+            await this.runningLock.WaitAsync().ConfigureAwait(false);
+            try
             {
-                await this.InitializeAsync().ConfigureAwait(false);
-            }
+                if (!this.initialized)
+                {
+                    await this.InitializeAsync().ConfigureAwait(false);
+                }
 
-            DefaultTrace.TraceInformation("Starting processor...");
-            await this.partitionManager.StartAsync().ConfigureAwait(false);
-            DefaultTrace.TraceInformation("Processor started.");
+                DefaultTrace.TraceInformation("Starting processor...");
+                await this.partitionManager.StartAsync().ConfigureAwait(false);
+                this.isRunning = true;
+                DefaultTrace.TraceInformation("Processor started.");
+            }
+            finally
+            {
+                this.runningLock.Release();
+            }
         }
 
         public override async Task StopAsync()
         {
-            DefaultTrace.TraceInformation("Stopping processor...");
-            await this.partitionManager.StopAsync().ConfigureAwait(false);
-            DefaultTrace.TraceInformation("Processor stopped.");
+            await this.runningLock.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                if (!this.isRunning)
+                {
+                    DefaultTrace.TraceInformation("Processor is not running, nothing to stop.");
+                    return;
+                }
+
+                DefaultTrace.TraceInformation("Stopping processor...");
+                await this.partitionManager.StopAsync().ConfigureAwait(false);
+                this.isRunning = false;
+                DefaultTrace.TraceInformation("Processor stopped.");
+            }
+            finally
+            {
+                this.runningLock.Release();
+            }
+        }
+
+        public override async Task<IReadOnlyList<LeaseExportData>> ExportLeasesAsync(CancellationToken cancellationToken = default)
+        {
+            // Wait for any ongoing start/stop operations to complete
+            // If processor is running, this will wait until StopAsync is called by the user
+            await this.runningLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try 
+            {
+                if (this.isRunning)
+                {
+                    // Release lock and throw - user must stop the processor first
+                    throw new InvalidOperationException(
+                        "Cannot export leases while the ChangeFeedProcessor is running. " +
+                        "Please call StopAsync() before exporting leases.");
+                }
+
+                // Initialize if needed to access the lease container
+                if (!this.initialized)
+                {
+                    await this.InitializeAsync().ConfigureAwait(false);
+                }
+
+                DefaultTrace.TraceInformation("Exporting leases...");
+                IReadOnlyList<LeaseExportData> exportedLeases = await this.documentServiceLeaseStoreManager
+                    .LeaseContainer
+                    .ExportLeasesAsync(this.instanceName, cancellationToken)
+                    .ConfigureAwait(false);
+
+                DefaultTrace.TraceInformation("Exported {0} leases.", exportedLeases.Count);
+                return exportedLeases;
+            }
+            finally
+            {
+                this.runningLock.Release();
+            }
+        }
+
+        public override async Task ImportLeasesAsync(
+            IReadOnlyList<LeaseExportData> leases,
+            bool overwriteExisting = false,
+            CancellationToken cancellationToken = default)
+        {
+            if (leases == null)
+            {
+                throw new ArgumentNullException(nameof(leases));
+            }
+
+            // Wait for any ongoing start/stop operations to complete
+            await this.runningLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                if (this.isRunning)
+                {
+                    // Release lock and throw - user must stop the processor first
+                    throw new InvalidOperationException(
+                        "Cannot import leases while the ChangeFeedProcessor is running. " +
+                        "Please call StopAsync() before importing leases.");
+                }
+
+                // Initialize if needed to access the lease container
+                if (!this.initialized)
+                {
+                    await this.InitializeAsync().ConfigureAwait(false);
+                }
+
+                DefaultTrace.TraceInformation("Importing {0} leases (overwriteExisting={1})...", leases.Count, overwriteExisting);
+                await this.documentServiceLeaseStoreManager
+                    .LeaseContainer
+                    .ImportLeasesAsync(leases, this.instanceName, overwriteExisting, cancellationToken)
+                    .ConfigureAwait(false);
+
+                DefaultTrace.TraceInformation("Imported {0} leases.", leases.Count);
+            }
+            finally
+            {
+                this.runningLock.Release();
+            }
         }
 
         private async Task InitializeAsync()
