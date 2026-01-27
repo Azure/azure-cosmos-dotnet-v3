@@ -13,12 +13,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Represents result of a specific operation in distributed transaction.
     /// </summary>
-#if INTERNAL
-    public
-#else
-    internal
-#endif
-    class DistributedTransactionOperationResult
+    internal class DistributedTransactionOperationResult
     {
         internal DistributedTransactionOperationResult(HttpStatusCode statusCode)
         {

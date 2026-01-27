@@ -11,12 +11,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Represents a distributed transaction that will be performed across partitions and/or collections. 
     /// </summary>
-#if INTERNAL
-    public
-#else
-    internal
-#endif
-    abstract class DistributedTransaction
+    internal abstract class DistributedTransaction
     {
         /// <summary>
         /// Commits the distributed transaction.
