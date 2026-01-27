@@ -397,7 +397,7 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            if (pkExists && partitionKeyRangeIdExists)
+            if (pkExists && partitionKeyRangeIdExists && this.OperationType != OperationType.Query)
             {
                 throw new ArgumentOutOfRangeException(RMResources.PartitionKeyAndPartitionKeyRangeRangeIdBothSpecified);
             }
