@@ -62,7 +62,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 "MediaResponse", // Part of dead code
                 "DocumentFeedResponse`1",// Part of dead code
                 "CosmosQuotaResponse",// Part of dead code
-                "StoredProcedureResponse`1" // Not supported as of now
+                "StoredProcedureResponse`1", // Not supported as of now
+                "DistributedTransactionResponse" // Internal as of now
             };
 
             // This dictionary contains a Key-Value pair where the Key represents the Response Type compatible with Open Telemetry Response, and the corresponding Value is a mocked instance.
