@@ -1,0 +1,146 @@
+{
+  "name": "Microsoft.Azure.Cosmos.DistributedTransactionApi",
+  "version": "v1",
+  "schemas": [
+    {
+      "name": "DistributedTransactionOperation",
+      "id": 2145473700,
+      "type": "schema",
+      "properties": [
+        {
+          "path": "index",
+          "type": {
+            "type": "int32",
+            "storage": "fixed"
+          }
+        },
+        {
+          "path": "crid",
+          "type": {
+            "type": "utf8",
+            "storage": "variable"
+          }
+        },
+        {
+          "path": "PartitionKey",
+          "type": {
+            "type": "utf8",
+            "storage": "variable"
+          }
+        },
+        {
+          "path": "Operation",
+          "type": {
+            "type": "int32",
+            "storage": "fixed"
+          }
+        },
+        {
+          "path": "resourceType",
+          "type": {
+            "type": "int32",
+            "storage": "fixed"
+          }
+        },
+        {
+          "path": "resourceBody",
+          "type": {
+            "type": "binary",
+            "storage": "variable"
+          }
+        },
+        {
+          "path": "x-ms-session-token",
+          "type": {
+            "type": "utf8",
+            "storage": "variable"
+          }
+        },
+        {
+          "path": "etag",
+          "type": {
+            "type": "utf8",
+            "storage": "sparse"
+          }
+        }
+      ]
+    },
+    {
+      "name": "DistributedTransactionResult",
+      "id": 2145473701,
+      "type": "schema",
+      "properties": [
+        {
+          "path": "index",
+          "type": {
+            "type": "uint32",
+            "storage": "fixed"
+          }
+        },
+        {
+          "path": "statusCode",
+          "type": {
+            "type": "int32",
+            "storage": "fixed"
+          }
+        },
+        {
+          "path": "subStatusCode",
+          "type": {
+            "type": "int32",
+            "storage": "fixed"
+          }
+        },
+        {
+          "path": "eTag",
+          "type": {
+            "type": "utf8",
+            "storage": "variable"
+          }
+        },
+        {
+          "path": "resourceBody",
+          "type": {
+            "type": "binary",
+            "storage": "variable"
+          }
+        },
+        {
+          "path": "sessionToken",
+          "type": {
+            "type": "utf8",
+            "storage": "variable"
+          }
+        },
+        {
+          "path": "hlcTimestamp",
+          "type": {
+            "type": "int64",
+            "storage": "fixed"
+          }
+        },
+        {
+          "path": "requestCharge",
+          "type": {
+            "type": "float64",
+            "storage": "sparse"
+          }
+        },
+        {
+          "path": "retryAfterMilliseconds",
+          "type": {
+            "type": "uint32",
+            "storage": "sparse"
+          }
+        },
+        {
+          "path": "isRetriable",
+          "type": {
+            "type": "bool",
+            "storage": "sparse"
+          }
+        }
+      ]
+    }
+  ]
+}

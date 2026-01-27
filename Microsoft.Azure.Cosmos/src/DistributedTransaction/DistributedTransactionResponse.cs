@@ -7,7 +7,12 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.IO;
     using System.Net;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Serialization.HybridRow;
+    using Microsoft.Azure.Cosmos.Serialization.HybridRow.RecordIO;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -19,22 +24,31 @@ namespace Microsoft.Azure.Cosmos
 #else
     internal
 #endif
-    class DistributedTransactionResponse : IReadOnlyList<DistributedTransactionOperationResult>
+    class DistributedTransactionResponse : IReadOnlyList<DistributedTransactionOperationResult>, IDisposable
     {
-        private readonly List<DistributedTransactionOperationResult> results = null;
+        private List<DistributedTransactionOperationResult> results;
+        private bool isDisposed;
 
         private DistributedTransactionResponse(
             HttpStatusCode statusCode,
             SubStatusCodes subStatusCode,
             string errorMessage,
             Headers headers,
-            IReadOnlyList<DistributedTransactionOperation> operations)
+            IReadOnlyList<DistributedTransactionOperation> operations,
+            CosmosSerializerCore serializer,
+            ITrace trace,
+            Guid? idempotencyToken = null,
+            string serverDiagnostics = null)
         {
             this.Headers = headers;
             this.StatusCode = statusCode;
             this.SubStatusCode = subStatusCode;
             this.ErrorMessage = errorMessage;
             this.Operations = operations;
+            this.SerializerCore = serializer;
+            this.Trace = trace;
+            this.IdempotencyToken = idempotencyToken;
+            this.ServerDiagnostics = serverDiagnostics;
         }
 
         /// <summary>
@@ -53,6 +67,8 @@ namespace Microsoft.Azure.Cosmos
         {
             get
             {
+                this.ThrowIfDisposed();
+
                 if (this.results == null || index < 0 || index >= this.results.Count)
                 {
                     throw new ArgumentOutOfRangeException(nameof(index), "Index is out of range.");
@@ -65,21 +81,37 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the headers associated with the distributed transaction response.
         /// </summary>
-        public virtual Headers Headers { get; internal set; }
+        public virtual Headers Headers { get; }
+
+        /// <summary>
+        /// Gets the ActivityId that identifies the server request made to execute the transaction.
+        /// </summary>
+        public virtual string ActivityId => this.Headers?.ActivityId;
+
+        /// <summary>
+        /// Gets the request charge for the distributed transaction request.
+        /// </summary>
+        public virtual double RequestCharge => this.Headers?.RequestCharge ?? 0;
+
+        /// <summary>
+        /// Gets the amount of time to wait before retrying this or any other request due to throttling.
+        /// </summary>
+        public virtual TimeSpan? RetryAfter => this.Headers?.RetryAfter;
 
         /// <summary>
         /// Gets the HTTP status code for the distributed transaction response.
         /// </summary>
-        public virtual HttpStatusCode StatusCode { get; internal set; }
+        public virtual HttpStatusCode StatusCode { get; }
 
-        internal virtual SubStatusCodes SubStatusCode { get; }
-
-        internal IReadOnlyList<DistributedTransactionOperation> Operations { get; set; }
+        /// <summary>
+        /// Gets a value indicating whether the transaction was processed successfully.
+        /// </summary>
+        public virtual bool IsSuccessStatusCode => (int)this.StatusCode >= 200 && (int)this.StatusCode <= 299;
 
         /// <summary>
         /// Gets the error message associated with the distributed transaction response, if any.
         /// </summary>
-        public virtual string ErrorMessage { get; internal set; }
+        public virtual string ErrorMessage { get; }
 
         /// <summary>
         /// Gets the number of operation results in the distributed transaction response.
@@ -87,12 +119,28 @@ namespace Microsoft.Azure.Cosmos
         public virtual int Count => this.results?.Count ?? 0;
 
         /// <summary>
-        /// Returns an enumerator that iterates through the collection of distributed transaction operation results.
+        /// Gets the idempotency token associated with this distributed transaction.
         /// </summary>
-        /// <returns>An enumerator for the collection of <see cref="DistributedTransactionOperationResult"/> objects.</returns>
+        public virtual Guid? IdempotencyToken { get; }
+
+        /// <summary>
+        /// Gets the server-side diagnostic information for the transaction.
+        /// </summary>
+        public virtual string ServerDiagnostics { get; }
+
+        internal virtual SubStatusCodes SubStatusCode { get; }
+
+        internal virtual CosmosSerializerCore SerializerCore { get; }
+
+        internal IReadOnlyList<DistributedTransactionOperation> Operations { get; }
+
+        internal ITrace Trace { get; }
+
+        /// <inheritdoc />
         public virtual IEnumerator<DistributedTransactionOperationResult> GetEnumerator()
         {
-            return this.results.GetEnumerator();
+            return this.results?.GetEnumerator()
+                ?? ((IList<DistributedTransactionOperationResult>)Array.Empty<DistributedTransactionOperationResult>()).GetEnumerator();
         }
 
         /// <inheritdoc />
@@ -101,9 +149,228 @@ namespace Microsoft.Azure.Cosmos
             return this.GetEnumerator();
         }
 
-        private void CreateAndPopulateResults(IReadOnlyList<DistributedTransactionOperation> operations, ITrace trace)
+        /// <inheritdoc />
+        public void Dispose()
         {
-            throw new NotImplementedException();
+            this.Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Creates a <see cref="DistributedTransactionResponse"/> from a <see cref="ResponseMessage"/>.
+        /// </summary>
+        internal static async Task<DistributedTransactionResponse> FromResponseMessageAsync(
+            ResponseMessage responseMessage,
+            DistributedTransactionServerRequest serverRequest,
+            CosmosSerializerCore serializer,
+            ITrace trace,
+            CancellationToken cancellationToken)
+        {
+            using (ITrace createResponseTrace = trace.StartChild("Create Distributed Transaction Response", TraceComponent.Batch, TraceLevel.Info))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                DistributedTransactionResponse response = null;
+                MemoryStream memoryStream = null;
+
+                try
+                {
+                    if (responseMessage.Content != null)
+                    {
+                        Stream content = responseMessage.Content;
+
+                        // Ensure the stream is seekable
+                        if (!content.CanSeek)
+                        {
+                            memoryStream = new MemoryStream();
+                            await responseMessage.Content.CopyToAsync(memoryStream);
+                            memoryStream.Position = 0;
+                            content = memoryStream;
+                        }
+
+                        if (content.ReadByte() == (int)HybridRowVersion.V1)
+                        {
+                            content.Position = 0;
+                            response = await PopulateFromContentAsync(
+                                content,
+                                responseMessage,
+                                serverRequest,
+                                serializer,
+                                createResponseTrace,
+                                cancellationToken);
+                        }
+                    }
+
+                    // If we couldn't parse HybridRow content or there was no content, create default response
+                    response ??= new DistributedTransactionResponse(
+                        responseMessage.StatusCode,
+                        responseMessage.Headers.SubStatusCode,
+                        responseMessage.ErrorMessage,
+                        responseMessage.Headers,
+                        serverRequest.Operations,
+                        serializer,
+                        createResponseTrace);
+
+                    // Validate results count matches operations count
+                    if (response.results == null || response.results.Count != serverRequest.Operations.Count)
+                    {
+                        if (responseMessage.IsSuccessStatusCode)
+                        {
+                            // Server should guarantee results count equals operations count on success
+                            return new DistributedTransactionResponse(
+                                HttpStatusCode.InternalServerError,
+                                SubStatusCodes.Unknown,
+                                ClientResources.InvalidServerResponse,
+                                responseMessage.Headers,
+                                serverRequest.Operations,
+                                serializer,
+                                createResponseTrace);
+                        }
+
+                        int retryAfterMilliseconds = GetRetryAfterMilliseconds(responseMessage);
+                        response.CreateAndPopulateResults(serverRequest.Operations, createResponseTrace, retryAfterMilliseconds);
+                    }
+
+                    return response;
+                }
+                finally
+                {
+                    memoryStream?.Dispose();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Disposes the disposable members held by this class.
+        /// </summary>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (this.isDisposed)
+            {
+                return;
+            }
+
+            if (disposing && this.results != null)
+            {
+                foreach (DistributedTransactionOperationResult result in this.results)
+                {
+                    result.ResourceStream?.Dispose();
+                }
+            }
+            this.results = null;
+            this.isDisposed = true;
+        }
+
+        private void ThrowIfDisposed()
+        {
+            if (this.isDisposed)
+            {
+                throw new ObjectDisposedException(nameof(DistributedTransactionResponse));
+            }
+        }
+
+        private static int GetRetryAfterMilliseconds(ResponseMessage responseMessage)
+        {
+            if ((int)responseMessage.StatusCode != (int)StatusCodes.TooManyRequests)
+            {
+                return 0;
+            }
+
+            if (responseMessage.Headers.TryGetValue(HttpConstants.HttpHeaders.RetryAfterInMilliseconds, out string retryAfter) &&
+                !string.IsNullOrEmpty(retryAfter) &&
+                int.TryParse(retryAfter, out int retryAfterMs))
+            {
+                return retryAfterMs;
+            }
+
+            return 0;
+        }
+
+        private static async Task<DistributedTransactionResponse> PopulateFromContentAsync(
+            Stream content,
+            ResponseMessage responseMessage,
+            DistributedTransactionServerRequest serverRequest,
+            CosmosSerializerCore serializer,
+            ITrace trace,
+            CancellationToken cancellationToken)
+        {
+            List<DistributedTransactionOperationResult> results = new List<DistributedTransactionOperationResult>();
+            int resizerInitialCapacity = (int)content.Length;
+
+            Result res = await content.ReadRecordIOAsync(
+                (Func<ReadOnlyMemory<byte>, Result>)(record =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    Result r = DistributedTransactionOperationResult.ReadOperationResult(record, out DistributedTransactionOperationResult operationResult);
+                    if (r != Result.Success)
+                    {
+                        return r;
+                    }
+
+                    operationResult.Trace = trace;
+                    operationResult.SessionToken ??= responseMessage.Headers.Session;
+                    operationResult.ActivityId = responseMessage.Headers.ActivityId;
+                    results.Add(operationResult);
+                    return r;
+                }),
+                resizer: new MemorySpanResizer<byte>(resizerInitialCapacity));
+
+            if (res != Result.Success)
+            {
+                return null;
+            }
+
+            HttpStatusCode finalStatusCode = responseMessage.StatusCode;
+            SubStatusCodes finalSubStatusCode = responseMessage.Headers.SubStatusCode;
+
+            // Promote operation error status for MultiStatus responses
+            if ((int)finalStatusCode == (int)StatusCodes.MultiStatus)
+            {
+                foreach (DistributedTransactionOperationResult result in results)
+                {
+                    if ((int)result.StatusCode != (int)StatusCodes.FailedDependency &&
+                        (int)result.StatusCode >= (int)StatusCodes.StartingErrorCode)
+                    {
+                        finalStatusCode = result.StatusCode;
+                        finalSubStatusCode = result.SubStatusCode;
+                        break;
+                    }
+                }
+            }
+
+            return new DistributedTransactionResponse(
+                finalStatusCode,
+                finalSubStatusCode,
+                responseMessage.ErrorMessage,
+                responseMessage.Headers,
+                serverRequest.Operations,
+                serializer,
+                trace)
+            {
+                results = results
+            };
+        }
+
+        private void CreateAndPopulateResults(
+            IReadOnlyList<DistributedTransactionOperation> operations,
+            ITrace trace,
+            int retryAfterMilliseconds = 0)
+        {
+            this.results = new List<DistributedTransactionOperationResult>(operations.Count);
+            TimeSpan retryAfter = TimeSpan.FromMilliseconds(retryAfterMilliseconds);
+
+            for (int i = 0; i < operations.Count; i++)
+            {
+                this.results.Add(new DistributedTransactionOperationResult(this.StatusCode)
+                {
+                    SubStatusCode = this.SubStatusCode,
+                    RetryAfter = retryAfter,
+                    SessionToken = this.Headers?.Session,
+                    ActivityId = this.ActivityId,
+                    Trace = trace
+                });
+            }
         }
     }
 }
