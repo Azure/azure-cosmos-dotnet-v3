@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     using System.Linq;
     using System.Runtime.Serialization;
     using Microsoft.Azure.Cosmos.Spatial.Converters;
+    using Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -20,6 +21,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     /// </summary>
     [DataContract]
     [JsonConverter(typeof(LinearRingJsonConverter))]
+    [System.Text.Json.Serialization.JsonConverter(typeof(LinearRingSTJConverter))]
     public sealed class LinearRing : IEquatable<LinearRing>
     {
         /// <summary>
