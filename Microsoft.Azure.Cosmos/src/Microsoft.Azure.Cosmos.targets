@@ -14,44 +14,40 @@ Copyright (C) Microsoft Corporation. All rights reserved.
 -->
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     
-  <ItemGroup>
+  <!-- Only include Windows native DLLs when:
+       1. RuntimeIdentifier is empty (regular build without RID), OR
+       2. RuntimeIdentifier is specified AND starts with 'win'
+       
+       Note: The 'win' prefix filter is used for backward compatibility and may copy
+       DLLs for win-x86, win-x64, win-arm, win-arm64, etc. Since these are win-x64 native
+       DLLs from runtimes\win-x64\native, they are compatible across Windows platforms.
+  -->
+  <ItemGroup Condition="'$(RuntimeIdentifier)' == '' OR $(RuntimeIdentifier.StartsWith('win'))">
     <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\Microsoft.Azure.Cosmos.ServiceInterop.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <TargetPath>Microsoft.Azure.Cosmos.ServiceInterop.dll</TargetPath>
       <Visible>False</Visible>
     </ContentWithTargetPath>
-  </ItemGroup>
-  
-  <ItemGroup>
     <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\Cosmos.CRTCompat.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <TargetPath>Cosmos.CRTCompat.dll</TargetPath>
       <Visible>False</Visible>
     </ContentWithTargetPath>
-  </ItemGroup>
-
-  <ItemGroup>
-      <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\msvcp140.dll">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-          <TargetPath>msvcp140.dll</TargetPath>
-          <Visible>False</Visible>
-      </ContentWithTargetPath>
-  </ItemGroup>
-
-  <ItemGroup>
-      <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\vcruntime140.dll">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-          <TargetPath>vcruntime140.dll</TargetPath>
-          <Visible>False</Visible>
-      </ContentWithTargetPath>
-  </ItemGroup>
-
-  <ItemGroup>
-      <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\vcruntime140_1.dll">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-          <TargetPath>vcruntime140_1.dll</TargetPath>
-          <Visible>False</Visible>
-      </ContentWithTargetPath>
+    <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\msvcp140.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>msvcp140.dll</TargetPath>
+      <Visible>False</Visible>
+    </ContentWithTargetPath>
+    <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\vcruntime140.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>vcruntime140.dll</TargetPath>
+      <Visible>False</Visible>
+    </ContentWithTargetPath>
+    <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\vcruntime140_1.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>vcruntime140_1.dll</TargetPath>
+      <Visible>False</Visible>
+    </ContentWithTargetPath>
   </ItemGroup>
 
 
