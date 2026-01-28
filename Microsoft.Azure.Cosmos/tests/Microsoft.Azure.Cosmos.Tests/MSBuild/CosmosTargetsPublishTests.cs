@@ -7,18 +7,19 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
     using System;
     using System.Diagnostics;
     using System.IO;
-    using System.Linq;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>
     /// Integration tests that verify Windows native DLLs are only copied when publishing
     /// for Windows RuntimeIdentifiers, and not for Linux/macOS targets.
+    /// These tests pack the SDK into a local NuGet package to properly test the .targets file behavior.
     /// </summary>
     [TestClass]
-    [DoNotParallelize]
     public class CosmosTargetsPublishTests
     {
         private static string testProjectsRoot;
+        private static string localNugetPackagePath;
+        private static string packageVersion;
         private static readonly string[] WindowsNativeDlls = new[]
         {
             "Microsoft.Azure.Cosmos.ServiceInterop.dll",
@@ -33,6 +34,9 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
         {
             testProjectsRoot = Path.Combine(Path.GetTempPath(), "CosmosTargetsTests_" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(testProjectsRoot);
+
+            // Create local NuGet package from the SDK
+            CreateLocalNuGetPackage();
         }
 
         [ClassCleanup]
@@ -84,6 +88,53 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
             this.AssertWindowsDllsPresent(publishPath, runtimeIdentifier);
         }
 
+        private static void CreateLocalNuGetPackage()
+        {
+            string repoRoot = GetRepositoryRoot();
+            string cosmosProjectPath = Path.Combine(repoRoot, "Microsoft.Azure.Cosmos", "src", "Microsoft.Azure.Cosmos.csproj");
+            string packOutputDir = Path.Combine(testProjectsRoot, "nuget-packages");
+            Directory.CreateDirectory(packOutputDir);
+
+            // Use a unique version to avoid cache conflicts
+            packageVersion = $"99.0.0-test.{DateTime.UtcNow:yyyyMMddHHmmss}";
+
+            // Pack the SDK project
+            ProcessStartInfo packInfo = new ProcessStartInfo
+            {
+                FileName = "dotnet",
+                Arguments = $"pack \"{cosmosProjectPath}\" -c Release -o \"{packOutputDir}\" /p:Version={packageVersion} /p:PackageVersion={packageVersion}",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            Console.WriteLine($"Packing SDK: dotnet {packInfo.Arguments}");
+
+            Process packProcess = Process.Start(packInfo);
+            if (packProcess == null)
+            {
+                Assert.Fail("Failed to start dotnet pack process");
+            }
+
+            using (packProcess)
+            {
+                packProcess.WaitForExit((int)TimeSpan.FromMinutes(10).TotalMilliseconds);
+
+                string output = packProcess.StandardOutput.ReadToEnd();
+                string error = packProcess.StandardError.ReadToEnd();
+
+                if (packProcess.ExitCode != 0)
+                {
+                    Assert.Fail($"dotnet pack failed.\nOutput: {output}\nError: {error}");
+                }
+
+                Console.WriteLine($"Pack succeeded. Output: {output}");
+            }
+
+            localNugetPackagePath = packOutputDir;
+        }
+
         private string CreateTestProject(string projectName)
         {
             string projectDir = Path.Combine(testProjectsRoot, projectName);
@@ -91,12 +142,19 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
 
             string projectFile = Path.Combine(projectDir, $"{projectName}.csproj");
             string programFile = Path.Combine(projectDir, "Program.cs");
+            string nugetConfigFile = Path.Combine(projectDir, "nuget.config");
 
-            // Get path to the Cosmos SDK project for reference
-            string repoRoot = GetRepositoryRoot();
-            string cosmosProjectPath = Path.Combine(repoRoot, "Microsoft.Azure.Cosmos", "src", "Microsoft.Azure.Cosmos.csproj");
+            // Create nuget.config to use local package source
+            File.WriteAllText(nugetConfigFile, $@"<?xml version=""1.0"" encoding=""utf-8""?>
+<configuration>
+  <packageSources>
+    <clear />
+    <add key=""local"" value=""{localNugetPackagePath}"" />
+    <add key=""nuget.org"" value=""https://api.nuget.org/v3/index.json"" />
+  </packageSources>
+</configuration>");
 
-            // Create a simple console app project that references Microsoft.Azure.Cosmos
+            // Create a simple console app project that references the local NuGet package
             File.WriteAllText(projectFile, $@"<Project Sdk=""Microsoft.NET.Sdk"">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -105,11 +163,12 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include=""{cosmosProjectPath}"" />
+    <PackageReference Include=""Microsoft.Azure.Cosmos"" Version=""{packageVersion}"" />
+    <PackageReference Include=""Newtonsoft.Json"" Version=""13.0.3"" />
   </ItemGroup>
 </Project>");
 
-            // Create a minimal Program.cs that uses CosmosClient to ensure the SDK is properly referenced
+            // Create a minimal Program.cs
             File.WriteAllText(programFile, @"using System;
 using Microsoft.Azure.Cosmos;
 
@@ -117,9 +176,7 @@ class Program
 {
     static void Main()
     {
-        // Create a dummy CosmosClient to ensure the SDK is used and targets file is applied
-        var client = new CosmosClient(""AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="");
-        Console.WriteLine($""CosmosClient created: {client != null}"");
+        Console.WriteLine(""Test app for verifying Cosmos SDK package behavior"");
     }
 }");
 
@@ -155,9 +212,8 @@ class Program
 
             using (process!)
             {
-                // .NET 6 compatibility: WaitForExit doesn't support TimeSpan parameter
                 process.WaitForExit((int)TimeSpan.FromMinutes(5).TotalMilliseconds);
-                
+
                 string output = process.StandardOutput.ReadToEnd();
                 string error = process.StandardError.ReadToEnd();
 
