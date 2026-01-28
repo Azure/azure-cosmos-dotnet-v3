@@ -15,21 +15,28 @@
           }
         },
         {
-          "path": "crid",
+          "path": "collectionResourceId",
           "type": {
             "type": "utf8",
             "storage": "variable"
           }
         },
         {
-          "path": "PartitionKey",
+          "path": "databaseResourceId",
           "type": {
             "type": "utf8",
             "storage": "variable"
           }
         },
         {
-          "path": "Operation",
+          "path": "partitionKey",
+          "type": {
+            "type": "utf8",
+            "storage": "variable"
+          }
+        },
+        {
+          "path": "operation",
           "type": {
             "type": "int32",
             "storage": "fixed"
@@ -50,7 +57,7 @@
           }
         },
         {
-          "path": "x-ms-session-token",
+          "path": "sessionToken",
           "type": {
             "type": "utf8",
             "storage": "variable"

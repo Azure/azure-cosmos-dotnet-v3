@@ -50,6 +50,8 @@ namespace Microsoft.Azure.Cosmos
 
         public string CollectionResourceId { get; internal set; }
 
+        public string DatabaseResourceId { get; internal set; }
+
         internal string PartitionKeyJson { get; set; }
 
         internal string SessionToken { get; set; }
@@ -91,6 +93,11 @@ namespace Microsoft.Azure.Cosmos
                 length += this.CollectionResourceId.Length;
             }
 
+            if (this.DatabaseResourceId != null)
+            {
+                length += this.DatabaseResourceId.Length;
+            }
+
             if (this.SessionToken != null)
             {
                 length += this.SessionToken.Length;
@@ -111,7 +118,16 @@ namespace Microsoft.Azure.Cosmos
 
             if (operation.CollectionResourceId != null)
             {
-                r = writer.WriteString("crid", operation.CollectionResourceId);
+                r = writer.WriteString("collectionResourceId", operation.CollectionResourceId);
+                if (r != Result.Success)
+                {
+                    return r;
+                }
+            }
+
+            if (operation.DatabaseResourceId != null)
+            {
+                r = writer.WriteString("databaseResourceId", operation.DatabaseResourceId);
                 if (r != Result.Success)
                 {
                     return r;
@@ -120,14 +136,14 @@ namespace Microsoft.Azure.Cosmos
 
             if (operation.PartitionKeyJson != null)
             {
-                r = writer.WriteString("PartitionKey", operation.PartitionKeyJson);
+                r = writer.WriteString("partitionKey", operation.PartitionKeyJson);
                 if (r != Result.Success)
                 {
                     return r;
                 }
             }
 
-            r = writer.WriteInt32("Operation", (int)operation.OperationType);
+            r = writer.WriteInt32("operation", (int)operation.OperationType);
             if (r != Result.Success)
             {
                 return r;
@@ -144,7 +160,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (operation.SessionToken != null)
             {
-                r = writer.WriteString("x-ms-session-token", operation.SessionToken);
+                r = writer.WriteString("sessionToken", operation.SessionToken);
                 if (r != Result.Success)
                 {
                     return r;

@@ -29,20 +29,19 @@ namespace Microsoft.Azure.Cosmos
                    string collectionPath = group.Key;
                    try
                    {
-                       DocumentServiceRequest request = DocumentServiceRequest.Create(
-                           OperationType.Read,
-                           ResourceType.Collection,
+                       ContainerProperties containerProperties = await clientContext.GetCachedContainerPropertiesAsync(
                            collectionPath,
-                           AuthorizationTokenType.PrimaryMasterKey);
+                           NoOpTrace.Singleton,
+                           cancellationToken);
 
-                       ContainerProperties containerProperties = await collectionCache.ResolveCollectionAsync(
-                           request,
-                           cancellationToken,
-                           NoOpTrace.Singleton) ?? throw new InvalidOperationException($"Could not resolve collection RID for {collectionPath}");
+                       string containerResourceId = containerProperties.ResourceId;
+                       ResourceId resourceId = ResourceId.Parse(containerResourceId);
+                       string databaseResourceId = resourceId.DatabaseId.ToString();
 
                        foreach (DistributedTransactionOperation operation in group)
                        {
-                           operation.CollectionResourceId = containerProperties.ResourceId;
+                           operation.CollectionResourceId = containerResourceId;
+                           operation.DatabaseResourceId = databaseResourceId;
                        }
                    }
                    catch (Exception ex)
@@ -53,5 +52,6 @@ namespace Microsoft.Azure.Cosmos
                });
             await Task.WhenAll(ridResolutionTasks);
         }
+
     }
 }
