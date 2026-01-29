@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                             serviceIdentity3),
 
 
-                    }, string.Empty);
+                    }, string.Empty, false);
 
             Assert.AreEqual("0", routingMap.OrderedPartitionKeyRanges[0].Id);
             Assert.AreEqual("1", routingMap.OrderedPartitionKeyRanges[1].Id);
@@ -131,10 +131,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             try
             {
-                // Arrange: Set environment variable to "true" since the default is only true for Preview.
-                Environment.SetEnvironmentVariable(ConfigurationManager.UseLengthAwareRangeComparator, "true");
-
-                CollectionRoutingMap routingMap = this.GenerateRoutingMap(isRoutingMapFullySpecified);
+                // Arrange: Set useLengthAwareComparer flag to "true" since the default is only true for Preview.
+                CollectionRoutingMap routingMap = this.GenerateRoutingMap(isRoutingMapFullySpecified, true);
 
                 // Test scenario 1.1: Input EPK is partial and falls on the boundary between two overlapping ranges.
                 // The LengthAware comparators are able to correctly compare partial and full EPK ranges.Routing map is hybrid of fully specified and partially specified EPK ranges.
@@ -251,9 +249,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             try
             {
-                // Arrange: Set environment variable to force legacy comparator usage.
-                Environment.SetEnvironmentVariable(ConfigurationManager.UseLengthAwareRangeComparator, "false");
-                CollectionRoutingMap routingMap = this.GenerateRoutingMap(false);
+
+                // Arrange: Set useLengthAwareComparer to false to force legacy comparator usage.
+                CollectionRoutingMap routingMap = this.GenerateRoutingMap(false, false);
 
 
                 // Test scenario: Input EPK is partial and falls on the boundary between two overlapping ranges.
@@ -275,7 +273,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
-        private CollectionRoutingMap GenerateRoutingMap(bool isFullySpecified)
+        private CollectionRoutingMap GenerateRoutingMap(bool isFullySpecified, bool useLengthAwareComparer)
         {
             IEnumerable<Tuple<PartitionKeyRange, ServiceIdentity>> partitionKeyRangeTuples = new[]
                 {
@@ -404,7 +402,8 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CollectionRoutingMap routingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(
                 partitionKeyRangeTuples,
-                string.Empty);
+                string.Empty,
+                useLengthAwareComparer);
 
             return routingMap;
         }
@@ -419,7 +418,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         Tuple.Create(new PartitionKeyRange {Id = "1", MinInclusive = "0000000020", MaxExclusive = "0000000030"}, (ServiceIdentity)null),
                         Tuple.Create(new PartitionKeyRange { Id = "2", MinInclusive = "0000000025", MaxExclusive = "0000000035"}, (ServiceIdentity)null),
                     },
-                string.Empty);
+                string.Empty, false);
         }
 
         [TestMethod]
@@ -431,7 +430,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         Tuple.Create(new PartitionKeyRange{ Id = "2", MinInclusive = "", MaxExclusive = "0000000030"}, (ServiceIdentity)null),
                         Tuple.Create(new PartitionKeyRange{ Id = "3", MinInclusive = "0000000031", MaxExclusive = "FF"}, (ServiceIdentity)null),
                     },
-                string.Empty);
+                string.Empty, false);
 
             Assert.IsNull(routingMap);
 
@@ -441,7 +440,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         Tuple.Create(new PartitionKeyRange{Id = "2", MinInclusive = "", MaxExclusive = "0000000030"}, (ServiceIdentity)null),
                         Tuple.Create(new PartitionKeyRange{Id = "3", MinInclusive = "0000000030", MaxExclusive = "FF"}, (ServiceIdentity)null),
                     },
-                string.Empty);
+                string.Empty, false);
 
             Assert.IsNotNull(routingMap);
         }
@@ -456,7 +455,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         Tuple.Create(new PartitionKeyRange{ Id = "3", MinInclusive = "0000000030", MaxExclusive = "0000000032", Parents = new Collection<string>{"5"}}, (ServiceIdentity)null),
                         Tuple.Create(new PartitionKeyRange{ Id = "4", MinInclusive = "0000000032", MaxExclusive = "FF"}, (ServiceIdentity)null),
                     },
-              string.Empty);
+              string.Empty, false);
 
             Assert.IsTrue(routingMap.IsGone("1"));
             Assert.IsTrue(routingMap.IsGone("0"));
@@ -501,7 +500,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                             MinInclusive = "0000000070",
                             MaxExclusive = "FF"},
                             (ServiceIdentity)null),
-                    }, string.Empty);
+                    }, string.Empty, false);
 
             CollectionRoutingMap newRoutingMap = routingMap.TryCombine(
                 new[]
@@ -522,7 +521,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                             MaxExclusive = "0000000030"},
                             (ServiceIdentity)null),
                     },
-                    null);
+                    null, false);
 
             Assert.IsNotNull(newRoutingMap);
 
@@ -561,7 +560,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                             MaxExclusive = "0000000030"},
                             (ServiceIdentity)null),
                     },
-                    null);
+                    null, false);
 
             Assert.IsNotNull(newRoutingMap);
 
@@ -576,7 +575,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                             MaxExclusive = "0000000002"},
                             (ServiceIdentity)null),
                     },
-                    null);
+                    null, false);
 
             Assert.IsNull(newRoutingMap);
         }
