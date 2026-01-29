@@ -181,6 +181,7 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
         /// <summary>
         /// Reads a JSON value and converts it to the appropriate .NET type.
         /// Handles primitive types, objects, and arrays for additional properties.
+        /// Matches Newtonsoft.Json behavior by returning Int32 for numbers that fit in 32 bits.
         /// </summary>
         private object ReadValue(JsonElement element)
         {
@@ -193,6 +194,11 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
                 case JsonValueKind.String:
                     return element.GetString();
                 case JsonValueKind.Number:
+                    // Match Newtonsoft behavior: try Int32 first, then Int64, then Double
+                    if (element.TryGetInt32(out int i))
+                    {
+                        return i;
+                    }
                     if (element.TryGetInt64(out long l))
                     {
                         return l;

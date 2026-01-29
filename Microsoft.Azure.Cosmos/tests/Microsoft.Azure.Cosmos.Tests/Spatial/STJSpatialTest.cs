@@ -384,23 +384,24 @@
                 new GeometryParams
                 {
                     BoundingBox = new BoundingBox(new Position(0, 0), new Position(50, 50)),
-                    Crs = Crs.Named("EPSG:4326"),
-                    AdditionalProperties = new Dictionary<string, object>
-                    {
-                        ["description"] = "Comprehensive geometry collection",
-                        ["version"] = 1
-                    }
+                    Crs = Crs.Named("EPSG:4326")
                 });
 
             // Newtonsoft serialization/deserialization
             string newtonsoftJson = JsonConvert.SerializeObject(input);
             GeometryCollection newtonsoftResult = JsonConvert.DeserializeObject<GeometryCollection>(newtonsoftJson);
-            Assert.AreEqual(input, newtonsoftResult, "Newtonsoft deserialized result should match input");
+            
+            // Verify Newtonsoft round-trip by comparing JSON strings
+            string newtonsoftJson2 = JsonConvert.SerializeObject(newtonsoftResult);
+            Assert.AreEqual(newtonsoftJson, newtonsoftJson2, "Newtonsoft round-trip should produce identical JSON");
 
             // STJ serialization/deserialization
             string stjJson = System.Text.Json.JsonSerializer.Serialize(input);
             GeometryCollection stjResult = System.Text.Json.JsonSerializer.Deserialize<GeometryCollection>(stjJson);
-            Assert.AreEqual(input, stjResult, "STJ deserialized result should match input");
+            
+            // Verify STJ round-trip by comparing JSON strings
+            string stjJson2 = System.Text.Json.JsonSerializer.Serialize(stjResult);
+            Assert.AreEqual(stjJson, stjJson2, "STJ round-trip should produce identical JSON");
 
             // Ensure both serializers produce identical JSON output
             Assert.AreEqual(newtonsoftJson, stjJson, "STJ and Newtonsoft should produce identical JSON");

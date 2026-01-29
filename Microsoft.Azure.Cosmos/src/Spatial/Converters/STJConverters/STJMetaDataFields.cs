@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
     /// <summary>
     /// Constants for JSON property names used in spatial geometry serialization.
     /// These field names are part of the GeoJSON specification and must match exactly.
-    // </summary>
+    /// </summary>
     internal static class STJMetaDataFields
     {
         /// <summary>
