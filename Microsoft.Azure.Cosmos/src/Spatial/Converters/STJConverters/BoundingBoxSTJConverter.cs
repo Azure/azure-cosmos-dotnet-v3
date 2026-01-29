@@ -11,10 +11,15 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
     using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
     /// <summary>
-    /// Converter used to support System.Text.Json de/serialization of type BoundingBox/>.
+    /// Converter used to support System.Text.Json serialization/deserialization of BoundingBox.
     /// </summary>
     internal sealed class BoundingBoxSTJConverter : JsonConverter<BoundingBox>
     {
+        /// <summary>
+        /// Deserializes a BoundingBox from a JSON array of coordinates.
+        /// The array contains min coordinates followed by max coordinates.
+        /// Example: [minLon, minLat, maxLon, maxLat] for 2D or [minLon, minLat, minAlt, maxLon, maxLat, maxAlt] for 3D.
+        /// </summary>
         public override BoundingBox Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             double[] coordinates = JsonSerializer.Deserialize<double[]>(ref reader, options);
@@ -33,6 +38,10 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
                 new Position(coordinates.Skip(coordinates.Length / 2).ToList()));
         }
 
+        /// <summary>
+        /// Serializes a BoundingBox to a JSON array.
+        /// Outputs min coordinates followed by max coordinates.
+        /// </summary>
         public override void Write(Utf8JsonWriter writer, BoundingBox box, JsonSerializerOptions options)
         {
             writer.WriteStartArray();

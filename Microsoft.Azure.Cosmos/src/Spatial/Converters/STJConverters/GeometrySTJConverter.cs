@@ -11,7 +11,8 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
     using System.Text.Json.Serialization;
 
     /// <summary>
-    /// A factory converter for all Geometry types.
+    /// A factory converter for all Geometry types including Point, LineString, Polygon, 
+    /// MultiPoint, MultiLineString, MultiPolygon, and GeometryCollection.
     /// </summary>
     internal sealed class GeometrySTJConverter : JsonConverter<Geometry>
     {
@@ -38,6 +39,10 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
             writer.WriteEndObject();
         }
 
+        /// <summary>
+        /// Writes the coordinates or geometries property based on the geometry type.
+        /// GeometryCollection uses 'geometries' property instead of 'coordinates'.
+        /// </summary>
         private void WriteCoordinates(Utf8JsonWriter writer, Geometry value, JsonSerializerOptions options)
         {
             switch (value.Type)
@@ -139,6 +144,10 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
             return (typeName, new GeometryParams { BoundingBox = boundingBox, Crs = crs, AdditionalProperties = additionalProperties });
         }
 
+        /// <summary>
+        /// Creates the appropriate Geometry subclass based on the type name.
+        /// Supports all geometry types including GeometryCollection which contains nested geometries.
+        /// </summary>
         private Geometry CreateGeometry(string typeName, GeometryParams geometryParams, JsonElement rootElement, JsonSerializerOptions options)
         {
             switch (typeName)
@@ -169,6 +178,10 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
             }
         }
 
+        /// <summary>
+        /// Reads a JSON value and converts it to the appropriate .NET type.
+        /// Handles primitive types, objects, and arrays for additional properties.
+        /// </summary>
         private object ReadValue(JsonElement element)
         {
             switch (element.ValueKind)

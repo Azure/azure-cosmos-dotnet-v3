@@ -12,10 +12,16 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
     using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
     /// <summary>
-    /// Converter used to support System.Text.Json de/serialization of type Position/>.
+    /// Converter used to support System.Text.Json serialization/deserialization of Position.
+    /// Handles 2D positions (longitude, latitude) and 3D positions (longitude, latitude, altitude).
+    /// Ensures output format matches Newtonsoft.Json exactly.
     /// </summary>
     internal sealed class PositionSTJConverter : JsonConverter<Position>
     {
+        /// <summary>
+        /// Deserializes a Position from a JSON array of coordinates.
+        /// Requires at least 2 coordinates (longitude, latitude). Altitude is optional.
+        /// </summary>
         public override Position Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             if (reader.TokenType != JsonTokenType.StartArray)
@@ -31,6 +37,11 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
 
             return new Position(coordinates);
         }
+        /// <summary>
+        /// Serializes a Position to a JSON array.
+        /// Integer coordinates are formatted with .0 decimal to match Newtonsoft.Json output.
+        /// Uses "R" format for non-integer values to preserve full precision.
+        /// </summary>
         public override void Write(Utf8JsonWriter writer, Position position, JsonSerializerOptions options)
         {
             writer.WriteStartArray();

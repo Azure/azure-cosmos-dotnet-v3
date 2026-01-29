@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Spatial
 {
     using System.Collections.Generic;
     using System.Runtime.Serialization;
-    using Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters;
 
     /// <summary>
     /// Not frequently used geometry parameters in the Azure Cosmos DB service.

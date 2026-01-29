@@ -11,11 +11,16 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
     using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.Azure.Documents;
     /// <summary>
-    /// Converter used to support System.Text.Json de/serialization of type LineStringCoordinates/>.
+    /// Converter used to support System.Text.Json serialization/deserialization of LineStringCoordinates.
+    /// LineStringCoordinates represents an array of positions forming a line string.
+    /// Used within MultiLineString geometries.
     /// </summary>
     internal sealed class LineStringCoordinatesSTJConverter : JsonConverter<LineStringCoordinates>
     {
         /// <inheritdoc />
+        /// <summary>
+        /// Deserializes LineStringCoordinates from a JSON array of Position objects.
+        /// </summary>
         public override LineStringCoordinates Read(
             ref Utf8JsonReader reader,
             Type typeToConvert,
@@ -28,6 +33,9 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
         }
 
         /// <inheritdoc />
+        /// <summary>
+        /// Serializes LineStringCoordinates to a JSON array of positions.
+        /// </summary>
         public override void Write(
             Utf8JsonWriter writer,
             LineStringCoordinates value,

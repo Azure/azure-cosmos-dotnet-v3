@@ -281,7 +281,7 @@
         }
 
         /// <summary>
-        /// Tests serialization/deserialization of GeometryCollection class.
+        /// Tests serialization/deserialization of GeometryCollection class with Point geometries.
         /// </summary>
         [TestMethod]
         public void TestGeometricCollectionPointSerialization()
@@ -311,6 +311,233 @@
             Assert.AreEqual(input, stjResult);
 
             Assert.AreEqual(newtonsoftJson, stjJson);
+        }
+
+        /// <summary>
+        /// Tests serialization/deserialization of GeometryCollection containing all geometry types.
+        /// Ensures comprehensive coverage of GeometryCollection with Point, LineString, Polygon, 
+        /// MultiPoint, MultiLineString, and MultiPolygon.
+        /// </summary>
+        [TestMethod]
+        public void TestGeometryCollectionWithAllGeometryTypes()
+        {
+            // Create a comprehensive GeometryCollection with all supported geometry types
+            GeometryCollection input = new GeometryCollection(
+                new Geometry[]
+                {
+                    // Point
+                    new Point(new Position(10, 20)),
+                    
+                    // LineString
+                    new LineString(new[] 
+                    { 
+                        new Position(20, 30), 
+                        new Position(30, 40) 
+                    }),
+                    
+                    // Polygon
+                    new Polygon(new[]
+                    {
+                        new LinearRing(new[]
+                        {
+                            new Position(0, 0),
+                            new Position(0, 10),
+                            new Position(10, 10),
+                            new Position(10, 0),
+                            new Position(0, 0)
+                        })
+                    }),
+                    
+                    // MultiPoint
+                    new MultiPoint(new[] 
+                    { 
+                        new Position(5, 5), 
+                        new Position(15, 15) 
+                    }),
+                    
+                    // MultiLineString
+                    new MultiLineString(new[]
+                    {
+                        new LineStringCoordinates(new[] 
+                        { 
+                            new Position(25, 25), 
+                            new Position(35, 35) 
+                        })
+                    }),
+                    
+                    // MultiPolygon
+                    new MultiPolygon(new[]
+                    {
+                        new PolygonCoordinates(new[]
+                        {
+                            new LinearRing(new[]
+                            {
+                                new Position(40, 40),
+                                new Position(40, 50),
+                                new Position(50, 50),
+                                new Position(50, 40),
+                                new Position(40, 40)
+                            })
+                        })
+                    })
+                },
+                new GeometryParams
+                {
+                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(50, 50)),
+                    Crs = Crs.Named("EPSG:4326"),
+                    AdditionalProperties = new Dictionary<string, object>
+                    {
+                        ["description"] = "Comprehensive geometry collection",
+                        ["version"] = 1
+                    }
+                });
+
+            // Newtonsoft serialization/deserialization
+            string newtonsoftJson = JsonConvert.SerializeObject(input);
+            GeometryCollection newtonsoftResult = JsonConvert.DeserializeObject<GeometryCollection>(newtonsoftJson);
+            Assert.AreEqual(input, newtonsoftResult, "Newtonsoft deserialized result should match input");
+
+            // STJ serialization/deserialization
+            string stjJson = System.Text.Json.JsonSerializer.Serialize(input);
+            GeometryCollection stjResult = System.Text.Json.JsonSerializer.Deserialize<GeometryCollection>(stjJson);
+            Assert.AreEqual(input, stjResult, "STJ deserialized result should match input");
+
+            // Ensure both serializers produce identical JSON output
+            Assert.AreEqual(newtonsoftJson, stjJson, "STJ and Newtonsoft should produce identical JSON");
+        }
+
+        /// <summary>
+        /// Tests serialization/deserialization of nested GeometryCollections.
+        /// Ensures that GeometryCollection can contain other GeometryCollections.
+        /// </summary>
+        [TestMethod]
+        public void TestNestedGeometryCollections()
+        {
+            // Create nested GeometryCollections
+            GeometryCollection innerCollection1 = new GeometryCollection(
+                new Geometry[]
+                {
+                    new Point(10, 20),
+                    new Point(30, 40)
+                });
+
+            GeometryCollection innerCollection2 = new GeometryCollection(
+                new Geometry[]
+                {
+                    new LineString(new[] 
+                    { 
+                        new Position(50, 60), 
+                        new Position(70, 80) 
+                    })
+                });
+
+            GeometryCollection outerCollection = new GeometryCollection(
+                new Geometry[]
+                {
+                    innerCollection1,
+                    innerCollection2,
+                    new Point(90, 100)
+                },
+                new GeometryParams
+                {
+                    Crs = Crs.Named("SomeCrs")
+                });
+
+            // Newtonsoft serialization/deserialization
+            string newtonsoftJson = JsonConvert.SerializeObject(outerCollection);
+            GeometryCollection newtonsoftResult = JsonConvert.DeserializeObject<GeometryCollection>(newtonsoftJson);
+            Assert.AreEqual(outerCollection, newtonsoftResult, "Newtonsoft deserialized nested collection should match input");
+
+            // STJ serialization/deserialization
+            string stjJson = System.Text.Json.JsonSerializer.Serialize(outerCollection);
+            GeometryCollection stjResult = System.Text.Json.JsonSerializer.Deserialize<GeometryCollection>(stjJson);
+            Assert.AreEqual(outerCollection, stjResult, "STJ deserialized nested collection should match input");
+
+            // Ensure both serializers produce identical JSON output
+            Assert.AreEqual(newtonsoftJson, stjJson, "STJ and Newtonsoft should produce identical JSON for nested collections");
+        }
+
+        /// <summary>
+        /// Tests serialization/deserialization of GeometryCollection with complex coordinates.
+        /// Ensures proper handling of floating-point precision and 3D coordinates.
+        /// </summary>
+        [TestMethod]
+        public void TestGeometryCollectionWithComplexCoordinates()
+        {
+            GeometryCollection input = new GeometryCollection(
+                new Geometry[]
+                {
+                    new Point(new Position(20.123456, 30.654321, 100.5)),
+                    new LineString(new[]
+                    {
+                        new Position(-122.419, 37.775, 0),
+                        new Position(-122.420, 37.776, 50.25)
+                    }),
+                    new Polygon(new[]
+                    {
+                        new LinearRing(new[]
+                        {
+                            new Position(0.1, 0.2),
+                            new Position(0.1, 0.3),
+                            new Position(0.2, 0.3),
+                            new Position(0.2, 0.2),
+                            new Position(0.1, 0.2)
+                        })
+                    })
+                },
+                new GeometryParams
+                {
+                    BoundingBox = new BoundingBox(
+                        new Position(-122.420, 37.775, 0), 
+                        new Position(20.123456, 37.776, 100.5)),
+                    AdditionalProperties = new Dictionary<string, object>
+                    {
+                        ["precision"] = "high",
+                        ["elevation"] = true
+                    }
+                });
+
+            // Newtonsoft serialization/deserialization
+            string newtonsoftJson = JsonConvert.SerializeObject(input);
+            GeometryCollection newtonsoftResult = JsonConvert.DeserializeObject<GeometryCollection>(newtonsoftJson);
+            Assert.AreEqual(input, newtonsoftResult, "Newtonsoft should handle complex coordinates");
+
+            // STJ serialization/deserialization
+            string stjJson = System.Text.Json.JsonSerializer.Serialize(input);
+            GeometryCollection stjResult = System.Text.Json.JsonSerializer.Deserialize<GeometryCollection>(stjJson);
+            Assert.AreEqual(input, stjResult, "STJ should handle complex coordinates");
+
+            // Ensure both serializers produce identical JSON output
+            Assert.AreEqual(newtonsoftJson, stjJson, "Both serializers should produce identical JSON for complex coordinates");
+        }
+
+        /// <summary>
+        /// Tests serialization/deserialization of GeometryCollection without optional properties.
+        /// Ensures proper handling when BoundingBox, Crs, and AdditionalProperties are null.
+        /// </summary>
+        [TestMethod]
+        public void TestGeometryCollectionWithoutOptionalProperties()
+        {
+            // Create a minimal GeometryCollection without optional properties
+            GeometryCollection input = new GeometryCollection(
+                new Geometry[]
+                {
+                    new Point(10, 20),
+                    new LineString(new[] { new Position(30, 40), new Position(50, 60) })
+                });
+
+            // Newtonsoft serialization/deserialization
+            string newtonsoftJson = JsonConvert.SerializeObject(input);
+            GeometryCollection newtonsoftResult = JsonConvert.DeserializeObject<GeometryCollection>(newtonsoftJson);
+            Assert.AreEqual(input, newtonsoftResult, "Newtonsoft should handle GeometryCollection without optional properties");
+
+            // STJ serialization/deserialization
+            string stjJson = System.Text.Json.JsonSerializer.Serialize(input);
+            GeometryCollection stjResult = System.Text.Json.JsonSerializer.Deserialize<GeometryCollection>(stjJson);
+            Assert.AreEqual(input, stjResult, "STJ should handle GeometryCollection without optional properties");
+
+            // Ensure both serializers produce identical JSON output
+            Assert.AreEqual(newtonsoftJson, stjJson, "Both serializers should produce identical JSON without optional properties");
         }
 
         public static IEnumerable<object[]> PointData => new[]

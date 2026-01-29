@@ -9,11 +9,19 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
     using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
     /// <summary>
-    /// Converter used to support System.Text.Json de/serialization of type Crs/>.
+    /// Converter used to support System.Text.Json serialization/deserialization of Crs (Coordinate Reference System).
+    /// Handles NamedCrs, LinkedCrs, and Unspecified CRS types.
+    /// Ensures output format matches Newtonsoft.Json exactly.
     /// </summary>
     internal sealed class CrsSTJConverter : JsonConverter<Crs>
     {
         public override bool HandleNull => true;
+        
+        /// <summary>
+        /// Deserializes a CRS from JSON.
+        /// Supports named CRS (e.g., EPSG:4326) and linked CRS with optional type.
+        /// Returns Crs.Unspecified for null values.
+        /// </summary>
         public override Crs Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             if (reader.TokenType == JsonTokenType.Null)
@@ -67,6 +75,10 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
             }
 
         }
+        /// <summary>
+        /// Serializes a CRS to JSON.
+        /// Outputs different JSON structures based on CRS type (Named, Linked, or Unspecified).
+        /// </summary>
         public override void Write(Utf8JsonWriter writer, Crs crs, JsonSerializerOptions options)
         {
             if (crs == null)
