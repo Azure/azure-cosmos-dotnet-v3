@@ -316,6 +316,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 documentServiceRequest.Headers.Set(key, headers[key]);
             }
+            documentServiceRequest.RequestContext.RouteToLocation(this.inferenceEndpoint);
 
             await this.chaosInterceptor.OnBeforeHttpSendAsync(documentServiceRequest, fiToken);
 
@@ -342,6 +343,7 @@ namespace Microsoft.Azure.Cosmos
                 OperationType.Read,
                 Microsoft.Azure.Documents.ResourceType.Document,
                 AuthorizationTokenType.AadToken);
+            documentServiceRequest.RequestContext.RouteToLocation(this.inferenceEndpoint);
 
             // Copy headers to the DocumentServiceRequest
             foreach (string key in headers.AllKeys())

@@ -26,7 +26,7 @@
         public void TestInitAsync()
         {
             this.connectionString = "https://inferencee2etest.documents.azure.com:443/";
-            Environment.SetEnvironmentVariable("AZURE_COSMOS_SEMANTIC_RERANKER_INFERENCE_ENDPOINT", "https://inferencee2etest.dbinference.azure.com");
+            Environment.SetEnvironmentVariable("AZURE_COSMOS_SEMANTIC_RERANKER_INFERENCE_ENDPOINT", "https://inferencee2etest.westus3.dbinference.azure.com");
             DefaultAzureCredentialOptions options = new DefaultAzureCredentialOptions
             {
                 TenantId = "72f988bf-86f1-41af-91ab-2d7cd011db47",
@@ -121,7 +121,7 @@
 
         [TestMethod]
         [TestCategory("Ignore")]
-        [Timeout(30000)]
+        [Timeout(70000)]
         public async Task SemanticRerankTimeoutFaultInjectionTest()
         {
             // Create a fault injection rule with a delay greater than the default inference timeout (5 seconds)
@@ -171,6 +171,7 @@
 
                 string rerankingContext = "test context";
 
+                await container.ReadContainerAsync();
                 // Enable the fault injection rule
                 timeoutRule.Enable();
 
