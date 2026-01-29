@@ -69,8 +69,10 @@ namespace Microsoft.Azure.Cosmos
             this.operationResizableWriteBuffer = new MemorySpanResizer<byte>(estimatedMaxOperationLength + operationSerializationOverheadOverEstimateInBytes);
 
             Result r = await this.bodyStream.WriteRecordIOAsync(default, this.WriteOperation);
-            Debug.Assert(r == Result.Success, "Failed to serialize distributed transaction request");
-
+            if (r != Result.Success)
+            {
+                throw new InvalidOperationException($"Failed to serialize distributed transaction request. HybridRow Result: {r}");
+            }
             this.bodyStream.Position = 0;
         }
 

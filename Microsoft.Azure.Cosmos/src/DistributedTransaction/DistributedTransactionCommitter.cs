@@ -67,8 +67,6 @@ namespace Microsoft.Azure.Cosmos
 
                 using (MemoryStream bodyStream = serverRequest.TransferBodyStream())
                 {
-                    Debug.Assert(bodyStream != null, "Server request payload expected to be non-null");
-
                     ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
                         resourceUri: null,
                         resourceType: ResourceType.Document,
@@ -97,13 +95,7 @@ namespace Microsoft.Azure.Cosmos
         private void EnrichRequestMessage(RequestMessage requestMessage, DistributedTransactionRequest transactionRequest)
         {
             // Set DTC-specific headers
-            requestMessage.Headers.Add("x-ms-dtc-version", "0.0");
             requestMessage.Headers.Add("x-ms-dtc-operation-id", transactionRequest.IdempotencyToken.ToString());
-
-            // Indicate this is a distributed transaction request (batch operation)
-            requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsBatchRequest, bool.TrueString);
-            requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsBatchAtomic, bool.TrueString);
-            requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsBatchOrdered, bool.TrueString);
         }
 
         private Task AbortTransactionAsync(CancellationToken cancellationToken)

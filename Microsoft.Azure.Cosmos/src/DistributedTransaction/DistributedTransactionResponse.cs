@@ -136,20 +136,17 @@ namespace Microsoft.Azure.Cosmos
 
         internal ITrace Trace { get; }
 
-        /// <inheritdoc />
         public virtual IEnumerator<DistributedTransactionOperationResult> GetEnumerator()
         {
             return this.results?.GetEnumerator()
                 ?? ((IList<DistributedTransactionOperationResult>)Array.Empty<DistributedTransactionOperationResult>()).GetEnumerator();
         }
 
-        /// <inheritdoc />
         IEnumerator IEnumerable.GetEnumerator()
         {
             return this.GetEnumerator();
         }
 
-        /// <inheritdoc />
         public void Dispose()
         {
             this.Dispose(true);
