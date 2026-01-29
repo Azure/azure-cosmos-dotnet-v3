@@ -1956,5 +1956,88 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 }
             }
         }
+
+        [TestMethod]
+        [Timeout(Timeout)]
+        [Owner("nalutripician")]
+        [Description("Tests custom server error with custom status and substatus codes for Direct mode")]
+        [DataRow(123, 456789, DisplayName = "Custom Status 123, SubStatus 456789")]
+        [DataRow(418, 12345, DisplayName = "Custom Status 418, SubStatus 12345")]
+        [DataRow(999, 0, DisplayName = "Custom Status 999, SubStatus 0")]
+        public async Task FaultInjectionCustomServerErrorRule_DirectModeTest(int statusCode, int subStatusCode)
+        {
+            //id and partitionkey of item that is to be created, will want to delete after test
+            string id = "customErrorTestId";
+            string pk = "customErrorTestPk";
+
+            FaultInjectionTestObject createdItem = new FaultInjectionTestObject
+            {
+                Id = id,
+                Pk = pk
+            };
+
+            await this.container.CreateItemAsync(createdItem);
+
+            string customErrorRuleId = "customErrorRule-" + Guid.NewGuid().ToString();
+            FaultInjectionRule customErrorRule = new FaultInjectionRuleBuilder(
+                id: customErrorRuleId,
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithOperationType(FaultInjectionOperationType.ReadItem)
+                        .Build(),
+                result:
+                    new FaultInjectionCustomServerErrorResultBuilder(statusCode, subStatusCode)
+                        .WithTimes(1)
+                        .Build())
+                .WithDuration(TimeSpan.FromMinutes(5))
+                .Build();
+            
+            customErrorRule.Disable();
+
+            try
+            {
+                //create client with fault injection
+                List<FaultInjectionRule> rules = new List<FaultInjectionRule> { customErrorRule };
+                FaultInjector faultInjector = new FaultInjector(rules);
+
+                CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+                {
+                    ConsistencyLevel = ConsistencyLevel.Session,
+                    FaultInjector = faultInjector,
+                    Serializer = this.serializer,
+                };
+
+                this.fiClient = new CosmosClient(
+                    this.connectionString,
+                    cosmosClientOptions);
+
+                this.fiDatabase = this.fiClient.GetDatabase(TestCommon.FaultInjectionDatabaseName);
+                this.fiContainer = this.fiDatabase.GetContainer(TestCommon.FaultInjectionContainerName);
+
+                customErrorRule.Enable();
+
+                await this.PerformDocumentOperationAndCheckApplication(
+                    this.fiContainer,
+                    OperationType.Read,
+                    createdItem,
+                    customErrorRule,
+                    statusCode,
+                    subStatusCode);
+
+                this.ValidateHitCount(customErrorRule, 1);
+            }
+            finally
+            {
+                customErrorRule.Disable();
+                try
+                {
+                    await this.container.DeleteItemAsync<FaultInjectionTestObject>(id, new PartitionKey(pk));
+                }
+                catch (CosmosException)
+                {
+                    // Ignore the exception
+                }
+            }
+        }
     }
 }
