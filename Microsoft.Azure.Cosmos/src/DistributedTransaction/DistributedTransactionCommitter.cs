@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
@@ -86,6 +85,7 @@ namespace Microsoft.Azure.Cosmos
                         responseMessage,
                         serverRequest,
                         this.clientContext.SerializerCore,
+                        transactionRequest.IdempotencyToken,
                         trace,
                         cancellationToken).ConfigureAwait(false);
                 }

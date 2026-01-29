@@ -36,7 +36,6 @@ namespace Microsoft.Azure.Cosmos
             this.ResourceStream = other.ResourceStream;
             this.SessionToken = other.SessionToken;
             this.RequestCharge = other.RequestCharge;
-            this.RetryAfter = other.RetryAfter;
             this.ActivityId = other.ActivityId;
             this.Trace = other.Trace;
         }
@@ -80,11 +79,6 @@ namespace Microsoft.Azure.Cosmos
         /// The stream contains the raw response payload returned by the operation.
         /// </summary>
         public virtual Stream ResourceStream { get; internal set; }
-
-        /// <summary>
-        /// In case the operation is rate limited, indicates the time post which a retry can be attempted.
-        /// </summary>
-        public virtual TimeSpan RetryAfter { get; internal set; }
 
         /// <summary>
         /// Request charge in request units for the operation.
@@ -175,12 +169,6 @@ namespace Microsoft.Azure.Cosmos
                         r = reader.ReadFloat64(out double requestCharge);
                         if (r != Result.Success) return r;
                         operationResult.RequestCharge = Math.Round(requestCharge, 2);
-                        break;
-
-                    case "retryAfterMilliseconds":
-                        r = reader.ReadUInt32(out uint retryAfterMilliseconds);
-                        if (r != Result.Success) return r;
-                        operationResult.RetryAfter = TimeSpan.FromMilliseconds(retryAfterMilliseconds);
                         break;
                 }
             }

@@ -134,13 +134,6 @@
           }
         },
         {
-          "path": "retryAfterMilliseconds",
-          "type": {
-            "type": "uint32",
-            "storage": "sparse"
-          }
-        },
-        {
           "path": "isRetriable",
           "type": {
             "type": "bool",

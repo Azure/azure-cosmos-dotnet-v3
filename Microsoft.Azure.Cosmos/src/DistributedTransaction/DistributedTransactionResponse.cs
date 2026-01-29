@@ -26,6 +26,8 @@ namespace Microsoft.Azure.Cosmos
 #endif
     class DistributedTransactionResponse : IReadOnlyList<DistributedTransactionOperationResult>, IDisposable
     {
+        private const string IdempotencyTokenHeader = "x-ms-dtc-operation-id";
+
         private List<DistributedTransactionOperationResult> results;
         private bool isDisposed;
 
@@ -37,7 +39,7 @@ namespace Microsoft.Azure.Cosmos
             IReadOnlyList<DistributedTransactionOperation> operations,
             CosmosSerializerCore serializer,
             ITrace trace,
-            Guid? idempotencyToken = null,
+            Guid idempotencyToken,
             string serverDiagnostics = null)
         {
             this.Headers = headers;
@@ -94,11 +96,6 @@ namespace Microsoft.Azure.Cosmos
         public virtual double RequestCharge => this.Headers?.RequestCharge ?? 0;
 
         /// <summary>
-        /// Gets the amount of time to wait before retrying this or any other request due to throttling.
-        /// </summary>
-        public virtual TimeSpan? RetryAfter => this.Headers?.RetryAfter;
-
-        /// <summary>
         /// Gets the HTTP status code for the distributed transaction response.
         /// </summary>
         public virtual HttpStatusCode StatusCode { get; }
@@ -121,7 +118,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the idempotency token associated with this distributed transaction.
         /// </summary>
-        public virtual Guid? IdempotencyToken { get; }
+        public virtual Guid IdempotencyToken { get; }
 
         /// <summary>
         /// Gets the server-side diagnostic information for the transaction.
@@ -136,17 +133,28 @@ namespace Microsoft.Azure.Cosmos
 
         internal ITrace Trace { get; }
 
+        /// <summary>
+        /// Returns an enumerator that iterates through the operation results.
+        /// </summary>
+        /// <returns>An enumerator for the operation results.</returns>
         public virtual IEnumerator<DistributedTransactionOperationResult> GetEnumerator()
         {
             return this.results?.GetEnumerator()
                 ?? ((IList<DistributedTransactionOperationResult>)Array.Empty<DistributedTransactionOperationResult>()).GetEnumerator();
         }
 
+        /// <summary>
+        /// Returns an enumerator that iterates through the operation results.
+        /// </summary>
+        /// <returns>An enumerator for the operation results.</returns>
         IEnumerator IEnumerable.GetEnumerator()
         {
             return this.GetEnumerator();
         }
 
+        /// <summary>
+        /// Releases the unmanaged resources used by the <see cref="DistributedTransactionResponse"/> and optionally releases the managed resources.
+        /// </summary>
         public void Dispose()
         {
             this.Dispose(true);
@@ -160,12 +168,16 @@ namespace Microsoft.Azure.Cosmos
             ResponseMessage responseMessage,
             DistributedTransactionServerRequest serverRequest,
             CosmosSerializerCore serializer,
+            Guid requestIdempotencyToken,
             ITrace trace,
             CancellationToken cancellationToken)
         {
             using (ITrace createResponseTrace = trace.StartChild("Create Distributed Transaction Response", TraceComponent.Batch, TraceLevel.Info))
             {
                 cancellationToken.ThrowIfCancellationRequested();
+
+                // Extract idempotency token from response headers, fallback to request token if not present
+                Guid idempotencyToken = GetIdempotencyTokenFromHeaders(responseMessage.Headers, requestIdempotencyToken);
 
                 DistributedTransactionResponse response = null;
                 MemoryStream memoryStream = null;
@@ -193,6 +205,7 @@ namespace Microsoft.Azure.Cosmos
                                 responseMessage,
                                 serverRequest,
                                 serializer,
+                                idempotencyToken,
                                 createResponseTrace,
                                 cancellationToken);
                         }
@@ -206,7 +219,8 @@ namespace Microsoft.Azure.Cosmos
                         responseMessage.Headers,
                         serverRequest.Operations,
                         serializer,
-                        createResponseTrace);
+                        createResponseTrace,
+                        idempotencyToken);
 
                     // Validate results count matches operations count
                     if (response.results == null || response.results.Count != serverRequest.Operations.Count)
@@ -221,11 +235,11 @@ namespace Microsoft.Azure.Cosmos
                                 responseMessage.Headers,
                                 serverRequest.Operations,
                                 serializer,
-                                createResponseTrace);
+                                createResponseTrace,
+                                idempotencyToken);
                         }
 
-                        int retryAfterMilliseconds = GetRetryAfterMilliseconds(responseMessage);
-                        response.CreateAndPopulateResults(serverRequest.Operations, createResponseTrace, retryAfterMilliseconds);
+                        response.CreateAndPopulateResults(serverRequest.Operations, createResponseTrace);
                     }
 
                     return response;
@@ -259,6 +273,18 @@ namespace Microsoft.Azure.Cosmos
             this.isDisposed = true;
         }
 
+        private static Guid GetIdempotencyTokenFromHeaders(Headers headers, Guid fallbackToken)
+        {
+            if (headers != null &&
+                headers.TryGetValue(IdempotencyTokenHeader, out string tokenValue) &&
+                Guid.TryParse(tokenValue, out Guid idempotencyToken))
+            {
+                return idempotencyToken;
+            }
+
+            return fallbackToken;
+        }
+
         private void ThrowIfDisposed()
         {
             if (this.isDisposed)
@@ -267,28 +293,12 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private static int GetRetryAfterMilliseconds(ResponseMessage responseMessage)
-        {
-            if ((int)responseMessage.StatusCode != (int)StatusCodes.TooManyRequests)
-            {
-                return 0;
-            }
-
-            if (responseMessage.Headers.TryGetValue(HttpConstants.HttpHeaders.RetryAfterInMilliseconds, out string retryAfter) &&
-                !string.IsNullOrEmpty(retryAfter) &&
-                int.TryParse(retryAfter, out int retryAfterMs))
-            {
-                return retryAfterMs;
-            }
-
-            return 0;
-        }
-
         private static async Task<DistributedTransactionResponse> PopulateFromContentAsync(
             Stream content,
             ResponseMessage responseMessage,
             DistributedTransactionServerRequest serverRequest,
             CosmosSerializerCore serializer,
+            Guid idempotencyToken,
             ITrace trace,
             CancellationToken cancellationToken)
         {
@@ -344,7 +354,8 @@ namespace Microsoft.Azure.Cosmos
                 responseMessage.Headers,
                 serverRequest.Operations,
                 serializer,
-                trace)
+                trace,
+                idempotencyToken)
             {
                 results = results
             };
@@ -352,18 +363,15 @@ namespace Microsoft.Azure.Cosmos
 
         private void CreateAndPopulateResults(
             IReadOnlyList<DistributedTransactionOperation> operations,
-            ITrace trace,
-            int retryAfterMilliseconds = 0)
+            ITrace trace)
         {
             this.results = new List<DistributedTransactionOperationResult>(operations.Count);
-            TimeSpan retryAfter = TimeSpan.FromMilliseconds(retryAfterMilliseconds);
 
             for (int i = 0; i < operations.Count; i++)
             {
                 this.results.Add(new DistributedTransactionOperationResult(this.StatusCode)
                 {
                     SubStatusCode = this.SubStatusCode,
-                    RetryAfter = retryAfter,
                     SessionToken = this.Headers?.Session,
                     ActivityId = this.ActivityId,
                     Trace = trace
