@@ -1757,12 +1757,15 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<SemanticRerankResult> SemanticRerankAsync(
+        public 
+#else 
+        internal
+#endif
+        abstract Task<SemanticRerankResult> SemanticRerankAsync(
             string rerankContext,
             IEnumerable<string> documents,
             IDictionary<string, object> options = null,
             CancellationToken cancellationToken = default);
-#endif
 
         /// <summary>
         /// Deletes all items in the Container with the specified <see cref="PartitionKey"/> value.

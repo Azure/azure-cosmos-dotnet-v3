@@ -394,7 +394,12 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <value>Default value is 5 seconds.</value>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso cref="CosmosClientOptions.InferenceRequestTimeout"/>
-        public CosmosClientBuilder WithInferenceRequestTimeout(TimeSpan inferenceRequestTimeout)
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        CosmosClientBuilder WithInferenceRequestTimeout(TimeSpan inferenceRequestTimeout)
         {
             this.clientOptions.InferenceRequestTimeout = inferenceRequestTimeout;
             return this;

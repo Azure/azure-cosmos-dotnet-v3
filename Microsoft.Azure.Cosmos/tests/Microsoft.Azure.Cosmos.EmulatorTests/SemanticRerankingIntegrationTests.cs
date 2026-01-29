@@ -30,7 +30,8 @@
             DefaultAzureCredentialOptions options = new DefaultAzureCredentialOptions
             {
                 TenantId = "72f988bf-86f1-41af-91ab-2d7cd011db47",
-                ExcludeVisualStudioCredential = true
+                ExcludeVisualStudioCredential = true,
+                ExcludeVisualStudioCodeCredential = true,
             };
 
             //Create a cosmos client using AAD authentication
@@ -58,6 +59,7 @@
         [TestCleanup]
         public void TestCleanup()
         {
+            Environment.SetEnvironmentVariable("AZURE_COSMOS_SEMANTIC_RERANKER_INFERENCE_ENDPOINT", null);
             this.client?.Dispose();
         }
 
@@ -154,7 +156,7 @@
             };
 
             using (CosmosClient faultInjectionClient = new CosmosClient(
-                connectionString: this.connectionString,
+                accountEndpoint: this.connectionString,
                 tokenCredential: this.tokenCredential,
                 clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {

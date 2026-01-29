@@ -283,7 +283,12 @@ namespace Microsoft.Azure.Cosmos
         /// This timeout is specific to inference service operations and is separate from the standard RequestTimeout.
         /// Inference operations typically require more processing time than standard database operations.
         /// </remarks>
-        public TimeSpan InferenceRequestTimeout { get; set; } = TimeSpan.FromSeconds(5);
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        TimeSpan InferenceRequestTimeout { get; set; } = TimeSpan.FromSeconds(5);
 
         /// <summary>
         /// The SDK does a background refresh based on the time interval set to refresh the token credentials.
