@@ -335,7 +335,8 @@
                     },
                     SubpartitionTests.CreatePartitionKeyDefinition(),
                     vectorEmbeddingPolicy: null,
-                    Cosmos.GeospatialType.Geometry));
+                    Cosmos.GeospatialType.Geometry,
+                    false));
             }
 
             public override Task<bool> GetClientDisableOptimisticDirectExecutionAsync()

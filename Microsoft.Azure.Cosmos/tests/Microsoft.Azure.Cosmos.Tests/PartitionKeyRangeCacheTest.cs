@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     .Returns(new ValueTask<string>(authToken));
 
                 // Act.
-                PartitionKeyRangeCache partitionKeyRangeCache = new(mockTokenProvider.Object, mockStoreModel.Object, mockCollectioNCache.Object, endpointManager, enableAsyncCacheExceptionNoSharing: false);
+                PartitionKeyRangeCache partitionKeyRangeCache = new(mockTokenProvider.Object, mockStoreModel.Object, mockCollectioNCache.Object, endpointManager, useLengthAwareRangeComparer: false, enableAsyncCacheExceptionNoSharing: false);
                 IReadOnlyList<PartitionKeyRange> partitionKeyRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
                     containerRId,
                     FeedRangeEpk.FullRange.Range,
@@ -207,7 +207,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 mockTokenProvider.Setup(x => x.GetUserAuthorizationTokenAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<INameValueCollection>(), It.IsAny<AuthorizationTokenType>(), It.IsAny<ITrace>()))
                     .Returns(new ValueTask<string>(authToken));
 
-                PartitionKeyRangeCache partitionKeyRangeCache = new(mockTokenProvider.Object, mockStoreModel.Object, mockCollectioNCache.Object, mockedEndpointManager.Object, enableAsyncCacheExceptionNoSharing: false);
+                PartitionKeyRangeCache partitionKeyRangeCache = new(mockTokenProvider.Object, mockStoreModel.Object, mockCollectioNCache.Object, mockedEndpointManager.Object, useLengthAwareRangeComparer: false, enableAsyncCacheExceptionNoSharing: false);
 
                 if (shouldSucceed)
                 {
