@@ -681,6 +681,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 ranges,
                 isContinuationExpected: true,
                 maxConcurrency: MaxConcurrency,
+                fullTextScoreScope: FullTextScoreScope.Global,
                 requestContinuationToken: null);
 
             Assert.IsTrue(tryCreatePipeline.Succeeded);
