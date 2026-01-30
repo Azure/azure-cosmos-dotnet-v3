@@ -341,6 +341,56 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     pageSize: 100,
                     fullTextScoreScope: FullTextScoreScope.Local,
                     targetRangeCount: 3),
+                // Local scope with single target range
+                MakeHybridSearchTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: null,
+                    take: 50,
+                    pageSize: 100,
+                    fullTextScoreScope: FullTextScoreScope.Local,
+                    targetRangeCount: 1),
+                // Local scope with larger page size than document count
+                MakeHybridSearchTest(
+                    leafPageCount: 2,
+                    backendPageSize: 5,
+                    requiresGlobalStatistics: true,
+                    skip: null,
+                    take: 100,
+                    pageSize: 1000,
+                    fullTextScoreScope: FullTextScoreScope.Local,
+                    targetRangeCount: 2),
+                // Local scope with skip and take
+                MakeHybridSearchTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: 5,
+                    take: 20,
+                    pageSize: 10,
+                    fullTextScoreScope: FullTextScoreScope.Local,
+                    targetRangeCount: 2),
+                // Local scope with small page size (multiple pages)
+                MakeHybridSearchTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: null,
+                    take: 50,
+                    pageSize: 5,
+                    fullTextScoreScope: FullTextScoreScope.Local,
+                    targetRangeCount: 3),
+                // Local scope with 4 target ranges (majority of 6)
+                MakeHybridSearchTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: 10,
+                    take: 100,
+                    pageSize: 50,
+                    fullTextScoreScope: FullTextScoreScope.Local,
+                    targetRangeCount: 4),
 
                 // Global scope test - query subset of ranges, statistics from ALL ranges
                 MakeHybridSearchTest(
@@ -426,6 +476,46 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     pageSize: 1000,
                     fullTextScoreScope: FullTextScoreScope.Local,
                     targetRangeCount: 2),
+                // Local scope with single target range
+                MakeHybridSearchSkipOrderByRewriteTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: null,
+                    take: 50,
+                    pageSize: 100,
+                    fullTextScoreScope: FullTextScoreScope.Local,
+                    targetRangeCount: 1),
+                // Local scope with small page size
+                MakeHybridSearchSkipOrderByRewriteTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: 5,
+                    take: 30,
+                    pageSize: 5,
+                    fullTextScoreScope: FullTextScoreScope.Local,
+                    targetRangeCount: 3),
+                // Local scope with different skip/take values
+                MakeHybridSearchSkipOrderByRewriteTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: 10,
+                    take: 25,
+                    pageSize: 10,
+                    fullTextScoreScope: FullTextScoreScope.Local,
+                    targetRangeCount: 2),
+                // Local scope with 4 target ranges
+                MakeHybridSearchSkipOrderByRewriteTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: null,
+                    take: 100,
+                    pageSize: 50,
+                    fullTextScoreScope: FullTextScoreScope.Local,
+                    targetRangeCount: 4),
             };
 
             foreach (HybridSearchTest testCase in testCases)
@@ -501,6 +591,50 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     pageSize: 1000,
                     fullTextScoreScope: FullTextScoreScope.Local,
                     targetRangeCount: 2),
+                // Local scope with different weights
+                MakeHybridSearchTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: 10,
+                    take: 50,
+                    weights: new double[] { 0.5, 1.5 },
+                    pageSize: 100,
+                    fullTextScoreScope: FullTextScoreScope.Local,
+                    targetRangeCount: 3),
+                // Local scope with single target range and weights
+                MakeHybridSearchTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: null,
+                    take: 50,
+                    weights: new double[] { 2.0, 1.0 },
+                    pageSize: 50,
+                    fullTextScoreScope: FullTextScoreScope.Local,
+                    targetRangeCount: 1),
+                // Local scope with small page size and weights
+                MakeHybridSearchTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: 5,
+                    take: 30,
+                    weights: new double[] { 1.0, 2.0 },
+                    pageSize: 5,
+                    fullTextScoreScope: FullTextScoreScope.Local,
+                    targetRangeCount: 2),
+                // Local scope with 4 target ranges and weights
+                MakeHybridSearchTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: null,
+                    take: 100,
+                    weights: new double[] { 0.75, 1.25 },
+                    pageSize: 25,
+                    fullTextScoreScope: FullTextScoreScope.Local,
+                    targetRangeCount: 4),
             };
 
             foreach (HybridSearchTest testCase in testCases)
