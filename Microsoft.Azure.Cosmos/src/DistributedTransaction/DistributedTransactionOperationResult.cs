@@ -7,8 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.IO;
     using System.Net;
-    using Microsoft.Azure.Cosmos.Serialization.HybridRow;
-    using Microsoft.Azure.Cosmos.Serialization.HybridRow.IO;
+    using System.Text.Json;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -95,85 +94,55 @@ namespace Microsoft.Azure.Cosmos
         internal ITrace Trace { get; set; }
 
         /// <summary>
-        /// Reads a <see cref="DistributedTransactionOperationResult"/> from a HybridRow record.
+        /// Creates a <see cref="DistributedTransactionOperationResult"/> from a JSON element.
         /// </summary>
-        /// <param name="input">The input buffer containing the HybridRow record.</param>
-        /// <param name="operationResult">The deserialized operation result.</param>
-        /// <returns>The result of the read operation.</returns>
-        internal static Result ReadOperationResult(ReadOnlyMemory<byte> input, out DistributedTransactionOperationResult operationResult)
+        /// <param name="json">The JSON element containing the operation result.</param>
+        /// <returns>The deserialized operation result.</returns>
+        internal static DistributedTransactionOperationResult FromJson(JsonElement json)
         {
-            RowBuffer row = new RowBuffer(input.Length);
-            if (!row.ReadFrom(input.Span, HybridRowVersion.V1, DistributedTransactionSchemaProvider.LayoutResolver))
+            DistributedTransactionOperationResult operationResult = new DistributedTransactionOperationResult();
+
+            if (json.TryGetProperty("index", out JsonElement indexElement))
             {
-                operationResult = null;
-                return Result.Failure;
+                operationResult.Index = indexElement.GetInt32();
             }
 
-            RowReader reader = new RowReader(ref row);
-            Result result = ReadOperationResult(ref reader, out operationResult);
-            
-            if (result != Result.Success || operationResult.StatusCode == default)
+            if (json.TryGetProperty("statusCode", out JsonElement statusCodeElement))
             {
-                return Result.Failure;
+                operationResult.StatusCode = (HttpStatusCode)statusCodeElement.GetInt32();
             }
 
-            return Result.Success;
-        }
-
-        private static Result ReadOperationResult(ref RowReader reader, out DistributedTransactionOperationResult operationResult)
-        {
-            operationResult = new DistributedTransactionOperationResult();
-            
-            while (reader.Read())
+            if (json.TryGetProperty("substatuscode", out JsonElement subStatusCodeElement))
             {
-                Result r;
-                switch (reader.Path)
+                operationResult.SubStatusCode = (SubStatusCodes)subStatusCodeElement.GetInt32();
+            }
+
+            if (json.TryGetProperty("etag", out JsonElement eTagElement) && eTagElement.ValueKind != JsonValueKind.Null)
+            {
+                operationResult.ETag = eTagElement.GetString();
+            }
+
+            if (json.TryGetProperty("resourcebody", out JsonElement resourceBodyElement) && resourceBodyElement.ValueKind != JsonValueKind.Null)
+            {
+                string resourceBodyBase64 = resourceBodyElement.GetString();
+                if (!string.IsNullOrEmpty(resourceBodyBase64))
                 {
-                    case "index":
-                        r = reader.ReadUInt32(out uint index);
-                        if (r != Result.Success) return r;
-                        operationResult.Index = (int)index;
-                        break;
-
-                    case "statusCode":
-                        r = reader.ReadInt32(out int statusCode);
-                        if (r != Result.Success) return r;
-                        operationResult.StatusCode = (HttpStatusCode)statusCode;
-                        break;
-
-                    case "subStatusCode":
-                        r = reader.ReadInt32(out int subStatusCode);
-                        if (r != Result.Success) return r;
-                        operationResult.SubStatusCode = (SubStatusCodes)subStatusCode;
-                        break;
-
-                    case "eTag":
-                        r = reader.ReadString(out string eTag);
-                        if (r != Result.Success) return r;
-                        operationResult.ETag = eTag;
-                        break;
-
-                    case "resourceBody":
-                        r = reader.ReadBinary(out byte[] resourceBody);
-                        if (r != Result.Success) return r;
-                        operationResult.ResourceStream = new MemoryStream(resourceBody, 0, resourceBody.Length, writable: false, publiclyVisible: true);
-                        break;
-
-                    case "sessionToken":
-                        r = reader.ReadString(out string sessionToken);
-                        if (r != Result.Success) return r;
-                        operationResult.SessionToken = sessionToken;
-                        break;
-
-                    case "requestCharge":
-                        r = reader.ReadFloat64(out double requestCharge);
-                        if (r != Result.Success) return r;
-                        operationResult.RequestCharge = Math.Round(requestCharge, 2);
-                        break;
+                    byte[] resourceBody = Convert.FromBase64String(resourceBodyBase64);
+                    operationResult.ResourceStream = new MemoryStream(resourceBody, 0, resourceBody.Length, writable: false, publiclyVisible: true);
                 }
             }
 
-            return Result.Success;
+            if (json.TryGetProperty("sessionToken", out JsonElement sessionTokenElement) && sessionTokenElement.ValueKind != JsonValueKind.Null)
+            {
+                operationResult.SessionToken = sessionTokenElement.GetString();
+            }
+
+            if (json.TryGetProperty("requestCharge", out JsonElement requestChargeElement))
+            {
+                operationResult.RequestCharge = Math.Round(requestChargeElement.GetDouble(), 2);
+            }
+
+            return operationResult;
         }
     }
 }

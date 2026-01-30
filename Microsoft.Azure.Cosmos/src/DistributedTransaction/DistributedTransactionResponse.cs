@@ -9,10 +9,9 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.IO;
     using System.Net;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Serialization.HybridRow;
-    using Microsoft.Azure.Cosmos.Serialization.HybridRow.RecordIO;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -197,21 +196,17 @@ namespace Microsoft.Azure.Cosmos
                             content = memoryStream;
                         }
 
-                        if (content.ReadByte() == (int)HybridRowVersion.V1)
-                        {
-                            content.Position = 0;
-                            response = await PopulateFromContentAsync(
-                                content,
-                                responseMessage,
-                                serverRequest,
-                                serializer,
-                                idempotencyToken,
-                                createResponseTrace,
-                                cancellationToken);
-                        }
+                        response = await PopulateFromJsonContentAsync(
+                            content,
+                            responseMessage,
+                            serverRequest,
+                            serializer,
+                            idempotencyToken,
+                            createResponseTrace,
+                            cancellationToken);
                     }
 
-                    // If we couldn't parse HybridRow content or there was no content, create default response
+                    // If we couldn't parse JSON content or there was no content, create default response
                     response ??= new DistributedTransactionResponse(
                         responseMessage.StatusCode,
                         responseMessage.Headers.SubStatusCode,
@@ -269,6 +264,7 @@ namespace Microsoft.Azure.Cosmos
                     result.ResourceStream?.Dispose();
                 }
             }
+
             this.results = null;
             this.isDisposed = true;
         }
@@ -293,7 +289,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private static async Task<DistributedTransactionResponse> PopulateFromContentAsync(
+        private static async Task<DistributedTransactionResponse> PopulateFromJsonContentAsync(
             Stream content,
             ResponseMessage responseMessage,
             DistributedTransactionServerRequest serverRequest,
@@ -303,29 +299,33 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             List<DistributedTransactionOperationResult> results = new List<DistributedTransactionOperationResult>();
-            int resizerInitialCapacity = (int)content.Length;
 
-            Result res = await content.ReadRecordIOAsync(
-                (Func<ReadOnlyMemory<byte>, Result>)(record =>
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    Result r = DistributedTransactionOperationResult.ReadOperationResult(record, out DistributedTransactionOperationResult operationResult);
-                    if (r != Result.Success)
-                    {
-                        return r;
-                    }
-
-                    operationResult.Trace = trace;
-                    operationResult.SessionToken ??= responseMessage.Headers.Session;
-                    operationResult.ActivityId = responseMessage.Headers.ActivityId;
-                    results.Add(operationResult);
-                    return r;
-                }),
-                resizer: new MemorySpanResizer<byte>(resizerInitialCapacity));
-
-            if (res != Result.Success)
+            try
             {
+                using (JsonDocument responseJson = await JsonDocument.ParseAsync(content, cancellationToken: cancellationToken))
+                {
+                    JsonElement root = responseJson.RootElement;
+
+                    // Parse operation results from "operationResponses" array
+                    if (root.TryGetProperty("operationResponses", out JsonElement operationResponses) &&
+                        operationResponses.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (JsonElement operationElement in operationResponses.EnumerateArray())
+                        {
+                            cancellationToken.ThrowIfCancellationRequested();
+
+                            DistributedTransactionOperationResult operationResult = DistributedTransactionOperationResult.FromJson(operationElement);
+                            operationResult.Trace = trace;
+                            operationResult.SessionToken ??= responseMessage.Headers.Session;
+                            operationResult.ActivityId = responseMessage.Headers.ActivityId;
+                            results.Add(operationResult);
+                        }
+                    }
+                }
+            }
+            catch (JsonException)
+            {
+                // If JSON parsing fails, return null to fall back to default response
                 return null;
             }
 

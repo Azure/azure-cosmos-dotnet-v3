@@ -69,9 +69,6 @@
 		<EmbeddedResource Include="Query\Core\QueryAdvisor\QueryAdviceRuleDocumentation.xml">
 		  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
 		</EmbeddedResource>
-		<EmbeddedResource Include="DistributedTransaction\HybridRowDistributedTransactionSchemas.json">
-			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
-		</EmbeddedResource>
 	</ItemGroup>
 
 	<ItemGroup>

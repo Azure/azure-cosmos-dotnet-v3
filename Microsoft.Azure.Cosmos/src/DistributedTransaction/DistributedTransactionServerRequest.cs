@@ -7,18 +7,20 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Serialization.HybridRow;
-    using Microsoft.Azure.Cosmos.Serialization.HybridRow.IO;
-    using Microsoft.Azure.Cosmos.Serialization.HybridRow.RecordIO;
+    using Microsoft.Azure.Documents;
 
     internal class DistributedTransactionServerRequest
     {
+        /// <summary>
+        /// Maximum allowed size for distributed transaction request body (2MB).
+        /// </summary>
+        private const int MaxBodySizeInBytes = 2 * 1024 * 1024;
+
         private readonly CosmosSerializerCore serializerCore;
-        private MemorySpanResizer<byte> operationResizableWriteBuffer;
         private MemoryStream bodyStream;
-        private int lastWrittenOperationIndex;
 
         private DistributedTransactionServerRequest(
             IReadOnlyList<DistributedTransactionOperation> operations,
@@ -29,6 +31,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public IReadOnlyList<DistributedTransactionOperation> Operations { get; }
+
+        public Guid IdempotencyToken { get; private set; }
 
         public static async Task<DistributedTransactionServerRequest> CreateAsync(
             IReadOnlyList<DistributedTransactionOperation> operations,
@@ -49,54 +53,32 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task CreateBodyStreamAsync(CancellationToken cancellationToken)
         {
-            int estimatedMaxOperationLength = 0;
-            int approximateTotalLength = 0;
-
             foreach (DistributedTransactionOperation operation in this.Operations)
             {
                 await operation.MaterializeResourceAsync(this.serializerCore, cancellationToken);
-
                 operation.PartitionKeyJson ??= operation.PartitionKey.ToJsonString();
-
-                int currentLength = operation.GetApproximateSerializedLength();
-                estimatedMaxOperationLength = Math.Max(currentLength, estimatedMaxOperationLength);
-                approximateTotalLength += currentLength;
             }
 
-            const int operationSerializationOverheadOverEstimateInBytes = 200;
-            this.bodyStream = new MemoryStream(approximateTotalLength + (operationSerializationOverheadOverEstimateInBytes * this.Operations.Count));
-            this.operationResizableWriteBuffer = new MemorySpanResizer<byte>(estimatedMaxOperationLength + operationSerializationOverheadOverEstimateInBytes);
+            // Generate idempotency token for this request
+            this.IdempotencyToken = Guid.NewGuid();
 
-            Result r = await this.bodyStream.WriteRecordIOAsync(default, this.WriteOperation);
-            if (r != Result.Success)
+            // Serialize the request to JSON using DistributedTransactionSerializer
+            this.bodyStream = DistributedTransactionSerializer.SerializeRequest(
+                this.IdempotencyToken,
+                OperationType.Batch,
+                ResourceType.Document,
+                this.Operations);
+
+            // Validate the final body size does not exceed the maximum allowed size
+            if (this.bodyStream.Length > MaxBodySizeInBytes)
             {
-                throw new InvalidOperationException($"Failed to serialize distributed transaction request. HybridRow Result: {r}");
+                throw new CosmosException(
+                    message: $"The distributed transaction request body exceeds the maximum allowed size of {MaxBodySizeInBytes / (1024 * 1024)}MB. Actual size: {this.bodyStream.Length} bytes.",
+                    statusCode: HttpStatusCode.RequestEntityTooLarge,
+                    subStatusCode: 0,
+                    activityId: string.Empty,
+                    requestCharge: 0);
             }
-            this.bodyStream.Position = 0;
-        }
-
-        private Result WriteOperation(long index, out ReadOnlyMemory<byte> buffer)
-        {
-            if (index >= this.Operations.Count)
-            {
-                buffer = default;
-                return Result.Success;
-            }
-
-            DistributedTransactionOperation operation = this.Operations[(int)index];
-
-            RowBuffer row = new RowBuffer(this.operationResizableWriteBuffer.Memory.Length, this.operationResizableWriteBuffer);
-            row.InitLayout(HybridRowVersion.V1, DistributedTransactionSchemaProvider.OperationLayout, DistributedTransactionSchemaProvider.LayoutResolver);
-            Result r = RowWriter.WriteBuffer(ref row, operation, DistributedTransactionOperation.WriteOperation);
-            if (r != Result.Success)
-            {
-                buffer = null;
-                return r;
-            }
-
-            this.lastWrittenOperationIndex = (int)index;
-            buffer = this.operationResizableWriteBuffer.Memory.Slice(0, row.Length);
-            return Result.Success;
         }
     }
 }

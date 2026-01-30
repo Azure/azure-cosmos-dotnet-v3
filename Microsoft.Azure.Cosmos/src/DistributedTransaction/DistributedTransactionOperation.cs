@@ -8,9 +8,6 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Serialization.HybridRow;
-    using Microsoft.Azure.Cosmos.Serialization.HybridRow.IO;
-    using Microsoft.Azure.Cosmos.Serialization.HybridRow.Layouts;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -72,117 +69,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.body = await BatchExecUtils.StreamToMemoryAsync(this.ResourceStream, cancellationToken);
             }
-        }
-
-        internal int GetApproximateSerializedLength()
-        {
-            int length = 0;
-
-            if (this.PartitionKeyJson != null)
-            {
-                length += this.PartitionKeyJson.Length;
-            }
-
-            if (this.Id != null)
-            {
-                length += this.Id.Length;
-            }
-
-            if (this.CollectionResourceId != null)
-            {
-                length += this.CollectionResourceId.Length;
-            }
-
-            if (this.DatabaseResourceId != null)
-            {
-                length += this.DatabaseResourceId.Length;
-            }
-
-            if (this.SessionToken != null)
-            {
-                length += this.SessionToken.Length;
-            }
-
-            length += this.body.Length;
-
-            return length;
-        }
-
-        internal static Result WriteOperation(ref RowWriter writer, TypeArgument typeArg, DistributedTransactionOperation operation)
-        {
-            Result r = writer.WriteInt32("index", operation.OperationIndex);
-            if (r != Result.Success)
-            {
-                return r;
-            }
-
-            if (operation.CollectionResourceId != null)
-            {
-                r = writer.WriteString("collectionResourceId", operation.CollectionResourceId);
-                if (r != Result.Success)
-                {
-                    return r;
-                }
-            }
-
-            if (operation.DatabaseResourceId != null)
-            {
-                r = writer.WriteString("databaseResourceId", operation.DatabaseResourceId);
-                if (r != Result.Success)
-                {
-                    return r;
-                }
-            }
-
-            if (operation.PartitionKeyJson != null)
-            {
-                r = writer.WriteString("partitionKey", operation.PartitionKeyJson);
-                if (r != Result.Success)
-                {
-                    return r;
-                }
-            }
-
-            r = writer.WriteInt32("operation", (int)operation.OperationType);
-            if (r != Result.Success)
-            {
-                return r;
-            }
-
-            if (!operation.ResourceBody.IsEmpty)
-            {
-                r = writer.WriteBinary("resourceBody", operation.ResourceBody.Span);
-                if (r != Result.Success)
-                {
-                    return r;
-                }
-            }
-
-            if (operation.SessionToken != null)
-            {
-                r = writer.WriteString("sessionToken", operation.SessionToken);
-                if (r != Result.Success)
-                {
-                    return r;
-                }
-            }
-
-            if (operation.ETag != null)
-            {
-                r = writer.WriteString("etag", operation.ETag);
-                if (r != Result.Success)
-                {
-                    return r;
-                }
-            }
-
-            r = writer.WriteInt32("resourceType", (int)ResourceType.Document);
-            if (r != Result.Success)
-            {
-                return r;
-            }
-
-            return Result.Success;
         }
     }
 

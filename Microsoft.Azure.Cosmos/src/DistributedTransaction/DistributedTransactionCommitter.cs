@@ -34,14 +34,14 @@ namespace Microsoft.Azure.Cosmos
                 await DistributedTransactionCommitterUtils.ResolveCollectionRidsAsync(
                     this.operations,
                     this.clientContext,
-                    cancellationToken).ConfigureAwait(false);
+                    cancellationToken);
 
                 DistributedTransactionServerRequest serverRequest = await DistributedTransactionServerRequest.CreateAsync(
                     this.operations,
                     this.clientContext.SerializerCore,
-                    cancellationToken).ConfigureAwait(false);
+                    cancellationToken);
 
-                return await this.ExecuteCommitAsync(serverRequest, cancellationToken).ConfigureAwait(false);
+                return await this.ExecuteCommitAsync(serverRequest, cancellationToken);
             }
             catch (Exception ex)
             {
@@ -56,8 +56,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-
-            using (ITrace trace = Tracing.Trace.GetRootTrace("Execute Distributed Transaction Commit", TraceComponent.Batch, Tracing.TraceLevel.Info))
+            using (ITrace trace = Trace.GetRootTrace("Execute Distributed Transaction Commit", TraceComponent.Batch, Tracing.TraceLevel.Info))
             {
                 DistributedTransactionRequest transactionRequest = new DistributedTransactionRequest(
                     serverRequest.Operations,
@@ -68,8 +67,8 @@ namespace Microsoft.Azure.Cosmos
                 {
                     ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
                         resourceUri: null,
-                        resourceType: ResourceType.Document,
-                        operationType: OperationType.Batch,
+                        resourceType: transactionRequest.ResourceType,
+                        operationType: transactionRequest.OperationType,
                         requestOptions: null,
                         cosmosContainerCore: null,
                         partitionKey: null,
@@ -77,7 +76,7 @@ namespace Microsoft.Azure.Cosmos
                         streamPayload: bodyStream,
                         requestEnricher: requestMessage => this.EnrichRequestMessage(requestMessage, transactionRequest),
                         trace: trace,
-                        cancellationToken: cancellationToken).ConfigureAwait(false);
+                        cancellationToken: cancellationToken);
 
                     cancellationToken.ThrowIfCancellationRequested();
 
@@ -87,7 +86,7 @@ namespace Microsoft.Azure.Cosmos
                         this.clientContext.SerializerCore,
                         transactionRequest.IdempotencyToken,
                         trace,
-                        cancellationToken).ConfigureAwait(false);
+                        cancellationToken);
                 }
             }
         }
@@ -96,16 +95,12 @@ namespace Microsoft.Azure.Cosmos
         {
             // Set DTC-specific headers
             requestMessage.Headers.Add("x-ms-dtc-operation-id", transactionRequest.IdempotencyToken.ToString());
+            requestMessage.UseGatewayMode = true;
         }
 
         private Task AbortTransactionAsync(CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            // TODO: Implement abort logic to clean up any partial state
-            // This may involve sending an abort request to the coordinator
-            DefaultTrace.TraceWarning("AbortTransactionAsync called but not yet implemented");
-            return Task.CompletedTask;
+            throw new NotImplementedException();
         }
     }
 }
