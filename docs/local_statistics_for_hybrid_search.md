@@ -46,3 +46,72 @@ And sets a new [QueryRequestOption](../Microsoft.Azure.Cosmos/src/RequestOptions
 Create a new member in [QueryRequestOptions.cs](../Microsoft.Azure.Cosmos/src/RequestOptions/QueryRequestOptions.cs) called `FullTextScoreScope` which should be an enum with two possible values: `Local` or `Global`. The default value in `QueryRequestOptions` should be `Global`
 
 The `FullTextScoreScope` from the `QueryRequestOptions` needs to be plumbed to `HybridSearchCrossPartitionQueryPipelineStage.MonadicCreate` defined in [HybridSearchCrossPartitionQueryPipelineStage.cs](../Microsoft.Azure.Cosmos/src/Query/Core/Pipeline/CrossPartition/HybridSearch/HybridSearchCrossPartitionQueryPipelineStage.cs). In the `HybridSearchCrossPartitionQueryPipelineStage` constructor when creating the `tryCatchGlobalStatisticsPipeline`, if the `FullTextScoreScope` is set to `Global` then `allRanges` is passed in to the `targetRanges` parameter else the `targetRanges` are passed in.
+
+## Test Plan: FullTextScoreScope Validation in NonStreamingOrderByQueryTests.cs
+
+### Status: ✅ COMPLETE
+
+### Objective
+Validate that the `FullTextScoreScope` feature correctly controls whether BM25 statistics are computed globally (across all partitions) or locally (scoped to filtered partitions) in hybrid search queries.
+
+### Implementation Summary
+
+#### Changes Made to `NonStreamingOrderByQueryTests.cs`:
+
+1. **`HybridSearchTest` class**: Added `FullTextScoreScope` and `TargetRangeCount` properties
+
+2. **`MockDocumentContainer` class**: Added `statisticsQueryRanges` list to track which ranges receive statistics queries
+
+3. **Factory methods**: Updated `MakeHybridSearchTest` and `MakeHybridSearchSkipOrderByRewriteTest` to accept the new parameters
+
+4. **`RunHybridSearchTest`**: 
+   - Now calculates expected indices for subset queries (interleaved document distribution)
+   - Validates statistics query ranges match expected scope (Global = all ranges, Local = target ranges only)
+
+5. **`CreateAndRunHybridSearchQueryPipelineStage`**: Updated to accept separate `targetRanges`, `allRanges`, and `fullTextScoreScope` parameters
+
+#### Test Cases Added:
+
+**`HybridSearchTests()`** - 7 new Local scope test cases:
+- Local scope with 2 target ranges
+- Local scope with 3 target ranges and skip/take
+- Local scope with single target range
+- Local scope with larger page size than document count  
+- Local scope with skip and take
+- Local scope with small page size (multiple pages)
+- Local scope with 4 target ranges (majority of 6)
+
+**`HybridSearchSkipOrderByRewriteTests()`** - 5 new Local scope test cases:
+- Local scope with 2 target ranges
+- Local scope with single target range
+- Local scope with small page size
+- Local scope with different skip/take values
+- Local scope with 4 target ranges
+
+**`HybridSearchWeightedRRFTests()`** - 5 new Local scope test cases:
+- Local scope with equal weights
+- Local scope with different weights (0.5, 1.5)
+- Local scope with single target range and weights
+- Local scope with small page size and weights
+- Local scope with 4 target ranges and weights
+
+**`HybridSearchDefaultScopeIsGlobalTests()`**:
+- Verifies default `QueryRequestOptions.FullTextScoreScope` is `Global`
+
+### Test Results
+All 5 hybrid search test methods pass:
+- `HybridSearchDefaultScopeIsGlobalTests` ✅
+- `HybridSearchTests` ✅
+- `HybridSearchSkipOrderByRewriteTests` ✅
+- `HybridSearchWeightedRRFTests` ✅
+- `HybridSearchSkipOrderByRewriteWeightedRRFTests` ✅
+
+### Key Validation Points
+
+| Scenario | FullTextScoreScope | TargetRangeCount | Statistics Query Ranges |
+|----------|-------------------|------------------|------------------------|
+| All ranges (default) | Global | null (all 6) | All 6 ranges |
+| Subset with Global | Global | 2 | All 6 ranges |
+| Subset with Local | Local | 2 | Only 2 target ranges |
+| Single range Local | Local | 1 | Only 1 target range |
+| Majority ranges Local | Local | 4 | Only 4 target ranges |
