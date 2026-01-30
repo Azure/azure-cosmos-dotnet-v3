@@ -259,6 +259,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         }
 
         [TestMethod]
+        public void HybridSearchDefaultScopeIsGlobalTests()
+        {
+            // Verify that default QueryRequestOptions.FullTextScoreScope is Global
+            QueryRequestOptions options = new QueryRequestOptions();
+            Assert.AreEqual(FullTextScoreScope.Global, options.FullTextScoreScope);
+        }
+
+        [TestMethod]
         public async Task HybridSearchTests()
         {
             IReadOnlyList<HybridSearchTest> testCases = new List<HybridSearchTest>
@@ -313,6 +321,37 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     take: 10,
                     pageSize: 10,
                     returnEmptyGlobalStatistics: true),
+
+                // Local scope tests - query subset of ranges, statistics also from subset
+                MakeHybridSearchTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: null,
+                    take: 100,
+                    pageSize: 1000,
+                    fullTextScoreScope: FullTextScoreScope.Local,
+                    targetRangeCount: 2),
+                MakeHybridSearchTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: 10,
+                    take: 50,
+                    pageSize: 100,
+                    fullTextScoreScope: FullTextScoreScope.Local,
+                    targetRangeCount: 3),
+
+                // Global scope test - query subset of ranges, statistics from ALL ranges
+                MakeHybridSearchTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: null,
+                    take: 100,
+                    pageSize: 1000,
+                    fullTextScoreScope: FullTextScoreScope.Global,
+                    targetRangeCount: 2),
             };
 
             foreach (HybridSearchTest testCase in testCases)
@@ -376,6 +415,17 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     take: 10,
                     pageSize: 10,
                     returnEmptyGlobalStatistics: true),
+
+                // Local scope test with skip order by rewrite
+                MakeHybridSearchSkipOrderByRewriteTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: 20,
+                    take: 100,
+                    pageSize: 1000,
+                    fullTextScoreScope: FullTextScoreScope.Local,
+                    targetRangeCount: 2),
             };
 
             foreach (HybridSearchTest testCase in testCases)
@@ -439,6 +489,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     weights: new double[] { -1.25, -2.0 },
                     pageSize: 10,
                     returnEmptyGlobalStatistics: true),
+
+                // Local scope test with weighted RRF
+                MakeHybridSearchTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: null,
+                    take: 100,
+                    weights: new double[] { 1.0, 1.0 },
+                    pageSize: 1000,
+                    fullTextScoreScope: FullTextScoreScope.Local,
+                    targetRangeCount: 2),
             };
 
             foreach (HybridSearchTest testCase in testCases)
@@ -512,7 +574,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
         private static async Task RunHybridSearchTest(HybridSearchTest testCase)
         {
-            IReadOnlyList<FeedRangeEpk> ranges = new List<FeedRangeEpk>
+            IReadOnlyList<FeedRangeEpk> allRanges = new List<FeedRangeEpk>
             {
                 new FeedRangeEpk(new Documents.Routing.Range<string>(string.Empty, "AA", true, false)),
                 new FeedRangeEpk(new Documents.Routing.Range<string>("AA", "BB", true, false)),
@@ -522,12 +584,36 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 new FeedRangeEpk(new Documents.Routing.Range<string>("EE", "FF", true, false)),
             };
 
-            int feedRangeCount = ranges.Count;
-            int documentCount = feedRangeCount * testCase.LeafPageCount * testCase.BackendPageSize;
+            // Determine target ranges based on test case
+            IReadOnlyList<FeedRangeEpk> targetRanges = testCase.TargetRangeCount.HasValue
+                ? allRanges.Take(testCase.TargetRangeCount.Value).ToList()
+                : allRanges;
 
-            IEnumerable<int> expectedIndices = Enumerable
-                .Range(0, documentCount)
-                .Reverse();
+            int targetRangeCount = targetRanges.Count;
+            int allRangeCount = allRanges.Count;
+
+            // Calculate expected indices based on target ranges
+            // Documents are distributed across ALL ranges with interleaved indices:
+            // Range 0: indices 0, 6, 12, 18, ...
+            // Range 1: indices 1, 7, 13, 19, ...
+            // etc.
+            IEnumerable<int> expectedIndices;
+            if (testCase.TargetRangeCount.HasValue && testCase.TargetRangeCount.Value < allRangeCount)
+            {
+                // Calculate expected indices for subset of ranges
+                int docsPerRange = testCase.LeafPageCount * testCase.BackendPageSize;
+                expectedIndices = Enumerable.Range(0, docsPerRange)
+                    .SelectMany(docInRange =>
+                        Enumerable.Range(0, testCase.TargetRangeCount.Value)
+                            .Select(rangeIndex => rangeIndex + (docInRange * allRangeCount)))
+                    .OrderByDescending(x => x);
+            }
+            else
+            {
+                // Original calculation for all ranges
+                int documentCount = allRangeCount * testCase.LeafPageCount * testCase.BackendPageSize;
+                expectedIndices = Enumerable.Range(0, documentCount).Reverse();
+            }
 
             PartitionedFeedMode[] feedModes = new PartitionedFeedMode[]
             {
@@ -561,8 +647,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 expectedIndices = expectedIndices.Take(testCase.Take.Value);
             }
 
+            // Create container with ALL ranges (for statistics if Global scope)
             MockDocumentContainer nonStreamingDocumentContainer = MockDocumentContainer.CreateHybridSearchContainer(
-                ranges,
+                allRanges,
                 feedModes,
                 leafPageCount: testCase.LeafPageCount,
                 backendPageSize: testCase.BackendPageSize,
@@ -571,13 +658,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             (IReadOnlyList<CosmosElement> results, double requestCharge) = await CreateAndRunHybridSearchQueryPipelineStage(
                 documentContainer: nonStreamingDocumentContainer,
-                ranges: ranges,
+                targetRanges: targetRanges,
+                allRanges: allRanges,
                 requiresGlobalStatistics: testCase.RequiresGlobalStatistics,
                 pageSize: testCase.PageSize,
                 skip: (uint?)testCase.Skip,
                 take: (uint?)testCase.Take,
                 weights: testCase.Weights,
-                skipOrderByRewrite: testCase.SkipOrderByRewrite);
+                skipOrderByRewrite: testCase.SkipOrderByRewrite,
+                fullTextScoreScope: testCase.FullTextScoreScope);
 
             Assert.AreEqual(expectedIndices.Count(), results.Count);
 
@@ -599,6 +688,27 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             }
 
             Assert.AreEqual(nonStreamingDocumentContainer.TotalRequestCharge, requestCharge);
+
+            // Validate statistics query ranges
+            if (testCase.RequiresGlobalStatistics)
+            {
+                IReadOnlyList<FeedRangeEpk> expectedStatisticsRanges =
+                    testCase.FullTextScoreScope == FullTextScoreScope.Global
+                        ? allRanges
+                        : targetRanges;
+
+                Assert.AreEqual(
+                    expectedStatisticsRanges.Count,
+                    nonStreamingDocumentContainer.StatisticsQueryRanges.Count,
+                    $"Statistics query should have targeted {expectedStatisticsRanges.Count} ranges for {testCase.FullTextScoreScope} scope");
+
+                foreach (FeedRangeEpk expectedRange in expectedStatisticsRanges)
+                {
+                    Assert.IsTrue(
+                        nonStreamingDocumentContainer.StatisticsQueryRanges.Any(r => r.Equals(expectedRange)),
+                        $"Statistics query should have targeted range {expectedRange}");
+                }
+            }
         }
 
         private static Task RunParityTests(
@@ -657,13 +767,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
         private static Task<(IReadOnlyList<CosmosElement>, double)> CreateAndRunHybridSearchQueryPipelineStage(
             IDocumentContainer documentContainer,
-            IReadOnlyList<FeedRangeEpk> ranges,
+            IReadOnlyList<FeedRangeEpk> targetRanges,
+            IReadOnlyList<FeedRangeEpk> allRanges,
             bool requiresGlobalStatistics,
             int pageSize,
             uint? skip,
             uint? take,
             double[] weights,
-            bool skipOrderByRewrite)
+            bool skipOrderByRewrite,
+            FullTextScoreScope fullTextScoreScope)
         {
             HybridSearchQueryInfo hybridSearchQueryInfo = skipOrderByRewrite ?
                 Create2ItemHybridSearchSkipOrderByRewriteQueryInfo(requiresGlobalStatistics, skip, take, weights) :
@@ -672,16 +784,16 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             TryCatch<IQueryPipelineStage> tryCreatePipeline = PipelineFactory.MonadicCreate(
                 documentContainer,
                 Create2ItemSqlQuerySpec(),
-                ranges,
+                targetRanges,
                 partitionKey: null,
                 queryInfo: null,
                 hybridSearchQueryInfo: hybridSearchQueryInfo,
                 maxItemCount: pageSize,
                 new ContainerQueryProperties(),
-                ranges,
+                allRanges,
                 isContinuationExpected: true,
                 maxConcurrency: MaxConcurrency,
-                fullTextScoreScope: FullTextScoreScope.Global,
+                fullTextScoreScope: fullTextScoreScope,
                 requestContinuationToken: null);
 
             Assert.IsTrue(tryCreatePipeline.Succeeded);
@@ -855,7 +967,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             int? take,
             int pageSize,
             bool returnEmptyGlobalStatistics = false,
-            bool skipOrderByRewrite = false)
+            bool skipOrderByRewrite = false,
+            FullTextScoreScope fullTextScoreScope = FullTextScoreScope.Global,
+            int? targetRangeCount = null)
         {
             return new HybridSearchTest(
                 leafPageCount,
@@ -866,7 +980,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 weights: null,
                 pageSize,
                 returnEmptyGlobalStatistics,
-                skipOrderByRewrite);
+                skipOrderByRewrite,
+                fullTextScoreScope,
+                targetRangeCount);
         }
 
         private static HybridSearchTest MakeHybridSearchSkipOrderByRewriteTest(
@@ -876,7 +992,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             int? skip,
             int? take,
             int pageSize,
-            bool returnEmptyGlobalStatistics = false)
+            bool returnEmptyGlobalStatistics = false,
+            FullTextScoreScope fullTextScoreScope = FullTextScoreScope.Global,
+            int? targetRangeCount = null)
         {
             return new HybridSearchTest(
                 leafPageCount,
@@ -887,7 +1005,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 weights: null,
                 pageSize,
                 returnEmptyGlobalStatistics,
-                skipOrderByRewrite: true);
+                skipOrderByRewrite: true,
+                fullTextScoreScope,
+                targetRangeCount);
         }
 
         private static HybridSearchTest MakeHybridSearchTest(
@@ -899,7 +1019,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             double[] weights,
             int pageSize,
             bool returnEmptyGlobalStatistics = false,
-            bool skipOrderByRewrite = false)
+            bool skipOrderByRewrite = false,
+            FullTextScoreScope fullTextScoreScope = FullTextScoreScope.Global,
+            int? targetRangeCount = null)
         {
             return new HybridSearchTest(
                 leafPageCount,
@@ -910,7 +1032,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 weights,
                 pageSize,
                 returnEmptyGlobalStatistics,
-                skipOrderByRewrite);
+                skipOrderByRewrite,
+                fullTextScoreScope,
+                targetRangeCount);
         }
 
         private static HybridSearchTest MakeHybridSearchSkipOrderByRewriteTest(
@@ -921,7 +1045,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             int? take,
             double[] weights,
             int pageSize,
-            bool returnEmptyGlobalStatistics = false)
+            bool returnEmptyGlobalStatistics = false,
+            FullTextScoreScope fullTextScoreScope = FullTextScoreScope.Global,
+            int? targetRangeCount = null)
         {
             return new HybridSearchTest(
                 leafPageCount,
@@ -932,7 +1058,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 weights,
                 pageSize,
                 returnEmptyGlobalStatistics,
-                skipOrderByRewrite: true);
+                skipOrderByRewrite: true,
+                fullTextScoreScope,
+                targetRangeCount);
         }
 
         private class HybridSearchTest
@@ -955,6 +1083,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             public bool SkipOrderByRewrite { get; }
 
+            public FullTextScoreScope FullTextScoreScope { get; }
+
+            // Number of ranges to use as target ranges (subset of all ranges)
+            // null means use all ranges (current behavior)
+            public int? TargetRangeCount { get; }
+
             public HybridSearchTest(
                 int leafPageCount,
                 int backendPageSize,
@@ -964,7 +1098,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 double[] weights,
                 int pageSize,
                 bool returnEmptyGlobalStatistics,
-                bool skipOrderByRewrite)
+                bool skipOrderByRewrite,
+                FullTextScoreScope fullTextScoreScope = FullTextScoreScope.Global,
+                int? targetRangeCount = null)
             {
                 this.LeafPageCount = leafPageCount;
                 this.BackendPageSize = backendPageSize;
@@ -975,6 +1111,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 this.PageSize = pageSize;
                 this.ReturnEmptyGlobalStatistics = returnEmptyGlobalStatistics;
                 this.SkipOrderByRewrite = skipOrderByRewrite;
+                this.FullTextScoreScope = fullTextScoreScope;
+                this.TargetRangeCount = targetRangeCount;
             }
         }
 
@@ -1347,9 +1485,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             private readonly bool returnEmptyGlobalStatistics;
 
+            private readonly List<FeedRange> statisticsQueryRanges = new List<FeedRange>();
+
             private int statisticsQueryCount;
 
             private int queryCount;
+
+            public IReadOnlyList<FeedRange> StatisticsQueryRanges => this.statisticsQueryRanges;
 
             public double TotalRequestCharge
             {
@@ -1494,6 +1636,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             {
                 if (this.isGlobalStatisticsQuery(sqlQuerySpec))
                 {
+                    lock (this.statisticsQueryRanges)
+                    {
+                        this.statisticsQueryRanges.Add(feedRangeState.FeedRange);
+                    }
+
                     QueryPage globalStatisticsPage = new QueryPage(
                         documents: new List<CosmosElement> { this.returnEmptyGlobalStatistics ? CreateEmptyHybridSearchGlobalStatistics() : CreateHybridSearchGlobalStatistics() },
                         requestCharge: GlobalStatisticsQueryCharge,
