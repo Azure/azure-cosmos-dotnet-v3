@@ -1099,6 +1099,147 @@ acceptance_criteria:
     required: "Before/after benchmark comparison in PR"
 ```
 
+### 4.8.1 Local Testing Strategy (Emulator-First)
+
+**⚠️ CRITICAL: Run maximum tests locally BEFORE pushing to CI.**
+
+Most tests can run locally with the Cosmos DB Emulator. Only a few tests require Azure secrets.
+
+```yaml
+local_testing_strategy:
+  principle: "Validate locally first, CI is final verification"
+  
+  test_categories_by_locality:
+    fully_local:
+      unit_tests:
+        path: "Microsoft.Azure.Cosmos.Tests"
+        command: "dotnet test --filter \"Category!=Emulator\""
+        secrets_required: false
+        run: "ALWAYS before push"
+        
+      emulator_tests:
+        path: "Microsoft.Azure.Cosmos.EmulatorTests"
+        command: "dotnet test"
+        secrets_required: false
+        prerequisite: "Cosmos DB Emulator running"
+        run: "ALWAYS before push"
+        categories:
+          - "Query tests"
+          - "CRUD operations"
+          - "ChangeFeed tests"
+          - "Batch operations"
+          - "LINQ tests"
+          
+      encryption_tests:
+        path: "Microsoft.Azure.Cosmos.Encryption.Tests"
+        command: "dotnet test"
+        secrets_required: false
+        run: "If encryption code changed"
+        
+    requires_secrets:
+      multi_region_tests:
+        category: "MultiRegion"
+        secret: "COSMOSDB_MULTI_REGION"
+        run: "CI only (or with personal Azure account)"
+        
+      live_account_tests:
+        category: "LiveTest"
+        secret: "COSMOSDB_ACCOUNT_*"
+        run: "CI only"
+        
+  emulator_setup:
+    windows:
+      install: |
+        # Download from Azure portal or use winget
+        winget install Microsoft.Azure.CosmosEmulator
+        
+      start: |
+        # Start emulator
+        & "C:\Program Files\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe"
+        
+      verify: |
+        # Check emulator is running
+        Invoke-WebRequest -Uri "https://localhost:8081/_explorer/emulator.pem" -UseBasicParsing
+        
+      connection_string: "AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="
+      
+  recommended_workflow:
+    before_any_push:
+      step_1:
+        name: "Start emulator"
+        command: "Start-Process 'C:\\Program Files\\Azure Cosmos DB Emulator\\CosmosDB.Emulator.exe'"
+        wait: "30 seconds for startup"
+        
+      step_2:
+        name: "Run unit tests"
+        command: "dotnet test Microsoft.Azure.Cosmos.Tests --filter \"Category!=Emulator\" -c Release"
+        expected: "All pass"
+        time: "~2 minutes"
+        
+      step_3:
+        name: "Run emulator tests"
+        command: "dotnet test Microsoft.Azure.Cosmos.EmulatorTests -c Release"
+        expected: "All pass"
+        time: "~15-30 minutes"
+        
+      step_4:
+        name: "Run specific area tests"
+        example: "dotnet test --filter \"FullyQualifiedName~Linq\" -c Release"
+        when: "For targeted validation"
+        
+      step_5:
+        name: "Push to CI"
+        action: "git push"
+        note: "CI runs secrets-required tests"
+        
+  test_coverage_by_environment:
+    local_emulator:
+      coverage: "~85% of all tests"
+      includes:
+        - "All unit tests"
+        - "All LINQ/Query tests"
+        - "All CRUD tests"
+        - "All ChangeFeed tests"
+        - "All Batch tests"
+        - "Most encryption tests"
+        - "Most retry/resilience tests"
+        
+    ci_only:
+      coverage: "~15% of all tests"
+      includes:
+        - "Multi-region replication"
+        - "Live account integration"
+        - "Cross-region failover"
+        - "Production endpoint tests"
+        
+  efficiency_gains:
+    local_validation: "Catch 85%+ of issues in ~20 minutes"
+    ci_feedback: "Avoid 60-90 minute CI wait for simple errors"
+    iteration_speed: "Fix → local test → fix → local test → push (confident)"
+```
+
+**Quick Local Test Commands:**
+
+```powershell
+# Start emulator (if not running)
+Start-Process "C:\Program Files\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe"
+
+# Run all unit tests (~2 min)
+dotnet test .\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests -c Release
+
+# Run emulator tests (~20 min)
+dotnet test .\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.EmulatorTests -c Release
+
+# Run specific test category
+dotnet test --filter "TestCategory=Query" -c Release
+
+# Run tests matching name pattern
+dotnet test --filter "FullyQualifiedName~Dictionary" -c Release
+
+# Run single test
+dotnet test --filter "FullyQualifiedName=Microsoft.Azure.Cosmos.Tests.Linq.LinqDictionaryQueryTests.TestIsDictionaryExtension" -c Release
+```
+
 ### 4.8 Regression Testing Requirement
 
 **Before any fix is considered complete, ALL existing tests must pass - both locally AND on remote CI.**
