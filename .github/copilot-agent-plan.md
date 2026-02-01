@@ -3386,8 +3386,18 @@ ci_monitoring_loop:
       exit_condition: "gh pr checks shows all checks passing"
       
     step_5_complete:
+      trigger: "IMMEDIATELY when all CI gates GREEN"
       action: "gh pr ready {pr_number}"
       result: "PR moves from draft to ready for review"
+      note: "Do NOT wait - mark ready as soon as gates pass"
+      
+  auto_ready_behavior:
+    principle: "Mark PR ready for review immediately when CI passes"
+    do_not_wait_for:
+      - "User confirmation"
+      - "Additional review"
+      - "Manual approval"
+    reason: "CI passing = code is validated, ready for human review"
       
   success_criteria:
     required:
