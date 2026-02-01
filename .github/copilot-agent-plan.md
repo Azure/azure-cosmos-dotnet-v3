@@ -3917,9 +3917,20 @@ performance:
     - "Pool objects where possible (ArrayPool<T>)"
     
   benchmarking:
-    tool: "BenchmarkDotNet"
-    location: "Microsoft.Azure.Cosmos.Performance"
+    location: "Microsoft.Azure.Cosmos.Samples/Tools/Benchmark"
+    url: "https://github.com/Azure/azure-cosmos-dotnet-v3/tree/master/Microsoft.Azure.Cosmos.Samples/Tools/Benchmark"
+    important: "ALL benchmarks go here ONLY - do not add benchmarks elsewhere"
     
+    adding_benchmarks:
+      step_1: "Add benchmark class to Benchmark project"
+      step_2: "Follow existing patterns in the project"
+      step_3: "Run locally to validate"
+      
+    running_benchmarks:
+      cd: "Microsoft.Azure.Cosmos.Samples/Tools/Benchmark"
+      help: "dotnet run -c Release -- --help"
+      example: "dotnet run -c Release -- -e {endpoint} -k {key}"
+      
   common_issues:
     boxing: "Avoid boxing value types"
     closures: "Be careful with lambda captures"
@@ -3929,6 +3940,7 @@ performance:
     - "Check if change is in hot path"
     - "Run relevant benchmarks if performance-sensitive"
     - "Document any expected performance impact"
+    - "Add new benchmarks to Benchmark project if needed"
 ```
 
 ### 16.20 Rollback Strategy
