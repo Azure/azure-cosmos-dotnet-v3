@@ -3385,28 +3385,48 @@ ci_monitoring_loop:
       loop: "Repeat step_2 and step_3 until all gates GREEN"
       exit_condition: "gh pr checks shows all checks passing"
       
-    step_5_complete:
-      trigger: "IMMEDIATELY when all CI gates GREEN"
+    step_5_pre_ready_checks:
+      description: "Verify branch is ready before marking for review"
+      checks:
+        - name: "Ensure branch is up-to-date with master"
+          commands: |
+            git fetch origin master
+            git rebase origin/master
+            # If conflicts, resolve and push
+            git push origin {branch_name} --force-with-lease
+          note: "Rebase ensures clean merge, re-triggers CI if needed"
+          
+        - name: "Verify dotnet-v3-ci passed"
+          command: "gh pr checks {pr_number} --json name,state | jq '.[] | select(.name==\"dotnet-v3-ci\")'"
+          required: "dotnet-v3-ci must show 'SUCCESS'"
+          note: "This is the main CI gate - other checks may be informational"
+          
+    step_6_complete:
+      trigger: "ONLY when branch is synced AND dotnet-v3-ci is GREEN"
       action: "gh pr ready {pr_number}"
       result: "PR moves from draft to ready for review"
-      note: "Do NOT wait - mark ready as soon as gates pass"
+      note: "Do NOT wait - mark ready as soon as conditions met"
       
   auto_ready_behavior:
-    principle: "Mark PR ready for review immediately when CI passes"
+    principle: "Mark PR ready for review immediately when conditions met"
+    required_conditions:
+      - "Branch is up-to-date with master (rebased)"
+      - "dotnet-v3-ci check is SUCCESS (main CI gate)"
     do_not_wait_for:
       - "User confirmation"
       - "Additional review"
       - "Manual approval"
-    reason: "CI passing = code is validated, ready for human review"
+    reason: "CI passing on synced branch = code is validated"
       
   success_criteria:
     required:
-      - "All CI checks show ✓ (green)"
-      - "No pending checks remaining"
+      - "Branch rebased on latest master"
+      - "**dotnet-v3-ci check is SUCCESS** (primary gate)"
       - "PR lint passed"
       - "CLA signed"
     optional:
-      - "CodeQL may show warnings (review, don't block)"
+      - "CodeQL checks (informational)"
+      - "Other secondary checks"
       
   failure_escalation:
     after_3_retries: "Investigate deeper, may need human help"
