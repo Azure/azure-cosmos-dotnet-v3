@@ -107,6 +107,58 @@ gh_token_scopes:
     - "gist"      # Gists
 ```
 
+**Troubleshooting SAML Errors:**
+
+```yaml
+saml_troubleshooting:
+  error: "Resource protected by organization SAML enforcement"
+  cause: "Token not authorized for Azure org via SAML SSO"
+  
+  fix_steps:
+    step_1:
+      description: "Logout and re-authenticate with SAML"
+      commands: |
+        gh auth logout
+        gh auth login --web
+        
+    step_2:
+      description: "During browser auth, authorize for Azure org"
+      note: "After GitHub login, you'll see 'Authorize for: Azure' - click it"
+      
+    step_3:
+      description: "If no SAML prompt appears, manually authorize"
+      url: "https://github.com/settings/tokens"
+      steps:
+        - "Go to https://github.com/settings/tokens"
+        - "Find the 'gh' token (or GitHub CLI)"
+        - "Click 'Configure SSO' dropdown"
+        - "Click 'Authorize' next to 'Azure' org"
+        - "Complete SAML login"
+        
+    step_4:
+      description: "Verify authorization"
+      command: "gh issue list --repo Azure/azure-cosmos-dotnet-v3 --limit 1"
+      
+  alternative_manual_sso:
+    url: "https://github.com/orgs/Azure/sso"
+    steps:
+      - "Visit https://github.com/orgs/Azure/sso"
+      - "Complete SAML authentication"
+      - "Return and retry gh command"
+```
+
+**Quick Fix (Copy-Paste):**
+```powershell
+# Re-authenticate with SAML
+gh auth logout
+gh auth login --web
+# → Complete browser auth AND click "Authorize" for Azure org
+
+# OR manually authorize existing token:
+# 1. Go to: https://github.com/settings/tokens
+# 2. Find GitHub CLI token → Configure SSO → Authorize Azure
+```
+
 **Quick Reference:**
 ```powershell
 # ✅ This works (gh CLI)
