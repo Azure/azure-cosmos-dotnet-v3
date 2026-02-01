@@ -283,6 +283,141 @@ git log --all --oneline -S "<code pattern>"  # Search for code changes
 
 ### Phase 3: Code Analysis
 
+#### Phase 2.5: Expectations Validation ⚠️
+
+**Before diving into code analysis, validate that the reported expectations are correct.**
+
+```yaml
+expectations_validation:
+  purpose: "Verify the user's expected behavior is actually correct"
+  importance: "Users sometimes report 'bugs' that are actually expected behavior"
+  
+  validation_sources:
+    official_documentation:
+      - docs.microsoft.com/azure/cosmos-db
+      - Azure SDK for .NET documentation
+      - API reference documentation
+      - Cosmos DB REST API specifications
+      
+    code_documentation:
+      - XML doc comments in source code
+      - README files in relevant folders
+      - Inline code comments explaining behavior
+      - Test files (show expected behavior)
+      
+    sdk_samples:
+      - Microsoft.Azure.Cosmos.Samples/
+      - Official Azure SDK samples repo
+      - Code snippets in documentation
+      
+    cosmos_db_specifications:
+      - SQL query language reference
+      - Consistency level behaviors
+      - Partitioning rules
+      - Request unit (RU) calculations
+```
+
+**Validation Checklist:**
+```markdown
+## Expectations Validation
+
+Before investigating further, verify:
+
+### 1. Is the expected behavior documented?
+- [ ] Checked official Microsoft Docs for the feature
+- [ ] Reviewed API reference documentation
+- [ ] Found relevant SDK samples
+
+### 2. Does the code documentation support the expectation?
+- [ ] Reviewed XML doc comments on relevant methods
+- [ ] Checked for documented limitations or known behaviors
+- [ ] Reviewed test files for expected behavior patterns
+
+### 3. Is this a documented limitation?
+- [ ] Searched docs for "limitations" or "not supported"
+- [ ] Checked Cosmos DB SQL reference for supported operations
+- [ ] Reviewed changelog for intentional behavior changes
+
+### 4. Validation Result
+- [ ] **CONFIRMED**: User expectation is correct (proceed with bug fix)
+- [ ] **INCORRECT**: User expectation doesn't match documented behavior (educate user)
+- [ ] **UNCLEAR**: Documentation is ambiguous or missing (may need docs improvement)
+- [ ] **UNDOCUMENTED**: Feature behavior is not documented (investigate actual behavior)
+```
+
+**Validation Workflow:**
+```yaml
+validation_workflow:
+  step_1_check_docs:
+    tool: web_fetch
+    urls:
+      - "https://docs.microsoft.com/azure/cosmos-db/{feature}"
+      - "https://docs.microsoft.com/dotnet/api/microsoft.azure.cosmos.{class}"
+    extract:
+      - Expected behavior description
+      - Supported operations
+      - Known limitations
+      
+  step_2_check_code_docs:
+    tools:
+      - grep: "/// <summary>" in relevant files
+      - view: XML doc comments on methods
+    extract:
+      - Method documentation
+      - Parameter constraints
+      - Return value expectations
+      - Exception conditions
+      
+  step_3_check_samples:
+    tools:
+      - glob: "Microsoft.Azure.Cosmos.Samples/**/*.cs"
+      - grep: "{feature keyword}" in samples
+    extract:
+      - Recommended usage patterns
+      - Working code examples
+      
+  step_4_check_tests:
+    tools:
+      - glob: "**/tests/**/*{feature}*.cs"
+      - view: Test methods showing expected behavior
+    extract:
+      - Assertions showing expected outcomes
+      - Edge cases handled
+      - Known limitations tested
+```
+
+**Example Validation Outcomes:**
+
+| Scenario | User Expectation | Documentation Says | Action |
+|----------|------------------|-------------------|--------|
+| Dictionary LINQ | `.Any()` should work | Not documented for Dictionary | Investigate, likely needs fix |
+| Null partition key | Should auto-generate | Docs say must provide value | Educate user |
+| Cross-partition query | Should be fast | Docs warn about RU cost | Educate user |
+| Retry on 429 | Should auto-retry | Docs confirm auto-retry | Investigate why not working |
+
+**Documentation Sources to Check:**
+
+```yaml
+microsoft_docs:
+  cosmos_db_overview: "https://docs.microsoft.com/azure/cosmos-db/"
+  sql_query_reference: "https://docs.microsoft.com/azure/cosmos-db/sql/sql-query-getting-started"
+  linq_support: "https://docs.microsoft.com/azure/cosmos-db/sql/sql-query-linq-to-sql"
+  partitioning: "https://docs.microsoft.com/azure/cosmos-db/partitioning-overview"
+  consistency_levels: "https://docs.microsoft.com/azure/cosmos-db/consistency-levels"
+  
+sdk_api_reference:
+  cosmos_client: "https://docs.microsoft.com/dotnet/api/microsoft.azure.cosmos.cosmosclient"
+  container: "https://docs.microsoft.com/dotnet/api/microsoft.azure.cosmos.container"
+  query: "https://docs.microsoft.com/dotnet/api/microsoft.azure.cosmos.feediterator"
+  
+code_documentation:
+  xml_docs: "Search for /// comments in source files"
+  readme_files: "Check README.md in relevant directories"
+  inline_comments: "Look for // comments explaining behavior"
+```
+
+---
+
 #### 3a. Combined Analysis Approach: Local + Bluebird
 
 **Use BOTH local tools and Bluebird for comprehensive analysis:**
@@ -2118,14 +2253,37 @@ challenges:
   github_cli_not_installed:
     problem: "gh CLI not available in environment"
     symptom: "'gh' is not recognized as a cmdlet"
-    workaround: "Provide PR details for manual creation via GitHub web UI"
-    recommendation: "Check for gh CLI early, have manual fallback ready"
+    workaround: "Install with: winget install --id GitHub.cli"
+    recommendation: "Install gh CLI, authenticate with: gh auth login --web"
+    
+  github_cli_authentication:
+    problem: "gh CLI requires browser authentication for Azure org"
+    symptom: "SAML SSO required even after gh auth login"
+    workaround: "Use --web flag and complete browser flow with device code"
+    recommendation: "gh auth login --web, then authorize for Azure org"
+    
+  pr_title_lint_failure:
+    problem: "PR Lint checks enforce strict title format"
+    symptom: "PR Lint fails with 'Please follow required format'"
+    format_required: '"[Internal] Category: (Adds|Fixes|Refactors|Removes) Description"'
+    examples:
+      - "LINQ: Fixes Dictionary.Any() to generate correct SQL"
+      - "Query: Adds support for new aggregate functions"
+      - "[Internal] Tests: Refactors test infrastructure"
+    workaround: "gh pr edit {number} --title 'Category: Verb Description'"
+    recommendation: "Always use correct format from start"
     
   long_running_tests:
     problem: "Full test suite takes several minutes"
     symptom: "Commands timeout waiting for completion"
     workaround: "Use initial_wait parameter, then read_powershell for polling"
     recommendation: "Run targeted tests first, full suite only for final validation"
+    
+  ci_gates_long_duration:
+    problem: "Remote CI gates can take up to 90 minutes"
+    symptom: "Many checks stay pending for extended periods"
+    workaround: "Use gh pr checks {number} to monitor, check periodically"
+    recommendation: "Set up monitoring loop, check every 5-10 minutes"
     
   agent_completion_time:
     problem: "Complex agents (general-purpose with Opus) take 5-10 minutes"
@@ -2163,9 +2321,98 @@ tool_selection:
   for_pr_creation:
     with_gh_cli: "gh pr create --draft"
     without_gh_cli: "Provide PR URL and description for manual creation"
+    
+  for_ci_monitoring:
+    check_status: "gh pr checks {pr_number}"
+    watch_mode: "gh pr checks {pr_number} --watch"
+    get_failures: "gh pr view {pr_number} --json statusCheckRollup"
+    fix_title: "gh pr edit {pr_number} --title 'Category: Verb Description'"
 ```
 
-### 16.5 Timing Benchmarks
+### 16.5 CI Monitoring Workflow (Learned)
+
+**PR creation triggers 30+ CI checks that can take up to 90 minutes.**
+
+```yaml
+ci_monitoring:
+  initial_check:
+    timing: "Immediately after PR creation"
+    command: "gh pr checks {pr_number}"
+    expect: "Most checks pending, license/cla may pass quickly"
+    
+  common_quick_failures:
+    pr_lint:
+      timing: "Within 1 minute"
+      cause: "PR title doesn't match format"
+      format: "Category: (Adds|Fixes|Refactors|Removes) Description"
+      fix: "gh pr edit {number} --title 'LINQ: Fixes Dictionary query translation'"
+      
+    license_cla:
+      timing: "Within 1 minute"
+      cause: "CLA not signed"
+      fix: "Sign CLA via link in check details"
+      
+  medium_duration_checks:
+    codeql:
+      timing: "5-15 minutes"
+      checks:
+        - "CodeQL/Analyze (csharp)" 
+        - "CodeQL/Analyze (actions)"
+        - "CodeQL/Analyze (javascript-typescript)"
+        - "CodeQL/Analyze (python)"
+      common_issues: "Security vulnerabilities, code quality"
+      
+    static_analysis:
+      timing: "10-20 minutes"
+      check: "dotnet-v3-ci (Static Analysis)"
+      common_issues: "Code style, analyzer warnings"
+      
+  long_duration_checks:
+    unit_tests:
+      timing: "15-30 minutes"
+      check: "dotnet-v3-ci (Microsoft.Azure.Cosmos.Tests)"
+      common_issues: "Test failures, build errors"
+      
+    emulator_tests:
+      timing: "30-60 minutes"
+      checks:
+        - "dotnet-v3-ci (EmulatorTests Release - Client Telemetry, Query, ChangeFeed, ReadFeed, Batch)"
+        - "dotnet-v3-ci (EmulatorTests Release - MultiMaster)"
+        - "dotnet-v3-ci (EmulatorTests Release - MultiRegion)"
+        - "dotnet-v3-ci (EmulatorTests Release - Others)"
+      common_issues: "Integration failures, emulator setup issues"
+      
+    full_ci:
+      timing: "60-90 minutes"
+      check: "dotnet-v3-ci"
+      note: "Aggregate check, passes when all sub-checks pass"
+      
+  monitoring_loop:
+    interval: "5-10 minutes"
+    command: "gh pr checks {pr_number}"
+    on_failure:
+      - Get failure details: "gh pr view {number} --json statusCheckRollup"
+      - Analyze logs if possible
+      - Fix locally and push
+      - Wait for re-run
+    on_all_pass:
+      - Mark PR ready for review (if draft)
+      - Notify user
+```
+
+**CI Check Categories:**
+
+| Category | Count | Duration | Priority |
+|----------|-------|----------|----------|
+| Quick (lint, cla) | 2 | < 1 min | Fix immediately |
+| CodeQL | 4 | 5-15 min | Usually pass |
+| Build/Package | 3 | 10-20 min | Must pass |
+| Unit Tests | 3 | 15-30 min | Critical |
+| Emulator Tests | 6 | 30-60 min | Critical |
+| Preview/Internal | 8 | 20-40 min | Important |
+| Encryption | 4 | 20-40 min | If changed |
+
+### 16.6 Timing Benchmarks
 
 | Phase | Duration | Notes |
 |-------|----------|-------|
