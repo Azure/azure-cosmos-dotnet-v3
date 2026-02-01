@@ -123,6 +123,22 @@ namespace Microsoft.Azure.Cosmos.Linq
             return type.IsGenericType() && type.GetGenericTypeDefinition() == typeof(Nullable<>);
         }
 
+        public static bool IsDictionary(this Type type)
+        {
+            if (type.IsGenericType())
+            {
+                Type genericTypeDefinition = type.GetGenericTypeDefinition();
+                if (genericTypeDefinition == typeof(Dictionary<,>) || genericTypeDefinition == typeof(IDictionary<,>))
+                {
+                    return true;
+                }
+            }
+
+            return type.GetInterfaces().Any(interfaceType =>
+                interfaceType.IsGenericType() &&
+                interfaceType.GetGenericTypeDefinition() == typeof(IDictionary<,>));
+        }
+
         public static Type NullableUnderlyingType(this Type type)
         {
             if (type.IsNullable())
