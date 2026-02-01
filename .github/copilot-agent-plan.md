@@ -3,6 +3,166 @@
 
 ---
 
+## 0. Environment Setup (MCP Servers)
+
+**Before using this plan, ensure the following MCP servers are configured.**
+
+### 0.1 Required MCP Servers
+
+| MCP Server | Purpose | Required |
+|------------|---------|----------|
+| **GitHub MCP Server** | Issues, PRs, code search, actions | ✅ Yes |
+| **Azure DevOps MCP Server** | CI builds, pipelines, retry failed jobs | ✅ Yes |
+| **Bluebird Engineering Copilot** | Code graph, semantic search | Optional |
+
+### 0.2 GitHub MCP Server
+
+**Already configured in most Copilot environments.**
+
+```yaml
+github_mcp_server:
+  package: "github-mcp-server"
+  capabilities:
+    - search_issues, list_issues, issue_read
+    - search_pull_requests, list_pull_requests, pull_request_read
+    - search_code, get_file_contents
+    - actions_list, actions_get, get_job_logs
+    - list_commits, get_commit
+    
+  note: "Usually pre-configured. For Azure org repos, may need SAML auth workaround (use web_fetch)"
+```
+
+### 0.3 Azure DevOps MCP Server (Official Microsoft)
+
+**Required for CI build management, retry failed jobs.**
+
+```yaml
+azure_devops_mcp_server:
+  package: "@azure-devops/mcp"
+  publisher: "Microsoft"
+  repository: "https://github.com/microsoft/azure-devops-mcp"
+  docs: "https://learn.microsoft.com/en-us/azure/devops/mcp-server/mcp-server-overview"
+  
+  capabilities:
+    pipelines:
+      - mcp_ado_pipelines_get_builds          # List builds
+      - mcp_ado_pipelines_get_build_status    # Get build status
+      - mcp_ado_pipelines_get_build_log       # Get build logs
+      - mcp_ado_pipelines_run_pipeline        # Start new pipeline run
+      - mcp_ado_pipelines_update_build_stage  # ⭐ RETRY FAILED JOBS
+    work_items:
+      - mcp_ado_wit_get_work_item
+      - mcp_ado_wit_create_work_item
+      - mcp_ado_wit_my_work_items
+    repositories:
+      - mcp_ado_repo_list_pull_requests_by_repo_or_project
+      - mcp_ado_repo_get_pull_request_by_id
+```
+
+**Installation:**
+
+```bash
+# Option 1: VS Code One-Click Install
+# Visit: https://insiders.vscode.dev/redirect/mcp/install?name=ado&config=...
+
+# Option 2: Manual Setup
+# Create .vscode/mcp.json in your project:
+```
+
+```json
+{
+  "inputs": [
+    {
+      "id": "ado_org",
+      "type": "promptString",
+      "description": "Azure DevOps organization name (e.g. 'cosmos-db-sdk-public')"
+    }
+  ],
+  "servers": {
+    "ado": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@azure-devops/mcp", "${input:ado_org}"]
+    }
+  }
+}
+```
+
+**Authentication:**
+- First use will open browser for Microsoft account login
+- Requires Azure DevOps organization access
+
+**Key Tool: Retry Failed Jobs**
+```yaml
+mcp_ado_pipelines_update_build_stage:
+  purpose: "Retry failed stages without re-running entire build"
+  parameters:
+    project: "cosmos-db-sdk-public"
+    buildId: 59156
+    stageRefName: "Preview_Tests_Release"  # Stage reference name
+    state: "retry"  # Options: retry, cancel
+  
+  advantage: "Faster than requeuing entire build"
+```
+
+### 0.4 Bluebird Engineering Copilot (Optional)
+
+**For advanced code graph and semantic search.**
+
+```yaml
+bluebird_engineering_copilot:
+  capabilities:
+    - do_vector_search: "Semantic code search"
+    - do_fulltext_search: "Keyword code search"
+    - get_source_code: "Retrieve source files"
+    - get_hierarchical_summary: "Code overview"
+    - get_callers, get_callees: "Call graph analysis"
+    
+  usage:
+    step_1: "Call engineering_copilot for instructions"
+    step_2: "Call dynamic_tool_invoker with specific tool"
+    
+  note: "Useful for deep code analysis, may timeout on large queries"
+```
+
+### 0.5 Quick Setup Script (Windows PowerShell)
+
+```powershell
+# 1. Install GitHub CLI
+winget install --id GitHub.cli
+
+# 2. Authenticate GitHub CLI
+gh auth login --web
+
+# 3. Install Node.js (for Azure DevOps MCP)
+winget install --id OpenJS.NodeJS
+
+# 4. Test Azure DevOps MCP (first run opens browser for auth)
+npx @azure-devops/mcp cosmos-db-sdk-public --help
+```
+
+### 0.6 Verification Checklist
+
+```markdown
+## Environment Setup Verification
+
+### GitHub MCP Server
+- [ ] `gh auth status` shows logged in
+- [ ] Can fetch issues: `gh issue list --repo Azure/azure-cosmos-dotnet-v3`
+
+### Azure DevOps MCP Server
+- [ ] Node.js 18+ installed: `node --version`
+- [ ] MCP server responds: `npx @azure-devops/mcp cosmos-db-sdk-public --help`
+- [ ] Browser auth completed (first MCP tool call opens login)
+
+### Local Tools
+- [ ] .NET SDK installed: `dotnet --version`
+- [ ] Git configured: `git config user.name`
+- [ ] Repository cloned: `E:\src\v33` or similar
+```
+
+---
+
 ## 1. Executive Summary
 
 This plan defines a comprehensive workflow for Copilot agents to handle GitHub issues for the Azure Cosmos DB .NET SDK repository. The agent will:
@@ -1207,7 +1367,7 @@ This workaround can be removed when upgrading to SDK version {x.y.z} or later.
 
 ### 7.1 Branch Naming Convention
 
-**Format:** `users/<username>/<feature-description>`
+**Format:** `users/<username>/copilot-<issue-number>-<feature-description>`
 
 ```yaml
 branch_naming:
@@ -1221,17 +1381,17 @@ branch_naming:
     - refactor # Code refactoring
     
   examples:
-    - "users/kirankk/fix-linq-dictionary-objecttoarray"
-    - "users/kirankk/fix-issue-5547-dictionary-any"
-    - "users/johndoe/feature-bulk-retry-policy"
-    - "users/janedoe/perf-batch-throughput"
-    - "users/alice/docs-linq-dictionary-support"
+    - "users/kirankk/copilot-5547-fix-linq-dictionary-objecttoarray"
+    - "users/kirankk/copilot-1234-feature-bulk-retry"
+    - "users/johndoe/copilot-5678-perf-batch-throughput"
+    - "users/janedoe/copilot-9999-docs-linq-dictionary"
     
   rules:
     - Use lowercase
     - Use hyphens (not underscores) as separators
-    - Include issue number when applicable
-    - Keep description concise but descriptive
+    - Always include `copilot-` prefix for Copilot-authored branches
+    - Always include issue number after `copilot-`
+    - Keep feature description concise but descriptive
     - Username should match GitHub handle
 ```
 
@@ -1420,7 +1580,7 @@ pr_references:
 
 branch_to_pr_url:
   pattern: "https://github.com/{owner}/{repo}/pull/new/{branch_name}"
-  example: "https://github.com/Azure/azure-cosmos-dotnet-v3/pull/new/users/kirankk/fix-issue-5547-linq-dictionary"
+  example: "https://github.com/Azure/azure-cosmos-dotnet-v3/pull/new/users/kirankk/copilot-5547-fix-linq-dictionary"
 ```
 
 ### 7.4 Reviewer Assignment Matrix
@@ -1535,16 +1695,15 @@ validation_workflow:
     description: "Create PR to trigger remote CI"
     steps:
       - name: "Create feature branch"
-        naming_convention: "users/<username>/<feature-description>"
+        naming_convention: "users/<username>/copilot-<issue-number>-<feature>"
         examples:
-          - "users/kirankk/fix-linq-dictionary-objecttoarray"
-          - "users/kirankk/issue-5547-dictionary-any"
-          - "users/johndoe/perf-batch-throughput"
+          - "users/kirankk/copilot-5547-fix-linq-dictionary"
+          - "users/johndoe/copilot-1234-perf-batch-throughput"
         command: |
-          git checkout -b users/{username}/fix-issue-{number}-{short-description}
+          git checkout -b users/{username}/copilot-{number}-{short-description}
           git add .
           git commit -m "Fix #{number}: {description}"
-          git push origin users/{username}/fix-issue-{number}-{short-description}
+          git push origin users/{username}/copilot-{number}-{short-description}
           
       - name: "Create Draft PR"
         purpose: "Triggers CI without requesting review"
@@ -2412,96 +2571,65 @@ ci_monitoring:
 | Preview/Internal | 8 | 20-40 min | Important |
 | Encryption | 4 | 20-40 min | If changed |
 
-### 16.5.1 Azure DevOps Build Re-run via API
+### 16.5.1 Azure DevOps Build Re-run via MCP Server
 
-**Re-running builds when CI fails:**
-
-```yaml
-azure_devops_rerun:
-  api_endpoint: "https://{org}.visualstudio.com/{project}/_apis/build/builds?api-version=6.0"
-  
-  authentication:
-    method: "Personal Access Token (PAT)"
-    required_scopes:
-      - "Build: Read & Execute"
-      - "Project and Team: Read"
-    header: "Authorization: Basic base64(:PAT)"
-    
-  rerun_options:
-    full_build_requeue:
-      supported: true
-      method: "POST to builds API"
-      use_when: "Need to re-run entire pipeline"
-      example: |
-        $body = @{
-            definition = @{ id = $definitionId }
-            sourceBranch = "refs/pull/{pr_number}/merge"
-            reason = "manual"
-        } | ConvertTo-Json
-        Invoke-RestMethod -Uri $apiUrl -Method POST -Headers $headers -Body $body
-        
-    rerun_failed_jobs_only:
-      supported: false  # ⚠️ NOT AVAILABLE VIA API
-      note: "Azure DevOps REST API does NOT support re-running only failed jobs"
-      workaround: "Use Azure DevOps web UI 'Rerun failed jobs' button"
-      ui_location: "Build results page → ... menu → Rerun failed jobs"
-      
-  recommended_approach:
-    for_flaky_tests:
-      first_try: "Rerun failed jobs via Azure DevOps web UI (faster)"
-      fallback: "Requeue entire build via API if UI not accessible"
-      
-    for_code_changes:
-      always: "Push new commit (triggers fresh build with latest code)"
-```
-
-**PowerShell Script to Requeue Build:**
-
-```powershell
-# Set credentials
-$org = "cosmos-db-sdk-public"
-$project = "cosmos-db-sdk-public"
-$pat = $env:AZURE_DEVOPS_PAT
-
-$headers = @{
-    Authorization = "Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$pat"))
-    "Content-Type" = "application/json"
-}
-
-# Get failed build info
-$failedBuildId = 59156
-$build = Invoke-RestMethod -Uri "https://$org.visualstudio.com/$project/_apis/build/builds/$failedBuildId?api-version=6.0" -Headers $headers
-
-# Queue new build with same parameters
-$body = @{
-    definition = @{ id = $build.definition.id }
-    sourceBranch = $build.sourceBranch
-    reason = "manual"
-} | ConvertTo-Json
-
-$newBuild = Invoke-RestMethod -Uri "https://$org.visualstudio.com/$project/_apis/build/builds?api-version=6.0" -Method POST -Headers $headers -Body $body
-Write-Host "New build queued: $($newBuild.id)"
-```
-
-**Azure DevOps MCP Server (Official):**
+**Use the Azure DevOps MCP Server to retry failed CI stages.**
 
 ```yaml
-mcp_server:
-  package: "@azure-devops/mcp"
-  publisher: "Microsoft"
-  docs: "https://learn.microsoft.com/en-us/azure/devops/mcp-server/mcp-server-overview"
+mcp_ado_pipelines_update_build_stage:
+  purpose: "Retry failed stages only (faster than full requeue)"
   
-  capabilities:
-    - Query work items, PRs, builds
-    - Trigger builds/pipelines
-    - Access test results
-    - Natural language queries
+  tool: "mcp_ado_pipelines_update_build_stage"
+  parameters:
+    project: "cosmos-db-sdk-public"
+    buildId: 59156
+    stageRefName: "Preview_Tests_Release"  # Stage reference name
+    state: "retry"                          # Options: retry, cancel
     
-  setup:
-    install: "npx @azure-devops/mcp <org-name>"
-    requires: "Azure DevOps PAT"
+  example_prompt: |
+    "Retry the failed 'Preview Tests Release' stage in build 59156 
+     for project cosmos-db-sdk-public"
+     
+  advantages:
+    - Only re-runs failed stage (faster)
+    - Doesn't re-run already-passed jobs
+    - Natural language interface
+    - Fully automated by Copilot
     
-  note: "For simple build operations, direct REST API is often simpler than full MCP setup"
+  requires:
+    - Azure DevOps MCP Server configured (see Section 0.3)
+    - Microsoft account with org access
+```
+
+**Finding the stage reference name:**
+
+```yaml
+# Use MCP server to get build details
+mcp_ado_pipelines_get_build_status:
+  project: "cosmos-db-sdk-public"
+  buildId: 59156
+  
+# Response includes timeline with stage names and their refNames
+# Common stage refNames in this repo:
+#   - "Build"
+#   - "Unit_Tests"
+#   - "Emulator_Tests_Release"
+#   - "Preview_Tests_Release"
+#   - "Static_Analysis"
+```
+
+**Handling CI Failures:**
+
+```yaml
+ci_failure_response:
+  flaky_tests:
+    action: "mcp_ado_pipelines_update_build_stage with state=retry"
+    
+  code_related_failures:
+    action: "Fix code locally, push commit (triggers fresh build)"
+    
+  infrastructure_failures:
+    action: "Wait 5 min, then retry failed stage via MCP"
 ```
 
 ### 16.6 Timing Benchmarks
@@ -2585,11 +2713,278 @@ recommended_workflow:
   phase_5_pr_creation:
     duration: "~5 min"
     steps:
-      - Create feature branch (users/<name>/<feature>)
+      - Create feature branch (users/<name>/copilot-<issue>-<feature>)
       - Commit with descriptive message
       - Push to remote
       - Create draft PR (or provide details for manual creation)
       - Monitor CI status
+```
+
+### 16.7 Flaky Test Registry
+
+**Known flaky tests that may fail intermittently (not related to code changes):**
+
+```yaml
+flaky_tests:
+  EndpointFailureMockTest:
+    location: "Microsoft.Azure.Cosmos.Tests/CosmosClientTests.cs"
+    symptom: "Intermittent timeout or connection failure"
+    seen_in: ["PR #5573 (merged)", "PR #5583", "Build 59156"]
+    action: "Retry failed stage via MCP server"
+    
+  # Add more as discovered:
+  # TestName:
+  #   location: "path/to/test"
+  #   symptom: "description"
+  #   seen_in: ["PR numbers where it failed"]
+  #   action: "retry/skip/fix"
+
+handling_flaky_failures:
+  step_1: "Check if failed test is in flaky registry"
+  step_2: "Verify failure is unrelated to your changes (same test fails in other PRs)"
+  step_3: "Retry failed stage: mcp_ado_pipelines_update_build_stage with state=retry"
+  step_4: "If still fails after 2 retries, document and proceed (known flaky)"
+  
+adding_to_registry:
+  when: "Test fails in your PR AND in at least one other recent PR/build"
+  format: "Add entry with location, symptom, seen_in PRs, recommended action"
+```
+
+### 16.8 Draft PR Workflow
+
+**Always create PRs as drafts first, mark ready after CI passes:**
+
+```yaml
+draft_pr_workflow:
+  create_draft:
+    command: "gh pr create --draft --title 'Category: Fixes ...' --body-file pr-body.md"
+    reason: "Prevents premature review requests while CI runs"
+    
+  monitor_ci:
+    command: "gh pr checks {pr_number}"
+    interval: "Every 5-10 minutes"
+    duration: "Up to 90 minutes for full CI"
+    
+  on_ci_pass:
+    command: "gh pr ready {pr_number}"
+    effect: "Removes draft status, notifies reviewers"
+    
+  on_ci_fail:
+    flaky_test: "Retry via MCP server (see Section 16.7)"
+    code_issue: "Fix locally, push, CI auto-reruns"
+    
+  timeline:
+    - "T+0: Create draft PR"
+    - "T+1min: Quick checks (lint, CLA) pass/fail"
+    - "T+15min: CodeQL, static analysis complete"
+    - "T+30min: Unit tests complete"
+    - "T+60min: Emulator tests complete"
+    - "T+90min: All CI complete → mark ready"
+```
+
+### 16.9 Parallel Agent Strategy
+
+**Use parallel background agents to maximize efficiency:**
+
+```yaml
+parallel_agent_pattern:
+  when: "Multiple independent tasks can run simultaneously"
+  
+  example_investigation:
+    launch_simultaneously:
+      agent_1:
+        type: "general-purpose"
+        task: "Create reproduction test"
+        model: "claude-opus-4.5"
+        
+      agent_2:
+        type: "general-purpose"
+        task: "Implement fix based on root cause"
+        model: "claude-opus-4.5"
+        
+      agent_3:
+        type: "task"
+        task: "Run baseline tests to establish pass/fail state"
+        model: "claude-haiku-4.5"
+        
+    then:
+      - "Wait for all agents to complete"
+      - "Review each agent's output"
+      - "Integrate changes if all successful"
+      - "Run regression tests"
+      
+  benefits:
+    - "3 agents finish in ~10min vs ~30min sequential"
+    - "Each agent has full context window"
+    - "Failures isolated to specific task"
+    
+  caution:
+    - "Don't parallelize dependent tasks"
+    - "Review all outputs before committing"
+    - "One agent's fix may conflict with another's"
+```
+
+### 16.10 Investigation Document Template
+
+**Create investigation docs in session workspace for complex issues:**
+
+```yaml
+investigation_document:
+  location: "~/.copilot/session-state/{session-id}/files/issue-{number}-investigation.md"
+  purpose: "Persist findings across context compactions"
+  
+  template: |
+    # Issue #{number} Investigation
+    
+    ## Summary
+    - **Issue**: [one-line description]
+    - **Reporter**: [username]
+    - **Area**: [LINQ/Query/SDK/etc]
+    - **Status**: [Triaging/Investigating/Reproducing/Fixing/Complete]
+    
+    ## Reported Behavior
+    [Copy from issue description]
+    
+    ## Expected Behavior
+    [What should happen]
+    
+    ## Root Cause Analysis
+    - **Location**: [file:line]
+    - **Cause**: [why the bug exists]
+    - **Evidence**: [code snippets, logs]
+    
+    ## Reproduction
+    - **Test file**: [path to test]
+    - **Steps**: [how to reproduce]
+    - **Result**: [confirmed/not-reproduced]
+    
+    ## Fix Strategy
+    - **Approach**: [how to fix]
+    - **Files to modify**: [list]
+    - **Risk assessment**: [low/medium/high]
+    
+    ## Verification
+    - [ ] Unit tests pass
+    - [ ] Existing tests still pass
+    - [ ] Build succeeds
+    - [ ] CI passes
+    
+    ## References
+    - [Links to related issues, docs, PRs]
+    
+  when_to_create:
+    - "Complex issues requiring multi-step analysis"
+    - "Issues that may span multiple sessions"
+    - "When context compaction is likely"
+```
+
+### 16.11 Commit Message Format
+
+**Follow conventional commit format for this repository:**
+
+```yaml
+commit_format:
+  pattern: "{type}: {description}"
+  
+  types:
+    - "Fix" - Bug fix
+    - "Add" - New feature
+    - "Refactor" - Code restructuring
+    - "Test" - Adding tests
+    - "Docs" - Documentation
+    - "Perf" - Performance improvement
+    
+  examples:
+    bug_fix: "Fix: Dictionary.Any() now uses OBJECTTOARRAY instead of JOIN"
+    new_feature: "Add: Support for hierarchical partition keys"
+    test: "Test: Add unit tests for IsDictionary type detection"
+    docs: "Docs: Update LINQ query translation documentation"
+    
+  rules:
+    - "Keep first line under 72 characters"
+    - "Use imperative mood ('Fix' not 'Fixed')"
+    - "Reference issue number in body if applicable"
+    - "Sign-off required for external contributors"
+    
+  full_example: |
+    Fix: Dictionary.Any() now uses OBJECTTOARRAY instead of JOIN
+    
+    The LINQ translator was treating Dictionary<K,V> as a generic
+    IEnumerable, generating incorrect SQL with JOIN. Now wraps
+    dictionary member access with OBJECTTOARRAY() function.
+    
+    Fixes #5547
+```
+
+### 16.12 PR Description Template
+
+**Full investigation details for Copilot-authored PRs:**
+
+```yaml
+pr_description_template: |
+  ## Description
+  🤖 **This PR was authored by GitHub Copilot**
+  
+  Fixes #{issue_number}
+  
+  [One paragraph explaining what the PR does]
+  
+  ## Root Cause
+  
+  **Location**: `{file_path}:{line_number}`
+  
+  **Analysis**:
+  [Detailed explanation of why the bug existed]
+  
+  **Evidence**:
+  ```csharp
+  // Code snippet showing the problematic behavior
+  ```
+  
+  ## Changes Made
+  
+  ### {file_name_1}
+  - [Change description]
+  
+  ### {file_name_2}
+  - [Change description]
+  
+  ## Generated Output
+  
+  **Before (incorrect)**:
+  ```sql
+  [incorrect output]
+  ```
+  
+  **After (correct)**:
+  ```sql
+  [correct output]
+  ```
+  
+  ## Testing
+  
+  - [ ] New unit tests added: `{test_file_name}`
+  - [ ] Existing tests pass
+  - [ ] Local build succeeds
+  - [ ] Tested with Cosmos DB emulator (if applicable)
+  
+  ## Checklist
+  
+  - [x] Code follows repository conventions
+  - [x] Changes are minimal and focused
+  - [x] No unrelated changes included
+  - [x] Documentation updated (if applicable)
+  
+  ---
+  *Generated by GitHub Copilot CLI Agent*
+
+pr_title_format:
+  pattern: "Category: (Adds|Fixes|Refactors|Removes) Description"
+  lint_regex: "^\\[Internal\\]\\s.+:\\s(Adds|Fixes|Refactors|Removes)\\s.+"
+  examples:
+    - "LINQ: Fixes Dictionary.Any() to generate correct SQL with OBJECTTOARRAY"
+    - "SDK: Adds support for hierarchical partition keys"
+    - "Query: Refactors SQL generation for better readability"
 ```
 
 ---
@@ -2598,10 +2993,18 @@ recommended_workflow:
 
 ### Completed ✅
 - [x] Test plan on real issue (#5547)
-- [x] Document branch naming convention (users/<name>/<feature>)
+- [x] Document branch naming convention (users/<name>/copilot-<issue>-<feature>)
 - [x] Add remote CI validation workflow (Section 7.4)
 - [x] Document Copilot-authored PR format
 - [x] Add lessons learned section
+- [x] Add MCP server setup instructions (Section 0)
+- [x] Document Azure DevOps MCP for CI retry (Section 16.5.1)
+- [x] Add flaky test registry (Section 16.7)
+- [x] Add draft PR workflow (Section 16.8)
+- [x] Add parallel agent strategy (Section 16.9)
+- [x] Add investigation document template (Section 16.10)
+- [x] Add commit message format (Section 16.11)
+- [x] Add PR description template (Section 16.12)
 
 ### Pending
 - [ ] Create GitHub Action workflow for auto-triggering agent on new issues
@@ -2616,5 +3019,3 @@ recommended_workflow:
 - [ ] Audit high-priority APIs for AI-friendly docs
 - [ ] Create documentation improvement backlog
 - [ ] Add "copilot-authored" label to repository
-- [ ] Install GitHub CLI (gh) in development environment
-- [ ] Document SAML workarounds for Azure org repos
