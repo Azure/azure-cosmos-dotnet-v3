@@ -266,8 +266,8 @@ testing_the_plan:
 # 1. Verify build
 dotnet build Microsoft.Azure.Cosmos.sln -c Release
 
-# 2. Run unit tests (no emulator needed)
-dotnet test .\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests -c Release --filter "Category!=Emulator" -- --no-restore
+# 2. Run unit tests (no emulator needed, no external dependencies)
+dotnet test .\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests -c Release --no-restore
 
 # 3. Verify GitHub CLI
 gh issue list --repo Azure/azure-cosmos-dotnet-v3 --limit 5
@@ -1262,8 +1262,10 @@ local_testing_strategy:
     fully_local:
       unit_tests:
         path: "Microsoft.Azure.Cosmos.Tests"
-        command: "dotnet test --filter \"Category!=Emulator\""
+        command: "dotnet test"
         secrets_required: false
+        external_dependencies: false
+        note: "Pure unit tests - no emulator, no network, no secrets"
         run: "ALWAYS before push"
         
       emulator_tests:
@@ -1321,9 +1323,10 @@ local_testing_strategy:
         
       step_2:
         name: "Run unit tests"
-        command: "dotnet test Microsoft.Azure.Cosmos.Tests --filter \"Category!=Emulator\" -c Release"
+        command: "dotnet test Microsoft.Azure.Cosmos.Tests -c Release"
         expected: "All pass"
         time: "~2 minutes"
+        note: "No emulator needed - pure unit tests"
         
       step_3:
         name: "Run emulator tests"
@@ -1342,16 +1345,29 @@ local_testing_strategy:
         note: "CI runs secrets-required tests"
         
   test_coverage_by_environment:
-    local_emulator:
-      coverage: "~85% of all tests"
+    local_no_dependencies:
+      project: "Microsoft.Azure.Cosmos.Tests"
+      coverage: "Unit tests - no external dependencies"
       includes:
         - "All unit tests"
-        - "All LINQ/Query tests"
-        - "All CRUD tests"
-        - "All ChangeFeed tests"
-        - "All Batch tests"
-        - "Most encryption tests"
-        - "Most retry/resilience tests"
+        - "Mocked integration tests"
+        - "Serialization tests"
+        - "Type system tests"
+        - "LINQ translation tests"
+      requires: "Nothing - just .NET SDK"
+      time: "~2 minutes"
+      
+    local_with_emulator:
+      project: "Microsoft.Azure.Cosmos.EmulatorTests"
+      coverage: "Integration tests with real Cosmos operations"
+      includes:
+        - "CRUD operations"
+        - "Query execution"
+        - "ChangeFeed tests"
+        - "Batch tests"
+        - "Encryption tests"
+      requires: "Cosmos DB Emulator running"
+      time: "~15-30 minutes"
         
     ci_only:
       coverage: "~15% of all tests"
@@ -1360,11 +1376,13 @@ local_testing_strategy:
         - "Live account integration"
         - "Cross-region failover"
         - "Production endpoint tests"
+      requires: "Azure secrets"
         
   efficiency_gains:
-    local_validation: "Catch 85%+ of issues in ~20 minutes"
+    unit_tests_only: "Catch most logic errors in ~2 minutes (no setup)"
+    with_emulator: "Catch integration issues in ~20 minutes"
     ci_feedback: "Avoid 60-90 minute CI wait for simple errors"
-    iteration_speed: "Fix → local test → fix → local test → push (confident)"
+    iteration_speed: "Fix → unit test → fix → emulator test → push"
 ```
 
 **Quick Local Test Commands:**
@@ -1434,9 +1452,11 @@ regression_testing:
   test_categories:
     unit_tests:
       path: "Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests"
-      command: dotnet test --filter "Category!=Emulator"
+      command: "dotnet test"
       required: true
       local: true
+      external_dependencies: false
+      note: "No emulator, no network, no secrets - pure unit tests"
       remote: true
       
     emulator_tests:
