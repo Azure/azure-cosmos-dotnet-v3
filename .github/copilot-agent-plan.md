@@ -3082,6 +3082,58 @@ pr_title_format:
     - "Query: Refactors SQL generation for better readability"
 ```
 
+### 16.13 Code Style (StyleCop & EditorConfig)
+
+**Repository uses StyleCop.Analyzers and .editorconfig for code style enforcement.**
+
+```yaml
+stylecop:
+  config_file: "Microsoft.Azure.Cosmos/src/stylecop.json"
+  package: "StyleCop.Analyzers v1.1.118"
+  
+  key_rules:
+    documentation:
+      company_name: "Microsoft"
+      document_internal: false
+      xml_header: false
+    ordering:
+      system_usings_first: true
+    readability:
+      no_builtin_type_aliases: true  # Use 'string' not 'String'
+
+editorconfig:
+  file: ".editorconfig"
+  
+  critical_rules:
+    indentation: "4 spaces (no tabs)"
+    line_endings: "CRLF"
+    final_newline: false
+    
+    this_qualification: "required (error level)"
+    # this.field, this.Property, this.Method(), this.Event
+    
+    var_usage: "never (error level)"
+    # Always use explicit types: string x = ""; not var x = "";
+    
+    usings_placement: "inside namespace (error level)"
+    
+    braces: "Allman style (open brace on new line)"
+    
+  common_violations:
+    - "Missing this. qualifier"
+    - "Using var instead of explicit type"
+    - "Usings outside namespace"
+    - "Missing parentheses in binary operators"
+```
+
+**Quick Style Checklist:**
+- [ ] `this.` prefix on all instance members
+- [ ] Explicit types (no `var`)
+- [ ] `using` statements inside namespace
+- [ ] System usings first
+- [ ] 4-space indentation
+- [ ] CRLF line endings
+
 ---
 
 ## TODO: Implementation Tasks
