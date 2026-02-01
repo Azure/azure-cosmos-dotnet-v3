@@ -2234,14 +2234,10 @@ validation_workflow:
         required: true
         note: "Tests run against PREVIEW build"
         
-      - name: "Run area-specific tests (if applicable)"
-        command: "dotnet test --filter \"FullyQualifiedName~{Area}\" -c Release --no-build"
-        example: "dotnet test --filter \"FullyQualifiedName~Linq\" -c Release --no-build"
-        required: "for changes in specific area"
-        
-      - name: "Run emulator tests (if emulator available)"
+      - name: "Run emulator tests"
         command: "dotnet test Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests -c Release"
-        required: "recommended for integration changes"
+        required: true
+        note: "Requires Cosmos DB emulator running locally"
         
     proof_required:
       description: "⚠️ MUST show test output for BOTH configurations before creating PR"
@@ -2262,10 +2258,11 @@ validation_workflow:
         Skipped: X
         ```
         
-        ### Area Tests (if run)
+        ### Emulator Tests
         ```
-        Passed: XX
+        Passed: XXX
         Failed: 0
+        Skipped: X
         ```
         
         ### Emulator Tests (if run)
@@ -3271,7 +3268,7 @@ ci_failure_response:
 | Root cause analysis | ~10min | With Opus model, thorough |
 | Reproduction test creation (agent) | ~4min | Background agent |
 | Fix implementation (agent) | ~10min | Background agent with Opus |
-| Baseline test run | ~2min | 9 LINQ tests |
+| Baseline test run | ~2min | Unit tests subset |
 | Build verification | ~15s | Incremental build |
 | Branch + commit + push | ~30s | Local git operations |
 
