@@ -4413,6 +4413,90 @@ testing:
     update: "Run UpdateContracts.ps1 to refresh baselines"
 ```
 
+### 16.22 Dynamic .NET Version Testing
+
+**For issues that only reproduce on newer .NET versions (e.g., .NET 10):**
+
+```yaml
+dynamic_version_testing:
+  purpose: "Test behavior in .NET versions not in main test matrix"
+  use_when:
+    - "Issue only reproduces on .NET 10+"
+    - "Compiler behavior changed in newer .NET"
+    - "Need to verify fix works across versions"
+    
+  approach:
+    description: "Dynamically generate, compile, and run test project"
+    steps:
+      1: "Create temp directory"
+      2: "Generate .csproj targeting specific .NET version"
+      3: "Generate test .cs file with repro code"
+      4: "Run dotnet build && dotnet run"
+      5: "Parse output for pass/fail"
+      6: "Clean up temp directory"
+      
+  implementation:
+    test_method: |
+      [TestMethod]
+      public void TestNet10Behavior()
+      {
+          string tempDir = Path.Combine(Path.GetTempPath(), $"cosmos-test-{Guid.NewGuid()}");
+          try
+          {
+              Directory.CreateDirectory(tempDir);
+              
+              // Generate .csproj
+              string csproj = @"
+              <Project Sdk=""Microsoft.NET.Sdk"">
+                <PropertyGroup>
+                  <OutputType>Exe</OutputType>
+                  <TargetFramework>net10.0</TargetFramework>
+                </PropertyGroup>
+                <ItemGroup>
+                  <PackageReference Include=""Microsoft.Azure.Cosmos"" Version=""3.x.x"" />
+                </ItemGroup>
+              </Project>";
+              File.WriteAllText(Path.Combine(tempDir, "Test.csproj"), csproj);
+              
+              // Generate test code
+              string testCode = @"
+              using Microsoft.Azure.Cosmos;
+              // Repro code from issue
+              var array = new[] { ""a"" };
+              var query = container.GetItemLinqQueryable<Doc>()
+                  .Where(x => array.Contains(x.Name));
+              Console.WriteLine(query.ToString());
+              ";
+              File.WriteAllText(Path.Combine(tempDir, "Program.cs"), testCode);
+              
+              // Build and run
+              var result = RunProcess("dotnet", "run", tempDir);
+              
+              // Assert
+              Assert.IsFalse(result.Contains("NotSupportedException"));
+          }
+          finally
+          {
+              Directory.Delete(tempDir, recursive: true);
+          }
+      }
+      
+  benefits:
+    - "Tests actual compiler behavior for target .NET version"
+    - "No permanent test project in repository"
+    - "Can test any .NET version installed on machine"
+    - "Catches version-specific regressions"
+    
+  prerequisites:
+    - "Target .NET SDK must be installed (e.g., .NET 10 SDK)"
+    - "Check with: dotnet --list-sdks"
+    
+  when_not_to_use:
+    - "Issue reproduces on existing test framework version"
+    - "CI doesn't have required SDK installed"
+    - "Simple unit test is sufficient"
+```
+
 ---
 
 ## TODO: Implementation Tasks
