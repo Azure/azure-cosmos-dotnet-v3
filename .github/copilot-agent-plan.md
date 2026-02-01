@@ -17,19 +17,64 @@
 
 ### 0.2 GitHub MCP Server
 
-**Already configured in most Copilot environments.**
+### 0.2 GitHub Access (SAML-Protected Repos)
+
+**⚠️ IMPORTANT: Azure org repos require SAML SSO - GitHub MCP Server is BLOCKED.**
 
 ```yaml
-github_mcp_server:
-  package: "github-mcp-server"
-  capabilities:
-    - search_issues, list_issues, issue_read
-    - search_pull_requests, list_pull_requests, pull_request_read
-    - search_code, get_file_contents
-    - actions_list, actions_get, get_job_logs
-    - list_commits, get_commit
+github_access:
+  saml_protected_orgs:
+    - "Azure"
+    - "microsoft"
+    note: "MCP server tokens don't have SAML authorization"
     
-  note: "Usually pre-configured. For Azure org repos, may need SAML auth workaround (use web_fetch)"
+  what_works:
+    gh_cli:
+      status: "✅ WORKS"
+      reason: "Browser OAuth completes SAML SSO"
+      auth: "gh auth login --web"
+      use_for:
+        - "Create/list/view issues"
+        - "Create/list/view PRs"
+        - "Check PR status"
+        - "All GitHub operations"
+      examples:
+        - "gh issue list --repo Azure/azure-cosmos-dotnet-v3"
+        - "gh pr create --draft --title '...'"
+        - "gh pr checks 5583"
+        
+    web_fetch:
+      status: "✅ WORKS (fallback)"
+      reason: "Scrapes public web pages"
+      use_for: "Reading issue/PR content when gh fails"
+      example: "web_fetch https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5547"
+      
+  what_does_not_work:
+    github_mcp_server:
+      status: "❌ BLOCKED by SAML"
+      error: "Resource protected by organization SAML enforcement"
+      reason: "MCP OAuth token not SAML-authorized"
+      tools_affected:
+        - "github-mcp-server-list_issues"
+        - "github-mcp-server-issue_read"
+        - "github-mcp-server-pull_request_read"
+        - "All github-mcp-server-* tools for Azure org"
+        
+  recommended_approach:
+    primary: "Use gh CLI for all GitHub operations"
+    fallback: "Use web_fetch to scrape issue content"
+    avoid: "Don't rely on GitHub MCP Server for Azure org repos"
+```
+
+**Quick Reference:**
+```powershell
+# ✅ This works (gh CLI)
+gh issue view 5547 --repo Azure/azure-cosmos-dotnet-v3
+gh pr create --draft --title "Fix: ..."
+gh pr checks 5583
+
+# ❌ This fails (MCP Server)
+# github-mcp-server-list_issues → SAML error
 ```
 
 ### 0.3 Azure DevOps MCP Server (Official Microsoft)
