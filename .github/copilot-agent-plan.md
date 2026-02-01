@@ -32,6 +32,7 @@ Guide step-by-step on any required setups and then investigate issue #XXXX.
 6. Run Copilot code-review
 7. Create PR and monitor CI
 8. Mark ready when CI passes
+9. **Capture learnings** → update agent plan with reusable patterns
 
 ---
 
@@ -3657,6 +3658,294 @@ git stash
 git checkout users/{name}/copilot-{other-issue}-{feature}
 
 # List all your branches
+git branch --list "users/*"
+```
+
+---
+
+## 17. Lessons Learned (Performance/Memory Issues)
+
+This section documents generalizable learnings from performance and memory-related investigations.
+
+### 17.1 Key Learnings: Performance/Benchmark PRs
+
+**⚠️ CRITICAL: For any performance or benchmark-related PR, measurements are REQUIRED.**
+
+```yaml
+performance_pr_requirements:
+  measurements:
+    required: true
+    must_include:
+      - "Environment details (machine, .NET version, config)"
+      - "Before measurement (baseline)"
+      - "After measurement (with fix)"
+      - "Improvement percentage"
+      - "Explanation of why measurement proves the fix"
+      
+  pr_description_template:
+    section: "## Benchmark Results"
+    table_format: |
+      | Metric | Before | After | Improvement |
+      |--------|--------|-------|-------------|
+      | {metric} | {before} | {after} | {improvement} |
+      
+    must_explain:
+      - "Why this measurement validates the fix"
+      - "What would happen without the fix (consequence)"
+      - "How measurement methodology is reliable"
+```
+
+### 17.2 Pre-existing Test Failures
+
+**Document pre-existing failures to distinguish from regression:**
+
+```yaml
+pre_existing_failures:
+  purpose: "Distinguish regressions from known issues"
+  
+  approach:
+    step_1: "Run tests on clean master before making changes"
+    step_2: "Document any failures as 'pre-existing'"
+    step_3: "After fix, compare failure list - new failures = regression"
+    
+  documentation_format:
+    in_pr_description: |
+      *Pre-existing failures, not related to this change
+      
+  ci_implications:
+    - "Pre-existing failures may cause CI to fail"
+    - "Check if same tests fail in recent passing PRs"
+    - "If test passes in master but fails in PR, it's a regression"
+```
+
+### 17.3 Check for Existing PRs First
+
+**⚠️ CRITICAL: Always check if an existing PR addresses the issue before starting work.**
+
+```yaml
+existing_pr_check:
+  when: "Before starting any investigation beyond triage"
+  
+  how_to_check:
+    command: "gh pr list --repo Azure/azure-cosmos-dotnet-v3 --search 'is:open {issue_keywords}'"
+    or: "Check issue page for 'linked pull requests' section"
+    
+  if_pr_exists:
+    action: "Review existing PR instead of creating duplicate"
+    options:
+      - "Add benchmark/validation tests to existing PR"
+      - "Review and provide feedback"
+      - "Offer to help resolve CI failures"
+      - "Create complementary PR (e.g., benchmark only) if appropriate"
+```
+
+### 17.4 CI Gate Not Started Pattern
+
+**When CI gates show "pending" but never start:**
+
+```yaml
+ci_not_started_pattern:
+  symptoms:
+    - "PR created but dotnet-v3-ci shows 'Expected — Waiting for status to be reported'"
+    - "No CI jobs running after 30+ minutes"
+    - "Other PRs in same repo have CI running"
+    
+  possible_causes:
+    author_permission:
+      description: "Author doesn't have write access to trigger CI"
+      fix: "Maintainer needs to approve workflow run"
+      check: "Look for 'Approve and run' button on PR Actions tab"
+      
+    ci_configuration:
+      description: "CI not configured to run on this branch pattern"
+      fix: "Check azure-pipelines.yml trigger configuration"
+      
+    branch_policy:
+      description: "Branch policies require specific conditions"
+      fix: "Check repository branch protection rules"
+      
+    quota_exhaustion:
+      description: "Org has exhausted CI minutes"
+      fix: "Wait or contact org admins"
+      
+  investigation_steps:
+    - "Check PR 'Checks' tab for any status"
+    - "Check if author is external contributor (first-time approval needed)"
+    - "Compare with recent PRs from same author"
+    - "Check Azure Pipelines dashboard for queue status"
+```
+
+### 17.5 Test Filter Patterns from CI
+
+**Reference for running CI-equivalent tests locally:**
+
+```yaml
+ci_test_filters:
+  source: "templates/build-test.yml"
+  
+  emulator_pipeline_1:
+    categories: "Query, ReadFeed, Batch, ChangeFeed"
+    filter: '--filter "TestCategory=Query|TestCategory=ReadFeed|TestCategory=Batch|TestCategory=ChangeFeed"'
+    excludes: "Flaky, Quarantine, LongRunning, MultiRegion, MultiMaster"
+    
+  emulator_pipeline_2:
+    categories: "Others (everything not in Pipeline 1)"
+    filter: '--filter "TestCategory!=Query & TestCategory!=ReadFeed & TestCategory!=Batch & TestCategory!=ChangeFeed"'
+    excludes: "Flaky, Quarantine, LongRunning, MultiRegion, MultiMaster"
+    
+  local_safe_categories:
+    can_run: ["Query", "ReadFeed", "Batch", "ChangeFeed", "LINQ"]
+    requires_emulator: true
+    
+  ci_only_categories:
+    multiregion: "Requires Azure secrets, multi-region setup"
+    multimaster: "Requires Azure secrets, multi-master setup"
+    
+  common_excludes:
+    always: '--filter "TestCategory!=Quarantine & TestCategory!=Ignore"'
+    reason: "Quarantined tests are known failures, Ignore tests are skipped"
+```
+
+### 17.6 Benchmark Test Pattern
+
+**Template for creating benchmark/validation tests:**
+
+```csharp
+// File: {Area}/{FeatureName}Benchmark.cs
+[TestClass]
+public class {FeatureName}BenchmarkTests
+{
+    /// <summary>
+    /// Compares performance between old and new approach.
+    /// This test validates that the fix reduces overhead.
+    /// </summary>
+    [TestMethod]
+    [TestCategory("LINQ")]  // Appropriate category
+    public void {MethodName}_PerformanceImpact()
+    {
+        // Arrange
+        const int iterations = 1000;
+        var testData = CreateTestData();
+        
+        // Act - Baseline (old approach)
+        var swBaseline = Stopwatch.StartNew();
+        for (int i = 0; i < iterations; i++)
+        {
+            OldApproach(testData);
+        }
+        swBaseline.Stop();
+        
+        // Act - New approach
+        var swNew = Stopwatch.StartNew();
+        for (int i = 0; i < iterations; i++)
+        {
+            NewApproach(testData);
+        }
+        swNew.Stop();
+        
+        // Assert - New should be faster
+        Trace.WriteLine($"Baseline: {swBaseline.ElapsedMilliseconds}ms");
+        Trace.WriteLine($"New: {swNew.ElapsedMilliseconds}ms");
+        Trace.WriteLine($"Speedup: {(double)swBaseline.ElapsedMilliseconds / swNew.ElapsedMilliseconds:F1}x");
+        
+        // Validate improvement (adjust threshold as needed)
+        Assert.IsTrue(swNew.ElapsedMilliseconds < swBaseline.ElapsedMilliseconds,
+            $"New approach should be faster. Baseline={swBaseline.ElapsedMilliseconds}ms, New={swNew.ElapsedMilliseconds}ms");
+    }
+}
+```
+
+### 17.7 Workflow Summary for Performance Issues
+
+```yaml
+recommended_workflow_for_perf_issues:
+  phase_1_triage:
+    - "Check for existing PRs first"
+    - "Classify as performance/memory issue"
+    - "Identify measurement approach"
+    
+  phase_2_analysis:
+    - "Locate root cause code"
+    - "Understand memory/performance impact"
+    - "Research fix options (.NET docs, patterns)"
+    
+  phase_3_validation:
+    - "Create benchmark test"
+    - "Run baseline measurement"
+    - "Apply fix or validate existing PR's approach"
+    - "Run post-fix measurement"
+    - "Document improvement (required for PR)"
+    
+  phase_4_pr:
+    - "Include benchmark results table in PR description"
+    - "Explain why measurements prove the fix"
+    - "Note any pre-existing test failures"
+    - "Link to related issues/PRs"
+    
+  phase_5_learnings:
+    - "Capture generalizable patterns discovered"
+    - "Update agent plan with reusable workflows"
+    - "Exclude issue-specific details"
+```
+
+### 17.8 Session Learnings Capture (Final Step)
+
+**⚠️ REQUIRED: At the end of each investigation session, capture learnings.**
+
+```yaml
+session_learnings:
+  when: "End of investigation session, before closing"
+  purpose: "Continuously improve the agent plan with real-world patterns"
+  
+  what_to_capture:
+    include:
+      - "New workflow patterns that worked well"
+      - "Tool selection improvements"
+      - "Error handling patterns"
+      - "CI/testing shortcuts discovered"
+      - "Documentation gaps filled"
+      - "Troubleshooting steps for common issues"
+      
+    exclude:
+      - "Issue-specific technical details (e.g., specific bug root causes)"
+      - "One-off code patterns unlikely to recur"
+      - "Temporary workarounds"
+      - "Measurements/benchmarks from specific issues"
+      
+  how_to_update:
+    step_1: "Review session for generalizable patterns"
+    step_2: "Draft additions to relevant section of agent plan"
+    step_3: "Remove any issue-specific examples"
+    step_4: "Commit with message: 'Docs: Add learnings from session'"
+    
+  checklist:
+    - "Is this pattern reusable for other issues?"
+    - "Would a future agent benefit from knowing this?"
+    - "Is it free of issue-specific details?"
+    - "Does it fit an existing section or need a new one?"
+    
+  examples_of_good_learnings:
+    - "Performance PRs require benchmark measurements in description"
+    - "Check for existing PRs before starting investigation"
+    - "CI gates may not start for external contributors"
+    - "Pre-existing test failures should be documented"
+    
+  examples_of_bad_learnings:
+    - "Issue #5487 was caused by Expression.Compile()" # Too specific
+    - "Fixed by using preferInterpretation: true" # Issue-specific fix
+    - "Build 59156 had a flaky test" # One-off occurrence
+```
+
+**Quick Prompt for End of Session:**
+
+```
+Review this session and identify any generalizable learnings 
+(workflow patterns, tool usage, troubleshooting steps) that should 
+be added to .github/copilot-agent-plan.md. Exclude issue-specific 
+technical details.
+```
+
+---
 git branch --list "users/*"
 ```
 
