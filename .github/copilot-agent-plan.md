@@ -825,9 +825,15 @@ expectations_validation:
 
 **Validation Checklist:**
 ```markdown
-## Expectations Validation
+## Pre-Investigation Checks
 
 Before investigating further, verify:
+
+### 0. Is there already an open PR for this issue?
+- [ ] Check linked PRs: `gh pr list --search "fixes #XXXX" --state open`
+- [ ] Check issue comments for PR references
+- [ ] If PR exists: Review PR instead of duplicating work
+- [ ] If PR exists but stale: Consider taking over or commenting
 
 ### 1. Is the expected behavior documented?
 - [ ] Checked official Microsoft Docs for the feature
