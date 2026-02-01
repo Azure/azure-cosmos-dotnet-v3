@@ -4497,6 +4497,35 @@ dynamic_version_testing:
     - "Simple unit test is sufficient"
 ```
 
+### 16.23 GitHub Comment Attribution
+
+**All GitHub comments posted by Copilot agents must include attribution:**
+
+```yaml
+github_comment_attribution:
+  required: true
+  format: |
+    ---
+    *Co-authored with GitHub Copilot* 🤖
+    
+  placement: "End of comment"
+  
+  example: |
+    Hi @user,
+    
+    Thank you for reporting this issue. We investigated and found...
+    
+    [Main content here]
+    
+    ---
+    *Co-authored with GitHub Copilot* 🤖
+    
+  rationale:
+    - "Transparency about AI-assisted responses"
+    - "Helps reviewers understand context"
+    - "Builds trust with community"
+```
+
 ---
 
 ## TODO: Implementation Tasks
