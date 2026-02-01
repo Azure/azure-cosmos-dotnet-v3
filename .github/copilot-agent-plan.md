@@ -4277,10 +4277,20 @@ api_contracts:
       - "Changing method signatures"
       - "Changing return types"
       - "Removing properties"
+      - "**Changing project TargetFramework**"
     allowed_with_review:
       - "Adding new optional parameters"
       - "Adding new methods/properties"
       - "Deprecating (not removing) APIs"
+      
+  project_constraints:
+    target_frameworks:
+      rule: "NEVER change TargetFramework in .csproj files"
+      reason: "SDK targets netstandard2.0 for broad compatibility"
+      current_targets:
+        sdk: "netstandard2.0"
+        tests: "net6.0"
+      if_needed: "Discuss with team before any framework changes"
       
   before_pr:
     - "Run UpdateContracts.ps1"
