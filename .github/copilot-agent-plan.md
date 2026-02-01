@@ -135,6 +135,48 @@ github_access:
     avoid: "Don't rely on GitHub MCP Server for Azure org repos"
 ```
 
+**Azure CLI Installation & Setup:**
+
+```powershell
+# 1. Install Azure CLI (Windows)
+winget install Microsoft.AzureCLI --accept-source-agreements --accept-package-agreements
+
+# Alternative installers:
+# - macOS: brew install azure-cli
+# - Linux: curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+
+# 2. Authenticate (opens browser)
+az login
+
+# 3. Select subscription when prompted
+# For Cosmos DB SDK work, select: CosmosDB-SDK-Dev
+
+# 4. Verify authentication
+az account show --query "{name:name, id:id}" -o table
+
+# 5. Set specific subscription if needed
+az account set --subscription "CosmosDB-SDK-Dev"
+```
+
+```yaml
+azure_cli_usage:
+  kusto_queries:
+    description: "Run Kusto queries against Support database"
+    example: |
+      az kusto query --cluster "https://cdbsupport.kusto.windows.net" \
+        --database "Support" \
+        --query "MgmtGlobalDatabaseAccountTrace | where GlobalDatabaseAccount contains 'account-name' | take 10"
+        
+  cosmos_account_info:
+    description: "Get Cosmos DB account information"
+    example: |
+      az cosmosdb show --name <account-name> --resource-group <rg-name>
+      
+  recommended_subscriptions:
+    - "CosmosDB-SDK-Dev" # For SDK development
+    - "Cosmos DB Backend Testing" # For backend testing
+```
+
 **gh CLI Installation & Setup:**
 
 ```powershell
