@@ -2236,9 +2236,53 @@ validation_workflow:
         ```
         
       gate: "DO NOT create PR if any tests fail in ANY configuration"
+      
+  phase_2_code_review:
+    prerequisite: "phase_1_local MUST pass"
+    description: "Run Copilot code review BEFORE creating PR"
+    
+    purpose: |
+      Catch issues before human reviewers see them:
+      - Bugs and logic errors
+      - Security vulnerabilities  
+      - Missing error handling
+      - Performance issues
+      
+    steps:
+      - name: "Run Copilot code-review agent"
+        agent: "code-review"
+        scope: "Staged/uncommitted changes"
+        prompt: |
+          Review the changes for this fix. Focus on:
+          - Correctness of the fix
+          - Edge cases not handled
+          - Security implications
+          - Performance impact
+          
+      - name: "Address findings"
+        action: |
+          For each issue found:
+          1. Evaluate if it's valid
+          2. Fix valid issues locally
+          3. Re-run local tests
+          4. Re-run code review until clean
+          
+    gate: "DO NOT create PR until code review passes with no high-signal issues"
+    
+    acceptable_to_ignore:
+      - "Style/formatting suggestions (StyleCop handles this)"
+      - "Minor refactoring suggestions"
+      - "Documentation improvements (unless critical)"
+      
+    must_address:
+      - "Bugs or logic errors"
+      - "Security vulnerabilities"
+      - "Null reference risks"
+      - "Resource leaks"
+      - "Missing error handling"
         
-  phase_2_create_pr:
-    prerequisite: "phase_1_local MUST pass with proof shown"
+  phase_3_create_pr:
+    prerequisite: "phase_1_local AND phase_2_code_review MUST pass"
     description: "Create PR to trigger remote CI"
     steps:
       - name: "Create feature branch"
@@ -2259,7 +2303,7 @@ validation_workflow:
             --title "Fix #{number}: {title}" \
             --body "$(cat pr_body.md)"
             
-  phase_3_ci_monitoring:
+  phase_4_ci_monitoring:
     description: "Monitor CI pipeline execution"
     steps:
       - name: "Check pipeline status"
@@ -2277,7 +2321,7 @@ validation_workflow:
           return_content: true
           tail_lines: 500
           
-  phase_4_fix_ci_failures:
+  phase_5_fix_ci_failures:
     description: "Iterate until CI passes"
     loop:
       - Analyze failure logs
