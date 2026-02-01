@@ -92,8 +92,35 @@ gh auth login --web
 gh auth status
 # Expected: ✓ Logged in to github.com account {username}
 
-# 6. Test access to Azure org
-gh issue list --repo Azure/azure-cosmos-dotnet-v3 --limit 3
+# 6. Test access to Azure org (with auto-fix)
+gh issue list --repo Azure/azure-cosmos-dotnet-v3 --limit 1
+# If SAML error occurs, run steps 7-8
+
+# 7. Force logout (if SAML error)
+gh auth logout
+
+# 8. Re-login with SAML authorization
+gh auth login --web
+# → Complete browser auth AND authorize Azure org
+
+# 9. Verify fixed
+gh issue list --repo Azure/azure-cosmos-dotnet-v3 --limit 1
+```
+
+**Auto-Fix Script (Copy-Paste):**
+```powershell
+# Test and auto-fix SAML issues
+$result = gh issue list --repo Azure/azure-cosmos-dotnet-v3 --limit 1 2>&1
+if ($result -match "SAML") {
+    Write-Host "SAML error detected. Re-authenticating..."
+    gh auth logout
+    gh auth login --web
+    Write-Host "Please authorize Azure org in browser, then press Enter..."
+    Read-Host
+    gh issue list --repo Azure/azure-cosmos-dotnet-v3 --limit 1
+} else {
+    Write-Host "✅ gh CLI working: $result"
+}
 ```
 
 **Required Scopes:**
