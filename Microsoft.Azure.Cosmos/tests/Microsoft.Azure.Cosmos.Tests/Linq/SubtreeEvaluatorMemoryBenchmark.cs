@@ -151,8 +151,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Linq
 #else
                     Delegate function = lambda.Compile();
 #endif
-                    // Simulate using the delegate
-                    bool result = (bool)function.DynamicInvoke("test_search_1_1");
+                    // Simulate using the delegate with matching input
+                    string testInput = $"test_{searchTerm}_value";
+                    bool result = (bool)function.DynamicInvoke(testInput);
+                    Assert.IsTrue(result, $"Filter should match input containing '{searchTerm}'");
                 }
 
                 long currentMemory = GC.GetTotalMemory(false);
