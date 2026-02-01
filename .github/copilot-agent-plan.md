@@ -1,0 +1,2152 @@
+# Copilot Agent Issue Triage & Resolution Plan
+## Azure Cosmos DB .NET SDK (azure-cosmos-dotnet-v3)
+
+---
+
+## 1. Executive Summary
+
+This plan defines a comprehensive workflow for Copilot agents to handle GitHub issues for the Azure Cosmos DB .NET SDK repository. The agent will:
+- Triage all issue types (bugs, features, questions, documentation)
+- Reproduce issues against the Cosmos DB emulator (when applicable)
+- Leverage Bluebird code graph tools for deep code analysis
+- Create linked investigation issues with structured findings
+- Auto-assign to human reviewers based on labels/area
+- Propose workarounds and draft PRs when appropriate
+
+---
+
+## 1.1 Model Configuration
+
+**Primary Model: Claude Opus 4.5** (`claude-opus-4.5`)
+
+Use Claude Opus for all investigation and analysis tasks due to its superior reasoning capabilities for complex debugging scenarios.
+
+```yaml
+model_configuration:
+  primary_model: "claude-opus-4.5"
+  
+  task_model_mapping:
+    # Deep analysis tasks - use Opus
+    issue_triage: "claude-opus-4.5"
+    root_cause_analysis: "claude-opus-4.5"
+    code_investigation: "claude-opus-4.5"
+    pr_review: "claude-opus-4.5"
+    documentation_writing: "claude-opus-4.5"
+    
+    # Quick tasks - can use faster models if needed
+    simple_queries: "claude-opus-4.5"  # Keep Opus for consistency
+    file_search: "claude-opus-4.5"
+    
+agent_invocation:
+  explore_agent:
+    model: "claude-opus-4.5"
+    use_for: "Codebase exploration and understanding"
+    
+  task_agent:
+    model: "claude-opus-4.5"
+    use_for: "Build, test, reproduction execution"
+    
+  general_purpose_agent:
+    model: "claude-opus-4.5"
+    use_for: "Complex multi-step investigations"
+    
+  code_review_agent:
+    model: "claude-opus-4.5"
+    use_for: "PR and code change review"
+```
+
+**Why Claude Opus:**
+- Superior reasoning for complex debugging scenarios
+- Better at understanding nuanced code behavior
+- More accurate root cause analysis
+- Higher quality documentation generation
+- Better at synthesizing information from multiple sources
+
+---
+
+## 2. Issue Intake & Classification
+
+### 2.1 Issue Triggers
+```yaml
+triggers:
+  - new_issue_created
+  - issue_labeled: ["needs-triage", "bug", "question"]
+  - issue_commented: ["@copilot investigate", "@copilot help"]
+```
+
+### 2.2 Classification Matrix
+
+| Issue Type | Reproduction Required | Code Analysis Depth | Output |
+|------------|----------------------|---------------------|--------|
+| **Bug - Crash/Exception** | Yes - Full repro | Deep (call graph, stack trace mapping) | Investigation issue + Draft PR |
+| **Bug - Performance** | Yes - Benchmark | Medium (hot path analysis) | Investigation issue + Perf report |
+| **Bug - Data Corruption** | Yes - Careful repro | Deep (serialization path) | Investigation issue + CRITICAL label |
+| **Question - How-to** | No | Light (find examples) | Comment with answer |
+| **Question - Behavior** | Maybe | Medium (find relevant code) | Investigation issue if complex |
+| **Enhancement** | No | Medium (impact analysis) | Feasibility comment |
+| **Documentation** | No | Light | Draft PR |
+
+### 2.3 Standard Labels to Apply
+```yaml
+labels:
+  type:
+    - bug
+    - enhancement  
+    - question
+    - documentation
+  area:
+    - Batch
+    - Query
+    - ChangeFeed
+    - DirectMode
+    - GatewayMode
+    - Serialization
+    - Encryption
+    - Diagnostics
+    - Retry
+    - PartitionKey
+  priority:
+    - P0-critical
+    - P1-high
+    - P2-medium
+    - P3-low
+  status:
+    - needs-triage
+    - investigating
+    - needs-repro
+    - has-workaround
+    - ready-for-pr
+```
+
+---
+
+## 3. Triage Workflow
+
+### Phase 0: Issue Retrieval
+
+**Handle GitHub API limitations (SAML enforcement for Azure org):**
+
+```yaml
+issue_retrieval:
+  primary_method:
+    tool: "github-mcp-server-issue_read"
+    params:
+      method: "get"
+      owner: "Azure"
+      repo: "azure-cosmos-dotnet-v3"
+      issue_number: "{number}"
+    
+  fallback_on_saml_error:
+    trigger: "403 error with 'Resource protected by organization SAML enforcement'"
+    tool: "web_fetch"
+    url: "https://github.com/Azure/azure-cosmos-dotnet-v3/issues/{number}"
+    note: "Scrapes issue page directly, bypasses API authentication"
+    
+  error_handling:
+    saml_error:
+      message: "GitHub API blocked by SAML - using web fallback"
+      action: "Switch to web_fetch automatically"
+    not_found:
+      message: "Issue #{number} not found"
+      action: "Ask user to verify issue number"
+```
+
+### Phase 1: Initial Assessment (< 5 minutes)
+
+```mermaid
+flowchart TD
+    A[New Issue] --> B{Has repro steps?}
+    B -->|Yes| C{Has code sample?}
+    B -->|No| D[Request repro steps]
+    C -->|Yes| E[Extract key info]
+    C -->|No| F[Request minimal repro]
+    E --> G{Issue type?}
+    G -->|Bug| H[Start Bug Workflow]
+    G -->|Question| I[Start Question Workflow]
+    G -->|Enhancement| J[Start Enhancement Workflow]
+    G -->|Docs| K[Start Docs Workflow]
+```
+
+#### Information Extraction Checklist
+```markdown
+- [ ] SDK Version (from issue or code)
+- [ ] .NET Version (runtime)
+- [ ] Connection Mode (Direct/Gateway)
+- [ ] Operation Type (CRUD, Query, Batch, ChangeFeed)
+- [ ] Error Message / Exception Type
+- [ ] Stack Trace (if available)
+- [ ] Cosmos DB Account Type (Serverless/Provisioned)
+- [ ] Partition Key configuration
+- [ ] Custom serializer in use?
+- [ ] Retry policy configuration
+```
+
+### Phase 1.5: Confirmation Gate ⚠️
+
+**Before proceeding with investigation, present findings to user and ask for confirmation:**
+
+```markdown
+## Investigation Scope Confirmation
+
+I've analyzed issue #{number} and gathered the following initial context:
+
+**Issue Summary:**
+- Type: {bug/question/enhancement/docs}
+- Area: {Batch/Query/ChangeFeed/etc}
+- Reported SDK Version: {version}
+- Priority Assessment: {P0-P3}
+
+**Proposed Investigation Plan:**
+1. Historical search: GitHub issues, PRs, StackOverflow, changelog
+2. Code analysis: {specific areas to investigate}
+3. Reproduction: Test against {reported version}, {latest SDK}, {master branch}
+
+**Estimated Time:** {X minutes}
+
+**Proceed with investigation?**
+- [ ] Yes, proceed as planned
+- [ ] Yes, but modify scope: {specify}
+- [ ] No, need more information first
+- [ ] Skip reproduction (analysis only)
+```
+
+> ⚠️ **MANDATORY**: Always wait for user confirmation before starting resource-intensive investigation or reproduction steps.
+
+---
+
+### Phase 2: Historical Analysis (< 10 minutes)
+
+#### 2a. Search for Related Issues (GitHub)
+```
+Tools to use:
+- github-mcp-server-search_issues: Find similar past issues
+- github-mcp-server-list_pull_requests: Find related fixes
+- git log --grep: Search commit history
+```
+
+**Search patterns:**
+```bash
+# Search by exception type
+github search issues: "CosmosException" + "<specific error code>"
+
+# Search by operation
+github search issues: "TransactionalBatch" + "timeout"
+
+# Search changelog
+grep -i "<keyword>" changelog.md
+```
+
+#### 2b. Search External Public References
+
+**StackOverflow Search:**
+```yaml
+tool: web_search
+queries:
+  - "azure-cosmosdb {error message} site:stackoverflow.com"
+  - "Microsoft.Azure.Cosmos {operation} {issue keyword} site:stackoverflow.com"
+  - "{exception type} cosmos db .net sdk site:stackoverflow.com"
+```
+
+**Other Trusted Sources:**
+```yaml
+trusted_sources:
+  - stackoverflow.com (tag: azure-cosmosdb)
+  - docs.microsoft.com/azure/cosmos-db
+  - devblogs.microsoft.com/cosmosdb
+  - github.com/Azure/azure-cosmos-dotnet-v3/discussions
+  - techcommunity.microsoft.com (Cosmos DB tag)
+  
+search_tool: web_search
+query_template: "{issue keywords} {error/behavior} site:{source}"
+```
+
+**What to Extract from External Sources:**
+- Known workarounds from community
+- Similar issue patterns and resolutions
+- Version-specific behavior changes
+- Configuration recommendations
+- Performance tuning tips
+
+#### 2c. Check Changelog for Related Fixes
+```yaml
+search_in:
+  - changelog.md
+  - PULL_REQUEST_TEMPLATE.md (for PR patterns)
+  - docs/releaseNotes/*.md
+```
+
+#### 2d. Search Commit History
+```bash
+git log --all --oneline --grep="<issue keywords>" -- <relevant paths>
+git log --all --oneline -S "<code pattern>"  # Search for code changes
+```
+
+### Phase 3: Code Analysis
+
+#### 3a. Combined Analysis Approach: Local + Bluebird
+
+**Use BOTH local tools and Bluebird for comprehensive analysis:**
+
+```yaml
+analysis_strategy:
+  local_tools_for:
+    - Quick exact-match searches (grep)
+    - File discovery (glob)
+    - Reading specific known files (view)
+    - String literal searches
+    - Configuration file analysis
+    
+  bluebird_tools_for:
+    - Semantic/conceptual searches
+    - Call graph traversal
+    - Inheritance hierarchy
+    - Code summaries and understanding
+    - Complex relationship queries
+```
+
+**Local Tools Workflow:**
+```bash
+# Find files related to issue area
+glob: "**/*{keyword}*.cs"
+
+# Search for error messages, constants
+grep: pattern="{error code}" glob="*.cs" -n
+
+# Search for specific patterns
+grep: pattern="throw.*{ExceptionType}" glob="*.cs" -C 3
+
+# Find configuration/constants
+grep: pattern="{config key}" path="src/" -n
+```
+
+**Bluebird Tools Workflow:**
+```yaml
+analysis_workflow:
+  1_locate:
+    tool: do_vector_search
+    input:
+      similarity_search_text: "<hypothetical code that would cause this issue>"
+      search_index: "Function" | "Class" | "General"
+      top_k: 10
+  
+  2_understand:
+    tool: get_hierarchical_summary
+    input:
+      node_name: "<identified class/function>"
+      node_type: "Class" | "Function"
+  
+  3_trace_calls:
+    tool: get_function_calling_functions
+    input:
+      function_name: "<suspected function>"
+    # Follow call chain to find root cause
+  
+  4_get_code:
+    tool: get_source_code
+    input:
+      node_name: "<identified node>"
+      node_type: "Function"
+```
+
+**Combined Analysis Example:**
+```yaml
+investigation_flow:
+  step_1:
+    description: "Quick local search for error/keyword"
+    tool: grep
+    purpose: "Fast initial scan"
+    
+  step_2:
+    description: "Semantic search for related functionality"
+    tool: bluebird.do_vector_search
+    purpose: "Find conceptually related code"
+    
+  step_3:
+    description: "Read specific files found"
+    tool: view
+    purpose: "Examine exact code"
+    
+  step_4:
+    description: "Trace call relationships"
+    tool: bluebird.get_function_calling_functions
+    purpose: "Understand code flow"
+    
+  step_5:
+    description: "Cross-reference with tests"
+    tool: grep + glob
+    purpose: "Find existing test coverage"
+```
+
+#### 3b. Analysis by Issue Type
+
+**For Exceptions/Crashes:**
+```yaml
+steps:
+  - Parse stack trace to identify top frame in SDK code
+  - Use get_function_calling_functions to trace call path
+  - Use get_function_called_functions to understand what failed
+  - Identify error handling paths with grep for "throw" patterns
+  - Check if retry logic should have caught this
+```
+
+**For Performance Issues:**
+```yaml
+steps:
+  - Identify hot path using operation type
+  - Check serialization path (CosmosSerializerCore)
+  - Check connection/retry configuration
+  - Look for blocking calls (sync over async)
+  - Analyze diagnostics output if provided
+```
+
+**For Data/Serialization Issues:**
+```yaml
+steps:
+  - Identify serializer in use
+  - Trace serialization path (ToStream/FromStream)
+  - Check partition key extraction logic
+  - Verify JSON path handling
+  - Check for custom serializer conflicts
+```
+
+---
+
+## 4. Reproduction Workflow
+
+### 4.1 Multi-Version Reproduction Strategy
+
+**Test against THREE versions to determine fix status:**
+
+```yaml
+reproduction_versions:
+  1_reported_version:
+    description: "Version from issue report"
+    purpose: "Confirm issue exists as reported"
+    source: "NuGet package"
+    
+  2_latest_stable:
+    description: "Latest released SDK version"
+    purpose: "Check if already fixed in release"
+    source: "NuGet package (latest)"
+    
+  3_master_branch:
+    description: "Current master/main branch"
+    purpose: "Check if fix exists but not released"
+    source: "Local build from master"
+```
+
+**Version Matrix Test Results:**
+
+| Version | Result | Implication |
+|---------|--------|-------------|
+| Reported ✅ / Latest ✅ / Master ✅ | Issue persists | Needs fix |
+| Reported ✅ / Latest ❌ / Master ❌ | Fixed in release | Recommend upgrade |
+| Reported ✅ / Latest ✅ / Master ❌ | Fixed, not released | Mention upcoming fix |
+| Reported ❌ / Latest ❌ / Master ❌ | Cannot reproduce | Request more info |
+
+### 4.2 Environment Setup
+
+```yaml
+prerequisites:
+  - Cosmos DB Emulator (Windows) or Linux emulator
+  - .NET SDK matching issue reporter's version
+  - Connection modes: Direct + Gateway
+  
+emulator_setup:
+  script: templates/emulator-setup.yml
+  connection_string: "AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="
+  
+version_setup:
+  reported_version:
+    command: |
+      # Create temp project with specific version
+      dotnet new console -o IssueRepro_{number}_v{reported}
+      cd IssueRepro_{number}_v{reported}
+      dotnet add package Microsoft.Azure.Cosmos --version {reported_version}
+      
+  latest_version:
+    command: |
+      dotnet new console -o IssueRepro_{number}_latest
+      cd IssueRepro_{number}_latest
+      dotnet add package Microsoft.Azure.Cosmos  # Gets latest
+      
+  master_branch:
+    command: |
+      # Build from local master
+      git checkout master
+      git pull origin master
+      dotnet build Microsoft.Azure.Cosmos.sln -c Release
+      # Reference local build in test project
+```
+
+### 4.3 Reproduction Decision Matrix
+
+| Condition | Action |
+|-----------|--------|
+| Clear repro steps + code sample | Attempt full reproduction on all 3 versions |
+| Partial repro steps | Create minimal test, request clarification |
+| No repro steps, clear error | Attempt based on error pattern |
+| Intermittent issue | Create stress test, log diagnostics |
+| Environment-specific | Document, request more details |
+
+### 4.4 Reproduction Test Template
+
+```csharp
+// File: tests/IssueRepro/Issue_{number}_Tests.cs
+
+/// <summary>
+/// Reproduction tests for GitHub Issue #{number}
+/// Run against: Reported version, Latest stable, Master branch
+/// </summary>
+[TestClass]
+public class Issue_{number}_Tests
+{
+    private CosmosClient _client;
+    private Container _container;
+    
+    // Capture which version is being tested
+    private static readonly string SdkVersion = typeof(CosmosClient).Assembly
+        .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+
+    [TestInitialize]
+    public async Task Setup()
+    {
+        Console.WriteLine($"Testing with SDK Version: {SdkVersion}");
+        
+        // Setup based on issue details
+        _client = new CosmosClient(
+            connectionString: EmulatorConnectionString,
+            clientOptions: new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.{Direct|Gateway},
+                // Add any specific options from issue
+            });
+        
+        var database = await _client.CreateDatabaseIfNotExistsAsync("IssueReproDb");
+        _container = await database.Database.CreateContainerIfNotExistsAsync(
+            new ContainerProperties("IssueReproContainer", "/pk"));
+    }
+
+    [TestMethod]
+    [Description("Reproduction for GitHub Issue #{number}: {title}")]
+    public async Task Reproduce_Issue_{number}_GatewayMode()
+    {
+        // Test in Gateway mode
+    }
+    
+    [TestMethod]
+    [Description("Reproduction for GitHub Issue #{number}: {title}")]
+    public async Task Reproduce_Issue_{number}_DirectMode()
+    {
+        // Test in Direct mode
+    }
+
+    [TestCleanup]
+    public async Task Cleanup()
+    {
+        await _client.GetDatabase("IssueReproDb").DeleteAsync();
+        _client.Dispose();
+    }
+}
+```
+
+### 4.5 Running Multi-Version Reproductions
+
+```yaml
+test_execution:
+  reported_version:
+    setup: |
+      cd IssueRepro_{number}_v{reported}
+      dotnet restore
+    gateway:
+      command: dotnet test --filter "Issue_{number}" -- CosmosDB:ConnectionMode=Gateway
+    direct:
+      command: dotnet test --filter "Issue_{number}" -- CosmosDB:ConnectionMode=Direct
+    record: "version={reported}, gateway={pass/fail}, direct={pass/fail}"
+      
+  latest_version:
+    setup: |
+      cd IssueRepro_{number}_latest
+      dotnet restore
+    gateway:
+      command: dotnet test --filter "Issue_{number}" -- CosmosDB:ConnectionMode=Gateway
+    direct:
+      command: dotnet test --filter "Issue_{number}" -- CosmosDB:ConnectionMode=Direct
+    record: "version=latest, gateway={pass/fail}, direct={pass/fail}"
+      
+  master_branch:
+    setup: |
+      # Ensure master is built
+      dotnet build Microsoft.Azure.Cosmos.sln -c Release
+    gateway:
+      command: dotnet test --filter "Issue_{number}" -- CosmosDB:ConnectionMode=Gateway
+    direct:
+      command: dotnet test --filter "Issue_{number}" -- CosmosDB:ConnectionMode=Direct
+    record: "version=master, gateway={pass/fail}, direct={pass/fail}"
+  
+capture:
+  - CosmosDiagnostics output
+  - Exception details
+  - Request/response traces
+  - Timeline of operations
+  - SDK version in output
+```
+
+### 4.6 Reproduction Results Summary Template
+
+```markdown
+## Reproduction Results
+
+| Version | Gateway Mode | Direct Mode | Notes |
+|---------|--------------|-------------|-------|
+| {reported_version} | ✅ Reproduced / ❌ Not Reproduced | ✅ / ❌ | {notes} |
+| {latest_version} | ✅ / ❌ | ✅ / ❌ | {notes} |
+| master ({commit_sha}) | ✅ / ❌ | ✅ / ❌ | {notes} |
+
+**Conclusion:** 
+- [ ] Issue persists in all versions → Needs fix
+- [ ] Fixed in latest release → Recommend upgrade to {version}
+- [ ] Fixed in master, not released → Will be available in next release
+- [ ] Cannot reproduce → Need more information
+```
+
+### 4.7 Performance Issue Validation via Benchmarks
+
+For performance-related issues, use BenchmarkDotNet to validate and measure impact.
+
+#### When to Run Benchmarks
+```yaml
+benchmark_triggers:
+  - Issue mentions: "slow", "performance", "latency", "throughput", "RU", "timeout"
+  - Issue type: "Bug - Performance"
+  - Suspected hot path changes
+  - Before/after fix validation
+```
+
+#### Benchmark Project Setup
+
+```csharp
+// File: tests/IssueRepro/Benchmarks/Issue_{number}_Benchmark.cs
+
+using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Running;
+using Microsoft.Azure.Cosmos;
+
+[MemoryDiagnoser]
+[RankColumn]
+[MinColumn, MaxColumn, MeanColumn, MedianColumn]
+public class Issue_{number}_Benchmark
+{
+    private CosmosClient _client;
+    private Container _container;
+    
+    [Params("Gateway", "Direct")]
+    public string ConnectionMode { get; set; }
+    
+    [Params("3.35.0", "Latest", "Master")]  // Versions to compare
+    public string SdkVersion { get; set; }
+
+    [GlobalSetup]
+    public async Task Setup()
+    {
+        var options = new CosmosClientOptions
+        {
+            ConnectionMode = ConnectionMode == "Direct" 
+                ? Microsoft.Azure.Cosmos.ConnectionMode.Direct 
+                : Microsoft.Azure.Cosmos.ConnectionMode.Gateway
+        };
+        
+        _client = new CosmosClient(EmulatorConnectionString, options);
+        var db = await _client.CreateDatabaseIfNotExistsAsync("BenchmarkDb");
+        _container = await db.Database.CreateContainerIfNotExistsAsync(
+            new ContainerProperties("BenchmarkContainer", "/pk"));
+        
+        // Warm up
+        await WarmupAsync();
+    }
+
+    [GlobalCleanup]
+    public async Task Cleanup()
+    {
+        await _client.GetDatabase("BenchmarkDb").DeleteAsync();
+        _client.Dispose();
+    }
+
+    [Benchmark(Baseline = true)]
+    public async Task Baseline_Operation()
+    {
+        // Baseline operation for comparison
+    }
+
+    [Benchmark]
+    public async Task Issue_{number}_Scenario()
+    {
+        // The specific operation reported as slow
+    }
+    
+    private async Task WarmupAsync()
+    {
+        // Warmup to stabilize connections
+        for (int i = 0; i < 10; i++)
+        {
+            await _container.ReadContainerAsync();
+        }
+    }
+}
+
+// Runner
+public class Program
+{
+    public static void Main(string[] args)
+    {
+        var summary = BenchmarkRunner.Run<Issue_{number}_Benchmark>();
+    }
+}
+```
+
+#### Benchmark Execution
+
+```yaml
+benchmark_workflow:
+  setup:
+    - Install BenchmarkDotNet: dotnet add package BenchmarkDotNet
+    - Ensure Release build: dotnet build -c Release
+    - Start emulator with consistent state
+    
+  execution:
+    command: dotnet run -c Release --project Benchmarks/Issue_{number}_Benchmark.csproj
+    
+  compare_versions:
+    # Run same benchmark against different SDK versions
+    reported_version:
+      command: dotnet run -c Release -- --filter "*" --artifacts ./results/v{reported}
+    latest_version:
+      command: dotnet run -c Release -- --filter "*" --artifacts ./results/latest
+    master_branch:
+      command: dotnet run -c Release -- --filter "*" --artifacts ./results/master
+```
+
+#### Benchmark Metrics to Capture
+
+```yaml
+metrics:
+  latency:
+    - Mean (ms)
+    - Median (ms)
+    - P95 (ms)
+    - P99 (ms)
+    - Min/Max (ms)
+    
+  throughput:
+    - Operations/second
+    - RU/s consumed
+    
+  memory:
+    - Allocated bytes
+    - Gen0/Gen1/Gen2 collections
+    
+  comparison:
+    - Ratio vs baseline
+    - Ratio vs previous version
+```
+
+#### Benchmark Results Template
+
+```markdown
+## Performance Benchmark Results
+
+**Issue:** #{number} - {title}
+**Scenario:** {description of operation benchmarked}
+**Environment:** {CPU, RAM, OS, Emulator version}
+
+### Latency Comparison
+
+| Version | Connection | Mean | Median | P95 | P99 | Allocated |
+|---------|------------|------|--------|-----|-----|-----------|
+| {reported} | Gateway | {ms} | {ms} | {ms} | {ms} | {KB} |
+| {reported} | Direct | {ms} | {ms} | {ms} | {ms} | {KB} |
+| {latest} | Gateway | {ms} | {ms} | {ms} | {ms} | {KB} |
+| {latest} | Direct | {ms} | {ms} | {ms} | {ms} | {KB} |
+| master | Gateway | {ms} | {ms} | {ms} | {ms} | {KB} |
+| master | Direct | {ms} | {ms} | {ms} | {ms} | {KB} |
+
+### Throughput Comparison
+
+| Version | Connection | Ops/sec | RU/s | RU/op |
+|---------|------------|---------|------|-------|
+| ... | ... | ... | ... | ... |
+
+### Analysis
+
+**Regression Detected:** Yes/No
+**Regression Severity:** {X}% slower than baseline
+**Root Cause Hypothesis:** {explanation}
+
+### Benchmark Artifacts
+- Full BenchmarkDotNet report: [link to artifacts]
+- Flame graph (if applicable): [link]
+```
+
+#### Performance Acceptance Criteria
+
+```yaml
+acceptance_criteria:
+  no_regression:
+    latency_increase: "< 5% vs baseline"
+    memory_increase: "< 10% vs baseline"
+    throughput_decrease: "< 5% vs baseline"
+    
+  fix_validation:
+    must_show: "Measurable improvement in reported scenario"
+    no_side_effects: "No regression in other operations"
+    
+  documentation:
+    required: "Before/after benchmark comparison in PR"
+```
+
+### 4.8 Regression Testing Requirement
+
+**Before any fix is considered complete, ALL existing tests must pass - both locally AND on remote CI.**
+
+```yaml
+regression_testing:
+  required: true
+  
+  local_validation:
+    description: "Quick local checks before PR"
+    workflow:
+      step_1:
+        description: "Run full test suite before making changes"
+        command: dotnet test Microsoft.Azure.Cosmos.sln --no-build -c Release
+        purpose: "Establish baseline - all tests must pass"
+        
+      step_2:
+        description: "Run full test suite after making changes"
+        command: dotnet test Microsoft.Azure.Cosmos.sln --no-build -c Release
+        purpose: "Verify no regressions introduced"
+        
+      step_3:
+        description: "Compare test results"
+        criteria:
+          - No previously passing tests should fail
+          - New tests should pass
+          - No increase in skipped tests
+          
+  remote_ci_validation:
+    description: "Full CI gate validation (REQUIRED)"
+    reference: "See Section 7.4 for full CI workflow"
+    gates_that_must_pass:
+      - static-tools (code analysis)
+      - nuget-pack (package build)
+      - build-test (unit + integration tests)
+      - build-samples (sample compilation)
+      - build-benchmark (benchmark build)
+      - build-preview (preview builds)
+      - build-internal (internal builds)
+      - build-thinclient (thin client builds)
+    note: "Local tests may pass but remote CI catches additional issues"
+        
+  test_categories:
+    unit_tests:
+      path: "Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests"
+      command: dotnet test --filter "Category!=Emulator"
+      required: true
+      local: true
+      remote: true
+      
+    emulator_tests:
+      path: "Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests"
+      command: dotnet test
+      required: "when emulator available"
+      local: "if emulator installed"
+      remote: true  # CI has automated emulator setup
+      
+    multi_region_tests:
+      path: "Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests"
+      filter: "TestCategory=MultiRegion"
+      required: "for cross-region changes"
+      local: false  # Requires Azure resources
+      remote: true  # Uses COSMOSDB_MULTI_REGION secret
+      
+    performance_tests:
+      path: "Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Performance.Tests"
+      command: dotnet run -c Release
+      required: "for performance-related changes"
+      local: true
+      remote: true
+
+  failure_handling:
+    if_baseline_fails:
+      - Document which tests were already failing
+      - Do not include those in regression comparison
+      - Note pre-existing failures in investigation issue
+      
+    if_new_failures:
+      - Stop and investigate
+      - Do not proceed with PR until resolved
+      - Document root cause of regression
+      
+    if_ci_only_failure:
+      - Get logs using github-mcp-server-get_job_logs
+      - Check if failure is infrastructure (emulator, network)
+      - Check if failure is environment-specific
+      - May need to re-run pipeline for transient failures
+
+  pr_checklist:
+    - "[ ] All unit tests pass locally"
+    - "[ ] All emulator tests pass locally (if applicable)"
+    - "[ ] No regression in existing tests"
+    - "[ ] New tests added for the fix"
+    - "[ ] PR created and CI triggered"
+    - "[ ] ALL remote CI gates pass (Section 7.4)"
+    - "[ ] CI failures investigated and resolved"
+```
+
+---
+
+When creating a linked investigation issue:
+
+```markdown
+# Investigation: #{original_issue_number} - {title}
+
+## Original Issue
+Linked to: #{original_issue_number}
+Reporter: @{username}
+Created: {date}
+
+## Issue Summary
+{2-3 sentence summary of the reported problem}
+
+## Environment Details
+| Property | Value |
+|----------|-------|
+| SDK Version | {version} |
+| .NET Version | {version} |
+| Connection Mode | {Direct/Gateway} |
+| Operation Type | {CRUD/Query/Batch/etc} |
+| Account Type | {Serverless/Provisioned} |
+
+## Reproduction Status
+- [ ] Reproduced with reported SDK version ({version})
+- [ ] Reproduced with latest SDK version ({version})
+- [ ] Reproduced with master branch ({commit_sha})
+- [ ] Reproduced in Gateway mode
+- [ ] Reproduced in Direct mode
+- [ ] Unable to reproduce
+- [ ] Needs more information
+
+### Version Matrix Results
+
+| Version | Gateway | Direct | Build | Notes |
+|---------|---------|--------|-------|-------|
+| {reported_version} | ✅/❌ | ✅/❌ | ✅ | {notes} |
+| {latest_version} | ✅/❌ | ✅/❌ | ✅ | {notes} |
+| master ({short_sha}) | ✅/❌ | ✅/❌ | ✅ | {notes} |
+
+### Reproduction Steps Attempted
+```
+{steps taken}
+```
+
+### Reproduction Results
+```
+{output/logs}
+```
+
+## Code Analysis
+
+### Suspected Code Path
+```
+{file}:{line} - {function_name}
+  └─> {file}:{line} - {called_function}
+      └─> {file}:{line} - {root_cause_location}
+```
+
+### Relevant Code Sections
+```csharp
+// {file}:{start_line}-{end_line}
+{code snippet}
+```
+
+### Root Cause Analysis
+{detailed explanation of what's happening and why}
+
+## Historical Context
+
+### Related StackOverflow / External References
+- [{title}]({url}) - {relevance summary}
+- [{title}]({url}) - {relevance summary}
+
+### Related Issues
+- #{issue_number} - {title} ({status})
+- #{issue_number} - {title} ({status})
+
+### Related PRs/Fixes
+- PR #{pr_number} - {title} (merged {date})
+
+### Changelog References
+- Version {x.y.z}: {relevant changelog entry}
+
+## Workaround
+{If available, provide a workaround}
+
+```csharp
+// Workaround code example
+```
+
+## Proposed Fix
+
+### Option 1: {approach name}
+**Pros:** 
+**Cons:** 
+**Risk:** Low/Medium/High
+**Effort:** Small/Medium/Large
+
+```csharp
+// Proposed code change
+```
+
+### Option 2: {alternative approach}
+...
+
+## Recommended Action
+- [ ] Needs more investigation
+- [ ] Ready for PR (recommend Option {n})
+- [ ] Won't fix (reason: {reason})
+- [ ] Duplicate of #{issue_number}
+
+## Reviewer Assignment
+Based on area labels, assign to: @{reviewer}
+
+/cc @{relevant_team_members}
+```
+
+---
+
+## 6. Workaround Identification
+
+### 6.1 Common Workaround Patterns
+
+| Issue Pattern | Potential Workaround |
+|--------------|---------------------|
+| Timeout in Direct mode | Switch to Gateway mode temporarily |
+| Serialization failure | Use custom serializer with explicit handling |
+| Retry exhaustion | Increase MaxRetryAttempts, add jitter |
+| Partition key error | Explicit partition key in request options |
+| Bulk throttling | Reduce batch size, implement backoff |
+| Connection issues | Configure IdleTcpConnectionTimeout |
+| Memory pressure | Enable streaming APIs, dispose properly |
+
+### 6.2 Workaround Documentation Template
+
+```markdown
+## Temporary Workaround
+
+**Applies to:** SDK versions {range}
+**Issue:** {brief description}
+
+### Option 1: Configuration Change
+```csharp
+var options = new CosmosClientOptions
+{
+    // Workaround configuration
+};
+```
+
+### Option 2: Code Pattern
+```csharp
+// Workaround code pattern
+```
+
+### Limitations
+- {limitation 1}
+- {limitation 2}
+
+### When Fix is Available
+This workaround can be removed when upgrading to SDK version {x.y.z} or later.
+```
+
+---
+
+## 7. PR Creation Workflow
+
+### 7.1 Branch Naming Convention
+
+**Format:** `users/<username>/<feature-description>`
+
+```yaml
+branch_naming:
+  pattern: "users/{username}/{type}-{description}"
+  
+  types:
+    - fix      # Bug fixes
+    - feature  # New features
+    - perf     # Performance improvements
+    - docs     # Documentation changes
+    - refactor # Code refactoring
+    
+  examples:
+    - "users/kirankk/fix-linq-dictionary-objecttoarray"
+    - "users/kirankk/fix-issue-5547-dictionary-any"
+    - "users/johndoe/feature-bulk-retry-policy"
+    - "users/janedoe/perf-batch-throughput"
+    - "users/alice/docs-linq-dictionary-support"
+    
+  rules:
+    - Use lowercase
+    - Use hyphens (not underscores) as separators
+    - Include issue number when applicable
+    - Keep description concise but descriptive
+    - Username should match GitHub handle
+```
+
+### 7.2 PR Eligibility Criteria
+
+```yaml
+create_pr_when:
+  - Root cause identified AND
+  - Fix verified in reproduction tests AND
+  - No breaking changes OR approved breaking change AND
+  - Follows existing code patterns AND
+  - Human reviewer identified
+
+do_not_create_pr_when:
+  - Requires design discussion
+  - Breaking change without approval
+  - Unclear requirements
+  - Complex cross-cutting change
+  - Security-sensitive fix (escalate instead)
+```
+
+### 7.3 PR Template
+
+```markdown
+# {Fix type}: {Brief description}
+
+## Description
+Fixes #{issue_number}
+
+{Detailed description of the fix}
+
+## Root Cause
+{Explanation of what was causing the issue}
+
+## Changes Made
+- {change 1}
+- {change 2}
+
+## Testing
+- [ ] Added/updated unit tests
+- [ ] Verified against emulator
+- [ ] Tested in Gateway mode
+- [ ] Tested in Direct mode
+
+## Reproduction Test
+```csharp
+// Test that verifies the fix
+```
+
+## Breaking Changes
+{None | Description of breaking changes}
+
+## Checklist
+- [ ] Code follows project conventions
+- [ ] Self-review completed
+- [ ] Comments added for complex logic
+- [ ] Documentation updated (if applicable)
+
+## Investigation Issue
+See #{investigation_issue_number} for full analysis.
+```
+
+### 7.3 Reviewer Assignment Matrix
+
+| Area Label | Primary Reviewer | Backup |
+|------------|-----------------|--------|
+| Batch | @batch-owners | @sdk-team |
+| Query | @query-owners | @sdk-team |
+| ChangeFeed | @changefeed-owners | @sdk-team |
+| DirectMode | @transport-owners | @sdk-team |
+| Serialization | @serialization-owners | @sdk-team |
+| Encryption | @encryption-owners | @security-team |
+
+### 7.4 Remote CI Validation (Azure Pipelines Gates)
+
+**Critical: Local tests are not sufficient. All fixes must pass the full Azure Pipelines CI gates.**
+
+#### 7.4.1 CI Pipeline Structure
+
+The repository uses Azure Pipelines with multiple gate templates defined in `azure-pipelines.yml`:
+
+```yaml
+ci_gates:
+  # All gates must pass before PR can be merged
+  
+  static_tools:
+    template: templates/static-tools.yml
+    checks:
+      - Code analysis
+      - Style compliance
+      - Security scanning
+      
+  nuget_pack:
+    template: templates/nuget-pack.yml
+    checks:
+      - Package builds successfully
+      - No packaging errors
+      
+  build_test:
+    template: templates/build-test.yml
+    checks:
+      - Unit tests (Release config)
+      - Integration tests
+      - Multi-region tests (if applicable)
+    filter: "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=Ignore"
+    
+  build_samples:
+    template: templates/build-samples.yml
+    checks:
+      - All samples compile
+      - Samples reference correct SDK version
+      
+  build_benchmark:
+    template: templates/build-benchmark.yml
+    checks:
+      - Benchmark project builds
+      - No performance regression detected
+      
+  build_preview:
+    template: templates/build-preview.yml
+    checks:
+      - Preview features compile
+      - PREVIEW define constant works
+      
+  build_internal:
+    template: templates/build-internal.yml
+    checks:
+      - Internal builds succeed
+      
+  build_thinclient:
+    template: templates/build-thinclient.yml
+    checks:
+      - Thin client variant builds
+```
+
+#### 7.4.2 Local vs Remote CI Comparison
+
+| Validation Type | Local Testing | Remote CI (Azure Pipelines) |
+|----------------|---------------|----------------------------|
+| **Unit Tests** | ✅ Can run | ✅ Full matrix |
+| **Emulator Tests** | ⚠️ Requires local emulator | ✅ Automated emulator setup |
+| **Multi-Region Tests** | ❌ No access | ✅ Uses COSMOSDB_MULTI_REGION |
+| **Multi-Master Tests** | ❌ No access | ✅ Uses COSMOSDB_MULTIMASTER |
+| **Static Analysis** | ⚠️ Manual | ✅ Automated |
+| **Package Validation** | ⚠️ Manual | ✅ NuGet pack verification |
+| **Cross-Platform** | ⚠️ Single OS | ✅ Windows matrix |
+| **Performance Gates** | ⚠️ Variable hardware | ✅ Consistent CI agents |
+
+#### 7.4.3 Pre-PR Validation Workflow
+
+```yaml
+validation_workflow:
+  phase_1_local:
+    description: "Quick local validation before creating PR"
+    steps:
+      - name: "Build solution"
+        command: dotnet build Microsoft.Azure.Cosmos.sln -c Release
+        required: true
+        
+      - name: "Run unit tests"
+        command: |
+          dotnet test Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests \
+            --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=Ignore" \
+            -c Release --no-build
+        required: true
+        
+      - name: "Run LINQ-specific tests (for LINQ changes)"
+        command: dotnet test --filter "FullyQualifiedName~Linq" -c Release --no-build
+        required: "for LINQ-related changes"
+        
+  phase_2_create_pr:
+    description: "Create PR to trigger remote CI"
+    steps:
+      - name: "Create feature branch"
+        naming_convention: "users/<username>/<feature-description>"
+        examples:
+          - "users/kirankk/fix-linq-dictionary-objecttoarray"
+          - "users/kirankk/issue-5547-dictionary-any"
+          - "users/johndoe/perf-batch-throughput"
+        command: |
+          git checkout -b users/{username}/fix-issue-{number}-{short-description}
+          git add .
+          git commit -m "Fix #{number}: {description}"
+          git push origin users/{username}/fix-issue-{number}-{short-description}
+          
+      - name: "Create Draft PR"
+        purpose: "Triggers CI without requesting review"
+        template: |
+          gh pr create --draft \
+            --title "Fix #{number}: {title}" \
+            --body "$(cat pr_body.md)"
+            
+  phase_3_ci_monitoring:
+    description: "Monitor CI pipeline execution"
+    steps:
+      - name: "Check pipeline status"
+        tool: github-mcp-server-actions_list
+        params:
+          method: list_workflow_runs
+          workflow_runs_filter:
+            branch: "users/{username}/fix-issue-{number}"
+            status: "in_progress"
+            
+      - name: "Get failed job logs"
+        tool: github-mcp-server-get_job_logs
+        params:
+          failed_only: true
+          return_content: true
+          tail_lines: 500
+          
+  phase_4_fix_ci_failures:
+    description: "Iterate until CI passes"
+    loop:
+      - Analyze failure logs
+      - Identify root cause of CI failure
+      - Fix locally
+      - Run local validation
+      - Push fix
+      - Wait for CI re-run
+    exit_condition: "All CI gates green"
+```
+
+#### 7.4.4 CI Failure Triage
+
+```yaml
+common_ci_failures:
+  build_failure:
+    symptoms:
+      - "error CS####"
+      - "Build FAILED"
+    actions:
+      - Check if failure is in changed files
+      - Verify all project references
+      - Check for missing using statements
+      
+  test_failure:
+    symptoms:
+      - "Failed: X, Passed: Y"
+      - "Assert.Xxx failed"
+    actions:
+      - Get failed test names from logs
+      - Check if test was passing before changes
+      - Reproduce failure locally if possible
+      - Check for flaky test (retry)
+      
+  emulator_failure:
+    symptoms:
+      - "Connection refused"
+      - "ServiceUnavailable"
+      - "Emulator not started"
+    actions:
+      - Check templates/emulator-setup.yml for setup steps
+      - This is likely infrastructure, not code issue
+      - May need to re-run pipeline
+      
+  timeout_failure:
+    symptoms:
+      - "Job cancelled"
+      - "Exceeded timeout"
+    actions:
+      - Check if test has infinite loop
+      - Check for deadlock in async code
+      - May need to increase timeout or fix perf
+      
+  multi_region_failure:
+    symptoms:
+      - "COSMOSDB_MULTI_REGION"
+      - "Endpoint not found"
+    actions:
+      - This requires actual Azure resources
+      - Cannot reproduce locally
+      - Check if failure is in multi-region specific code
+```
+
+#### 7.4.5 CI Gate Checklist for PR
+
+```markdown
+## CI Validation Checklist
+
+### Local Validation (Required before PR)
+- [ ] `dotnet build Microsoft.Azure.Cosmos.sln -c Release` passes
+- [ ] Unit tests pass with CI filter
+- [ ] No new compiler warnings
+
+### Remote CI Gates (Must pass before merge)
+- [ ] **static-tools** - Code analysis clean
+- [ ] **nuget-pack** - Package builds successfully
+- [ ] **build-test** - All tests pass
+  - [ ] Unit tests
+  - [ ] Integration tests
+  - [ ] Multi-region tests (if applicable)
+- [ ] **build-samples** - Samples compile
+- [ ] **build-benchmark** - Benchmarks build
+- [ ] **build-preview** - Preview builds work
+- [ ] **build-internal** - Internal builds work
+- [ ] **build-thinclient** - Thin client builds
+
+### CI Failure Resolution
+- [ ] All CI failures investigated
+- [ ] No failures related to this change
+- [ ] Any infrastructure failures documented
+
+### Final Status
+- [ ] All CI gates GREEN
+- [ ] PR ready for review (not draft)
+```
+
+#### 7.4.6 Monitoring Tools
+
+```yaml
+ci_monitoring_tools:
+  list_workflows:
+    tool: github-mcp-server-actions_list
+    method: list_workflows
+    purpose: "See all CI workflows in repo"
+    
+  list_runs:
+    tool: github-mcp-server-actions_list
+    method: list_workflow_runs
+    purpose: "Check status of PR's CI runs"
+    filter_by:
+      - branch
+      - status (queued, in_progress, completed)
+      - event (pull_request)
+      
+  get_run_details:
+    tool: github-mcp-server-actions_get
+    method: get_workflow_run
+    purpose: "Get details of specific CI run"
+    
+  list_jobs:
+    tool: github-mcp-server-actions_list
+    method: list_workflow_jobs
+    purpose: "See individual jobs in a run"
+    
+  get_logs:
+    tool: github-mcp-server-get_job_logs
+    purpose: "Get failure logs for debugging"
+    params:
+      failed_only: true
+      return_content: true
+      tail_lines: 500
+```
+
+---
+
+## 8. Agent Capabilities & Tools
+
+### 8.1 Model Selection
+
+**All agents use Claude Opus 4.5** for maximum reasoning quality:
+
+```yaml
+task_tool_invocation:
+  explore_agent:
+    agent_type: "explore"
+    model: "claude-opus-4.5"
+    
+  task_agent:
+    agent_type: "task"
+    model: "claude-opus-4.5"
+    
+  general_purpose_agent:
+    agent_type: "general-purpose"
+    model: "claude-opus-4.5"
+    
+  code_review_agent:
+    agent_type: "code-review"
+    model: "claude-opus-4.5"
+```
+
+### 8.2 MCP Tools Available
+
+```yaml
+github_mcp_server:
+  - search_issues: Find related issues
+  - search_pull_requests: Find related PRs
+  - list_issues: Browse open issues
+  - issue_read: Get issue details
+  - pull_request_read: Get PR details
+  - get_commit: View commit details
+  - get_file_contents: Read files from repo
+  - get_job_logs: Check CI failures
+
+bluebird_engineering_copilot:
+  - do_vector_search: Semantic code search
+  - do_fulltext_search: Keyword code search
+  - get_source_code: Retrieve source
+  - get_hierarchical_summary: Get code overview
+  - get_function_calling_functions: Find callers
+  - get_function_called_functions: Find callees
+  - get_class_or_struct_parent_types: Inheritance
+  - get_class_or_struct_member_functions: Methods
+```
+
+### 8.3 Local Tools
+
+```yaml
+file_operations:
+  - view: Read files
+  - edit: Modify files
+  - create: Create new files
+  - grep: Search content
+  - glob: Find files
+
+shell_operations:
+  - powershell: Run commands
+  - dotnet build: Build solution
+  - dotnet test: Run tests
+  - git: Version control
+```
+
+---
+
+## 9. Workflow State Machine
+
+```
+┌─────────────┐
+│  NEW_ISSUE  │
+└──────┬──────┘
+       │
+       ▼
+┌─────────────────┐     ┌──────────────────┐
+│  NEEDS_TRIAGE   │────▶│  NEEDS_INFO      │
+└────────┬────────┘     └────────┬─────────┘
+         │                       │
+         │ ◀─────────────────────┘
+         ▼
+┌─────────────────┐
+│  INVESTIGATING  │
+└────────┬────────┘
+         │
+    ┌────┴────┐
+    ▼         ▼
+┌────────┐ ┌─────────────┐
+│ REPRO  │ │ CANNOT_REPRO│
+└───┬────┘ └──────┬──────┘
+    │             │
+    ▼             ▼
+┌─────────────────────────┐
+│  ANALYSIS_COMPLETE      │
+└───────────┬─────────────┘
+            │
+    ┌───────┼───────┬──────────┐
+    ▼       ▼       ▼          ▼
+┌──────┐ ┌──────┐ ┌────────┐ ┌──────────┐
+│ PR   │ │WONT  │ │NEEDS   │ │DUPLICATE │
+│READY │ │FIX   │ │DESIGN  │ │          │
+└──┬───┘ └──────┘ └────────┘ └──────────┘
+   │
+   ▼
+┌─────────────────┐
+│  PR_CREATED     │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  UNDER_REVIEW   │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  MERGED/CLOSED  │
+└─────────────────┘
+```
+
+---
+
+## 10. Quality Checklist
+
+### Before Creating Investigation Issue
+- [ ] Issue fully understood
+- [ ] Historical search completed
+- [ ] Code path identified
+- [ ] Reproduction attempted (if applicable)
+- [ ] Root cause hypothesis formed
+
+### Before Proposing Workaround
+- [ ] Workaround verified to work
+- [ ] Side effects documented
+- [ ] Limitations clearly stated
+- [ ] Code example provided
+
+### Before Creating PR
+- [ ] Fix verified in tests
+- [ ] No regression introduced
+- [ ] Code follows conventions
+- [ ] Documentation updated
+- [ ] Reviewer assigned
+
+---
+
+## 11. Escalation Criteria
+
+Escalate to human immediately when:
+- Security vulnerability suspected
+- Data loss/corruption confirmed
+- Breaking change required
+- Cross-team coordination needed
+- Legal/compliance implications
+- Customer escalation mentioned
+- P0 priority issue
+
+---
+
+## 13. Documentation Improvement Workflow
+
+### 13.1 Microsoft Docs Feedback Loop
+
+When investigating issues, identify documentation gaps that contributed to the issue and suggest improvements.
+
+#### Triggers for Docs Suggestions
+```yaml
+suggest_docs_update_when:
+  - Issue caused by misunderstanding documented behavior
+  - Common question pattern (3+ similar issues)
+  - Undocumented edge case discovered
+  - Error message not explained in docs
+  - Missing code sample for common scenario
+  - Outdated information found
+  - Missing migration guidance between versions
+```
+
+#### Microsoft Docs Feedback Template
+
+```markdown
+## Documentation Improvement Suggestion
+
+**Source Issue:** #{issue_number}
+**Docs Page:** https://docs.microsoft.com/azure/cosmos-db/{page}
+**Severity:** High/Medium/Low
+
+### Current State
+{What the docs currently say or don't say}
+
+### Problem
+{How this caused confusion or the reported issue}
+
+### Suggested Improvement
+{Specific text/code to add or change}
+
+### Sample Code to Add
+```csharp
+// Example that would have prevented this issue
+```
+
+### Related Issues
+- #{issue_number} - {X users affected}
+- StackOverflow: {link} - {Y views}
+
+---
+**Action:** File issue at https://github.com/MicrosoftDocs/azure-docs or submit PR
+```
+
+#### Docs Areas to Monitor
+
+| SDK Area | Microsoft Docs Section | Common Gaps |
+|----------|----------------------|-------------|
+| Connection/Setup | /azure/cosmos-db/nosql/quickstart-dotnet | Connection string formats, emulator setup |
+| CRUD Operations | /azure/cosmos-db/nosql/how-to-dotnet-create-item | Error handling, partial success |
+| Query | /azure/cosmos-db/nosql/how-to-dotnet-query-items | Pagination, cross-partition queries |
+| Batch | /azure/cosmos-db/nosql/how-to-dotnet-batch-operations | Size limits, atomicity guarantees |
+| Change Feed | /azure/cosmos-db/nosql/change-feed-processor | Lease management, error recovery |
+| Partitioning | /azure/cosmos-db/partitioning-overview | Hot partitions, synthetic keys |
+| Performance | /azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3 | Direct vs Gateway, connection pooling |
+
+---
+
+### 13.2 Code Documentation for AI Agents
+
+Identify and improve SDK code documentation to make it more AI-agent friendly.
+
+#### Why This Matters
+```yaml
+ai_agent_challenges:
+  - Cannot infer intent from variable names alone
+  - Needs explicit error condition documentation
+  - Benefits from examples in XML comments
+  - Requires clear parameter constraints
+  - Needs explicit nullability documentation
+  - Benefits from "when to use" guidance
+```
+
+#### Code Documentation Audit Checklist
+
+When investigating issues, audit related code for AI-friendliness:
+
+```markdown
+- [ ] XML summary describes WHAT and WHY, not just WHAT
+- [ ] Parameters have <param> tags with constraints
+- [ ] Return values documented including null/empty cases
+- [ ] Exceptions documented with <exception> tags
+- [ ] Code examples in <example> tags for complex APIs
+- [ ] <remarks> section for edge cases and gotchas
+- [ ] <seealso> links to related methods
+- [ ] Async methods document cancellation behavior
+```
+
+#### Before/After Examples
+
+**❌ Current (AI-Unfriendly):**
+```csharp
+/// <summary>
+/// Creates an item.
+/// </summary>
+/// <param name="item">The item to create.</param>
+/// <returns>The response.</returns>
+public Task<ItemResponse<T>> CreateItemAsync<T>(T item);
+```
+
+**✅ Improved (AI-Friendly):**
+```csharp
+/// <summary>
+/// Creates a new item in the container. The item must have a unique 'id' property 
+/// within its partition key. Use <see cref="UpsertItemAsync{T}"/> if the item may already exist.
+/// </summary>
+/// <typeparam name="T">The type of item to create. Must be JSON-serializable.</typeparam>
+/// <param name="item">
+/// The item to create. Must contain:
+/// - 'id' property (string, max 255 chars, unique within partition)
+/// - Partition key property matching container's partition key path
+/// Cannot be null.
+/// </param>
+/// <param name="partitionKey">
+/// The partition key value for the item. If null, SDK extracts from item using 
+/// the container's partition key path. Explicit value recommended for performance.
+/// </param>
+/// <param name="requestOptions">
+/// Optional request configuration. Common options:
+/// - EnableContentResponseOnWrite: false to reduce response size (default: true)
+/// - IfMatchEtag: for optimistic concurrency
+/// </param>
+/// <param name="cancellationToken">Token to cancel the operation. Safe to cancel; no partial writes.</param>
+/// <returns>
+/// Response containing:
+/// - Resource: The created item (null if EnableContentResponseOnWrite=false)
+/// - StatusCode: 201 Created on success
+/// - RequestCharge: RU cost of operation
+/// - ETag: Version identifier for optimistic concurrency
+/// </returns>
+/// <exception cref="CosmosException">
+/// StatusCode 400: Invalid item (missing id, invalid JSON, exceeds 2MB)
+/// StatusCode 409: Item with same id already exists in partition
+/// StatusCode 413: Item exceeds maximum size (2MB)
+/// StatusCode 429: Rate limited - retry after response.RetryAfter
+/// </exception>
+/// <example>
+/// Basic usage:
+/// <code>
+/// var item = new { id = "1", pk = "partitionA", name = "Example" };
+/// var response = await container.CreateItemAsync(item, new PartitionKey("partitionA"));
+/// Console.WriteLine($"Created item, cost: {response.RequestCharge} RUs");
+/// </code>
+/// </example>
+/// <example>
+/// With optimistic concurrency:
+/// <code>
+/// try {
+///     var response = await container.CreateItemAsync(item);
+/// } catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.Conflict) {
+///     // Item already exists - use UpsertItemAsync or ReplaceItemAsync
+/// }
+/// </code>
+/// </example>
+/// <remarks>
+/// Performance tips:
+/// - Use Direct connection mode for lower latency
+/// - Set EnableContentResponseOnWrite=false if you don't need the response body
+/// - Provide explicit PartitionKey to avoid server-side extraction
+/// 
+/// Size limits:
+/// - Maximum item size: 2MB
+/// - Maximum id length: 255 characters
+/// - Maximum partition key value: 2KB
+/// </remarks>
+/// <seealso cref="UpsertItemAsync{T}"/>
+/// <seealso cref="ReplaceItemAsync{T}"/>
+public Task<ItemResponse<T>> CreateItemAsync<T>(
+    T item,
+    PartitionKey? partitionKey = null,
+    ItemRequestOptions? requestOptions = null,
+    CancellationToken cancellationToken = default);
+```
+
+#### Priority Areas for Documentation Improvement
+
+Based on common issue patterns, prioritize these areas:
+
+| Priority | Class/Method | Why |
+|----------|-------------|-----|
+| P0 | `CosmosClient` constructor | Connection setup confusion |
+| P0 | `Container.CreateItemAsync` | Most common operation |
+| P0 | `CosmosException` | Error handling critical |
+| P1 | `TransactionalBatch` | Complex API, many gotchas |
+| P1 | `Container.GetItemQueryIterator` | Pagination confusion |
+| P1 | `ChangeFeedProcessor` | Lifecycle management |
+| P2 | `CosmosClientOptions` | Many options, unclear defaults |
+| P2 | `ItemRequestOptions` | Conditional operations |
+| P2 | `QueryDefinition` | Parameterized queries |
+
+#### Documentation PR Template
+
+```markdown
+# Docs: Improve XML documentation for {ClassName}
+
+## Motivation
+Issue #{number} revealed that the current documentation for `{ClassName}` 
+is insufficient for AI agents and developers to use correctly.
+
+## Changes
+- Added detailed parameter constraints
+- Added exception documentation with status codes
+- Added code examples for common scenarios
+- Added remarks for edge cases and performance tips
+- Added seealso links to related APIs
+
+## AI-Agent Friendliness Checklist
+- [x] Summary describes intent, not just action
+- [x] All parameters documented with constraints
+- [x] Return value documented including edge cases
+- [x] Exceptions documented with conditions
+- [x] Examples provided for common use cases
+- [x] Remarks cover gotchas and best practices
+
+## Before/After
+[Include diff showing documentation improvement]
+```
+
+---
+
+### 13.3 AI-Agent Documentation Standards
+
+Define standards for new code to be AI-agent friendly from the start.
+
+#### Required Documentation Elements
+
+```yaml
+public_api_requirements:
+  summary:
+    - Describe WHAT the method does
+    - Describe WHEN to use it vs alternatives
+    - Max 3 sentences
+    
+  parameters:
+    - Type constraints (not just type name)
+    - Valid value ranges
+    - Null behavior
+    - Default values and their implications
+    
+  returns:
+    - Success case
+    - Empty/null cases
+    - What properties are populated
+    
+  exceptions:
+    - All thrown exceptions
+    - Conditions that trigger each
+    - HTTP status codes for CosmosException
+    
+  examples:
+    - Basic happy path
+    - Error handling pattern
+    - Advanced scenario (if complex API)
+    
+  remarks:
+    - Performance implications
+    - Size/rate limits
+    - Thread safety
+    - Retry behavior
+    
+  seealso:
+    - Alternative methods
+    - Related configuration
+    - Relevant documentation links
+```
+
+#### Linting Rules for AI-Friendly Docs
+
+```yaml
+documentation_lint_rules:
+  - error: "Summary must not be empty for public APIs"
+  - error: "Parameters must have <param> documentation"
+  - warning: "Consider adding <example> for complex APIs"
+  - warning: "Consider adding <exception> for methods that throw"
+  - info: "Consider adding <remarks> for non-obvious behavior"
+```
+
+---
+
+## 14. Documentation Improvement Tracking
+
+### 14.1 Issue Label for Docs
+
+Add label `docs-improvement` to issues that reveal documentation gaps.
+
+### 14.2 Docs Improvement Backlog Template
+
+Track documentation improvements separately:
+
+```markdown
+## Documentation Improvement Backlog
+
+### Microsoft Docs (External)
+| Page | Issue | Priority | Status |
+|------|-------|----------|--------|
+| {docs page} | {gap description} | P0/P1/P2 | Suggested/Filed/Merged |
+
+### SDK XML Docs (Internal)
+| Class/Method | Issue | Priority | Status |
+|--------------|-------|----------|--------|
+| {class.method} | {gap description} | P0/P1/P2 | Identified/PR/Merged |
+
+### New Samples Needed
+| Scenario | Issue Pattern | Priority | Status |
+|----------|--------------|----------|--------|
+| {scenario} | #{issue_numbers} | P0/P1/P2 | Identified/Created |
+```
+
+---
+
+## 15. Metrics & Reporting
+
+Track for continuous improvement:
+- Time from issue creation to triage
+- Time from triage to investigation complete
+- Reproduction success rate
+- Workaround acceptance rate
+- PR acceptance rate
+- False positive rate (wrong root cause)
+- Docs improvement suggestions generated
+- Docs PRs merged (internal + external)
+
+---
+
+## 16. Lessons Learned (Issue #5547 Case Study)
+
+This section documents learnings from the first real issue investigation using this plan.
+
+### 16.1 Issue Details
+- **Issue:** #5547 - LINQ Dictionary.Any() generates incorrect SQL
+- **Type:** Bug - Query/LINQ
+- **Outcome:** Fix implemented, PR created, awaiting CI validation
+
+### 16.2 What Worked Well
+
+```yaml
+effective_approaches:
+  parallel_agents:
+    description: "Using background agents for parallel work"
+    example: |
+      - agent-0: Create reproduction test
+      - agent-1: Implement fix
+      - agent-2: Run baseline tests
+    benefit: "Reduced total investigation time significantly"
+    
+  local_code_search:
+    tools_used:
+      - grep: "Fast pattern matching in source files"
+      - glob: "Find files by name pattern"
+      - view: "Read specific file sections"
+    benefit: "More reliable than remote API when SAML blocks access"
+    
+  web_fetch_for_issues:
+    description: "Use web_fetch when GitHub API is blocked by SAML"
+    example: "web_fetch https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5547"
+    benefit: "Can still retrieve issue details without API access"
+    
+  stackoverflow_research:
+    description: "Search StackOverflow for known issues and workarounds"
+    benefit: "Confirmed issue was known limitation, found workaround pattern"
+    
+  incremental_testing:
+    workflow:
+      - Run targeted tests first (LINQ-specific)
+      - Then broader regression tests
+      - Build verification last
+    benefit: "Faster feedback loop during development"
+```
+
+### 16.3 Challenges Encountered
+
+```yaml
+challenges:
+  github_api_saml:
+    problem: "Azure org requires SAML authentication for API access"
+    symptom: "403 error with 'Resource protected by organization SAML enforcement'"
+    workaround: "Use web_fetch to scrape issue page directly"
+    recommendation: "Always have web_fetch fallback for GitHub operations"
+    
+  github_cli_not_installed:
+    problem: "gh CLI not available in environment"
+    symptom: "'gh' is not recognized as a cmdlet"
+    workaround: "Provide PR details for manual creation via GitHub web UI"
+    recommendation: "Check for gh CLI early, have manual fallback ready"
+    
+  long_running_tests:
+    problem: "Full test suite takes several minutes"
+    symptom: "Commands timeout waiting for completion"
+    workaround: "Use initial_wait parameter, then read_powershell for polling"
+    recommendation: "Run targeted tests first, full suite only for final validation"
+    
+  agent_completion_time:
+    problem: "Complex agents (general-purpose with Opus) take 5-10 minutes"
+    symptom: "read_agent times out multiple times"
+    workaround: "Use wait:true with longer timeout (180-300s)"
+    recommendation: "Set expectations for agent completion times"
+```
+
+### 16.4 Tool Selection Guide (Refined)
+
+```yaml
+tool_selection:
+  for_issue_retrieval:
+    first_try: "github-mcp-server-issue_read"
+    fallback: "web_fetch (when SAML blocks API)"
+    
+  for_code_search:
+    semantic_search: "bluebird do_vector_search"
+    exact_match: "grep with pattern"
+    file_discovery: "glob with pattern"
+    
+  for_code_reading:
+    known_path: "view tool directly"
+    unknown_location: "grep/glob first, then view"
+    
+  for_parallel_work:
+    independent_tasks: "Multiple background agents"
+    dependent_tasks: "Sequential agent calls"
+    
+  for_testing:
+    quick_validation: "dotnet test --filter (specific tests)"
+    regression_check: "dotnet test (full suite)"
+    ci_validation: "Create PR, monitor Azure Pipelines"
+    
+  for_pr_creation:
+    with_gh_cli: "gh pr create --draft"
+    without_gh_cli: "Provide PR URL and description for manual creation"
+```
+
+### 16.5 Timing Benchmarks
+
+| Phase | Duration | Notes |
+|-------|----------|-------|
+| Issue fetch (web_fetch) | ~5s | Faster than API when working |
+| Codebase search (grep) | ~2s | Very fast for pattern matching |
+| Root cause analysis | ~10min | With Opus model, thorough |
+| Reproduction test creation (agent) | ~4min | Background agent |
+| Fix implementation (agent) | ~10min | Background agent with Opus |
+| Baseline test run | ~2min | 9 LINQ tests |
+| Build verification | ~15s | Incremental build |
+| Branch + commit + push | ~30s | Local git operations |
+
+### 16.6 PR Template Refinements
+
+Based on this exercise, PRs should include:
+
+```yaml
+pr_requirements:
+  header:
+    - "🤖 This PR was authored by GitHub Copilot"
+    - Links to original issue
+    
+  sections:
+    - Description (what the PR does)
+    - Root Cause (why the bug existed)
+    - Changes Made (bullet list)
+    - Generated SQL/Output (before/after comparison)
+    - Testing (checklist)
+    - Checklist (code conventions)
+    
+  footer:
+    - "Generated by GitHub Copilot CLI Agent"
+    
+  labels_to_add:
+    - "copilot-authored"
+    - Area label (e.g., "Query", "LINQ")
+```
+
+### 16.7 Recommended Workflow Sequence
+
+```yaml
+recommended_workflow:
+  phase_1_intake:
+    duration: "~2 min"
+    steps:
+      - Try GitHub API for issue details
+      - Fallback to web_fetch if SAML blocked
+      - Classify issue type and area
+      - Confirm with user before proceeding
+      
+  phase_2_research:
+    duration: "~5 min"
+    steps:
+      - Search StackOverflow for known issues
+      - Search codebase for related code
+      - Review recent commits/PRs in area
+      - Document findings
+      
+  phase_3_analysis:
+    duration: "~10 min"
+    steps:
+      - Deep code analysis with grep/view
+      - Use Bluebird for call graph if needed
+      - Identify root cause
+      - Document workaround if available
+      
+  phase_4_implementation:
+    duration: "~15 min"
+    parallel_agents:
+      - Reproduction test (general-purpose agent)
+      - Fix implementation (general-purpose agent)
+      - Baseline tests (task agent)
+    then:
+      - Verify all agents completed
+      - Review changes
+      - Run regression tests
+      
+  phase_5_pr_creation:
+    duration: "~5 min"
+    steps:
+      - Create feature branch (users/<name>/<feature>)
+      - Commit with descriptive message
+      - Push to remote
+      - Create draft PR (or provide details for manual creation)
+      - Monitor CI status
+```
+
+---
+
+## TODO: Implementation Tasks
+
+### Completed ✅
+- [x] Test plan on real issue (#5547)
+- [x] Document branch naming convention (users/<name>/<feature>)
+- [x] Add remote CI validation workflow (Section 7.4)
+- [x] Document Copilot-authored PR format
+- [x] Add lessons learned section
+
+### Pending
+- [ ] Create GitHub Action workflow for auto-triggering agent on new issues
+- [ ] Set up emulator environment in CI for reproduction tests
+- [ ] Define reviewer assignment rules in CODEOWNERS
+- [ ] Create issue templates with required fields
+- [ ] Build integration tests for agent workflow
+- [ ] Document agent capabilities for contributors
+- [ ] Set up metrics dashboard
+- [ ] Create Microsoft Docs feedback automation
+- [ ] Define XML documentation linting rules
+- [ ] Audit high-priority APIs for AI-friendly docs
+- [ ] Create documentation improvement backlog
+- [ ] Add "copilot-authored" label to repository
+- [ ] Install GitHub CLI (gh) in development environment
+- [ ] Document SAML workarounds for Azure org repos
