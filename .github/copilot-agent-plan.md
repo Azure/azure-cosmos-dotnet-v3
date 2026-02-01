@@ -2412,6 +2412,98 @@ ci_monitoring:
 | Preview/Internal | 8 | 20-40 min | Important |
 | Encryption | 4 | 20-40 min | If changed |
 
+### 16.5.1 Azure DevOps Build Re-run via API
+
+**Re-running builds when CI fails:**
+
+```yaml
+azure_devops_rerun:
+  api_endpoint: "https://{org}.visualstudio.com/{project}/_apis/build/builds?api-version=6.0"
+  
+  authentication:
+    method: "Personal Access Token (PAT)"
+    required_scopes:
+      - "Build: Read & Execute"
+      - "Project and Team: Read"
+    header: "Authorization: Basic base64(:PAT)"
+    
+  rerun_options:
+    full_build_requeue:
+      supported: true
+      method: "POST to builds API"
+      use_when: "Need to re-run entire pipeline"
+      example: |
+        $body = @{
+            definition = @{ id = $definitionId }
+            sourceBranch = "refs/pull/{pr_number}/merge"
+            reason = "manual"
+        } | ConvertTo-Json
+        Invoke-RestMethod -Uri $apiUrl -Method POST -Headers $headers -Body $body
+        
+    rerun_failed_jobs_only:
+      supported: false  # ⚠️ NOT AVAILABLE VIA API
+      note: "Azure DevOps REST API does NOT support re-running only failed jobs"
+      workaround: "Use Azure DevOps web UI 'Rerun failed jobs' button"
+      ui_location: "Build results page → ... menu → Rerun failed jobs"
+      
+  recommended_approach:
+    for_flaky_tests:
+      first_try: "Rerun failed jobs via Azure DevOps web UI (faster)"
+      fallback: "Requeue entire build via API if UI not accessible"
+      
+    for_code_changes:
+      always: "Push new commit (triggers fresh build with latest code)"
+```
+
+**PowerShell Script to Requeue Build:**
+
+```powershell
+# Set credentials
+$org = "cosmos-db-sdk-public"
+$project = "cosmos-db-sdk-public"
+$pat = $env:AZURE_DEVOPS_PAT
+
+$headers = @{
+    Authorization = "Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$pat"))
+    "Content-Type" = "application/json"
+}
+
+# Get failed build info
+$failedBuildId = 59156
+$build = Invoke-RestMethod -Uri "https://$org.visualstudio.com/$project/_apis/build/builds/$failedBuildId?api-version=6.0" -Headers $headers
+
+# Queue new build with same parameters
+$body = @{
+    definition = @{ id = $build.definition.id }
+    sourceBranch = $build.sourceBranch
+    reason = "manual"
+} | ConvertTo-Json
+
+$newBuild = Invoke-RestMethod -Uri "https://$org.visualstudio.com/$project/_apis/build/builds?api-version=6.0" -Method POST -Headers $headers -Body $body
+Write-Host "New build queued: $($newBuild.id)"
+```
+
+**Azure DevOps MCP Server (Official):**
+
+```yaml
+mcp_server:
+  package: "@azure-devops/mcp"
+  publisher: "Microsoft"
+  docs: "https://learn.microsoft.com/en-us/azure/devops/mcp-server/mcp-server-overview"
+  
+  capabilities:
+    - Query work items, PRs, builds
+    - Trigger builds/pipelines
+    - Access test results
+    - Natural language queries
+    
+  setup:
+    install: "npx @azure-devops/mcp <org-name>"
+    requires: "Azure DevOps PAT"
+    
+  note: "For simple build operations, direct REST API is often simpler than full MCP setup"
+```
+
 ### 16.6 Timing Benchmarks
 
 | Phase | Duration | Notes |
