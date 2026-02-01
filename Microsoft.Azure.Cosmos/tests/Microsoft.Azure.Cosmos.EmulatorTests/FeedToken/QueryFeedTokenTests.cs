@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     effectivePartitionKeyRanges: null,
                     containerResponse.Resource.PartitionKey,
                     vectorEmbeddingPolicy: null,
-                    containerResponse.Resource.GeospatialConfig.GeospatialType);
+                    containerResponse.Resource.GeospatialConfig.GeospatialType, false);
 
                 IReadOnlyList<FeedRange> feedTokens = await container.GetFeedRangesAsync();
 

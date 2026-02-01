@@ -1163,6 +1163,20 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Creates a new instance of a distributed write transaction.
+        /// </summary>
+        /// <returns>An instance of Distributed transaction.</returns>
+#if INTERNAL
+        public 
+#else
+        internal
+#endif
+        virtual DistributedWriteTransaction CreateDistributedWriteTransaction()
+        {
+            return new DistributedWriteTransactionCore();
+        }
+
+        /// <summary>
         /// Send a request for creating a database.
         ///
         /// A database manages users, permissions and a set of containers.

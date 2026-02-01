@@ -87,10 +87,12 @@
           ],
           "MethodInfo": "Boolean get_IsTimeToLiveExpired();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Boolean IsTimeToLiveExpired[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"timeToLiveExpired\")]": {
+        "Boolean IsTimeToLiveExpired[System.Text.Json.Serialization.JsonIncludeAttribute()]-[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"timeToLiveExpired\")]-[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"timeToLiveExpired\")]": {
           "Type": "Property",
           "Attributes": [
-            "JsonPropertyAttribute"
+            "JsonIncludeAttribute",
+            "JsonPropertyAttribute",
+            "JsonPropertyNameAttribute"
           ],
           "MethodInfo": "Boolean IsTimeToLiveExpired;CanRead:True;CanWrite:True;Boolean get_IsTimeToLiveExpired();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
@@ -108,17 +110,21 @@
           ],
           "MethodInfo": "Int64 get_PreviousLsn();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Int64 Lsn[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"lsn\")]": {
+        "Int64 Lsn[System.Text.Json.Serialization.JsonIncludeAttribute()]-[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"lsn\")]-[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"lsn\")]": {
           "Type": "Property",
           "Attributes": [
-            "JsonPropertyAttribute"
+            "JsonIncludeAttribute",
+            "JsonPropertyAttribute",
+            "JsonPropertyNameAttribute"
           ],
           "MethodInfo": "Int64 Lsn;CanRead:True;CanWrite:True;Int64 get_Lsn();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Int64 PreviousLsn[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"previousImageLSN\")]": {
+        "Int64 PreviousLsn[System.Text.Json.Serialization.JsonIncludeAttribute()]-[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"previousImageLSN\")]-[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"previousImageLSN\")]": {
           "Type": "Property",
           "Attributes": [
-            "JsonPropertyAttribute"
+            "JsonIncludeAttribute",
+            "JsonPropertyAttribute",
+            "JsonPropertyNameAttribute"
           ],
           "MethodInfo": "Int64 PreviousLsn;CanRead:True;CanWrite:True;Int64 get_PreviousLsn();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
@@ -129,28 +135,61 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedOperationType get_OperationType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.ChangeFeedOperationType OperationType[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"operationType\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]": {
+        "Microsoft.Azure.Cosmos.ChangeFeedOperationType OperationType[Newtonsoft.Json.JsonConverterAttribute(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]-[System.Text.Json.Serialization.JsonIncludeAttribute()]-[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"operationType\")]-[System.Text.Json.Serialization.JsonConverterAttribute(typeof(System.Text.Json.Serialization.JsonStringEnumConverter))]-[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"operationType\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonConverterAttribute",
-            "JsonPropertyAttribute"
+            "JsonConverterAttribute",
+            "JsonIncludeAttribute",
+            "JsonPropertyAttribute",
+            "JsonPropertyNameAttribute"
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedOperationType OperationType;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.ChangeFeedOperationType get_OperationType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.DateTime ConflictResolutionTimestamp[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"crts\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]": {
-          "Type": "Property",
-          "Attributes": [
-            "JsonConverterAttribute",
-            "JsonPropertyAttribute"
-          ],
-          "MethodInfo": "System.DateTime ConflictResolutionTimestamp;CanRead:True;CanWrite:True;System.DateTime get_ConflictResolutionTimestamp();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "System.DateTime get_ConflictResolutionTimestamp()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "System.Collections.Generic.Dictionary`2[System.String,System.Object] get_PartitionKey()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
+          "MethodInfo": "System.Collections.Generic.Dictionary`2[System.String,System.Object] get_PartitionKey();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Collections.Generic.Dictionary`2[System.String,System.Object] PartitionKey[System.Text.Json.Serialization.JsonIncludeAttribute()]-[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"partitionKey\")]-[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"partitionKey\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonIncludeAttribute",
+            "JsonPropertyAttribute",
+            "JsonPropertyNameAttribute"
+          ],
+          "MethodInfo": "System.Collections.Generic.Dictionary`2[System.String,System.Object] PartitionKey;CanRead:True;CanWrite:True;System.Collections.Generic.Dictionary`2[System.String,System.Object] get_PartitionKey();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.DateTime ConflictResolutionTimestamp[System.Text.Json.Serialization.JsonIgnoreAttribute()]-[Newtonsoft.Json.JsonIgnoreAttribute()]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonIgnoreAttribute",
+            "JsonIgnoreAttribute"
+          ],
+          "MethodInfo": "System.DateTime ConflictResolutionTimestamp;CanRead:True;CanWrite:False;System.DateTime get_ConflictResolutionTimestamp();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.DateTime get_ConflictResolutionTimestamp()": {
+          "Type": "Method",
+          "Attributes": [],
           "MethodInfo": "System.DateTime get_ConflictResolutionTimestamp();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String get_Id()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_Id();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String Id[System.Text.Json.Serialization.JsonIncludeAttribute()]-[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"id\")]-[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"id\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonIncludeAttribute",
+            "JsonPropertyAttribute",
+            "JsonPropertyNameAttribute"
+          ],
+          "MethodInfo": "System.String Id;CanRead:True;CanWrite:True;System.String get_Id();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void .ctor()": {
           "Type": "Constructor",
@@ -253,6 +292,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes[T](System.String, ChangeFeedHandler`1);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.SemanticRerankResult] SemanticRerankAsync(System.String, System.Collections.Generic.IEnumerable`1[System.String], System.Collections.Generic.IDictionary`2[System.String,System.Object], System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.SemanticRerankResult] SemanticRerankAsync(System.String, System.Collections.Generic.IEnumerable`1[System.String], System.Collections.Generic.IDictionary`2[System.String,System.Object], System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.Threading.Tasks.Task`1[System.Boolean] IsFeedRangePartOfAsync(Microsoft.Azure.Cosmos.FeedRange, Microsoft.Azure.Cosmos.FeedRange, System.Threading.CancellationToken)": {
           "Type": "Method",
@@ -1169,6 +1213,11 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.VectorIndexDefinition`1[T] WithQuantizationByteSize(Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Microsoft.Azure.Cosmos.Fluent.VectorIndexDefinition`1[T] WithQuantizerType(Microsoft.Azure.Cosmos.QuantizerType)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.VectorIndexDefinition`1[T] WithQuantizerType(Microsoft.Azure.Cosmos.QuantizerType);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Microsoft.Azure.Cosmos.Fluent.VectorIndexDefinition`1[T] WithVectorIndexShardKey(System.String[])": {
           "Type": "Method",
           "Attributes": [],
@@ -1288,6 +1337,31 @@
       },
       "NestedTypes": {}
     },
+    "Microsoft.Azure.Cosmos.QuantizerType;System.Enum;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:True;IsClass:False;IsValueType:True;IsNested:False;IsGenericType:False;IsSerializable:True": {
+      "Subclasses": {},
+      "Members": {
+        "Int32 value__": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Int32 value__;IsInitOnly:False;IsStatic:False;"
+        },
+        "Microsoft.Azure.Cosmos.QuantizerType Product[System.Runtime.Serialization.EnumMemberAttribute(Value = \"product\")]": {
+          "Type": "Field",
+          "Attributes": [
+            "EnumMemberAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.QuantizerType Product;IsInitOnly:False;IsStatic:True;"
+        },
+        "Microsoft.Azure.Cosmos.QuantizerType Spherical[System.Runtime.Serialization.EnumMemberAttribute(Value = \"spherical\")]": {
+          "Type": "Field",
+          "Attributes": [
+            "EnumMemberAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.QuantizerType Spherical;IsInitOnly:False;IsStatic:True;"
+        }
+      },
+      "NestedTypes": {}
+    },
     "Microsoft.Azure.Cosmos.RequestOptions;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
@@ -1351,6 +1425,107 @@
       },
       "NestedTypes": {}
     },
+    "Microsoft.Azure.Cosmos.RerankScore;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "Double get_Score()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Double get_Score();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Double Score": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Double Score;CanRead:True;CanWrite:False;Double get_Score();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Int32 get_Index()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Int32 get_Index();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Int32 Index": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Int32 Index;CanRead:True;CanWrite:False;Int32 get_Index();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String Document": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.String Document;CanRead:True;CanWrite:False;System.String get_Document();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String get_Document()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_Document();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor(System.String, Double, Int32)": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "Void .ctor(System.String, Double, Int32)"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.SemanticRerankResult;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "System.Collections.Generic.Dictionary`2[System.String,System.Object] get_Latency()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Collections.Generic.Dictionary`2[System.String,System.Object] get_Latency();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Collections.Generic.Dictionary`2[System.String,System.Object] get_TokenUseage()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Collections.Generic.Dictionary`2[System.String,System.Object] get_TokenUseage();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Collections.Generic.Dictionary`2[System.String,System.Object] Latency": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.Collections.Generic.Dictionary`2[System.String,System.Object] Latency;CanRead:True;CanWrite:False;System.Collections.Generic.Dictionary`2[System.String,System.Object] get_Latency();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Collections.Generic.Dictionary`2[System.String,System.Object] TokenUseage": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.Collections.Generic.Dictionary`2[System.String,System.Object] TokenUseage;CanRead:True;CanWrite:False;System.Collections.Generic.Dictionary`2[System.String,System.Object] get_TokenUseage();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.RerankScore] get_RerankScores()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.RerankScore] get_RerankScores();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.RerankScore] RerankScores": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.RerankScore] RerankScores;CanRead:True;CanWrite:False;System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.RerankScore] get_RerankScores();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Net.Http.Headers.HttpResponseHeaders get_Headers()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Net.Http.Headers.HttpResponseHeaders get_Headers();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Net.Http.Headers.HttpResponseHeaders Headers": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.Net.Http.Headers.HttpResponseHeaders Headers;CanRead:True;CanWrite:False;System.Net.Http.Headers.HttpResponseHeaders get_Headers();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        }
+      },
+      "NestedTypes": {}
+    },
     "Microsoft.Azure.Cosmos.VectorIndexPath;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
@@ -1366,10 +1541,32 @@
           ],
           "MethodInfo": "Int32 QuantizationByteSize;CanRead:True;CanWrite:True;Int32 get_QuantizationByteSize();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_QuantizationByteSize(Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "System.Nullable`1[Microsoft.Azure.Cosmos.QuantizerType] get_QuantizerType()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.QuantizerType] get_QuantizerType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Nullable`1[Microsoft.Azure.Cosmos.QuantizerType] QuantizerType[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = NullValueHandling.Ignore = 1, PropertyName = \"quantizerType\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonConverterAttribute",
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.QuantizerType] QuantizerType;CanRead:True;CanWrite:True;System.Nullable`1[Microsoft.Azure.Cosmos.QuantizerType] get_QuantizerType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_QuantizerType(System.Nullable`1[Microsoft.Azure.Cosmos.QuantizerType]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Void set_QuantizationByteSize(Int32)": {
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Void set_QuantizationByteSize(Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_QuantizerType(System.Nullable`1[Microsoft.Azure.Cosmos.QuantizerType])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_QuantizerType(System.Nullable`1[Microsoft.Azure.Cosmos.QuantizerType]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}

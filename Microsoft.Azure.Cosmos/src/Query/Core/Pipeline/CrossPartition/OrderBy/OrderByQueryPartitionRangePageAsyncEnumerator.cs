@@ -158,7 +158,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             protected override async Task<TryCatch<OrderByQueryPage>> GetNextPageAsync(ITrace trace, CancellationToken cancellationToken)
             {
-                FeedRangeInternal feedRange = HierarchicalPartitionUtils.LimitFeedRangeToSinglePartition(this.PartitionKey, this.FeedRangeState.FeedRange, this.containerQueryProperties);
+                FeedRangeInternal feedRange = QueryRangeUtils.LimitHpkFeedRangeToPartition(this.PartitionKey, this.FeedRangeState.FeedRange, this.containerQueryProperties);
 
                 TryCatch<QueryPage> monadicQueryPage = await this.queryDataSource
                     .MonadicQueryAsync(

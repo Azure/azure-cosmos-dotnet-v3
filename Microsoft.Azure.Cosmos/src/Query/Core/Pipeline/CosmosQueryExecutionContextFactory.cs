@@ -517,9 +517,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                             isMinInclusive: true,
                             isMaxInclusive: false)))
                     .ToList(),
+                partitionKey: inputParameters.PartitionKey,
                 queryPaginationOptions: new QueryExecutionOptions(
                     pageSizeHint: inputParameters.MaxItemCount),
-                partitionKey: inputParameters.PartitionKey,
                 containerQueryProperties: containerQueryProperties,
                 maxConcurrency: inputParameters.MaxConcurrency,
                 prefetchPolicy: PrefetchPolicy.PrefetchSinglePage,
@@ -926,6 +926,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             public bool EnableOptimisticDirectExecution { get; }
             public bool IsHybridSearchQueryPlanOptimizationDisabled { get; }
             public bool EnableDistributedQueryGatewayMode { get; }
+            public bool UseLengthAwareRangeComparer { get; }
 
             public InputParameters WithContinuationToken(CosmosElement token)
             {

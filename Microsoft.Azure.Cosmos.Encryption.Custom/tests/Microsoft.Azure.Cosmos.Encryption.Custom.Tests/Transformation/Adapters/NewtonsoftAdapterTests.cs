@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
             using MemoryStream output = new ();
 
             await Assert.ThrowsExceptionAsync<NotSupportedException>(
-                () => adapter.EncryptAsync(input, output, mockEncryptor.Object, defaultOptions, CancellationToken.None));
+                () => adapter.EncryptAsync(input, output, mockEncryptor.Object, defaultOptions, JsonProcessor.Newtonsoft, CancellationToken.None));
         }
 
         [TestMethod]
