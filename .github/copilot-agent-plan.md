@@ -4497,6 +4497,76 @@ dynamic_version_testing:
     - "Simple unit test is sufficient"
 ```
 
+### 16.24 Network and Region Debugging Techniques
+
+**Useful techniques for investigating connectivity and region-related issues:**
+
+```yaml
+network_debugging:
+  dns_verification:
+    description: "Verify Cosmos DB endpoint DNS resolution"
+    commands:
+      - "nslookup <account>.documents.azure.com 8.8.8.8"
+      - "nslookup <account>-<region>.documents.azure.com 8.8.8.8"
+    example: |
+      # Main endpoint
+      nslookup hkms-local-default-store.documents.azure.com 8.8.8.8
+      
+      # Regional endpoint
+      nslookup hkms-local-default-store-eastus.documents.azure.com 8.8.8.8
+    
+    interpret_results:
+      - "NXDOMAIN = endpoint doesn't exist in DNS"
+      - "CNAME chain shows actual backend server"
+      - "Compare main vs regional to verify account exists"
+
+  region_proximity_util:
+    description: "Inspect SDK's preferred region list (internal)"
+    location: "Microsoft.Azure.Cosmos.Direct assembly"
+    method: "RegionProximityUtil.GeneratePreferredRegionList(region)"
+    test_code: |
+      // Use reflection to call internal method
+      var cosmosDir = Path.GetDirectoryName(typeof(CosmosClient).Assembly.Location);
+      var directAsm = Assembly.LoadFrom(Path.Combine(cosmosDir, "Microsoft.Azure.Cosmos.Direct.dll"));
+      var utilType = directAsm.GetTypes().First(x => x.Name == "RegionProximityUtil");
+      var method = utilType.GetMethod("GeneratePreferredRegionList", BindingFlags.Public | BindingFlags.Static);
+      var result = method.Invoke(null, new object[] { "East US" }) as List<string>;
+    
+    notes:
+      - "Preferred list is from static proximity table"
+      - "Only used when main endpoint is unavailable"
+      - "SDK will iterate through list on failures"
+
+  common_issues:
+    nsp_blocked:
+      symptom: "Main endpoint unreachable, falls back to regional"
+      cause: "Network Security Perimeter (NSP) enabled on account"
+      diagnosis: "App running outside NSP boundary"
+      resolution: "Add app network/IP to NSP allowed list"
+    
+    staging_in_list:
+      symptom: "SDK tries *stg endpoints (e.g., eastusstg)"
+      cause: "Staging regions in proximity table"
+      note: "This is data issue in Microsoft.Azure.Cosmos.Direct"
+    
+    imds_errors:
+      symptom: "Socket error to 169.254.169.254:80"
+      meaning: "Azure IMDS (Instance Metadata Service) unreachable"
+      note: "Often unrelated noise - not root cause"
+      context: "Common in non-Azure or restricted environments"
+
+  endpoint_construction:
+    file: "Microsoft.Azure.Cosmos/src/Routing/LocationHelper.cs"
+    method: "GetLocationEndpoint(serviceEndpoint, location)"
+    logic: |
+      // "East US" -> "eastus" (spaces removed)
+      // contoso.documents.azure.com + "East US" 
+      //   -> contoso-eastus.documents.azure.com
+    note: "Only called when main endpoint unavailable"
+```
+
+---
+
 ### 16.23 GitHub Comment Attribution
 
 **All GitHub comments posted by Copilot agents must include attribution:**
