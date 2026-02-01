@@ -66,6 +66,47 @@ github_access:
     avoid: "Don't rely on GitHub MCP Server for Azure org repos"
 ```
 
+**gh CLI Installation & Setup:**
+
+```powershell
+# 1. Install gh CLI (Windows)
+winget install --id GitHub.cli
+
+# Alternative installers:
+# - macOS: brew install gh
+# - Linux: https://github.com/cli/cli/blob/trunk/docs/install_linux.md
+
+# 2. Authenticate (opens browser for SAML SSO)
+gh auth login --web
+
+# 3. Select options when prompted:
+#    - GitHub.com (not Enterprise)
+#    - HTTPS
+#    - Authenticate with browser
+
+# 4. Complete SAML SSO in browser
+#    - Login to GitHub
+#    - Authorize for Azure org (SAML)
+
+# 5. Verify authentication
+gh auth status
+# Expected: ✓ Logged in to github.com account {username}
+
+# 6. Test access to Azure org
+gh issue list --repo Azure/azure-cosmos-dotnet-v3 --limit 3
+```
+
+**Required Scopes:**
+```yaml
+gh_token_scopes:
+  required:
+    - "repo"      # Full repository access
+    - "read:org"  # Read org membership (for SAML)
+  optional:
+    - "workflow"  # GitHub Actions
+    - "gist"      # Gists
+```
+
 **Quick Reference:**
 ```powershell
 # ✅ This works (gh CLI)
