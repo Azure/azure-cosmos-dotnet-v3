@@ -1498,10 +1498,12 @@ regression_testing:
       - May need to re-run pipeline for transient failures
 
   pr_checklist:
-    - "[ ] All unit tests pass locally"
-    - "[ ] All emulator tests pass locally (if applicable)"
+    - "[ ] Build succeeds: dotnet build -c Release"
+    - "[ ] Unit tests pass locally (SHOW OUTPUT)"
+    - "[ ] Emulator tests pass locally (if applicable, SHOW OUTPUT)"
     - "[ ] No regression in existing tests"
     - "[ ] New tests added for the fix"
+    - "[ ] **PROOF OF LOCAL TESTS SHOWN** (see Section 7.4.3)"
     - "[ ] PR created and CI triggered"
     - "[ ] ALL remote CI gates pass (Section 7.4)"
     - "[ ] CI failures investigated and resolved"
@@ -1984,24 +1986,61 @@ ci_gates:
 ```yaml
 validation_workflow:
   phase_1_local:
-    description: "Quick local validation before creating PR"
+    description: "Local validation with PROOF before creating PR"
+    
     steps:
       - name: "Build solution"
-        command: dotnet build Microsoft.Azure.Cosmos.sln -c Release
+        command: "dotnet build Microsoft.Azure.Cosmos.sln -c Release"
         required: true
         
       - name: "Run unit tests"
-        command: |
-          dotnet test Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests \
-            --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=Ignore" \
-            -c Release --no-build
+        command: "dotnet test Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests -c Release --no-build"
         required: true
         
-      - name: "Run LINQ-specific tests (for LINQ changes)"
-        command: dotnet test --filter "FullyQualifiedName~Linq" -c Release --no-build
-        required: "for LINQ-related changes"
+      - name: "Run area-specific tests (if applicable)"
+        command: "dotnet test --filter \"FullyQualifiedName~{Area}\" -c Release --no-build"
+        example: "dotnet test --filter \"FullyQualifiedName~Linq\" -c Release --no-build"
+        required: "for changes in specific area"
+        
+      - name: "Run emulator tests (if emulator available)"
+        command: "dotnet test Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests -c Release"
+        required: "recommended for integration changes"
+        
+    proof_required:
+      description: "⚠️ MUST show test output before creating PR"
+      format: |
+        ## Local Test Results
+        
+        ### Unit Tests
+        ```
+        Passed: XXX
+        Failed: 0
+        Skipped: X
+        ```
+        
+        ### Area Tests (if run)
+        ```
+        Passed: XX
+        Failed: 0
+        ```
+        
+        ### Emulator Tests (if run)
+        ```
+        Passed: XXX
+        Failed: 0
+        ```
+        
+      example_output: |
+        Test run successful.
+        Total tests: 1247
+        Passed: 1245
+        Skipped: 2
+        Total time: 2.34 Minutes
+        
+      gate: "DO NOT create PR if any tests fail"
         
   phase_2_create_pr:
+    prerequisite: "phase_1_local MUST pass with proof shown"
     description: "Create PR to trigger remote CI"
     steps:
       - name: "Create feature branch"
