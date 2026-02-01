@@ -105,7 +105,9 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
 
             // Array functions
-            if (declaringType.IsEnumerable())
+            // Note: In .NET 10+, array.Contains() may resolve to MemoryExtensions.Contains(ReadOnlySpan<T>, T)
+            // ReadOnlySpan<T> does not implement IEnumerable<T>, so we also check for MemoryExtensions
+            if (declaringType.IsEnumerable() || IsMemoryExtensionsMethod(methodCallExpression))
             {
                 return ArrayBuiltinFunctions.Visit(methodCallExpression, context);
             }
@@ -117,6 +119,16 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
 
             throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.MethodNotSupported, methodCallExpression.Method.Name));
+        }
+
+        /// <summary>
+        /// Checks if the method is from MemoryExtensions class (e.g., Contains on ReadOnlySpan).
+        /// In .NET 10+, array.Contains() resolves to MemoryExtensions.Contains(ReadOnlySpan, T).
+        /// </summary>
+        private static bool IsMemoryExtensionsMethod(MethodCallExpression methodCallExpression)
+        {
+            Type declaringType = methodCallExpression.Method.DeclaringType;
+            return declaringType != null && declaringType.FullName == "System.MemoryExtensions";
         }
 
         protected abstract SqlScalarExpression VisitExplicit(MethodCallExpression methodCallExpression, TranslationContext context);
