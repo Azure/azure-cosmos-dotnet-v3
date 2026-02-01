@@ -46,7 +46,43 @@ Guide step-by-step on any required setups and then investigate issue #XXXX.
 |------------|---------|----------|
 | **GitHub MCP Server** | Issues, PRs, code search, actions | ✅ Yes |
 | **Azure DevOps MCP Server** | CI builds, pipelines, retry failed jobs | ✅ Yes |
+| **Cosmos LiveSite MCP Server** | LiveSite diagnostics, account info, NSP status | Optional |
 | **Bluebird Engineering Copilot** | Code graph, semantic search | Optional |
+
+### 0.1.1 Cosmos LiveSite MCP Server
+
+**Purpose:** Access Cosmos DB LiveSite diagnostics for investigating customer issues.
+
+```json
+{
+  "servers": {
+    "cosmos-livesite": {
+      "type": "sse",
+      "url": "https://coslsmcp-app.livelybeach-8f6a50c5.eastus2.azurecontainerapps.io/sse"
+    }
+  }
+}
+```
+
+```yaml
+cosmos_livesite_mcp:
+  capabilities:
+    - "Account diagnostics"
+    - "NSP (Network Security Perimeter) status"
+    - "Regional endpoint information"
+    - "Service-side configuration"
+    
+  use_cases:
+    - "Investigate connectivity issues"
+    - "Check if account has NSP enabled"
+    - "Verify regional endpoint configuration"
+    - "Customer-reported service issues"
+    
+  when_to_use:
+    - "Issue involves network/connectivity problems"
+    - "Need to verify account configuration"
+    - "Debugging 'eastusstg' or similar endpoint issues"
+```
 
 ### 0.2 GitHub MCP Server
 
