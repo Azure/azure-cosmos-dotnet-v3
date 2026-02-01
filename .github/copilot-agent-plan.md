@@ -3134,6 +3134,236 @@ editorconfig:
 - [ ] 4-space indentation
 - [ ] CRLF line endings
 
+### 16.14 Async/Await & CancellationToken Patterns
+
+```yaml
+async_patterns:
+  all_public_async_methods:
+    - "Must accept CancellationToken as last parameter"
+    - "Must pass CancellationToken to all async calls"
+    - "Must use ConfigureAwait(false) for library code"
+    
+  naming:
+    - "Async suffix required: ReadItemAsync, CreateContainerAsync"
+    
+  example: |
+    public async Task<ItemResponse<T>> ReadItemAsync<T>(
+        string id,
+        PartitionKey partitionKey,
+        ItemRequestOptions requestOptions = null,
+        CancellationToken cancellationToken = default)
+    {
+        return await this.container.ReadItemAsync<T>(
+            id, 
+            partitionKey, 
+            requestOptions, 
+            cancellationToken).ConfigureAwait(false);
+    }
+    
+  anti_patterns:
+    - "Never use .Result or .Wait() - causes deadlocks"
+    - "Never ignore CancellationToken parameter"
+    - "Never create fire-and-forget tasks without error handling"
+```
+
+### 16.15 Error Handling Patterns
+
+```yaml
+exception_handling:
+  primary_exception: "CosmosException"
+  location: "Microsoft.Azure.Cosmos.Resource.CosmosExceptions"
+  
+  factory_usage:
+    - "Use CosmosExceptionFactory.Create() for new exceptions"
+    - "Use CosmosExceptionFactory.CreateNotFoundException()"
+    - "Use CosmosExceptionFactory.CreateBadRequestException()"
+    
+  catching_pattern: |
+    try
+    {
+        ResponseMessage response = await this.SendAsync(...);
+    }
+    catch (CosmosException cosmosException) when (cosmosException.StatusCode == HttpStatusCode.NotFound)
+    {
+        // Handle not found
+    }
+    catch (CosmosException cosmosException)
+    {
+        DefaultTrace.TraceError($"Operation failed: {cosmosException.StatusCode}");
+        throw;
+    }
+    
+  status_code_handling:
+    "400 BadRequest": "Invalid input, don't retry"
+    "404 NotFound": "Resource doesn't exist"
+    "409 Conflict": "Concurrency conflict, may retry with new etag"
+    "429 TooManyRequests": "Throttled, retry after RetryAfter"
+    "503 ServiceUnavailable": "Transient, retry with backoff"
+```
+
+### 16.16 Logging Conventions
+
+```yaml
+logging:
+  class: "DefaultTrace"
+  namespace: "Microsoft.Azure.Cosmos.Tracing"
+  
+  methods:
+    info: "DefaultTrace.TraceInformation()"
+    warning: "DefaultTrace.TraceWarning()"
+    error: "DefaultTrace.TraceError()"
+    critical: "DefaultTrace.TraceCritical()"
+    verbose: "DefaultTrace.TraceVerbose()"
+    
+  format:
+    - "Include context: operation, resource, status"
+    - "Use string interpolation with $"
+    - "Include relevant IDs for debugging"
+    
+  example: |
+    DefaultTrace.TraceInformation(
+        $"ReadItem completed. Container: {this.containerId}, " +
+        $"Item: {itemId}, StatusCode: {response.StatusCode}");
+        
+  when_to_log:
+    always: "Errors, retries, throttling"
+    verbose: "Successful operations, timing"
+    never: "Sensitive data, PII, keys"
+```
+
+### 16.17 Breaking Change Detection
+
+```yaml
+api_contracts:
+  contract_files:
+    - "Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/Contracts/DotNetSDKAPI.net6.json"
+    - "Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/Contracts/DotNetSDKTelemetryAPI.net6.json"
+    
+  update_script: "UpdateContracts.ps1"
+  
+  check_command: |
+    dotnet test --filter "TestCategory=UpdateContract" --configuration Release
+    
+  breaking_changes:
+    prohibited:
+      - "Removing public API"
+      - "Changing method signatures"
+      - "Changing return types"
+      - "Removing properties"
+    allowed_with_review:
+      - "Adding new optional parameters"
+      - "Adding new methods/properties"
+      - "Deprecating (not removing) APIs"
+      
+  before_pr:
+    - "Run UpdateContracts.ps1"
+    - "Review contract diff"
+    - "If breaking, document in PR and get explicit approval"
+```
+
+### 16.18 Security Review Checklist
+
+```yaml
+security_review:
+  required_for:
+    - "Changes to Authorization/"
+    - "Changes to encryption code"
+    - "Changes to credential handling"
+    - "New external HTTP calls"
+    
+  checklist:
+    - "[ ] No secrets/keys logged or exposed"
+    - "[ ] Credentials not stored in plain text"
+    - "[ ] Input validation on user-provided data"
+    - "[ ] No SQL injection in generated queries"
+    - "[ ] Proper certificate validation"
+    - "[ ] CancellationToken honored (no indefinite waits)"
+    
+  encryption_specific:
+    - "[ ] Keys properly scoped"
+    - "[ ] Encryption algorithms approved"
+    - "[ ] Key rotation supported"
+```
+
+### 16.19 Performance Considerations
+
+```yaml
+performance:
+  hot_path_rules:
+    - "Minimize allocations in request path"
+    - "Use Span<T>/Memory<T> for buffer operations"
+    - "Avoid LINQ in hot paths (use foreach)"
+    - "Pool objects where possible (ArrayPool<T>)"
+    
+  benchmarking:
+    tool: "BenchmarkDotNet"
+    location: "Microsoft.Azure.Cosmos.Performance"
+    
+  common_issues:
+    boxing: "Avoid boxing value types"
+    closures: "Be careful with lambda captures"
+    strings: "Use StringBuilder for concatenation"
+    
+  before_pr:
+    - "Check if change is in hot path"
+    - "Run relevant benchmarks if performance-sensitive"
+    - "Document any expected performance impact"
+```
+
+### 16.20 Rollback Strategy
+
+```yaml
+rollback:
+  if_pr_causes_issues:
+    immediate:
+      - "Revert PR: gh pr revert {number}"
+      - "Or: git revert {commit} && git push"
+      
+    investigation:
+      - "Create issue documenting the problem"
+      - "Link to reverted PR"
+      - "Analyze what was missed"
+      
+  prevention:
+    - "Draft PR with CI validation"
+    - "Require review before merge"
+    - "Monitor after merge for 24h"
+```
+
+### 16.21 Testing Patterns
+
+```yaml
+testing:
+  unit_tests:
+    location: "Microsoft.Azure.Cosmos.Tests"
+    pattern: "{ClassName}Tests.cs"
+    framework: "MSTest"
+    
+  emulator_tests:
+    location: "Microsoft.Azure.Cosmos.EmulatorTests"
+    requires: "Cosmos DB Emulator running"
+    category: "[TestCategory(\"Emulator\")]"
+    
+  mocking:
+    - "Mock external dependencies (HTTP, network)"
+    - "Use ResponseMessage for response mocking"
+    - "Don't mock internal implementation details"
+    
+  test_naming: |
+    [TestMethod]
+    public async Task MethodName_Scenario_ExpectedResult()
+    {
+        // Arrange
+        // Act  
+        // Assert
+    }
+    
+  baseline_tests:
+    location: "Microsoft.Azure.Cosmos.Tests/BaselineTest"
+    purpose: "Capture expected output for comparison"
+    update: "Run UpdateContracts.ps1 to refresh baselines"
+```
+
 ---
 
 ## TODO: Implementation Tasks
