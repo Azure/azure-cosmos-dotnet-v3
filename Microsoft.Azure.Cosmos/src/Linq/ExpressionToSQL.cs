@@ -1619,27 +1619,41 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
             else
             {
-                SqlQuery query = ExpressionToSql.CreateSubquery(expression, parameters, context);
-
-                ParameterExpression parameterExpression = context.GenerateFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
-                SqlCollection subqueryCollection = ExpressionToSql.CreateSubquerySqlCollection(
-                    query,
-                    isMinMaxAvgMethod ? SubqueryKind.ArrayScalarExpression : expressionObjKind.Value);
-
-                Binding newBinding = new Binding(parameterExpression, subqueryCollection,
-                    isInCollection: false, isInputParameter: context.IsInMainBranchSelect());
-
-                context.CurrentSubqueryBinding.NewBindings.Add(newBinding);
-
-                if (isMinMaxAvgMethod)
+                // Optimization: When we're in a WHERE predicate context and the expression is an EXISTS subquery,
+                // we can inline the EXISTS expression directly instead of creating a JOIN binding.
+                // This enables compatibility with ORDER BY RANK which doesn't support JOINs.
+                if (context.IsInWherePredicateContext() && 
+                    expressionObjKind == SubqueryKind.ExistsScalarExpression &&
+                    !isMinMaxAvgMethod)
                 {
-                    sqlScalarExpression = SqlMemberIndexerScalarExpression.Create(
-                        SqlPropertyRefScalarExpression.Create(null, SqlIdentifier.Create(parameterExpression.Name)),
-                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(0)));
+                    SqlQuery query = ExpressionToSql.CreateSubquery(expression, parameters, context);
+                    sqlScalarExpression = SqlExistsScalarExpression.Create(query);
                 }
                 else
                 {
-                    sqlScalarExpression = SqlPropertyRefScalarExpression.Create(null, SqlIdentifier.Create(parameterExpression.Name));
+                    // Standard path: create a binding for the subquery
+                    SqlQuery query = ExpressionToSql.CreateSubquery(expression, parameters, context);
+
+                    ParameterExpression parameterExpression = context.GenerateFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
+                    SqlCollection subqueryCollection = ExpressionToSql.CreateSubquerySqlCollection(
+                        query,
+                        isMinMaxAvgMethod ? SubqueryKind.ArrayScalarExpression : expressionObjKind.Value);
+
+                    Binding newBinding = new Binding(parameterExpression, subqueryCollection,
+                        isInCollection: false, isInputParameter: context.IsInMainBranchSelect());
+
+                    context.CurrentSubqueryBinding.NewBindings.Add(newBinding);
+
+                    if (isMinMaxAvgMethod)
+                    {
+                        sqlScalarExpression = SqlMemberIndexerScalarExpression.Create(
+                            SqlPropertyRefScalarExpression.Create(null, SqlIdentifier.Create(parameterExpression.Name)),
+                            SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(0)));
+                    }
+                    else
+                    {
+                        sqlScalarExpression = SqlPropertyRefScalarExpression.Create(null, SqlIdentifier.Create(parameterExpression.Name));
+                    }
                 }
             }
 
@@ -1725,9 +1739,19 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
 
             LambdaExpression function = Utilities.GetLambda(arguments[1]);
-            SqlScalarExpression sqlfunc = ExpressionToSql.VisitScalarExpression(function, context);
-            SqlWhereClause where = SqlWhereClause.Create(sqlfunc);
-            return where;
+            
+            // Enter WHERE predicate context to enable inline EXISTS optimization
+            context.EnterWherePredicate();
+            try
+            {
+                SqlScalarExpression sqlfunc = ExpressionToSql.VisitScalarExpression(function, context);
+                SqlWhereClause where = SqlWhereClause.Create(sqlfunc);
+                return where;
+            }
+            finally
+            {
+                context.ExitWherePredicate();
+            }
         }
 
         private static SqlSelectClause VisitSelect(ReadOnlyCollection<Expression> arguments, TranslationContext context)
