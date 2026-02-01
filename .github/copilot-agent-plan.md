@@ -1988,14 +1988,47 @@ validation_workflow:
   phase_1_local:
     description: "Local validation with PROOF before creating PR"
     
+    build_configurations:
+      default:
+        command: "dotnet build Microsoft.Azure.Cosmos.sln -c Release"
+        defines: "(none)"
+        required: true
+        
+      preview:
+        command: "dotnet build Microsoft.Azure.Cosmos.sln -c Release /p:IsPreview=true"
+        defines: "PREVIEW;ENCRYPTIONPREVIEW"
+        required: true
+        note: "Tests preview-only APIs and code paths"
+        
+    test_configurations:
+      default:
+        build: "dotnet build -c Release"
+        test: "dotnet test -c Release --no-build"
+        required: true
+        
+      preview:
+        build: "dotnet build -c Release /p:IsPreview=true"
+        test: "dotnet test -c Release --no-build"
+        required: true
+        note: "Must pass with PREVIEW defined"
+    
     steps:
-      - name: "Build solution"
+      - name: "Build solution (default)"
         command: "dotnet build Microsoft.Azure.Cosmos.sln -c Release"
         required: true
         
-      - name: "Run unit tests"
+      - name: "Run unit tests (default)"
         command: "dotnet test Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests -c Release --no-build"
         required: true
+        
+      - name: "Build solution (PREVIEW)"
+        command: "dotnet build Microsoft.Azure.Cosmos.sln -c Release /p:IsPreview=true"
+        required: true
+        
+      - name: "Run unit tests (PREVIEW)"
+        command: "dotnet test Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests -c Release --no-build"
+        required: true
+        note: "Tests run against PREVIEW build"
         
       - name: "Run area-specific tests (if applicable)"
         command: "dotnet test --filter \"FullyQualifiedName~{Area}\" -c Release --no-build"
@@ -2007,11 +2040,18 @@ validation_workflow:
         required: "recommended for integration changes"
         
     proof_required:
-      description: "⚠️ MUST show test output before creating PR"
+      description: "⚠️ MUST show test output for BOTH configurations before creating PR"
       format: |
         ## Local Test Results
         
-        ### Unit Tests
+        ### Unit Tests (Default)
+        ```
+        Passed: XXX
+        Failed: 0
+        Skipped: X
+        ```
+        
+        ### Unit Tests (PREVIEW)
         ```
         Passed: XXX
         Failed: 0
@@ -2030,14 +2070,7 @@ validation_workflow:
         Failed: 0
         ```
         
-      example_output: |
-        Test run successful.
-        Total tests: 1247
-        Passed: 1245
-        Skipped: 2
-        Total time: 2.34 Minutes
-        
-      gate: "DO NOT create PR if any tests fail"
+      gate: "DO NOT create PR if any tests fail in ANY configuration"
         
   phase_2_create_pr:
     prerequisite: "phase_1_local MUST pass with proof shown"
