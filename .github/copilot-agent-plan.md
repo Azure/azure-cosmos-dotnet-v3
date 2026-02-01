@@ -2782,6 +2782,101 @@ draft_pr_workflow:
     - "T+90min: All CI complete → mark ready"
 ```
 
+### 16.8.1 CI Gate Monitoring Loop (Goal: ALL GREEN)
+
+**⚠️ CRITICAL: PR is not complete until ALL CI gates are GREEN.**
+
+```yaml
+ci_monitoring_loop:
+  goal: "All CI gates GREEN before marking PR ready for review"
+  
+  monitoring_workflow:
+    step_1_initial_check:
+      wait: "5 minutes after push"
+      command: "gh pr checks {pr_number}"
+      check: "Quick gates (lint, CLA) should pass"
+      on_fail: "Fix immediately (usually PR title format)"
+      
+    step_2_periodic_monitoring:
+      interval: "Every 10 minutes"
+      command: "gh pr checks {pr_number}"
+      duration: "Up to 90 minutes"
+      actions:
+        - "Note which checks are pending/passing/failing"
+        - "On first failure, begin investigation immediately"
+        
+    step_3_on_failure:
+      investigate:
+        - "Get failure logs: gh pr checks {pr_number} --json"
+        - "Identify failed check name and job ID"
+        - "Fetch logs via MCP or gh CLI"
+        - "Analyze root cause"
+        
+      categorize_failure:
+        code_related: "Your changes broke something"
+        flaky_test: "Known intermittent failure (see Section 16.7)"
+        infrastructure: "Emulator/network/timeout issues"
+        unrelated: "Pre-existing failure in master"
+        
+      respond:
+        code_related:
+          action: "Fix locally → test → push → CI auto-reruns"
+          verify: "Monitor until that check passes"
+          
+        flaky_test:
+          action: "mcp_ado_pipelines_update_build_stage with state=retry"
+          max_retries: 2
+          if_still_fails: "Document and escalate"
+          
+        infrastructure:
+          action: "Wait 5 min, then retry failed stage via MCP"
+          
+        unrelated:
+          action: "Document that failure exists in master, proceed"
+          
+    step_4_iterate:
+      loop: "Repeat step_2 and step_3 until all gates GREEN"
+      exit_condition: "gh pr checks shows all checks passing"
+      
+    step_5_complete:
+      action: "gh pr ready {pr_number}"
+      result: "PR moves from draft to ready for review"
+      
+  success_criteria:
+    required:
+      - "All CI checks show ✓ (green)"
+      - "No pending checks remaining"
+      - "PR lint passed"
+      - "CLA signed"
+    optional:
+      - "CodeQL may show warnings (review, don't block)"
+      
+  failure_escalation:
+    after_3_retries: "Investigate deeper, may need human help"
+    infrastructure_repeated: "Check Azure DevOps service status"
+    unknown_failure: "Comment on PR with findings, request help"
+```
+
+**Quick Reference Commands:**
+
+```bash
+# Check all PR gates
+gh pr checks {pr_number}
+
+# Get detailed status as JSON
+gh pr checks {pr_number} --json name,state,conclusion
+
+# View specific check logs (GitHub Actions)
+gh run view {run_id} --log-failed
+
+# Retry failed stage (Azure DevOps via MCP)
+# Use: mcp_ado_pipelines_update_build_stage
+#   project: "cosmos-db-sdk-public"
+#   buildId: {build_id}
+#   stageRefName: "{failed_stage}"
+#   state: "retry"
+```
+
 ### 16.9 Parallel Agent Strategy
 
 **Use parallel background agents to maximize efficiency:**
