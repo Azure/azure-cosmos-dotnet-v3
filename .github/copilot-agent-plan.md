@@ -3540,6 +3540,88 @@ parallel_agent_pattern:
     - "One agent's fix may conflict with another's"
 ```
 
+### 16.9.1 Parallel Issue Handling (While CI Waits)
+
+**While waiting for CI on one issue, start investigation on the next issue.**
+
+```yaml
+parallel_issue_workflow:
+  principle: "Don't wait idle - use CI wait time productively"
+  
+  workflow:
+    time_0:
+      issue_A: "Create PR, CI starts (60-90 min wait)"
+      action: "Start investigation on Issue B"
+      
+    time_30min:
+      issue_A: "CI running (~50% complete)"
+      issue_B: "Root cause identified, fix implemented"
+      action: "Run local tests for Issue B"
+      
+    time_60min:
+      issue_A: "CI running (~80% complete)"
+      issue_B: "Local tests pass, create PR, CI starts"
+      action: "Start investigation on Issue C (if available)"
+      
+    time_90min:
+      issue_A: "CI complete → mark ready for review"
+      issue_B: "CI running"
+      issue_C: "Investigation in progress"
+      
+  state_tracking:
+    per_issue:
+      - "Branch name: users/<name>/copilot-<issue>-<feature>"
+      - "Investigation doc: ~/.copilot/session-state/.../files/issue-{n}-investigation.md"
+      - "PR number (once created)"
+      - "CI status"
+      
+    session_state:
+      recommended: "Track in session plan.md"
+      format: |
+        ## Active Issues
+        | Issue | Branch | Status | PR | CI |
+        |-------|--------|--------|----|----|
+        | #5547 | copilot-5547-linq-dict | Ready for review | #5583 | ✅ |
+        | #5550 | copilot-5550-retry | CI running | #5590 | ⏳ |
+        | #5555 | (none) | Investigating | - | - |
+        
+  commands:
+    switch_to_issue:
+      - "git stash (if uncommitted work)"
+      - "git checkout users/<name>/copilot-<other-issue>-<feature>"
+      - "Continue work on that issue"
+      
+    check_all_ci:
+      command: "gh pr list --author @me --json number,title,statusCheckRollup"
+      
+  limits:
+    recommended_parallel: 2-3
+    reason: "Context quality degrades with too many active issues"
+    
+  best_practices:
+    - "Complete one issue to PR-created before starting next"
+    - "Don't start new issue if current one needs active debugging"
+    - "Check CI status periodically for all active PRs"
+    - "Mark PRs ready as soon as CI passes (don't forget!)"
+```
+
+**Quick Commands for Multi-Issue Workflow:**
+
+```powershell
+# Check status of all your PRs
+gh pr list --author @me --repo Azure/azure-cosmos-dotnet-v3
+
+# Check CI for specific PR
+gh pr checks {pr_number}
+
+# Switch to different issue branch
+git stash
+git checkout users/{name}/copilot-{other-issue}-{feature}
+
+# List all your branches
+git branch --list "users/*"
+```
+
 ### 16.10 Investigation Document Template
 
 **Create investigation docs in session workspace for complex issues:**
