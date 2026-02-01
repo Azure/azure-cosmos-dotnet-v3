@@ -3,6 +3,38 @@
 
 ---
 
+## Quick Start Prompt
+
+**Copy-paste this prompt to start the Copilot agent workflow:**
+
+```
+Follow the Copilot Agent Issue Triage Plan in .github/copilot-agent-plan.md
+
+Guide step-by-step on any required setups and then investigate issues 
+with label "customer-reported".
+
+gh issue list --repo Azure/azure-cosmos-dotnet-v3 --label "customer-reported" --state open --limit 5
+```
+
+**For a specific issue:**
+```
+Follow the Copilot Agent Issue Triage Plan in .github/copilot-agent-plan.md
+
+Guide step-by-step on any required setups and then investigate issue #XXXX.
+```
+
+**What the agent will do:**
+1. Verify environment setup (gh CLI, .NET SDK, emulator)
+2. Fix any setup issues (SAML auth, missing tools)
+3. Fetch and triage the issue(s)
+4. Investigate root cause
+5. Implement fix with tests
+6. Run Copilot code-review
+7. Create PR and monitor CI
+8. Mark ready when CI passes
+
+---
+
 ## 0. Environment Setup (MCP Servers)
 
 **Before using this plan, ensure the following MCP servers are configured.**
