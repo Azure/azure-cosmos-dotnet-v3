@@ -159,6 +159,155 @@ npx @azure-devops/mcp cosmos-db-sdk-public --help
 - [ ] .NET SDK installed: `dotnet --version`
 - [ ] Git configured: `git config user.name`
 - [ ] Repository cloned: `E:\src\v33` or similar
+
+### Cosmos DB Emulator
+- [ ] Emulator installed: Check "Azure Cosmos DB Emulator" in Start menu
+- [ ] Emulator running: `https://localhost:8081/_explorer/index.html` accessible
+```
+
+### 0.7 New Machine Quick Start
+
+**To test these instructions on a new machine with a new issue:**
+
+```yaml
+new_machine_setup:
+  time_estimate: "15-20 minutes"
+  
+  step_1_prerequisites:
+    commands: |
+      # Install required tools (Windows)
+      winget install Microsoft.DotNet.SDK.8
+      winget install Git.Git
+      winget install GitHub.cli
+      winget install OpenJS.NodeJS
+      winget install Microsoft.Azure.CosmosEmulator
+      
+  step_2_clone_repo:
+    commands: |
+      # Clone repository
+      git clone https://github.com/Azure/azure-cosmos-dotnet-v3.git
+      cd azure-cosmos-dotnet-v3
+      
+      # Build to verify setup
+      dotnet build Microsoft.Azure.Cosmos.sln -c Release
+      
+  step_3_authenticate:
+    commands: |
+      # GitHub CLI
+      gh auth login --web
+      
+      # Verify
+      gh auth status
+      
+  step_4_start_emulator:
+    commands: |
+      # Start Cosmos DB Emulator
+      Start-Process "C:\Program Files\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe"
+      
+      # Wait 30 seconds, then verify
+      Start-Sleep -Seconds 30
+      Invoke-WebRequest -Uri "https://localhost:8081/" -UseBasicParsing
+      
+  step_5_test_with_issue:
+    description: "Give Copilot an issue to work on"
+    example_prompt: |
+      "Investigate and fix issue #XXXX following the plan in 
+       .github/copilot-agent-plan.md"
+```
+
+**Test Workflow with a Real Issue:**
+
+```yaml
+testing_the_plan:
+  step_1_select_issue:
+    options:
+      - "Pick an open bug from: gh issue list --label bug --state open"
+      - "Use a known test issue (if available)"
+      - "Create a test issue with a known problem"
+      
+  step_2_invoke_copilot:
+    prompt_template: |
+      Follow the Copilot Agent Issue Triage Plan in .github/copilot-agent-plan.md
+      
+      Investigate issue #{issue_number}: {issue_title}
+      
+      Steps:
+      1. Fetch and analyze the issue
+      2. Search codebase for related code
+      3. Identify root cause
+      4. Create reproduction test
+      5. Implement fix
+      6. Run local tests (unit + emulator)
+      7. Create draft PR
+      8. Monitor CI until GREEN
+      
+  step_3_verify_workflow:
+    checklist:
+      - "[ ] Issue fetched successfully (or via web_fetch fallback)"
+      - "[ ] Root cause identified"
+      - "[ ] Local tests pass"
+      - "[ ] PR created with correct format"
+      - "[ ] CI monitoring initiated"
+      
+  step_4_validate_results:
+    success_criteria:
+      - "PR created following naming convention"
+      - "PR title matches lint format"
+      - "Local emulator tests pass"
+      - "CI gates monitored"
+```
+
+**Minimal Test (5 minutes):**
+
+```powershell
+# Quick verification that setup works
+# Run from repository root
+
+# 1. Verify build
+dotnet build Microsoft.Azure.Cosmos.sln -c Release
+
+# 2. Run unit tests (no emulator needed)
+dotnet test .\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests -c Release --filter "Category!=Emulator" -- --no-restore
+
+# 3. Verify GitHub CLI
+gh issue list --repo Azure/azure-cosmos-dotnet-v3 --limit 5
+
+# 4. Verify git
+git status
+
+# If all pass, environment is ready for Copilot agent workflow
+Write-Host "✅ Environment ready!"
+```
+
+**Troubleshooting Common Issues:**
+
+```yaml
+troubleshooting:
+  build_fails:
+    symptom: "dotnet build fails"
+    causes:
+      - "Missing .NET SDK": "winget install Microsoft.DotNet.SDK.8"
+      - "Wrong SDK version": "Check global.json for required version"
+      - "Missing workloads": "dotnet workload restore"
+      
+  gh_auth_fails:
+    symptom: "gh: not authenticated"
+    fix: "gh auth login --web"
+    
+  emulator_not_starting:
+    symptom: "Connection refused on localhost:8081"
+    causes:
+      - "Emulator not installed": "winget install Microsoft.Azure.CosmosEmulator"
+      - "Port conflict": "Check if another process uses 8081"
+      - "Needs admin": "Run emulator as administrator"
+      
+  github_api_403:
+    symptom: "SAML authentication required"
+    fix: "Use web_fetch to scrape issue page directly (see Section 3 Phase 0)"
+    
+  azure_devops_auth:
+    symptom: "MCP server auth fails"
+    fix: "First MCP call opens browser - complete Microsoft login"
 ```
 
 ---
