@@ -865,6 +865,17 @@ anti_patterns:
     bad: "gh pr create --title 'Fix issue'"
     good: "gh pr create --draft --title 'Fix issue'"
     rule: "ALWAYS create PRs as draft, convert to ready only after CI passes"
+    
+  fix_at_wrong_layer:
+    bad: "Add null check at caller when the source method returns null incorrectly"
+    good: "Fix at source of truth - if GetStoreProxy() can return null when disposed, throw ObjectDisposedException there"
+    rule: "ALWAYS fix bugs at the source where the invalid state originates, not at callers"
+    principle: |
+      When a method returns an invalid value (null, error state), fix the method itself
+      rather than adding defensive checks in all callers. This:
+      - Provides clear error messages at the source
+      - Prevents the same bug pattern in other callers
+      - Keeps error handling centralized
 ```
 
 ### 1.0.5 Mandatory Local Test Validation Before Push
