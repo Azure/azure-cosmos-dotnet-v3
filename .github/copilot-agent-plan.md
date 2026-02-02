@@ -40,14 +40,15 @@ Guide step-by-step on any required setups and then investigate issue #XXXX.
 
 **Before using this plan, ensure the following MCP servers are configured.**
 
-### 0.1 Required MCP Servers
+### 0.1 Required MCP Servers & API Access
 
-| MCP Server | Purpose | Required |
-|------------|---------|----------|
-| **GitHub MCP Server** | Issues, PRs, code search, actions | ✅ Yes |
-| **Azure DevOps MCP Server** | CI builds, pipelines, retry failed jobs | ✅ Yes |
-| **Cosmos LiveSite MCP Server** | LiveSite diagnostics, account info, NSP status | Optional |
-| **Bluebird Engineering Copilot** | Code graph, semantic search | Optional |
+| Tool | Purpose | Required | Setup |
+|------|---------|----------|-------|
+| **GitHub MCP Server** | Issues, PRs, code search, actions | ✅ Yes | Section 0.2 |
+| **Azure DevOps PAT** | CI builds, logs, pipeline status | ✅ Yes | Section 0.3.1 |
+| **Azure DevOps MCP** | Alternative to PAT (retry jobs) | Optional | Section 0.3.2 |
+| **Cosmos LiveSite MCP** | LiveSite diagnostics, account info | Optional | Section 0.1.1 |
+| **Bluebird Engineering Copilot** | Code graph, semantic search | Optional | Section 0.4 |
 
 ### 0.1.1 Cosmos LiveSite MCP Server
 
@@ -344,9 +345,73 @@ gh pr checks 5583
 # github-mcp-server-list_issues → SAML error
 ```
 
-### 0.3 Azure DevOps MCP Server (Official Microsoft)
+### 0.3 Azure DevOps Access (PAT or MCP)
 
-**Required for CI build management, retry failed jobs.**
+**Required for CI build logs, retry failed jobs, pipeline management.**
+
+#### 0.3.1 Option 1: Personal Access Token (PAT) - Recommended
+
+**Simplest setup - works immediately without additional tools.**
+
+```yaml
+azure_devops_pat:
+  purpose: "Direct REST API access to Azure DevOps"
+  advantage: "No MCP server needed, works with PowerShell/curl"
+  
+  setup:
+    step_1: "Create PAT at https://dev.azure.com/{org}/_usersSettings/tokens"
+    step_2: "Select scope: Build (Read) - minimum required"
+    step_3: "Store PAT securely (environment variable, never in code)"
+    
+  environment_variable:
+    name: "ADO_PAT"
+    set_windows: '$env:ADO_PAT = "your-pat-here"'
+    set_unix: 'export ADO_PAT="your-pat-here"'
+    
+  organization: "cosmos-db-sdk-public"
+  project: "cosmos-db-sdk-public"
+  api_base: "https://dev.azure.com/cosmos-db-sdk-public/cosmos-db-sdk-public/_apis"
+```
+
+**Verify PAT Setup:**
+
+```powershell
+# Test PAT is working
+$headers = @{ Authorization = "Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$env:ADO_PAT")) }
+Invoke-RestMethod -Uri "https://dev.azure.com/cosmos-db-sdk-public/cosmos-db-sdk-public/_apis/build/builds?api-version=7.0&`$top=1" -Headers $headers
+
+# Expected: JSON response with build info (not HTML or 401 error)
+```
+
+**Common API Calls:**
+
+```powershell
+$headers = @{ Authorization = "Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$env:ADO_PAT")) }
+$org = "cosmos-db-sdk-public"
+$project = "cosmos-db-sdk-public"
+
+# Get build status
+$buildId = 59172  # From PR checks URL
+$build = Invoke-RestMethod -Uri "https://dev.azure.com/$org/$project/_apis/build/builds/$buildId?api-version=7.0" -Headers $headers
+$build.status  # "completed", "inProgress", etc.
+$build.result  # "succeeded", "failed", etc.
+
+# Get build timeline (all stages/jobs with status)
+$timeline = Invoke-RestMethod -Uri "https://dev.azure.com/$org/$project/_apis/build/builds/$buildId/timeline?api-version=7.0" -Headers $headers
+
+# Find failed tasks
+$failed = $timeline.records | Where-Object { $_.result -eq "failed" }
+$failed | Select-Object name, result, @{N='logId';E={$_.log.id}}
+
+# Get log content for failed task
+$logId = $failed[0].log.id
+$log = Invoke-RestMethod -Uri "https://dev.azure.com/$org/$project/_apis/build/builds/$buildId/logs/$logId?api-version=7.0" -Headers $headers
+$log | Select-String -Pattern "error|fail|assert" -Context 2,2
+```
+
+#### 0.3.2 Option 2: Azure DevOps MCP Server
+
+**Alternative if MCP infrastructure is preferred.**
 
 ```yaml
 azure_devops_mcp_server:
