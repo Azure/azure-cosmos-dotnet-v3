@@ -171,6 +171,7 @@ namespace Microsoft.Azure.Cosmos
 
         //Private state.
         private bool isSuccessfullyInitialized;
+        private bool isDisposing;
         private bool isDisposed;
 
         // creator of TransportClient is responsible for disposing it.
@@ -1338,14 +1339,15 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public void Dispose()
         {
-            if (this.isDisposed)
+            if (this.isDisposed || this.isDisposing)
             {
                 return;
             }
 
-            // Set disposed flag FIRST to prevent race conditions where
-            // in-flight requests check isDisposed before fields are nulled
-            this.isDisposed = true;
+            // Set isDisposing flag FIRST to signal disposal has started
+            // This prevents race conditions where in-flight requests 
+            // could proceed while fields are being nulled
+            this.isDisposing = true;
 
             if (this.telemetryToServiceHelper != null)
             {
@@ -1423,6 +1425,9 @@ namespace Microsoft.Azure.Cosmos
 
             DefaultTrace.TraceInformation("DocumentClient with id {0} disposed.", this.traceId);
             DefaultTrace.Flush();
+
+            // Mark disposal complete
+            this.isDisposed = true;
         }
 
         //Compatibility mode:
@@ -6587,10 +6592,10 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>Returns <see cref="IStoreModel"/> to which the request must be sent</returns>
         internal IStoreModel GetStoreProxy(DocumentServiceRequest request)
         {
-            // Check if client has been disposed - fail fast with clear error message
+            // Check if client is being disposed or has been disposed - fail fast with clear error message
             // This prevents the confusing "StoreProxy cannot be null" error when
             // requests are in-flight during client disposal
-            if (this.isDisposed)
+            if (this.isDisposing || this.isDisposed)
             {
                 throw new ObjectDisposedException(
                     nameof(DocumentClient),
