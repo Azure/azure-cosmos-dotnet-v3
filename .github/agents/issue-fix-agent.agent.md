@@ -717,6 +717,15 @@ no_shortcuts_policy:
     - "Do NOT combine steps to save time at the cost of rigor"
     - "Do NOT mark checklist items complete without actually doing them"
     - "Do NOT proceed to next phase until current phase is verified"
+    - "Do NOT wait or ask permission when next action is clear"
+    - "Do NOT ask 'want me to do X?' - just execute if conditions are met"
+    
+  immediate_action_triggers:
+    - "CI passes on draft PR → immediately mark ready for review"
+    - "CI fails → immediately investigate and fix"
+    - "PR lint fails → immediately fix title/description"
+    - "Tests pass locally → immediately push and create PR"
+    - "Issue comment needed → immediately post it"
     
   examples_of_violations:
     - "Assuming tests pass without running them"
@@ -724,6 +733,8 @@ no_shortcuts_policy:
     - "Not posting issue comment because 'PR is self-explanatory'"
     - "Marking 'root cause identified' without code path trace"
     - "Skipping reproduction because 'issue description is clear'"
+    - "Asking 'should I mark PR ready?' when CI already passed"
+    - "Waiting for user confirmation on routine next steps"
     
   enforcement:
     - "Each step must produce observable output"
