@@ -1343,6 +1343,10 @@ namespace Microsoft.Azure.Cosmos
                 return;
             }
 
+            // Set disposed flag FIRST to prevent race conditions where
+            // in-flight requests check isDisposed before fields are nulled
+            this.isDisposed = true;
+
             if (this.telemetryToServiceHelper != null)
             {
                 this.telemetryToServiceHelper.Dispose();
@@ -1419,8 +1423,6 @@ namespace Microsoft.Azure.Cosmos
 
             DefaultTrace.TraceInformation("DocumentClient with id {0} disposed.", this.traceId);
             DefaultTrace.Flush();
-
-            this.isDisposed = true;
         }
 
         //Compatibility mode:
