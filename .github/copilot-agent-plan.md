@@ -2313,29 +2313,29 @@ Created: {date}
 | master ({short_sha}) | ✅/❌ | ✅/❌ | ✅ | {notes} |
 
 ### Reproduction Steps Attempted
-```
+~~~
 {steps taken}
-```
+~~~
 
 ### Reproduction Results
-```
+~~~
 {output/logs}
-```
+~~~
 
 ## Code Analysis
 
 ### Suspected Code Path
-```
+~~~
 {file}:{line} - {function_name}
   └─> {file}:{line} - {called_function}
       └─> {file}:{line} - {root_cause_location}
-```
+~~~
 
 ### Relevant Code Sections
-```csharp
+~~~csharp
 // {file}:{start_line}-{end_line}
 {code snippet}
-```
+~~~
 
 ### Root Cause Analysis
 {detailed explanation of what's happening and why}
@@ -2359,9 +2359,9 @@ Created: {date}
 ## Workaround
 {If available, provide a workaround}
 
-```csharp
+~~~csharp
 // Workaround code example
-```
+~~~
 
 ## Proposed Fix
 
@@ -2371,9 +2371,9 @@ Created: {date}
 **Risk:** Low/Medium/High
 **Effort:** Small/Medium/Large
 
-```csharp
+~~~csharp
 // Proposed code change
-```
+~~~
 
 ### Option 2: {alternative approach}
 ...
@@ -2452,17 +2452,17 @@ linking_strategy:
 **Issue:** {brief description}
 
 ### Option 1: Configuration Change
-```csharp
+~~~csharp
 var options = new CosmosClientOptions
 {
     // Workaround configuration
 };
-```
+~~~
 
 ### Option 2: Code Pattern
-```csharp
+~~~csharp
 // Workaround code pattern
-```
+~~~
 
 ### Limitations
 - {limitation 1}
@@ -2553,11 +2553,11 @@ Fixes #{issue_number}
 ## Root Cause Analysis
 
 ### Code Path
-```
+~~~
 {file1}:{line} - {function_name}
   └─> {file2}:{line} - {called_function}
       └─> {file3}:{line} - {root_cause_location}
-```
+~~~
 
 ### Root Cause
 {Detailed explanation of why the bug existed, including:
@@ -2583,14 +2583,14 @@ Fixes #{issue_number}
 ## Generated Output (Before/After)
 
 **Before (incorrect):**
-```
+~~~
 {output/SQL/JSON showing the bug}
-```
+~~~
 
 **After (correct):**
-```
+~~~
 {output/SQL/JSON showing correct behavior}
-```
+~~~
 
 ---
 
@@ -2598,9 +2598,9 @@ Fixes #{issue_number}
 
 {If a workaround exists, document it here so users can unblock themselves}
 
-```csharp
+~~~csharp
 // Workaround code example
-```
+~~~
 
 ---
 
@@ -2617,7 +2617,7 @@ Fixes #{issue_number}
 - `{TestClass}.{TestMethod}` - {description}
 
 ### Reproduction Test
-```csharp
+~~~csharp
 // Test that reproduces the original issue and verifies the fix
 [TestMethod]
 public void Issue_{number}_Reproduction()
@@ -2626,7 +2626,7 @@ public void Issue_{number}_Reproduction()
     // Act - operation that was failing
     // Assert - verify correct behavior
 }
-```
+~~~
 
 ---
 
@@ -3420,9 +3420,9 @@ suggest_docs_update_when:
 {Specific text/code to add or change}
 
 ### Sample Code to Add
-```csharp
+~~~csharp
 // Example that would have prevented this issue
-```
+~~~
 
 ### Related Issues
 - #{issue_number} - {X users affected}
@@ -4809,8 +4809,6 @@ technical details.
 ```
 
 ---
-git branch --list "users/*"
-```
 
 ### 16.12 Investigation Document Template
 
