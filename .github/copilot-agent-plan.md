@@ -636,6 +636,134 @@ This plan defines a comprehensive workflow for Copilot agents to handle GitHub i
 
 ---
 
+## 1.0 Core Principles: No Shortcuts, Evidence Required
+
+> ⚠️ **CRITICAL: These principles are non-negotiable and apply to ALL steps in this plan.**
+
+### 1.0.1 No Shortcuts Policy
+
+```yaml
+no_shortcuts_policy:
+  principle: "Every step in the workflow MUST be executed explicitly"
+  
+  rules:
+    - "Do NOT skip steps even if outcome seems obvious"
+    - "Do NOT assume a step succeeded without verification"
+    - "Do NOT combine steps to save time at the cost of rigor"
+    - "Do NOT mark checklist items complete without actually doing them"
+    - "Do NOT proceed to next phase until current phase is verified"
+    
+  examples_of_violations:
+    - "Assuming tests pass without running them"
+    - "Skipping local build because 'it should work'"
+    - "Not posting issue comment because 'PR is self-explanatory'"
+    - "Marking 'root cause identified' without code path trace"
+    - "Skipping reproduction because 'issue description is clear'"
+    
+  enforcement:
+    - "Each step must produce observable output"
+    - "Session plan must track completion with evidence"
+    - "Reviewers can request proof of any claimed step"
+```
+
+### 1.0.2 Evidence-Based Verification
+
+```yaml
+evidence_required_policy:
+  principle: "Every outcome/output requires PROOF, not assumptions"
+  
+  what_counts_as_proof:
+    build_succeeded:
+      required: "Actual build output showing 'Build succeeded' or exit code 0"
+      not_acceptable: "I ran the build" (without output)
+      
+    tests_passed:
+      required: "Test output showing pass count: 'Passed: X, Failed: 0'"
+      not_acceptable: "Tests should pass" or "I ran the tests"
+      
+    root_cause_identified:
+      required: "Code path with file:line references showing exactly where bug occurs"
+      not_acceptable: "The issue is in the LINQ translator"
+      
+    fix_works:
+      required: "Before/after output demonstrating the fix"
+      not_acceptable: "The fix addresses the issue"
+      
+    ci_passed:
+      required: "CI status showing 'COMPLETED: X/X' with all green"
+      not_acceptable: "CI is running" or "CI should pass"
+      
+    issue_updated:
+      required: "GitHub comment URL as confirmation"
+      not_acceptable: "I posted a comment"
+      
+  verification_format:
+    pattern: |
+      **Step:** {step_name}
+      **Evidence:** {actual_output_or_url}
+      **Status:** ✅ Verified
+      
+  session_plan_tracking:
+    format: |
+      - [x] Build succeeded (exit code 0, 0 errors)
+      - [x] Tests passed (13/13 LINQ, 12/12 BuiltinFunction)
+      - [x] PR created (https://github.com/.../pull/5585)
+      - [x] Comment posted (https://github.com/.../issues/5518#comment-123)
+```
+
+### 1.0.3 Mandatory Checkpoints
+
+```yaml
+mandatory_checkpoints:
+  before_creating_pr:
+    - "Local build MUST succeed with captured output"
+    - "Local tests MUST pass with captured output"
+    - "Root cause MUST be documented with code path"
+    - "Fix MUST be verified with before/after evidence"
+    
+  before_marking_pr_ready:
+    - "ALL CI gates MUST show COMPLETED status"
+    - "PR description MUST follow full template"
+    - "Issue comment MUST be posted with investigation summary"
+    
+  before_claiming_issue_resolved:
+    - "PR MUST be merged (not just created)"
+    - "Or customer MUST confirm workaround works"
+    - "Or issue MUST be closed with documented reason"
+    
+  checkpoint_failure_response:
+    action: "STOP and address the failure"
+    do_not: "Proceed hoping it will resolve itself"
+    document: "Record what failed and remediation steps"
+```
+
+### 1.0.4 Anti-Patterns to Avoid
+
+```yaml
+anti_patterns:
+  assumption_based_claims:
+    bad: "The fix should work because the logic is correct"
+    good: "The fix works - test output shows 13/13 passed"
+    
+  implicit_verification:
+    bad: "I updated the PR" 
+    good: "PR updated: https://github.com/.../pull/5585"
+    
+  skipped_local_validation:
+    bad: "Pushing to CI to validate"
+    good: "Local build: ✅, Local tests: 13/13 ✅, now pushing to CI"
+    
+  incomplete_documentation:
+    bad: "Fixed the LINQ issue"
+    good: "Fixed: BuiltinFunctionVisitor.cs:108 - added IsMemoryExtensionsMethod() check"
+    
+  optimistic_status:
+    bad: "CI running, should pass"
+    good: "CI status: 7/33 completed, monitoring for failures"
+```
+
+---
+
 ## 1.1 Model Configuration
 
 **Primary Model: Claude Opus 4.5** (`claude-opus-4.5`)
