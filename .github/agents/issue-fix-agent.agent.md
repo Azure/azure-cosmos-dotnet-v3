@@ -726,6 +726,9 @@ no_shortcuts_policy:
     - "PR lint fails → immediately fix title/description"
     - "Tests pass locally → immediately push and create PR"
     - "Issue comment needed → immediately post it"
+    - "PR review comment received → immediately address or respond"
+    - "PR changes requested → immediately fix and push"
+    - "PR approved → monitor for merge or follow up"
     
   examples_of_violations:
     - "Assuming tests pass without running them"
