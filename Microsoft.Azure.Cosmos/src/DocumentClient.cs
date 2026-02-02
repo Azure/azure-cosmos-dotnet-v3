@@ -1339,7 +1339,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public void Dispose()
         {
-            if (this.isDisposed || this.isDisposing)
+            if (this.isDisposed)
             {
                 return;
             }
@@ -6592,10 +6592,11 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>Returns <see cref="IStoreModel"/> to which the request must be sent</returns>
         internal IStoreModel GetStoreProxy(DocumentServiceRequest request)
         {
-            // Check if client is being disposed or has been disposed - fail fast with clear error message
+            // Check if client is being disposed - fail fast with clear error message
             // This prevents the confusing "StoreProxy cannot be null" error when
             // requests are in-flight during client disposal
-            if (this.isDisposing || this.isDisposed)
+            // Note: Only check isDisposing since once disposal starts, requests should be rejected
+            if (this.isDisposing)
             {
                 throw new ObjectDisposedException(
                     nameof(DocumentClient),
