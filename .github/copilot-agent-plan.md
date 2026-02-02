@@ -1908,20 +1908,58 @@ local_testing_strategy:
         note: "No emulator needed - pure unit tests"
         
       step_3:
-        name: "Run emulator tests"
-        command: "dotnet test Microsoft.Azure.Cosmos.EmulatorTests -c Release"
+        name: "Run emulator tests (Pipeline 1 - Query, ReadFeed, Batch, ChangeFeed)"
+        command: |
+          dotnet test Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests -c Release --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=ClientTelemetryRelease & TestCategory!=ThinClient & TestCategory!=LongRunning & TestCategory!=MultiRegion & TestCategory!=MultiMaster & (TestCategory=ClientTelemetryEmulator|TestCategory=Query|TestCategory=ReadFeed|TestCategory=Batch|TestCategory=ChangeFeed) & TestCategory!=Ignore" --verbosity normal
         expected: "All pass"
-        time: "~15-30 minutes"
+        time: "~10-15 minutes"
+        source: "templates/build-test.yml:EmulatorPipeline1Arguments"
         
       step_4:
-        name: "Run specific area tests"
-        example: "dotnet test --filter \"FullyQualifiedName~Linq\" -c Release"
-        when: "For targeted validation"
+        name: "Run emulator tests (Pipeline 2 - Others)"
+        command: |
+          dotnet test Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests -c Release --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=ClientTelemetryRelease & TestCategory!=ThinClient & TestCategory!=ClientTelemetryEmulator & TestCategory!=Query & TestCategory!=ReadFeed & TestCategory!=Batch & TestCategory!=ChangeFeed & TestCategory!=LongRunning & TestCategory!=MultiRegion & TestCategory!=MultiMaster & TestCategory!=Ignore" --verbosity normal
+        expected: "All pass"
+        time: "~10-15 minutes"
+        source: "templates/build-test.yml:EmulatorPipeline2Arguments"
+        note: "MultiRegion and MultiMaster tests require Azure secrets - CI only"
         
       step_5:
+        name: "Run specific area tests"
+        example: "dotnet test --filter \"FullyQualifiedName~Linq\" -c Release"
+        when: "For targeted validation of specific area"
+        
+      step_6:
         name: "Push to CI"
         action: "git push"
-        note: "CI runs secrets-required tests"
+        note: "CI runs secrets-required tests (MultiRegion, MultiMaster)"
+        
+  # These are the EXACT filter arguments used in CI pipelines (templates/build-test.yml)
+  # Use these to ensure local runs match CI behavior
+  ci_exact_arguments:
+    source_file: "templates/build-test.yml"
+    
+    emulator_pipeline_1:
+      name: "Query, ChangeFeed, ReadFeed, Batch"
+      filter: '--filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=ClientTelemetryRelease & TestCategory!=ThinClient & TestCategory!=LongRunning & TestCategory!=MultiRegion & TestCategory!=MultiMaster & (TestCategory=ClientTelemetryEmulator|TestCategory=Query|TestCategory=ReadFeed|TestCategory=Batch|TestCategory=ChangeFeed) & TestCategory!=Ignore" --verbosity normal'
+      
+    emulator_pipeline_2:
+      name: "Others (excluding Pipeline 1 categories)"
+      filter: '--filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=ClientTelemetryRelease & TestCategory!=ThinClient & TestCategory!=ClientTelemetryEmulator & TestCategory!=Query & TestCategory!=ReadFeed & TestCategory!=Batch & TestCategory!=ChangeFeed & TestCategory!=LongRunning & TestCategory!=MultiRegion & TestCategory!=MultiMaster & TestCategory!=Ignore" --verbosity normal'
+      
+    emulator_pipeline_3:
+      name: "MultiRegion"
+      filter: '--filter "TestCategory=MultiRegion" --verbosity normal'
+      note: "Requires COSMOSDB_MULTI_REGION secret - CI only"
+      
+    emulator_pipeline_4:
+      name: "MultiMaster"
+      filter: '--filter "TestCategory=MultiMaster" --verbosity normal'
+      note: "Requires secrets - CI only"
+      
+    flaky_tests:
+      filter: '--filter "TestCategory=Flaky" --verbosity normal'
+      note: "Run separately, allowed to fail"
         
   test_coverage_by_environment:
     local_no_dependencies:
