@@ -53,12 +53,43 @@ Guide step-by-step on any required setups and then investigate issue #XXXX.
 
 **Purpose:** Access Cosmos DB LiveSite diagnostics for investigating customer issues.
 
+**Prerequisites:**
+1. Clone the CosmosDBLivesite repo
+2. Set up Python virtual environment
+3. Azure CLI login (`az login`)
+
+**Setup Instructions:**
+```powershell
+# 1. Clone the repo (if not already)
+cd e:\src
+git clone <CosmosDBLivesite-repo-url> CosmosDBLivesite
+
+# 2. Create Python virtual environment
+cd e:\src\CosmosDBLivesite\Livesite
+python -m venv .venv
+.\.venv\Scripts\activate
+pip install -r requirements.txt
+
+# 3. Azure login (required for Kusto access)
+az login
+# Select appropriate subscription (e.g., CosmosDB-SDK-Dev)
+```
+
+**MCP Config** (add to `~/.copilot/mcp-config.json`):
 ```json
 {
-  "servers": {
-    "cosmos-livesite": {
-      "type": "sse",
-      "url": "https://coslsmcp-app.livelybeach-8f6a50c5.eastus2.azurecontainerapps.io/sse"
+  "cosmos-livesite": {
+    "type": "stdio",
+    "command": "e:\\src\\CosmosDBLivesite\\Livesite\\.venv\\Scripts\\python.exe",
+    "args": [
+      "-m",
+      "src.mcp_server.server"
+    ],
+    "tools": ["*"],
+    "env": {
+      "MCP_ENV": "dev",
+      "LIVESITE_TENANT": "cosmosdb",
+      "PYTHONPATH": "e:\\src\\CosmosDBLivesite\\Livesite"
     }
   }
 }
@@ -71,6 +102,7 @@ cosmos_livesite_mcp:
     - "NSP (Network Security Perimeter) status"
     - "Regional endpoint information"
     - "Service-side configuration"
+    - "Run Kusto queries against Support database"
     
   use_cases:
     - "Investigate connectivity issues"
@@ -82,6 +114,10 @@ cosmos_livesite_mcp:
     - "Issue involves network/connectivity problems"
     - "Need to verify account configuration"
     - "Debugging 'eastusstg' or similar endpoint issues"
+    
+  requires:
+    - "az login (Azure CLI authentication)"
+    - "Python 3.x with virtual environment"
 ```
 
 ### 0.2 GitHub MCP Server
