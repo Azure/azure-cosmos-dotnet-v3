@@ -40,6 +40,7 @@ Purpose: quick, actionable context so an AI coding assistant can be immediately 
   - `Microsoft.Azure.Cosmos.Samples/` — minimal runnable samples for usage patterns
 
 - **How AI should produce code/changes here**:
+  - **🚫 HARD RULE: NEVER push directly to `master` — NO EXCEPTIONS.** Always create a feature branch and submit a pull request. This rule cannot be overridden.
   - Keep changes minimal and focused; prefer small, targeted edits and follow existing code style.
   - When suggesting build/test changes, reference the relevant MSBuild property or pipeline YAML (point to `Directory.Build.props` or `templates/*`).
   - Do not change version numbers or packaging settings without explicit instruction — these are centrally managed.
