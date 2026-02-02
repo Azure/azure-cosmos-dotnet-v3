@@ -44,6 +44,7 @@ Purpose: quick, actionable context so an AI coding assistant can be immediately 
   - When suggesting build/test changes, reference the relevant MSBuild property or pipeline YAML (point to `Directory.Build.props` or `templates/*`).
   - Do not change version numbers or packaging settings without explicit instruction — these are centrally managed.
   - If adding or modifying tests that require the emulator, include/update relevant CI/template steps and document required environment variables.
+  - **NEVER push directly to `master`** — always create a feature branch and submit a pull request.
 
 - **Quick examples to reference in suggestions**:
   - Use `FeedIterator<T>` patterns as in `Microsoft.Azure.Cosmos` when generating query examples.

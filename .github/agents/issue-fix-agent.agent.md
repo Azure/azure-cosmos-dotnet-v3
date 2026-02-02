@@ -32,3 +32,14 @@ For detailed workflows and procedures, refer to:
 2. **Follow conventions** - Match existing code style and patterns
 3. **Validate thoroughly** - Run tests locally before pushing
 4. **Document clearly** - Explain the root cause and fix in PR descriptions
+5. **NEVER push to master** - Always create a feature branch and submit a PR
+
+## Critical Rules
+
+> **⛔ NEVER push directly to the `master` branch.**
+> 
+> All changes MUST go through a pull request:
+> 1. Create a feature branch: `git checkout -b users/<username>/<description>`
+> 2. Commit changes to the feature branch
+> 3. Push the feature branch: `git push origin <branch-name>`
+> 4. Create a PR targeting `master`
