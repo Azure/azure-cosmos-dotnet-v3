@@ -4928,6 +4928,20 @@ commit_format:
     - "Reference issue number in body if applicable"
     - "Sign-off required for external contributors"
     
+  copilot_attribution:
+    requirement: "All Copilot-assisted commits MUST include co-author trailer"
+    format: |
+      Co-authored-by: Copilot Autofix powered by GitHub Advanced Security <copilot-autofix-noreply@github.com>
+    example: |
+      Fix: Dictionary.Any() now uses OBJECTTOARRAY instead of JOIN
+      
+      The LINQ translator was treating Dictionary<K,V> as a generic
+      IEnumerable, generating incorrect SQL with JOIN.
+      
+      Fixes #5547
+      
+      Co-authored-by: Copilot Autofix powered by GitHub Advanced Security <copilot-autofix-noreply@github.com>
+    
   full_example: |
     Fix: Dictionary.Any() now uses OBJECTTOARRAY instead of JOIN
     
