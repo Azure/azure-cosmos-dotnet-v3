@@ -117,7 +117,15 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
 
             LambdaExpression lambda = Expression.Lambda(expression);
+#if NET6_0_OR_GREATER
+            // Use interpretation mode to avoid generating JIT-compiled DynamicMethods.
+            // Each Compile() call without preferInterpretation emits IL that persists in native memory,
+            // causing unbounded memory growth in long-running services.
+            // See: https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5487
+            Delegate function = lambda.Compile(preferInterpretation: true);
+#else
             Delegate function = lambda.Compile();
+#endif
 
             return Expression.Constant(function.DynamicInvoke(null), expression.Type);
         }
