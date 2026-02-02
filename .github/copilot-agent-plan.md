@@ -2958,7 +2958,7 @@ validation_workflow:
       - Analyze failure logs
       - Identify root cause of CI failure
       - Fix locally
-      - Run local validation
+      - "**FULL LOCAL VALIDATION BEFORE PUSH** (see 7.4.4.1)"
       - Push fix
       - Wait for CI re-run
     exit_condition: "All CI gates green"
@@ -2966,7 +2966,59 @@ validation_workflow:
 
 #### 7.4.4 CI Failure Triage
 
+**⚠️ CRITICAL: After fixing any CI failure, FULL local validation is required BEFORE pushing.**
+
 ```yaml
+pre_push_validation:
+  principle: "Never push a fix without verifying it locally first"
+  
+  required_before_every_push:
+    step_1_build:
+      command: "dotnet build Microsoft.Azure.Cosmos.sln -c Release"
+      must_show: "Build succeeded, 0 errors"
+      
+    step_2_unit_tests:
+      command: "dotnet test Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests -c Release --no-build"
+      or_targeted: "dotnet test ... --filter 'FullyQualifiedName~{area}'"
+      must_show: "Passed: X, Failed: 0"
+      
+    step_3_affected_tests:
+      description: "Run tests in the area you changed"
+      examples:
+        linq_change: "--filter 'FullyQualifiedName~Linq'"
+        query_change: "--filter 'TestCategory=Query'"
+        
+  baseline_test_failures:
+    symptom: "Please run UpdateContracts.ps1 to update the baselines"
+    
+    fix_workflow:
+      step_1: "Run the specific failing test to generate new baseline"
+      step_2: "Copy output to baseline file"
+      step_3: "**RE-RUN THE TEST to verify baseline is correct**"
+      step_4: "Run related tests to verify no regressions"
+      step_5: "ONLY THEN commit and push"
+      
+    common_mistake: "Pushing baseline update without re-running tests"
+    why_bad: "Baseline may be incomplete or test may still fail"
+    
+    correct_sequence: |
+      # 1. Run failing test (generates output)
+      dotnet test ... --filter "FullyQualifiedName~{FailingTest}"
+      
+      # 2. Copy output to baseline
+      Copy-Item -Path "{output_path}" -Destination "{baseline_path}"
+      
+      # 3. RE-RUN to verify (MUST PASS)
+      dotnet test ... --filter "FullyQualifiedName~{FailingTest}" --no-build
+      
+      # 4. Run related tests
+      dotnet test ... --filter "FullyQualifiedName~{Area}" --no-build
+      
+      # 5. NOW commit and push
+      git add {baseline_file}
+      git commit -m "..."
+      git push
+
 common_ci_failures:
   build_failure:
     symptoms:
