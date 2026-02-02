@@ -2392,6 +2392,43 @@ Based on area labels, assign to: @{reviewer}
 
 ---
 
+## 5. Investigation Issue Creation
+
+> **Note:** Section 5 covers creating investigation issues for complex bugs that require detailed tracking. The investigation issue template is detailed in Section 4's "Investigation Issue Template" subsection.
+
+### 5.1 When to Create Investigation Issue
+
+```yaml
+create_investigation_issue_when:
+  - Root cause requires deep analysis (> 30 min)
+  - Multiple code paths involved
+  - Reproduction is complex or intermittent
+  - Fix requires design discussion
+  - Historical context needs documentation
+
+skip_investigation_issue_when:
+  - Simple bug with obvious fix
+  - Question that can be answered directly
+  - Documentation-only change
+  - Already has linked investigation issue
+```
+
+### 5.2 Investigation Issue Linking
+
+```yaml
+linking_strategy:
+  original_issue:
+    add_comment: "🔍 Investigation started - see #{investigation_issue_number}"
+    add_label: "investigating"
+    
+  investigation_issue:
+    title: "Investigation: #{original_number} - {title}"
+    link_to_original: "Linked to: #{original_number}"
+    add_labels: ["investigation", "{area}"]
+```
+
+---
+
 ## 6. Workaround Identification
 
 ### 6.1 Common Workaround Patterns
@@ -3257,6 +3294,43 @@ Escalate to human immediately when:
 
 ---
 
+## 12. Post-Resolution Follow-up
+
+### 12.1 After PR Merge
+
+```yaml
+post_merge_actions:
+  update_original_issue:
+    add_comment: |
+      ✅ **Fix merged in PR #{pr_number}**
+      
+      The fix will be available in the next SDK release.
+      Version: {expected_version} (estimated)
+      
+      Workaround (until release): {workaround_if_any}
+    
+  update_investigation_issue:
+    if_exists: "Close with reference to merged PR"
+    
+  changelog:
+    check: "Verify fix is mentioned in changelog.md"
+```
+
+### 12.2 Customer Communication
+
+```yaml
+communication_template:
+  fix_available: |
+    @{reporter} - Good news! This issue has been fixed in PR #{pr_number}.
+    
+    **When available:** Next SDK release ({version})
+    **Workaround:** {workaround_description}
+    
+    Please let us know if you have any questions.
+```
+
+---
+
 ## 13. Documentation Improvement Workflow
 
 ### 13.1 Microsoft Docs Feedback Loop
@@ -3877,7 +3951,7 @@ ci_failure_response:
 | Build verification | ~15s | Incremental build |
 | Branch + commit + push | ~30s | Local git operations |
 
-### 16.6 PR Template Refinements
+### 16.7 PR Template Refinements
 
 Based on this exercise, PRs should include:
 
@@ -3903,7 +3977,7 @@ pr_requirements:
     - Area label (e.g., "Query", "LINQ")
 ```
 
-### 16.7 Recommended Workflow Sequence
+### 16.8 Recommended Workflow Sequence
 
 ```yaml
 recommended_workflow:
@@ -3952,7 +4026,7 @@ recommended_workflow:
       - Monitor CI status
 ```
 
-### 16.7 Flaky Test Registry
+### 16.9 Flaky Test Registry
 
 **Known flaky tests that may fail intermittently (not related to code changes):**
 
@@ -3982,7 +4056,7 @@ adding_to_registry:
   format: "Add entry with location, symptom, seen_in PRs, recommended action"
 ```
 
-### 16.8 Draft PR Workflow
+### 16.10 Draft PR Workflow
 
 **Always create PRs as drafts first, mark ready after CI passes:**
 
@@ -4014,7 +4088,7 @@ draft_pr_workflow:
     - "T+90min: All CI complete → mark ready"
 ```
 
-### 16.8.1 CI Gate Monitoring Loop (Goal: ALL GREEN)
+### 16.10.1 CI Gate Monitoring Loop (Goal: ALL GREEN)
 
 **⚠️ CRITICAL: PR is not complete until ALL CI gates are GREEN.**
 
@@ -4119,7 +4193,7 @@ ci_monitoring_loop:
     unknown_failure: "Comment on PR with findings, request help"
 ```
 
-### 16.8.1 Post-Ready PR Monitoring & Review Response
+### 16.10.2 Post-Ready PR Monitoring & Review Response
 
 **⚠️ CRITICAL: After marking PR ready, agent MUST monitor for review comments and address them.**
 
@@ -4274,7 +4348,7 @@ gh run view {run_id} --log-failed
 #   state: "retry"
 ```
 
-### 16.9 Parallel Agent Strategy
+### 16.11 Parallel Agent Strategy
 
 **Use parallel background agents to maximize efficiency:**
 
@@ -4316,7 +4390,7 @@ parallel_agent_pattern:
     - "One agent's fix may conflict with another's"
 ```
 
-### 16.9.1 Parallel Issue Handling (While CI Waits)
+### 16.11.1 Parallel Issue Handling (While CI Waits)
 
 **While waiting for CI on one issue, start investigation on the next issue.**
 
@@ -4686,7 +4760,7 @@ technical details.
 git branch --list "users/*"
 ```
 
-### 16.10 Investigation Document Template
+### 16.12 Investigation Document Template
 
 **Create investigation docs in session workspace for complex issues:**
 
@@ -4740,7 +4814,7 @@ investigation_document:
     - "When context compaction is likely"
 ```
 
-### 16.11 Commit Message Format
+### 16.13 Commit Message Format
 
 **Follow conventional commit format for this repository:**
 
@@ -4778,7 +4852,7 @@ commit_format:
     Fixes #5547
 ```
 
-### 16.12 PR Description Template
+### 16.14 PR Description Template
 
 **Full investigation details for Copilot-authored PRs:**
 
@@ -4849,7 +4923,7 @@ pr_title_format:
     - "Query: Refactors SQL generation for better readability"
 ```
 
-### 16.13 Code Style (StyleCop & EditorConfig)
+### 16.15 Code Style (StyleCop & EditorConfig)
 
 **Repository uses StyleCop.Analyzers and .editorconfig for code style enforcement.**
 
@@ -4901,7 +4975,7 @@ editorconfig:
 - [ ] 4-space indentation
 - [ ] CRLF line endings
 
-### 16.14 Async/Await & CancellationToken Patterns
+### 16.16 Async/Await & CancellationToken Patterns
 
 ```yaml
 async_patterns:
@@ -4933,7 +5007,7 @@ async_patterns:
     - "Never create fire-and-forget tasks without error handling"
 ```
 
-### 16.15 Error Handling Patterns
+### 16.17 Error Handling Patterns
 
 ```yaml
 exception_handling:
@@ -4968,7 +5042,7 @@ exception_handling:
     "503 ServiceUnavailable": "Transient, retry with backoff"
 ```
 
-### 16.16 Logging Conventions
+### 16.18 Logging Conventions
 
 ```yaml
 logging:
@@ -4998,7 +5072,7 @@ logging:
     never: "Sensitive data, PII, keys"
 ```
 
-### 16.17 Breaking Change Detection
+### 16.19 Breaking Change Detection
 
 ```yaml
 api_contracts:
@@ -5038,7 +5112,7 @@ api_contracts:
     - "If breaking, document in PR and get explicit approval"
 ```
 
-### 16.18 Security Review Checklist
+### 16.20 Security Review Checklist
 
 ```yaml
 security_review:
@@ -5062,7 +5136,7 @@ security_review:
     - "[ ] Key rotation supported"
 ```
 
-### 16.19 Performance Considerations
+### 16.21 Performance Considerations
 
 ```yaml
 performance:
@@ -5099,7 +5173,7 @@ performance:
     - "Add new benchmarks to Benchmark project if needed"
 ```
 
-### 16.20 Rollback Strategy
+### 16.22 Rollback Strategy
 
 ```yaml
 rollback:
@@ -5119,7 +5193,7 @@ rollback:
     - "Monitor after merge for 24h"
 ```
 
-### 16.21 Testing Patterns
+### 16.23 Testing Patterns
 
 ```yaml
 testing:
@@ -5153,7 +5227,7 @@ testing:
     update: "Run UpdateContracts.ps1 to refresh baselines"
 ```
 
-### 16.22 Dynamic .NET Version Testing
+### 16.24 Dynamic .NET Version Testing
 
 **For issues that only reproduce on newer .NET versions (e.g., .NET 10):**
 
@@ -5237,7 +5311,7 @@ dynamic_version_testing:
     - "Simple unit test is sufficient"
 ```
 
-### 16.24 Network and Region Debugging Techniques
+### 16.25 Network and Region Debugging Techniques
 
 **Useful techniques for investigating connectivity and region-related issues:**
 
@@ -5307,7 +5381,7 @@ network_debugging:
 
 ---
 
-### 16.23 GitHub Comment Attribution
+### 16.26 GitHub Comment Attribution
 
 **All GitHub comments posted by Copilot agents must include attribution:**
 
@@ -5336,7 +5410,7 @@ github_comment_attribution:
     - "Builds trust with community"
 ```
 
-### 16.25 Awaiting Customer Response Workflow
+### 16.27 Awaiting Customer Response Workflow
 
 **When investigation requires customer input before proceeding:**
 
@@ -5398,7 +5472,7 @@ awaiting_customer_workflow:
       - "Track multiple awaiting issues in session plan"
 ```
 
-### 16.26 Issue Status Tracking in Session
+### 16.28 Issue Status Tracking in Session
 
 **Maintain a status table when working multiple issues:**
 
