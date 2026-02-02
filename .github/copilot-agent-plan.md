@@ -751,7 +751,7 @@ anti_patterns:
     
   skipped_local_validation:
     bad: "Pushing to CI to validate"
-    good: "Local build: ✅, Local tests: 13/13 ✅, now pushing to CI"
+    good: "Local build: ✅, Local tests: 13/13 ✅, Emulator tests: 45/45 ✅, now pushing to CI"
     
   incomplete_documentation:
     bad: "Fixed the LINQ issue"
@@ -760,6 +760,139 @@ anti_patterns:
   optimistic_status:
     bad: "CI running, should pass"
     good: "CI status: 7/33 completed, monitoring for failures"
+    
+  partial_test_validation:
+    bad: "Unit tests pass, emulator tests will run in CI"
+    good: "Unit tests: 13/13 ✅, Emulator tests: 45/45 ✅, all local validation complete"
+```
+
+### 1.0.5 Mandatory Local Test Validation Before Push
+
+> ⛔ **CRITICAL: Every commit/change MUST have ALL tests validated locally BEFORE push.**
+
+```yaml
+local_test_validation_policy:
+  principle: "No push without complete local test validation"
+  
+  required_before_every_push:
+    step_1_build:
+      command: "dotnet build Microsoft.Azure.Cosmos.sln -c Release"
+      required: true
+      evidence: "Build succeeded. 0 Warning(s) 0 Error(s)"
+      
+    step_2_unit_tests:
+      command: "dotnet test Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests -c Release"
+      required: true
+      evidence: "Passed! - Failed: 0, Passed: X"
+      time: "~2-5 minutes"
+      
+    step_3_emulator_tests:
+      command: "dotnet test Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests -c Release"
+      required: true
+      evidence: "Passed! - Failed: 0, Passed: X"
+      time: "~15-30 minutes"
+      prerequisite: "Cosmos DB Emulator running with admin rights"
+      
+  emulator_setup:
+    start_command: "Start-Process 'C:\\Program Files\\Azure Cosmos DB Emulator\\CosmosDB.Emulator.exe' -Verb RunAs"
+    verify_running: "Get-Process -Name 'CosmosDB.Emulator' -ErrorAction SilentlyContinue"
+    wait_for_ready: "Invoke-WebRequest -Uri 'https://localhost:8081/_explorer/emulator.pem' -UseBasicParsing"
+    note: "Emulator requires admin elevation - run PowerShell as Administrator"
+    
+  no_exceptions:
+    - "CI is NOT a substitute for local validation"
+    - "Emulator tests are NOT optional"
+    - "Time constraints do NOT justify skipping tests"
+    - "Previous passing CI does NOT validate new changes"
+    
+  blocking_push_scenarios:
+    - "Emulator not installed → Install emulator first"
+    - "Emulator not running → Start emulator with admin rights"
+    - "Emulator tests fail → Fix failures before push"
+    - "Unit tests fail → Fix failures before push"
+    - "Build fails → Fix build before push"
+    
+  evidence_format:
+    template: |
+      ## Local Validation (Before Push)
+      
+      **Build:**
+      ```
+      Build succeeded.
+          0 Warning(s)
+          0 Error(s)
+      Time Elapsed 00:00:XX.XX
+      ```
+      
+      **Unit Tests:**
+      ```
+      Passed! - Failed: 0, Passed: XX, Skipped: X, Total: XX
+      ```
+      
+      **Emulator Tests:**
+      ```
+      Passed! - Failed: 0, Passed: XX, Skipped: X, Total: XX
+      ```
+      
+  workflow:
+    1: "Make code changes"
+    2: "Run build locally → capture output"
+    3: "Run unit tests locally → capture output"
+    4: "Start emulator (admin required)"
+    5: "Run emulator tests locally → capture output"
+    6: "All pass? → git commit and push"
+    7: "Any fail? → Fix and repeat from step 2"
+```
+
+### 1.0.6 Emulator Test Environment Setup
+
+```yaml
+emulator_environment:
+  installation:
+    download: "https://aka.ms/cosmosdb-emulator"
+    path: "C:\\Program Files\\Azure Cosmos DB Emulator\\CosmosDB.Emulator.exe"
+    
+  starting_emulator:
+    powershell_admin: |
+      # Must run PowerShell as Administrator
+      Start-Process "C:\Program Files\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" -Verb RunAs
+      
+      # Wait for emulator to be ready
+      $maxWait = 120  # seconds
+      $waited = 0
+      while ($waited -lt $maxWait) {
+          try {
+              $response = Invoke-WebRequest -Uri "https://localhost:8081/_explorer/emulator.pem" -UseBasicParsing -ErrorAction Stop
+              Write-Host "✅ Emulator is ready"
+              break
+          } catch {
+              Write-Host "Waiting for emulator... ($waited s)"
+              Start-Sleep -Seconds 5
+              $waited += 5
+          }
+      }
+      
+  running_tests:
+    command: |
+      # Run emulator tests
+      dotnet test Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests -c Release
+      
+    filter_by_area: |
+      # Run only LINQ emulator tests
+      dotnet test Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests -c Release --filter "FullyQualifiedName~Linq"
+      
+  troubleshooting:
+    elevation_error:
+      symptom: "The requested operation requires elevation"
+      solution: "Run PowerShell as Administrator"
+      
+    port_in_use:
+      symptom: "Port 8081 already in use"
+      solution: "Stop existing emulator: Stop-Process -Name CosmosDB.Emulator"
+      
+    ssl_error:
+      symptom: "SSL certificate error"
+      solution: "Import emulator certificate or use -SkipCertificateCheck"
 ```
 
 ---
