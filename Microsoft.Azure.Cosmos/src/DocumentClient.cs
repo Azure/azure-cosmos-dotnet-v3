@@ -6585,6 +6585,17 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>Returns <see cref="IStoreModel"/> to which the request must be sent</returns>
         internal IStoreModel GetStoreProxy(DocumentServiceRequest request)
         {
+            // Check if client has been disposed - fail fast with clear error message
+            // This prevents the confusing "StoreProxy cannot be null" error when
+            // requests are in-flight during client disposal
+            if (this.isDisposed)
+            {
+                throw new ObjectDisposedException(
+                    nameof(DocumentClient),
+                    "Cannot process request because the CosmosClient has been disposed. " +
+                    "Ensure all in-flight requests complete before disposing the client.");
+            }
+
             // If a request is configured to always use Gateway mode(in some cases when targeting .NET Core)
             // we return the Gateway store model
             if (request.UseGatewayMode)
