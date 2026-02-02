@@ -3051,87 +3051,49 @@ ci_monitoring_tools:
 
 #### 7.4.7 Accessing Azure DevOps CI Logs
 
-**⚠️ LIMITATION: Azure DevOps pages are dynamic SPAs that require authentication. `web_fetch` cannot access them.**
+**Use Azure DevOps REST API with PAT (see Section 0.3.1 for setup).**
 
 ```yaml
 azure_devops_log_access:
-  problem: "Azure DevOps build pages are JavaScript SPAs requiring auth"
-  web_fetch_limitation: "Returns HTML shell only, no rendered content"
+  primary_method: "REST API with PAT"
+  setup_reference: "Section 0.3.1"
   
-  solutions_by_priority:
-    1_azure_devops_mcp:
-      description: "Use Azure DevOps MCP Server (if configured)"
-      tool: "mcp_ado_pipelines_get_build_log"
-      setup: "See Section 0.3 for MCP server setup"
-      advantage: "Direct API access, full log content"
-      
-    2_gh_cli_for_github_actions:
-      description: "GitHub Actions logs via gh CLI"
-      command: |
-        # Get run ID from checks
-        gh pr checks {pr_number}
-        
-        # View failed logs
-        gh run view {run_id} --log-failed
-      limitation: "Only works for GitHub Actions, NOT Azure DevOps"
-      
-    3_reproduce_locally:
-      description: "Run same tests locally with CI filter"
-      approach: |
-        # Use exact CI filter arguments (from templates/build-test.yml)
-        # Pipeline 1: Query, ReadFeed, Batch, ChangeFeed
-        dotnet test Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests -c Release \
-          --filter "TestCategory!=Flaky & TestCategory!=Quarantine & ..." --verbosity detailed
-      advantage: "Full control, immediate feedback"
-      when: "When MCP not available and need to debug"
-      
-    4_ask_user:
-      description: "Request user to check Azure DevOps directly"
-      prompt: |
-        CI failed on Azure DevOps. I cannot access the logs programmatically.
-        
-        Please check: {build_url}
-        
-        Look for:
-        - Failed test name
-        - Error message
-        - Stack trace
-        
-        Then share the relevant failure details.
-      when: "Cannot reproduce locally, need specific error"
-      
-  ci_platform_mapping:
-    github_actions:
-      logs_accessible: true
-      tool: "gh run view --log-failed"
-      
-    azure_devops:
-      logs_accessible: "Only via MCP or manual browser access"
-      build_url_pattern: "https://cosmos-db-sdk-public.visualstudio.com/.../_build/results?buildId={id}"
-      
-  debugging_without_logs:
-    step_1: "Identify failed stage name from gh pr checks output"
-    step_2: "Map stage to test category (see templates/build-test.yml)"
-    step_3: "Run same category locally with --verbosity detailed"
-    step_4: "If can't reproduce, ask user for specific error from ADO"
+  quick_workflow:
+    step_1: "Ensure ADO_PAT environment variable is set"
+    step_2: "Get build ID from PR checks URL"
+    step_3: "Fetch timeline to find failed task"
+    step_4: "Fetch log content for failed task"
+    
+  fallback_options:
+    - "Reproduce locally with same CI filter (Section 4.8.1)"
+    - "Ask user to check ADO directly"
 ```
 
-**Quick Reference - When CI Fails on Azure DevOps:**
+**Quick Reference - Get Failed CI Logs:**
+
+```powershell
+# Requires: $env:ADO_PAT set (see Section 0.3.1)
+$headers = @{ Authorization = "Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$env:ADO_PAT")) }
+$buildId = 59172  # From PR checks URL
+
+# Get failed tasks
+$timeline = Invoke-RestMethod -Uri "https://dev.azure.com/cosmos-db-sdk-public/cosmos-db-sdk-public/_apis/build/builds/$buildId/timeline?api-version=7.0" -Headers $headers
+$failed = $timeline.records | Where-Object { $_.result -eq "failed" }
+$failed | Select-Object name, @{N='logId';E={$_.log.id}}
+
+# Get log content
+$logId = $failed[0].log.id
+Invoke-RestMethod -Uri "https://dev.azure.com/cosmos-db-sdk-public/cosmos-db-sdk-public/_apis/build/builds/$buildId/logs/$logId?api-version=7.0" -Headers $headers
+```
+
+**If PAT Not Available - Reproduce Locally:**
 
 ```bash
-# 1. Get failed stage name
-gh pr checks {pr_number}
-# Look for "fail" status, note the stage name
-
-# 2. Map stage to local command (from templates/build-test.yml)
-# "EmulatorTests Release - Others" = Pipeline 2 filter
-# "EmulatorTests Release - Query, ReadFeed, Batch, ChangeFeed" = Pipeline 1 filter
-
-# 3. Run locally with same filter
+# 1. Get failed stage name from: gh pr checks {pr_number}
+# 2. Map stage to filter (templates/build-test.yml)
+# 3. Run locally:
 dotnet test Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests -c Release \
-  --filter "{same_filter_as_ci}" --verbosity detailed --logger "console;verbosity=detailed"
-
-# 4. If still can't find issue, ask user to check Azure DevOps directly
+  --filter "{same_filter_as_ci}" --verbosity detailed
 ```
 
 ---
