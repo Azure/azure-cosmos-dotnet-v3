@@ -68,6 +68,19 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     ORDER BY RANK FullTextScore(c.title, 'John')",
                     new List<List<int>>{ new List<int>{ 2, 57, 85 }, new List<int>{ 2, 85, 57 } }),
                 MakeSanityTest(@"
+                    SELECT c.index AS Index, c.title AS Title, c.text AS Text
+                    FROM c
+                    WHERE (FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')) AND (c.index = 2)
+                    ORDER BY RANK FullTextScore(c.title, 'John')",
+                    new List<List<int>>{ new List<int>{ 2 } }),
+                MakeSanityTest(@"
+                    SELECT c.index AS Index, c.title AS Title, c.text AS Text
+                    FROM c
+                    WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')
+                    ORDER BY RANK FullTextScore(c.title, 'John')",
+                    new List<List<int>>{ new List<int>{ 2 } },
+                    new PartitionKey(2)),
+                MakeSanityTest(@"
                     SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')
@@ -186,23 +199,30 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 collectionTypes: CollectionTypes.MultiPartition, // | CollectionTypes.SinglePartition,
                 documents: documents,
                 query: (container, _) => RunTests(container, testCases),
+                partitionKey: "/index",
                 indexingPolicy: CompositeIndexPolicy);
         }
 
         private static async Task RunTests(Container container, IEnumerable<SanityTestCase> testCases)
         {
-            foreach (QueryRequestOptions requestOptions in new[]
-            {
-                new QueryRequestOptions { FullTextScoreScope = FullTextScoreScope.Local },
-                new QueryRequestOptions { FullTextScoreScope = FullTextScoreScope.Global },
-            })
+            foreach (FullTextScoreScope fullTextScoreScope in new[]{ FullTextScoreScope.Local, FullTextScoreScope.Global })
             {
                 foreach (SanityTestCase testCase in testCases)
                 {
+                    QueryRequestOptions testRequestOptions = new QueryRequestOptions
+                    {
+                        FullTextScoreScope = fullTextScoreScope,
+                    };
+
+                    if (testCase.PartitionKey.HasValue)
+                    {
+                        testRequestOptions.PartitionKey = testCase.PartitionKey;
+                    }
+
                     List<TextDocument> result = await RunQueryCombinationsAsync<TextDocument>(
                         container,
                         testCase.Query,
-                        queryRequestOptions: null,
+                        queryRequestOptions: testRequestOptions,
                         queryDrainingMode: QueryDrainingMode.HoldState);
 
                     IEnumerable<int> actual = result.Select(document => document.Index);
@@ -257,12 +277,13 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             return policy;
         }
 
-        private static SanityTestCase MakeSanityTest(string query, IReadOnlyList<IReadOnlyList<int>> expectedIndices)
+        private static SanityTestCase MakeSanityTest(string query, IReadOnlyList<IReadOnlyList<int>> expectedIndices, PartitionKey? partitionKey = null)
         {
             return new SanityTestCase
             {
                 Query = query,
                 ExpectedIndices = expectedIndices,
+                PartitionKey = partitionKey,
             };
         }
 
@@ -271,6 +292,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             public string Query { get; init; }
 
             public IReadOnlyList<IReadOnlyList<int>> ExpectedIndices { get; init; }
+
+            public PartitionKey? PartitionKey { get; init; }
         }
 
         private sealed class TextDocument
