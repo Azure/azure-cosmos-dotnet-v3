@@ -4710,6 +4710,102 @@ github_comment_attribution:
     - "Builds trust with community"
 ```
 
+### 16.25 Awaiting Customer Response Workflow
+
+**When investigation requires customer input before proceeding:**
+
+```yaml
+awaiting_customer_workflow:
+  trigger:
+    - "Need reproduction steps or environment details"
+    - "Question about expected behavior vs actual behavior"
+    - "Need to confirm hypothesis (e.g., NSP enabled, firewall rules)"
+    - "Missing information to reproduce issue"
+    
+  steps:
+    1_post_comment:
+      action: "Post detailed comment with specific questions"
+      include:
+        - "Summary of investigation so far"
+        - "Specific question(s) - numbered for easy response"
+        - "Why this information is needed"
+        - "Attribution footer"
+      
+    2_add_label:
+      action: "gh issue edit {issue_number} --add-label 'waiting-for-author'"
+      purpose: "Visible status for triage"
+      
+    3_track_status:
+      action: "Update session plan with awaiting status"
+      format: "| #{issue} | Description | 💬 Awaiting customer | - | - |"
+      
+    4_set_reminder:
+      note: "Check back in 3-5 business days"
+      followup_if_no_response: |
+        - Ping author with gentle reminder
+        - After 14 days: Consider closing with "needs-info" label
+        
+  example_comment: |
+    ## Investigation Update
+    
+    We've analyzed the issue and found the following:
+    
+    **Findings:**
+    - Main endpoint `account.documents.azure.com` resolves correctly
+    - Regional endpoint `account-eastusstg.documents.azure.com` returns NXDOMAIN
+    - SDK's RegionProximityUtil returns "East US STG" as first fallback region
+    
+    **Question:**
+    1. Is Network Security Perimeter (NSP) enabled on this Cosmos DB account?
+    2. Is the application running inside a VNet or behind a firewall?
+    
+    This will help us confirm whether the DNS failure is expected (NSP blocks 
+    direct access) or indicates a configuration issue.
+    
+    ---
+    *Co-authored with GitHub Copilot* 🤖
+    
+  parallel_work:
+    while_waiting:
+      - "Continue with other issues in queue"
+      - "Don't block on customer response"
+      - "Track multiple awaiting issues in session plan"
+```
+
+### 16.26 Issue Status Tracking in Session
+
+**Maintain a status table when working multiple issues:**
+
+```yaml
+session_status_table:
+  format: |
+    | Issue | Description | Status | PR | CI |
+    |-------|-------------|--------|----|----|
+    | #5547 | LINQ Dictionary | ✅ Ready for review | #5583 | ✅ 35/35 |
+    | #5518 | LINQ ReadOnlySpan | ✅ Ready for review | #5585 | ✅ 34/34 |
+    | #5578 | DNS eastusstg | 💬 Awaiting customer | - | - |
+    
+  status_icons:
+    investigating: "🔍"
+    coding: "💻"
+    ci_running: "🔄"
+    ci_passed: "✅"
+    ci_failed: "❌"
+    awaiting_customer: "💬"
+    ready_for_review: "✅"
+    merged: "🎉"
+    blocked: "🚫"
+    
+  update_triggers:
+    - "After posting PR"
+    - "After CI completes"
+    - "After marking ready for review"
+    - "After posting comment awaiting response"
+    - "When switching between issues"
+    
+  location: "Session plan.md in session-state folder"
+```
+
 ---
 
 ## TODO: Implementation Tasks
