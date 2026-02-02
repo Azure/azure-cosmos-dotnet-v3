@@ -3927,7 +3927,142 @@ ci_monitoring_loop:
     unknown_failure: "Comment on PR with findings, request help"
 ```
 
+### 16.8.1 Post-Ready PR Monitoring & Review Response
+
+**⚠️ CRITICAL: After marking PR ready, agent MUST monitor for review comments and address them.**
+
+```yaml
+pr_review_monitoring:
+  principle: "PR is not complete until merged - monitor and respond to all feedback"
+  
+  when_to_monitor:
+    trigger: "After PR is marked ready for review"
+    frequency: "Check every session or when user requests status"
+    until: "PR is merged OR closed"
+    
+  check_for_reviews:
+    command: "gh pr view {pr_number} --json reviews,reviewRequests,comments"
+    also_check: "gh pr view {pr_number} --json reviewDecision"
+    
+    review_states:
+      APPROVED: "PR can be merged (if CI passes)"
+      CHANGES_REQUESTED: "Must address feedback before merge"
+      COMMENTED: "Review feedback, may need response"
+      PENDING: "Awaiting review"
+      
+  response_workflow:
+    step_1_fetch_feedback:
+      command: |
+        gh pr view {pr_number} --comments
+        gh api /repos/{owner}/{repo}/pulls/{pr_number}/reviews
+      action: "Read all review comments and requested changes"
+      
+    step_2_analyze_feedback:
+      categorize:
+        - "Code changes required"
+        - "Questions to answer"
+        - "Style/formatting suggestions"
+        - "Test coverage requests"
+        - "Documentation updates"
+        
+    step_3_implement_changes:
+      action: "Make requested code changes"
+      follow: "Same process as original implementation"
+      important: "Address ALL feedback, not just some"
+      
+    step_4_full_revalidation:
+      principle: "Treat as NEW change - full validation required"
+      required_steps:
+        - "Local build: dotnet build -c Release"
+        - "Local unit tests: dotnet test Microsoft.Azure.Cosmos.Tests -c Release"
+        - "Local emulator tests (if applicable)"
+        - "Verify fix still works after changes"
+        
+    step_5_commit_and_push:
+      commit_message: "Address review feedback: {summary}"
+      action: "git push"
+      
+    step_6_respond_to_reviewer:
+      action: "Reply to each review comment explaining resolution"
+      format: |
+        > {original comment}
+        
+        Addressed in commit {sha}: {explanation}
+      important: "Do NOT just say 'fixed' - explain what was changed"
+      
+    step_7_request_re_review:
+      command: "gh pr edit {pr_number} --add-reviewer {reviewer}"
+      or: "Comment @{reviewer} - feedback addressed, please re-review"
+      
+    step_8_monitor_ci:
+      action: "Wait for CI to complete on new commits"
+      same_as: "Original CI monitoring workflow"
+      
+  review_response_patterns:
+    code_change_requested:
+      bad: "Fixed."
+      good: |
+        Addressed in abc1234:
+        - Changed `foo()` to use `bar()` as suggested
+        - Added null check per review feedback
+        - Updated test to cover edge case
+        
+    question_asked:
+      bad: "Yes" or "No"
+      good: |
+        Good question! The reason for this approach is:
+        1. {explanation}
+        2. {trade-off considered}
+        Alternative considered: {alternative and why not chosen}
+        
+    style_suggestion:
+      action: "Apply if reasonable, explain if declining"
+      declining_format: |
+        Considered this suggestion. Keeping current approach because:
+        - {reason}
+        If you feel strongly, happy to change.
+        
+  iteration_loop:
+    principle: "Repeat until APPROVED or merged"
+    
+    loop:
+      - "Check for new reviews/comments"
+      - "Address all feedback"
+      - "Full revalidation (build, test)"
+      - "Push changes"
+      - "Respond to reviewers"
+      - "Wait for CI"
+      - "Check review status"
+      - "If CHANGES_REQUESTED → repeat loop"
+      - "If APPROVED → ready for merge"
+      
+  evidence_required:
+    per_iteration:
+      - "Review comments addressed: {list}"
+      - "Local build: exit code 0"
+      - "Local tests: X/Y passed"
+      - "CI status: {status}"
+      - "Reviewer notified: {comment_url}"
+```
+
 **Quick Reference Commands:**
+
+```bash
+# Check PR reviews and status
+gh pr view {pr_number} --json reviews,reviewDecision,state
+
+# Get review comments
+gh pr view {pr_number} --comments
+
+# Get detailed review threads
+gh api /repos/Azure/azure-cosmos-dotnet-v3/pulls/{pr_number}/reviews
+
+# Request re-review after addressing feedback
+gh pr edit {pr_number} --add-reviewer {username}
+
+# Check if PR is mergeable
+gh pr view {pr_number} --json mergeable,mergeStateStatus
+```
 
 ```bash
 # Check all PR gates
