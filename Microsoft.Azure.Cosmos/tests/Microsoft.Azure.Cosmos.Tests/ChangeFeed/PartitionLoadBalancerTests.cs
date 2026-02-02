@@ -20,6 +20,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         private readonly LoadBalancingStrategy strategy = Mock.Of<LoadBalancingStrategy>();
         private readonly ChangeFeedProcessorHealthMonitor monitor = Mock.Of<ChangeFeedProcessorHealthMonitor>();
 
+        /// <summary>
+        /// Repro for GitHub issue #3453: When AddOrUpdateLeaseAsync throws during lease acquisition,
+        /// the error should be reported to ChangeFeedProcessorHealthMonitor.NotifyErrorAsync.
+        /// Before the fix, errors were only logged via DefaultTrace but NOT reported to the health monitor,
+        /// making it impossible for users to detect lease acquisition failures programmatically.
+        /// </summary>
         [TestMethod]
         public async Task AddLease_ThrowsException_LeaseAddingContinues()
         {
@@ -53,6 +59,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 .Verify(m => m.NotifyErrorAsync(It.IsAny<string>(), It.IsAny<Exception>()), Times.Exactly(2));
         }
 
+        /// <summary>
+        /// Repro for GitHub issue #3453: When GetAllLeasesAsync throws during load balancing iteration,
+        /// the error should be reported to ChangeFeedProcessorHealthMonitor.NotifyErrorAsync.
+        /// Before the fix, errors were only logged via DefaultTrace but NOT reported to the health monitor,
+        /// making it impossible for users to detect load balancer failures programmatically.
+        /// </summary>
         [TestMethod]
         public async Task GetAllLeases_ThrowsException_MonitorNotified()
         {
