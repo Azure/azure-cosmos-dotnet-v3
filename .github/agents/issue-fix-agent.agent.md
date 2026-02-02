@@ -780,16 +780,24 @@ evidence_required_policy:
 
 ```yaml
 mandatory_checkpoints:
+  before_creating_branch:
+    - "Search for existing PRs: `gh pr list --search 'ISSUE_NUMBER'`"
+    - "Search for existing branches: `git branch -a | grep ISSUE_NUMBER`"
+    - "If PR exists, use existing branch instead of creating new one"
+    - "Document search results as evidence"
+    
   before_creating_pr:
     - "Local build MUST succeed with captured output"
     - "Local tests MUST pass with captured output"
     - "Root cause MUST be documented with code path"
     - "Fix MUST be verified with before/after evidence"
+    - "PR MUST be created as DRAFT: `gh pr create --draft`"
     
   before_marking_pr_ready:
     - "ALL CI gates MUST show COMPLETED status"
     - "PR description MUST follow full template"
     - "Issue comment MUST be posted with investigation summary"
+    - "Convert from draft: `gh pr ready <PR_NUMBER>`"
     
   before_claiming_issue_resolved:
     - "PR MUST be merged (not just created)"
@@ -829,6 +837,20 @@ anti_patterns:
   partial_test_validation:
     bad: "Unit tests pass, emulator tests will run in CI"
     good: "Unit tests: 13/13 ✅, Emulator tests: 45/45 ✅, all local validation complete"
+    
+  duplicate_pr_creation:
+    bad: "Creating new branch and PR for issue #1234"
+    good: "Checked for existing PRs: `gh pr list --search '1234'` - none found, creating new PR"
+    rule: "ALWAYS search for existing PRs/branches before creating new ones"
+    
+  branch_without_pr_check:
+    bad: "git checkout -b users/me/fix-issue-1234"
+    good: "First: `gh pr list --search '1234'` and `git branch -a | grep 1234` - then create if none exist"
+    
+  pr_created_as_ready:
+    bad: "gh pr create --title 'Fix issue'"
+    good: "gh pr create --draft --title 'Fix issue'"
+    rule: "ALWAYS create PRs as draft, convert to ready only after CI passes"
 ```
 
 ### 1.0.5 Mandatory Local Test Validation Before Push
