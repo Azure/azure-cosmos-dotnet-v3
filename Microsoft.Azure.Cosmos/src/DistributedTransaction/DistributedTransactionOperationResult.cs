@@ -122,7 +122,8 @@ namespace Microsoft.Azure.Cosmos
                 operationResult.ETag = eTagElement.GetString();
             }
 
-            if (json.TryGetProperty("resourcebody", out JsonElement resourceBodyElement) && resourceBodyElement.ValueKind != JsonValueKind.Null)
+            if (json.TryGetProperty("resourcebody", out JsonElement resourceBodyElement) && 
+                resourceBodyElement.ValueKind == JsonValueKind.String)
             {
                 string resourceBodyBase64 = resourceBodyElement.GetString();
                 if (!string.IsNullOrEmpty(resourceBodyBase64))

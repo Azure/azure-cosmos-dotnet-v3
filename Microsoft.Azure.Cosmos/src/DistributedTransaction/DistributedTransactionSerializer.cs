@@ -93,10 +93,11 @@ namespace Microsoft.Azure.Cosmos
             }
             jsonWriter.WriteNumber("index", (uint)operation.OperationIndex);
 
-            // body (base64 encoded resourceBody)
+            //resourceBody
             if (!operation.ResourceBody.IsEmpty)
             {
-                jsonWriter.WriteBase64String("body", operation.ResourceBody.Span);
+                string resourceBodyJson = System.Text.Encoding.UTF8.GetString(operation.ResourceBody.Span);
+                jsonWriter.WriteString("resourceBody", resourceBodyJson);
             }
 
             // sessionToken

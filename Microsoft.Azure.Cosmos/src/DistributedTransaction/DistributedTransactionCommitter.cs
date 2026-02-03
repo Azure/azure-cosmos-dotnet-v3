@@ -64,9 +64,9 @@ namespace Microsoft.Azure.Cosmos
                 using (MemoryStream bodyStream = serverRequest.TransferBodyStream())
                 {
                     ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
-                        resourceUri: null,
-                        resourceType: ResourceType.Document,
-                        operationType: OperationType.Batch,
+                        resourceUri: "/dtc/ops",
+                        resourceType: ResourceType.Document, // TODO: Update to a new ResourceType specific to DTC
+                        operationType: OperationType.Batch, // TODO: Update to a new OperationType specific to DTC
                         requestOptions: null,
                         cosmosContainerCore: null,
                         partitionKey: null,
