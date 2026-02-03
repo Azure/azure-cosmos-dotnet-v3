@@ -927,6 +927,7 @@ namespace Microsoft.Azure.Cosmos
 
             ContainerInternal.ValidatePartitionKey(partitionKey, requestOptions);
             string resourceUri = this.GetResourceUri(requestOptions, operationType, itemId);
+            itemId = await this.GetItemIdFromStreamIfRequiredAsync(itemId, streamPayload, cancellationToken);
 
             // Convert Text to Binary Stream.
             // Exception: Serializing a text stream to a binary stream should be avoided when triggers are present in the item request options.
@@ -1063,6 +1064,70 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return true;
+        }
+
+        private static string GetIdFromStreamPayload(Stream streamPayload)
+        {
+            if (streamPayload == null || !streamPayload.CanSeek)
+            {
+                return null;
+            }
+
+            try
+            {
+                long originalPosition = streamPayload.Position;
+                streamPayload.Position = 0;
+
+                MemoryStream memoryStream = streamPayload as MemoryStream;
+                if (memoryStream == null)
+                {
+                    memoryStream = new MemoryStream();
+                    streamPayload.CopyTo(memoryStream);
+                }
+
+                IJsonNavigator jsonNavigator = JsonNavigator.Create(memoryStream.ToArray());
+                IJsonNavigatorNode jsonNavigatorNode = jsonNavigator.GetRootNode();
+                CosmosObject cosmosObject = CosmosObject.Create(jsonNavigator, jsonNavigatorNode);
+
+                if (cosmosObject.TryGetValue("id", out CosmosElement idElement) && idElement is CosmosString cosmosString)
+                {
+                    return cosmosString.Value;
+                }
+
+                return null;
+            }
+            catch
+            {
+                return null;
+            }
+            finally
+            {
+                if (streamPayload.CanSeek)
+                {
+                    streamPayload.Position = 0;
+                }
+            }
+        }
+
+        public override async Task<string> GetItemIdFromStreamIfRequiredAsync(
+            string itemId,
+            Stream streamPayload,
+            CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrEmpty(itemId) && streamPayload != null)
+            {
+                ContainerProperties cachedContainerProperties = await this.GetCachedContainerPropertiesAsync(
+                   forceRefresh: false,
+                   trace: NoOpTrace.Singleton,
+                   cancellationToken: cancellationToken);
+
+                if (cachedContainerProperties.IsLastPartitionKeyPathId)
+                {
+                    itemId = ContainerCore.GetIdFromStreamPayload(streamPayload);
+                }
+            }
+
+            return itemId;
         }
 
         private static PartitionKey CosmosElementToPartitionKeyObject(IReadOnlyList<CosmosElement> cosmosElementList)
