@@ -4315,8 +4315,17 @@ pr_review_monitoring:
   
   when_to_monitor:
     trigger: "After PR is marked ready for review"
-    frequency: "Check every session or when user requests status"
+    frequency: "Every 5-10 minutes while session is active"
     until: "PR is merged OR closed"
+    
+  monitoring_loop:
+    interval: "5-10 minutes"
+    check_ci: "gh pr checks {pr_number}"
+    check_comments: "gh api repos/{owner}/{repo}/pulls/{pr_number}/comments --jq '.[].created_at' | Select-Object -Last 1"
+    check_reviews: "gh pr view {pr_number} --json reviews,reviewDecision"
+    on_new_comment: "Read comment, address feedback, push fix, reply with commit SHA"
+    on_ci_failure: "Investigate, fix, push"
+    on_approval: "Merge or wait for additional approvals"
     
   check_for_reviews:
     command: "gh pr view {pr_number} --json reviews,reviewRequests,comments"
