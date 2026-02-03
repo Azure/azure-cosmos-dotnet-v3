@@ -699,7 +699,11 @@ namespace Microsoft.Azure.Cosmos
         }
 
 #if PREVIEW
-        public override Task<SemanticRerankResult> SemanticRerankAsync(
+        public
+#else
+        internal
+#endif 
+        override Task<SemanticRerankResult> SemanticRerankAsync(
             string rerankContext,
             IEnumerable<string> documents,
             IDictionary<string, object> options = null,
@@ -707,6 +711,5 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.ClientContext.SemanticRerankAsync(rerankContext, documents, options, cancellationToken);
         }
-#endif
     }
 }
