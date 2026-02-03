@@ -15,6 +15,9 @@ namespace Microsoft.Azure.Cosmos
 
     internal class DistributedTransactionCommitter
     {
+        // TODO: Move to HttpConstants.HttpHeaders once DTC headers are added centrally
+        private const string IdempotencyTokenHeader = "x-ms-dtc-operation-id";
+
         private readonly IReadOnlyList<DistributedTransactionOperation> operations;
         private readonly CosmosClientContext clientContext;
 
@@ -56,25 +59,20 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            using (ITrace trace = Trace.GetRootTrace("Execute Distributed Transaction Commit", TraceComponent.Batch, Tracing.TraceLevel.Info))
+            using (ITrace trace = Trace.GetRootTrace("Execute Distributed Transaction Commit", TraceComponent.Batch, TraceLevel.Info))
             {
-                DistributedTransactionRequest transactionRequest = new DistributedTransactionRequest(
-                    serverRequest.Operations,
-                    OperationType.Batch,
-                    ResourceType.Document);
-
                 using (MemoryStream bodyStream = serverRequest.TransferBodyStream())
                 {
                     ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
                         resourceUri: null,
-                        resourceType: transactionRequest.ResourceType,
-                        operationType: transactionRequest.OperationType,
+                        resourceType: ResourceType.Document,
+                        operationType: OperationType.Batch,
                         requestOptions: null,
                         cosmosContainerCore: null,
                         partitionKey: null,
                         itemId: null,
                         streamPayload: bodyStream,
-                        requestEnricher: requestMessage => this.EnrichRequestMessage(requestMessage, transactionRequest),
+                        requestEnricher: requestMessage => this.EnrichRequestMessage(requestMessage, serverRequest),
                         trace: trace,
                         cancellationToken: cancellationToken);
 
@@ -84,17 +82,17 @@ namespace Microsoft.Azure.Cosmos
                         responseMessage,
                         serverRequest,
                         this.clientContext.SerializerCore,
-                        transactionRequest.IdempotencyToken,
+                        serverRequest.IdempotencyToken,
                         trace,
                         cancellationToken);
                 }
             }
         }
 
-        private void EnrichRequestMessage(RequestMessage requestMessage, DistributedTransactionRequest transactionRequest)
+        private void EnrichRequestMessage(RequestMessage requestMessage, DistributedTransactionServerRequest serverRequest)
         {
             // Set DTC-specific headers
-            requestMessage.Headers.Add("x-ms-dtc-operation-id", transactionRequest.IdempotencyToken.ToString());
+            requestMessage.Headers.Add(IdempotencyTokenHeader, serverRequest.IdempotencyToken.ToString());
             requestMessage.UseGatewayMode = true;
         }
 

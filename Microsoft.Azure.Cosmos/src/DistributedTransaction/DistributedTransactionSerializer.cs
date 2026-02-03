@@ -16,20 +16,13 @@ namespace Microsoft.Azure.Cosmos
     internal static class DistributedTransactionSerializer
     {
         /// <summary>
-        /// Serializes a distributed transaction request to a JSON stream.
+        /// Serializes a distributed transaction request body to a JSON stream.
+        /// The body contains only the operations array. Other metadata like idempotencyToken,
+        /// operationType, and resourceType are sent as HTTP headers per the spec.
         /// </summary>
-        /// <param name="idempotencyToken">The idempotency token for the request.</param>
-        /// <param name="operationType">The operation type.</param>
-        /// <param name="resourceType">The resource type.</param>
         /// <param name="operations">The list of operations to include in the request.</param>
-        /// <param name="headers">Optional headers to include in the request.</param>
-        /// <returns>A MemoryStream containing the JSON-serialized request.</returns>
-        public static MemoryStream SerializeRequest(
-            Guid idempotencyToken,
-            OperationType operationType,
-            ResourceType resourceType,
-            IReadOnlyList<DistributedTransactionOperation> operations,
-            IDictionary<string, string> headers = null)
+        /// <returns>A MemoryStream containing the JSON-serialized request body.</returns>
+        public static MemoryStream SerializeRequest(IReadOnlyList<DistributedTransactionOperation> operations)
         {
             MemoryStream stream = new MemoryStream();
 
@@ -37,27 +30,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 jsonWriter.WriteStartObject();
 
-                // idempotencyToken
-                jsonWriter.WriteString("idempotencyToken", idempotencyToken.ToString());
-
-                // rntbdOperationType (stringified)
-                jsonWriter.WriteString("rntbdOperationType", ((int)operationType).ToString());
-
-                // rntbdResourceType (stringified)
-                jsonWriter.WriteString("rntbdResourceType", ((int)resourceType).ToString());
-
-                // headers (optional)
-                if (headers != null && headers.Count > 0)
-                {
-                    jsonWriter.WriteStartObject("headers");
-                    foreach (KeyValuePair<string, string> header in headers)
-                    {
-                        jsonWriter.WriteString(header.Key, header.Value);
-                    }
-                    jsonWriter.WriteEndObject();
-                }
-
-                // operations
+                // operations array
                 jsonWriter.WriteStartArray("operations");
 
                 foreach (DistributedTransactionOperation operation in operations)
@@ -83,17 +56,12 @@ namespace Microsoft.Azure.Cosmos
         {
             jsonWriter.WriteStartObject();
 
-            // databaseName
-            if (operation.Database != null)
-            {
-                jsonWriter.WriteString("databaseName", operation.Database);
-            }
+            // databaseName 
+            jsonWriter.WriteString("databaseName", operation.Database);
 
-            // collectionId
-            if (operation.Container != null)
-            {
-                jsonWriter.WriteString("collectionName", operation.Container);
-            }
+            // collectionName
+            jsonWriter.WriteString("collectionName", operation.Container);
+
             // collectionResourceId
             if (operation.CollectionResourceId != null)
             {
@@ -109,7 +77,7 @@ namespace Microsoft.Azure.Cosmos
             // id 
             if (operation.Id != null)
             {
-                jsonWriter.WriteString("resourceId", operation.Id);
+                jsonWriter.WriteString("id", operation.Id);
             }
 
             // partitionKey
@@ -118,12 +86,12 @@ namespace Microsoft.Azure.Cosmos
                 jsonWriter.WriteString("partitionKey", operation.PartitionKeyJson);
             }
 
-            // index (stringified as uint32)
+            // index (uint32)
             if (operation.OperationIndex < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(operation.OperationIndex), "Operation index must be non-negative.");
             }
-            jsonWriter.WriteString("index", operation.OperationIndex.ToString());
+            jsonWriter.WriteNumber("index", (uint)operation.OperationIndex);
 
             // body (base64 encoded resourceBody)
             if (!operation.ResourceBody.IsEmpty)
@@ -143,15 +111,11 @@ namespace Microsoft.Azure.Cosmos
                 jsonWriter.WriteString("etag", operation.ETag);
             }
 
-            // operationType (RntbdOperationType as int)
-            jsonWriter.WriteString("operationType", ((int)operation.OperationType).ToString());
+            // operationType (uint16)
+            jsonWriter.WriteNumber("operationType", (ushort)operation.OperationType);
 
-            // resourceType (RntbdResourceType as int)
-            jsonWriter.WriteString("resourceType", ((int)ResourceType.Document).ToString());
-
-            // headers (empty for now, can be extended)
-            jsonWriter.WriteStartObject("headers");
-            jsonWriter.WriteEndObject();
+            // resourceType (uint16)
+            jsonWriter.WriteNumber("resourceType", (ushort)ResourceType.Document);
 
             jsonWriter.WriteEndObject();
         }

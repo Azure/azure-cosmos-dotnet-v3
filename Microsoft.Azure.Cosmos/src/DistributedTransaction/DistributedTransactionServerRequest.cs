@@ -7,18 +7,11 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.IO;
-    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Documents;
 
     internal class DistributedTransactionServerRequest
     {
-        /// <summary>
-        /// Maximum allowed size for distributed transaction request body (2MB).
-        /// </summary>
-        private const int MaxBodySizeInBytes = 2 * 1024 * 1024;
-
         private readonly CosmosSerializerCore serializerCore;
         private MemoryStream bodyStream;
 
@@ -62,23 +55,7 @@ namespace Microsoft.Azure.Cosmos
             // Generate idempotency token for this request
             this.IdempotencyToken = Guid.NewGuid();
 
-            // Serialize the request to JSON using DistributedTransactionSerializer
-            this.bodyStream = DistributedTransactionSerializer.SerializeRequest(
-                this.IdempotencyToken,
-                OperationType.Batch,
-                ResourceType.Document,
-                this.Operations);
-
-            // Validate the final body size does not exceed the maximum allowed size
-            if (this.bodyStream.Length > MaxBodySizeInBytes)
-            {
-                throw new CosmosException(
-                    message: $"The distributed transaction request body exceeds the maximum allowed size of {MaxBodySizeInBytes / (1024 * 1024)}MB. Actual size: {this.bodyStream.Length} bytes.",
-                    statusCode: HttpStatusCode.RequestEntityTooLarge,
-                    subStatusCode: 0,
-                    activityId: string.Empty,
-                    requestCharge: 0);
-            }
+            this.bodyStream = DistributedTransactionSerializer.SerializeRequest(this.Operations);
         }
     }
 }

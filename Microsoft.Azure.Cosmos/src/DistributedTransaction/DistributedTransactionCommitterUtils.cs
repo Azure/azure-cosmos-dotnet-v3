@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -21,37 +20,37 @@ namespace Microsoft.Azure.Cosmos
             CosmosClientContext clientContext,
             CancellationToken cancellationToken)
         {
-            CollectionCache collectionCache = await clientContext.DocumentClient.GetCollectionCacheAsync(NoOpTrace.Singleton);
-            IEnumerable<Task> ridResolutionTasks = operations
-               .GroupBy(op => $"/dbs/{op.Database}/colls/{op.Container}")
-               .Select(async group =>
-               {
-                   string collectionPath = group.Key;
-                   try
-                   {
-                       ContainerProperties containerProperties = await clientContext.GetCachedContainerPropertiesAsync(
-                           collectionPath,
-                           NoOpTrace.Singleton,
-                           cancellationToken);
+            IEnumerable<IGrouping<string, DistributedTransactionOperation>> groupedOperations = operations
+                .GroupBy(op => $"/dbs/{op.Database}/colls/{op.Container}");
 
-                       string containerResourceId = containerProperties.ResourceId;
-                       ResourceId resourceId = ResourceId.Parse(containerResourceId);
-                       string databaseResourceId = resourceId.DatabaseId.ToString();
+            foreach (IGrouping<string, DistributedTransactionOperation> group in groupedOperations)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
 
-                       foreach (DistributedTransactionOperation operation in group)
-                       {
-                           operation.CollectionResourceId = containerResourceId;
-                           operation.DatabaseResourceId = databaseResourceId;
-                       }
-                   }
-                   catch (Exception ex)
-                   {
-                       DefaultTrace.TraceError($"Failed to resolve RID for {collectionPath}: {ex.Message}");
-                       throw;
-                   }
-               });
-            await Task.WhenAll(ridResolutionTasks);
+                string collectionPath = group.Key;
+                try
+                {
+                    ContainerProperties containerProperties = await clientContext.GetCachedContainerPropertiesAsync(
+                        collectionPath,
+                        NoOpTrace.Singleton,
+                        cancellationToken);
+
+                    string containerResourceId = containerProperties.ResourceId;
+                    ResourceId resourceId = ResourceId.Parse(containerResourceId);
+                    string databaseResourceId = resourceId.DatabaseId.ToString();
+
+                    foreach (DistributedTransactionOperation operation in group)
+                    {
+                        operation.CollectionResourceId = containerResourceId;
+                        operation.DatabaseResourceId = databaseResourceId;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    DefaultTrace.TraceError($"Failed to resolve RID for {collectionPath}: {ex.Message}");
+                    throw;
+                }
+            }
         }
-
     }
 }
