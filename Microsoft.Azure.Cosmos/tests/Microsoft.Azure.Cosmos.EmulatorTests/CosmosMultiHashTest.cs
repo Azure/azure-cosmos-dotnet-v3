@@ -24,7 +24,7 @@
             this.client = TestCommon.CreateCosmosClient(true);
             this.database = await this.client.CreateDatabaseIfNotExistsAsync("mydb");
 
-            this.containerProperties = new ContainerProperties("mycoll", new List<string> { "/ZipCode", "/City" });
+            this.containerProperties = new ContainerProperties("mycoll", new List<string> { "/ZipCode", "/City","/id" });
             this.container = await this.database.CreateContainerAsync(this.containerProperties);
         }
 

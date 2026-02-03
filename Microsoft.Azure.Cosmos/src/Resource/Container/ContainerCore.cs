@@ -13,7 +13,9 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
@@ -706,6 +708,60 @@ namespace Microsoft.Azure.Cosmos
             return new FeedIteratorCore<T>(
                 changeFeedIteratorCore,
                 responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
+        }
+
+        public override async Task<PartitionKey?> EnsureIdGetAppendedtoPartitionKeyIfneededAsync(
+            PartitionKey? partitionKey,
+            string itemId,
+            CancellationToken cancellationToken)
+        {
+            ContainerProperties cachedContainerPropertiesAsync = await this.GetCachedContainerPropertiesAsync(
+                forceRefresh: false,
+                trace: NoOpTrace.Singleton,
+                cancellationToken: cancellationToken);
+
+            if (!cachedContainerPropertiesAsync.IsLastPartitionKeyPathId)
+            {
+                return partitionKey;
+            }
+
+            if (string.IsNullOrEmpty(itemId))
+            {
+                throw new ArgumentException("itemId needs to be specified if LastPartitionKeyPath is id");
+            }
+
+            IReadOnlyList<Documents.Routing.IPartitionKeyComponent> existingComponents = Array.Empty<Documents.Routing.IPartitionKeyComponent>();
+            if (partitionKey.HasValue)
+            {
+                existingComponents = partitionKey.Value.InternalKey.Components;
+                IReadOnlyList<string> partitionKeyPaths = cachedContainerPropertiesAsync.PartitionKey.Paths;
+
+                if (existingComponents.Count != partitionKeyPaths.Count - 1)
+                {
+                    return partitionKey;
+                }
+            }
+
+            PartitionKeyBuilder builder = new PartitionKeyBuilder();
+            builder.Add(itemId);
+            PartitionKey idPath = builder.Build();
+
+            List<Documents.Routing.IPartitionKeyComponent> allComponentsList = new List<Documents.Routing.IPartitionKeyComponent>();
+            foreach (Documents.Routing.IPartitionKeyComponent item in existingComponents)
+            {
+                allComponentsList.Add(item); 
+            }
+
+            foreach (Documents.Routing.IPartitionKeyComponent item in idPath.InternalKey.Components)
+            {
+                allComponentsList.Add(item);
+            }
+
+            Documents.Routing.PartitionKeyInternal partitionKeyInternal = new Documents.Routing.PartitionKeyInternal(allComponentsList);
+
+            partitionKey = new PartitionKey(partitionKeyInternal);
+
+            return partitionKey;
         }
     }
 }
