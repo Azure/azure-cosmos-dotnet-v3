@@ -4315,8 +4315,17 @@ pr_review_monitoring:
   
   when_to_monitor:
     trigger: "After PR is marked ready for review"
-    frequency: "Check every session or when user requests status"
+    frequency: "Every 5-10 minutes while session is active"
     until: "PR is merged OR closed"
+    
+  monitoring_loop:
+    interval: "5-10 minutes"
+    check_ci: "gh pr checks {pr_number}"
+    check_comments: "gh api repos/{owner}/{repo}/pulls/{pr_number}/comments --jq '.[].created_at' | Select-Object -Last 1"
+    check_reviews: "gh pr view {pr_number} --json reviews,reviewDecision"
+    on_new_comment: "Read comment, address feedback, push fix, reply with commit SHA"
+    on_ci_failure: "Investigate, fix, push"
+    on_approval: "Merge or wait for additional approvals"
     
   check_for_reviews:
     command: "gh pr view {pr_number} --json reviews,reviewRequests,comments"
@@ -5664,6 +5673,35 @@ gh_cli_workarounds:
     problem: "`gh pr edit --title` may fail with GraphQL warning"
     workaround: |
       gh api repos/{owner}/{repo}/pulls/{pr_number} -X PATCH -f title="New Title"
+
+  pr_body_formatting_corrupted:
+    problem: "PR description loses newlines, emojis corrupted (e.g., 🤖 becomes Γëí╞Æ├▒├╗)"
+    symptoms:
+      - "All content appears on single line"
+      - "Markdown headers not rendered"
+      - "Unicode characters corrupted"
+    causes:
+      - "Using Out-File without proper encoding"
+      - "PowerShell string handling stripping newlines"
+      - "gh pr create/edit with inline --body argument"
+    workaround: |
+      # 1. Write body to file with UTF8 no BOM encoding:
+      $body | Set-Content -Path "body.md" -Encoding UTF8
+      
+      # 2. Use gh api with -F to read from file:
+      gh api repos/{owner}/{repo}/pulls/{pr_number} -X PATCH -F body=@body.md
+      
+      # 3. For new PRs, use --body-file (not --body):
+      gh pr create --draft --title "..." --body-file body.md
+    verification: |
+      # After update, verify formatting preserved:
+      gh api repos/{owner}/{repo}/pulls/{pr_number} --jq '.body' | Select-Object -First 5
+      # Should show proper line breaks and headers
+    prevention:
+      - "NEVER use inline --body with multi-line content"
+      - "ALWAYS write to file first, then use -F body=@file or --body-file"
+      - "ALWAYS use UTF8 encoding (Set-Content -Encoding UTF8)"
+      - "VERIFY formatting after every PR create/update"
 ```
 
 ### 18.19 Sequence Diagrams in PRs
