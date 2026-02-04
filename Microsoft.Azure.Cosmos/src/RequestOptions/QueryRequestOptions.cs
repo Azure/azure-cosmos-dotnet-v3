@@ -222,7 +222,7 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// <para>
         /// When set to <see cref="FullTextScoreScope.Local"/>, statistics are computed only over the subset of documents
-        /// within the partition key values specified in the query. This is useful for multi-tenant scenarios where scoring
+        /// within the partition key values specified in the query request. This is useful for multi-tenant scenarios where scoring
         /// should reflect statistics that are accurate for a specific tenant's dataset.
         /// </para>
         /// </remarks>

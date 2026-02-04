@@ -14,13 +14,13 @@ namespace Microsoft.Azure.Cosmos
         /// across all documents in the container, including all physical and logical partitions.
         /// This is the default behavior.
         /// </summary>
-        Global = 0,
+        Global,
 
         /// <summary>
         /// Compute BM25 statistics only over the subset of documents within the partition key values
         /// specified in the query. This is useful for multi-tenant scenarios where scoring should
         /// reflect statistics that are accurate for a specific tenant's dataset.
         /// </summary>
-        Local = 1
+        Local
     }
 }
