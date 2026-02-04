@@ -121,8 +121,6 @@ cosmos_livesite_mcp:
     - "Python 3.x with virtual environment"
 ```
 
-### 0.2 GitHub MCP Server
-
 ### 0.2 GitHub Access (SAML-Protected Repos)
 
 **⚠️ IMPORTANT: Azure org repos require SAML SSO - GitHub MCP Server is BLOCKED.**
@@ -865,6 +863,17 @@ anti_patterns:
     bad: "gh pr create --title 'Fix issue'"
     good: "gh pr create --draft --title 'Fix issue'"
     rule: "ALWAYS create PRs as draft, convert to ready only after CI passes"
+    
+  fix_at_wrong_layer:
+    bad: "Add null check at caller when the source method returns null incorrectly"
+    good: "Fix at source of truth - if GetStoreProxy() can return null when disposed, throw ObjectDisposedException there"
+    rule: "ALWAYS fix bugs at the source where the invalid state originates, not at callers"
+    principle: |
+      When a method returns an invalid value (null, error state), fix the method itself
+      rather than adding defensive checks in all callers. This:
+      - Provides clear error messages at the source
+      - Prevents the same bug pattern in other callers
+      - Keeps error handling centralized
 ```
 
 ### 1.0.5 Mandatory Local Test Validation Before Push
@@ -2741,11 +2750,11 @@ branch_to_pr_url:
 | Serialization | @serialization-owners | @sdk-team |
 | Encryption | @encryption-owners | @security-team |
 
-### 7.4 Remote CI Validation (Azure Pipelines Gates)
+### 7.5 Remote CI Validation (Azure Pipelines Gates)
 
 **Critical: Local tests are not sufficient. All fixes must pass the full Azure Pipelines CI gates.**
 
-#### 7.4.1 CI Pipeline Structure
+#### 7.5.1 CI Pipeline Structure
 
 The repository uses Azure Pipelines with multiple gate templates defined in `azure-pipelines.yml`:
 
@@ -2803,7 +2812,7 @@ ci_gates:
       - Thin client variant builds
 ```
 
-#### 7.4.2 Local vs Remote CI Comparison
+#### 7.5.2 Local vs Remote CI Comparison
 
 | Validation Type | Local Testing | Remote CI (Azure Pipelines) |
 |----------------|---------------|----------------------------|
@@ -2816,7 +2825,7 @@ ci_gates:
 | **Cross-Platform** | ⚠️ Single OS | ✅ Windows matrix |
 | **Performance Gates** | ⚠️ Variable hardware | ✅ Consistent CI agents |
 
-#### 7.4.3 Pre-PR Validation Workflow
+#### 7.5.3 Pre-PR Validation Workflow
 
 ```yaml
 validation_workflow:
@@ -3000,7 +3009,7 @@ validation_workflow:
     exit_condition: "All CI gates green"
 ```
 
-#### 7.4.4 CI Failure Triage
+#### 7.5.4 CI Failure Triage
 
 **⚠️ CRITICAL: After fixing any CI failure, FULL local validation is required BEFORE pushing.**
 
@@ -3104,7 +3113,7 @@ common_ci_failures:
       - Check if failure is in multi-region specific code
 ```
 
-#### 7.4.5 CI Gate Checklist for PR
+#### 7.5.5 CI Gate Checklist for PR
 
 ```markdown
 ## CI Validation Checklist
@@ -3137,7 +3146,7 @@ common_ci_failures:
 - [ ] PR ready for review (not draft)
 ```
 
-#### 7.4.6 Monitoring Tools
+#### 7.5.6 Monitoring Tools
 
 ```yaml
 ci_monitoring_tools:
@@ -3174,7 +3183,7 @@ ci_monitoring_tools:
       tail_lines: 500
 ```
 
-#### 7.4.7 Accessing Azure DevOps CI Logs
+#### 7.5.7 Accessing Azure DevOps CI Logs
 
 **Use Azure DevOps REST API with PAT (see Section 0.3.1 for setup).**
 
@@ -4126,12 +4135,27 @@ flaky_tests:
     seen_in: ["PR #5573 (merged)", "PR #5583", "Build 59156"]
     action: "Retry failed stage via MCP server"
     
-  # Add more as discovered:
-  # TestName:
-  #   location: "path/to/test"
-  #   symptom: "description"
-  #   seen_in: ["PR numbers where it failed"]
-  #   action: "retry/skip/fix"
+  RetryTransientIssuesTestAsync:
+    location: "Microsoft.Azure.Cosmos.EmulatorTests"
+    symptom: "Transient failure during emulator tests"
+    seen_in: ["PR #5588", "PR #5587"]
+    action: "Retry failed stage via ADO API"
+    
+  EmulatorTests_Release_Flaky:
+    location: "CI stage: EmulatorTests Release Flaky"
+    symptom: "Various timing-related failures"
+    seen_in: ["PR #5588 (Build 59213)"]
+    action: "Retry failed stage via ADO API"
+
+pre_existing_failures:
+  description: "Tests that consistently fail in master (not flaky)"
+  note: "These are baseline issues, not caused by your PR changes"
+  tests:
+    - name: "TestQueryExecutionInfo_FromString"
+      location: "OptimisticDirectExecutionQueryBaselineTests.cs"
+    - name: "TestTextDistributionPlanParsingFromStream"
+      location: "OptimisticDirectExecutionQueryBaselineTests.cs"
+  handling: "Ignore if they fail - verify by running on master branch"
 
 handling_flaky_failures:
   step_1: "Check if failed test is in flaky registry"
@@ -4291,8 +4315,17 @@ pr_review_monitoring:
   
   when_to_monitor:
     trigger: "After PR is marked ready for review"
-    frequency: "Check every session or when user requests status"
+    frequency: "Every 5-10 minutes while session is active"
     until: "PR is merged OR closed"
+    
+  monitoring_loop:
+    interval: "5-10 minutes"
+    check_ci: "gh pr checks {pr_number}"
+    check_comments: "gh api repos/{owner}/{repo}/pulls/{pr_number}/comments --jq '.[].created_at' | Select-Object -Last 1"
+    check_reviews: "gh pr view {pr_number} --json reviews,reviewDecision"
+    on_new_comment: "Read comment, address feedback, push fix, reply with commit SHA"
+    on_ci_failure: "Investigate, fix, push"
+    on_approval: "Merge or wait for additional approvals"
     
   check_for_reviews:
     command: "gh pr view {pr_number} --json reviews,reviewRequests,comments"
@@ -4846,7 +4879,9 @@ technical details.
 
 ---
 
-### 16.12 Investigation Document Template
+## 18. Reference Templates & Patterns
+
+### 18.1 Investigation Document Template
 
 **Create investigation docs in session workspace for complex issues:**
 
@@ -4900,7 +4935,7 @@ investigation_document:
     - "When context compaction is likely"
 ```
 
-### 16.13 Commit Message Format
+### 18.2 Commit Message Format
 
 **Follow conventional commit format for this repository:**
 
@@ -4952,7 +4987,7 @@ commit_format:
     Fixes #5547
 ```
 
-### 16.14 PR Description Template
+### 18.3 PR Description Template
 
 **Full investigation details for Copilot-authored PRs:**
 
@@ -5011,6 +5046,19 @@ pr_description_template: |
   - [x] No unrelated changes included
   - [x] Documentation updated (if applicable)
   
+  ## Plan Compliance Audit
+  
+  | Checkpoint | Status | Notes |
+  |------------|--------|-------|
+  | Searched existing PRs before branch | ✅/❌ | `gh pr list --search '{issue}'` |
+  | Searched existing branches | ✅/❌ | `git branch -a \| grep {issue}` |
+  | Local build succeeded | ✅/❌ | Exit code 0, 0 errors |
+  | Full unit tests passed | ✅/❌ | Or note pre-existing failures |
+  | Emulator tests passed | ✅/❌ | Or note if not applicable |
+  | Root cause documented | ✅/❌ | Code path traced |
+  | Investigation steps included | ✅/❌ | Summary in PR body |
+  | Issue comment posted | ✅/❌ | Link to comment |
+  
   ---
   *Generated by GitHub Copilot CLI Agent*
 
@@ -5023,7 +5071,7 @@ pr_title_format:
     - "Query: Refactors SQL generation for better readability"
 ```
 
-### 16.15 Code Style (StyleCop & EditorConfig)
+### 18.4 Code Style (StyleCop & EditorConfig)
 
 **Repository uses StyleCop.Analyzers and .editorconfig for code style enforcement.**
 
@@ -5075,7 +5123,7 @@ editorconfig:
 - [ ] 4-space indentation
 - [ ] CRLF line endings
 
-### 16.16 Async/Await & CancellationToken Patterns
+### 18.5 Async/Await & CancellationToken Patterns
 
 ```yaml
 async_patterns:
@@ -5107,7 +5155,7 @@ async_patterns:
     - "Never create fire-and-forget tasks without error handling"
 ```
 
-### 16.17 Error Handling Patterns
+### 18.6 Error Handling Patterns
 
 ```yaml
 exception_handling:
@@ -5142,7 +5190,7 @@ exception_handling:
     "503 ServiceUnavailable": "Transient, retry with backoff"
 ```
 
-### 16.18 Logging Conventions
+### 18.7 Logging Conventions
 
 ```yaml
 logging:
@@ -5172,7 +5220,7 @@ logging:
     never: "Sensitive data, PII, keys"
 ```
 
-### 16.19 Breaking Change Detection
+### 18.8 Breaking Change Detection
 
 ```yaml
 api_contracts:
@@ -5212,7 +5260,7 @@ api_contracts:
     - "If breaking, document in PR and get explicit approval"
 ```
 
-### 16.20 Security Review Checklist
+### 18.9 Security Review Checklist
 
 ```yaml
 security_review:
@@ -5236,7 +5284,7 @@ security_review:
     - "[ ] Key rotation supported"
 ```
 
-### 16.21 Performance Considerations
+### 18.10 Performance Considerations
 
 ```yaml
 performance:
@@ -5273,7 +5321,7 @@ performance:
     - "Add new benchmarks to Benchmark project if needed"
 ```
 
-### 16.22 Rollback Strategy
+### 18.11 Rollback Strategy
 
 ```yaml
 rollback:
@@ -5293,7 +5341,7 @@ rollback:
     - "Monitor after merge for 24h"
 ```
 
-### 16.23 Testing Patterns
+### 18.12 Testing Patterns
 
 ```yaml
 testing:
@@ -5327,7 +5375,7 @@ testing:
     update: "Run UpdateContracts.ps1 to refresh baselines"
 ```
 
-### 16.24 Dynamic .NET Version Testing
+### 18.13 Dynamic .NET Version Testing
 
 **For issues that only reproduce on newer .NET versions (e.g., .NET 10):**
 
@@ -5411,7 +5459,7 @@ dynamic_version_testing:
     - "Simple unit test is sufficient"
 ```
 
-### 16.25 Network and Region Debugging Techniques
+### 18.14 Network and Region Debugging Techniques
 
 **Useful techniques for investigating connectivity and region-related issues:**
 
@@ -5481,7 +5529,7 @@ network_debugging:
 
 ---
 
-### 16.26 GitHub Comment Attribution
+### 18.15 GitHub Comment Attribution
 
 **All GitHub comments posted by Copilot agents must include attribution:**
 
@@ -5510,7 +5558,7 @@ github_comment_attribution:
     - "Builds trust with community"
 ```
 
-### 16.27 Awaiting Customer Response Workflow
+### 18.16 Awaiting Customer Response Workflow
 
 **When investigation requires customer input before proceeding:**
 
@@ -5572,7 +5620,7 @@ awaiting_customer_workflow:
       - "Track multiple awaiting issues in session plan"
 ```
 
-### 16.28 Issue Status Tracking in Session
+### 18.17 Issue Status Tracking in Session
 
 **Maintain a status table when working multiple issues:**
 
@@ -5604,6 +5652,135 @@ session_status_table:
     - "When switching between issues"
     
   location: "Session plan.md in session-state folder"
+```
+
+### 18.18 GitHub CLI Workarounds
+
+**Known issues with `gh` CLI and workarounds:**
+
+```yaml
+gh_cli_workarounds:
+  gh_pr_edit_body_unreliable:
+    problem: "`gh pr edit --body-file` sometimes fails silently"
+    symptom: "Exit code 1 with deprecation warning, body not updated"
+    workaround: |
+      # Use gh api directly instead:
+      gh api repos/{owner}/{repo}/pulls/{pr_number} -X PATCH -F body=@body.md
+    example: |
+      gh api repos/Azure/azure-cosmos-dotnet-v3/pulls/5597 -X PATCH -F body=@pr_body.md
+      
+  gh_pr_edit_title_unreliable:
+    problem: "`gh pr edit --title` may fail with GraphQL warning"
+    workaround: |
+      gh api repos/{owner}/{repo}/pulls/{pr_number} -X PATCH -f title="New Title"
+
+  pr_body_formatting_corrupted:
+    problem: "PR description loses newlines, emojis corrupted (e.g., 🤖 becomes Γëí╞Æ├▒├╗)"
+    symptoms:
+      - "All content appears on single line"
+      - "Markdown headers not rendered"
+      - "Unicode characters corrupted"
+    causes:
+      - "Using Out-File without proper encoding"
+      - "PowerShell string handling stripping newlines"
+      - "gh pr create/edit with inline --body argument"
+    workaround: |
+      # 1. Write body to file with UTF8 no BOM encoding:
+      $body | Set-Content -Path "body.md" -Encoding UTF8
+      
+      # 2. Use gh api with -F to read from file:
+      gh api repos/{owner}/{repo}/pulls/{pr_number} -X PATCH -F body=@body.md
+      
+      # 3. For new PRs, use --body-file (not --body):
+      gh pr create --draft --title "..." --body-file body.md
+    verification: |
+      # After update, verify formatting preserved:
+      gh api repos/{owner}/{repo}/pulls/{pr_number} --jq '.body' | Select-Object -First 5
+      # Should show proper line breaks and headers
+    prevention:
+      - "NEVER use inline --body with multi-line content"
+      - "ALWAYS write to file first, then use -F body=@file or --body-file"
+      - "ALWAYS use UTF8 encoding (Set-Content -Encoding UTF8)"
+      - "VERIFY formatting after every PR create/update"
+```
+
+### 18.19 Sequence Diagrams in PRs
+
+**Add Mermaid sequence diagrams to help reviewers understand code flow:**
+
+```yaml
+sequence_diagrams:
+  when_to_add:
+    - "Race conditions or timing-sensitive code"
+    - "Multi-component interactions (client → handler → service)"
+    - "Before/after behavior changes"
+    - "Error propagation paths"
+    
+  format: |
+    ```mermaid
+    sequenceDiagram
+        participant A as Component A
+        participant B as Component B
+        
+        A->>B: Method call
+        B-->>A: Return value
+        A--xB: Exception thrown
+    ```
+    
+  example_before_after: |
+    ## Sequence Diagram
+    
+    ### Before Fix
+    ```mermaid
+    sequenceDiagram
+        App->>Client: Request()
+        Client--xApp: ❌ Confusing error
+    ```
+    
+    ### After Fix
+    ```mermaid
+    sequenceDiagram
+        App->>Client: Request()
+        Client--xApp: ❌ Clear ObjectDisposedException
+    ```
+    
+  benefits:
+    - "Reviewers understand flow at a glance"
+    - "Documents race condition scenarios"
+    - "Renders natively in GitHub markdown"
+```
+
+### 18.20 Review Feedback Workflow
+
+**Handling PR review comments efficiently:**
+
+```yaml
+review_feedback_workflow:
+  on_comment_received:
+    step_1: "Read and understand the feedback"
+    step_2: "Implement the fix locally"
+    step_3: "Build and test"
+    step_4: "Commit with descriptive message"
+    step_5: "Push to PR branch"
+    step_6: "Reply to comment with commit SHA"
+    
+  reply_format: |
+    Good catch! Fixed in commit {sha}.
+    
+    **Change:** {brief description of what changed}
+    
+  multiple_comments:
+    approach: "Address all comments in one commit if related"
+    separate_if: "Comments are unrelated or complex"
+    
+  disagreeing_with_feedback:
+    approach: "Reply explaining your reasoning"
+    be_open: "Consider reviewer's perspective"
+    escalate_if: "Fundamental design disagreement"
+    
+  requesting_re_review:
+    after: "All comments addressed and pushed"
+    command: "gh pr edit {number} --add-reviewer {reviewer}"
 ```
 
 ---
