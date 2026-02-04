@@ -93,11 +93,11 @@ namespace Microsoft.Azure.Cosmos
             }
             jsonWriter.WriteNumber("index", (uint)operation.OperationIndex);
 
-            //resourceBody
+            //resourceBody - written as nested JSON object
             if (!operation.ResourceBody.IsEmpty)
             {
-                string resourceBodyJson = System.Text.Encoding.UTF8.GetString(operation.ResourceBody.Span);
-                jsonWriter.WriteString("resourceBody", resourceBodyJson);
+                jsonWriter.WritePropertyName("resourceBody");
+                jsonWriter.WriteRawValue(operation.ResourceBody.Span, skipInputValidation: true);
             }
 
             // sessionToken

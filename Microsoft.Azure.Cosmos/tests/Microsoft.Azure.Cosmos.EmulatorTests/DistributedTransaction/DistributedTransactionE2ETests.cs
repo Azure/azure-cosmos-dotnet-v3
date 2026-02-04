@@ -240,9 +240,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(op.TryGetProperty("collectionName", out _));
                 Assert.IsTrue(op.TryGetProperty("operationType", out _));
 
-                // Deserialize and compare objects to avoid JSON formatting differences (e.g., 0 vs 0.0 for doubles)
-                string actualJson = op.GetProperty("resourceBody").GetString();
-                ToDoActivity actualDoc = JsonSerializer.Deserialize<ToDoActivity>(actualJson);
+                // resourceBody is now a nested JSON object, not a string
+                JsonElement resourceBody = op.GetProperty("resourceBody");
+                Assert.AreEqual(JsonValueKind.Object, resourceBody.ValueKind);
+                
+                ToDoActivity actualDoc = JsonSerializer.Deserialize<ToDoActivity>(resourceBody.GetRawText());
                 ToDoActivity expectedDoc = expectedDocs[i];
                 
                 Assert.AreEqual(expectedDoc.id, actualDoc.id);
