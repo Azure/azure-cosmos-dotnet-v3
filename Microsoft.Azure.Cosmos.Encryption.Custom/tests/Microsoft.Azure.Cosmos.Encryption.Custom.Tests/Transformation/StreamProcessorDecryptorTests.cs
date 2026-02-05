@@ -40,7 +40,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         public static void Init(TestContext ctx)
         {
             _ = ctx;
-            StreamProcessor.InitialBufferSize = 8; // force multiple resizes / leftover path
+            // Force multiple resizes / leftover path with small initial buffer size
+            PooledStreamConfiguration.SetConfiguration(new PooledStreamConfiguration { StreamProcessorBufferSize = 8 });
 
             mockEncryptor = TestEncryptorFactory.CreateMde(DekId, out mockDek);
         }
@@ -213,8 +214,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
 
             // Choose very small initial buffer so _ei object is fragmented.
-            int original = StreamProcessor.InitialBufferSize;
-            StreamProcessor.InitialBufferSize = 32;
+            PooledStreamConfiguration original = PooledStreamConfiguration.Current;
+            PooledStreamConfiguration.SetConfiguration(new PooledStreamConfiguration { StreamProcessorBufferSize = 32 });
             try
             {
                 // Act
@@ -234,7 +235,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             }
             finally
             {
-                StreamProcessor.InitialBufferSize = original; // restore
+                PooledStreamConfiguration.SetConfiguration(original); // restore
             }
         }
 
