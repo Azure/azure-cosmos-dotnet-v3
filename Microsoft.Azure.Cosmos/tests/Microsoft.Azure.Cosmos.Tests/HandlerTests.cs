@@ -808,5 +808,30 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return 1;
             }
         }
+
+        [TestMethod]
+        public void GetStoreProxyThrowsObjectDisposedExceptionAfterClientDisposal()
+        {
+            // Arrange
+            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
+            DocumentClient documentClient = client.DocumentClient;
+
+            // Create a mock request
+            DocumentServiceRequest request = DocumentServiceRequest.CreateFromName(
+                OperationType.Read,
+                "dbs/testdb/colls/testcoll/docs/testdoc",
+                ResourceType.Document,
+                AuthorizationTokenType.PrimaryMasterKey,
+                headers: null);
+
+            // Act - Dispose the client
+            client.Dispose();
+
+            // Assert - GetStoreProxy should throw ObjectDisposedException
+            ObjectDisposedException exception = Assert.ThrowsException<ObjectDisposedException>(() => documentClient.GetStoreProxy(request));
+            Assert.IsNotNull(exception);
+            Assert.IsTrue(exception.Message.Contains("Cannot process request because the CosmosClient has been disposed"));
+            Assert.IsTrue(exception.Message.Contains("Ensure all in-flight requests complete before disposing the client"));
+        }
     }
 }
