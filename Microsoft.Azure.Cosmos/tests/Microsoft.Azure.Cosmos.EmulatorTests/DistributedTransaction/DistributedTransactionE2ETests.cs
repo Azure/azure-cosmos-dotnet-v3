@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using OperationType = Microsoft.Azure.Documents.OperationType;
+    using OperationType = Documents.OperationType;
 
     [TestClass]
     public class DistributedTransactionE2ETests : BaseCosmosClientHelper
@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string mockErrorResponse = @"{
                 ""operationResponses"": [{
                     ""index"": 0,
-                    ""statusCode"": 409,
+                    ""statuscode"": 409,
                     ""substatuscode"": 0
                 }]
             }";
@@ -162,7 +162,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string mockResponse = $@"{{
                 ""operationResponses"": [{{
                     ""index"": 0,
-                    ""statusCode"": 201,
+                    ""statuscode"": 201,
                     ""etag"": ""\""test-etag\"""",
                     ""resourcebody"": ""{base64Body}""
                 }}]

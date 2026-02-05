@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -28,27 +27,19 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken.ThrowIfCancellationRequested();
 
                 string collectionPath = group.Key;
-                try
-                {
-                    ContainerProperties containerProperties = await clientContext.GetCachedContainerPropertiesAsync(
-                        collectionPath,
-                        NoOpTrace.Singleton,
-                        cancellationToken);
+                ContainerProperties containerProperties = await clientContext.GetCachedContainerPropertiesAsync(
+                    collectionPath,
+                    NoOpTrace.Singleton,
+                    cancellationToken);
 
-                    string containerResourceId = containerProperties.ResourceId;
-                    ResourceId resourceId = ResourceId.Parse(containerResourceId);
-                    string databaseResourceId = resourceId.DatabaseId.ToString();
+                string containerResourceId = containerProperties.ResourceId;
+                ResourceId resourceId = ResourceId.Parse(containerResourceId);
+                string databaseResourceId = resourceId.DatabaseId.ToString();
 
-                    foreach (DistributedTransactionOperation operation in group)
-                    {
-                        operation.CollectionResourceId = containerResourceId;
-                        operation.DatabaseResourceId = databaseResourceId;
-                    }
-                }
-                catch (Exception ex)
+                foreach (DistributedTransactionOperation operation in group)
                 {
-                    DefaultTrace.TraceError($"Failed to resolve RID for {collectionPath}: {ex.Message}");
-                    throw;
+                    operation.CollectionResourceId = containerResourceId;
+                    operation.DatabaseResourceId = databaseResourceId;
                 }
             }
         }

@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.Operations = operations ?? throw new ArgumentNullException(nameof(operations));
             this.serializerCore = serializerCore ?? throw new ArgumentNullException(nameof(serializerCore));
+            this.IdempotencyToken = Guid.NewGuid();
         }
 
         public IReadOnlyList<DistributedTransactionOperation> Operations { get; }
@@ -51,9 +52,6 @@ namespace Microsoft.Azure.Cosmos
                 await operation.MaterializeResourceAsync(this.serializerCore, cancellationToken);
                 operation.PartitionKeyJson ??= operation.PartitionKey.ToJsonString();
             }
-
-            // Generate idempotency token for this request
-            this.IdempotencyToken = Guid.NewGuid();
 
             this.bodyStream = DistributedTransactionSerializer.SerializeRequest(this.Operations);
         }
