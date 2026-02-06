@@ -13,10 +13,12 @@ namespace Microsoft.Azure.Cosmos
 
     internal class DistributedWriteTransactionCore : DistributedWriteTransaction
     {
-        protected List<DistributedTransactionOperation> operations;
+        private readonly CosmosClientContext clientContext;
+        private readonly List<DistributedTransactionOperation> operations;
 
-        internal DistributedWriteTransactionCore()
+        internal DistributedWriteTransactionCore(CosmosClientContext clientContext)
         {
+            this.clientContext = clientContext ?? throw new ArgumentNullException(nameof(clientContext));
             this.operations = new List<DistributedTransactionOperation>();
         }
 
@@ -116,8 +118,11 @@ namespace Microsoft.Azure.Cosmos
 
         public override async Task<DistributedTransactionResponse> CommitTransactionAsync(CancellationToken cancellationToken)
         {
-            await Task.CompletedTask;
-            throw new NotImplementedException();
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                operations: this.operations,
+                clientContext: this.clientContext);
+
+            return await committer.CommitTransactionAsync(cancellationToken);
         }
 
         private static void ValidateContainerReference(string database, string collection)
