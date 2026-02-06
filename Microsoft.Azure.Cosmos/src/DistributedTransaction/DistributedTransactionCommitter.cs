@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
             catch (Exception ex)
             {
                 DefaultTrace.TraceError($"Distributed transaction failed: {ex.Message}");
-                await this.AbortTransactionAsync(cancellationToken);
+                // await this.AbortTransactionAsync(cancellationToken);
                 throw;
             }
         }
