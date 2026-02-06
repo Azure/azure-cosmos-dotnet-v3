@@ -109,9 +109,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             JsonElement operations = requestJson.RootElement.GetProperty("operations");
             
             Assert.AreEqual(3, operations.GetArrayLength());
-            Assert.AreEqual((int)OperationType.Create, operations[0].GetProperty("operationType").GetInt32()); // Create
-            Assert.AreEqual((int)OperationType.Replace, operations[1].GetProperty("operationType").GetInt32()); // Replace  
-            Assert.AreEqual((int)OperationType.Delete, operations[2].GetProperty("operationType").GetInt32()); // Delete
+            Assert.AreEqual(OperationType.Create.ToString(), operations[0].GetProperty("operationType").GetString()); // Create
+            Assert.AreEqual(OperationType.Replace.ToString(), operations[1].GetProperty("operationType").GetString()); // Replace  
+            Assert.AreEqual(OperationType.Delete.ToString(), operations[2].GetProperty("operationType").GetString()); // Delete
 
             response.Dispose();
         }
