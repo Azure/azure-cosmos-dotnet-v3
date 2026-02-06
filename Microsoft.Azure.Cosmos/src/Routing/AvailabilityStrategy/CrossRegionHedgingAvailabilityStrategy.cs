@@ -173,7 +173,7 @@ namespace Microsoft.Azure.Cosmos
                                         hedgeRegions: hedgeRegions,
                                         requestNumber: requestNumber,
                                         trace: trace,
-                                        cancellationToken: cancellationToken,
+                                        cancellationToken: cancellationTokenSource.Token,
                                         cancellationTokenSource: cancellationTokenSource);
 
                                 requestTasks.Add(requestTask);
@@ -267,22 +267,22 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken,
             CancellationTokenSource cancellationTokenSource)
         {
-            RequestMessage clonedRequest;
-
-            using (clonedRequest = request.Clone(
+            RequestMessage clonedRequest = request.Clone(
                 trace,
-                clonedBody))
+                clonedBody);
+
+            clonedRequest.RequestOptions ??= new RequestOptions();
+
+            //we do not want to exclude any regions for the primary request
+            if (requestNumber > 0)
             {
-                clonedRequest.RequestOptions ??= new RequestOptions();
+                List<string> excludeRegions = new List<string>(hedgeRegions);
+                excludeRegions.RemoveAt(requestNumber);
+                clonedRequest.RequestOptions.ExcludeRegions = excludeRegions;
+            }
 
-                //we do not want to exclude any regions for the primary request
-                if (requestNumber > 0)
-                {
-                    List<string> excludeRegions = new List<string>(hedgeRegions);
-                    excludeRegions.RemoveAt(requestNumber);
-                    clonedRequest.RequestOptions.ExcludeRegions = excludeRegions;
-                }
-
+            try
+            {
                 return await this.RequestSenderAndResultCheckAsync(
                     sender,
                     clonedRequest,
@@ -290,6 +290,10 @@ namespace Microsoft.Azure.Cosmos
                     cancellationToken,
                     cancellationTokenSource, 
                     trace);
+            }
+            finally
+            {
+                clonedRequest.Dispose();
             }
         }
 
