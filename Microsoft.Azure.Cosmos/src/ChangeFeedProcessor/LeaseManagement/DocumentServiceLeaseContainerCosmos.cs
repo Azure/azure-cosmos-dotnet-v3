@@ -6,7 +6,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Net;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
@@ -44,38 +46,33 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             return ownedLeases;
         }
 
-        public override async Task<IReadOnlyList<LeaseExportData>> ExportLeasesAsync(
-            string exportedBy,
+        public override async Task<IReadOnlyList<JsonElement>> ExportLeasesAsync(
             CancellationToken cancellationToken = default)
         {
             IReadOnlyList<DocumentServiceLease> allLeases = await this.GetAllLeasesAsync().ConfigureAwait(false);
 
-            List<LeaseExportData> exportedLeases = new List<LeaseExportData>();
+            List<JsonElement> exportedLeases = new List<JsonElement>();
 
             foreach (DocumentServiceLease lease in allLeases)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                LeaseExportData exportData = LeaseExportHelper.ToExportData(lease, exportedBy);
-
-                // Include any existing ownership history from previous imports
-                List<LeaseOwnershipHistory> existingHistory = LeaseExportHelper.GetOwnershipHistory(lease);
-                if (existingHistory.Count > 0)
+                using (Stream stream = CosmosContainerExtensions.DefaultJsonSerializer.ToStream(lease))
+                using (StreamReader reader = new StreamReader(stream))
                 {
-                    // Prepend existing history (it will be before the current "exported" entry)
-                    existingHistory.AddRange(exportData.OwnershipHistory);
-                    exportData.OwnershipHistory = existingHistory;
+                    string payload = await reader.ReadToEndAsync().ConfigureAwait(false);
+                    using (JsonDocument doc = JsonDocument.Parse(payload))
+                    {
+                        exportedLeases.Add(doc.RootElement.Clone());
+                    }
                 }
-
-                exportedLeases.Add(exportData);
             }
 
             return exportedLeases.AsReadOnly();
         }
 
         public override async Task ImportLeasesAsync(
-            IReadOnlyList<LeaseExportData> leases,
-            string importedBy,
+            IReadOnlyList<JsonElement> leases,
             bool overwriteExisting = false,
             CancellationToken cancellationToken = default)
         {
@@ -84,21 +81,34 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 throw new ArgumentNullException(nameof(leases));
             }
 
-            foreach (LeaseExportData exportData in leases)
+            foreach (JsonElement leaseElement in leases)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                DocumentServiceLease lease = LeaseExportHelper.FromExportData(exportData, importedBy);
-
-                if (overwriteExisting)
+                if (leaseElement.ValueKind == JsonValueKind.Undefined || leaseElement.ValueKind == JsonValueKind.Null)
                 {
-                    // Use upsert to create or replace
-                    await this.UpsertLeaseAsync(lease).ConfigureAwait(false);
+                    continue;
                 }
-                else
+
+                string payloadJson = leaseElement.GetRawText();
+                using (MemoryStream stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(payloadJson)))
                 {
-                    // Try to create, ignore if already exists
-                    await this.TryCreateLeaseAsync(lease).ConfigureAwait(false);
+                    DocumentServiceLease lease = CosmosContainerExtensions.DefaultJsonSerializer.FromStream<DocumentServiceLease>(stream);
+                    if (lease == null)
+                    {
+                        continue;
+                    }
+
+                    if (overwriteExisting)
+                    {
+                        // Use upsert to create or replace
+                        await this.UpsertLeaseAsync(lease).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        // Try to create, ignore if already exists
+                        await this.TryCreateLeaseAsync(lease).ConfigureAwait(false);
+                    }
                 }
             }
         }
