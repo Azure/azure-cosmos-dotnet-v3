@@ -115,8 +115,8 @@ namespace Microsoft.Azure.Cosmos
             // operationType (string)
             jsonWriter.WriteString("operationType", operation.OperationType.ToString());
 
-            // resourceType (uint16)
-            jsonWriter.WriteNumber("resourceType", (ushort)ResourceType.Document);
+            // resourceType (string)
+            jsonWriter.WriteString("resourceType", ResourceType.Document.ToString());
 
             jsonWriter.WriteEndObject();
         }
