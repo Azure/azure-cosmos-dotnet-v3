@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -30,38 +31,29 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             return Task.FromResult<IEnumerable<DocumentServiceLease>>(this.container.Values.AsEnumerable());
         }
 
-        public override Task<IReadOnlyList<LeaseExportData>> ExportLeasesAsync(
-            string exportedBy,
+        public override Task<IReadOnlyList<JsonElement>> ExportLeasesAsync(
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            List<LeaseExportData> exportedLeases = new List<LeaseExportData>();
+            List<JsonElement> exportedLeases = new List<JsonElement>();
             
             foreach (DocumentServiceLease lease in this.container.Values)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 
-                LeaseExportData exportData = LeaseExportHelper.ToExportData(lease, exportedBy);
-                
-                // Include any existing ownership history from previous imports
-                List<LeaseOwnershipHistory> existingHistory = LeaseExportHelper.GetOwnershipHistory(lease);
-                if (existingHistory.Count > 0)
+                string payload = JsonSerializer.Serialize(lease, lease.GetType());
+                using (JsonDocument doc = JsonDocument.Parse(payload))
                 {
-                    // Prepend existing history (it will be before the current "exported" entry)
-                    existingHistory.AddRange(exportData.OwnershipHistory);
-                    exportData.OwnershipHistory = existingHistory;
+                    exportedLeases.Add(doc.RootElement.Clone());
                 }
-                
-                exportedLeases.Add(exportData);
             }
 
-            return Task.FromResult<IReadOnlyList<LeaseExportData>>(exportedLeases.AsReadOnly());
+            return Task.FromResult<IReadOnlyList<JsonElement>>(exportedLeases.AsReadOnly());
         }
 
         public override Task ImportLeasesAsync(
-            IReadOnlyList<LeaseExportData> leases,
-            string importedBy,
+            IReadOnlyList<JsonElement> leases,
             bool overwriteExisting = false,
             CancellationToken cancellationToken = default)
         {
@@ -72,11 +64,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            foreach (LeaseExportData exportData in leases)
+            foreach (JsonElement leaseElement in leases)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                DocumentServiceLease lease = LeaseExportHelper.FromExportData(exportData, importedBy);
+                DocumentServiceLease lease = DeserializeLease(leaseElement);
+                if (lease == null)
+                {
+                    continue;
+                }
 
                 if (overwriteExisting)
                 {
@@ -90,6 +86,39 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             }
 
             return Task.CompletedTask;
+        }
+
+        private static DocumentServiceLease DeserializeLease(JsonElement leaseElement)
+        {
+            if (leaseElement.ValueKind == JsonValueKind.Undefined || leaseElement.ValueKind == JsonValueKind.Null)
+            {
+                return null;
+            }
+
+            string payloadJson = leaseElement.GetRawText();
+
+            // Try EPK lease first, then fall back to Core lease
+            try
+            {
+                DocumentServiceLeaseCoreEpk epkLease = JsonSerializer.Deserialize<DocumentServiceLeaseCoreEpk>(payloadJson);
+                if (epkLease?.FeedRange != null)
+                {
+                    return epkLease;
+                }
+            }
+            catch (JsonException)
+            {
+                // Fall through to try Core lease
+            }
+
+            try
+            {
+                return JsonSerializer.Deserialize<DocumentServiceLeaseCore>(payloadJson);
+            }
+            catch (JsonException)
+            {
+                return null;
+            }
         }
     }
 }

@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
     using System.Collections.Generic;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping;
@@ -101,44 +102,37 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             }
         }
 
-        public override async Task<IReadOnlyList<LeaseExportData>> ExportLeasesAsync(CancellationToken cancellationToken = default)
+        public override async Task<IReadOnlyList<JsonElement>> ExportLeasesAsync(CancellationToken cancellationToken = default)
         {
-            // Wait for any ongoing start/stop operations to complete
-            // If processor is running, this will wait until StopAsync is called by the user
-            await this.runningLock.WaitAsync(cancellationToken).ConfigureAwait(false);
-            try 
+            // Initialize if needed to access the lease container
+            if (!this.initialized)
             {
-                if (this.isRunning)
+                await this.runningLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+                try
                 {
-                    // Release lock and throw - user must stop the processor first
-                    throw new InvalidOperationException(
-                        "Cannot export leases while the ChangeFeedProcessor is running. " +
-                        "Please call StopAsync() before exporting leases.");
+                    if (!this.initialized)
+                    {
+                        await this.InitializeAsync().ConfigureAwait(false);
+                    }
                 }
-
-                // Initialize if needed to access the lease container
-                if (!this.initialized)
+                finally
                 {
-                    await this.InitializeAsync().ConfigureAwait(false);
+                    this.runningLock.Release();
                 }
-
-                DefaultTrace.TraceInformation("Exporting leases...");
-                IReadOnlyList<LeaseExportData> exportedLeases = await this.documentServiceLeaseStoreManager
-                    .LeaseContainer
-                    .ExportLeasesAsync(this.instanceName, cancellationToken)
-                    .ConfigureAwait(false);
-
-                DefaultTrace.TraceInformation("Exported {0} leases.", exportedLeases.Count);
-                return exportedLeases;
             }
-            finally
-            {
-                this.runningLock.Release();
-            }
+
+            DefaultTrace.TraceInformation("Exporting leases...");
+            IReadOnlyList<JsonElement> exportedLeases = await this.documentServiceLeaseStoreManager
+                .LeaseContainer
+                .ExportLeasesAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            DefaultTrace.TraceInformation("Exported {0} leases.", exportedLeases.Count);
+            return exportedLeases;
         }
 
         public override async Task ImportLeasesAsync(
-            IReadOnlyList<LeaseExportData> leases,
+            IReadOnlyList<JsonElement> leases,
             bool overwriteExisting = false,
             CancellationToken cancellationToken = default)
         {
@@ -147,36 +141,30 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 throw new ArgumentNullException(nameof(leases));
             }
 
-            // Wait for any ongoing start/stop operations to complete
-            await this.runningLock.WaitAsync(cancellationToken).ConfigureAwait(false);
-            try
+            // Initialize if needed to access the lease container
+            if (!this.initialized)
             {
-                if (this.isRunning)
+                await this.runningLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+                try
                 {
-                    // Release lock and throw - user must stop the processor first
-                    throw new InvalidOperationException(
-                        "Cannot import leases while the ChangeFeedProcessor is running. " +
-                        "Please call StopAsync() before importing leases.");
+                    if (!this.initialized)
+                    {
+                        await this.InitializeAsync().ConfigureAwait(false);
+                    }
                 }
-
-                // Initialize if needed to access the lease container
-                if (!this.initialized)
+                finally
                 {
-                    await this.InitializeAsync().ConfigureAwait(false);
+                    this.runningLock.Release();
                 }
-
-                DefaultTrace.TraceInformation("Importing {0} leases (overwriteExisting={1})...", leases.Count, overwriteExisting);
-                await this.documentServiceLeaseStoreManager
-                    .LeaseContainer
-                    .ImportLeasesAsync(leases, this.instanceName, overwriteExisting, cancellationToken)
-                    .ConfigureAwait(false);
-
-                DefaultTrace.TraceInformation("Imported {0} leases.", leases.Count);
             }
-            finally
-            {
-                this.runningLock.Release();
-            }
+
+            DefaultTrace.TraceInformation("Importing {0} leases (overwriteExisting={1})...", leases.Count, overwriteExisting);
+            await this.documentServiceLeaseStoreManager
+                .LeaseContainer
+                .ImportLeasesAsync(leases, overwriteExisting, cancellationToken)
+                .ConfigureAwait(false);
+
+            DefaultTrace.TraceInformation("Imported {0} leases.", leases.Count);
         }
 
         private async Task InitializeAsync()
