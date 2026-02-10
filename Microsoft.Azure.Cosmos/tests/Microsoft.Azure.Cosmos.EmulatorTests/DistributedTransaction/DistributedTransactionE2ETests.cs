@@ -117,6 +117,85 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task ValidateSerializedRequestFieldDataTypes()
+        {
+            // Arrange
+            ToDoActivity createDoc = ToDoActivity.CreateRandomToDoActivity();
+            ToDoActivity replaceDoc = ToDoActivity.CreateRandomToDoActivity();
+
+            DistributedTransactionTestHandler handler = CreateMockHandler(
+                HttpStatusCode.OK,
+                CreateMockSuccessResponse(operationCount: 3));
+
+            using CosmosClient client = TestCommon.CreateCosmosClient(
+                clientOptions: new CosmosClientOptions
+                {
+                    CustomHandlers = { handler },
+                    ConnectionMode = ConnectionMode.Gateway
+                });
+
+            // Act
+            DistributedTransactionResponse response = await client.CreateDistributedWriteTransaction()
+                .CreateItem(this.database.Id, this.container.Id, new PartitionKey(createDoc.pk), createDoc)
+                .ReplaceItem(this.database.Id, this.container.Id, new PartitionKey(replaceDoc.pk), replaceDoc.id, replaceDoc)
+                .DeleteItem(this.database.Id, this.container.Id, new PartitionKey("delete-pk"), "delete-id")
+                .CommitTransactionAsync(CancellationToken.None);
+
+            // Assert - Parse captured request
+            using JsonDocument requestJson = JsonDocument.Parse(handler.CapturedRequestBody);
+
+            // Verify root structure
+            Assert.AreEqual(JsonValueKind.Object, requestJson.RootElement.ValueKind, "Root element should be an object");
+
+            // Verify operations array
+            Assert.IsTrue(requestJson.RootElement.TryGetProperty("operations", out JsonElement operations), "operations property should exist");
+            Assert.AreEqual(JsonValueKind.Array, operations.ValueKind, "operations should be an array");
+            Assert.AreEqual(3, operations.GetArrayLength(), "operations should have 3 elements");
+
+            // Validate datatypes for each operation
+            int operationIndex = 0;
+            foreach (JsonElement operation in operations.EnumerateArray())
+            {
+                // Verify operation is an object
+                Assert.AreEqual(JsonValueKind.Object, operation.ValueKind, $"Operation {operationIndex} should be an object");
+
+                (string Property, JsonValueKind Kind)[] requiredFields =
+                {
+                    ("databaseName", JsonValueKind.String),
+                    ("collectionName", JsonValueKind.String),
+                    ("collectionResourceId", JsonValueKind.String),
+                    ("databaseResourceId", JsonValueKind.String),
+                    ("partitionKey", JsonValueKind.String),
+                    ("index", JsonValueKind.Number),
+                    ("operationType", JsonValueKind.String),
+                    ("resourceType", JsonValueKind.String),
+                    ("sessionToken", JsonValueKind.String),
+                    ("etag", JsonValueKind.String)
+                };
+
+                foreach ((string property, JsonValueKind expectedKind) in requiredFields)
+                {
+                    this.ValidateValueKind(operation, property, expectedKind, operationIndex, isRequired: true);
+                }
+
+                (string Property, JsonValueKind Kind)[] optionalFields =
+                {
+                    ("id", JsonValueKind.String),
+                    ("resourceBody", JsonValueKind.Object),
+                };
+
+                foreach ((string property, JsonValueKind expectedKind) in optionalFields)
+                {
+                    this.ValidateValueKind(operation, property, expectedKind, operationIndex, isRequired: false);
+                }
+
+                operationIndex++;
+            }
+
+            response.Dispose();
+        }
+
+        [TestMethod]
         public async Task ValidateConflictResponseReturnsErrorStatus()
         {
             // Arrange
@@ -253,6 +332,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(expectedDoc.cost, actualDoc.cost);
                 Assert.AreEqual(expectedDoc.description, actualDoc.description);
             }
+        }
+
+        private void ValidateValueKind(JsonElement operation, string property, JsonValueKind expectedValueKind, int operationIndex, bool isRequired)
+        {
+            if (!operation.TryGetProperty(property, out JsonElement value))
+            {
+                Assert.IsFalse(isRequired, $"Operation {operationIndex}: required property '{property}' is missing");
+                return;
+            }
+
+            Assert.AreEqual(expectedValueKind, value.ValueKind, $"Operation {operationIndex}: '{property}' should be {expectedValueKind}");
         }
 
         #endregion
