@@ -1116,7 +1116,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void PreviousImageRetentionPolicySerialization()
         {
-            ContainerProperties containerSettings = new ContainerProperties("TestContainer", "/partitionKey");
+            ContainerProperties containerSettings = new ContainerProperties("TestContainer1", "/partitionKey");
             string serialization = JsonConvert.SerializeObject(containerSettings);
             Assert.IsFalse(serialization.Contains("previousImageRetentionPolicy"), "Previous Image Retention Policy should not be included by default");
 
@@ -1133,7 +1133,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void PreviousImageRetentionPolicySerialization_Disabled()
         {
-            ContainerProperties containerSettings = new ContainerProperties("TestContainer", "/partitionKey");
+            ContainerProperties containerSettings = new ContainerProperties("TestContainer2", "/partitionKey");
             containerSettings.PreviousImageRetentionPolicy = Cosmos.PreviousImageRetentionPolicy.Disabled;
             
             string serializationWithValues = JsonConvert.SerializeObject(containerSettings);
@@ -1149,7 +1149,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void PreviousImageRetentionPolicySerialization_IndividualFlags()
         {
             // Test EnabledForReplaceOperation
-            ContainerProperties containerSettings = new ContainerProperties("TestContainer", "/partitionKey");
+            ContainerProperties containerSettings = new ContainerProperties("TestContainer3", "/partitionKey");
             containerSettings.PreviousImageRetentionPolicy = Cosmos.PreviousImageRetentionPolicy.EnabledForReplaceOperation;
             
             string serialization = JsonConvert.SerializeObject(containerSettings);
