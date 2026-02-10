@@ -96,14 +96,28 @@ namespace Microsoft.Azure.Cosmos.Handlers
             ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, request.Trace);
             serviceRequest.RequestContext.ClientRequestStatistics = clientSideRequestStatisticsTraceDatum;
 
-            //TODO: extrace auth into a separate handler
-            string authorization = await ((ICosmosAuthorizationTokenProvider)this.client.DocumentClient).GetUserAuthorizationTokenAsync(
-                serviceRequest.ResourceAddress,
-                PathsHelper.GetResourcePath(request.ResourceType),
-                request.Method.ToString(),
-                serviceRequest.Headers,
-                AuthorizationTokenType.PrimaryMasterKey,
-                request.Trace);
+            string authorization;
+            if (request.OperationType == OperationType.Batch && request.ResourceType == ResourceType.Document)
+            {
+                authorization = await ((ICosmosAuthorizationTokenProvider)this.client.DocumentClient).GetUserAuthorizationTokenAsync(
+                    serviceRequest.ResourceAddress,
+                    String.Empty,
+                    request.Method.ToString(),
+                    serviceRequest.Headers,
+                    AuthorizationTokenType.PrimaryMasterKey,
+                    request.Trace);
+            }
+            else
+            {
+                //TODO: extrace auth into a separate handler
+                authorization = await ((ICosmosAuthorizationTokenProvider)this.client.DocumentClient).GetUserAuthorizationTokenAsync(
+                    serviceRequest.ResourceAddress,
+                    PathsHelper.GetResourcePath(request.ResourceType),
+                    request.Method.ToString(),
+                    serviceRequest.Headers,
+                    AuthorizationTokenType.PrimaryMasterKey,
+                    request.Trace);
+            }
 
             serviceRequest.Headers[HttpConstants.HttpHeaders.Authorization] = authorization;
 
