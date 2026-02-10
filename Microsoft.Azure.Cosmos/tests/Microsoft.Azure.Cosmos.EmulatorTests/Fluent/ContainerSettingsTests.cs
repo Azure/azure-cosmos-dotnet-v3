@@ -537,6 +537,73 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [Ignore("This test will be enabled once the emulator supports previousImageRetentionPolicy")]
+        [TestMethod]
+        public async Task TestPreviousImageRetentionPolicy()
+        {
+            Database databaseForPreviousImage = await this.GetClient().CreateDatabaseAsync("previousImageRetentionContainerTest",
+                cancellationToken: this.cancellationToken);
+
+            try
+            {
+                string containerName = "previousImageRetentionContainerTest";
+                string partitionKeyPath = "/users";
+
+                // Create container with PreviousImageRetentionPolicy set to EnabledForAllOperations
+                ContainerProperties containerProperties = new ContainerProperties(containerName, partitionKeyPath)
+                {
+                    PreviousImageRetentionPolicy = PreviousImageRetentionPolicy.EnabledForAllOperations
+                };
+
+                ContainerResponse containerResponse = await databaseForPreviousImage.CreateContainerAsync(containerProperties);
+
+                Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+                Assert.AreEqual(containerName, containerResponse.Resource.Id);
+                Assert.AreEqual(partitionKeyPath, containerResponse.Resource.PartitionKey.Paths.First());
+                ContainerProperties containerSettings = containerResponse.Resource;
+                Assert.IsNotNull(containerSettings.PreviousImageRetentionPolicy);
+                Assert.AreEqual(PreviousImageRetentionPolicy.EnabledForAllOperations, containerSettings.PreviousImageRetentionPolicy);
+
+                // Verify read returns the same policy
+                Container container = containerResponse.Container;
+                ContainerResponse readResponse = await container.ReadContainerAsync();
+                Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
+                Assert.IsNotNull(readResponse.Resource.PreviousImageRetentionPolicy);
+                Assert.AreEqual(PreviousImageRetentionPolicy.EnabledForAllOperations, readResponse.Resource.PreviousImageRetentionPolicy);
+
+                // Delete and recreate with different policy values
+                await container.DeleteContainerAsync();
+
+                // Test with EnabledForReplaceOperation
+                containerProperties = new ContainerProperties(containerName + "_replace", partitionKeyPath)
+                {
+                    PreviousImageRetentionPolicy = PreviousImageRetentionPolicy.EnabledForReplaceOperation
+                };
+                containerResponse = await databaseForPreviousImage.CreateContainerAsync(containerProperties);
+                Assert.AreEqual(PreviousImageRetentionPolicy.EnabledForReplaceOperation, containerResponse.Resource.PreviousImageRetentionPolicy);
+
+                // Test with EnabledForDeleteOperation
+                containerProperties = new ContainerProperties(containerName + "_delete", partitionKeyPath)
+                {
+                    PreviousImageRetentionPolicy = PreviousImageRetentionPolicy.EnabledForDeleteOperation
+                };
+                containerResponse = await databaseForPreviousImage.CreateContainerAsync(containerProperties);
+                Assert.AreEqual(PreviousImageRetentionPolicy.EnabledForDeleteOperation, containerResponse.Resource.PreviousImageRetentionPolicy);
+
+                // Test with Disabled
+                containerProperties = new ContainerProperties(containerName + "_disabled", partitionKeyPath)
+                {
+                    PreviousImageRetentionPolicy = PreviousImageRetentionPolicy.Disabled
+                };
+                containerResponse = await databaseForPreviousImage.CreateContainerAsync(containerProperties);
+                Assert.AreEqual(PreviousImageRetentionPolicy.Disabled, containerResponse.Resource.PreviousImageRetentionPolicy);
+            }
+            finally
+            {
+                await databaseForPreviousImage.DeleteAsync();
+            }
+        }
+
         [TestMethod]
         [Ignore("This test will be enabled once the vector similarity changes are made available into the public emulator.")]
         public async Task TestVectorEmbeddingPolicy()

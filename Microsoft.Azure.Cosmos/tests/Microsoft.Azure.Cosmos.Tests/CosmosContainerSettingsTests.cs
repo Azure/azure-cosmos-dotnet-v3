@@ -562,6 +562,91 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual("/fts3", fullTextIndexes[2].Path);
         }
 
+        [TestMethod]
+        public void ValidatePreviousImageRetentionPolicyIsOptional()
+        {
+            // Verify property is null by default and not included in serialization
+            ContainerProperties containerSettings = new ContainerProperties("TestContainer", "/partitionKey");
+            
+            // Property should be null by default
+            Assert.IsNull(containerSettings.PreviousImageRetentionPolicy);
+
+            // Serialize and verify the property is NOT in the JSON when null
+            string serialized = this.Serialize(containerSettings);
+            Assert.IsFalse(serialized.Contains("previousImageRetentionPolicy"), 
+                "previousImageRetentionPolicy should not be included in JSON when null");
+
+            // Verify existing container without the property can still be deserialized
+            string existingContainerJson = @"{""id"":""TestContainer"",""partitionKey"":{""paths"":[""/partitionKey""],""kind"":""Hash""}}";
+            ContainerProperties deserialized = JsonConvert.DeserializeObject<ContainerProperties>(existingContainerJson);
+            Assert.IsNotNull(deserialized);
+            Assert.AreEqual("TestContainer", deserialized.Id);
+            Assert.IsNull(deserialized.PreviousImageRetentionPolicy);
+        }
+
+        [TestMethod]
+        public void ValidatePreviousImageRetentionPolicySerialization()
+        {
+            // Test serialization when property is set
+            ContainerProperties containerSettings = new ContainerProperties("TestContainer", "/partitionKey")
+            {
+                PreviousImageRetentionPolicy = Cosmos.PreviousImageRetentionPolicy.EnabledForAllOperations
+            };
+
+            string serialized = this.Serialize(containerSettings);
+            Assert.IsTrue(serialized.Contains("previousImageRetentionPolicy"), 
+                "previousImageRetentionPolicy should be included in JSON when set");
+
+            // Verify round-trip deserialization
+            ContainerProperties deserialized = JsonConvert.DeserializeObject<ContainerProperties>(serialized);
+            Assert.IsNotNull(deserialized.PreviousImageRetentionPolicy);
+            Assert.AreEqual(Cosmos.PreviousImageRetentionPolicy.EnabledForAllOperations, deserialized.PreviousImageRetentionPolicy);
+        }
+
+        [TestMethod]
+        public void ValidatePreviousImageRetentionPolicyFlagsEnum()
+        {
+            // Verify the flags enum values
+            Assert.AreEqual(0, (int)Cosmos.PreviousImageRetentionPolicy.Disabled);
+            Assert.AreEqual(1, (int)Cosmos.PreviousImageRetentionPolicy.EnabledForReplaceOperation);
+            Assert.AreEqual(2, (int)Cosmos.PreviousImageRetentionPolicy.EnabledForDeleteOperation);
+            Assert.AreEqual(3, (int)Cosmos.PreviousImageRetentionPolicy.EnabledForAllOperations);
+
+            // Verify flags combination
+            Cosmos.PreviousImageRetentionPolicy combined = 
+                Cosmos.PreviousImageRetentionPolicy.EnabledForReplaceOperation | 
+                Cosmos.PreviousImageRetentionPolicy.EnabledForDeleteOperation;
+            Assert.AreEqual(Cosmos.PreviousImageRetentionPolicy.EnabledForAllOperations, combined);
+        }
+
+        [TestMethod]
+        public void ValidatePreviousImageRetentionPolicyDeserializationFromService()
+        {
+            // Simulate JSON response from service with the property
+            string serviceResponseJson = @"{
+                ""id"":""TestContainer"",
+                ""partitionKey"":{""paths"":[""/partitionKey""],""kind"":""Hash""},
+                ""previousImageRetentionPolicy"":3
+            }";
+
+            ContainerProperties deserialized = JsonConvert.DeserializeObject<ContainerProperties>(serviceResponseJson);
+            Assert.IsNotNull(deserialized);
+            Assert.AreEqual("TestContainer", deserialized.Id);
+            Assert.IsNotNull(deserialized.PreviousImageRetentionPolicy);
+            Assert.AreEqual(Cosmos.PreviousImageRetentionPolicy.EnabledForAllOperations, deserialized.PreviousImageRetentionPolicy);
+
+            // Test with Disabled value (0)
+            serviceResponseJson = @"{
+                ""id"":""TestContainer"",
+                ""partitionKey"":{""paths"":[""/partitionKey""],""kind"":""Hash""},
+                ""previousImageRetentionPolicy"":0
+            }";
+
+            deserialized = JsonConvert.DeserializeObject<ContainerProperties>(serviceResponseJson);
+            Assert.IsNotNull(deserialized.PreviousImageRetentionPolicy);
+            Assert.AreEqual(Cosmos.PreviousImageRetentionPolicy.Disabled, deserialized.PreviousImageRetentionPolicy);
+        }
+
         private static string SerializeDocumentCollection(DocumentCollection collection)
         {
             using (MemoryStream ms = new MemoryStream())
