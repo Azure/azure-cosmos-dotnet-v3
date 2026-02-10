@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -210,6 +209,25 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public QueryTextMode QueryTextMode { get; set; } = QueryTextMode.None;
 
+        /// <summary>
+        /// Gets or sets the scope for computing BM25 statistics used by FullTextScore in hybrid search queries.
+        /// </summary>
+        /// <value>
+        /// The scope for computing BM25 statistics. Defaults to <see cref="FullTextScoreScope.Global"/>.
+        /// </value>
+        /// <remarks>
+        /// <para>
+        /// When set to <see cref="FullTextScoreScope.Global"/>, BM25 statistics (term frequency, inverse document frequency,
+        /// and document length) are computed across all documents in the container, including all physical and logical partitions.
+        /// </para>
+        /// <para>
+        /// When set to <see cref="FullTextScoreScope.Local"/>, statistics are computed only over the subset of documents
+        /// within the partition key values specified in the query request. This is useful for multi-tenant scenarios where scoring
+        /// should reflect statistics that are accurate for a specific tenant's dataset.
+        /// </para>
+        /// </remarks>
+        public FullTextScoreScope FullTextScoreScope { get; set; } = FullTextScoreScope.Global;
+
         internal CosmosElement CosmosElementContinuationToken { get; set; }
 
         internal string StartId { get; set; }
@@ -228,7 +246,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal FeedRange FeedRange { get; set; }
 
-        internal bool IsHybridSearchQueryPlanOptimizationDisabled { get; set; } = ConfigurationManager.IsHybridSearchQueryPlanOptimizationDisabled(defaultValue: true);
+        internal bool IsHybridSearchQueryPlanOptimizationDisabled { get; set; } = ConfigurationManager.IsHybridSearchQueryPlanOptimizationDisabled(defaultValue: false);
 
         // This is a temporary flag to enable the distributed query gateway mode.
         // This flag will be removed once we have a way for the client to determine

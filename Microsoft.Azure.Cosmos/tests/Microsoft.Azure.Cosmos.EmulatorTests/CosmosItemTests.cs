@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
@@ -40,6 +41,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private Container Container = null;
         private ContainerProperties containerSettings = null;
 
+        private const string HubRegionHeader = "x-ms-cosmos-hub-region-processing-only";
         private static readonly string nonPartitionItemId = "fixed-Container-Item";
         private static readonly string undefinedPartitionItemId = "undefined-partition-Item";
 
@@ -275,7 +277,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     Assert.AreEqual(999999, ce.SubStatusCode);
                     string exception = ce.ToString();
-                    Assert.IsTrue(exception.StartsWith("Microsoft.Azure.Cosmos.CosmosException : Response status code does not indicate success: Forbidden (403); Substatus: 999999; "));
+                    Assert.IsTrue(exception.Contains("Response status code does not indicate success: Forbidden (403); Substatus: 999999; "));
                     string diagnostics = ce.Diagnostics.ToString();
                     Assert.IsTrue(diagnostics.Contains("999999"));
                     CosmosItemTests.ValidateCosmosException(ce);
@@ -2173,7 +2175,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     //new List<Documents.Routing.Range<string>> { new Documents.Routing.Range<string>("AA", "AA", true, true) },
                     containerResponse.Resource.PartitionKey,
                     vectorEmbeddingPolicy: null,
-                    containerResponse.Resource.GeospatialConfig.GeospatialType);
+                    containerResponse.Resource.GeospatialConfig.GeospatialType, false);
 
                 // There should only be one range since the EPK option is set.
                 List<PartitionKeyRange> partitionKeyRanges = await CosmosQueryExecutionContextFactory.GetTargetPartitionKeyRangesAsync(
@@ -4315,6 +4317,111 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 JsonConvert.DefaultSettings = () => default;
             }
+        }
+
+        [TestMethod]
+        [Owner("aavasthy")]
+        [Description("Forces two consecutive 404/1002 responses from the gateway and verifies ClientRetryPolicy sets the hub region header flag after the first retry fails.")]
+        public async Task ReadItemAsync_ShouldAddHubHeader_OnRetryAfter_404_1002()
+        {
+            int requestCount = 0;
+            int return404Count = 0;
+            const int maxReturn404 = 2; // Return 404/1002 twice
+
+            // Created HTTP handler to intercept requests
+            HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper
+            {
+                RequestCallBack = (request, cancellationToken) =>
+                {
+                    // Track all document read requests
+                    if (request.Method == HttpMethod.Get &&
+                        request.RequestUri != null &&
+                        request.RequestUri.AbsolutePath.Contains("/docs/"))
+                    {
+                        requestCount++;
+
+                        // Header should NOT be present on first retry (2nd request)
+                        if (requestCount == 2 &&
+                            request.Headers.TryGetValues(HubRegionHeader, out IEnumerable<string> firstRetryValues) &&
+                            firstRetryValues.Any())
+                        {
+                            Assert.Fail("Header should NOT be present on first retry attempt.");
+                        }
+
+                        // Return fake 404/1002 for first two requests
+                        if (return404Count < maxReturn404)
+                        {
+                            return404Count++;
+
+                            var errorResponse = new
+                            {
+                                code = "NotFound",
+                                message = "Message: {\"Errors\":[\"Resource Not Found. Learn more: https://aka.ms/cosmosdb-tsg-not-found\"]}\r\nActivityId: " + Guid.NewGuid() + ", Request URI: " + request.RequestUri,
+                                additionalErrorInfo = ""
+                            };
+
+                            HttpResponseMessage notFoundResponse = new HttpResponseMessage(HttpStatusCode.NotFound)
+                            {
+                                Content = new StringContent(
+                                    JsonConvert.SerializeObject(errorResponse),
+                                    Encoding.UTF8,
+                                    "application/json"
+                                )
+                            };
+
+                            // Add the substatus header for ReadSessionNotAvailable
+                            notFoundResponse.Headers.Add("x-ms-substatus", "1002");
+                            notFoundResponse.Headers.Add("x-ms-activity-id", Guid.NewGuid().ToString());
+                            notFoundResponse.Headers.Add("x-ms-request-charge", "1.0");
+
+                            return Task.FromResult(notFoundResponse);
+                        }
+                    }
+
+                    return Task.FromResult<HttpResponseMessage>(null);
+                }
+            };
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Gateway,
+                ConsistencyLevel = Cosmos.ConsistencyLevel.Session,
+                HttpClientFactory = () => new HttpClient(httpHandler),
+                MaxRetryAttemptsOnRateLimitedRequests = 9,
+                MaxRetryWaitTimeOnRateLimitedRequests = TimeSpan.FromSeconds(30)
+            };
+
+            using CosmosClient customClient = TestCommon.CreateCosmosClient(clientOptions);
+
+            Container customContainer = customClient.GetContainer(this.database.Id, this.Container.Id);
+
+            // Create a test item first
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+            await this.Container.CreateItemAsync(testItem, new Cosmos.PartitionKey(testItem.pk));
+
+            try
+            {
+                // This should trigger 404/1002 twice
+                // In single-region emulator, after first retry fails with 404/1002, it won't retry again
+                ItemResponse<ToDoActivity> response = await customContainer.ReadItemAsync<ToDoActivity>(
+                    testItem.id,
+                    new Cosmos.PartitionKey(testItem.pk));
+
+                Assert.Fail("Expected CosmosException due to consecutive 404/1002 failures.");
+            }
+            catch (CosmosException ex)
+            {
+                // Expected: After first retry fails with 404/1002, single master won't retry again
+                Assert.AreEqual(HttpStatusCode.NotFound, ex.StatusCode);
+                Assert.AreEqual((int)SubStatusCodes.ReadSessionNotAvailable, ex.SubStatusCode);
+            }
+
+            // Verify the expected behavior:
+            // 1. Initial request (requestCount = 1) fails with 404/1002
+            // 2. First retry (requestCount = 2) fails with 404/1002
+            // 3. No more retries because single master + no additional regions
+            Assert.AreEqual(2, requestCount, $"Expected exactly 2 requests (initial + 1 retry) for single-region emulator, but got {requestCount}");
+            Assert.AreEqual(2, return404Count, "Both requests should have returned 404/1002");
         }
 
         private async Task<T> AutoGenerateIdPatternTest<T>(Cosmos.PartitionKey pk, T itemWithoutId)

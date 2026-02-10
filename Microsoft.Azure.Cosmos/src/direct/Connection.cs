@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Documents.Rntbd
     using System.Security.Authentication;
     using System.Threading;
     using System.Threading.Tasks;
+    using System.Security.Cryptography.X509Certificates;
     using Microsoft.Azure.Cosmos.Core.Trace;
 
 #if COSMOSCLIENT
@@ -71,6 +72,8 @@ namespace Microsoft.Azure.Documents.Rntbd
         // Used only for integration tests
         private readonly RemoteCertificateValidationCallback remoteCertificateValidationCallback;
 
+        private readonly Func<string, X509Certificate2> clientCertificateFunction;
+
         private bool disposed = false;
 
         private TcpClient tcpClient;
@@ -121,6 +124,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             TimeSpan idleTimeout,
             MemoryStreamPool memoryStreamPool,
             RemoteCertificateValidationCallback remoteCertificateValidationCallback,
+            Func<string, X509Certificate2> clientCertificateFunction,
             Func<string, Task<IPAddress>> dnsResolutionFunction)
         {
             Debug.Assert(serverUri.PathAndQuery.Equals("/", StringComparison.Ordinal), serverUri.AbsoluteUri,
@@ -149,6 +153,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             this.memoryStreamPool = memoryStreamPool;
             this.remoteCertificateValidationCallback = remoteCertificateValidationCallback;
+            this.clientCertificateFunction = clientCertificateFunction;
 
             this.healthChecker = new (
                 sendDelayLimit: sendHangDetectionTime,
@@ -641,8 +646,17 @@ namespace Microsoft.Azure.Documents.Rntbd
                     TransportErrorCode.SslNegotiationTimeout);
                 this.UpdateLastSendAttemptTime();
 
-                await sslStream.AuthenticateAsClientAsync(host, clientCertificates: null,
-                    enabledSslProtocols: Connection.TlsProtocols, checkCertificateRevocation: false);
+                X509CertificateCollection clientCertificates = null;
+                if (this.clientCertificateFunction != null)
+                {
+                    X509Certificate2 clientCertificate = this.clientCertificateFunction(host);
+                    if (clientCertificate != null)
+                    {
+                        clientCertificates = new X509CertificateCollection() { clientCertificate };
+                    }
+                }
+                await sslStream.AuthenticateAsClientAsync(host, clientCertificates,
+                enabledSslProtocols: Connection.TlsProtocols, checkCertificateRevocation: false);
 
                 this.UpdateLastSendTime();
                 this.UpdateLastReceiveTime();

@@ -3,8 +3,6 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Documents.Client
 {
-    using Microsoft.Azure.Cosmos;
-
     /// <summary>
     /// Specifies the protocol to be used by DocumentClient for communicating to the Azure Cosmos DB service.
     /// </summary>

@@ -62,7 +62,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 "MediaResponse", // Part of dead code
                 "DocumentFeedResponse`1",// Part of dead code
                 "CosmosQuotaResponse",// Part of dead code
-                "StoredProcedureResponse`1" // Not supported as of now
+                "StoredProcedureResponse`1", // Not supported as of now
+                "DistributedTransactionResponse" // // Distributed transaction response in internal as of now
             };
 
             // This dictionary contains a Key-Value pair where the Key represents the Response Type compatible with Open Telemetry Response, and the corresponding Value is a mocked instance.
@@ -96,13 +97,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
             IEnumerable<Type> actualClasses = asm
                 .GetTypes()
                 .Where(type =>
-                    (type.Name.EndsWith("Response") || type.Name.EndsWith("Response`1")) && // Ending with Response and Response<T>
-                    !type.Name.Contains("OpenTelemetryResponse") && // Excluding OpenTelemetryResponse because we are testing this class
-                    !type.IsAbstract && // Excluding abstract classes
-                    !type.IsInterface && // Excluding interfaces
-                    !excludedResponses.Contains(type.Name) && // Excluding all the types defined in excludedResponses list
-                    !(type.Namespace != null && type.Namespace.StartsWith("Microsoft.Azure.Documents")) // Exclude types from direct Microsoft.Azure.Documents
-                );
+                                (type.Name.EndsWith("Response") || type.Name.EndsWith("Response`1")) && // Ending with Response and Response<T>
+                                !type.Name.Contains("OpenTelemetryResponse") && // Excluding OpenTelemetryResponse because we are testing this class
+                                !type.IsAbstract && // Excluding abstract classes
+                                !type.IsInterface && // Excluding interfaces
+                                !excludedResponses.Contains(type.Name)); // Excluding all the types defined in excludedResponses list
 
             foreach (Type className in actualClasses)
             {

@@ -26,6 +26,10 @@ namespace Microsoft.Azure.Documents
                     {
                         FeedResource<T>.collectionName = "Attachments";
                     }
+                    else if (typeof(AzureRbac).IsAssignableFrom(typeof(T)))
+                    {
+                        FeedResource<T>.collectionName = "AzureRbac";
+                    }
                     else
                     {
                         FeedResource<T>.collectionName = typeof(T).Name + "s";

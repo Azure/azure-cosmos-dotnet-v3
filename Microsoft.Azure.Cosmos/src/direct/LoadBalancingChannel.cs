@@ -66,6 +66,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                     channelProperties.EnableChannelMultiplexing,
                     channelProperties.MemoryStreamPool,
                     channelProperties.RemoteCertificateValidationCallback,
+                    channelProperties.ClientCertificateFunction,
+                    channelProperties.ClientCertificateFailureHandler,
                     channelProperties.DnsResolutionFunction);
                 this.partitions = new LoadBalancingPartition[channelProperties.PartitionCount];
                 for (int i = 0; i < this.partitions.Length; i++)

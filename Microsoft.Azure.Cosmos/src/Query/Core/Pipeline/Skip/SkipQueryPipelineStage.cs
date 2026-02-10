@@ -5,12 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip
 {
     using System;
-    using System.Collections.Generic;
-    using System.Text;
-    using System.Threading;
-    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
     internal abstract partial class SkipQueryPipelineStage : QueryPipelineStageBase

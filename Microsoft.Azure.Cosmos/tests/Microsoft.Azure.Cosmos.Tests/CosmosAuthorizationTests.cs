@@ -291,6 +291,57 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
+        [TestMethod]
+        [TestCategory("Flaky")]
+        [Timeout(30000)]
+        public async Task TestTokenCredentialBackgroundRefreshAsync()
+        {
+            // When token is within tokenCredentialRefreshBuffer of expiry, start background task to refresh token,
+            // but return the cached token.
+            string token1 = "Token1";
+            string token2 = "Token2";
+            bool firstTimeGetToken = true;
+
+            TestTokenCredential testTokenCredential = new TestTokenCredential(() =>
+            {
+                if (firstTimeGetToken)
+                {
+                    firstTimeGetToken = false;
+
+                    return new ValueTask<AccessToken>(new AccessToken(token1, DateTimeOffset.UtcNow + TimeSpan.FromSeconds(10)));
+                }
+                else
+                {
+                    return new ValueTask<AccessToken>(new AccessToken(token2, DateTimeOffset.MaxValue));
+                }
+            });
+
+            using (TokenCredentialCache tokenCredentialCache = this.CreateTokenCredentialCache(testTokenCredential))
+            {
+                string t1 = await tokenCredentialCache.GetTokenAsync(NoOpTrace.Singleton);
+                Assert.AreEqual(token1, t1);
+
+                // Token is valid for 6 seconds. Client TokenCredentialRefreshBuffer is set to 5 seconds.
+                // After waiting for 2 seconds, the cache token is still valid, but it will be refreshed in the background.
+                await Task.Delay(TimeSpan.FromSeconds(2));
+
+                string t2 = await tokenCredentialCache.GetTokenAsync(NoOpTrace.Singleton);
+                Assert.AreEqual(token1, t2);
+
+                // Wait until the background refresh occurs.
+                while (testTokenCredential.NumTimesInvoked == 1)
+                {
+                    await Task.Delay(500);
+                }
+
+                string t3 = await tokenCredentialCache.GetTokenAsync(NoOpTrace.Singleton);
+                Assert.AreEqual(token2, t3);
+
+                Assert.AreEqual(2, testTokenCredential.NumTimesInvoked);
+                this.ValidateSemaphoreIsReleased(tokenCredentialCache);
+            }
+        }
+
         // When disposing, the internal cancellationtoken should be signaled
         [TestMethod]
         [Timeout(30000)]

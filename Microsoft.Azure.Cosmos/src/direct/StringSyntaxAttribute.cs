@@ -7,17 +7,12 @@
 #pragma warning disable NamespaceMatchesFolderStructure // The namespace needs to be System.Diagnostics.CodeAnalysis.
 namespace System.Diagnostics.CodeAnalysis
 #pragma warning restore NamespaceMatchesFolderStructure
-#pragma warning disable SA1505 // Opening braces should not be followed by blank line
 {
-
-#pragma warning disable CS1584 // XML comment has syntactically incorrect cref attribute
-#pragma warning restore SA1505 // Opening braces should not be followed by blank line
     /// <summary>
     /// Partial copy of NET7's StringSyntaxAttribute.
     /// </summary>
-    /// <seealso cref="https://github.com/dotnet/runtime/blob/main/src/libraries/System.Private.CoreLib/src/System/Diagnostics/CodeAnalysis/StringSyntaxAttribute.cs"/>
+    /// See https://github.com/dotnet/runtime/blob/main/src/libraries/System.Private.CoreLib/src/System/Diagnostics/CodeAnalysis/StringSyntaxAttribute.cs
     [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
-#pragma warning restore CS1584 // XML comment has syntactically incorrect cref attribute
 #if DOCDBCLIENT // We don't want to update the public API in the client
     internal
 #else

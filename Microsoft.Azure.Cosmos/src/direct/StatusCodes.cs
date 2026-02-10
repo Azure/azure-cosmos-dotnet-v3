@@ -40,9 +40,10 @@ namespace Microsoft.Azure.Documents
         BadGateway = 502,
         ServiceUnavailable = 503,
 
-        //Operation pause and cancel. These are FAKE status codes for QOS logging purpose only.
+        //Operation pause, cancel, and yield. These are FAKE status codes for QOS logging purpose only.
         OperationPaused = 1200,
         OperationCancelled = 1201,
+        OperationYielding = 1202,
 
         // Internal Status Codes for Migration errors
         PartitionMigrationOperationException = 2001
@@ -73,11 +74,6 @@ namespace Microsoft.Azure.Documents
         ScriptCompileError = 0xFFFF,    // From ExecuteStoredProcedure.
         AnotherOfferReplaceOperationIsInProgress = 3205,
         HttpListenerException = 1101,
-        NotImplementedPartitonKeyKindOrVersion = 1038, // Used for ThinProxy
-        MultipleAccountsNotAllowedInSameConnection = 1039, // Used for ThinProxy
-        ThinClientPublicEndpointDisabled = 1040, // Used for ThinProxy
-        MissingRequiredRntbdToken = 1041, // Used for ThinProxy
-        InvalidRntbdToken = 1042, // Used for ThinProxy
 
         // 410: StatusCodeType_Gone: substatus
         NameCacheIsStale = 1000,
@@ -110,6 +106,7 @@ namespace Microsoft.Azure.Documents
         RedundantCollectionPut = 1009,
         SharedThroughputDatabaseQuotaExceeded = 1010,
         SharedThroughputOfferGrowNotNeeded = 1011,
+        RedundantDatabasePut = 1012,
         PartitionKeyQuotaOverLimit = 1014,
         SharedThroughputDatabaseCollectionCountExceeded = 1019,
         SharedThroughputDatabaseCountExceeded = 1020,
@@ -126,6 +123,30 @@ namespace Microsoft.Azure.Documents
         // 409: Partition migration Count mismatch conflict sub status codes
         PartitionMigrationDocumentCountMismatchBetweenSourceAndTargetPartition = 3050,
         PartitionMigrationDocumentCountMismatchBetweenTargetPartitionReplicas = 3051,
+        PartitionMigrationDocumentCountMismatchWithinPartitionReplicas = 3052,
+
+        // Error codes for external backup and restore, ranges from 3500-3599
+        InvalidBackupMetadataInRestoreRequestClientError = 3500,
+        IncorrectApiTypeForCosmosDBAccountUserError = 3501,
+        RequestNotSupportedOnMultiRegionCosmosDBAccountUserError = 3502,
+        RequestNotSupportedOnOfflineCosmosDBAccountUserError = 3503,
+        RequestNotSupportedOnNonEmptyCosmosDBAccountUserError = 3504,
+        MissingMetadataStorageUnitInRestoreRequestClientError = 3505,
+        MissingDataStorageUnitInRestoreRequestClientError = 3506,
+        ExternalBackupAndRestoreServerError = 3507,
+        AnotherOperationInProgressOnCosmosDBAccountUserError = 3508,
+        InvalidMetadataCommitBlobUriClientError = 3509,
+        CrossRegionExternalBackupNotAllowedUserError = 3510,
+        PartitionLimitExceededUserError = 3511,
+        BackupNotReadyServerError = 3512,
+        InvalidBackupTimestampClientError = 3513,
+        LongTermProtectionNotEnabledUserError = 3514,
+        RequestNotSupportedOnPeriodicBackupModeCosmosDBAccountUserError = 3515,
+        RequestNotSupportedOnPPAFEnabledCosmosDBAccountUserError = 3516,
+        CrossRegionLongTermProtectionNotAllowedUserError = 3517,
+        RestoreNotSupportedOnServerlessCosmosDBAccountUserError = 3518,
+        IncrementalBackupNotYetSupportedUserError = 3519,
+        IncrementalBackupRestoreNotYetSupportedUserError = 3520,
 
         // 503: Service Unavailable due to region being out of capacity for bindable partitions
         InsufficientBindablePartitions = 1007,
@@ -210,7 +231,7 @@ namespace Microsoft.Azure.Documents
         PartitionMigrationIsDisabledAtTheCurrentArmLocation = 2054,
         PartitionMigrationFailedToAcquirePartitionMigrationLocks = 2055,
         PartitionMigrationIsDisabledOnTheRegionalAccount = 2056,
-        PartitionMigrationWaitForCatchupTimedOut = 2057,
+        PartitionMigrationWaitForLSNCatchupTimedOut = 2057,
         PartitionMigrationFailureMitigationWrongServiceType = 2058,
         PartitionMigrationWaitForTargetReplicaResourceCreationTimedOut = 2059,
         PartitionMigrationIsDisabledOnTheService = 2060,
@@ -225,11 +246,48 @@ namespace Microsoft.Azure.Documents
         PartitionMigrationCanNotProceedDuringBlockedWindow = 2069,
         RevokedPartitionMigrationCanNotProceedForMultimasterAccount = 2070,
         RevokedPartitionMigrationCanNotProceedForNonRevokedAccount = 2071,
-        PartitionMigrationWaitForCatchupGotCancelledBeforeTimeout = 2072,
+        PartitionMigrationWaitForLSNCatchupGotCancelledBeforeTimeout = 2072,
         PartitionMigrationWaitForLocalCatchupTimedOut = 2073,
         PartitionMigrationFailureMitigationInvalidResumeStep = 2074,
         PartitionMigrationResetConfigsAfterWaitForFullSyncTookTooLong = 2075,
         PartitionMigrationResetConfigsAfterWaitForFullSyncReceivedException = 2076,
+        PartitionMigrationAccountConsistencyLevelIsBoundedStaleness = 2077,
+        PartitionMigrationWaitForVectorIndexCatchupTimedOut = 2078,
+        PartitionMigrationWaitForVectorIndexingCatchupGotCancelledBeforeTimeout = 2079,
+        PartitionMigrationWaitForCatchupFailedWithException = 2080,
+        PartitionMigrationListingMasterServicePartitionsFailed = 2081,
+        PartitionMigrationListingServerPartitionsFromMasterFailed = 2082,
+        PartitionMigrationCanNotAcquireRegionalPartitionMigrationLock = 2083,
+        PartitionMigrationDidNotCompleteValidateDocumentCountAcrossReplicasInTenRetries = 2084,
+        PartitionMigrationCanNotProceedForFailoverFailedRegionalDatabaseAccount = 2085,
+        PartitionMigrationFailedWithExceptionInjection = 2086,
+        PartitionMigrationTargetInFederationsToAvoid = 2087,
+        RevokedPartitionMigrationCanNotAcquireDatabaseAccountLock = 2088,
+        RevokedPartitionReseedingCannotProceedForNonRevokedAccount = 2089,
+        RevokedPartitionReseedingIsDisabled = 2090,
+        RevokedPartitionMigrationCanNotAcquireGlobalDatabaseAccountLock = 2091,
+        RevokedPartitionReseedingCanNotAcquireGlobalDatabaseAccountLock = 2092,
+        PartitionMigrationFailureMitigationTargetNotBound = 2093,
+        PartitionMigrationAttemptedBeforeCooldown = 2094,
+        PartitionMigrationSourceServiceDeleted = 2095,
+
+        // 412: PreconditionFailed codes for PartitionMigration from backend
+        MismatchingCollectionRidsOnMigratePartitionDuringMigration = 5325,
+
+        // 412: PreConditionFailed Cross SubRegion Migration SubStatus Codes
+        CrossSubRegionMigrationIsDisabledOnTheRegionalAccount = 2200,
+
+        // 412: PreConditionFailed SoftDelete substatus codes
+        AccountIsSoftDeleted = 1300,
+        DatabaseIsSoftDeleted = 1301,
+        CollectionIsSoftDeleted = 1302,
+        ResourceStillSoftDeleted = 1303,
+        ServerSoftDeletionMetadataOutOfSyncWithMaster = 1304,
+        SoftDeletionTimestampsNotUpdated = 1305,
+        SoftDeletionMetadataMismatch = 1306,
+        SoftDeleteOperationFailedWithExceptionInjection = 1307,
+        NullSoftDeletionMetadata = 1308,
+        InvalidSoftDeletionMetadata = 1309,
 
         // 500: InternalServerError
         ConfigurationNameNotEmpty = 3001,
@@ -239,6 +297,7 @@ namespace Microsoft.Azure.Documents
         PartitionFailoverErrorCode = 3010,
         OperationManagerDequeuePumpStopped = 3021,
         OperationCancelledWithNoRollback = 3042,
+        SplitTimedOut = 3043,
 
         // 429: Request Rate Too Large
         PrepareTimeLimitExceeded = 3207,
@@ -251,6 +310,7 @@ namespace Microsoft.Azure.Documents
         SystemResourceUnavailable = 3092,
         ThrottleDueToTransportBufferUsage = 3103,
         TooManyThroughputBucketUpdates = 3213,
+        MicrosoftFabricCUBudgetExceeded = 3300,
 
         // Key Vault Access Client Error Code
         AadClientCredentialsGrantFailure = 4000, // Indicated access to AAD failed to get a token
@@ -273,6 +333,16 @@ namespace Microsoft.Azure.Documents
         KeyVaultNotFound = 4017, // Indicates that the Key Vault could not be found by the system.
         KeyDisabledOrExpired = 4018, // Indicates that the Key Vault key has been disabled.
         MasterServiceUnavailable = 4019, // Indicates that the master service is unavailable.
+
+        // Fabric codes
+        // Fabric codes are in the range of 6050-6999
+        InsufficientFabricPermissions = 6050,
+        FabricAuthorizationFailed = 6051,
+        FabricOperationUnsupported = 6052,
+        FabricTokenValidatonFailed = 6053,
+        InvalidFabricAppId = 6054,
+        InvalidFabricTenantId = 6055,
+        InvalidFabricAritfactId = 6056,
 
         // Keep in sync with Microsoft.Azure.Cosmos.ServiceFramework.Security.AadAuthentication.AadSubStatusCodes
         // 401 : Unauthorized Exception (User-side errors start with 50)
@@ -341,6 +411,8 @@ namespace Microsoft.Azure.Documents
         IncrementGlobalConfigurationNumberTopologyUpsertIntentNotApplied = 8003,
         AddRegionUpsertIntentNotApplied = 8004,
         RemoveReadRegionUpsertIntentNotApplied = 8005,
+        RemoveReadRegionTopologyValidationFailed = 8006,
+        PrepareForEntityDeletionTopologyValidationFailed = 8007,
 
         // SDK Codes (Client)
         // IMPORTANT - keep these consistent with Java SDK as well
@@ -363,6 +435,9 @@ namespace Microsoft.Azure.Documents
         // INVALID_BACKEND_RESPONSE = 20908;
         // UNKNOWN_QUORUM_RESULT = 20909;
         // INVALID_RESULT = 20910;
+        // TRANSIT_TIMEOUT = 20911;
+        // CLOSED_CLIENT = 20912;
+        WriteRegionBarrierChangedMidOperation = 20913,
 
         //SDK Codes (Server)
         // IMPORTANT - keep these consistent with Java SDK as well
@@ -376,10 +451,36 @@ namespace Microsoft.Azure.Documents
         ServerGenerated503 = 21008,
         Server_NoValidStoreResponse = 21009,
         // ServerGenerated408 = 21010 - currently only applicable in Java
+        Server_BarrierThrottled = 21011, // indicates the primary operation succeeded, but barrier failed due to 429 throttling
+        Server_NRegionCommitWriteBarrierNotMet = 21012,
+        Server_WriteBarrierThrottled = 21013,
 
         // Data Transfer Application related
         MissingPartitionKeyInDataTransfer = 22001,
-        InvalidPartitionKeyInDataTransfer = 22002
+        InvalidPartitionKeyInDataTransfer = 22002,
+
+        // Failover Priority Change Rollback Failed
+        FailoverPriorityChangeRollbackFailed = 23001,
+
+        #region ThinProxy specific subStatusCodes
+        // ThinProxy specific subStatusCodes are in the range of 13000-13100
+        ThinProxy_MultipleAccountsNotAllowedInSameConnection = 13000,
+        ThinProxy_ThinClientPublicEndpointDisabled = 13001,
+        ThinProxy_MissingRequiredRntbdToken = 13002,
+        ThinProxy_InvalidRntbdToken = 13003,
+        ThinProxy_DefaultConsistencyLevelIsNull = 13004,
+        ThinProxy_InvalidRequestLevelConsistency = 13005,
+        ThinProxy_TopologyClientBadRequest = 13006,
+        ThinProxy_InvalidRequestBytes =  13007,
+        ThinProxy_Generated401 = 13008,
+        ThinProxy_Generated408 = 13009,
+        ThinProxy_RequestThrottled = 13010,
+        ThinProxy_Generated500 = 13011,
+        ThinProxy_Generated503 = 13012,
+        ThinProxy_QueryPlanParsingError = 13013,
+        ThinProxy_QueryPlanCompilationError = 13014,
+        ThinProxy_QueryPlanUnexpectedError = 13015,
+        #endregion
     }
 
     internal static class StatusCodesExtensions
@@ -423,6 +524,12 @@ namespace Microsoft.Azure.Documents
         public static bool IsSDKGeneratedSubStatus(this SubStatusCodes code)
         {
             return ((int)code > SubStatusCodesExtensions.SDKGeneratedSubStatusStartingCode);
+        }
+
+        public static bool IsExternalBackupAndRestoreSubStatus(this SubStatusCodes code)
+        {
+            int intCode = (int)code;
+            return (intCode >= 3500 && intCode <= 3599);
         }
     }
 

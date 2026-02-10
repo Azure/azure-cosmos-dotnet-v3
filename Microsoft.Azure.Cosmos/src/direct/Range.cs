@@ -210,5 +210,99 @@ namespace Microsoft.Azure.Documents.Routing
                 }
             }
         }
+
+        public class LengthAwareMinComparer : IComparer<Range<T>>
+        {
+            private readonly IComparer<T> boundsComparer;
+
+            public static readonly LengthAwareMinComparer Instance = new LengthAwareMinComparer(TComparer);
+
+            public LengthAwareMinComparer(IComparer<T> boundsComparer)
+            {
+                this.boundsComparer = boundsComparer;
+            }
+
+            public int Compare(Range<T> left, Range<T> right)
+            {
+                if (left == null || right == null)
+                {
+                    throw new ArgumentNullException("Range<T> LengthAwareMinComparer comparison: Both left and right arguments must be non-null.");
+                }
+
+                int result;
+                if (typeof(T) == typeof(string))
+                {
+                    result = Range<T>.CompareHexStrings(left.Min as string, right.Min as string, boundsComparer);
+                }
+                else
+                {
+                    result = this.boundsComparer.Compare(left.Min, right.Min);
+                }
+
+                if (result != 0 || left.IsMinInclusive == right.IsMinInclusive)
+                {
+                    return result;
+                }
+
+                return left.IsMinInclusive ? -1 : 1;
+            }
+        }
+
+        public class LengthAwareMaxComparer : IComparer<Range<T>>
+        {
+            private readonly IComparer<T> boundsComparer;
+
+            public static readonly LengthAwareMaxComparer Instance = new LengthAwareMaxComparer(TComparer);
+
+            public LengthAwareMaxComparer(IComparer<T> boundsComparer)
+            {
+                this.boundsComparer = boundsComparer;
+            }
+
+            public int Compare(Range<T> left, Range<T> right)
+            {
+                if (left == null || right == null)
+                {
+                    throw new ArgumentNullException("Range<T> LengthAwareMaxComparer comparison: Both left and right arguments must be non-null.");
+                }
+
+                int result;
+                if (typeof(T) == typeof(string))
+                {
+                    result = Range<T>.CompareHexStrings(left.Max as string, right.Max as string, boundsComparer);
+                }
+                else
+                {
+                    result = this.boundsComparer.Compare(left.Max, right.Max);
+                }
+
+                if (result != 0 || left.IsMaxInclusive == right.IsMaxInclusive)
+                {
+                    return result;
+                }
+
+                return left.IsMaxInclusive ? 1 : -1;
+            }
+        }
+
+        private static int CompareHexStrings(string leftString, string rightString, IComparer<T> boundsComparer)
+        {
+            if (leftString == null || rightString == null)
+            {
+                throw new ArgumentNullException("Range<T> CompareHexStrings comparison: Both left and right arguments must be non-null.");
+            }
+
+            if (leftString.Length == rightString.Length)
+            {
+                return boundsComparer.Compare((T)(object)leftString, (T)(object)rightString);
+            }
+
+            string leftStr = leftString.TrimEnd('0');
+            string rightStr = rightString.TrimEnd('0');
+
+            return boundsComparer.Compare(
+                (T)(object)leftStr,
+                (T)(object)rightStr);
+        }
     }
 }

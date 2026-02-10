@@ -68,6 +68,11 @@ namespace Microsoft.Azure.Documents
             StorageAuthToken = 0x002D,
             RetriableWriteCachedResponse = 0x002E,
             EncryptionScope = 0x0030,
+            AzureRbac = 0x0034,
+            DistributedTransactionBatch = 0x0035,
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
         }
 
         public enum RntbdOperationType : ushort
@@ -127,6 +132,20 @@ namespace Microsoft.Azure.Documents
             CreateRidRangeResources = 0x0036,
             Truncate = 0x0037,
             RelocateLeakedTentativeWrites = 0x0039,
+            ExternalPreBackup = 0x003A,
+            ExternalBackup = 0x003B,
+            CheckExternalBackupStatus = 0x003C,
+            ExternalBackupRestore = 0x003D,
+            CheckExternalBackupRestoreStatus = 0x003E,
+            PrepareDistributedTransaction = 0x003F,
+            CommitDistributedTransaction = 0x0040,
+            AbortDistributedTransaction = 0x0041,
+            QueryPlan = 0x0042,
+            CancelExternalBackup = 0x0043,
+            CancelExternalBackupRestore = 0x0044,
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
         }
 
         public enum ConnectionContextRequestTokenIdentifiers : ushort
@@ -138,6 +157,10 @@ namespace Microsoft.Azure.Documents
             EnableChannelMultiplexing = 0x0004,
             ThinProxySignature = 0x0005,
             ThinProxySignatureDate = 0x0006,
+            MutualTlsAuthMode = 0x0007,
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
         }
 
         public sealed class ConnectionContextRequest : RntbdTokenStream<ConnectionContextRequestTokenIdentifiers>
@@ -151,6 +174,10 @@ namespace Microsoft.Azure.Documents
             public RntbdToken enableChannelMultiplexing;
             public RntbdToken thinProxySignature;
             public RntbdToken thinProxySignatureDate;
+            public RntbdToken mutualTlsAuthMode;
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
 
             public ConnectionContextRequest()
             {
@@ -161,6 +188,7 @@ namespace Microsoft.Azure.Documents
                 this.enableChannelMultiplexing = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)ConnectionContextRequestTokenIdentifiers.EnableChannelMultiplexing);
                 this.thinProxySignature = new RntbdToken(false, RntbdTokenTypes.String, (ushort)ConnectionContextRequestTokenIdentifiers.ThinProxySignature);
                 this.thinProxySignatureDate = new RntbdToken(false, RntbdTokenTypes.SmallString, (ushort)ConnectionContextRequestTokenIdentifiers.ThinProxySignatureDate);
+                this.mutualTlsAuthMode = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)ConnectionContextRequestTokenIdentifiers.MutualTlsAuthMode);
 
                 this.tokens = new RntbdToken[]
                 {
@@ -171,6 +199,7 @@ namespace Microsoft.Azure.Documents
                     this.enableChannelMultiplexing,
                     this.thinProxySignature,
                     this.thinProxySignatureDate,
+                    this.mutualTlsAuthMode,
                 };
             }
         }
@@ -183,6 +212,10 @@ namespace Microsoft.Azure.Documents
             ServerVersion = 0x0003,
             IdleTimeoutInSeconds = 0x0004,
             UnauthenticatedTimeoutInSeconds = 0x0005,
+            MutualTlsAuthThumbprint = 0x0006,
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
         }
 
         public sealed class ConnectionContextResponse : RntbdTokenStream<ConnectionContextResponseTokenIdentifiers>
@@ -195,6 +228,7 @@ namespace Microsoft.Azure.Documents
             public RntbdToken serverVersion;
             public RntbdToken idleTimeoutInSeconds;
             public RntbdToken unauthenticatedTimeoutInSeconds;
+            public RntbdToken mutualTlsAuthThumbprint;
 
             public ConnectionContextResponse()
             {
@@ -204,6 +238,7 @@ namespace Microsoft.Azure.Documents
                 this.serverVersion = new RntbdToken(true, RntbdTokenTypes.SmallString, (ushort)ConnectionContextResponseTokenIdentifiers.ServerVersion);
                 this.idleTimeoutInSeconds = new RntbdToken(false, RntbdTokenTypes.ULong, (ushort)ConnectionContextResponseTokenIdentifiers.IdleTimeoutInSeconds);
                 this.unauthenticatedTimeoutInSeconds = new RntbdToken(false, RntbdTokenTypes.ULong, (ushort)ConnectionContextResponseTokenIdentifiers.UnauthenticatedTimeoutInSeconds);
+                this.mutualTlsAuthThumbprint = new RntbdToken(false, RntbdTokenTypes.SmallString, (ushort)ConnectionContextResponseTokenIdentifiers.MutualTlsAuthThumbprint);
 
                 this.tokens = new RntbdToken[]
                 {
@@ -213,6 +248,7 @@ namespace Microsoft.Azure.Documents
                     this.serverVersion,
                     this.idleTimeoutInSeconds,
                     this.unauthenticatedTimeoutInSeconds,
+                    this.mutualTlsAuthThumbprint,
                 };
             }
         }
@@ -224,6 +260,9 @@ namespace Microsoft.Azure.Documents
             Exclude = 0x02,
 
             Invalid = 0xFF,
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
         }
 
         public enum RntbdMigrateCollectionDirective : byte
@@ -232,6 +271,9 @@ namespace Microsoft.Azure.Documents
             Freeze = 0x01,
 
             Invalid = 0xFF,
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
         }
 
         public enum RntbdRemoteStorageType : byte
@@ -240,6 +282,9 @@ namespace Microsoft.Azure.Documents
             NotSpecified = 0x01,
             Standard = 0x02,
             Premium = 0x03,
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
         }
 
         public enum RntbdConsistencyLevel : byte
@@ -251,6 +296,9 @@ namespace Microsoft.Azure.Documents
             ConsistentPrefix = 0x04,
 
             Invalid = 0xFF,
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
         }
 
         public enum RntdbEnumerationDirection : byte
@@ -258,12 +306,18 @@ namespace Microsoft.Azure.Documents
             Invalid = 0x00,
             Forward = 0x01,
             Reverse = 0x02,
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
         }
 
         public enum RntbdFanoutOperationState : byte
         {
             Started = 0x01,
             Completed = 0x02,
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
         }
 
         public enum RntdbReadFeedKeyType : byte
@@ -272,6 +326,9 @@ namespace Microsoft.Azure.Documents
             ResourceId = 0x01,
             EffectivePartitionKey = 0x02,
             EffectivePartitionKeyRange = 0x03,
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
         }
 
         public enum RntbdContentSerializationFormat : byte
@@ -281,6 +338,9 @@ namespace Microsoft.Azure.Documents
             HybridRow = 0x02,
 
             Invalid = 0xFF,
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
         }
 
         [Flags]
@@ -290,6 +350,9 @@ namespace Microsoft.Azure.Documents
             JsonText = 0x01,
             CosmosBinary = 0x02,
             HybridRow = 0x04,
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
         }
 
         public enum RntbdSystemDocumentType : byte
@@ -298,8 +361,14 @@ namespace Microsoft.Azure.Documents
             MaterializedViewLeaseDocument = 0x01,
             MaterializedViewBuilderOwnershipDocument = 0x02,
             MaterializedViewLeaseStoreInitDocument = 0x03,
+            EmbeddingGeneratorLeaseDocument = 0x04,
+            EmbeddingGeneratorOwnershipDocument = 0x05,
+            EmbeddingGeneratorLeaseStoreInitDocument = 0x06,
 
             Invalid = 0xFF,
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
         }
 
         public enum RntbdRequestedCollectionType : byte
@@ -307,12 +376,26 @@ namespace Microsoft.Azure.Documents
             All = 0x00,
             Standard = 0x01,
             MaterializedView = 0x02,
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
         }
 
         public enum RntbdPriorityLevel : byte
         {
             High = 0x01,
             Low = 0x02,
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
+        }
+
+        public enum RntbdMutualTlsAuthMode : byte
+        {
+            System = 0x00,
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
         }
 
         public enum RequestIdentifiers : ushort
@@ -530,6 +613,32 @@ namespace Microsoft.Azure.Documents
             PopulateVectorIndexAggregateProgress = 0x00E3,
             AllowTopologyUpsertWithoutIntent = 0x00E4,
             ReadGlobalCommittedData = 0x00E5,
+            IsSoftDeletionOrRecoveryOperation = 0x00E6,
+            WorkloadId = 0x00E7,
+            RegionalDatabaseAccountName = 0x00E8,
+            OriginalAuthTokenType = 0x00E9,
+            AllowBarrierRequestWhenRWStatusRevoked = 0x00EA,
+            PopulateGlobalEpochRecordCount = 0x00EB,
+            PopulateCanFailoverManagerAccessDocumentStore = 0x00EC,
+            IsEmbeddingGeneratorRequest = 0x00ED,
+            PopulateGloballyAcceptedFailoverPolicy = 0x00EE,
+            ShouldProcessOnlyInHubRegion = 0x00EF,
+            BypassSoftDeletionBlocking = 0x00F0,
+            IsStrongConsistencyStoreClient = 0x00F1,
+            AzureRbacName = 0x00F2,
+            PopulateGlobalStateWriteQuorumRegionsSet = 0x00F3,
+            IsRequestIgnoredForAutoscaleReporting = 0x00F4,
+            DtcVersion = 0x00F5,
+            UserAgent = 0x00F6,
+            ContentType = 0x00F7,
+            IdempotencyToken = 0x00F8,
+            AllowInternalServerlessOfferRead = 0x00F9,
+            HybridLogicalClockTimestamp = 0x00FA,
+            DistributedTransactionId = 0x00FB,
+            CreatePKRangesWithStatusOffline = 0x00FC,
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
         }
 
         public sealed class Request : RntbdTokenStream<RequestIdentifiers>
@@ -749,6 +858,29 @@ namespace Microsoft.Azure.Documents
             public RntbdToken populateVectorIndexAggregateProgress;
             public RntbdToken allowTopologyUpsertWithoutIntent;
             public RntbdToken readGlobalCommittedData;
+            public RntbdToken isSoftDeletionOrRecoveryOperation;
+            public RntbdToken workloadId;
+            public RntbdToken regionalDatabaseAccountName;
+            public RntbdToken originalAuthTokenType;
+            public RntbdToken allowBarrierRequestWhenRWStatusRevoked;
+            public RntbdToken populateGlobalEpochRecordCount;
+            public RntbdToken populateCanFailoverManagerAccessDocumentStore;
+            public RntbdToken isEmbeddingGeneratorRequest;
+            public RntbdToken populateGloballyAcceptedFailoverPolicy;
+            public RntbdToken shouldProcessOnlyInHubRegion;
+            public RntbdToken bypassSoftDeletionBlocking;
+            public RntbdToken isStrongConsistencyStoreClient;
+            public RntbdToken azureRbacName;
+            public RntbdToken populateGlobalStateWriteQuorumRegionsSet;
+            public RntbdToken isRequestIgnoredForAutoscaleReporting;
+            public RntbdToken dtcVersion;
+            public RntbdToken userAgent;
+            public RntbdToken contentType;
+            public RntbdToken idempotencyToken;
+            public RntbdToken allowInternalServerlessOfferRead;
+            public RntbdToken hybridLogicalClockTimestamp;
+            public RntbdToken distributedTransactionId;
+            public RntbdToken createPKRangesWithStatusOffline;
 
             public Request()
             {
@@ -965,6 +1097,29 @@ namespace Microsoft.Azure.Documents
                 this.populateVectorIndexAggregateProgress = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.PopulateVectorIndexAggregateProgress);
                 this.allowTopologyUpsertWithoutIntent = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.AllowTopologyUpsertWithoutIntent);
                 this.readGlobalCommittedData = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.ReadGlobalCommittedData);
+                this.isSoftDeletionOrRecoveryOperation = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.IsSoftDeletionOrRecoveryOperation);
+                this.workloadId = new RntbdToken(false, RntbdTokenTypes.UShort, (ushort)RequestIdentifiers.WorkloadId);
+                this.regionalDatabaseAccountName = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.RegionalDatabaseAccountName);
+                this.originalAuthTokenType = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.OriginalAuthTokenType);
+                this.allowBarrierRequestWhenRWStatusRevoked = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.AllowBarrierRequestWhenRWStatusRevoked);
+                this.populateGlobalEpochRecordCount = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.PopulateGlobalEpochRecordCount);
+                this.populateCanFailoverManagerAccessDocumentStore = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.PopulateCanFailoverManagerAccessDocumentStore);
+                this.isEmbeddingGeneratorRequest = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.IsEmbeddingGeneratorRequest);
+                this.populateGloballyAcceptedFailoverPolicy = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.PopulateGloballyAcceptedFailoverPolicy);
+                this.shouldProcessOnlyInHubRegion = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.ShouldProcessOnlyInHubRegion);
+                this.bypassSoftDeletionBlocking = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.BypassSoftDeletionBlocking);
+                this.isStrongConsistencyStoreClient = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.IsStrongConsistencyStoreClient);
+                this.azureRbacName = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.AzureRbacName);
+                this.populateGlobalStateWriteQuorumRegionsSet = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.PopulateGlobalStateWriteQuorumRegionsSet);
+                this.isRequestIgnoredForAutoscaleReporting = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.IsRequestIgnoredForAutoscaleReporting);
+                this.dtcVersion = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.DtcVersion);
+                this.userAgent = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.UserAgent);
+                this.contentType = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.ContentType);
+                this.idempotencyToken = new RntbdToken(false, RntbdTokenTypes.Guid, (ushort)RequestIdentifiers.IdempotencyToken);
+                this.allowInternalServerlessOfferRead = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.AllowInternalServerlessOfferRead);
+                this.hybridLogicalClockTimestamp = new RntbdToken(false, RntbdTokenTypes.LongLong, (ushort)RequestIdentifiers.HybridLogicalClockTimestamp);
+                this.distributedTransactionId = new RntbdToken(false, RntbdTokenTypes.Guid, (ushort)RequestIdentifiers.DistributedTransactionId);
+                this.createPKRangesWithStatusOffline = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.CreatePKRangesWithStatusOffline);
 
                 this.tokens = new RntbdToken[]
                 {
@@ -1198,6 +1353,29 @@ namespace Microsoft.Azure.Documents
                     this.populateVectorIndexAggregateProgress,
                     this.allowTopologyUpsertWithoutIntent,
                     this.readGlobalCommittedData,
+                    this.isSoftDeletionOrRecoveryOperation,
+                    this.workloadId,
+                    this.regionalDatabaseAccountName,
+                    this.originalAuthTokenType,
+                    this.allowBarrierRequestWhenRWStatusRevoked,
+                    this.populateGlobalEpochRecordCount,
+                    this.populateCanFailoverManagerAccessDocumentStore,
+                    this.isEmbeddingGeneratorRequest,
+                    this.populateGloballyAcceptedFailoverPolicy,
+                    this.shouldProcessOnlyInHubRegion,
+                    this.bypassSoftDeletionBlocking,
+                    this.isStrongConsistencyStoreClient,
+                    this.azureRbacName,
+                    this.populateGlobalStateWriteQuorumRegionsSet,
+                    this.isRequestIgnoredForAutoscaleReporting,
+                    this.dtcVersion,
+                    this.userAgent,
+                    this.contentType,
+                    this.idempotencyToken,
+                    this.allowInternalServerlessOfferRead,
+                    this.hybridLogicalClockTimestamp,
+                    this.distributedTransactionId,
+                    this.createPKRangesWithStatusOffline,
                 };
             }
         }
@@ -1302,6 +1480,10 @@ namespace Microsoft.Azure.Documents
             VectorIndexAggregateProgress = 0x0083,
             MergeProgressBlockedReason = 0x0084,
             ThroughputBucketApplied = 0x0085,
+            HybridLogicalClockTimestamp = 0x0086,
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
         }
 
         //
@@ -1333,6 +1515,9 @@ namespace Microsoft.Azure.Documents
             /// Invalid caller Id
             /// </summary>
             Invalid = 0x04,
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
         }
 
         internal sealed class RntbdEntityPool<T, TU>

@@ -12,5 +12,7 @@ namespace Microsoft.Azure.Documents
     internal interface IServiceConfigurationReaderExtension : IServiceConfigurationReader
     {
         IServiceRetryParams TryGetServiceRetryParams(DocumentServiceRequest documentServiceRequest);
+
+        bool TryGetConsistencyLevel(DocumentServiceRequest documentServiceRequest, out ConsistencyLevel consistencyLevel);
     }
 }

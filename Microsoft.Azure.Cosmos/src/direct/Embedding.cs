@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Documents
 {
     using System;
+    using System.Globalization;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
 
@@ -13,6 +14,8 @@ namespace Microsoft.Azure.Documents
     /// </summary>
     internal sealed class Embedding : JsonSerializable
     {
+        private EmbeddingSource embeddingSource;
+        
         public Embedding() 
         { 
         }
@@ -90,6 +93,31 @@ namespace Microsoft.Azure.Documents
             set
             {
                 base.SetValue(Constants.Properties.DistanceFunction, value);
+            }
+        }
+
+        /// <summary>
+        /// Gets the EmbeddingSource associated with the Embedding.
+        /// </summary>
+        /// <value>
+        /// The EmbeddingSource associated with the VectorEmbeddingPolicy.
+        /// </value>
+        [JsonProperty(PropertyName = Constants.Properties.EmbeddingSource, DefaultValueHandling = DefaultValueHandling.Ignore, NullValueHandling = NullValueHandling.Ignore)]
+        public EmbeddingSource EmbeddingSource
+        {
+            get
+            {
+                if (this.embeddingSource == null)
+                {
+                    this.embeddingSource = base.GetObject<EmbeddingSource>(Constants.Properties.EmbeddingSource);
+                }
+
+                return this.embeddingSource;
+            }
+            set
+            {
+                this.embeddingSource = value;
+                base.SetObject<EmbeddingSource>(Constants.Properties.EmbeddingSource, value);
             }
         }
     }

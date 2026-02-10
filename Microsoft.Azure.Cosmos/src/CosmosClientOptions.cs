@@ -174,7 +174,7 @@ namespace Microsoft.Azure.Cosmos
         /// <para>
         /// During the CosmosClient initialization the account information, including the available regions, is obtained from the <see cref="CosmosClient.Endpoint"/>.
         /// The CosmosClient will use the value of <see cref="ApplicationPreferredRegions"/> to populate the preferred list with the account available regions that intersect with its value.
-        /// If the value of <see cref="ApplicationPreferredRegions"/> contains regions that are not an available region in the account, the values will be ignored. If the these invalid regions are added later to the account, the CosmosClient will use them if they are higher in the preference order.
+        /// If the value of <see cref="ApplicationPreferredRegions"/> contains regions that are not an available region in the account, the values will be ignored. If these invalid regions are added later to the account, the CosmosClient will use them if they are higher in the preference order.
         /// </para>
         /// <para>
         /// If during CosmosClient initialization, the <see cref="CosmosClient.Endpoint"/> is not reachable, the CosmosClient will attempt to recover and obtain the account information issuing requests to the regions in <see cref="ApplicationPreferredRegions"/> in the order that they are listed.
@@ -466,6 +466,25 @@ namespace Microsoft.Azure.Cosmos
         /// The default value for this parameter is 'false'.
         /// </summary>
         internal bool EnableStreamPassThrough { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether to use length-aware range comparators for EPK range comparisons.
+        /// Length-aware range comparators were introduced in Range class to handle EPK range comparisons correctly 
+        /// in the case of a container's physical partition set consisting of fully and partially specified EPK values.
+        /// By default, length-aware range comparator is enabled. Refer to Range.cs in Msdata project for more details. 
+        /// Range.LengthAwareMinComparer/LengthAwareMaxComparer.
+        /// Setting the value to false will disable length-aware range comparator and switch to using the regular 
+        /// Range.MinComparer/MaxComparer.
+        /// </summary>
+        /// <value>
+        /// The default value is true.
+        /// </value>
+        internal bool UseLengthAwareRangeComparer { get; set; } =
+#if !INTERNAL
+            true;
+#else
+            false;
+#endif
 
         /// <summary>
         /// (Direct/TCP) Controls the amount of idle time after which unused connections are closed.

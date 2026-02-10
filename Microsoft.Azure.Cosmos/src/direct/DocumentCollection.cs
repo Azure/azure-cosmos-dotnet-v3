@@ -110,7 +110,10 @@ namespace Microsoft.Azure.Documents
         private ConflictResolutionPolicy conflictResolutionPolicy;
         private ChangeFeedPolicy changeFeedPolicy;
         private CollectionBackupPolicy collectionBackupPolicy;
+        private ExternalBackupFeatureFlags externalBackupFeatureFlags;
+        private PreviousImageRetentionPolicy previousImageRetentionPolicy;
         private MaterializedViewDefinition materializedViewDefinition;
+        private MaterializedViewsProperties materializedViewsProperties;
         private ByokConfig byokConfig;
         private ClientEncryptionPolicy clientEncryptionPolicy;
         private DataMaskingPolicy dataMaskingPolicy;
@@ -287,6 +290,28 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        /// Gets the <see cref="MaterializedViewsProperties"/> associated with the collection. 
+        /// </summary>
+        [JsonProperty(PropertyName = Constants.Properties.MaterializedViewsProperties)]
+        internal MaterializedViewsProperties MaterializedViewsProperties
+        {
+            get
+            {
+                if (this.materializedViewsProperties == null)
+                {
+                    this.materializedViewsProperties = base.GetObject<MaterializedViewsProperties>(Constants.Properties.MaterializedViewsProperties) ?? null;
+                }
+
+                return this.materializedViewsProperties;
+            }
+            set
+            {
+                this.materializedViewsProperties = value;
+                base.SetObject<MaterializedViewsProperties>(Constants.Properties.MaterializedViewsProperties, value);
+            }
+        }
+
+        /// <summary>
         /// Gets the <see cref="ByokConfig"/> associated with the collection from the Azure Cosmos DB service. 
         /// </summary>
         /// <value>
@@ -326,12 +351,6 @@ namespace Microsoft.Azure.Documents
             }
             set
             {
-#pragma warning disable CS0472 // The result of the expression is always the same since a value of this type is never equal to 'null'
-                if(value == null)
-                {
-                    throw new ArgumentNullException(string.Format(CultureInfo.CurrentCulture, RMResources.PropertyCannotBeNull, "UniqueIndexNameEncodingMode"));
-                }
-#pragma warning restore CS0472 // The result of the expression is always the same since a value of this type is never equal to 'null'
                 this.uniqueIndexNameEncodingMode = value;
                 this.SetValue(Constants.Properties.UniqueIndexNameEncodingMode, value);
             }
@@ -884,6 +903,36 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        /// Gets the <see cref="ExternalBackupFeatureFlags"/> associated with the collection from the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>
+        /// The external backup feature flags associated with the collection.
+        /// </value>
+        [JsonProperty(PropertyName = Constants.Properties.ExternalBackupFeatureFlags, DefaultValueHandling = DefaultValueHandling.Ignore, NullValueHandling = NullValueHandling.Ignore)]
+        internal ExternalBackupFeatureFlags ExternalBackupFeatureFlags
+        {
+            get
+            {
+                if (this.externalBackupFeatureFlags == null)
+                {
+                    this.externalBackupFeatureFlags = base.GetObject<ExternalBackupFeatureFlags>(Constants.Properties.ExternalBackupFeatureFlags);
+                }
+
+                return this.externalBackupFeatureFlags;
+            }
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentNullException(string.Format(CultureInfo.CurrentCulture, RMResources.PropertyCannotBeNull, "ExternalBackupFeatureFlags"));
+                }
+
+                this.externalBackupFeatureFlags = value;
+                base.SetObject<ExternalBackupFeatureFlags>(Constants.Properties.ExternalBackupFeatureFlags, value);
+            }
+        }
+
+        /// <summary>
         /// Gets the <see cref="CollectionTieringPolicy"/> associated with the collection from the Azure Cosmos DB service. 
         /// </summary>
         /// <value>
@@ -906,7 +955,7 @@ namespace Microsoft.Azure.Documents
                 if (value == null)
                 {
                     throw new ArgumentNullException(string.Format(CultureInfo.CurrentCulture, RMResources.PropertyCannotBeNull, "CollectionTieringPolicy"));
-                }
+            }
 
                 this.collectionTieringPolicy = value;
                 base.SetObject<CollectionTieringPolicy>(Constants.Properties.CollectionTieringPolicy, value);
@@ -951,7 +1000,7 @@ namespace Microsoft.Azure.Documents
             set
             {
                 base.SetValue(Constants.Properties.InternalSchemaProperties, value);
-            }
+        }
         }
 
         internal bool IsMaterializedView()
@@ -990,16 +1039,13 @@ namespace Microsoft.Azure.Documents
             }
         }
 
-        // <summary>
-        
-#pragma warning disable CS1570 // XML comment has badly formed XML
-/// Gets the <see cref="DataMaskingPolicy"/> associated with the collection from the Azure Cosmos DB service. 
+        /// <summary>
+        /// Gets the <see cref="DataMaskingPolicy"/> associated with the collection from the Azure Cosmos DB service. 
         /// </summary>
         /// <value>
         /// The DataMaskingPolicy associated with the collection.
         /// </value>
         [JsonProperty(PropertyName = Constants.Properties.DataMaskingPolicy, DefaultValueHandling = DefaultValueHandling.Ignore, NullValueHandling = NullValueHandling.Ignore)]
-#pragma warning restore CS1570 // XML comment has badly formed XML
         internal DataMaskingPolicy DataMaskingPolicy
         {
             get
@@ -1023,16 +1069,13 @@ namespace Microsoft.Azure.Documents
             }
         }
 
-        // <summary>
-        
-#pragma warning disable CS1570 // XML comment has badly formed XML
-/// Gets the <see cref="VectorEmbeddingPolicy"/> associated with the collection from the Azure Cosmos DB service. 
+        /// <summary>
+        /// Gets the <see cref="VectorEmbeddingPolicy"/> associated with the collection from the Azure Cosmos DB service. 
         /// </summary>
         /// <value>
         /// The VectorEmbeddingPolicy associated with the collection.
         /// </value>
         [JsonProperty(PropertyName = Constants.Properties.VectorEmbeddingPolicy, DefaultValueHandling = DefaultValueHandling.Ignore, NullValueHandling = NullValueHandling.Ignore)]
-#pragma warning restore CS1570 // XML comment has badly formed XML
         internal VectorEmbeddingPolicy VectorEmbeddingPolicy
         {
             get
@@ -1056,16 +1099,13 @@ namespace Microsoft.Azure.Documents
             }
         }
 
-        // <summary>
-        
-#pragma warning disable CS1570 // XML comment has badly formed XML
-/// Gets the <see cref="FullTextPolicy"/> associated with the collection from the Azure Cosmos DB service.
+        /// <summary>
+        /// Gets the <see cref="FullTextPolicy"/> associated with the collection from the Azure Cosmos DB service.
         /// </summary>
         /// <value>
         /// The FullTextPolicy associated with the collection.
         /// </value>
         [JsonProperty(PropertyName = Constants.Properties.FullTextPolicy, DefaultValueHandling = DefaultValueHandling.Ignore, NullValueHandling = NullValueHandling.Ignore)]
-#pragma warning restore CS1570 // XML comment has badly formed XML
         internal FullTextPolicy FullTextPolicy
         {
             get
@@ -1089,16 +1129,13 @@ namespace Microsoft.Azure.Documents
             }
         }
 
-        // <summary>
-        
-#pragma warning disable CS1570 // XML comment has badly formed XML
-/// Gets the <see cref="SoftDeletionMetadata"/> associated with the collection from the Azure Cosmos DB service.
+        /// <summary>
+        /// Gets the <see cref="SoftDeletionMetadata"/> associated with the collection from the Azure Cosmos DB service.
         /// </summary>
         /// <value>
         /// The FullTextPolicy associated with the collection.
         /// </value>
         [JsonProperty(PropertyName = Constants.SoftDeletionMetadataProperties.SoftDeletionMetadata, DefaultValueHandling = DefaultValueHandling.Ignore, NullValueHandling = NullValueHandling.Ignore)]
-#pragma warning restore CS1570 // XML comment has badly formed XML
         internal SoftDeletionMetadata SoftDeletionMetadata
         {
             get
@@ -1114,6 +1151,31 @@ namespace Microsoft.Azure.Documents
             {
                 this.softDeletionMetadata = value;
                 base.SetObject<SoftDeletionMetadata>(Constants.SoftDeletionMetadataProperties.SoftDeletionMetadata, value);
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the <see cref="PreviousImageRetentionPolicy"/> associated with the collection from the Azure Cosmos DB service. 
+        /// </summary>
+        /// <value>
+        /// The previous image retention policy associated with the collection.
+        /// </value>
+        [JsonProperty(PropertyName = Constants.Properties.PreviousImageRetentionPolicy, DefaultValueHandling = DefaultValueHandling.Ignore, NullValueHandling = NullValueHandling.Ignore)]
+        internal PreviousImageRetentionPolicy PreviousImageRetentionPolicy
+        {
+            get
+            {
+                if (this.previousImageRetentionPolicy == null)
+                {
+                    this.previousImageRetentionPolicy = base.GetObject<PreviousImageRetentionPolicy>(Constants.Properties.PreviousImageRetentionPolicy);
+                }
+
+                return this.previousImageRetentionPolicy;
+            }
+            set
+            {
+                this.previousImageRetentionPolicy = value;
+                base.SetObject<PreviousImageRetentionPolicy>(Constants.Properties.PreviousImageRetentionPolicy, value);
             }
         }
 
@@ -1268,7 +1330,7 @@ namespace Microsoft.Azure.Documents
             {
                 base.SetObject(Constants.Properties.SchemaDiscoveryPolicy, this.schemaDiscoveryPolicy);
             }
-            
+
             if (this.changeFeedPolicy != null)
             {
                 base.SetObject(Constants.Properties.ChangeFeedPolicy, this.changeFeedPolicy);
@@ -1277,6 +1339,16 @@ namespace Microsoft.Azure.Documents
             if (this.collectionBackupPolicy != null)
             {
                 base.SetObject(Constants.Properties.CollectionBackupPolicy, this.collectionBackupPolicy);
+            }
+
+            if (this.externalBackupFeatureFlags != null)
+            {
+                base.SetObject(Constants.Properties.ExternalBackupFeatureFlags, this.externalBackupFeatureFlags);
+            }
+
+            if (this.previousImageRetentionPolicy != null)
+            {
+                base.SetObject(Constants.Properties.PreviousImageRetentionPolicy, this.previousImageRetentionPolicy);
             }
 
             if (this.collectionTieringPolicy != null)
@@ -1289,7 +1361,7 @@ namespace Microsoft.Azure.Documents
                 base.SetObject(Constants.Properties.GeospatialConfig, this.geospatialConfig);
             }
 
-            if(this.byokConfig != null)
+            if (this.byokConfig != null)
             {
                 base.SetObject(Constants.Properties.ByokConfig, this.byokConfig);
             }
@@ -1332,8 +1404,8 @@ namespace Microsoft.Azure.Documents
                 base.SetObject<EncryptionScopeMetadata>(Constants.EncryptionScopeProperties.EncryptionScope, this.encryptionScopeMetadata);
             }
 
-            if(this.uniqueIndexNameEncodingMode != 0)
-            { 
+            if (this.uniqueIndexNameEncodingMode != 0)
+            {
                 base.SetValue(Constants.Properties.UniqueIndexNameEncodingMode, this.uniqueIndexNameEncodingMode);
             }
 

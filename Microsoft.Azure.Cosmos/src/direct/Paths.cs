@@ -19,9 +19,7 @@ namespace Microsoft.Azure.Documents
         public const string ReplicaOperations_ReportThroughputUtilization = "reportthroughpututilization";
         public const string ReplicaOperations_BatchReportThroughputUtilization = "batchreportthroughpututilization";
         public const string Operations_GetFederationConfigurations = "getfederationconfigurations";
-#pragma warning disable SA1310 // Field names should not contain underscore
         public const string Operations_GetRegionalConfigurations = "getregionalconfigurations";
-#pragma warning restore SA1310 // Field names should not contain underscore
         public const string Operations_GetConfiguration = "getconfiguration";
         public const string Operations_GetDatabaseAccountConfigurations = "getdatabaseaccountconfigurations";
         public const string Operations_GetMicrosoftFabricDatabaseAccountArtifactPermissions = "getdatabaseaccountartifactpermissions";
@@ -38,9 +36,10 @@ namespace Microsoft.Azure.Documents
         public const string Operations_GetAadGroups = "getaadgroups";
         public const string Operations_XPDatabaseAccountMetaData = "xpmetadata";
         public const string Operations_MetadataCheckAccess = "metadatacheckaccess";
+        public const string Operations_GetAzureRbacAccessCheck = "getazurerbacaccesscheck";
 
         //databases namespace off of root-------------------
-        
+
         // /subscriptions
         public const string SubscriptionsSegment = "subscriptions";
         public const string SubscriptionsSegment_Root = Root + SubscriptionsSegment;
@@ -270,6 +269,9 @@ namespace Microsoft.Azure.Documents
         // FedURL/accounts/{id}/offers/{id}
         public const string FederationEndpoint_Offer_Root = FederationEndpoint_Offers_Root + "{" + OfferId + "}";
 
+        // FedURL/accounts/{accountName}/operations/metadatacheckaccess
+        public const string FederationEndpoint_CheckMetaData_Access = FederationEndpoint_Root + "/" + OperationsPathSegment + "/" + MetadataCheckAccessPathSegment;
+
         // /topology
         public const string TopologyPathSegment = "topology";
         public const string Topology_Root = Root + "/" + TopologyPathSegment + "/";
@@ -372,6 +374,14 @@ namespace Microsoft.Azure.Documents
         // /interopUsers/{id}
         public const string InteropUserId = "interopuserId";
         public const string InteropUser_Root = InteropUsers_Root + "{" + InteropUserId + "}";
+
+        // /azureRbac
+        public const string AzureRbacPathSegment = "azurerbac";
+        public const string AzureRbac_Root = Root + "/" + AzureRbacPathSegment + "/";
+
+        // /azureRbac/{}
+        public const string AzureRbacId = "azurerbacId";
+        public const string AzureRbacResource_Root = AzureRbac_Root + "{" + AzureRbacId + "}";
 
         // /localemulator
         public const string LocalEmulatorPathSegment = "localemulator";

@@ -389,7 +389,7 @@ namespace Microsoft.Azure.Documents
             }
         }
 
-        public OperationType OperationType { get; private set; }
+        public OperationType OperationType { get; set; }
 
         public ResourceType ResourceType { get; private set; }
 
@@ -635,6 +635,7 @@ namespace Microsoft.Azure.Documents
                 case OperationType.GetUnwrappedDek:
                 case OperationType.GetDekProperties:
                 case OperationType.GetFederationConfigurations:
+                case OperationType.GetRegionalConfigurations:
                 case OperationType.GetDatabaseAccountConfigurations:
                 case OperationType.GetStorageServiceConfigurations:
                 case OperationType.GetDatabaseAccountArtifactPermissions:
@@ -650,6 +651,11 @@ namespace Microsoft.Azure.Documents
                 case OperationType.XPDatabaseAccountMetaData:
                 case OperationType.Truncate:
                 case OperationType.RelocateLeakedTentativeWrites:
+                case OperationType.ExternalBackup:
+                case OperationType.ExternalBackupRestore:
+                case OperationType.CancelExternalBackupRestore:
+                case OperationType.GetAzureRbacAccessCheck:
+                case OperationType.CancelExternalBackup:
                     return HttpConstants.HttpMethods.Post;
 
                 case OperationType.EnsureSnapshotOperation:
@@ -660,6 +666,9 @@ namespace Microsoft.Azure.Documents
                 case OperationType.GetStorageAuthToken:
                 case OperationType.GetCustomerManagedKeyStatus:
                 case OperationType.GetGraphDatabaseAccountConfiguration:
+                case OperationType.ExternalPreBackup:
+                case OperationType.CheckExternalBackupStatus:
+                case OperationType.CheckExternalBackupRestoreStatus:
                         return HttpConstants.HttpMethods.Get;
 #endif
 
@@ -791,6 +800,10 @@ namespace Microsoft.Azure.Documents
                     {
                         return true;
                     }
+                    else if (this.ResourceType == ResourceType.AzureRbac)
+                    {
+                        return true;
+                    }
 #if !COSMOSCLIENT
                     else if (this.ResourceType == ResourceType.VectorClock)
                     {
@@ -841,14 +854,25 @@ namespace Microsoft.Azure.Documents
             DocumentServiceRequest request,
             Resource modifiedResource)
         {
+            return CreateFromResourceWithModifiedOperationType(
+                request,
+                modifiedResource,
+                request.OperationType);
+        }
+
+        public static DocumentServiceRequest CreateFromResourceWithModifiedOperationType(
+            DocumentServiceRequest request,
+            Resource modifiedResource,
+            OperationType operationType)
+        {
             DocumentServiceRequest modifiedRequest;
             if (!request.IsNameBased)
             {
-                modifiedRequest = DocumentServiceRequest.Create(request.OperationType, modifiedResource, request.ResourceType, request.RequestAuthorizationTokenType, request.Headers, request.ResourceId);
+                modifiedRequest = DocumentServiceRequest.Create(operationType, modifiedResource, request.ResourceType, request.RequestAuthorizationTokenType, request.Headers, request.ResourceId);
             }
             else
             {
-                modifiedRequest = DocumentServiceRequest.CreateFromName(request.OperationType, modifiedResource, request.ResourceType, request.Headers, request.ResourceAddress, request.RequestAuthorizationTokenType);
+                modifiedRequest = DocumentServiceRequest.CreateFromName(operationType, modifiedResource, request.ResourceType, request.Headers, request.ResourceAddress, request.RequestAuthorizationTokenType);
             }
 
             return modifiedRequest;
@@ -1156,7 +1180,7 @@ namespace Microsoft.Azure.Documents
             this.RequestContext.ResolvedPartitionKeyRange = null;
         }
 
-        public DocumentServiceRequest Clone()
+        public DocumentServiceRequest Clone(bool ignoreCloneableBody = false)
         {
             if (!this.IsBodySeekableClonableAndCountable)
             {
@@ -1170,7 +1194,7 @@ namespace Microsoft.Azure.Documents
                ServiceIdentity = this.ServiceIdentity,
                SystemAuthorizationParams = this.SystemAuthorizationParams == null ? null : this.SystemAuthorizationParams.Clone(),
                // Body = this.Body, // intentionally don't clone body, as it is not cloneable.
-               CloneableBody = this.CloneableBody != null ? this.CloneableBody.Clone() : null,
+               CloneableBody = !ignoreCloneableBody && this.CloneableBody != null ? this.CloneableBody.Clone() : null,
                Headers = (INameValueCollection)this.Headers.Clone(),
                IsFeed = this.IsFeed,
                IsNameBased = this.IsNameBased,
@@ -1241,7 +1265,8 @@ namespace Microsoft.Azure.Documents
                     !(this.ResourceType == ResourceType.RoleDefinition) &&
                     !(this.ResourceType == ResourceType.RoleAssignment) &&
                     !(this.ResourceType == ResourceType.InteropUser) &&
-                    !(this.ResourceType == ResourceType.AuthPolicyElement)
+                    !(this.ResourceType == ResourceType.AuthPolicyElement) &&
+                    !(this.ResourceType == ResourceType.AzureRbac)
     #if !COSMOSCLIENT
                     && !(this.ResourceType == ResourceType.MasterPartition) &&
                     !(this.ResourceType == ResourceType.ServerPartition) &&

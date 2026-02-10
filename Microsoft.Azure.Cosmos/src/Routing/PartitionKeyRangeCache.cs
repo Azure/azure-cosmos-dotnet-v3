@@ -31,12 +31,14 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly IStoreModel storeModel;
         private readonly CollectionCache collectionCache;
         private readonly IGlobalEndpointManager endpointManager;
+        private readonly bool useLengthAwareRangeComparer;
 
         public PartitionKeyRangeCache(
             ICosmosAuthorizationTokenProvider authorizationTokenProvider,
             IStoreModel storeModel,
             CollectionCache collectionCache,
             IGlobalEndpointManager endpointManager,
+            bool useLengthAwareRangeComparer,
             bool enableAsyncCacheExceptionNoSharing = true)
         {
             this.routingMapCache = new AsyncCacheNonBlocking<string, CollectionRoutingMap>(
@@ -46,6 +48,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.storeModel = storeModel;
             this.collectionCache = collectionCache;
             this.endpointManager = endpointManager;
+            this.useLengthAwareRangeComparer = useLengthAwareRangeComparer;
         }
 
         public virtual async Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
@@ -213,6 +216,16 @@ namespace Microsoft.Azure.Cosmos.Routing
                     lastStatusCode = response.StatusCode;
                     changeFeedNextIfNoneMatch = response.Headers[HttpConstants.HttpHeaders.ETag];
 
+                    DefaultTrace.TraceInformation("PartitionKeyRangeCache GetRoutingMapForCollectionAsync collectionRid: {0}, StatusCode: {1}, SubstatusCode {2}, request Etag {3}, response ETag: {4}, RegionsContacted {5}", 
+                        collectionRid,
+                        lastStatusCode,
+                        response.GetSubStatusCodes(),
+                        headers.GetHeaderValue<string>(HttpConstants.HttpHeaders.IfNoneMatch),
+                        changeFeedNextIfNoneMatch,
+                        response.RequestStats?.RegionsContacted != null
+                            ? string.Join(", ", response.RequestStats.RegionsContacted)
+                            : string.Empty);
+
                     FeedResource<PartitionKeyRange> feedResource = response.GetResource<FeedResource<PartitionKeyRange>>();
                     if (feedResource != null)
                     {
@@ -232,11 +245,12 @@ namespace Microsoft.Azure.Cosmos.Routing
                 routingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(
                     tuples.Where(tuple => !goneRanges.Contains(tuple.Item1.Id)),
                     string.Empty,
+                    false,
                     changeFeedNextIfNoneMatch);
             }
             else
             {
-                routingMap = previousRoutingMap.TryCombine(tuples, changeFeedNextIfNoneMatch);
+                routingMap = previousRoutingMap.TryCombine(tuples, changeFeedNextIfNoneMatch, this.useLengthAwareRangeComparer);
             }
 
             if (routingMap == null)

@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Documents
                 if (object.ReferenceEquals(resourceMan, null))
                 {
 #if COSMOSCLIENT
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.Azure.Cosmos.RMResources", typeof(RMResources).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.Azure.Documents.RMResources", typeof(RMResources).Assembly);
 #else
                     global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.Azure.Documents.RMResources", typeof(RMResources).GetAssembly());
 #endif
@@ -246,6 +246,17 @@ namespace Microsoft.Azure.Documents
             get
             {
                 return ResourceManager.GetString("BadUrl", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot offline when either the global account or one or more regional accounts are in an invalid state (i.e., not Online or Updating)..
+        /// </summary>
+        internal static string CannotOfflineDueToInvalidAccountStatus
+        {
+            get
+            {
+                return ResourceManager.GetString("CannotOfflineDueToInvalidAccountStatus", resourceCulture);
             }
         }
 
@@ -811,6 +822,17 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Serverless accounts do not support partition merge.
+        /// </summary>
+        internal static string MergeNotSupportedForServerless
+        {
+            get
+            {
+                return ResourceManager.GetString("MergeNotSupportedForServerless", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Cannot set EnableMultipleWriteLocations on an account with EnableTieredStorageV1.
         /// </summary>
         internal static string EnableMultipleWriteLocationsAndEnableTieredStorageV1NotSupported
@@ -1093,17 +1115,6 @@ namespace Microsoft.Azure.Documents
             get
             {
                 return ResourceManager.GetString("FeatureNotSupportedOnSubscription", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to MaterializedViews is not supported on this account type.
-        /// </summary>
-        internal static string MaterializedViewsNotSupportedOnZoneRedundantAccount
-        {
-            get
-            {
-                return ResourceManager.GetString("MaterializedViewsNotSupportedOnZoneRedundantAccount", resourceCulture);
             }
         }
 
@@ -1734,6 +1745,17 @@ namespace Microsoft.Azure.Documents
             get
             {
                 return ResourceManager.GetString("InvalidOfferCRUDForServerless", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Offer update operations are not supported for the account {0}.
+        /// </summary>
+        internal static string InvalidOfferUpdateOperation
+        {
+            get
+            {
+                return ResourceManager.GetString("InvalidOfferUpdateOperation", resourceCulture);
             }
         }
 
@@ -2650,6 +2672,17 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to EnableOnlineContainerCopy capability is not enabled..
+        /// </summary>
+        internal static string OnlineContainerCopyNotEnabled
+        {
+            get
+            {
+                return ResourceManager.GetString("OnlineContainerCopyNotEnabled", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Offer throughput and autopilot settings cannot both be specified..
         /// </summary>
         internal static string OfferThroughputAndAutoPilotSettingsCannotBeSpecifiedBoth
@@ -2910,6 +2943,28 @@ namespace Microsoft.Azure.Documents
             get
             {
                 return ResourceManager.GetString("ProvisionLimit", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Failed to hydrate RBAC cache..
+        /// </summary>
+        internal static string RbacCacheHydrationFailed
+        {
+            get
+            {
+                return ResourceManager.GetString("RbacCacheHydrationFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Failed to hydrate RBAC cache since the hydrator is unavailable..
+        /// </summary>
+        internal static string RbacHydratorNotAvailable
+        {
+            get
+            {
+                return ResourceManager.GetString("RbacHydratorNotAvailable", resourceCulture);
             }
         }
 
@@ -4092,6 +4147,28 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to The requested region &apos;{0}&apos; does not yet support AZ provisioning for Materialized View enablement. Please try other regions or disable zone redundancy for this region..
+        /// </summary>
+        internal static string UnsupportedMaterializedViewAzRegion
+        {
+            get
+            {
+                return ResourceManager.GetString("UnsupportedMaterializedViewAzRegion", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to The requested region &apos;{0}&apos; is not supported for Materialized View enablement..
+        /// </summary>
+        internal static string UnsupportedMaterializedViewRegion
+        {
+            get
+            {
+                return ResourceManager.GetString("UnsupportedMaterializedViewRegion", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to The operation is only supported for Serverless accounts, per-partition throughput cannot be updated directly for provisioned accounts.
         /// </summary>
         internal static string UnsupportedOfferOperationForProvisionedThroughput
@@ -4286,6 +4363,17 @@ namespace Microsoft.Azure.Documents
             get
             {
                 return ResourceManager.GetString("UnsupportedAccessControlType", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Online container copy enablement is supported only on NoSQL accounts..
+        /// </summary>
+        internal static string UnsupportedAccountTypeForOnlineContainerCopy
+        {
+            get
+            {
+                return ResourceManager.GetString("UnsupportedAccountTypeForOnlineContainerCopy", resourceCulture);
             }
         }
 
@@ -4886,6 +4974,17 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to All versions and deletes change feed mode should be enabled for Online Container Copy..
+        /// </summary>
+        internal static string EnableFFCFWithPITRNotEnabledForOnlineContainerCopy
+        {
+            get
+            {
+                return ResourceManager.GetString("EnableFFCFWithPITRNotEnabledForOnlineContainerCopy", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Change of CapacityMode from Serverless to Provisioned is failed as account: {0} is not serverless account.
         /// </summary>
         internal static string NotServerlessAccount
@@ -4893,6 +4992,28 @@ namespace Microsoft.Azure.Documents
             get
             {
                 return ResourceManager.GetString("NotServerlessAccount", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to NRegion Commit write barrier has not been met for the request..
+        /// </summary>
+        internal static string NRegionCommitWriteBarrierNotMet
+        {
+            get
+            {
+                return ResourceManager.GetString("NRegionCommitWriteBarrierNotMet", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Service is currently unavailable. More info: https://aka.ms/cosmosdb-tsg-service-unavailable. N-Region Commit write barrier has not been met for the request..
+        /// </summary>
+        internal static string Server_NRegionCommitWriteBarrierNotMet
+        {
+            get
+            {
+                return ResourceManager.GetString("Server_NRegionCommitWriteBarrierNotMet", resourceCulture);
             }
         }
 
@@ -4981,6 +5102,94 @@ namespace Microsoft.Azure.Documents
             get
             {
                 return ResourceManager.GetString("DisableCmkNotSupported", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Soft Delete and Multiple Write Locations cannot be enabled on the same account.
+        /// </summary>
+        internal static string SoftDeletionNotSupportedWithMultipleWriteLocations
+        {
+            get
+            {
+                return ResourceManager.GetString("SoftDeletionNotSupportedWithMultipleWriteLocations", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Resource is soft deleted.
+        /// </summary>
+        internal static string ResourceIsSoftDeleted
+        {
+            get
+            {
+                return ResourceManager.GetString("ResourceIsSoftDeleted", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to DisableLocalAuthDeniedBecauseOfKeysUsage if keyUri is not valid to update on an account.
+        /// </summary>
+        internal static string DisableLocalAuthDeniedBecauseOfKeysUsage
+        {
+            get
+            {
+                return ResourceManager.GetString("DisableLocalAuthDeniedBecauseOfKeysUsage", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to UnexpectedErrorCheckingKeysUsageInDisableLocalAuth if keyUri is not valid to update on an account.
+        /// </summary>
+        internal static string UnexpectedErrorCheckingKeysUsageInDisableLocalAuth
+        {
+            get
+            {
+                return ResourceManager.GetString("UnexpectedErrorCheckingKeysUsageInDisableLocalAuth", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to KeyRegenerationDeniedBecauseOfKeysUsage if there is recent key usage on a cdb account.
+        /// </summary>
+        internal static string KeyRegenerationDeniedBecauseOfKeysUsage
+        {
+            get
+            {
+                return ResourceManager.GetString("KeyRegenerationDeniedBecauseOfKeysUsage", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to UnexpectedErrorCheckingKeysUsageInKeyRegeneration if there is recent key usage on a cdb account.
+        /// </summary>
+        internal static string UnexpectedErrorCheckingKeysUsageInKeyRegeneration
+        {
+            get
+            {
+                return ResourceManager.GetString("UnexpectedErrorCheckingKeysUsageInKeyRegeneration", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        /// Looks up a localized string similar to Missing Soft Delete Action Kind From Request if SoftDeleteActionKind is missing from Header or Query Parameters
+        /// </summary>
+        internal static string MissingSoftDeleteActionKindFromRequest
+        {
+            get
+            {
+                return ResourceManager.GetString("MissingSoftDeleteActionKindFromRequest", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        /// Looks up a localized string similar to Cannot set SoftDeletionMetadata when disabling soft delete
+        /// </summary>
+        internal static string CannotSetSoftDeletionMetadataWhenDisablingSoftDeleteErrorMessage
+        {
+            get
+            {
+                return ResourceManager.GetString("CannotSetSoftDeletionMetadataWhenDisablingSoftDeleteErrorMessage", resourceCulture);
             }
         }
     }

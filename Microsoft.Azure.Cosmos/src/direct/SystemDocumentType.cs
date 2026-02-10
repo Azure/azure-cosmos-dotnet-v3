@@ -29,5 +29,29 @@ namespace Microsoft.Azure.Documents
         /// PartitionedSystemDocument
         /// </summary>
         MaterializedViewLeaseStoreInitDocument,
+
+        /// <summary>
+        /// Set the SystemDocumentType as MaterializedViewStatusDocument
+        /// PartitionedSystemDocument
+        /// </summary>
+        MaterializedViewStatusDocument,
+
+        /// <summary>
+        /// Set the SystemDocumentType as EmbeddingGeneratorLeaseDocument
+        /// Partitioned SystemDocument
+        /// </summary>
+        EmbeddingGeneratorLeaseDocument,
+
+        /// <summary>
+        /// Set the SystemDocumentType as MaterializedViewBuilderOwnershipDocument
+        /// NonPartitioned SystemDocument
+        /// </summary>
+        EmbeddingGeneratorOwnershipDocument,
+
+        /// <summary>
+        /// Set the SystemDocumentType as EmbeddingGeneratorLeaseStoreInitDocument
+        /// Partitioned SystemDocument
+        /// </summary>
+        EmbeddingGeneratorLeaseStoreInitDocument,
     }
 }

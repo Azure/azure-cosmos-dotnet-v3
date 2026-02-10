@@ -10,28 +10,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
     internal static class EncryptionOptionsExtensions
     {
-        internal static void Validate(this EncryptionOptions options)
+        internal static void Validate(this EncryptionOptions options, JsonProcessor jsonProcessor)
         {
-            if (string.IsNullOrWhiteSpace(options.DataEncryptionKeyId))
-            {
-#pragma warning disable CA2208 // Instantiate argument exceptions correctly
-                throw new ArgumentNullException(nameof(options.DataEncryptionKeyId));
-#pragma warning restore CA2208 // Instantiate argument exceptions correctly
-            }
+            ArgumentValidation.ThrowIfNullOrWhiteSpace(options.DataEncryptionKeyId, nameof(options.DataEncryptionKeyId));
+            ArgumentValidation.ThrowIfNullOrWhiteSpace(options.EncryptionAlgorithm, nameof(options.EncryptionAlgorithm));
+            ArgumentValidation.ThrowIfNull(options.PathsToEncrypt, nameof(options.PathsToEncrypt));
 
-            if (string.IsNullOrWhiteSpace(options.EncryptionAlgorithm))
-            {
-#pragma warning disable CA2208 // Instantiate argument exceptions correctly
-                throw new ArgumentNullException(nameof(options.EncryptionAlgorithm));
-#pragma warning restore CA2208 // Instantiate argument exceptions correctly
-            }
-
-            if (options.PathsToEncrypt == null)
-            {
-#pragma warning disable CA2208 // Instantiate argument exceptions correctly
-                throw new ArgumentNullException(nameof(options.PathsToEncrypt));
-#pragma warning restore CA2208 // Instantiate argument exceptions correctly
-            }
+            options.ValidateJsonProcessor(jsonProcessor);
 
             if (options.PathsToEncrypt is not HashSet<string> && options.PathsToEncrypt.Distinct().Count() != options.PathsToEncrypt.Count())
             {
@@ -50,18 +35,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     throw new InvalidOperationException($"{nameof(options.PathsToEncrypt)} includes a invalid path: '{path}'.");
                 }
             }
-
-            options.CompressionOptions?.Validate();
         }
 
-        internal static void Validate(this CompressionOptions options)
+        public static void ValidateJsonProcessor(this EncryptionOptions options, JsonProcessor jsonProcessor)
         {
-            if (options.MinimalCompressedLength < 0)
+#if NET8_0_OR_GREATER
+#pragma warning disable CS0618 // Type or member is obsolete
+            if (jsonProcessor != JsonProcessor.Newtonsoft && options.EncryptionAlgorithm == CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized)
             {
-#pragma warning disable CA2208 // Instantiate argument exceptions correctly
-                throw new ArgumentOutOfRangeException(nameof(options.MinimalCompressedLength));
-#pragma warning restore CA2208 // Instantiate argument exceptions correctly
+                throw new NotSupportedException("JsonProcessor.Stream is not supported for AE AES encryption algorithm.");
             }
+#pragma warning restore CS0618 // Type or member is obsolete
+#endif
         }
     }
 }

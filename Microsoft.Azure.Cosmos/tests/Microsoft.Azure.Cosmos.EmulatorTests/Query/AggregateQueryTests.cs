@@ -244,65 +244,6 @@
                     }
                 }
             }
-
-
-             static AggregateQueryArguments[] CreateAggregateQueryArguments(
-                IReadOnlyList<CosmosObject> inputDocuments,
-                AggregateTestArgs aggregateTestArgs)
-            {
-                IReadOnlyList<CosmosObject> documentsWherePkIsANumber = inputDocuments
-                        .Where(doc =>
-                        {
-                            return double.TryParse(
-                                doc[aggregateTestArgs.PartitionKey].ToString(),
-                                out double result);
-                        })
-                        .ToList();
-                double numberSum = documentsWherePkIsANumber
-                    .Sum(doc =>
-                    {
-                        if (!doc.TryGetValue(aggregateTestArgs.PartitionKey, out CosmosNumber number))
-                        {
-                            Assert.Fail("Failed to get partition key from document");
-                        }
-
-                        return Number64.ToDouble(number.Value);
-                    });
-                double count = documentsWherePkIsANumber.Count();
-                AggregateQueryArguments[] aggregateQueryArgumentsList = new AggregateQueryArguments[]
-                {
-                    new AggregateQueryArguments(
-                        aggregateOperator: "AVG",
-                        expectedValue: CosmosNumber64.Create(numberSum / count),
-                        predicate: $"IS_NUMBER(r.{aggregateTestArgs.PartitionKey})"),
-                    new AggregateQueryArguments(
-                        aggregateOperator: "AVG",
-                        expectedValue: CosmosUndefined.Create(),
-                        predicate: "true"),
-                    new AggregateQueryArguments(
-                        aggregateOperator: "COUNT",
-                        expectedValue: CosmosNumber64.Create(inputDocuments.Count()),
-                        predicate: "true"),
-                    new AggregateQueryArguments(
-                        aggregateOperator: "MAX",
-                        expectedValue: CosmosString.Create("xyz"),
-                        predicate: "true"),
-                    new AggregateQueryArguments(
-                        aggregateOperator: "MIN",
-                        expectedValue: CosmosBoolean.Create(false),
-                        predicate: "true"),
-                    new AggregateQueryArguments(
-                        aggregateOperator: "SUM",
-                        expectedValue: CosmosNumber64.Create(numberSum),
-                        predicate: $"IS_NUMBER(r.{aggregateTestArgs.PartitionKey})"),
-                    new AggregateQueryArguments(
-                        aggregateOperator: "SUM",
-                        expectedValue: CosmosUndefined.Create(),
-                        predicate: $"true"),
-                };
-
-                return aggregateQueryArgumentsList;
-            }
         }
 
         private static AggregateQueryArguments[] CreateAggregateQueryArguments(
@@ -558,6 +499,247 @@
             public int NumDocuments;
             public string PartitionKey;
             public string UniqueField;
+        }
+
+        [TestMethod]
+        public async Task TestAggregateFunctionsWithMixedTypesAsync()
+        {
+            AggregateQueryMixedTypes args = new AggregateQueryMixedTypes()
+            {
+                PartitionKey = "key",
+                Field = "field",
+                DoubleOnlyKey = "doubleOnly",
+                StringOnlyKey = "stringOnly",
+                BoolOnlyKey = "boolOnly",
+                NullOnlyKey = "nullOnly",
+                ObjectOnlyKey = "objectOnlyKey",
+                ArrayOnlyKey = "arrayOnlyKey",
+                OneObjectKey = "oneObjectKey",
+                OneArrayKey = "oneArrayKey",
+                UndefinedKey = "undefinedKey",
+            };
+
+            List<string> documents = new List<string>();
+            Random random = new Random(1234);
+            for (int i = 0; i < 20; ++i)
+            {
+                Document doubleDoc = new Document();
+                doubleDoc.SetPropertyValue(args.PartitionKey, Guid.NewGuid());
+                doubleDoc.SetPropertyValue(args.Field, random.Next(1, 100000));
+                documents.Add(doubleDoc.ToString());
+                doubleDoc.SetPropertyValue(args.PartitionKey, args.DoubleOnlyKey);
+                documents.Add(doubleDoc.ToString());
+
+                Document stringDoc = new Document();
+                stringDoc.SetPropertyValue(args.PartitionKey, Guid.NewGuid());
+                stringDoc.SetPropertyValue(args.Field, random.NextDouble().ToString());
+                documents.Add(stringDoc.ToString());
+                stringDoc.SetPropertyValue(args.PartitionKey, args.StringOnlyKey);
+                documents.Add(stringDoc.ToString());
+
+                Document boolDoc = new Document();
+                boolDoc.SetPropertyValue(args.PartitionKey, Guid.NewGuid());
+                boolDoc.SetPropertyValue(args.Field, random.Next() % 2 == 0);
+                documents.Add(boolDoc.ToString());
+                boolDoc.SetPropertyValue(args.PartitionKey, args.BoolOnlyKey);
+                documents.Add(boolDoc.ToString());
+
+                Document nullDoc = new Document();
+                nullDoc.SetPropertyValue(args.PartitionKey, Guid.NewGuid());
+                nullDoc.propertyBag.Add(args.Field, null);
+                documents.Add(nullDoc.ToString());
+                nullDoc.SetPropertyValue(args.PartitionKey, args.NullOnlyKey);
+                documents.Add(nullDoc.ToString());
+
+                Document objectDoc = new Document();
+                objectDoc.SetPropertyValue(args.PartitionKey, Guid.NewGuid());
+                objectDoc.SetPropertyValue(args.Field, new object { });
+                documents.Add(objectDoc.ToString());
+                objectDoc.SetPropertyValue(args.PartitionKey, args.ObjectOnlyKey);
+                documents.Add(objectDoc.ToString());
+
+                Document arrayDoc = new Document();
+                arrayDoc.SetPropertyValue(args.PartitionKey, Guid.NewGuid());
+                arrayDoc.SetPropertyValue(args.Field, new object[] { });
+                documents.Add(arrayDoc.ToString());
+                arrayDoc.SetPropertyValue(args.PartitionKey, args.ArrayOnlyKey);
+                documents.Add(arrayDoc.ToString());
+            }
+
+            Document oneObjectDoc = new Document();
+            oneObjectDoc.SetPropertyValue(args.PartitionKey, args.OneObjectKey);
+            oneObjectDoc.SetPropertyValue(args.Field, new object { });
+            documents.Add(oneObjectDoc.ToString());
+
+            Document oneArrayDoc = new Document();
+            oneArrayDoc.SetPropertyValue(args.PartitionKey, args.OneArrayKey);
+            oneArrayDoc.SetPropertyValue(args.Field, new object[] { });
+            documents.Add(oneArrayDoc.ToString());
+
+            Document undefinedDoc = new Document();
+            undefinedDoc.SetPropertyValue(args.PartitionKey, args.UndefinedKey);
+            // This doc does not have the field key set
+            documents.Add(undefinedDoc.ToString());
+
+            await this.CreateIngestQueryDeleteAsync<AggregateQueryMixedTypes>(
+                ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+                documents,
+                this.TestQueryCrossPartitionAggregateFunctionsWithMixedTypesHelper,
+                args,
+                "/" + args.PartitionKey);
+        }
+
+        private struct AggregateQueryMixedTypes
+        {
+            public string PartitionKey;
+            public string Field;
+            public string DoubleOnlyKey;
+            public string StringOnlyKey;
+            public string BoolOnlyKey;
+            public string NullOnlyKey;
+            public string ObjectOnlyKey;
+            public string ArrayOnlyKey;
+            public string OneObjectKey;
+            public string OneArrayKey;
+            public string UndefinedKey;
+        }
+
+        private async Task TestQueryCrossPartitionAggregateFunctionsWithMixedTypesHelper(
+            Container container,
+            IReadOnlyList<CosmosObject> documents,
+            AggregateQueryMixedTypes args)
+        {
+            await QueryTestsBase.NoOp();
+            string partitionKey = args.PartitionKey;
+            string field = args.Field;
+            string[] typeOnlyPartitionKeys = new string[]
+            {
+                args.DoubleOnlyKey,
+                args.StringOnlyKey,
+                args.BoolOnlyKey,
+                args.NullOnlyKey,
+                args.ObjectOnlyKey,
+                args.ArrayOnlyKey,
+                args.OneArrayKey,
+                args.OneObjectKey,
+                args.UndefinedKey
+            };
+
+            string[] aggregateOperators = new string[] { "AVG", "MIN", "MAX", "SUM", "COUNT", "MAKELIST", "MAKESET" };
+            string[] typeCheckFunctions = new string[] { "IS_ARRAY", "IS_BOOL", "IS_NULL", "IS_NUMBER", "IS_OBJECT", "IS_STRING", "IS_DEFINED", "IS_PRIMITIVE" };
+            List<(string, bool)> queries = new List<(string, bool)>();
+            foreach (string aggregateOperator in aggregateOperators)
+            {
+                bool ignoreResultOrder = aggregateOperator.Equals("MAKELIST") || aggregateOperator.Equals("MAKESET");
+                foreach (string typeCheckFunction in typeCheckFunctions)
+                {
+                    queries.Add(
+                    ($@"
+                        SELECT VALUE {aggregateOperator} (c.{field}) 
+                        FROM c 
+                        WHERE {typeCheckFunction}(c.{field})
+                    ", 
+                    ignoreResultOrder));
+                }
+
+                foreach (string typeOnlyPartitionKey in typeOnlyPartitionKeys)
+                {
+                    queries.Add(
+                    ($@"
+                        SELECT VALUE {aggregateOperator} (c.{field}) 
+                        FROM c 
+                        WHERE c.{partitionKey} = ""{typeOnlyPartitionKey}""
+                    ",
+                    ignoreResultOrder));
+                }
+            };
+
+            // mixing primitive and non primitives
+            foreach (string minmaxop in new string[] { "MIN", "MAX" })
+            {
+                bool ignoreResultOrder = false;
+                foreach (string key in new string[] { args.OneObjectKey, args.OneArrayKey })
+                {
+                    queries.Add(
+                    ($@"
+                        SELECT VALUE {minmaxop} (c.{field}) 
+                        FROM c 
+                        WHERE c.{partitionKey} IN (""{key}"", ""{args.DoubleOnlyKey}"")
+                    ",
+                    ignoreResultOrder));
+                }
+            }
+
+            string filename = $"Query/AggregateQueryTests.AggregateMixedTypes";
+            string baselinePath = $"{filename}_baseline.xml";
+
+            XmlWriterSettings settings = new XmlWriterSettings()
+            {
+                OmitXmlDeclaration = true,
+                Indent = true,
+                NewLineOnAttributes = true,
+            };
+
+            StringBuilder builder = new StringBuilder();
+            using (XmlWriter writer = XmlWriter.Create(builder, settings))
+            {
+                writer.WriteStartDocument();
+                writer.WriteStartElement("Results");
+                foreach ( (string query, bool ignoreResultOrder) in queries)
+                {
+                    string formattedQuery = string.Join(
+                        Environment.NewLine,
+                        query.Trim().Split(
+                            new[] { Environment.NewLine },
+                            StringSplitOptions.None)
+                            .Select(x => x.Trim()));
+
+                    List<CosmosElement> items = await QueryTestsBase.RunQueryAsync(
+                        container,
+                        query,
+                        new QueryRequestOptions()
+                        {
+                            MaxItemCount = 10,
+                        });
+
+                    writer.WriteStartElement("Result");
+                    writer.WriteStartElement("Query");
+                    writer.WriteCData(formattedQuery);
+                    writer.WriteEndElement();
+                    writer.WriteStartElement("Aggregation");
+
+                    if (items.Count > 0)
+                    {
+                        Assert.AreEqual(1, items.Count);
+                        CosmosElement aggregateResult = items.First();
+                        if(aggregateResult is not CosmosUndefined)
+                        {
+                            if (ignoreResultOrder && (aggregateResult is CosmosArray aggregateResultArray))
+                            {
+                                CosmosElement[] normalizedAggregateResult = aggregateResultArray.ToArray();
+                                Array.Sort(normalizedAggregateResult);
+                                writer.WriteCData(CosmosArray.Create(normalizedAggregateResult).ToString());
+                            }
+                            else
+                            {
+                                writer.WriteCData(items.Single().ToString());
+                            }
+                        }
+                    }
+
+                    writer.WriteEndElement();
+                    writer.WriteEndElement();
+                }
+                writer.WriteEndElement();
+                writer.WriteEndDocument();
+            }
+
+            Regex r = new Regex(">\\s+");
+            string normalizedBaseline = r.Replace(File.ReadAllText(baselinePath), ">");
+            string normalizedOutput = r.Replace(builder.ToString(), ">");
+
+            Assert.AreEqual(normalizedBaseline, normalizedOutput);
         }
 
         [TestMethod]

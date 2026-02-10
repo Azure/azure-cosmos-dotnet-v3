@@ -21,7 +21,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     {
         [TestMethod]
         [TestCategory("Flaky")]
-        [Ignore("This test is flaky and is ignored for msdata/direct")]
         [Timeout(30000)]
         [DataRow(true, true, false, DisplayName = "Validate when replica validation is enabled using environment variable.")]
         [DataRow(false, true, false, DisplayName = "Validate when replica validation is disabled using environment variable.")]
@@ -201,13 +200,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                             await Task.Delay(TimeSpan.FromMilliseconds(100));
                         } while (!delayRefreshUnblocked);
 
-                        for (int i = 0; i < 20; i++)
+                        for (int i = 0; i < 30; i++)
                         {
                             ResponseMessage response = await container.ReadItemStreamAsync(Guid.NewGuid().ToString(), new Cosmos.PartitionKey(Guid.NewGuid().ToString()));
                             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
                         }
 
-                        Assert.AreEqual(4, urisVisited.ToHashSet().Count());
+                        Assert.AreEqual(4, urisVisited.ToHashSet().Count(), "All 4 replicas should be visited after refresh.");
 
                         // Clears all the setups. No network calls should be done on the next operation.
                         mockHttpHandler.Reset();
