@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos
 
         public string SubscriptionId => throw new NotImplementedException();
 
-        public bool EnableNRegionSynchronousCommit => false;
+        public bool EnableNRegionSynchronousCommit => this.AccountProperties.EnableNRegionSynchronousCommit;
 
         public async Task InitializeAsync()
         {
