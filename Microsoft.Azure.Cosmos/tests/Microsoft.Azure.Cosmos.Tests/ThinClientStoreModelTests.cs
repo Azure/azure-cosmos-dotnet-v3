@@ -393,7 +393,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             PartitionKeyRange pkRange = new PartitionKeyRange { Id = "0", MinInclusive = "", MaxExclusive = "FF" };
             List<PartitionKeyRange> pkRanges = new List<PartitionKeyRange> { pkRange };
             IEnumerable<Tuple<PartitionKeyRange, ServiceIdentity>> rangeTuples = pkRanges.Select(r => Tuple.Create(r, (ServiceIdentity)null));
-            CollectionRoutingMap routingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(rangeTuples, "testCollectionRid");
+            CollectionRoutingMap routingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(rangeTuples, "testCollectionRid", useLengthAwareRangeComparer: false);
 
             mockPartitionKeyRangeCache
                 .Setup(c => c.TryLookupAsync(It.IsAny<string>(), It.IsAny<CollectionRoutingMap>(), It.IsAny<DocumentServiceRequest>(), It.IsAny<ITrace>()))
@@ -504,8 +504,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Action onDispose = null)
                 : base(
                     httpClient: null,
-                    eventSource: null,
                     userAgentContainer: null,
+                    eventSource: null,
+                    globalPartitionEndpointManager: null,
                     serializerSettings: null)
             {
                 this.invokeAsyncFunc = invokeAsyncFunc;
