@@ -92,7 +92,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             IReadOnlyList<FeedRangeEpk> allRanges,
             int maxItemCount,
             bool isContinuationExpected,
-            int maxConcurrency)
+            int maxConcurrency,
+            Cosmos.FullTextScoreScope fullTextScoreScope)
         {
             TryCatch<IQueryPipelineStage> ComponentPipelineFactory(QueryInfo rewrittenQueryInfo)
             {
@@ -124,10 +125,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                     queryInfo.GlobalStatisticsQuery,
                     sqlQuerySpec.Parameters);
 
+                // When FullTextScoreScope is Global, use allRanges (all partitions) for statistics.
+                // When FullTextScoreScope is Local, use targetRanges (only the filtered partitions) for statistics.
+                IReadOnlyList<FeedRangeEpk> statisticsTargetRanges = fullTextScoreScope == Cosmos.FullTextScoreScope.Global
+                    ? allRanges
+                    : targetRanges;
+
                 TryCatch<IQueryPipelineStage> tryCatchGlobalStatisticsPipeline = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
                     documentContainer: documentContainer,
                     sqlQuerySpec: globalStatisticsQuerySpec,
-                    targetRanges: allRanges,
+                    targetRanges: statisticsTargetRanges,
                     queryPaginationOptions: queryExecutionOptions,
                     partitionKey: null,
                     containerQueryProperties: containerQueryProperties,
@@ -653,6 +660,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             }
 
             string rewrittenQuery = FormatComponentQueryTextWorkaround(queryInfo.RewrittenQuery, statistics, componentCount);
+            HybridSearchDebugTraceHelpers.TraceComponentQueryText(rewrittenQuery);
 
             QueryInfo result = new QueryInfo()
             {
@@ -955,6 +963,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 #pragma warning disable CS0162 // Unreachable code detected
 
             [Conditional("DEBUG")]
+            public static void TraceComponentQueryText(string queryText)
+            {
+                if (Enabled)
+                {
+                    System.Diagnostics.Trace.WriteLine("Component Query Text:");
+                    System.Diagnostics.Trace.WriteLine(queryText);
+                    System.Diagnostics.Trace.WriteLine("\n");
+                }
+            }
+
+            [Conditional("DEBUG")]
             public static void TraceQuerySpec(SqlQuerySpec querySpec)
             {
                 if (Enabled)
@@ -1043,27 +1062,31 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                 return builder;
             }
 
+            [Conditional("DEBUG")]
             public static void TraceQueryResultTSVHeader(int componentCount)
             {
-                StringBuilder builder = new StringBuilder();
-                builder.Append("_rid");
-                builder.Append("\t");
-                builder.Append("Payload");
-                builder.Append("\t");
-
-                for (int componentIndex = 0; componentIndex < componentCount; ++componentIndex)
+                if (Enabled)
                 {
-                    builder.Append($"Score{componentIndex}");
+                    StringBuilder builder = new StringBuilder();
+                    builder.Append("_rid");
                     builder.Append("\t");
+                    builder.Append("Payload");
+                    builder.Append("\t");
+
+                    for (int componentIndex = 0; componentIndex < componentCount; ++componentIndex)
+                    {
+                        builder.Append($"Score{componentIndex}");
+                        builder.Append("\t");
+                    }
+
+                    builder.Append("RRFScore");
+                    builder.Append("\t");
+
+                    builder.Remove(builder.Length - 1, 1); // remove extra tab
+
+                    string header = builder.ToString();
+                    System.Diagnostics.Trace.WriteLine(header);
                 }
-
-                builder.Append("RRFScore");
-                builder.Append("\t");
-
-                builder.Remove(builder.Length - 1, 1); // remove extra tab
-
-                string header = builder.ToString();
-                System.Diagnostics.Trace.WriteLine(header);
             }
 
             private static void TraceFullDebugTSVHeader(int componentCount)

@@ -12,11 +12,7 @@ namespace Microsoft.Azure.Documents
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents.Rntbd;
-#pragma warning disable SA1507 // Code should not contain multiple blank lines in a row
 
-
-#pragma warning disable CS1570 // XML comment has badly formed XML
-#pragma warning disable CS1584 // XML comment has syntactically incorrect cref attribute
     /// <summary>
     /// ConnectionStateListener listens to the connection reset event notification fired by the transport client
     /// and refreshes the Document client's address cache
@@ -29,30 +25,27 @@ namespace Microsoft.Azure.Documents
     ///     
     /// <see cref="notificationConcurrency"/>control the number of concurrent notifications or calles to the registered handlers
     ///     - Default: Environment.ProcessorCount
-    ///     - Can be set through <see cref="IStoreClientFactory.GetConnectionStateListener().SetConnectionEventConcurrency(int notificationConcurrency)"/>
+    ///     - Can be set through IStoreClientFactory.GetConnectionStateListener().SetConnectionEventConcurrency(int notificationConcurrency)
     ///     - ZERO: no notifications will be sent
     /// 
     /// <see cref="Microsoft.Azure.Documents.Client.ConnectionPolicy.EnableTcpConnectionEndpointRediscovery"/> can be used in conjunction with this listener
     /// to control at the account level with the above combinations (AND clause)
     /// 
     /// A safe phased roll-out for service might be: 
-    /// - <see cref="enableTcpConnectionEndpointRediscovery"/>=False
-    /// - (Restart) <see cref="enableTcpConnectionEndpointRediscovery"/>=True & <see cref="notificationConcurrency"/>=0 (Subscription only non notifications)
-    /// - <see cref="enableTcpConnectionEndpointRediscovery"/>=True & <see cref="notificationConcurrency"/> > 0 
+    /// - enableTcpConnectionEndpointRediscovery=False
+    /// - (Restart) enableTcpConnectionEndpointRediscovery=True and notificationConcurrency=0 (Subscription only non notifications)
+    /// - enableTcpConnectionEndpointRediscovery=True and notificationConcurrency &gt; 0 
     ///     - When upgrade resiliency will be fully ON
     ///     
     /// Live site turning off: (from final state)
-    ///     - (! Restart) <see cref="enableTcpConnectionEndpointRediscovery"/>=True & <see cref="notificationConcurrency"/>=0 (Subscription only non notifications)
-    ///     - (Restaret) <see cref="enableTcpConnectionEndpointRediscovery"/>=False
+    ///     - (! Restart) enableTcpConnectionEndpointRediscovery=True and notificationConcurrency=0 (Subscription only non notifications)
+    ///     - (Restaret) enableTcpConnectionEndpointRediscovery=False
     ///     
     /// Monitoring:
     ///     - TCP direct connections in TIMED_WAIT state
     ///     - Task scheduler contention
     /// </remarks>
-    internal sealed class ConnectionStateMuxListener : IConnectionStateListener
-#pragma warning restore CS1584 // XML comment has syntactically incorrect cref attribute
-#pragma warning restore SA1507 // Code should not contain multiple blank lines in a row
-#pragma warning restore CS1570 // XML comment has badly formed XML
+    internal sealed class ConnectionStateMuxListener : IConnectionStateListener 
     {
         readonly internal bool enableTcpConnectionEndpointRediscovery;
         readonly internal ConcurrentDictionary<ServerKey, ConcurrentDictionary<Func<ServerKey, Task>, object>> serverKeyEventHandlers = new();
@@ -61,12 +54,10 @@ namespace Microsoft.Azure.Documents
 
         public ConnectionStateMuxListener(bool enableTcpConnectionEndpointRediscovery) 
         {
-#pragma warning disable CS1587 // XML comment has badly formed XML
             /// Default to the processor count 
             this.notificationConcurrency = Environment.ProcessorCount;
             this.notificationSemaphore = new SemaphoreSlim(this.notificationConcurrency);
             this.enableTcpConnectionEndpointRediscovery = enableTcpConnectionEndpointRediscovery;
-#pragma warning restore CS1587 // XML comment has badly formed XML
         }
 
         public void SetConnectionEventConcurrency(int notificationConcurrency)

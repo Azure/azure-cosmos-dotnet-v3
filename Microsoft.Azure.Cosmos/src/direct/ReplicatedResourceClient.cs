@@ -70,7 +70,6 @@ namespace Microsoft.Azure.Documents
             bool detectClientConnectivityIssues,
             bool disableRetryWithRetryPolicy,
             bool enableReplicaValidation,
-            AccountConfigurationProperties accountConfigurationProperties,
             RetryWithConfiguration retryWithConfiguration = null,
             ISessionRetryOptions sessionRetryOptions = null)
         {
@@ -102,7 +101,6 @@ namespace Microsoft.Azure.Documents
                 authorizationTokenProvider,
                 useMultipleWriteLocations,
                 enableReplicaValidation,
-                accountConfigurationProperties,
                 sessionRetryOptions);
             this.enableReadRequestsFallback = enableReadRequestsFallback;
             this.useMultipleWriteLocations = useMultipleWriteLocations;
@@ -380,6 +378,7 @@ namespace Microsoft.Azure.Documents
                 resourceType == ResourceType.EncryptionScope ||
                 resourceType == ResourceType.AuthPolicyElement ||
                 resourceType == ResourceType.InteropUser ||
+                resourceType == ResourceType.AzureRbac ||
 #if !COSMOSCLIENT
                 resourceType == ResourceType.Topology ||
                 operationType == OperationType.GetStorageAuthToken ||
@@ -434,7 +433,8 @@ namespace Microsoft.Azure.Documents
                 resourceType == ResourceType.RoleDefinition ||
                 resourceType == ResourceType.EncryptionScope ||
                 resourceType == ResourceType.Trigger ||
-                resourceType == ResourceType.UserDefinedFunction)
+                resourceType == ResourceType.UserDefinedFunction ||
+                resourceType == ResourceType.AzureRbac)
             {
                 return true;
             }

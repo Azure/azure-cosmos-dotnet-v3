@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Documents
 
         private readonly string performanceCategoryHelp;
 
-#pragma warning disable IDE0032
         private PerformanceCounter frontendRequestsPerSec;
 
         private PerformanceCounter frontendActiveRequests;
@@ -49,7 +48,6 @@ namespace Microsoft.Azure.Documents
         private PerformanceCounter routingFailures;
 
         private PerformanceCounter backendConnectionOpenFailuresDueToSynRetransmitPerSecond;
-#pragma warning restore IDE0032
 
         private PerfCounters(string category, string categoryHelp)
         {

@@ -125,8 +125,8 @@ namespace Microsoft.Azure.Documents
         public static readonly ResourceOperation Resume = new ResourceOperation(OperationType.Resume, ResourceType.Replica);
         public static readonly ResourceOperation Stop = new ResourceOperation(OperationType.Stop, ResourceType.Replica);
         public static readonly ResourceOperation Recycle = new ResourceOperation(OperationType.Recycle, ResourceType.Replica);
-        
-        // TODO: Add following for master partition once we support master partition migration.
+
+        public static readonly ResourceOperation AbortMasterPartitionMigration = new ResourceOperation(OperationType.AbortPartitionMigration, ResourceType.MasterPartition);
         public static readonly ResourceOperation AbortServerPartitionMigration = new ResourceOperation(OperationType.AbortPartitionMigration, ResourceType.ServerPartition);
         public static readonly ResourceOperation CompleteServerPartitionMigration = new ResourceOperation(OperationType.CompleteSplit, ResourceType.ServerPartition);
         

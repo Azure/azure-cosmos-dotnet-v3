@@ -38,6 +38,8 @@ using Microsoft.Azure.Cosmos.Direct;
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.QueryOracle" + AssemblyKeys.TestPublicKey)]
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.QueryOracle.JobProcessor" + AssemblyKeys.ProductPublicKey)]
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.QueryOracle.JobProcessor" + AssemblyKeys.TestPublicKey)]
+[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.QueryOracle.QueryTests" + AssemblyKeys.ProductPublicKey)]
+[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.QueryOracle.QueryTests" + AssemblyKeys.TestPublicKey)]
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.QueryOracle.UnitTests" + AssemblyKeys.ProductPublicKey)]
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.QueryOracle.UnitTests" + AssemblyKeys.TestPublicKey)]
 [assembly: InternalsVisibleTo("CosmosCTL" + AssemblyKeys.ProductPublicKey)]

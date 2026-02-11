@@ -17,9 +17,7 @@ namespace Microsoft.Azure.Documents
         private const int backoffMultiplier = 2;
         private const int initialBackoffTimeInSeconds = 1;
 
-#pragma warning disable IDE0044 // Add readonly modifier
         private Stopwatch durationTimer = new Stopwatch();
-#pragma warning restore IDE0044 // Add readonly modifier
 
         private readonly TimeSpan retryTimeout;
         private int currentBackoffTimeInSeconds;

@@ -25,19 +25,13 @@ namespace Microsoft.Azure.Documents
         // System.Text.Encoding and Write/Read for stream don't take Memory<> in NetStandard
         // so we have to use ArrayPool instead.
 #if COSMOSCLIENT
-#pragma warning disable IDE0044 // Add readonly modifier
         private ArrayPool<byte> arrayPool = ArrayPool<byte>.Create();
-#pragma warning restore IDE0044 // Add readonly modifier
-#pragma warning disable IDE0044 // Add readonly modifier
         private List<byte[]> borrowedBytes = new List<byte[]>();
-#pragma warning restore IDE0044 // Add readonly modifier
 #endif
 
         public abstract int RequiredTokenCount { get; }
 
-        
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
-/// <summary>
+        /// <summary>
         /// Gets a byte[] of at least <see cref="length"/> bytes from a pool.
         /// </summary>
         /// <param name="length">The length of bytes to retrieve</param>
@@ -46,7 +40,6 @@ namespace Microsoft.Azure.Documents
         /// Typically this is done when the request is returned to a shared pool of RNTBD requests.
         /// </remarks>
         public byte[] GetBytes(int length)
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
         {
 #if COSMOSCLIENT
             byte[] bytes = this.arrayPool.Rent(length);

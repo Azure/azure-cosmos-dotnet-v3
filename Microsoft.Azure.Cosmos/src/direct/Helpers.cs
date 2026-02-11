@@ -52,9 +52,7 @@ namespace Microsoft.Azure.Documents
             try
             {
                 string pattern = "sig=.*?[&|\"]";
-#pragma warning disable SA1122 // Use string.Empty for empty strings
                 string replacement = "";
-#pragma warning restore SA1122 // Use string.Empty for empty strings
 
                 string result = Regex.Replace(sASToken, pattern, replacement, RegexOptions.IgnoreCase);
                 return result;

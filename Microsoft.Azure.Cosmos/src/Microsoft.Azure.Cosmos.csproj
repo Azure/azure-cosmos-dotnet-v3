@@ -39,7 +39,7 @@
 		<IncludeSymbols>false</IncludeSymbols>
 		<IncludeSource>false</IncludeSource>
 		<RootNamespace>Microsoft.Azure.Cosmos</RootNamespace>
-		<NoWarn>NU5125</NoWarn>
+		<NoWarn>NU5125;CS1572;CS1573;CS1574;CS1587;SA1000;SA1001;SA1002;SA1003;SA1008;SA1025;SA1027;SA1108;SA1122;SA1127;SA1137;SA1203;SA1310;SA1500;SA1505;SA1507;SA1518;SA1616;SA1627;SA1649;VSTHRD200</NoWarn>
 		<Optimize Condition="'$(Configuration)'=='Release'">true</Optimize>
 		<LangVersion>$(LangVersion)</LangVersion>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -128,16 +128,17 @@
 	<ItemGroup>
 		<PackageReference Include="Azure.Core" Version="1.44.1" />
 		<PackageReference Include="System.Collections.Immutable" Version="1.7.0" />
-		<PackageReference Include="System.Diagnostics.PerformanceCounter" Version="6.0.0" />
 		<PackageReference Include="System.Diagnostics.DiagnosticSource" Version="8.0.1" />
 		<PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
 		<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="6.0.0" />
 		<PackageReference Include="Newtonsoft.Json" Version="10.0.2" NoWarn="NU1903" PrivateAssets="All" />
-		<PackageReference Include="System.Net.Http" Version="4.3.4" />
-		<PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
+
 
 		<!--Direct Dependencies-->
 		<PackageReference Include="System.Configuration.ConfigurationManager" Version="6.0.0" />
+		<PackageReference Include="System.Diagnostics.PerformanceCounter" Version="6.0.0" />
+		<PackageReference Include="System.Net.Http" Version="4.3.4" />
+		<PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
 
 		<!--HybridRow Dependencies-->
 		<PackageReference Include="System.Memory" Version="4.5.5" />

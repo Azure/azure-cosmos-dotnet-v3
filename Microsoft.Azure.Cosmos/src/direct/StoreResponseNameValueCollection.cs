@@ -71,6 +71,7 @@ namespace Microsoft.Azure.Documents.Collections
         public string GlobalNRegionCommittedGLSN { get; set; }
         public string HasTentativeWrites { get; set; }
         public string HighestTentativeWriteLLSN { get; set; }
+        public string HybridLogicalClockTimestamp { get; set; }
         public string IndexingDirective { get; set; }
         public string IndexUtilization { get; set; }
         public string InstantScaleUpValue { get; set; }
@@ -90,6 +91,8 @@ namespace Microsoft.Azure.Documents.Collections
         public string MinGLSNForDocumentOperations { get; set; }
         public string MinGLSNForTombstoneOperations { get; set; }
         public string MinimumRUsForOffer { get; set; }
+        public string MutualTlsStatus { get; set; }
+        public string MutualTlsThumbprint { get; set; }
         public string NumberOfReadRegions { get; set; }
         public string OfferReplacePending { get; set; }
         public string OfferReplacePendingForMerge { get; set; }
@@ -209,6 +212,7 @@ namespace Microsoft.Azure.Documents.Collections
             this.GlobalNRegionCommittedGLSN = null;
             this.HasTentativeWrites = null;
             this.HighestTentativeWriteLLSN = null;
+            this.HybridLogicalClockTimestamp = null;
             this.IndexingDirective = null;
             this.IndexUtilization = null;
             this.InstantScaleUpValue = null;
@@ -228,6 +232,8 @@ namespace Microsoft.Azure.Documents.Collections
             this.MinGLSNForDocumentOperations = null;
             this.MinGLSNForTombstoneOperations = null;
             this.MinimumRUsForOffer = null;
+            this.MutualTlsStatus = null;
+            this.MutualTlsThumbprint = null;
             this.NumberOfReadRegions = null;
             this.OfferReplacePending = null;
             this.OfferReplacePendingForMerge = null;
@@ -319,6 +325,7 @@ namespace Microsoft.Azure.Documents.Collections
                 GlobalNRegionCommittedGLSN = this.GlobalNRegionCommittedGLSN,
                 HasTentativeWrites = this.HasTentativeWrites,
                 HighestTentativeWriteLLSN = this.HighestTentativeWriteLLSN,
+                HybridLogicalClockTimestamp = this.HybridLogicalClockTimestamp,
                 IndexingDirective = this.IndexingDirective,
                 IndexUtilization = this.IndexUtilization,
                 InstantScaleUpValue = this.InstantScaleUpValue,
@@ -338,6 +345,8 @@ namespace Microsoft.Azure.Documents.Collections
                 MinGLSNForDocumentOperations = this.MinGLSNForDocumentOperations,
                 MinGLSNForTombstoneOperations = this.MinGLSNForTombstoneOperations,
                 MinimumRUsForOffer = this.MinimumRUsForOffer,
+                MutualTlsStatus = this.MutualTlsStatus,
+                MutualTlsThumbprint = this.MutualTlsThumbprint,
                 NumberOfReadRegions = this.NumberOfReadRegions,
                 OfferReplacePending = this.OfferReplacePending,
                 OfferReplacePendingForMerge = this.OfferReplacePendingForMerge,
@@ -789,6 +798,18 @@ namespace Microsoft.Azure.Documents.Collections
             {
                 yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.ThroughputBucketApplied, this.ThroughputBucketApplied);
             }
+            if (this.MutualTlsStatus != null)
+            {
+                yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.MutualTlsStatus, this.MutualTlsStatus);
+            }
+            if (this.MutualTlsThumbprint != null)
+            {
+                yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.MutualTlsThumbprint, this.MutualTlsThumbprint);
+            }
+            if (this.HybridLogicalClockTimestamp != null)
+            {
+                yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.HybridLogicalClockTimestamp, this.HybridLogicalClockTimestamp);
+            }
 
             if (this.lazyNotCommonHeaders != null)
             {
@@ -1200,6 +1221,18 @@ namespace Microsoft.Azure.Documents.Collections
             {
                 yield return HttpConstants.HttpHeaders.ThroughputBucketApplied;
             }
+            if (this.MutualTlsStatus != null)
+            {
+                yield return HttpConstants.HttpHeaders.MutualTlsStatus;
+            }
+            if (this.MutualTlsThumbprint != null)
+            {
+                yield return HttpConstants.HttpHeaders.MutualTlsThumbprint;
+            }
+            if (this.HybridLogicalClockTimestamp != null)
+            {
+                yield return HttpConstants.HttpHeaders.HybridLogicalClockTimestamp;
+            }
 
             if (this.lazyNotCommonHeaders != null)
             {
@@ -1610,6 +1643,18 @@ namespace Microsoft.Azure.Documents.Collections
                         {
                             this.nameValueCollection.Add(HttpConstants.HttpHeaders.ThroughputBucketApplied, this.ThroughputBucketApplied);
                         }
+                        if (this.MutualTlsStatus != null)
+                        {
+                            this.nameValueCollection.Add(HttpConstants.HttpHeaders.MutualTlsStatus, this.MutualTlsStatus);
+                        }
+                        if (this.MutualTlsThumbprint != null)
+                        {
+                            this.nameValueCollection.Add(HttpConstants.HttpHeaders.MutualTlsThumbprint, this.MutualTlsThumbprint);
+                        }
+                        if (this.HybridLogicalClockTimestamp != null)
+                        {
+                            this.nameValueCollection.Add(HttpConstants.HttpHeaders.HybridLogicalClockTimestamp, this.HybridLogicalClockTimestamp);
+                        }
                         if(this.lazyNotCommonHeaders != null)
                         {
                             foreach (KeyValuePair<string, string> keyValuePair in this.lazyNotCommonHeaders)
@@ -1704,6 +1749,10 @@ namespace Microsoft.Azure.Documents.Collections
                     {
                         return this.LocalLSN;
                     }
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.MutualTlsStatus, key))
+                    {
+                        return this.MutualTlsStatus;
+                    }
                     if (string.Equals(HttpConstants.HttpHeaders.ActivityId, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.ActivityId;
@@ -1712,6 +1761,11 @@ namespace Microsoft.Azure.Documents.Collections
                     if (string.Equals(WFConstants.BackendHeaders.LocalLSN, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.LocalLSN;
+                    }
+
+                    if (string.Equals(HttpConstants.HttpHeaders.MutualTlsStatus, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.MutualTlsStatus;
                     }
 
                     break;
@@ -1817,6 +1871,13 @@ namespace Microsoft.Azure.Documents.Collections
                     if (string.Equals(HttpConstants.HttpHeaders.ServerVersion, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.ServerVersion;
+                    }
+
+                    break;
+                case 20:
+                    if (string.Equals(HttpConstants.HttpHeaders.MutualTlsThumbprint, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.MutualTlsThumbprint;
                     }
 
                     break;
@@ -2504,6 +2565,13 @@ namespace Microsoft.Azure.Documents.Collections
                     }
 
                     break;
+                case 51:
+                    if (string.Equals(HttpConstants.HttpHeaders.HybridLogicalClockTimestamp, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.HybridLogicalClockTimestamp;
+                    }
+
+                    break;
                 case 52:
                     if (object.ReferenceEquals(WFConstants.BackendHeaders.UnflushedMergLogEntryCount, key))
                     {
@@ -2696,6 +2764,16 @@ namespace Microsoft.Azure.Documents.Collections
                         this.LocalLSN = value;
                         return;
                     }
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.MutualTlsStatus, key))
+                    {
+                        if (throwIfAlreadyExists && this.MutualTlsStatus != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.MutualTlsStatus = value;
+                        return;
+                    }
                     if (string.Equals(HttpConstants.HttpHeaders.ActivityId, key, StringComparison.OrdinalIgnoreCase))
                     {
                         if (throwIfAlreadyExists && this.ActivityId != null)
@@ -2714,6 +2792,16 @@ namespace Microsoft.Azure.Documents.Collections
                         }
 
                         this.LocalLSN = value;
+                        return;
+                    }
+                    if (string.Equals(HttpConstants.HttpHeaders.MutualTlsStatus, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.MutualTlsStatus != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.MutualTlsStatus = value;
                         return;
                     }
                     break;
@@ -2940,6 +3028,18 @@ namespace Microsoft.Azure.Documents.Collections
                         }
 
                         this.ServerVersion = value;
+                        return;
+                    }
+                    break;
+                case 20:
+                    if (string.Equals(HttpConstants.HttpHeaders.MutualTlsThumbprint, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.MutualTlsThumbprint != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.MutualTlsThumbprint = value;
                         return;
                     }
                     break;
@@ -4390,6 +4490,18 @@ namespace Microsoft.Azure.Documents.Collections
                         }
 
                         this.CollectionLazyIndexingProgress = value;
+                        return;
+                    }
+                    break;
+                case 51:
+                    if (string.Equals(HttpConstants.HttpHeaders.HybridLogicalClockTimestamp, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.HybridLogicalClockTimestamp != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.HybridLogicalClockTimestamp = value;
                         return;
                     }
                     break;

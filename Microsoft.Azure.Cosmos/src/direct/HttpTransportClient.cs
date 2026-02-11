@@ -328,6 +328,7 @@ namespace Microsoft.Azure.Documents
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.EmitVerboseTracesInQuery, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.CanCharge, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.CanThrottle, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IsRequestIgnoredForAutoscaleReporting, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.EnableLowPrecisionOrderBy, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.EnableLogging, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IsReadOnlyScript, request);
@@ -485,6 +486,7 @@ namespace Microsoft.Azure.Documents
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IsOfferStorageRefreshRequest, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IsServerlessStorageRefreshRequest, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IsInternalServerlessRequest, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.AllowInternalServerlessOfferRead, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.UpdateMaxThroughputEverProvisioned, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.TruncateMergeLogRequest, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.AllowRequestWithoutInstanceId, request);
@@ -504,6 +506,7 @@ namespace Microsoft.Azure.Documents
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.SkipAdjustThroughputFractionsForOfferReplace, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IsMigratedFixedCollection, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.SetMasterResourcesDeletionPending, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.CreatePKRangesWithStatusOffline, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.HighPriorityForcedBackup, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.EnableConflictResolutionPolicyUpdate, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.AllowDocumentReadsInOfflineRegion, request);
@@ -518,6 +521,15 @@ namespace Microsoft.Azure.Documents
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateVectorIndexAggregateProgress, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.AllowTopologyUpsertWithoutIntent, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.ReadGlobalCommittedData, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IsSoftDeletionOrRecoveryOperation, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.WorkloadId, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IsEmbeddingGeneratorRequest, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.BypassSoftDeletionBlocking, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IsStrongConsistencyStoreClient, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.OriginalAuthorizationTokenType, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.DistributedTransactionId, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.HybridLogicalClockTimestamp, request);
 
             // Set the CollectionOperation TransactionId if present
             // Currently only being done for SharedThroughputTransactionHandler in the collection create path
@@ -646,6 +658,7 @@ namespace Microsoft.Azure.Documents
                 case OperationType.GetFederationConfigurations:
                 case OperationType.GetStorageServiceConfigurations:
                 case OperationType.XPDatabaseAccountMetaData:
+                case OperationType.GetRegionalConfigurations:
                     // IfModifiedSince and A_IM is already added above
                     HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.ETag, request);
                     HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IfMatch, request);
@@ -707,6 +720,13 @@ namespace Microsoft.Azure.Documents
                 case OperationType.ControllerBatchWatchdogHealthCheckPing:
                     httpRequestMessage.RequestUri = HttpTransportClient.GetRootOperationUri(physicalAddress, resourceOperation.operationType);
                     httpRequestMessage.Method = HttpMethod.Get;
+                    break;
+                
+                case OperationType.GetAzureRbacAccessCheck:
+                    httpRequestMessage.RequestUri = physicalAddress;
+                    httpRequestMessage.Method = HttpMethod.Post;
+                    Debug.Assert(clonedStream != null);
+                    httpRequestMessage.Content = new StreamContent(clonedStream);
                     break;
 #endif
 
@@ -777,6 +797,8 @@ namespace Microsoft.Azure.Documents
                     return HttpTransportClient.GetEncryptionScopeFeedUri(physicalAddress, request);
                 case ResourceType.AuthPolicyElement:
                     return HttpTransportClient.GetAuthPolicyElementFeedUri(physicalAddress, request);
+                case ResourceType.AzureRbac:
+                    return HttpTransportClient.GetAzureRbacFeedUri(physicalAddress, request);
                 case ResourceType.SystemDocument:
                     return HttpTransportClient.GetSystemDocumentFeedUri(physicalAddress, request);
                 case ResourceType.PartitionedSystemDocument:
@@ -845,6 +867,8 @@ namespace Microsoft.Azure.Documents
                     return HttpTransportClient.GetAuthPolicyElementEntryUri(physicalAddress, request);
                 case ResourceType.InteropUser:
                     return HttpTransportClient.GetInteropUserEntryUri(physicalAddress, request);
+                case ResourceType.AzureRbac:
+                    return HttpTransportClient.GetAzureRbacEntryUri(physicalAddress, request);
                 case ResourceType.SystemDocument:
                     return HttpTransportClient.GetSystemDocumentEntryUri(physicalAddress, request);
                 case ResourceType.PartitionedSystemDocument:
@@ -1078,6 +1102,16 @@ namespace Microsoft.Azure.Documents
             return new Uri(baseAddress, PathsHelper.GeneratePath(ResourceType.InteropUser, request, isFeed: false));
         }
 
+        private static Uri GetAzureRbacFeedUri(Uri baseAddress, DocumentServiceRequest request)
+        {
+            return new Uri(baseAddress, PathsHelper.GeneratePath(ResourceType.AzureRbac, request, isFeed: true));
+        }
+
+        private static Uri GetAzureRbacEntryUri(Uri baseAddress, DocumentServiceRequest request)
+        {
+            return new Uri(baseAddress, PathsHelper.GeneratePath(ResourceType.AzureRbac, request, isFeed: false));
+        }
+
         private static Uri GetSystemDocumentFeedUri(Uri baseAddress, DocumentServiceRequest request)
         {
             return new Uri(baseAddress, PathsHelper.GeneratePath(ResourceType.SystemDocument, request, isFeed: true));
@@ -1124,12 +1158,9 @@ namespace Microsoft.Azure.Documents
             {
                 InternalServerErrorException exception =
                     new InternalServerErrorException(
-                    string.Format(CultureInfo.CurrentUICulture,
-                            RMResources.ExceptionMessage,
-                            RMResources.InvalidBackendResponse),
+                        string.Format(CultureInfo.CurrentUICulture, RMResources.ExceptionMessage, RMResources.InvalidBackendResponse),
                         physicalAddress);
-                exception.Headers.Set(HttpConstants.HttpHeaders.ActivityId,
-                    activityId);
+                exception.Headers.Set(HttpConstants.HttpHeaders.ActivityId, activityId);
                 exception.Headers.Add(HttpConstants.HttpHeaders.RequestValidationFailure, "1");
                 throw exception;
             }

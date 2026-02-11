@@ -14,25 +14,35 @@ namespace Microsoft.Azure.Documents
     internal sealed class RequestTimeoutException : DocumentClientException
     {
         public RequestTimeoutException()
-            : this(RMResources.RequestTimeout)
+            : this(RMResources.RequestTimeout, SubStatusCodes.Unknown)
         {
 
         }
 
         public RequestTimeoutException(string message, Uri requestUri = null)
-            : this(message, null, null, requestUri)
+            : this(message, null, null, SubStatusCodes.Unknown, requestUri)
         {
 
         }
 
+        public RequestTimeoutException(string message, SubStatusCodes subStatusCode)
+            : this(message, null, null, subStatusCode, null)
+        {
+        }
+
+        public RequestTimeoutException(string message, SubStatusCodes subStatusCode, Uri requestUri = null)
+            : this(message, null, null, subStatusCode, requestUri)
+        {
+        }
+
         public RequestTimeoutException(string message, Exception innerException, Uri requestUri = null)
-            : this(message, innerException, null, requestUri)
+            : this(message, innerException, null, SubStatusCodes.Unknown, requestUri)
         {
 
         }
 
         public RequestTimeoutException(string message, HttpResponseHeaders headers, Uri requestUri = null)
-            : this(message, null, headers, requestUri)
+            : this(message, null, headers, SubStatusCodes.Unknown, requestUri)
         {
 
         }
@@ -44,23 +54,23 @@ namespace Microsoft.Azure.Documents
         }
 
         public RequestTimeoutException(string message, INameValueCollection headers, Uri requestUri = null)
-            : base(message, null, headers, HttpStatusCode.RequestTimeout, requestUri)
+            : base(message, null, headers, HttpStatusCode.RequestTimeout, SubStatusCodes.Unknown, requestUri)
         {
             SetDescription();
         }
 
         public RequestTimeoutException(string message, Exception innerException, Uri requestUri = null, string localIpAddress = null)
-            : this(message, innerException, (HttpResponseHeaders)null, requestUri)
+            : this(message, innerException, (HttpResponseHeaders)null, SubStatusCodes.Unknown, requestUri)
         {
             this.LocalIp = localIpAddress;
         }
 
-
         public RequestTimeoutException(string message,
             Exception innerException,
             HttpResponseHeaders headers,
+            SubStatusCodes? subStatusCode,
             Uri requestUri = null)
-            : base(message, innerException, headers, HttpStatusCode.RequestTimeout, requestUri)
+            : base(message, innerException, headers, HttpStatusCode.RequestTimeout, requestUri, subStatusCode)
         {
             SetDescription();
         }

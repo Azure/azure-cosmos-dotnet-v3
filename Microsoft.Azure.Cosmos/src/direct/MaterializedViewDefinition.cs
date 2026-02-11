@@ -80,6 +80,33 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+        [JsonProperty(PropertyName = Constants.Properties.ThroughputBucketForBuild, NullValueHandling = NullValueHandling.Ignore)]
+        public int? ThroughputBucketForBuild
+        {
+            get
+            {
+                return base.GetValue<int?>(Constants.Properties.ThroughputBucketForBuild);
+            }
+            set
+            {
+                this.SetValue(Constants.Properties.ThroughputBucketForBuild, value);
+            }
+        }
+
+        // This property is used for identifying the status of materialized view
+        [JsonProperty(PropertyName = Constants.Properties.MaterializedViewStatus, NullValueHandling = NullValueHandling.Ignore)]
+        public string Status
+        {
+            get
+            {
+                return base.GetValue<string>(Constants.Properties.MaterializedViewStatus);
+            }
+            set
+            {
+                this.SetValue(Constants.Properties.MaterializedViewStatus, value);
+            }
+        }
+
         public object Clone()
         {
             MaterializedViewDefinition cloned = new MaterializedViewDefinition()
@@ -87,7 +114,9 @@ namespace Microsoft.Azure.Documents
                 SourceCollectionRid = this.SourceCollectionRid,
                 Definition = this.Definition,
                 ApiSpecificDefinition = this.ApiSpecificDefinition,
-                ContainerType = this.ContainerType
+                ContainerType = this.ContainerType,
+                ThroughputBucketForBuild = this.ThroughputBucketForBuild,
+                Status = this.Status
             };
             return cloned;
         }

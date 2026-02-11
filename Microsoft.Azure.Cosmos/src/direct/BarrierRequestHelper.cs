@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Documents
     using System.Globalization;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Documents.Collections;
 
     internal static class BarrierRequestHelper
     {
@@ -62,9 +63,7 @@ namespace Microsoft.Azure.Documents
                         headers: null,
                         authorizationTokenType: originalRequestTokenType);
             }
-#pragma warning disable SA1108
             else if (request.IsNameBased) // Name based server request
-#pragma warning restore SA1108
             {
                 // get the collection full name
                 // dbs/{id}/colls/{collid}/
@@ -76,9 +75,7 @@ namespace Microsoft.Azure.Documents
                     originalRequestTokenType,
                     null);
             }
-#pragma warning disable SA1108
             else // RID based Server request
-#pragma warning restore SA1108
             {
                 barrierLsnRequest = DocumentServiceRequest.Create(
                     OperationType.Head,
@@ -86,7 +83,17 @@ namespace Microsoft.Azure.Documents
                     ResourceType.Collection, null, originalRequestTokenType);
             }
 
+            if (ShouldAllowBarrierRequestWithRwStatusRevoked(request))
+            {
+                barrierLsnRequest.Headers[WFConstants.BackendHeaders.AllowBarrierRequestWhenRWStatusRevoked] = bool.TrueString;
+            }
+
             barrierLsnRequest.Headers[HttpConstants.HttpHeaders.XDate] = Rfc1123DateTimeCache.UtcNow();
+            barrierLsnRequest.UseStatusCodeFor429 = request.UseStatusCodeFor429;
+            barrierLsnRequest.UseStatusCodeForFailures = request.UseStatusCodeForFailures;
+            barrierLsnRequest.UseStatusCodeFor403 = request.UseStatusCodeFor403;
+            barrierLsnRequest.UseStatusCodeFor4041002 = request.UseStatusCodeFor4041002;
+            barrierLsnRequest.UseStatusCodeForBadRequest = request.UseStatusCodeForBadRequest;
 
             if (targetLsn.HasValue && targetLsn.Value > 0)
             {
@@ -192,6 +199,13 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+        internal static bool ShouldAllowBarrierRequestWithRwStatusRevoked(DocumentServiceRequest request)
+        {
+            return request?.Headers != null &&
+                   bool.TryParse(request.Headers[WFConstants.BackendHeaders.AllowBarrierRequestWhenRWStatusRevoked],
+                                out bool isAllowed) && isAllowed;
+        }
+
         internal static bool IsCollectionHeadBarrierRequest(ResourceType resourceType, OperationType operationType)
         {
             switch(resourceType)
@@ -226,15 +240,12 @@ namespace Microsoft.Azure.Documents
                     return false;
             }
         }
-#pragma warning disable SA1507 // Code should not contain multiple blank lines in a row
 
-        
-#pragma warning disable CS1570 // XML comment has badly formed XML
-/// <summary>
+        /// <summary>
         /// Used to determine the appropriate back-off time between barrier requests based
         /// on the responses to previous barrier requests. The substatus code of HEAD requests
         /// indicate the gap - like how far the targeted LSN/GCLSN was missed.
-        /// As a very naive rule-of-thumb the assumpiton is that even for small documents < 1 KB
+        /// As a very naive rule-of-thumb the assumpiton is that even for small documents &lt; 1 KB
         /// only about 2000 write trasnactions can possibly be committed on a single phsyical
         /// partition (10,000 RU / 5 RU at least per write operation). The allowed
         /// throughput per physical partition could grow and the min. RU per write operations
@@ -256,8 +267,6 @@ namespace Microsoft.Azure.Documents
         /// A flag indicating whether a delay before the next barrier request should be injected.
         /// </returns>
         internal static bool ShouldDelayBetweenHeadRequests(
-#pragma warning restore SA1507 // Code should not contain multiple blank lines in a row
-#pragma warning restore CS1570 // XML comment has badly formed XML
             TimeSpan previousHeadRequestLatency,
             IList<ReferenceCountedDisposable<StoreResult>> responses,
             TimeSpan minDelay,
@@ -295,6 +304,32 @@ namespace Microsoft.Azure.Documents
 
             delay = minDelay;
             return minDelay > TimeSpan.Zero;
+        }
+
+        /// <summary>
+        /// Checks if any response in the list is a 410/1022 Gone error.
+        /// </summary>
+        internal static bool IsGoneLeaseNotFound(IList<ReferenceCountedDisposable<StoreResult>> responses)
+        {
+            if (responses == null) return false;
+            foreach (ReferenceCountedDisposable<StoreResult> storeResult in responses)
+            {
+                if (IsGoneLeaseNotFound(storeResult.Target))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Checks if the given StoreResult is a 410/1022 Gone error.
+        /// </summary>
+        internal static bool IsGoneLeaseNotFound(StoreResult r)
+        {
+            return r != null &&
+            r.StatusCode == StatusCodes.Gone &&
+            r.SubStatusCode == SubStatusCodes.LeaseNotFound;
         }
 
         private static TimeSpan GetDelayBetweenHeadRequests(int minLSNGap)

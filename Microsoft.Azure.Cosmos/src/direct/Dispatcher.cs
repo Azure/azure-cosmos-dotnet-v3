@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Documents.Rntbd
     using System.Net.Security;
     using System.Threading;
     using System.Threading.Tasks;
+    using System.Security.Cryptography.X509Certificates;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents.FaultInjection;
 #if COSMOSCLIENT
@@ -40,6 +41,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         private readonly CancellationTokenSource cancellation = new CancellationTokenSource();
         private readonly TimerPool idleTimerPool;
         private readonly bool enableChannelMultiplexing;
+        private readonly Action<string, Exception> clientCertificateFailureHandler;
 
         private bool disposed = false;
 
@@ -52,6 +54,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         private Task receiveTask = null; // Guarded by callLock.
         // Guarded by callLock.
         private readonly Dictionary<uint, CallInfo> calls = new Dictionary<uint, CallInfo>();
+        private readonly bool shouldRequestMutualTls = false;
 
         // Guarded by callLock.
         // The call map can become frozen if the underlying connection becomes
@@ -83,6 +86,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             bool enableChannelMultiplexing,
             MemoryStreamPool memoryStreamPool,
             RemoteCertificateValidationCallback remoteCertificateValidationCallback,
+            Func<string, X509Certificate2> clientCertificateFunction,
+            Action<string, Exception> clientCertificateFailureHandler,
             Func<string, Task<IPAddress>> dnsResolutionFunction,
             IChaosInterceptor chaosInterceptor)
         {
@@ -92,6 +97,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 idleTimeout,
                 memoryStreamPool,
                 remoteCertificateValidationCallback,
+                clientCertificateFunction,
                 dnsResolutionFunction);
             this.userAgent = userAgent;
             this.connectionStateListener = connectionStateListener;
@@ -99,6 +105,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.idleTimerPool = idleTimerPool;
             this.enableChannelMultiplexing = enableChannelMultiplexing;
             this.chaosInterceptor = chaosInterceptor;
+            this.clientCertificateFailureHandler = clientCertificateFailureHandler;
+            this.shouldRequestMutualTls = clientCertificateFunction != null;
         }
 
         internal Dispatcher(
@@ -118,13 +126,11 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.enableChannelMultiplexing = enableChannelMultiplexing;
             this.chaosInterceptor = chaosInterceptor;
         }
-#pragma warning disable SA1507 // Code should not contain multiple blank lines in a row
 
 
         #region Test hook.
 
         internal event Action TestOnConnectionClosed;
-#pragma warning restore SA1507 // Code should not contain multiple blank lines in a row
         internal bool TestIsIdle
         {
             get
@@ -353,7 +359,6 @@ namespace Microsoft.Azure.Documents.Rntbd
                 try
                 {
                     try
-#pragma warning disable SA1507 // Code should not contain multiple blank lines in a row
                     {     
                         if (this.chaosInterceptor != null)
                         {
@@ -379,7 +384,6 @@ namespace Microsoft.Azure.Documents.Rntbd
                         
 
                     }
-#pragma warning restore SA1507 // Code should not contain multiple blank lines in a row
                     catch (Exception e)
                     {
                         callInfo.SendFailed();
@@ -577,7 +581,6 @@ namespace Microsoft.Azure.Documents.Rntbd
             Debug.Assert(Monitor.IsEntered(this.connectionLock));
             this.idleTimer = this.idleTimerPool.GetPooledTimer((int)timeToIdle.TotalSeconds);
             this.idleTimerTask = this.idleTimer.StartTimerAsync().ContinueWith(this.OnIdleTimer, TaskContinuationOptions.OnlyOnRanToCompletion);
-#pragma warning disable SA1137
             this.idleTimerTask.ContinueWith(
                 failedTask =>
                 {
@@ -586,7 +589,6 @@ namespace Microsoft.Azure.Documents.Rntbd
                          this.ConnectionCorrelationId, this, failedTask.Exception?.InnerException?.Message);
                 },
                 TaskContinuationOptions.OnlyOnFaulted);
-#pragma warning restore SA1137
         }
 
         // this.connectionLock must be held.
@@ -692,7 +694,11 @@ namespace Microsoft.Azure.Documents.Rntbd
         private async Task NegotiateRntbdContextAsync(ChannelOpenArguments args)
         {
             byte[] contextMessage = TransportSerialization.BuildContextRequest(
-                args.CommonArguments.ActivityId, this.userAgent, args.CallerId, this.enableChannelMultiplexing);
+                args.CommonArguments.ActivityId,
+                this.userAgent,
+                args.CallerId,
+                this.enableChannelMultiplexing,
+                mutualTlsAuthMode: this.shouldRequestMutualTls ? RntbdConstants.RntbdMutualTlsAuthMode.System : null);
 
             await this.connection.WriteRequestAsync(
                 args.CommonArguments, 
@@ -732,6 +738,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 {
                     Error error = Resource.LoadFrom<Error>(errorResponseStream);
 
+                    // DEVNOTE: This exception can be sent to the user via the clientCertificateFailureHandler callback.
                     DocumentClientException exception = new DocumentClientException(
                         string.Format(CultureInfo.CurrentUICulture,
                             RMResources.ExceptionMessage,
@@ -765,8 +772,37 @@ namespace Microsoft.Azure.Documents.Rntbd
                             BytesSerializer.GetStringFromBytes(response.serverVersion.value.valueBytes));
                     }
 
+                    bool isMutualTlsAuthFailure = false;
+                    if (response.mutualTlsAuthThumbprint.isPresent)
+                    {
+                        exception.Headers.Add(HttpConstants.HttpHeaders.MutualTlsThumbprint,
+                            BytesSerializer.GetStringFromBytes(response.mutualTlsAuthThumbprint.value.valueBytes));
+                        exception.Headers.Add(HttpConstants.HttpHeaders.MutualTlsStatus,
+                            HttpConstants.HttpHeaderValues.MutualTlsAuthFailed);
+                        isMutualTlsAuthFailure = true;
+                    }
+
+                    // DEVNOTE: Do not modify the exception after this point, as it may affect the mutual TLS auth failure handler.
+                    if (isMutualTlsAuthFailure)
+                    {
+                        this.clientCertificateFailureHandler?.Invoke(
+                            exception.Headers.Get(HttpConstants.HttpHeaders.MutualTlsThumbprint),
+                            exception);
+                    }
+
                     throw exception;
                 }
+            }
+
+            // Even on successful requests, we want to handle Mutual TLS auth failures.
+            // This is because while we are in dual mode (certificate + token as fallback),
+            // the server may indicate that the certificate auth failed, but requests can still succeed with the auth token.
+            // In the future, once Mutual TLS auth is the only auth method, this can be removed as a cert failure will be a 401.
+            if (response.mutualTlsAuthThumbprint.isPresent)
+            {
+                this.clientCertificateFailureHandler?.Invoke(
+                    BytesSerializer.GetStringFromBytes(response.mutualTlsAuthThumbprint.value.valueBytes),
+                    null);
             }
 
             this.NotifyConnectionOnSuccessEvent();

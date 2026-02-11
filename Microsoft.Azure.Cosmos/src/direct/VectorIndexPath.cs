@@ -39,12 +39,14 @@ namespace Microsoft.Azure.Documents
     ///         {
     ///             "path": "/vector3",
     ///             "type": "quantizedFlat",
+    ///             "quantizerType": "product",
     ///             "quantizationByteSize": 20,
     ///             "vectorIndexShardKey": ["/Country"]
     ///         },
     ///         {
     ///             "path": "/vector3",
     ///             "type": "diskann",
+    ///             "quantizerType": "product",
     ///             "quantizationByteSize": 32,
     ///             "indexingSearchListSize": 100,
     ///             "vectorIndexShardKey": ["/Country", "ZipCode"]
@@ -113,6 +115,24 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        /// Gets or sets the quantizer type for the vector index path.
+        /// <!-- This is only applicable for the quantizedFlat and diskann vector index types. -->
+        /// <!-- This is an optional parameter. -->
+        /// </summary>
+        [JsonProperty(PropertyName = Constants.Properties.QuantizerType, NullValueHandling = NullValueHandling.Ignore)]
+        public QuantizerType? QuantType
+        {
+            get
+            {
+                return base.GetValue<QuantizerType?>(Constants.Properties.QuantizerType);
+            }
+            set
+            {
+                base.SetValue(Constants.Properties.QuantizerType, value);
+            }
+        }
+
+        /// <summary>
         /// Gets or sets the indexing search list size for the vector index path.
         /// <!-- This is only applicable for the diskann vector index type. -->
         /// <!-- This is an optional parameter. -->
@@ -154,6 +174,7 @@ namespace Microsoft.Azure.Documents
             clonedVectorIndexPath.Path = this.Path;
             clonedVectorIndexPath.Type = this.Type;
             clonedVectorIndexPath.QuantizationByteSize = this.QuantizationByteSize;
+            clonedVectorIndexPath.QuantType = this.QuantType;
             clonedVectorIndexPath.IndexingSearchListSize = this.IndexingSearchListSize;
             clonedVectorIndexPath.VectorIndexShardKey = this.VectorIndexShardKey;
             return clonedVectorIndexPath;
@@ -164,6 +185,7 @@ namespace Microsoft.Azure.Documents
             base.SetValue(Constants.Properties.Path, this.Path);
             base.SetValue(Constants.Properties.Type, this.Type);
             base.SetValue(Constants.Properties.QuantizationByteSize, this.QuantizationByteSize);
+            base.SetValue(Constants.Properties.QuantizerType, this.QuantType);
             base.SetValue(Constants.Properties.IndexingSearchListSize, this.IndexingSearchListSize);
             base.SetValue(Constants.Properties.VectorIndexShardKey, this.VectorIndexShardKey);
         }

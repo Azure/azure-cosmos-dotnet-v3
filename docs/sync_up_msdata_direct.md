@@ -8,6 +8,7 @@
 * [Validating the sync-up.](#validating-the-sync-up)
 * [Submit Pull Request to msdata direct.](#submit-pull-request-to-msdata-direct)
 * [Sample Pull Requests to Sync-up msdata direct.](#sample-pull-requests-to-sync-up-msdata-direct)
+* [Common Issues and Resolutions.](#common-issues-and-resolutions)
 
 ## Background
 
@@ -17,6 +18,8 @@ As a developer on the Cosmos SDK team, we often engage in a task, that requires 
 
 Before covering the sync-up process in detail, please follow the below steps to make sure all the required pre-requisites are met.
 
+> **Note for AI Agents**: The sync process requires the local path to the msdata `CosmosDB` repository. If the user does not provide this path in their instructions, **ask for it before proceeding**. The path is needed to update `$baseDir` in `msdata_sync.ps1` and to manually copy any missing files. Do not assume a default path.
+
 ### Clone the Azure Cosmos DB .NET SDK Version 3 Repo
 
 - Clone the azure `cosmos-db dotnet sdk` repo in the local environment, using the below git command:
@@ -25,12 +28,12 @@ Before covering the sync-up process in detail, please follow the below steps to 
 - Navigate to the directory `azure-cosmos-dotnet-v3` and check out the following branch, `msdata/direct` using the below git commands:
     -       git pull && git checkout msdata/direct
 
-### Clone the `CosmosDB` Repo hosted in msdata
+### CosmosDB Repo hosted in msdata
 
-- Clone the CosmosDB repository in the local environment, using the CosmosDB onboarding guide. Please note, building the entire repository is not required for the sync-up process.
+- Ensure you have a local clone of the CosmosDB repository (see the CosmosDB onboarding guide for cloning instructions). Building the entire repository is not required for the sync-up process.
 
-- Navigate to the cloned `CosmosDB` directory and check out the following branch, `master` using the below git commands:
-    -       git pull && git checkout master
+- Navigate to the cloned `CosmosDB` directory and make sure it is on the latest `master`:
+    -       git checkout master && git pull
 
 ## Steps Required to Update msdata direct Repo
 
@@ -47,6 +50,8 @@ The next step is to port the latest `master` branch code into the newly created 
 - Make sure the `master` branch is up-to-date.
 - Stay on the newly created feature branch `users/<user_name>/update_msdata_direct_<mm_dd_yyyy>` and run `git merge master`.
 - There are likely to be conflicts during the merge. If that happens, we will need to resolve the conflicts gracefully by accepting the incoming `master` branch changes.
+  - **Exception**: Files unique to `msdata/direct` (such as `AssemblyKeys.cs` in `Microsoft.Azure.Cosmos/src/direct/`) must be kept from `msdata/direct`, not overwritten by master. If accidentally lost, restore with: `git checkout origin/msdata/direct -- <file_path>`.
+  - For delete/modify conflicts (files deleted on master but modified on `msdata/direct`), keep the `msdata/direct` version.
 
 ### Pick the Required Microsoft Azure Cosmos.Direct files into `msdata/direct` repo.
 
@@ -73,7 +78,8 @@ This is the last part for the sync-up process. Please follow the below steps to 
     Copying Files: BarrierRequestHelper.cs
     ```
 
-- Note: There may be instances where some of the files could be missing in the v3 `msdata/direct` repo and the copy may fail with the following error: `Write-Error: SystemSynchronizationScope.cs False`. If that happens, please copy the file manually from the `msdata/CosmosDB` repo and continue running the script all over again. 
+- Note: There may be instances where some of the files could be missing in the v3 `msdata/direct` repo and the copy may fail with the following error: `Write-Error: SystemSynchronizationScope.cs False`. If that happens, please copy the file manually from the `msdata/CosmosDB` repo and continue running the script all over again.
+- Note: If new source directories were added in the msdata repo (e.g., `Rntbd\rntbdtokens\`, `Cosmos\Core\Core\Utilities\`), the script will fail to find those files. Add the new paths to `$srcDirs` in `msdata_sync.ps1` before re-running.
 
 ## Validating the sync-up
 
@@ -81,7 +87,8 @@ One of the most important part in the whole `msdata/direct` sync up process is t
 
 - Open command prompt/ windows terminal and navigate to the directory where the cosmos v3 code is located, for instance `C:\stash\azure-cosmos-dotnet-v3`.
 - Make sure to stay on the newly created feature branch.
-- Stay on the same directory mentioned above, and run the following command for a clean build: `dotnet build`. Make sure, the build passes successfully.
+- Stay on the same directory mentioned above, and run the following command for a clean build: `dotnet build Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj`. Make sure, the build passes successfully.
+- **Critical**: After merging `master`, verify that `Microsoft.Azure.Cosmos.csproj` still has `<ExcludeAssets>compile</ExcludeAssets>` on the `Microsoft.Azure.Cosmos.Direct` PackageReference. The merge from `master` typically overwrites this, causing thousands of CS0436 type-conflict errors between local source files and the NuGet package.
 
 ## Submit Pull Request to msdata direct
 
@@ -91,3 +98,14 @@ Once the feature branch builds successfully, it's time to submit the PR to `msda
 
 - [[Internal] Msdata/Direct: Refactors msdata branch with latest v3 and direct release](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3726)
 - [[Internal] Msdata/Direct: Refactors msdata/direct branch with latest v3 master and Cosmos.Direct v3.30.4](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3776)
+
+## Common Issues and Resolutions
+
+| Issue | Typical Fix |
+|-------|------------|
+| `GatewayStoreModel` fields inaccessible from `ThinClientStoreModel` | Change `private` fields/methods to `protected internal` or `internal` |
+| Constructor signature mismatches (e.g., `ThinClientStoreClient`) | Update call sites to match the current constructor parameters |
+| Read-only property assignments in converters | Use the backing setter (e.g., `ConflictResolutionTimestampInSeconds` instead of `ConflictResolutionTimestamp`) |
+| Missing types (e.g., `AzureRbac`, `IServiceConfigurationReaderVnext`) | Copy from the msdata CosmosDB repo manually |
+| XML comment errors (CS1570, CS1574, unclosed tags, unescaped `<`, `>`, `&`) | Escape special chars or fix malformed tags in the synced files |
+| StyleCop / formatting errors (SA****) | Add error codes to `<NoWarn>` in the `.csproj` — these are cosmetic and safe to suppress for the sync PR |

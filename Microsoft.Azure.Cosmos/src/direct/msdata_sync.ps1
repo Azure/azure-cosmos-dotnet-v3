@@ -1,4 +1,4 @@
-$baseDir    = "Q:\src\CosmosDB"
+$baseDir    = "Q:\CosmosDB"
 $sourceDir = 
     @(
         "\Product\SDK\.net\Microsoft.Azure.Cosmos.Direct\src\",
@@ -6,8 +6,10 @@ $sourceDir =
         "\Product\Microsoft.Azure.Documents\SharedFiles\Routing\",
         "\Product\Microsoft.Azure.Documents\SharedFiles\Rntbd2\",
         "\Product\Microsoft.Azure.Documents\SharedFiles\Rntbd\",
+        "\Product\Microsoft.Azure.Documents\SharedFiles\Rntbd\rntbdtokens\",
         "\Product\SDK\.net\Microsoft.Azure.Documents.Client\LegacyXPlatform\",
         "\Product\Cosmos\Core\Core.Trace\",
+        "\Product\Cosmos\Core\Core\Utilities\",
         "\Product\Microsoft.Azure.Documents\SharedFiles\",
         "\Product\Microsoft.Azure.Documents\SharedFiles\Collections\",
         "\Product\Microsoft.Azure.Documents\SharedFiles\Query\",
@@ -16,10 +18,10 @@ $sourceDir =
 $syncCopyFile="msdata_sync.ps1"
 $exclueList =
     @(
+        "AssemblyKeys.cs",
         "BaseTransportClient.cs",
         "CpuReaderBase.cs",
         "LinuxCpuReader.cs",
-        "MaterializedViews.cs",
         "MemoryLoad.cs",
         "MemoryLoadHistory.cs",
         "UnsupportedCpuReader.cs",
@@ -75,8 +77,8 @@ foreach ($file in Get-ChildItem . -Name )
 
     if (! ($fileFound -or $exclueList -contains $file))
     {
-        Write-Error "$file $fileFound"
-        break;
+        Write-Warning "File not found in any source directory: $file"
+        continue;
     }
 
     if ($fileFound)

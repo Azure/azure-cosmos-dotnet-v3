@@ -106,8 +106,6 @@ namespace Microsoft.Azure.Documents
                     return;
                 }
             }
-#pragma warning disable CDX1002
-#pragma warning disable CDX1003
             try
             {
                 // get the current tick count which will be used to compare to 
@@ -168,10 +166,8 @@ namespace Microsoft.Azure.Documents
             }
             catch(Exception ex)
             {
-                DefaultTrace.TraceCritical("Hit exception ex: {0}\n, stack: {1}", ex.Message, ex.StackTrace);
+                DefaultTrace.TraceCritical("Hit exception ex: {0}", ex.Message);
             }
-#pragma warning restore CDX1003
-#pragma warning restore CDX1002
             finally
             {
                 lock(timerConcurrencyLock)
@@ -199,17 +195,13 @@ namespace Microsoft.Azure.Documents
             this.ThrowIfDisposed();
             return new PooledTimer(timeoutInSeconds, this);
         }
-        
-#pragma warning disable CS1572 // XML comment has a param tag, but there is no parameter by that name
-/// <summary>
+
+        /// <summary>
         /// get a timer with timeout specified as a TimeSpan
         /// </summary>
         /// <param name="timeoutInSeconds"></param>
         /// <returns></returns>
-#pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
         public PooledTimer GetPooledTimer(TimeSpan timeout)
-#pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
-#pragma warning restore CS1572 // XML comment has a param tag, but there is no parameter by that name
         {
             this.ThrowIfDisposed();
             return new PooledTimer(timeout, this);

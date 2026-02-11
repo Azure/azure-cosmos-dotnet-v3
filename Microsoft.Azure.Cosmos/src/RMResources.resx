@@ -861,9 +861,6 @@
   <data name="FeatureNotSupportedInRegion" xml:space="preserve">
     <value>Feature {0} is not supported in {1} region</value>
   </data>
-  <data name="MaterializedViewsNotSupportedOnZoneRedundantAccount" xml:space="preserve">
-    <value>Materialized Views are not supported on account with zone redundant region</value>
-  </data>
   <data name="GlobalAndWriteRegionMisMatch" xml:space="preserve">
     <value>Database and Write Location are not matching</value>
   </data>
@@ -1054,6 +1051,9 @@ If you would like to serve this query through continuation tokens, then please r
   <data name="EnableMultiRegionAndEnableServerlessNotSupported" xml:space="preserve">
     <value>Serverless accounts do not support multiple regions.</value>
   </data>
+  <data name="MergeNotSupportedForServerless" xml:space="preserve">
+    <value>Serverless accounts do not support partition merge.</value>
+  </data>
   <data name="DataPlaneOperationNotAllowed" xml:space="preserve">
     <value>"Operation '{0}' on resource '{1}' is not allowed through Azure Cosmos DB endpoint. Please switch on such operations for your account, or perform this operation through Azure Resource Manager, Azure Portal, Azure CLI or Azure Powershell"</value>
   </data>
@@ -1113,9 +1113,6 @@ If you would like to serve this query through continuation tokens, then please r
   </data>
   <data name="AadAuthGroupExpansionNeeded" xml:space="preserve">
     <value> This could be because the user's group memberships were not present in the AAD token.</value>
-  </data>
-  <data name="AadAuthActionNotSupported" xml:space="preserve">
-    <value>The given request [{0} {1}] cannot be authorized by AAD token in data plane. Learn more: https://aka.ms/cosmos-native-rbac.</value>
   </data>
   <data name="AadAuthenticatorNotAvailable" xml:space="preserve">
     <value>Failed to validate AAD identity since the authenticator is unavailable.</value>
@@ -1206,6 +1203,12 @@ If you would like to serve this query through continuation tokens, then please r
   </data>
   <data name="RbacMissingAction" xml:space="preserve">
     <value>Cannot authorize request since the [Action] to authorize was not found.</value>
+  </data>
+  <data name="RbacCacheHydrationFailed" xml:space="preserve">
+    <value>Failed to hydrate RBAC cache. Please retry again later.</value>
+  </data>
+  <data name="RbacHydratorNotAvailable" xml:space="preserve">
+    <value>Failed to hydrate RBAC cache since the hydrator is unavailable.</value>
   </data>
   <data name="CrossTenantCMKDatabaseAccountDelegatedIdentityNotSupported" xml:space="preserve">
     <value>Cross tenant CMK database account doesn't support using delegated identity as the default identity.</value>
@@ -1457,5 +1460,53 @@ If you would like to serve this query through continuation tokens, then please r
   </data>
   <data name="CapabilityNotSupportedOnSubscription" xml:space="preserve">
     <value>{0} capability is not supported on subscription {1}</value>
+  </data>
+  <data name="SoftDeletionNotSupportedWithMultipleWriteLocations" xml:space="preserve">
+    <value>Soft Delete and Multiple Write Locations cannot be enabled on the same account.</value>
+  </data>
+  <data name="NRegionCommitWriteBarrierNotMet" xml:space="preserve">
+    <value>NRegion Commit write barrier has not been met for the request, since the gap between the local LSN and global n-region committed lsn is more than 1.</value>
+  </data>
+  <data name="InvalidOfferUpdateOperation" xml:space="preserve">
+    <value>Offer update operations are not supported for the account {0}.</value>
+  </data>
+  <data name="UnsupportedMaterializedViewRegion" xml:space="preserve">
+    <value>The requested region '{0}' is not supported for Materialized View enablement.</value>
+  </data>
+  <data name="UnsupportedMaterializedViewAzRegion" xml:space="preserve">
+    <value>The requested region '{0}' does not yet support AZ provisioning for Materialized View enablement. Please try other regions or disable zone redundancy for this region.</value>
+  </data>
+  <data name="DisableLocalAuthDeniedBecauseOfKeysUsage" xml:space="preserve">
+    <value>Cannot disable local authentication: key usage detected on {0}. Stop using keys before proceeding. More info: https://aka.ms/cosmosdb-disable-local-auth</value>
+  </data>
+  <data name="UnexpectedErrorCheckingKeysUsageInDisableLocalAuth" xml:space="preserve">
+    <value>Unexpected error occurred while disabling local authentication. Please ensure that your account is not using keys and try again. More info: https://aka.ms/cosmosdb-disable-local-auth</value>
+  </data>
+  <data name="AadAuthActionNotSupported" xml:space="preserve">
+    <value>The given request [{0} {1}] cannot be authorized by AAD token in data plane. Learn more: https://aka.ms/cosmos-native-rbac.</value>
+  </data>
+  <data name="Server_NRegionCommitWriteBarrierNotMet" xml:space="preserve">
+    <value>Service is currently unavailable. More info: https://aka.ms/cosmosdb-tsg-service-unavailable. N-Region Commit write barrier has not been met for the request.</value>
+  </data>
+  <data name="KeyRegenerationDeniedBecauseOfKeysUsage" xml:space="preserve">
+    <value>Cannot regenerate key because usage was detected on the {0} of your account. Please stop using keys before regenerating the key. More info: https://aka.ms/cosmosdb-key-rotation</value>
+  </data>
+  <data name="UnexpectedErrorCheckingKeysUsageInKeyRegeneration" xml:space="preserve">
+    <value>Unexpected error occurred while checking key usage during key regeneration. Please ensure that your account is not using keys and try again. More info: https://aka.ms/cosmosdb-key-rotation</value>
+  </data>
+  <data name="UnsupportedAccountTypeForOnlineContainerCopy" xml:space="preserve">
+    <value>Online container copy enablement is supported only on NoSQL accounts.</value>
+  </data>
+  <data name="EnableFFCFWithPITRNotEnabledForOnlineContainerCopy" xml:space="preserve">
+    <value>All versions and deletes change feed mode should be enabled for Online Container Copy.</value>
+  </data>
+  <data name="OnlineContainerCopyNotEnabled" xml:space="preserve">
+    <value>EnableOnlineContainerCopy capability is not enabled.</value>
+  </data>
+  <data name="CannotOfflineDueToInvalidAccountStatus" xml:space="preserve">
+    <value>Cannot offline when Region {0} is in an invalid state (i.e., not Online or Updating).</value>
+  </data>
+	<data name="CannotSetSoftDeletionMetadataWhenDisablingSoftDeleteErrorMessage" xml:space="preserve">
+    <value>Cannot set SoftDeletionMetadata when disabling soft delete.</value>
   </data>
 </root>

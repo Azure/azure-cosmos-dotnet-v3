@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Documents.Rntbd
     using System.Net;
     using System.Net.Security;
     using System.Threading.Tasks;
+    using System.Security.Cryptography.X509Certificates;
 
     internal sealed class ChannelProperties
     {
@@ -22,6 +23,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             RntbdConstants.CallerId callerId, bool enableChannelMultiplexing,
             MemoryStreamPool memoryStreamPool,
             RemoteCertificateValidationCallback remoteCertificateValidationCallback,
+            Func<string, X509Certificate2> clientCertificateFunction,
+            Action<string, Exception> clientCertificateFailureHandler,
             Func<string, Task<IPAddress>> dnsResolutionFunction)
         {
             Debug.Assert(userAgent != null);
@@ -56,6 +59,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.MaxConcurrentOpeningConnectionCount = maxConcurrentOpeningConnectionCount;
             this.MemoryStreamPool = memoryStreamPool;
             this.RemoteCertificateValidationCallback = remoteCertificateValidationCallback;
+            this.ClientCertificateFunction = clientCertificateFunction;
+            this.ClientCertificateFailureHandler = clientCertificateFailureHandler;
             this.DnsResolutionFunction = dnsResolutionFunction;
         }
 
@@ -106,6 +111,10 @@ namespace Microsoft.Azure.Documents.Rntbd
         public MemoryStreamPool MemoryStreamPool { get; private set; }
 
         public RemoteCertificateValidationCallback RemoteCertificateValidationCallback { get; private set; }
+
+        public Func<string, X509Certificate2> ClientCertificateFunction { get; private set; }
+
+        public Action<string, Exception> ClientCertificateFailureHandler { get; private set; }
 
         public Func<string, Task<System.Net.IPAddress>> DnsResolutionFunction { get; private set; }
     }

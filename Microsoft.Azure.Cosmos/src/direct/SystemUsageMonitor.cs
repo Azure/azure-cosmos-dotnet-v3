@@ -23,9 +23,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         private readonly IDictionary<string, SystemUsageRecorder> recorders = new Dictionary<string, SystemUsageRecorder>();
         private readonly Stopwatch watch = new Stopwatch();
 
-#pragma warning disable IDE0044 // Add readonly modifier
         private int pollDelayInMilliSeconds;
-#pragma warning restore IDE0044 // Add readonly modifier
         private CancellationTokenSource cancellation;
 
         private Task periodicTask { set; get; }

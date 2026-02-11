@@ -26,12 +26,8 @@ namespace Microsoft.Azure.Documents
         private static readonly Lazy<int> sessionRetryMaximumBackoffConfig;
 
         private int retryCount;
-#pragma warning disable IDE0044 // Add readonly modifier
         private Stopwatch durationTimer = new Stopwatch();
-#pragma warning restore IDE0044 // Add readonly modifier
-#pragma warning disable IDE0044 // Add readonly modifier
         private int waitTimeInMilliSeconds;
-#pragma warning restore IDE0044 // Add readonly modifier
 
         private int? currentBackoffInMilliSeconds;
 
@@ -128,9 +124,7 @@ namespace Microsoft.Azure.Documents
             return true;
         }
 
-#pragma warning disable VSTHRD200 // Use "Async" suffix for async methods
         private ShouldRetryResult ShouldRetryInternalAsync(DocumentServiceRequest request,
-#pragma warning restore VSTHRD200 // Use "Async" suffix for async methods
             HttpStatusCode? statusCode,
             SubStatusCodes? subStatusCode,
             long? responseLSN)
@@ -139,7 +133,6 @@ namespace Microsoft.Azure.Documents
 
             if (statusCode.HasValue && statusCode.Value == HttpStatusCode.NotFound
                 && subStatusCode.HasValue && subStatusCode.Value == SubStatusCodes.ReadSessionNotAvailable)
-#pragma warning disable SA1505 // Opening braces should not be followed by blank line
             {
 
                 int remainingTimeInMilliSeconds = this.waitTimeInMilliSeconds - Convert.ToInt32(this.durationTimer.Elapsed.TotalMilliseconds);
@@ -148,12 +141,10 @@ namespace Microsoft.Azure.Documents
                 {
                     this.durationTimer.Stop();
 
-#pragma warning disable SA1003 // Symbols should be spaced correctly
                     DefaultTrace.TraceInformation("SessionTokenMismatchRetryPolicy not retrying because it has exceeded the time limit. Retry count = {0} request-session-token = {1} response-session-token = {2}", 
                         this.retryCount,
                         requestSessionToken == null ? "<empty>" : requestSessionToken.ConvertToString(),
                         responseLSN.HasValue? responseLSN : "<empty>");
-#pragma warning restore SA1003 // Symbols should be spaced correctly
 
                     return ShouldRetryResult.NoRetry();
                 }
@@ -209,7 +200,6 @@ namespace Microsoft.Azure.Documents
 
                 return ShouldRetryResult.RetryAfter(backoffTime);
             }
-#pragma warning restore SA1505 // Opening braces should not be followed by blank line
 
             this.durationTimer.Stop();
 
@@ -218,9 +208,22 @@ namespace Microsoft.Azure.Documents
 
         private bool shouldRetryLocally()
         {
-            if (this.sessionRetryOptions == null || !this.sessionRetryOptions.RemoteRegionPreferred)
+            // If no options, allow retry (legacy behavior)
+            if (this.sessionRetryOptions == null)
             {
                 return true;
+            }
+
+            // If remote region is not preferred, use legacy retry logic
+            if (!this.sessionRetryOptions.RemoteRegionPreferred)
+            {
+                return true;
+            }
+
+            // If retries are disabled, do not retry
+            if (this.sessionRetryOptions.MaxInRegionRetryCount <= 0)
+            {
+                return false;
             }
 
             // SessionTokenMismatchRetryPolicy is invoked after 1 attempt on a region

@@ -8,14 +8,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Globalization;
     using System.Net;
     using System.Net.Http;
+    using System.Net.Security;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -272,6 +276,112 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(throttled);
         }
 
+        [TestMethod]
+        [DataRow(false, DisplayName = "NRegion Synchronous commit is disabled for the account")]
+        [DataRow(true, DisplayName = "NRegion Synchronous commit is enabled for the account")]
+        public void EnableNRegionSynchronousCommit_PassedToStoreClient(bool nRegionCommitEnabled)
+        {
+
+            StoreClient storeClient = new StoreClient(
+                        new Mock<IAddressResolver>().Object,
+                        new SessionContainer(string.Empty),
+                        new Mock<IServiceConfigurationReader>().Object,
+                        new Mock<IAuthorizationTokenProvider>().Object,
+                        Protocol.Tcp,
+                        new Mock<TransportClient>().Object);
+            // Arrange
+            Mock<IStoreClientFactory> mockStoreClientFactory = new Mock<IStoreClientFactory>();
+            mockStoreClientFactory.Setup(f => f.CreateStoreClient(
+                It.IsAny<IAddressResolver>(),
+                It.IsAny<ISessionContainer>(),
+                It.IsAny<IServiceConfigurationReader>(),
+                It.IsAny<IAuthorizationTokenProvider>(),
+                It.IsAny<bool>(),
+                It.IsAny<bool>(),
+                It.IsAny<bool>(),
+                It.IsAny<bool>(),
+                It.IsAny<bool>(),
+                It.IsAny<bool>(),
+                It.IsAny<AccountConfigurationProperties>(),
+                It.IsAny<ISessionRetryOptions>()
+            )).Returns(storeClient);
+
+            DocumentClient documentClient = new DocumentClient(
+                new Uri("https://localhost:8081"),
+                new Mock<AuthorizationTokenProvider>().Object,
+                new EventHandler<SendingRequestEventArgs>((s, e) => { }),
+                new ConnectionPolicy(),
+                null, // desiredConsistencyLevel
+                null, // serializerSettings
+                ApiType.None,
+                new EventHandler<ReceivedResponseEventArgs>((s, e) => { }),
+                null, // handler
+                new Mock<ISessionContainer>().Object,
+                null, // enableCpuMonitor
+                new Func<TransportClient, TransportClient>(tc => tc),
+                mockStoreClientFactory.Object,
+                false, // isLocalQuorumConsistency
+                "testClientId",
+                new RemoteCertificateValidationCallback((sender, certificate, chain, sslPolicyErrors) => true),
+                new Mock<CosmosClientTelemetryOptions>().Object,
+                new Mock<IChaosInterceptorFactory>().Object,
+                true // enableAsyncCacheExceptionNoSharing
+            );
+
+            AccountProperties accountProperties = new AccountProperties
+            {
+                // Set the property to true for test
+                EnableNRegionSynchronousCommit = nRegionCommitEnabled,
+            };
+
+            AccountConsistency ac = new AccountConsistency();
+            ac.DefaultConsistencyLevel = (Cosmos.ConsistencyLevel) ConsistencyLevel.Session;
+            accountProperties.Consistency = ac;
+
+            Func<Task<AccountProperties>> getDatabaseAccountFn = () =>
+                // When called with any Uri, return the expected AccountProperties
+                Task.FromResult(accountProperties);
+
+            CosmosAccountServiceConfiguration accountServiceConfiguration = new CosmosAccountServiceConfiguration(
+                getDatabaseAccountFn);
+
+            typeof(CosmosAccountServiceConfiguration)
+                .GetProperty("AccountProperties", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                .SetValue(accountServiceConfiguration, accountProperties);
+
+            //Inject the accountServiceConfiguration into the DocumentClient via reflection.
+            typeof(DocumentClient)
+                .GetProperty("accountServiceConfiguration", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                .SetValue(documentClient, accountServiceConfiguration);
+
+
+            typeof(DocumentClient)
+                .GetField("storeClientFactory", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                .SetValue(documentClient, mockStoreClientFactory.Object);
+
+            // Act: Call the private method via reflection
+            typeof(DocumentClient)
+                .GetMethod("CreateStoreModel", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                .Invoke(documentClient, new object[] { true });
+
+            // Assert: Verify the correct value was passed
+            mockStoreClientFactory.Verify(f =>
+                f.CreateStoreClient(
+                    It.IsAny<IAddressResolver>(),
+                    It.IsAny<ISessionContainer>(),
+                    It.IsAny<IServiceConfigurationReader>(),
+                    It.IsAny<IAuthorizationTokenProvider>(),
+                    It.IsAny<bool>(),
+                    It.IsAny<bool>(),
+                    It.IsAny<bool>(),
+                    It.IsAny<bool>(),
+                    It.IsAny<bool>(),
+                    It.IsAny<bool>(),
+                    It.Is<AccountConfigurationProperties>(config => config.EnableNRegionSynchronousCommit == accountProperties.EnableNRegionSynchronousCommit),
+                    It.IsAny<ISessionRetryOptions>()),
+                Times.Once,
+                "EnableNRegionSynchronousCommit was not passed correctly to AccountConfigurationProperties and StoreClient.");
+        }
 
         private DocumentClientException CreateTooManyRequestException(int retryAfterInMilliseconds)
         {
