@@ -64,9 +64,9 @@ namespace Microsoft.Azure.Cosmos
                 using (MemoryStream bodyStream = serverRequest.TransferBodyStream())
                 {
                     ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
-                        resourceUri: "/dtc/ops",
-                        resourceType: ResourceType.Document, // TODO: Update to a new ResourceType specific to DTC
-                        operationType: OperationType.Batch, // TODO: Update to a new OperationType specific to DTC
+                        resourceUri: "/operations/dtc",
+                        resourceType: ResourceType.DistributedTransactionBatch,
+                        operationType: OperationType.CommitDistributedTransaction,
                         requestOptions: null,
                         cosmosContainerCore: null,
                         partitionKey: null,
@@ -93,6 +93,8 @@ namespace Microsoft.Azure.Cosmos
         {
             // Set DTC-specific headers
             requestMessage.Headers.Add(IdempotencyTokenHeader, serverRequest.IdempotencyToken.ToString());
+            //TODO: update to HttpConstants.HttpHeaders.OperationType
+            requestMessage.Headers.Add("x-ms-cosmos-operation-type", OperationType.CommitDistributedTransaction.ToString());
             requestMessage.UseGatewayMode = true;
         }
 
