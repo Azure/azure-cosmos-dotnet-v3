@@ -919,13 +919,15 @@ namespace Microsoft.Azure.Cosmos.Linq
                 IReadOnlyList<MemberInfo> members = inputExpression.Members;
                 if (members == null)
                 {
-                    MemberInfo[] typeMembers = inputExpression.Type.GetMembers(BindingFlags.Instance | BindingFlags.Public);
+                    PropertyInfo[] typeProperties = inputExpression.Type.GetProperties(BindingFlags.Instance | BindingFlags.Public);
+                    FieldInfo[] typeFields = inputExpression.Type.GetFields(BindingFlags.Instance | BindingFlags.Public);
                     members = inputExpression.Constructor.GetParameters().Select(param =>
                     {
-                        MemberInfo member = typeMembers.FirstOrDefault(x => x.Name.Equals(param.Name, StringComparison.OrdinalIgnoreCase));
                         // When serializers bind constructor parameters to fields/properties during deserialization,
                         // they tipically do so in a case-insensitive manner.
                         // If we match a parameter here that the serliazer doesn't allow, the serializer will fail during deserialization.
+                        MemberInfo member = (MemberInfo)typeProperties.FirstOrDefault(x => x.Name.Equals(param.Name, StringComparison.OrdinalIgnoreCase) && x.PropertyType == param.ParameterType)
+                                         ?? typeFields.FirstOrDefault(x => x.Name.Equals(param.Name, StringComparison.OrdinalIgnoreCase) && x.FieldType == param.ParameterType);
                         if (member == null)
                         {
                             throw new DocumentQueryException(ClientResources.ConstructorInvocationNotSupported);
