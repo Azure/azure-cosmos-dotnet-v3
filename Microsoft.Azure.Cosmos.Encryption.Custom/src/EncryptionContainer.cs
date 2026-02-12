@@ -970,13 +970,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return this.ResponseFactory.CreateItemFeedResponse<T>(responseMessage);
         }
 
-        public override Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
-            FeedRange feedRange,
-            CancellationToken cancellationToken = default)
-        {
-            return this.container.GetPartitionKeyRangesAsync(feedRange, cancellationToken);
-        }
-
         public override Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
                Cosmos.PartitionKey partitionKey,
                RequestOptions requestOptions = null,
@@ -988,6 +981,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 cancellationToken);
         }
 
+#if PREVIEW
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(string processorName, ChangeFeedHandler<ChangeFeedItem<T>> onChangesDelegate)
         {
             return this.container.GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(
@@ -995,7 +989,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 onChangesDelegate);
         }
 
-#if SDKPROJECTREF
         public override Task<bool> IsFeedRangePartOfAsync(
             Cosmos.FeedRange x,
             Cosmos.FeedRange y,
@@ -1005,6 +998,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 x,
                 y,
                 cancellationToken);
+        }
+
+        public override Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
+            FeedRange feedRange,
+            CancellationToken cancellationToken = default)
+        {
+            return this.container.GetPartitionKeyRangesAsync(feedRange, cancellationToken);
         }
 #endif
 

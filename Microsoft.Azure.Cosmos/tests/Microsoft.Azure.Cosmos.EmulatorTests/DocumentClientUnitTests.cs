@@ -302,7 +302,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 It.IsAny<bool>(),
                 It.IsAny<bool>(),
                 It.IsAny<bool>(),
-                It.IsAny<AccountConfigurationProperties>(),
                 It.IsAny<ISessionRetryOptions>()
             )).Returns(storeClient);
 
@@ -377,7 +376,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     It.IsAny<bool>(),
                     It.IsAny<bool>(),
                     It.IsAny<bool>(),
-                    It.Is<AccountConfigurationProperties>(config => config.EnableNRegionSynchronousCommit == accountProperties.EnableNRegionSynchronousCommit),
                     It.IsAny<ISessionRetryOptions>()),
                 Times.Once,
                 "EnableNRegionSynchronousCommit was not passed correctly to AccountConfigurationProperties and StoreClient.");

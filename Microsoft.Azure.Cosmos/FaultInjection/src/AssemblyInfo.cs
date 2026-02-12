@@ -3,6 +3,7 @@
 //------------------------------------------------------------
 
 using System.Runtime.CompilerServices;
+using Microsoft.Azure.Cosmos.FaultInjection;
 
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2" + AssemblyKeys.MoqPublicKey)]
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.FaultInjection.Tests" + AssemblyKeys.ProductPublicKey)]
