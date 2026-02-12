@@ -180,9 +180,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                     {
                         Tuple.Create(new PartitionKeyRange{ Id = "0", MinInclusive = "", MaxExclusive = "FF"}, (ServiceIdentity)null)
                     },
-                string.Empty);
+                string.Empty, false);
 
-            this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null, null, false);
+            this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null, null, false, false);
             this.partitionKeyRangeCache.Setup(
                         m => m.TryLookupAsync(
                             It.IsAny<string>(),
