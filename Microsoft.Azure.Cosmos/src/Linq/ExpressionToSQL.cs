@@ -923,6 +923,9 @@ namespace Microsoft.Azure.Cosmos.Linq
                     members = inputExpression.Constructor.GetParameters().Select(param =>
                     {
                         MemberInfo member = typeMembers.FirstOrDefault(x => x.Name.Equals(param.Name, StringComparison.OrdinalIgnoreCase));
+                        // When serializers bind constructor parameters to fields/properties during deserialization,
+                        // they tipically do so in a case-insensitive manner.
+                        // If we match a parameter here that the serliazer doesn't allow, the serializer will fail during deserialization.
                         if (member == null)
                         {
                             throw new DocumentQueryException(ClientResources.ConstructorInvocationNotSupported);
