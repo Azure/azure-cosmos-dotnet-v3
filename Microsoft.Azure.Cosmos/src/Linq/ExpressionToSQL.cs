@@ -916,24 +916,34 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             if (inputExpression.Arguments.Count > 0)
             {
-                IReadOnlyList<MemberInfo> members = inputExpression.Members;
-                if (members == null)
+                BindingFlags flags = BindingFlags.Instance | BindingFlags.Public;
+                PropertyInfo[] properties = inputExpression.Type.GetProperties(flags);
+                FieldInfo[] fields = inputExpression.Type.GetFields(flags);
+
+                // When serializers bind constructor parameters to fields/ properties during deserialization,
+                // they tipically do so in a case-insensitive manner.
+                // If we match a parameter here that the serliazer doesn't allow, the serializer will fail during deserialization.
+                Dictionary<(string Name, Type Type), MemberInfo> memberLookup = new (properties.Length + fields.Length, MemberKeyComparer.Instance);
+                foreach (PropertyInfo property in properties)
                 {
-                    PropertyInfo[] typeProperties = inputExpression.Type.GetProperties(BindingFlags.Instance | BindingFlags.Public);
-                    FieldInfo[] typeFields = inputExpression.Type.GetFields(BindingFlags.Instance | BindingFlags.Public);
-                    members = inputExpression.Constructor.GetParameters().Select(param =>
+                    memberLookup[(property.Name, property.PropertyType)] = property;
+                }
+                foreach (FieldInfo field in fields) 
+                { 
+                    memberLookup[(field.Name, field.FieldType)] = field; 
+                }
+
+                ParameterInfo[] parameters = inputExpression.Constructor.GetParameters();
+                MemberInfo[] members = new MemberInfo[parameters.Length];
+                for (int i = 0; i < parameters.Length; i++)
+                {
+                    ParameterInfo p = parameters[i];
+                    if (!memberLookup.TryGetValue((p.Name, Type: p.ParameterType), out MemberInfo member))
                     {
-                        // When serializers bind constructor parameters to fields/properties during deserialization,
-                        // they tipically do so in a case-insensitive manner.
-                        // If we match a parameter here that the serliazer doesn't allow, the serializer will fail during deserialization.
-                        MemberInfo member = (MemberInfo)typeProperties.FirstOrDefault(x => x.Name.Equals(param.Name, StringComparison.OrdinalIgnoreCase) && x.PropertyType == param.ParameterType)
-                                         ?? typeFields.FirstOrDefault(x => x.Name.Equals(param.Name, StringComparison.OrdinalIgnoreCase) && x.FieldType == param.ParameterType);
-                        if (member == null)
-                        {
-                            throw new DocumentQueryException(ClientResources.ConstructorInvocationNotSupported);
-                        }
-                        return member;
-                    }).ToList();
+                        throw new DocumentQueryException(ClientResources.ConstructorInvocationNotSupported);
+                    }
+
+                    members[i] = member;
                 }
 
                 SqlObjectProperty[] propertyBindings = ExpressionToSql.CreateInitializers(inputExpression.Arguments, members, context);
@@ -2419,6 +2429,25 @@ namespace Microsoft.Azure.Cosmos.Linq
             ArrayScalarExpression,
             ExistsScalarExpression,
             SubqueryScalarExpression,
+        }
+
+        private sealed class MemberKeyComparer : IEqualityComparer<(string Name, Type Type)>
+        {
+            private MemberKeyComparer()
+            {
+            }
+
+            public static readonly MemberKeyComparer Instance = new ();
+
+            public bool Equals((string Name, Type Type) x, (string Name, Type Type) y)
+            {
+                return StringComparer.OrdinalIgnoreCase.Equals(x.Name, y.Name) && x.Type == y.Type;
+            }
+
+            public int GetHashCode((string Name, Type Type) obj)
+            {
+                return HashCode.Combine(StringComparer.OrdinalIgnoreCase.GetHashCode(obj.Name), obj.Type);
+            }
         }
     }
 }
