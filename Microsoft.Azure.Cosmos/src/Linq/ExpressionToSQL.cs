@@ -921,8 +921,8 @@ namespace Microsoft.Azure.Cosmos.Linq
                 FieldInfo[] fields = inputExpression.Type.GetFields(flags);
 
                 // When serializers bind constructor parameters to fields/ properties during deserialization,
-                // they tipically do so in a case-insensitive manner.
-                // If we match a parameter here that the serliazer doesn't allow, the serializer will fail during deserialization.
+                // they tipically do so in a case-insensitive manner. (STJ, Newtonsoft)
+                // If we match a parameter here that the serializer doesn't allow, an exception will be thrown later by the serializer.
                 Dictionary<(string Name, Type Type), MemberInfo> memberLookup = new (properties.Length + fields.Length, MemberKeyComparer.Instance);
                 foreach (PropertyInfo property in properties)
                 {
