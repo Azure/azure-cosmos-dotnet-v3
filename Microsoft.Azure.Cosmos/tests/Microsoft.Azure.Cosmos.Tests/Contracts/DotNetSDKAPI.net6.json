@@ -5515,6 +5515,27 @@
       },
       "NestedTypes": {}
     },
+    "Microsoft.Azure.Cosmos.FullTextScoreScope;System.Enum;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:True;IsClass:False;IsValueType:True;IsNested:False;IsGenericType:False;IsSerializable:True": {
+      "Subclasses": {},
+      "Members": {
+        "Int32 value__": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Int32 value__;IsInitOnly:False;IsStatic:False;"
+        },
+        "Microsoft.Azure.Cosmos.FullTextScoreScope Global": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.FullTextScoreScope Global;IsInitOnly:False;IsStatic:True;"
+        },
+        "Microsoft.Azure.Cosmos.FullTextScoreScope Local": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.FullTextScoreScope Local;IsInitOnly:False;IsStatic:True;"
+        }
+      },
+      "NestedTypes": {}
+    },
     "Microsoft.Azure.Cosmos.GeospatialConfig;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
@@ -7548,6 +7569,18 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions get_DedicatedGatewayRequestOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Microsoft.Azure.Cosmos.FullTextScoreScope FullTextScoreScope": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.FullTextScoreScope FullTextScoreScope;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.FullTextScoreScope get_FullTextScoreScope();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_FullTextScoreScope(Microsoft.Azure.Cosmos.FullTextScoreScope);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.FullTextScoreScope get_FullTextScoreScope()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.FullTextScoreScope get_FullTextScoreScope();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Microsoft.Azure.Cosmos.QueryTextMode get_QueryTextMode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -7727,6 +7760,13 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_EnableScanInQuery(System.Nullable`1[System.Boolean]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_FullTextScoreScope(Microsoft.Azure.Cosmos.FullTextScoreScope)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_FullTextScoreScope(Microsoft.Azure.Cosmos.FullTextScoreScope);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_MaxBufferedItemCount(System.Nullable`1[System.Int32])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -8783,6 +8823,18 @@
               ],
               "MethodInfo": "Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions get_DedicatedGatewayRequestOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
+            "Microsoft.Azure.Cosmos.FullTextScoreScope FullTextScoreScope": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": "Microsoft.Azure.Cosmos.FullTextScoreScope FullTextScoreScope;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.FullTextScoreScope get_FullTextScoreScope();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_FullTextScoreScope(Microsoft.Azure.Cosmos.FullTextScoreScope);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "Microsoft.Azure.Cosmos.FullTextScoreScope get_FullTextScoreScope()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Microsoft.Azure.Cosmos.FullTextScoreScope get_FullTextScoreScope();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
             "Microsoft.Azure.Cosmos.QueryTextMode get_QueryTextMode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
               "Type": "Method",
               "Attributes": [
@@ -8962,6 +9014,13 @@
                 "CompilerGeneratedAttribute"
               ],
               "MethodInfo": "Void set_EnableScanInQuery(System.Nullable`1[System.Boolean]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "Void set_FullTextScoreScope(Microsoft.Azure.Cosmos.FullTextScoreScope)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Void set_FullTextScoreScope(Microsoft.Azure.Cosmos.FullTextScoreScope);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
             "Void set_MaxBufferedItemCount(System.Nullable`1[System.Int32])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
               "Type": "Method",
