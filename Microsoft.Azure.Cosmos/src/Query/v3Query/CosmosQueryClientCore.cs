@@ -176,16 +176,22 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override async Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
-            string resourceUri,
-            ResourceType resourceType,
-            OperationType operationType,
-            SqlQuerySpec sqlQuerySpec,
-            PartitionKey? partitionKey,
-            string supportedQueryFeatures,
-            Guid clientQueryCorrelationId,
-            ITrace trace,
-            CancellationToken cancellationToken)
+     string resourceUri,
+     ResourceType resourceType,
+     OperationType operationType,
+     SqlQuerySpec sqlQuerySpec,
+     PartitionKey? partitionKey,
+     string supportedQueryFeatures,
+     Guid clientQueryCorrelationId,
+     ITrace trace,
+     CancellationToken cancellationToken)
         {
+            // Determine if thin client mode is enabled
+            bool isThinClientEnabled = this.clientContext.ClientOptions.ConnectionMode == ConnectionMode.Gateway
+                && ConfigurationManager.GetEnvironmentVariable<bool>(
+                    ConfigurationManager.ThinClientModeEnabled,
+                    defaultValue: false);
+
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
             using (ResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,
@@ -202,7 +208,10 @@ namespace Microsoft.Azure.Cosmos
                     requestMessage.Headers.Add(HttpConstants.HttpHeaders.SupportedQueryFeatures, supportedQueryFeatures);
                     requestMessage.Headers.Add(HttpConstants.HttpHeaders.QueryVersion, new Version(major: 1, minor: 0).ToString());
                     requestMessage.Headers.Add(WFConstants.BackendHeaders.CorrelatedActivityId, clientQueryCorrelationId.ToString());
-                    requestMessage.UseGatewayMode = true;
+                    if (!isThinClientEnabled)
+                    {
+                        requestMessage.UseGatewayMode = true;
+                    }
                 },
                 trace: trace,
                 cancellationToken: cancellationToken))
@@ -210,6 +219,14 @@ namespace Microsoft.Azure.Cosmos
                 // Syntax exception are argument exceptions and thrown to the user.
                 message.EnsureSuccessStatusCode();
                 partitionedQueryExecutionInfo = this.clientContext.SerializerCore.FromStream<PartitionedQueryExecutionInfo>(message.Content);
+
+                if (isThinClientEnabled)
+                {
+                    partitionedQueryExecutionInfo.UseThinClientMode = true;
+                    ContainerProperties containerProperties = await this.clientContext.GetCachedContainerPropertiesAsync(
+                        resourceUri, trace, cancellationToken);
+                    partitionedQueryExecutionInfo.PartitionKeyDefinition = containerProperties.PartitionKey;
+                }
             }
 
             return partitionedQueryExecutionInfo;
