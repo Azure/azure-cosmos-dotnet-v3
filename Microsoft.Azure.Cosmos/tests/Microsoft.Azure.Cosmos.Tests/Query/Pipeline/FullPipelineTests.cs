@@ -341,6 +341,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 enableOptimisticDirectExecution: queryRequestOptions.EnableOptimisticDirectExecution,
                 isHybridSearchQueryPlanOptimizationDisabled: queryRequestOptions.IsHybridSearchQueryPlanOptimizationDisabled,
                 enableDistributedQueryGatewayMode: queryRequestOptions.EnableDistributedQueryGatewayMode,
+                fullTextScoreScope: queryRequestOptions.FullTextScoreScope,
                 testInjections: queryRequestOptions.TestSettings);
 
             string databaseId = "db1234";
@@ -620,6 +621,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 containerQueryProperties: new ContainerQueryProperties(),
                 isContinuationExpected: true,
                 maxConcurrency: 10,
+                fullTextScoreScope: FullTextScoreScope.Global,
                 requestContinuationToken: state);
 
             tryCreatePipeline.ThrowIfFailed();
