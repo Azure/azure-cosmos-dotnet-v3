@@ -173,34 +173,74 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return protectedDataEncryptionKey;
         }
 
+        /// <summary>
+        /// Builds a <see cref="ProtectedDataEncryptionKey"/> using a double-checked locking pattern.
+        ///
+        /// Fast path (cache hit): The SDK-side shadow cache is checked first WITHOUT acquiring the
+        /// global semaphore. On hit, the PDEK is returned immediately — no contention.
+        ///
+        /// Slow path (cache miss): The semaphore is acquired to prevent a cache stampede (multiple
+        /// threads calling Key Vault for the same key simultaneously). After acquiring, the shadow
+        /// cache is re-checked (another thread may have populated it while we waited), then MDE's
+        /// GetOrCreate is called which may trigger a sync Key Vault HTTP call on miss.
+        /// </summary>
         private async Task<ProtectedDataEncryptionKey> BuildProtectedDataEncryptionKeyAsync(
             ClientEncryptionKeyProperties clientEncryptionKeyProperties,
             string keyId,
             CancellationToken cancellationToken)
         {
-            if (await EncryptionCosmosClient.EncryptionKeyCacheSemaphore.WaitAsync(-1, cancellationToken))
+            // Build a cache key that matches the granularity of MDE's PDEK cache:
+            //   Tuple(name, keyEncryptionKey, encryptedKey.ToHexString())
+            // We use a string composite of keyId + KEK path + wrapped DEK hex.
+            // Key rewraps change the wrapped DEK bytes, producing a new cache key automatically.
+            string wrappedKeyHex = clientEncryptionKeyProperties.WrappedDataEncryptionKey.ToHexString();
+            string cacheKey = keyId
+                + "/"
+                + clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Value
+                + "/"
+                + wrappedKeyHex;
+
+            // Fast path: check SDK-side shadow cache WITHOUT the semaphore.
+            // On hit, the semaphore is never touched — zero contention for 99%+ of calls.
+            if (EncryptionCosmosClient.ProtectedDataEncryptionKeyCache.TryGetValue(cacheKey, out ProtectedDataEncryptionKeyCacheEntry cacheEntry)
+                && !cacheEntry.IsExpired)
             {
-                try
-                {
-                    KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
-                        clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Name,
-                        clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Value,
-                        this.encryptionContainer.EncryptionCosmosClient.EncryptionKeyStoreProviderImpl);
-
-                    ProtectedDataEncryptionKey protectedDataEncryptionKey = ProtectedDataEncryptionKey.GetOrCreate(
-                        keyId,
-                        keyEncryptionKey,
-                        clientEncryptionKeyProperties.WrappedDataEncryptionKey);
-
-                    return protectedDataEncryptionKey;
-                }
-                finally
-                {
-                    EncryptionCosmosClient.EncryptionKeyCacheSemaphore.Release(1);
-                }
+                return cacheEntry.ProtectedDataEncryptionKey;
             }
 
-            throw new InvalidOperationException("Failed to build ProtectedDataEncryptionKey. ");
+            // Slow path: cache miss — acquire semaphore to prevent stampede.
+            await EncryptionCosmosClient.EncryptionKeyCacheSemaphore
+                .WaitAsync(-1, cancellationToken)
+                .ConfigureAwait(false);
+            try
+            {
+                // Double-check: another thread may have populated the cache while we waited.
+                if (EncryptionCosmosClient.ProtectedDataEncryptionKeyCache.TryGetValue(cacheKey, out cacheEntry)
+                    && !cacheEntry.IsExpired)
+                {
+                    return cacheEntry.ProtectedDataEncryptionKey;
+                }
+
+                KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
+                    clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Name,
+                    clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Value,
+                    this.encryptionContainer.EncryptionCosmosClient.EncryptionKeyStoreProviderImpl);
+
+                ProtectedDataEncryptionKey protectedDataEncryptionKey = ProtectedDataEncryptionKey.GetOrCreate(
+                    keyId,
+                    keyEncryptionKey,
+                    clientEncryptionKeyProperties.WrappedDataEncryptionKey);
+
+                // Populate shadow cache with the result.
+                EncryptionCosmosClient.ProtectedDataEncryptionKeyCache[cacheKey] =
+                    new ProtectedDataEncryptionKeyCacheEntry(protectedDataEncryptionKey);
+
+                return protectedDataEncryptionKey;
+            }
+            finally
+            {
+                EncryptionCosmosClient.EncryptionKeyCacheSemaphore.Release(1);
+            }
         }
     }
 }

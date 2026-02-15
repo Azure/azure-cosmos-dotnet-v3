@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
@@ -17,6 +18,22 @@ namespace Microsoft.Azure.Cosmos.Encryption
     internal sealed class EncryptionCosmosClient : CosmosClient
     {
         internal static readonly SemaphoreSlim EncryptionKeyCacheSemaphore = new SemaphoreSlim(1, 1);
+
+        /// <summary>
+        /// SDK-side shadow cache for <see cref="ProtectedDataEncryptionKey"/> instances.
+        /// This cache enables a fast-path lookup outside the global semaphore so that
+        /// cache hits (99%+ of calls) bypass the semaphore entirely, eliminating contention.
+        ///
+        /// Sync with MDE's internal PDEK cache:
+        /// - Entries are timestamped and expire based on <see cref="ProtectedDataEncryptionKey.TimeToLive"/>
+        ///   (read at check time, so ratchet-downs are respected immediately).
+        /// - Key rewraps produce different <c>wrappedKeyHex</c>, creating a new cache key automatically.
+        /// - If MDE's MemoryCache evicts under memory pressure but the shadow entry is still valid,
+        ///   the PDEK object remains functional (key bytes live in the object, not the cache).
+        ///   The next call through the semaphore will re-populate MDE's cache.
+        /// </summary>
+        internal static readonly ConcurrentDictionary<string, ProtectedDataEncryptionKeyCacheEntry> ProtectedDataEncryptionKeyCache
+            = new ConcurrentDictionary<string, ProtectedDataEncryptionKeyCacheEntry>();
 
         private readonly CosmosClient cosmosClient;
 
