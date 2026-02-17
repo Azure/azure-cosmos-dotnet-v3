@@ -51,13 +51,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
                 if (this.RawQueryRanges != null)
                 {
-                    if (this.UseThinClientMode && this.PartitionKeyDefinition != null)
+                    if (this.PartitionKeyDefinition != null)
                     {
-                        this.queryRanges = this.ParseQueryRangesForThinClient();
+                        // convert PartitionKeyInternal format to EPK strings
+                        this.queryRanges = this.ParseQueryRangesWithPartitionKeyDefinition();
                     }
                     else
                     {
-                        // Non-thin client: deserialize directly as string ranges
                         this.queryRanges = this.RawQueryRanges.ToObject<List<Documents.Routing.Range<string>>>();
                     }
                 }
@@ -86,14 +86,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             get;
             set;
         }
-
-        /// <summary>
-        /// Flag indicating if thin client mode is enabled.
-        /// Must be set before accessing QueryRanges property.
-        /// </summary>
-        [JsonIgnore]
-        internal bool UseThinClientMode { get; set; }
-
         /// <summary>
         /// Partition key definition used for converting PartitionKeyInternal to EPK strings.
         /// Must be set before accessing QueryRanges property in thin client mode.
@@ -130,13 +122,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         /// in PartitionKeyInternal format (e.g., {"min": [[""]], "max": [["Infinity"]]})
         /// and converts them to EPK hex string ranges.
         /// </summary>
-        private List<Documents.Routing.Range<string>> ParseQueryRangesForThinClient()
+        private List<Documents.Routing.Range<string>> ParseQueryRangesWithPartitionKeyDefinition()
         {
-            if (this.RawQueryRanges == null || this.PartitionKeyDefinition == null)
-            {
-                return null;
-            }
-
             List<Documents.Routing.Range<string>> epkRanges = new List<Documents.Routing.Range<string>>(this.RawQueryRanges.Count);
 
             foreach (JToken rangeToken in this.RawQueryRanges)
@@ -146,18 +133,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                     continue;
                 }
 
-                // Parse min and max as PartitionKeyInternal
                 JToken minToken = rangeObject["min"];
                 JToken maxToken = rangeObject["max"];
 
-                PartitionKeyInternal minPk = this.ParsePartitionKeyInternal(minToken);
-                PartitionKeyInternal maxPk = this.ParsePartitionKeyInternal(maxToken);
+                PartitionKeyInternal minPk = PartitionedQueryExecutionInfo.ParsePartitionKeyInternal(minToken);
+                PartitionKeyInternal maxPk = PartitionedQueryExecutionInfo.ParsePartitionKeyInternal(maxToken);
 
-                // Convert to EPK hex strings
                 string minEpk = minPk.GetEffectivePartitionKeyString(this.PartitionKeyDefinition);
                 string maxEpk = maxPk.GetEffectivePartitionKeyString(this.PartitionKeyDefinition);
 
-                // Parse isMinInclusive and isMaxInclusive (defaults: min=true, max=false)
                 bool isMinInclusive = rangeObject["isMinInclusive"]?.Value<bool>() ?? true;
                 bool isMaxInclusive = rangeObject["isMaxInclusive"]?.Value<bool>() ?? false;
 
@@ -171,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         /// Parses a JSON token representing a PartitionKeyInternal.
         /// Handles formats like [[""]] (empty), [["Infinity"]] (infinity), or actual partition key values.
         /// </summary>
-        private PartitionKeyInternal ParsePartitionKeyInternal(JToken token)
+        private static PartitionKeyInternal ParsePartitionKeyInternal(JToken token)
         {
             if (token == null || token.Type == JTokenType.Null)
             {

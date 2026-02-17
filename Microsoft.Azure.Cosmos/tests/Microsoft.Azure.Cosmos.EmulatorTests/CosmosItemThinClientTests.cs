@@ -188,183 +188,212 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestCategory("ThinClient")]
         public async Task TestThinClientWithExecuteStoredProcedureAsync()
         {
-            Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "true");
-
-            JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
+            try
             {
-                PropertyNamingPolicy = null,
-                PropertyNameCaseInsensitive = true,
-                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-            };
-            this.cosmosSystemTextJsonSerializer = new MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer(jsonSerializerOptions);
+                Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "true");
 
-            this.client = new CosmosClient(
-                    this.connectionString,
-                    new CosmosClientOptions()
-                    {
-                        ConnectionMode = ConnectionMode.Gateway,
-                        Serializer = this.cosmosSystemTextJsonSerializer,
-                    });
+                JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = null,
+                    PropertyNameCaseInsensitive = true,
+                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                };
+                this.cosmosSystemTextJsonSerializer = new MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer(jsonSerializerOptions);
 
-            string uniqueDbName = "TestDbStoreProc_" + Guid.NewGuid().ToString();
-            this.database = await this.client.CreateDatabaseIfNotExistsAsync(uniqueDbName);
-            string uniqueContainerName = "TestDbStoreProcContainer_" + Guid.NewGuid().ToString();
-            this.container = await this.database.CreateContainerIfNotExistsAsync(uniqueContainerName, "/pk");
+                this.client = new CosmosClient(
+                        this.connectionString,
+                        new CosmosClientOptions()
+                        {
+                            ConnectionMode = ConnectionMode.Gateway,
+                            Serializer = this.cosmosSystemTextJsonSerializer,
+                        });
+
+                string uniqueDbName = "TestDbStoreProc_" + Guid.NewGuid().ToString();
+                this.database = await this.client.CreateDatabaseIfNotExistsAsync(uniqueDbName);
+                string uniqueContainerName = "TestDbStoreProcContainer_" + Guid.NewGuid().ToString();
+                this.container = await this.database.CreateContainerIfNotExistsAsync(uniqueContainerName, "/pk");
 
 
-            string sprocId = "testSproc_" + Guid.NewGuid().ToString();
-            string sprocBody = @"function(itemToCreate) {
-            var context = getContext();
-            var collection = context.getCollection();
-            var response = context.getResponse();
+                string sprocId = "testSproc_" + Guid.NewGuid().ToString();
+                string sprocBody = @"function(itemToCreate) {
+                    var context = getContext();
+                    var collection = context.getCollection();
+                    var response = context.getResponse();
         
-            if (!itemToCreate) throw new Error('Item is undefined or null.');
+                    if (!itemToCreate) throw new Error('Item is undefined or null.');
         
-            // Create a document
-            var accepted = collection.createDocument(
-                collection.getSelfLink(),
-                itemToCreate,
-                function(err, newItem) {
-                    if (err) throw err;
-                
-                    // Query the created document
-                    var query = 'SELECT * FROM c WHERE c.id = ""' + newItem.id + '""';
-                    var isAccepted = collection.queryDocuments(
+                    // Create a document
+                    var accepted = collection.createDocument(
                         collection.getSelfLink(),
-                        query,
-                        function(queryErr, documents) {
-                            if (queryErr) throw queryErr;
-                            response.setBody({
-                                created: newItem,
-                                queried: documents[0]
-                            });
-                        }
-                    );
-                    if (!isAccepted) throw 'Query not accepted';
-                });
+                        itemToCreate,
+                        function(err, newItem) {
+                            if (err) throw err;
+                
+                            // Query the created document
+                            var query = 'SELECT * FROM c WHERE c.id = ""' + newItem.id + '""';
+                            var isAccepted = collection.queryDocuments(
+                                collection.getSelfLink(),
+                                query,
+                                function(queryErr, documents) {
+                                    if (queryErr) throw queryErr;
+                                    response.setBody({
+                                        created: newItem,
+                                        queried: documents[0]
+                                    });
+                                }
+                            );
+                            if (!isAccepted) throw 'Query not accepted';
+                        });
         
-            if (!accepted) throw new Error('Create was not accepted.');
-        }";
+                    if (!accepted) throw new Error('Create was not accepted.');
+                }";
 
-            // Create stored procedure
-            Scripts.StoredProcedureResponse createResponse = await this.container.Scripts.CreateStoredProcedureAsync(
-                new Scripts.StoredProcedureProperties(sprocId, sprocBody));
-            Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+                // Create stored procedure
+                Scripts.StoredProcedureResponse createResponse = await this.container.Scripts.CreateStoredProcedureAsync(
+                    new Scripts.StoredProcedureProperties(sprocId, sprocBody));
+                Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
 
-            // Execute stored procedure
-            string testPartitionId = Guid.NewGuid().ToString();
-            TestObject testItem = new TestObject
+                // Execute stored procedure
+                string testPartitionId = Guid.NewGuid().ToString();
+                TestObject testItem = new TestObject
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    Pk = testPartitionId,
+                    Other = "Created by Stored Procedure"
+                };
+
+                Scripts.StoredProcedureExecuteResponse<dynamic> executeResponse =
+                    await this.container.Scripts.ExecuteStoredProcedureAsync<dynamic>(
+                        sprocId,
+                        new PartitionKey(testPartitionId),
+                        new dynamic[] { testItem });
+
+                Assert.AreEqual(HttpStatusCode.OK, executeResponse.StatusCode);
+                Assert.IsNotNull(executeResponse.Resource);
+                string diagnostics = executeResponse.Diagnostics.ToString();
+                Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
+
+                // Delete stored procedure
+                await this.container.Scripts.DeleteStoredProcedureAsync(sprocId);
+            }
+
+            finally
             {
-                Id = Guid.NewGuid().ToString(),
-                Pk = testPartitionId,
-                Other = "Created by Stored Procedure"
-            };
-
-            Scripts.StoredProcedureExecuteResponse<dynamic> executeResponse =
-                await this.container.Scripts.ExecuteStoredProcedureAsync<dynamic>(
-                    sprocId,
-                    new PartitionKey(testPartitionId),
-                    new dynamic[] { testItem });
-
-            Assert.AreEqual(HttpStatusCode.OK, executeResponse.StatusCode);
-            Assert.IsNotNull(executeResponse.Resource);
-            string diagnostics = executeResponse.Diagnostics.ToString();
-            Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
-
-            // Delete stored procedure
-            await this.container.Scripts.DeleteStoredProcedureAsync(sprocId);
+                if (this.database != null)
+                {
+                    try
+                    {
+                        await this.database.DeleteAsync();
+                    }
+                    catch { }
+                }
+            }
         }
 
         [TestMethod]
         [TestCategory("ThinClient")]
         public async Task TestThinClientWithExecuteStoredProcedureStreamAsync()
         {
-            Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "true");
-
-            JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
+            try
             {
-                PropertyNamingPolicy = null,
-                PropertyNameCaseInsensitive = true,
-                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-            };
-            this.cosmosSystemTextJsonSerializer = new MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer(jsonSerializerOptions);
+                Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "true");
 
-            this.client = new CosmosClient(
-                    this.connectionString,
-                    new CosmosClientOptions()
-                    {
-                        ConnectionMode = ConnectionMode.Gateway,
-                        Serializer = this.cosmosSystemTextJsonSerializer,
-                    });
+                JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = null,
+                    PropertyNameCaseInsensitive = true,
+                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                };
+                this.cosmosSystemTextJsonSerializer = new MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer(jsonSerializerOptions);
 
-            string uniqueDbName = "TestDbStoreProc_" + Guid.NewGuid().ToString();
-            this.database = await this.client.CreateDatabaseIfNotExistsAsync(uniqueDbName);
-            string uniqueContainerName = "TestDbStoreProcContainer_" + Guid.NewGuid().ToString();
-            this.container = await this.database.CreateContainerIfNotExistsAsync(uniqueContainerName, "/pk");
+                this.client = new CosmosClient(
+                        this.connectionString,
+                        new CosmosClientOptions()
+                        {
+                            ConnectionMode = ConnectionMode.Gateway,
+                            Serializer = this.cosmosSystemTextJsonSerializer,
+                        });
+
+                string uniqueDbName = "TestDbStoreProc_" + Guid.NewGuid().ToString();
+                this.database = await this.client.CreateDatabaseIfNotExistsAsync(uniqueDbName);
+                string uniqueContainerName = "TestDbStoreProcContainer_" + Guid.NewGuid().ToString();
+                this.container = await this.database.CreateContainerIfNotExistsAsync(uniqueContainerName, "/pk");
 
 
-            string sprocId = "testSproc_" + Guid.NewGuid().ToString();
-            string sprocBody = @"function(itemToCreate) {
-            var context = getContext();
-            var collection = context.getCollection();
-            var response = context.getResponse();
+                string sprocId = "testSproc_" + Guid.NewGuid().ToString();
+                string sprocBody = @"function(itemToCreate) {
+                    var context = getContext();
+                    var collection = context.getCollection();
+                    var response = context.getResponse();
         
-            if (!itemToCreate) throw new Error('Item is undefined or null.');
+                    if (!itemToCreate) throw new Error('Item is undefined or null.');
         
-            // Create a document
-            var accepted = collection.createDocument(
-                collection.getSelfLink(),
-                itemToCreate,
-                function(err, newItem) {
-                    if (err) throw err;
-                
-                    // Query the created document
-                    var query = 'SELECT * FROM c WHERE c.id = ""' + newItem.id + '""';
-                    var isAccepted = collection.queryDocuments(
+                    // Create a document
+                    var accepted = collection.createDocument(
                         collection.getSelfLink(),
-                        query,
-                        function(queryErr, documents) {
-                            if (queryErr) throw queryErr;
-                            response.setBody({
-                                created: newItem,
-                                queried: documents[0]
-                            });
-                        }
-                    );
-                    if (!isAccepted) throw 'Query not accepted';
-                });
+                        itemToCreate,
+                        function(err, newItem) {
+                            if (err) throw err;
+                
+                            // Query the created document
+                            var query = 'SELECT * FROM c WHERE c.id = ""' + newItem.id + '""';
+                            var isAccepted = collection.queryDocuments(
+                                collection.getSelfLink(),
+                                query,
+                                function(queryErr, documents) {
+                                    if (queryErr) throw queryErr;
+                                    response.setBody({
+                                        created: newItem,
+                                        queried: documents[0]
+                                    });
+                                }
+                            );
+                            if (!isAccepted) throw 'Query not accepted';
+                        });
         
-            if (!accepted) throw new Error('Create was not accepted.');
-        }";
+                    if (!accepted) throw new Error('Create was not accepted.');
+                }";
 
-            // Create stored procedure
-            Scripts.StoredProcedureResponse createResponse = await this.container.Scripts.CreateStoredProcedureAsync(
-                new Scripts.StoredProcedureProperties(sprocId, sprocBody));
-            Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+                // Create stored procedure
+                Scripts.StoredProcedureResponse createResponse = await this.container.Scripts.CreateStoredProcedureAsync(
+                    new Scripts.StoredProcedureProperties(sprocId, sprocBody));
+                Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
 
-            // Execute stored procedure
-            string testPartitionId = Guid.NewGuid().ToString();
-            TestObject testItem = new TestObject
-            {
-                Id = Guid.NewGuid().ToString(),
-                Pk = testPartitionId,
-                Other = "Created by Stored Procedure"
-            };
+                // Execute stored procedure
+                string testPartitionId = Guid.NewGuid().ToString();
+                TestObject testItem = new TestObject
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    Pk = testPartitionId,
+                    Other = "Created by Stored Procedure"
+                };
 
-            using (ResponseMessage executeResponse =
-                await this.container.Scripts.ExecuteStoredProcedureStreamAsync(
-                    sprocId,
-                    new PartitionKey(testPartitionId),
-                    new dynamic[] { testItem }))
-            {
-                Assert.AreEqual(HttpStatusCode.OK, executeResponse.StatusCode);
-                Assert.IsNotNull(executeResponse.Content);
-                string diagnostics = executeResponse.Diagnostics.ToString();
-                Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
+                using (ResponseMessage executeResponse =
+                    await this.container.Scripts.ExecuteStoredProcedureStreamAsync(
+                        sprocId,
+                        new PartitionKey(testPartitionId),
+                        new dynamic[] { testItem }))
+                {
+                    Assert.AreEqual(HttpStatusCode.OK, executeResponse.StatusCode);
+                    Assert.IsNotNull(executeResponse.Content);
+                    string diagnostics = executeResponse.Diagnostics.ToString();
+                    Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
+                }
+
+                // Delete stored procedure
+                await this.container.Scripts.DeleteStoredProcedureAsync(sprocId);
             }
-
-            // Delete stored procedure
-            await this.container.Scripts.DeleteStoredProcedureAsync(sprocId);
+            finally
+            {
+                if (this.database != null)
+                {
+                    try
+                    {
+                        await this.database.DeleteAsync();
+                    }
+                    catch { }
+                }
+            }
         }
 
         [TestMethod]
@@ -426,42 +455,56 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestCategory("ThinClient")]
         public async Task CreateItemsTestWithThinClientFlagEnabledAndAccountDisabled()
         {
-            Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
-            string authKey = Utils.ConfigurationManager.AppSettings["MasterKey"];
-            string endpoint = Utils.ConfigurationManager.AppSettings["GatewayEndpoint"];
-            AzureKeyCredential masterKeyCredential = new AzureKeyCredential(authKey);
-
-            JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
+            try
             {
-                PropertyNamingPolicy = null,
-                PropertyNameCaseInsensitive = true,
-                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-            };
-            this.cosmosSystemTextJsonSerializer = new MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer(jsonSerializerOptions);
+                Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
+                string authKey = Utils.ConfigurationManager.AppSettings["MasterKey"];
+                string endpoint = Utils.ConfigurationManager.AppSettings["GatewayEndpoint"];
+                AzureKeyCredential masterKeyCredential = new AzureKeyCredential(authKey);
 
-            this.client = new CosmosClient(
-                  endpoint,
-                  masterKeyCredential,
-                  new CosmosClientOptions()
-                  {
-                      ConnectionMode = ConnectionMode.Gateway,
-                      Serializer = this.cosmosSystemTextJsonSerializer,
-                  });
+                JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = null,
+                    PropertyNameCaseInsensitive = true,
+                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                };
+                this.cosmosSystemTextJsonSerializer = new MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer(jsonSerializerOptions);
 
-            string uniqueDbName = "TestDb2_" + Guid.NewGuid().ToString();
-            this.database = await this.client.CreateDatabaseIfNotExistsAsync(uniqueDbName);
-            string uniqueContainerName = "TestContainer2_" + Guid.NewGuid().ToString();
-            this.container = await this.database.CreateContainerIfNotExistsAsync(uniqueContainerName, "/pk");
+                this.client = new CosmosClient(
+                      endpoint,
+                      masterKeyCredential,
+                      new CosmosClientOptions()
+                      {
+                          ConnectionMode = ConnectionMode.Gateway,
+                          Serializer = this.cosmosSystemTextJsonSerializer,
+                      });
 
-            string pk = "pk_create";
-            IEnumerable<TestObject> items = this.GenerateItems(pk);
+                string uniqueDbName = "TestDb2_" + Guid.NewGuid().ToString();
+                this.database = await this.client.CreateDatabaseIfNotExistsAsync(uniqueDbName);
+                string uniqueContainerName = "TestContainer2_" + Guid.NewGuid().ToString();
+                this.container = await this.database.CreateContainerIfNotExistsAsync(uniqueContainerName, "/pk");
 
-            foreach (TestObject item in items)
+                string pk = "pk_create";
+                IEnumerable<TestObject> items = this.GenerateItems(pk);
+
+                foreach (TestObject item in items)
+                {
+                    ItemResponse<TestObject> response = await this.container.CreateItemAsync(item, new PartitionKey(item.Pk));
+                    Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+                    string diagnostics = response.Diagnostics.ToString();
+                    Assert.IsFalse(diagnostics.Contains("|F4"), "Diagnostics User Agent should NOT contain '|F4' for Gateway");
+                }
+            }
+            finally
             {
-                ItemResponse<TestObject> response = await this.container.CreateItemAsync(item, new PartitionKey(item.Pk));
-                Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
-                string diagnostics = response.Diagnostics.ToString();
-                Assert.IsFalse(diagnostics.Contains("|F4"), "Diagnostics User Agent should NOT contain '|F4' for Gateway");
+                if (this.database != null)
+                {
+                    try
+                    {
+                        await this.database.DeleteAsync();
+                    }
+                    catch { }
+                }
             }
         }
 
@@ -469,42 +512,56 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestCategory("ThinClient")]
         public async Task CreateItemsTestWithDirectMode_ThinClientFlagEnabledAndAccountEnabled()
         {
-            JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
+            try
             {
-                PropertyNamingPolicy = null,
-                PropertyNameCaseInsensitive = true,
-                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-            };
-            this.cosmosSystemTextJsonSerializer = new MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer(jsonSerializerOptions);
+                JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = null,
+                    PropertyNameCaseInsensitive = true,
+                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                };
+                this.cosmosSystemTextJsonSerializer = new MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer(jsonSerializerOptions);
 
-            this.client = new CosmosClient(
-                  this.connectionString,
-                  new CosmosClientOptions()
-                  {
-                      ConnectionMode = ConnectionMode.Direct,
-                      Serializer = this.cosmosSystemTextJsonSerializer,
-                  });
+                this.client = new CosmosClient(
+                      this.connectionString,
+                      new CosmosClientOptions()
+                      {
+                          ConnectionMode = ConnectionMode.Direct,
+                          Serializer = this.cosmosSystemTextJsonSerializer,
+                      });
 
-            string uniqueDbName = "TestDb2_" + Guid.NewGuid().ToString();
-            this.database = await this.client.CreateDatabaseIfNotExistsAsync(uniqueDbName);
-            string uniqueContainerName = "TestContainer2_" + Guid.NewGuid().ToString();
-            this.container = await this.database.CreateContainerIfNotExistsAsync(uniqueContainerName, "/pk");
+                string uniqueDbName = "TestDb2_" + Guid.NewGuid().ToString();
+                this.database = await this.client.CreateDatabaseIfNotExistsAsync(uniqueDbName);
+                string uniqueContainerName = "TestContainer2_" + Guid.NewGuid().ToString();
+                this.container = await this.database.CreateContainerIfNotExistsAsync(uniqueContainerName, "/pk");
 
-            string pk = "pk_create";
-            IEnumerable<TestObject> items = this.GenerateItems(pk);
+                string pk = "pk_create";
+                IEnumerable<TestObject> items = this.GenerateItems(pk);
 
-            foreach (TestObject item in items)
+                foreach (TestObject item in items)
+                {
+                    ItemResponse<TestObject> response = await this.container.CreateItemAsync(item, new PartitionKey(item.Pk));
+                    Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+                    JsonDocument doc = JsonDocument.Parse(response.Diagnostics.ToString());
+                    string connectionMode = doc.RootElement
+                        .GetProperty("data")
+                        .GetProperty("Client Configuration")
+                        .GetProperty("ConnectionMode")
+                        .GetString();
+
+                    Assert.AreEqual("Direct", connectionMode, "Diagnostics should have ConnectionMode set to 'Direct'");
+                }
+            }
+            finally
             {
-                ItemResponse<TestObject> response = await this.container.CreateItemAsync(item, new PartitionKey(item.Pk));
-                Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
-                JsonDocument doc = JsonDocument.Parse(response.Diagnostics.ToString());
-                string connectionMode = doc.RootElement
-                    .GetProperty("data")
-                    .GetProperty("Client Configuration")
-                    .GetProperty("ConnectionMode")
-                    .GetString();
-
-                Assert.AreEqual("Direct", connectionMode, "Diagnostics should have ConnectionMode set to 'Direct'");
+                if (this.database != null)
+                {
+                    try
+                    {
+                        await this.database.DeleteAsync();
+                    }
+                    catch { }
+                }
             }
         }
 
@@ -512,38 +569,53 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestCategory("ThinClient")]
         public async Task CreateItemsTestWithThinClientFlagDisabledAccountEnabled()
         {
-            Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "False");
-
-            JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
+            try
             {
-                PropertyNamingPolicy = null,
-                PropertyNameCaseInsensitive = true,
-                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-            };
-            this.cosmosSystemTextJsonSerializer = new MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer(jsonSerializerOptions);
 
-            this.client = new CosmosClient(
-                  this.connectionString,
-                  new CosmosClientOptions()
-                  {
-                      ConnectionMode = ConnectionMode.Gateway,
-                      Serializer = this.cosmosSystemTextJsonSerializer,
-                  });
+                Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "False");
 
-            string uniqueDbName = "TestDbTCDisabled_" + Guid.NewGuid().ToString();
-            this.database = await this.client.CreateDatabaseIfNotExistsAsync(uniqueDbName);
-            string uniqueContainerName = "TestContainerTCDisabled_" + Guid.NewGuid().ToString();
-            this.container = await this.database.CreateContainerIfNotExistsAsync(uniqueContainerName, "/pk");
+                JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = null,
+                    PropertyNameCaseInsensitive = true,
+                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                };
+                this.cosmosSystemTextJsonSerializer = new MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer(jsonSerializerOptions);
 
-            string pk = "pk_create";
-            IEnumerable<TestObject> items = this.GenerateItems(pk);
+                this.client = new CosmosClient(
+                      this.connectionString,
+                      new CosmosClientOptions()
+                      {
+                          ConnectionMode = ConnectionMode.Gateway,
+                          Serializer = this.cosmosSystemTextJsonSerializer,
+                      });
 
-            foreach (TestObject item in items)
+                string uniqueDbName = "TestDbTCDisabled_" + Guid.NewGuid().ToString();
+                this.database = await this.client.CreateDatabaseIfNotExistsAsync(uniqueDbName);
+                string uniqueContainerName = "TestContainerTCDisabled_" + Guid.NewGuid().ToString();
+                this.container = await this.database.CreateContainerIfNotExistsAsync(uniqueContainerName, "/pk");
+
+                string pk = "pk_create";
+                IEnumerable<TestObject> items = this.GenerateItems(pk);
+
+                foreach (TestObject item in items)
+                {
+                    ItemResponse<TestObject> response = await this.container.CreateItemAsync(item, new PartitionKey(item.Pk));
+                    Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+                    string diagnostics = response.Diagnostics.ToString();
+                    Assert.IsFalse(diagnostics.Contains("|F4"), "Diagnostics User Agent should NOT contain '|F4' for Gateway");
+                }
+            }
+            finally
             {
-                ItemResponse<TestObject> response = await this.container.CreateItemAsync(item, new PartitionKey(item.Pk));
-                Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
-                string diagnostics = response.Diagnostics.ToString();
-                Assert.IsFalse(diagnostics.Contains("|F4"), "Diagnostics User Agent should NOT contain '|F4' for Gateway");
+                if (this.database != null)
+                {
+                    try
+                    {
+                        await this.database.DeleteAsync();
+                    }
+                    catch { }
+                }
             }
         }
 
@@ -764,77 +836,106 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestCategory("ThinClient")]
         public async Task QueryItemsTestWithStrongConsistency()
         {
-            string connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_THINCLIENTSTRONG", string.Empty);
-            if (string.IsNullOrEmpty(connectionString))
+            try
             {
-                Assert.Fail("Set environment variable COSMOSDB_THINCLIENTSTRONG to run the tests");
+                string connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_THINCLIENTSTRONG", string.Empty);
+                if (string.IsNullOrEmpty(connectionString))
+                {
+                    Assert.Fail("Set environment variable COSMOSDB_THINCLIENTSTRONG to run the tests");
+                }
+                this.client = new CosmosClient(
+                     connectionString,
+                     new CosmosClientOptions()
+                     {
+                         ConnectionMode = ConnectionMode.Gateway,
+                         RequestTimeout = TimeSpan.FromSeconds(60),
+                         ConsistencyLevel = Microsoft.Azure.Cosmos.ConsistencyLevel.Strong
+                     });
+
+                string uniqueDbName = "TestDbTC_" + Guid.NewGuid().ToString();
+                this.database = await this.client.CreateDatabaseIfNotExistsAsync(uniqueDbName);
+                string uniqueContainerName = "TestContainerTC_" + Guid.NewGuid().ToString();
+                this.container = await this.database.CreateContainerIfNotExistsAsync(uniqueContainerName, "/pk");
+
+                string pk = "pk_query";
+                List<TestObject> items = this.GenerateItems(pk).ToList();
+
+                List<TestObject> createdItems = await this.CreateItemsSafeAsync(items);
+
+                string query = $"SELECT * FROM c WHERE c.pk = '{pk}'";
+                FeedIterator<TestObject> iterator = this.container.GetItemQueryIterator<TestObject>(query);
+
+                int count = 0;
+                while (iterator.HasMoreResults)
+                {
+                    FeedResponse<TestObject> response = await iterator.ReadNextAsync();
+                    count += response.Count;
+                }
+
+                Assert.AreEqual(createdItems.Count, count);
             }
-            this.client = new CosmosClient(
-                 connectionString,
-                 new CosmosClientOptions()
-                 {
-                     ConnectionMode = ConnectionMode.Gateway,
-                     RequestTimeout = TimeSpan.FromSeconds(60),
-                     ConsistencyLevel = Microsoft.Azure.Cosmos.ConsistencyLevel.Strong
-                 });
-
-            string uniqueDbName = "TestDbTC_" + Guid.NewGuid().ToString();
-            this.database = await this.client.CreateDatabaseIfNotExistsAsync(uniqueDbName);
-            string uniqueContainerName = "TestContainerTC_" + Guid.NewGuid().ToString();
-            this.container = await this.database.CreateContainerIfNotExistsAsync(uniqueContainerName, "/pk");
-
-            string pk = "pk_query";
-            List<TestObject> items = this.GenerateItems(pk).ToList();
-
-            List<TestObject> createdItems = await this.CreateItemsSafeAsync(items);
-
-            string query = $"SELECT * FROM c WHERE c.pk = '{pk}'";
-            FeedIterator<TestObject> iterator = this.container.GetItemQueryIterator<TestObject>(query);
-
-            int count = 0;
-            while (iterator.HasMoreResults)
+            finally
             {
-                FeedResponse<TestObject> response = await iterator.ReadNextAsync();
-                count += response.Count;
+                if (this.database != null)
+                {
+                    try
+                    {
+                        await this.database.DeleteAsync();
+                    }
+                    catch { }
+                }
             }
-
-            Assert.AreEqual(createdItems.Count, count);
         }
 
         [TestMethod]
         [TestCategory("ThinClient")]
         public async Task QueryItemsTestWithSessionConsistency()
         {
-            this.client = new CosmosClient(
-                 this.connectionString,
-                 new CosmosClientOptions()
-                 {
-                     ConnectionMode = ConnectionMode.Gateway,
-                     RequestTimeout = TimeSpan.FromSeconds(60),
-                     ConsistencyLevel = Microsoft.Azure.Cosmos.ConsistencyLevel.Session
-                 });
-
-            string uniqueDbName = "TestDbTC_" + Guid.NewGuid().ToString();
-            this.database = await this.client.CreateDatabaseIfNotExistsAsync(uniqueDbName);
-            string uniqueContainerName = "TestContainerTC_" + Guid.NewGuid().ToString();
-            this.container = await this.database.CreateContainerIfNotExistsAsync(uniqueContainerName, "/pk");
-
-            string pk = "pk_query";
-            List<TestObject> items = this.GenerateItems(pk).ToList();
-
-            List<TestObject> createdItems = await this.CreateItemsSafeAsync(items);
-
-            string query = $"SELECT * FROM c WHERE c.pk = '{pk}'";
-            FeedIterator<TestObject> iterator = this.container.GetItemQueryIterator<TestObject>(query);
-
-            int count = 0;
-            while (iterator.HasMoreResults)
+            try
             {
-                FeedResponse<TestObject> response = await iterator.ReadNextAsync();
-                count += response.Count;
-            }
 
-            Assert.AreEqual(createdItems.Count, count);
+                this.client = new CosmosClient(
+                     this.connectionString,
+                     new CosmosClientOptions()
+                     {
+                         ConnectionMode = ConnectionMode.Gateway,
+                         RequestTimeout = TimeSpan.FromSeconds(60),
+                         ConsistencyLevel = Microsoft.Azure.Cosmos.ConsistencyLevel.Session
+                     });
+
+                string uniqueDbName = "TestDbTC_" + Guid.NewGuid().ToString();
+                this.database = await this.client.CreateDatabaseIfNotExistsAsync(uniqueDbName);
+                string uniqueContainerName = "TestContainerTC_" + Guid.NewGuid().ToString();
+                this.container = await this.database.CreateContainerIfNotExistsAsync(uniqueContainerName, "/pk");
+
+                string pk = "pk_query";
+                List<TestObject> items = this.GenerateItems(pk).ToList();
+
+                List<TestObject> createdItems = await this.CreateItemsSafeAsync(items);
+
+                string query = $"SELECT * FROM c WHERE c.pk = '{pk}'";
+                FeedIterator<TestObject> iterator = this.container.GetItemQueryIterator<TestObject>(query);
+
+                int count = 0;
+                while (iterator.HasMoreResults)
+                {
+                    FeedResponse<TestObject> response = await iterator.ReadNextAsync();
+                    count += response.Count;
+                }
+
+                Assert.AreEqual(createdItems.Count, count);
+            }
+            finally
+            {
+                if (this.database != null)
+                {
+                    try
+                    {
+                        await this.database.DeleteAsync();
+                    }
+                    catch { }
+                }
+            }
         }
 
         [TestMethod]
@@ -929,83 +1030,148 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [TestCategory("ThinClient")]
-        public async Task RegionalFailoverWithHttpRequestException_EnsuresThinClientHeaderInRefreshRequest()
+        public async Task TestThinClientQueryPlanWithOrderBy()
         {
-            // Arrange
-            Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
+            List<TestObject> items = new List<TestObject>();
+            string commonPk = "pk_orderby_test_" + Guid.NewGuid().ToString();
 
-            bool headerFoundInRefreshRequest = false;
-            int accountRefreshCount = 0;
-            bool hasThrown = false;
-
-            JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
+            try
             {
-                PropertyNamingPolicy = null,
-                PropertyNameCaseInsensitive = true,
-                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-            };
-            CosmosSystemTextJsonSerializer serializer = new CosmosSystemTextJsonSerializer(jsonSerializerOptions);
-
-            FaultInjectionDelegatingHandler faultHandler = new FaultInjectionDelegatingHandler(
-                (request) =>
+                for (int i = 0; i < 5; i++)
                 {
-                    // Check for account refresh requests (GET to "/" with HTTP/1.1)
-                    if (request.Method == HttpMethod.Get &&
-                        request.RequestUri.AbsolutePath == "/" &&
-                        request.Version == new Version(1, 1))
+                    items.Add(new TestObject
                     {
-                        accountRefreshCount++;
+                        Id = Guid.NewGuid().ToString(),
+                        Pk = commonPk,
+                        Other = $"Item_{i:D3}",
+                        SortField = i
+                    });
+                }
 
-                        // Only check header after we've thrown the exception
-                        if (hasThrown)
+                List<TestObject> createdItems = await this.CreateItemsSafeAsync(items);
+                Assert.AreEqual(5, createdItems.Count, "All items should be created");
+
+                await Task.Delay(1000);
+
+                // Execute ORDER BY query - this requires QueryPlan and EPK range conversion
+                string query = "SELECT * FROM c WHERE c.pk = @pk ORDER BY c.SortField DESC";
+                QueryDefinition queryDef = new QueryDefinition(query).WithParameter("@pk", commonPk);
+
+                FeedIterator<TestObject> iterator = this.container.GetItemQueryIterator<TestObject>(queryDef);
+
+                List<TestObject> results = new List<TestObject>();
+                int pageCount = 0;
+
+                while (iterator.HasMoreResults)
+                {
+                    FeedResponse<TestObject> response = await iterator.ReadNextAsync();
+                    results.AddRange(response);
+                    pageCount++;
+
+                    string diagnostics = response.Diagnostics.ToString();
+                    Assert.IsTrue(diagnostics.Contains("|F4"), $"Page {pageCount}: Should use ThinClient");
+                }
+
+                Assert.AreEqual(5, results.Count, "Should return all 5 items");
+
+                for (int i = 0; i < results.Count; i++)
+                {
+                    int expectedSortField = 4 - i;  // Descending: 4, 3, 2, 1, 0
+                    Assert.AreEqual(expectedSortField, results[i].SortField,
+                        $"Item at position {i} should have SortField={expectedSortField}");
+                }
+
+            }
+            finally
+            {
+                foreach (TestObject item in items)
+                {
+                    try
+                    {
+                        await this.container.DeleteItemAsync<TestObject>(item.Id, new PartitionKey(item.Pk));
+                    }
+                    catch { }
+                }
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("ThinClient")]
+        public async Task TestThinClientQueryPlanCrossPartitionWithFilter()
+        {
+            List<TestObject> items = new List<TestObject>();
+            string baseGuid = Guid.NewGuid().ToString();
+
+            try
+            {
+                string[] partitionKeys = {
+                    $"pk_filter_1_{baseGuid}",
+                    $"pk_filter_2_{baseGuid}",
+                    $"pk_filter_3_{baseGuid}"
+                };
+
+                for (int pkIndex = 0; pkIndex < partitionKeys.Length; pkIndex++)
+                {
+                    for (int i = 0; i < 3; i++)
+                    {
+                        items.Add(new TestObject
                         {
-                            if (request.Headers.TryGetValues(
-                                ThinClientConstants.EnableThinClientEndpointDiscoveryHeaderName,
-                                out IEnumerable<string> headerValues))
-                            {
-                                if (headerValues.Contains("True"))
-                                {
-                                    headerFoundInRefreshRequest = true;
-                                }
-                            }
-                        }
+                            Id = Guid.NewGuid().ToString(),
+                            Pk = partitionKeys[pkIndex],
+                            Other = $"Value_{i}",
+                            SortField = i
+                        });
                     }
+                }
 
-                    // Throw HttpRequestException only ONCE on ThinClient POST requests
-                    if (!hasThrown &&
-                        request.Method == HttpMethod.Post &&
-                        request.Version == new Version(2, 0))
+                List<TestObject> createdItems = await this.CreateItemsSafeAsync(items);
+                Assert.AreEqual(9, createdItems.Count, "All 9 items should be created");
+
+                await Task.Delay(2000);
+                string query = "SELECT * FROM c ORDER BY c._ts";
+
+                FeedIterator<TestObject> iterator = this.container.GetItemQueryIterator<TestObject>(query);
+
+                List<TestObject> results = new List<TestObject>();
+                int pageCount = 0;
+
+                while (iterator.HasMoreResults)
+                {
+                    FeedResponse<TestObject> response = await iterator.ReadNextAsync();
+                    results.AddRange(response);
+                    pageCount++;
+
+                    string diagnostics = response.Diagnostics.ToString();
+                    Assert.IsTrue(diagnostics.Contains("|F4"), $"Page {pageCount}: Should use ThinClient");
+                }
+
+                Assert.IsTrue(results.Count >= 9,
+                    $"Should return at least 9 items, got {results.Count}");
+
+                int foundCount = 0;
+                foreach (TestObject item in createdItems)
+                {
+                    if (results.Any(r => r.Id == item.Id))
                     {
-                        hasThrown = true;
-                        throw new HttpRequestException("Simulated endpoint failure");
+                        foundCount++;
                     }
-                });
+                }
 
-            CosmosClientBuilder builder = new CosmosClientBuilder(this.connectionString)
-                .WithConnectionModeGateway()
-                .WithCustomSerializer(serializer)
-                .WithHttpClientFactory(() => new HttpClient(faultHandler));
+                Assert.IsTrue(foundCount >= 9,
+                    $"Should find all 9 test items in results, found {foundCount}");
 
-            using CosmosClient client = builder.Build();
-
-            string uniqueDbName = "TestFailoverDb_" + Guid.NewGuid().ToString();
-            Database database = await client.CreateDatabaseIfNotExistsAsync(uniqueDbName);
-            string uniqueContainerName = "TestFailoverContainer_" + Guid.NewGuid().ToString();
-            Container container = await database.CreateContainerIfNotExistsAsync(uniqueContainerName, "/pk");
-
-            string pk = "pk_failover_test";
-            TestObject testItem = this.GenerateItems(pk).First();
-
-            // Act - CreateItemAsync will fail once, then SDK retries and succeeds
-            ItemResponse<TestObject> response = await container.CreateItemAsync(testItem, new PartitionKey(testItem.Pk));
-
-            // Assert
-            Assert.AreEqual(HttpStatusCode.Created, response.StatusCode, "Request should succeed after retry");
-            Assert.IsTrue(hasThrown, "Exception should have been thrown once");
-            Assert.IsTrue(headerFoundInRefreshRequest, "Account refresh after HttpRequestException should contain thin client header");
-
-            // Cleanup
-            await database.DeleteAsync();
+            }
+            finally
+            {
+                foreach (TestObject item in items)
+                {
+                    try
+                    {
+                        await this.container.DeleteItemAsync<TestObject>(item.Id, new PartitionKey(item.Pk));
+                    }
+                    catch { }
+                }
+            }
         }
 
         /// <summary>
