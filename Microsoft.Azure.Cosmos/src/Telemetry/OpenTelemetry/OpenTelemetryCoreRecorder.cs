@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     /// </summary>
     internal struct OpenTelemetryCoreRecorder : IDisposable
     {
-        internal const string CosmosDb = "cosmosdb";
+        internal const string CosmosDb = "azure.cosmosdb";
 
         private readonly DiagnosticScope scope = default;
         private readonly CosmosThresholdOptions config = null;
@@ -62,8 +62,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             string operationName,
             string containerName,
             string databaseName,
-            OperationType operationType, 
-            CosmosClientContext clientContext, 
+            OperationType operationType,
+            CosmosClientContext clientContext,
             CosmosThresholdOptions config,
             QueryTextMode queryTextMode)
         {
@@ -113,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         }
 
         /// <summary>
-        /// Used for creating parent activity in scenario where there are listeners at operation level 
+        /// Used for creating parent activity in scenario where there are listeners at operation level
         /// </summary>
         public static OpenTelemetryCoreRecorder CreateOperationLevelParentActivity(
             DiagnosticScope operationScope,
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             string databaseName,
             Documents.OperationType operationType,
             CosmosClientContext clientContext,
-            CosmosThresholdOptions config, 
+            CosmosThresholdOptions config,
             QueryTextMode queryTextMode)
         {
             return new OpenTelemetryCoreRecorder(
@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 this.scope.AddAttribute(key, value);
             }
         }
-        
+
         /// <summary>
         /// Recording information
         /// </summary>

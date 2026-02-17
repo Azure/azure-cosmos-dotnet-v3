@@ -613,7 +613,7 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.system.name">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.system.name">azure.cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
@@ -628,7 +628,7 @@
     <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="server.port">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.client.id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.connection.mode">direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
@@ -639,17 +639,17 @@
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.response.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.request.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.row.count">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.response.returned_rows">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.contacted_regions">South Central US</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.contacted_regions">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.system.name">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.system.name">azure.cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
@@ -664,7 +664,7 @@
     <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="server.port">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.client.id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.connection.mode">direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
@@ -675,17 +675,17 @@
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.response.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.request.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.row.count">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.response.returned_rows">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.contacted_regions">South Central US</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.contacted_regions">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.system.name">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.system.name">azure.cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
@@ -700,7 +700,7 @@
     <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="server.port">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.client.id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.connection.mode">direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
@@ -711,17 +711,17 @@
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.response.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.request.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.row.count">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.response.returned_rows">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.contacted_regions">South Central US</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.contacted_regions">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.system.name">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.system.name">azure.cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
@@ -736,7 +736,7 @@
     <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="server.port">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.client.id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.connection.mode">direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
@@ -747,12 +747,12 @@
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.response.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.request.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.row.count">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.response.returned_rows">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.contacted_regions">South Central US</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.contacted_regions">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="ThresholdViolation" />
   <EVENT name="ThresholdViolation" />
@@ -1394,7 +1394,7 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.system.name">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.system.name">azure.cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
@@ -1409,7 +1409,7 @@
     <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="server.port">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.client.id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.connection.mode">direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
@@ -1420,17 +1420,17 @@
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.response.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.request.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.row.count">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.response.returned_rows">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.contacted_regions">South Central US</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.contacted_regions">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.system.name">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.system.name">azure.cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
@@ -1445,7 +1445,7 @@
     <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="server.port">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.client.id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.connection.mode">direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
@@ -1456,17 +1456,17 @@
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.response.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.request.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.row.count">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.response.returned_rows">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.contacted_regions">South Central US</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.contacted_regions">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.system.name">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.system.name">azure.cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
@@ -1481,7 +1481,7 @@
     <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="server.port">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.client.id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.connection.mode">direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
@@ -1492,17 +1492,17 @@
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.response.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.request.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.row.count">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.response.returned_rows">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.contacted_regions">South Central US</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.contacted_regions">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.system.name">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.system.name">azure.cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
@@ -1517,7 +1517,7 @@
     <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="server.port">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.client.id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.connection.mode">direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
@@ -1528,12 +1528,12 @@
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.response.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.request.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.row.count">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.response.returned_rows">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.contacted_regions">South Central US</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.contacted_regions">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="ThresholdViolation" />
   <EVENT name="ThresholdViolation" />
@@ -2156,7 +2156,7 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.system.name">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.system.name">azure.cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
@@ -2171,7 +2171,7 @@
     <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="server.port">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.client.id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.connection.mode">direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
@@ -2182,17 +2182,17 @@
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.response.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.request.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.row.count">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.response.returned_rows">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.contacted_regions">South Central US</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.contacted_regions">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.system.name">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.system.name">azure.cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
@@ -2207,7 +2207,7 @@
     <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="server.port">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.client.id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.connection.mode">direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
@@ -2218,17 +2218,17 @@
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.response.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.request.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.row.count">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.response.returned_rows">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.contacted_regions">South Central US</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.contacted_regions">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.system.name">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.system.name">azure.cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
@@ -2243,7 +2243,7 @@
     <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="server.port">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.client.id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.connection.mode">direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
@@ -2254,17 +2254,17 @@
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.response.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.request.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.row.count">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.response.returned_rows">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.contacted_regions">South Central US</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.contacted_regions">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.system.name">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.system.name">azure.cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
@@ -2279,7 +2279,7 @@
     <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="server.port">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.client.id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.connection.mode">direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
@@ -2290,12 +2290,12 @@
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.response.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.request.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.row.count">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.response.returned_rows">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.contacted_regions">South Central US</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.contacted_regions">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="ThresholdViolation" />
   <EVENT name="ThresholdViolation" />
@@ -2938,7 +2938,7 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.system.name">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.system.name">azure.cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
@@ -2953,7 +2953,7 @@
     <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="server.port">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.client.id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.connection.mode">direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
@@ -2964,17 +2964,17 @@
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.response.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.request.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.row.count">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.response.returned_rows">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.query.text">SELECT * FROM c WHERE c.id != @customIdentifier</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.contacted_regions">South Central US</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.contacted_regions">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.system.name">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.system.name">azure.cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
@@ -2989,7 +2989,7 @@
     <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="server.port">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.client.id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.connection.mode">direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
@@ -3000,17 +3000,17 @@
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.response.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.request.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.row.count">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.response.returned_rows">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.query.text">SELECT * FROM c WHERE c.id != @customIdentifier</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.contacted_regions">South Central US</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.contacted_regions">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.system.name">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.system.name">azure.cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
@@ -3025,7 +3025,7 @@
     <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="server.port">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.client.id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.connection.mode">direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
@@ -3036,17 +3036,17 @@
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.response.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.request.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.row.count">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.response.returned_rows">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.query.text">SELECT * FROM c WHERE c.id != @customIdentifier</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.contacted_regions">South Central US</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.contacted_regions">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.system.name">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.system.name">azure.cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
@@ -3061,7 +3061,7 @@
     <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="server.port">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.client.id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.connection.mode">direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
@@ -3072,12 +3072,12 @@
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.response.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.request.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.row.count">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.response.returned_rows">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.query.text">SELECT * FROM c WHERE c.id != @customIdentifier</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.contacted_regions">South Central US</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.contacted_regions">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="ThresholdViolation" />
   <EVENT name="ThresholdViolation" />
@@ -3794,7 +3794,7 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.system.name">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.system.name">azure.cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
@@ -3809,7 +3809,7 @@
     <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="server.port">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.client.id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.connection.mode">direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
@@ -3820,17 +3820,17 @@
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.response.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.request.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.row.count">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.response.returned_rows">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.contacted_regions">South Central US</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.contacted_regions">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.system.name">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.system.name">azure.cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
@@ -3845,7 +3845,7 @@
     <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="server.port">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.client.id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.connection.mode">direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
@@ -3856,17 +3856,17 @@
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.response.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.request.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.row.count">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.response.returned_rows">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.contacted_regions">South Central US</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.contacted_regions">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.system.name">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.system.name">azure.cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
@@ -3881,7 +3881,7 @@
     <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="server.port">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.client.id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.connection.mode">direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
@@ -3892,17 +3892,17 @@
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.response.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.request.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.row.count">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.response.returned_rows">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.contacted_regions">South Central US</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.contacted_regions">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.system.name">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.system.name">azure.cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
@@ -3917,7 +3917,7 @@
     <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="server.port">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.client.id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.connection.mode">direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
@@ -3928,12 +3928,12 @@
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.response.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.request.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.row.count">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.response.returned_rows">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.contacted_regions">South Central US</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.contacted_regions">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="ThresholdViolation" />
   <EVENT name="ThresholdViolation" />
@@ -4565,7 +4565,7 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.system.name">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.system.name">azure.cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
@@ -4580,7 +4580,7 @@
     <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="server.port">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.client.id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.connection.mode">direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
@@ -4591,17 +4591,17 @@
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.response.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.request.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.row.count">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.response.returned_rows">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.contacted_regions">South Central US</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.contacted_regions">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.system.name">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.system.name">azure.cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
@@ -4616,7 +4616,7 @@
     <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="server.port">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.client.id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.connection.mode">direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
@@ -4627,17 +4627,17 @@
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.response.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.request.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.row.count">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.response.returned_rows">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.contacted_regions">South Central US</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.contacted_regions">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.system.name">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.system.name">azure.cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
@@ -4652,7 +4652,7 @@
     <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="server.port">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.client.id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.connection.mode">direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
@@ -4663,17 +4663,17 @@
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.response.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.request.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.row.count">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.response.returned_rows">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.contacted_regions">South Central US</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.contacted_regions">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.system.name">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.system.name">azure.cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
@@ -4688,7 +4688,7 @@
     <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="server.port">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.client.id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.connection.mode">direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
@@ -4699,12 +4699,12 @@
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.response.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.request.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.row.count">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.response.returned_rows">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.contacted_regions">South Central US</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.contacted_regions">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="ThresholdViolation" />
   <EVENT name="ThresholdViolation" />
@@ -5356,7 +5356,7 @@
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.system.name">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.system.name">azure.cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
@@ -5371,7 +5371,7 @@
     <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="server.port">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.client.id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.connection.mode">direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
@@ -5382,17 +5382,17 @@
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.response.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.request.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.row.count">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.response.returned_rows">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.contacted_regions">South Central US</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.contacted_regions">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.system.name">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.system.name">azure.cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
@@ -5407,7 +5407,7 @@
     <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="server.port">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.client.id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.connection.mode">direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
@@ -5418,17 +5418,17 @@
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.response.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.request.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.row.count">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.response.returned_rows">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.contacted_regions">South Central US</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.contacted_regions">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.system.name">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.system.name">azure.cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
@@ -5443,7 +5443,7 @@
     <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="server.port">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.client.id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.connection.mode">direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
@@ -5454,17 +5454,17 @@
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.response.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.request.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.row.count">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.response.returned_rows">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.contacted_regions">South Central US</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.contacted_regions">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.23.0</ATTRIBUTE>
-    <ATTRIBUTE key="db.system.name">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.system.name">azure.cosmosdb</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">query_items</ATTRIBUTE>
     <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
@@ -5479,7 +5479,7 @@
     <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
     <ATTRIBUTE key="server.port">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.client.id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.connection.mode">direct</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
@@ -5490,12 +5490,12 @@
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.response.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.request.request_charge">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.row.count">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.response.returned_rows">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="azure.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
-    <ATTRIBUTE key="azure.cosmosdb.contacted_regions">South Central US</ATTRIBUTE>
+    <ATTRIBUTE key="azure.cosmosdb.operation.contacted_regions">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="ThresholdViolation" />
   <EVENT name="ThresholdViolation" />

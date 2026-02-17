@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.networkMetricsOptions = networkMetricsOptions ?? new NetworkMetricsOptions();
             this.operationMetricsOptions = operationMetricsOptions ?? new OperationMetricsOptions();
         }
-        
+
         // Azure defaults
 
         /// <summary>
@@ -84,9 +84,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         // Cosmos DB specific attributes
 
         /// <summary>
-        /// Represents the client ID for Cosmos DB.
+        /// Represents the unique identifier of the client instance.
         /// </summary>
-        public const string ClientId = "azure.cosmosdb.client.id";
+        public const string ClientId = "azure.client.id";
 
         /// <summary>
         /// Represents the user agent, compliant with OpenTelemetry conventions.
@@ -128,17 +128,17 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Represents the request charge for the operation.
         /// </summary>
-        public const string RequestCharge = "azure.cosmosdb.request.request_charge";
+        public const string RequestCharge = "azure.cosmosdb.operation.request_charge";
 
         /// <summary>
         /// Represents the regions contacted for the operation.
         /// </summary>
-        public const string Region = "azure.cosmosdb.contacted_regions";
+        public const string Region = "azure.cosmosdb.operation.contacted_regions";
 
         /// <summary>
         /// Represents the item count in the operation.
         /// </summary>
-        public const string ItemCount = "azure.cosmosdb.row.count";
+        public const string ItemCount = "db.response.returned_rows";
 
         /// <summary>
         /// Represents the activity ID for the operation.
@@ -189,11 +189,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         public const string ServiceEndPointPort = "network.protocol.port";
 
         public const string ServiceEndpointStatusCode = "azure.cosmosdb.network.response.status_code";
-        
+
         public const string ServiceEndpointSubStatusCode = "azure.cosmosdb.network.response.sub_status_code";
-        
+
         public const string ServiceEndpointRegion = "cloud.region";
-        
+
         public const string ServiceEndpointRoutingId = "azure.cosmosdb.network.routing_id ";
 
         /// <summary>
@@ -201,14 +201,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         public const string ErrorType = "error.type";
 
-        public void PopulateAttributes(DiagnosticScope scope, 
-            string operationName, 
-            string databaseName, 
-            string containerName, 
-            Uri accountName, 
-            string userAgent, 
-            string machineId, 
-            string clientId, 
+        public void PopulateAttributes(DiagnosticScope scope,
+            string operationName,
+            string databaseName,
+            string containerName,
+            Uri accountName,
+            string userAgent,
+            string machineId,
+            string clientId,
             string connectionMode)
         {
             scope.AddAttribute(OpenTelemetryAttributeKeys.DbOperation, operationName);
@@ -238,9 +238,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
         }
 
-        public void PopulateAttributes(DiagnosticScope scope, 
-            QueryTextMode? queryTextMode, 
-            string operationType, 
+        public void PopulateAttributes(DiagnosticScope scope,
+            QueryTextMode? queryTextMode,
+            string operationType,
             OpenTelemetryAttributes response)
         {
             if (response == null)
@@ -275,10 +275,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             if (response.Diagnostics != null)
             {
                 scope.AddAttribute<string[]>(
-                    OpenTelemetryAttributeKeys.Region, 
+                    OpenTelemetryAttributeKeys.Region,
                     CosmosDbMeterUtil.GetRegions(response.Diagnostics), (input) => string.Join(",", input));
             }
-         
+
         }
 
         public KeyValuePair<string, object>[] PopulateNetworkMeterDimensions(string operationName,
@@ -325,9 +325,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             return dimensions.ToArray();
         }
 
-        private void AddOptionalDimensions(NetworkMetricsOptions optionFromRequest, 
-            ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats, 
-            ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats, 
+        private void AddOptionalDimensions(NetworkMetricsOptions optionFromRequest,
+            ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats,
+            ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats,
             List<KeyValuePair<string, object>> dimensions)
         {
             // Add custom dimensions from networkMetricsOptions
@@ -351,11 +351,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                    (requestOptions?.IncludeRoutingId == true);
         }
 
-        public KeyValuePair<string, object>[] PopulateOperationMeterDimensions(string operationName, 
-            string containerName, 
-            string databaseName, 
-            Uri accountName, 
-            OpenTelemetryAttributes attributes, 
+        public KeyValuePair<string, object>[] PopulateOperationMeterDimensions(string operationName,
+            string containerName,
+            string databaseName,
+            Uri accountName,
+            OpenTelemetryAttributes attributes,
             Exception ex,
             OperationMetricsOptions optionFromRequest)
         {
