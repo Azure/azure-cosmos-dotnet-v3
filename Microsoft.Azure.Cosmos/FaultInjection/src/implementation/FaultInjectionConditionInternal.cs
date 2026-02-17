@@ -200,12 +200,13 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 return isApplicable;
             }
 
-            //Used for Gateway Requestrs
+            //Used for Gateway Requests
             public bool IsApplicable(string ruleId, DocumentServiceRequest request)
             {
-                bool isApplicable = this.regionEndpoints.Any(uri => 
+                bool isApplicable = this.regionEndpoints.Any(uri =>
                     request.RequestContext.LocationEndpointToRoute.Host
-                    .StartsWith(uri.Host));
+                    .StartsWith(uri.Host))
+                    ||request.RequestContext.LocationEndpointToRoute.AbsoluteUri.Contains(".dbinference.azure.com");
 
                 return isApplicable;
             }
