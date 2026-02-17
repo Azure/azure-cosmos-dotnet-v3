@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Serialization.HybridRow.Schemas;
     using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -131,8 +132,11 @@ namespace Microsoft.Azure.Cosmos
             IDictionary<PartitionKeyRange, List<(string, PartitionKey)>> partitionKeyRangeItemMap = new
                 Dictionary<PartitionKeyRange, List<(string, PartitionKey)>>();
 
-            foreach ((string id, PartitionKey pk) item in items)
+            foreach ((string id, PartitionKey pk) in items)
             {
+                PartitionKey? partitionKey = await this.container.EnsureIdGetAppendedtoPartitionKeyIfneededAsync(pk, id, cancellationToken);
+                (string id, PartitionKey pk) item = (id, partitionKey.Value);
+
                 Documents.Routing.PartitionKeyInternal partitionKeyInternal = 
                             await this.GetPartitionKeyInternalAsync(item.pk, trace, cancellationToken);
                 string effectivePartitionKeyValue = partitionKeyInternal.GetEffectivePartitionKeyString(this.partitionKeyDefinition);

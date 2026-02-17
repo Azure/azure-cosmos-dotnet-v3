@@ -81,6 +81,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(operation));
             }
 
+            await operation.UpdatePartitionKeyIfRequiredAsync(this.cosmosContainer, trace, cancellationToken);
             await this.ValidateOperationAsync(operation, itemRequestOptions, cancellationToken);
 
             string resolvedPartitionKeyRangeId = await this.ResolvePartitionKeyRangeIdAsync(

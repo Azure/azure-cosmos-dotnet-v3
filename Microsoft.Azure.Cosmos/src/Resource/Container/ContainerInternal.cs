@@ -90,6 +90,32 @@ namespace Microsoft.Azure.Cosmos
             ITrace trace,
             CancellationToken cancellation);
 
+        /// <summary>
+        /// Extracts the item ID from a stream payload if it is required for hierarchical partition key scenarios.
+        /// When the last partition key path is "id", this method attempts to extract the ID from the stream.
+        /// </summary>
+        /// <param name="itemId">The existing item ID, if already provided.</param>
+        /// <param name="streamPayload">The stream containing the JSON payload from which to extract the ID.</param>
+        /// <param name="cancellationToken">Cancellation token for the operation.</param>
+        /// <returns>The item ID, either from the parameter or extracted from the stream.</returns>
+        public abstract Task<string> GetItemIdFromStreamIfRequiredAsync(
+            string itemId,
+            Stream streamPayload,
+            CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Ensures that the item ID is appended to the partition key if needed for hierarchical partition keys.
+        /// When the last partition key path is "id", this method appends the ID to the partition key components.
+        /// </summary>
+        /// <param name="partitionKey">The existing partition key, if already provided.</param>
+        /// <param name="itemId">The item ID to append to the partition key if needed.</param>
+        /// <param name="cancellationToken">Cancellation token for the operation.</param>
+        /// <returns>The updated partition key with the ID appended if necessary.</returns>
+        public abstract Task<PartitionKey?> EnsureIdGetAppendedtoPartitionKeyIfneededAsync(
+            PartitionKey? partitionKey,
+            string itemId,
+            CancellationToken cancellationToken);
+
         public abstract IAsyncEnumerable<TryCatch<ChangeFeedPage>> GetChangeFeedAsyncEnumerable(
             ChangeFeedCrossFeedRangeState state,
             ChangeFeedMode changeFeedMode,
