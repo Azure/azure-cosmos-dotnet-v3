@@ -6794,8 +6794,6 @@ namespace Microsoft.Azure.Cosmos
 
         private void CreateStoreModel(bool subscribeRntbdStatus)
         {
-            AccountConfigurationProperties accountConfigurationProperties = new (EnableNRegionSynchronousCommit: this.accountServiceConfiguration.AccountProperties.EnableNRegionSynchronousCommit);
-
             //EnableReadRequestsFallback, if not explicity set on the connection policy,
             //is false if the account's consistency is bounded staleness,
             //and true otherwise.
@@ -6810,8 +6808,7 @@ namespace Microsoft.Azure.Cosmos
                 this.UseMultipleWriteLocations && (this.accountServiceConfiguration.DefaultConsistencyLevel != Documents.ConsistencyLevel.Strong),
                 true,
                 enableReplicaValidation: this.isReplicaAddressValidationEnabled,
-                sessionRetryOptions: this.ConnectionPolicy.SessionRetryOptions,
-                accountConfigurationProperties: accountConfigurationProperties);
+                sessionRetryOptions: this.ConnectionPolicy.SessionRetryOptions);
 
             if (subscribeRntbdStatus)
             {
