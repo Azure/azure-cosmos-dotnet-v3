@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos
 
         static CosmosClient()
         {
-            HttpConstants.Versions.CurrentVersion = HttpConstants.Versions.v2020_07_15;
+            HttpConstants.Versions.CurrentVersion = HttpConstants.Versions.v2024_06_06;
 
             HttpConstants.Versions.CurrentVersionUTF8 = Encoding.UTF8.GetBytes(HttpConstants.Versions.CurrentVersion);
 
