@@ -78,6 +78,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Assert
             Console.WriteLine($"Response StatusCode: {response.StatusCode}");
             Console.WriteLine($"Response Count: {response.Count}");
+            Console.WriteLine($"Response ActivityId: {response.ActivityId}");
 
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode, $"Expected OK but got {response.StatusCode}");
             Assert.IsTrue(response.IsSuccessStatusCode, "Response should indicate success");
