@@ -602,6 +602,39 @@
                 $"All {concurrentRequests} requests should complete successfully.");
         }
 
+        [TestMethod]
+        public async Task FaultedHedgeTask_DoesNotAbortWhenOtherRegionSucceeds()
+        {
+            CrossRegionHedgingAvailabilityStrategy availabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
+                threshold: TimeSpan.FromMilliseconds(10),
+                thresholdStep: TimeSpan.FromMilliseconds(10));
+
+            using RequestMessage request = CreateReadRequest();
+            using CosmosClient mockCosmosClient = CreateMockClientWithRegions(2);
+
+            int senderCallCount = 0;
+
+            Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender = (req, ct) =>
+            {
+                int callNumber = Interlocked.Increment(ref senderCallCount);
+                if (callNumber == 1)
+                {
+                    throw new OperationCanceledException("Simulated faulted hedge task");
+                }
+
+                return Task.FromResult(new ResponseMessage(HttpStatusCode.OK));
+            };
+
+            ResponseMessage response = await availabilityStrategy.ExecuteAvailabilityStrategyAsync(
+                sender,
+                mockCosmosClient,
+                request,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.IsTrue(senderCallCount >= 2, "Expected a second hedge request to complete successfully.");
+        }
+
        
     }
 }

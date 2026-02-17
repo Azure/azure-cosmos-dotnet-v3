@@ -201,9 +201,17 @@ namespace Microsoft.Azure.Cosmos
                                 requestTasks.Remove(hedgeTimer);
                                 timerTokenSource.Cancel();
 
-                                if (completedTask.IsFaulted)
+                                if (completedTask.IsFaulted || completedTask.IsCanceled)
                                 {
-                                    AggregateException innerExceptions = completedTask.Exception.Flatten();
+                                    requestTasks.Remove(hedgeTimer);
+                                    timerTokenSource.Cancel();
+
+                                    if (applicationProvidedCancellationToken.IsCancellationRequested)
+                                    {
+                                        await (Task<HedgingResponse>)completedTask;
+                                    }
+
+                                    continue;
                                 }
 
                                 hedgeResponse = await (Task<HedgingResponse>)completedTask;
@@ -238,6 +246,13 @@ namespace Microsoft.Azure.Cosmos
                         {
                             AggregateException innerExceptions = completedTask.Exception.Flatten();
                             lastException = innerExceptions.InnerExceptions.FirstOrDefault();
+                            continue;
+                        }
+
+                        if (completedTask.IsCanceled)
+                        {
+                            lastException = new OperationCanceledException();
+                            continue;
                         }
 
                         hedgeResponse = await (Task<HedgingResponse>)completedTask;
@@ -262,7 +277,16 @@ namespace Microsoft.Azure.Cosmos
                         throw lastException;
                     }
 
-                    Debug.Assert(hedgeResponse != null);
+                    if (hedgeResponse == null)
+                    {
+                        if (applicationProvidedCancellationToken.IsCancellationRequested)
+                        {
+                            throw new CosmosOperationCanceledException(new OperationCanceledException(), trace);
+                        }
+
+                        throw new InvalidOperationException("Cross-region hedging completed without producing a response.");
+                    }
+
                     return hedgeResponse.ResponseMessage;
                 }
             }
