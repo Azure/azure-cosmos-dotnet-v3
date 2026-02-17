@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private readonly ConcurrentDictionary<FaultInjectionServerErrorRule, byte> serverResponseErrorRuleSet = new ConcurrentDictionary<FaultInjectionServerErrorRule, byte>();
         private readonly ConcurrentDictionary<FaultInjectionServerErrorRule, byte> serverConnectionDelayRuleSet = new ConcurrentDictionary<FaultInjectionServerErrorRule, byte>();
         private readonly ConcurrentDictionary<FaultInjectionConnectionErrorRule, byte> connectionErrorRuleSet = new ConcurrentDictionary<FaultInjectionConnectionErrorRule, byte>();
+        private readonly ConcurrentDictionary<FaultInjectionCustomServerErrorRule, byte> customServerErrorRuleSet = new ConcurrentDictionary<FaultInjectionCustomServerErrorRule, byte>();
 
         private readonly FaultInjectionRuleProcessor ruleProcessor;
 
@@ -91,6 +92,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                         break;
                 }
             }
+            else if (effectiveRule.GetType() == typeof(FaultInjectionCustomServerErrorRule))
+            {
+                FaultInjectionCustomServerErrorRule customServerErrorRule = (FaultInjectionCustomServerErrorRule)effectiveRule;
+                this.customServerErrorRuleSet.TryAdd(customServerErrorRule, 0);
+            }
 
             return effectiveRule;
         }
@@ -98,6 +104,21 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         public FaultInjectionServerErrorRule? FindRntbdServerResponseErrorRule(ChannelCallArguments args)
         {
             foreach (FaultInjectionServerErrorRule rule in this.serverResponseErrorRuleSet.Keys)
+            {
+                if ((rule.GetConnectionType() == FaultInjectionConnectionType.Direct
+                    || rule.GetConnectionType() == FaultInjectionConnectionType.All)
+                    && rule.IsApplicable(args))
+                {
+                    return rule;
+                }
+            }
+
+            return null;
+        }
+
+        public FaultInjectionCustomServerErrorRule? FindRntbdCustomServerErrorRule(ChannelCallArguments args)
+        {
+            foreach (FaultInjectionCustomServerErrorRule rule in this.customServerErrorRuleSet.Keys)
             {
                 if ((rule.GetConnectionType() == FaultInjectionConnectionType.Direct
                     || rule.GetConnectionType() == FaultInjectionConnectionType.All)
@@ -165,6 +186,21 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         public FaultInjectionServerErrorRule? FindHttpServerResponseErrorRule(DocumentServiceRequest dsr)
         {
             foreach (FaultInjectionServerErrorRule rule in this.serverResponseErrorRuleSet.Keys)
+            {
+                if ((rule.GetConnectionType() == FaultInjectionConnectionType.Gateway
+                    || rule.GetConnectionType() == FaultInjectionConnectionType.All)
+                    && rule.IsApplicable(dsr))
+                {
+                    return rule;
+                }
+            }
+
+            return null;
+        }
+
+        public FaultInjectionCustomServerErrorRule? FindHttpCustomServerErrorRule(DocumentServiceRequest dsr)
+        {
+            foreach (FaultInjectionCustomServerErrorRule rule in this.customServerErrorRuleSet.Keys)
             {
                 if ((rule.GetConnectionType() == FaultInjectionConnectionType.Gateway
                     || rule.GetConnectionType() == FaultInjectionConnectionType.All)
