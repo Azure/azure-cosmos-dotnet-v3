@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
 
@@ -40,7 +41,9 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         protected override Expression VisitMemberInit(MemberInitExpression node)
         {
-            return node;
+            return Expression.MemberInit(
+                node.NewExpression,
+                node.Bindings.Select(binding => this.VisitMemberBinding(binding)));
         }
 
         private Expression EvaluateMemberAccess(Expression expression)
