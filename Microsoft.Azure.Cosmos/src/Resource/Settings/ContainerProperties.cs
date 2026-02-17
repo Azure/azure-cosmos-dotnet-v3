@@ -87,6 +87,9 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = "fullTextPolicy", NullValueHandling = NullValueHandling.Ignore)]
         private FullTextPolicy fullTextPolicyInternal;
 
+        [JsonProperty(PropertyName = "previousImageRetentionPolicy", NullValueHandling = NullValueHandling.Ignore)]
+        private PreviousImageRetentionPolicy? previousImageRetentionPolicyInternal;
+
         /// <summary>
         /// This contains additional values for scenarios where the SDK is not aware of new fields. 
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
@@ -396,6 +399,30 @@ namespace Microsoft.Azure.Cosmos
                 return this.changeFeedPolicyInternal;
             }
             set => this.changeFeedPolicyInternal = value;
+        }
+
+        /// <summary>
+        /// Gets or sets the <see cref="Cosmos.PreviousImageRetentionPolicy"/> associated with the container from the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>
+        /// The previous image retention policy associated with the container.
+        /// </value>
+        /// <remarks>
+        /// <para>
+        /// The <see cref="Cosmos.PreviousImageRetentionPolicy"/> controls whether the previous image of a document 
+        /// is retained during change feed operations for replace and/or delete operations.
+        /// </para>
+        /// </remarks>
+        [JsonIgnore]
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        PreviousImageRetentionPolicy? PreviousImageRetentionPolicy
+        {
+            get => this.previousImageRetentionPolicyInternal;
+            set => this.previousImageRetentionPolicyInternal = value;
         }
 
         /// <summary>
