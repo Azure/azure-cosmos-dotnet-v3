@@ -15,9 +15,6 @@ namespace Microsoft.Azure.Cosmos
 
     internal class DistributedTransactionCommitter
     {
-        // TODO: Move to HttpConstants.HttpHeaders once DTC headers are added centrally
-        private const string IdempotencyTokenHeader = "x-ms-dtc-operation-id";
-
         private readonly IReadOnlyList<DistributedTransactionOperation> operations;
         private readonly CosmosClientContext clientContext;
 
@@ -64,9 +61,9 @@ namespace Microsoft.Azure.Cosmos
                 using (MemoryStream bodyStream = serverRequest.TransferBodyStream())
                 {
                     ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
-                        resourceUri: String.Empty, //"/operations/dtc",
-                        resourceType: ResourceType.Document, // TODO: Update to a new ResourceType specific to DTC
-                        operationType: OperationType.Batch, // TODO: Update to a new OperationType specific to DTC
+                        resourceUri: "/operations/dtc",
+                        resourceType: ResourceType.DistributedTransactionBatch,
+                        operationType: OperationType.CommitDistributedTransaction,
                         requestOptions: null,
                         cosmosContainerCore: null,
                         partitionKey: null,
@@ -92,8 +89,8 @@ namespace Microsoft.Azure.Cosmos
         private void EnrichRequestMessage(RequestMessage requestMessage, DistributedTransactionServerRequest serverRequest)
         {
             // Set DTC-specific headers
-            requestMessage.Headers.Add(IdempotencyTokenHeader, serverRequest.IdempotencyToken.ToString());
-            requestMessage.Headers.Add("x-ms-cosmos-operation-type", "CommitDistributedTransaction");
+            requestMessage.Headers.Add("x-ms-cosmos-idempotency-token", serverRequest.IdempotencyToken.ToString());
+            requestMessage.Headers.Add("x-ms-cosmos-operation-type", requestMessage.OperationType.ToString());
             requestMessage.UseGatewayMode = true;
         }
 

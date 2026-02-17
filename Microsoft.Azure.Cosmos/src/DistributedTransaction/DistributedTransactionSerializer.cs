@@ -80,10 +80,11 @@ namespace Microsoft.Azure.Cosmos
                 jsonWriter.WriteString("id", operation.Id);
             }
 
-            // partitionKey
+            // partitionKey - already JSON, write as raw value
             if (operation.PartitionKeyJson != null)
             {
-                jsonWriter.WriteString("partitionKey", operation.PartitionKeyJson);
+                jsonWriter.WritePropertyName("partitionKey");
+                jsonWriter.WriteRawValue(operation.PartitionKeyJson);
             }
 
             // index (uint32)

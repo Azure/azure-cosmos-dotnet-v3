@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             serviceRequest.RequestContext.ClientRequestStatistics = clientSideRequestStatisticsTraceDatum;
 
             string authorization;
-            if (request.OperationType == OperationType.Batch && request.ResourceType == ResourceType.Document)
+            if (request.OperationType == OperationType.CommitDistributedTransaction && request.ResourceType == ResourceType.DistributedTransactionBatch)
             {
                 authorization = await ((ICosmosAuthorizationTokenProvider)this.client.DocumentClient).GetUserAuthorizationTokenAsync(
                     serviceRequest.ResourceAddress,
