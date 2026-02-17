@@ -15,9 +15,6 @@ namespace Microsoft.Azure.Cosmos
 
     internal class DistributedTransactionCommitter
     {
-        // TODO: Move to HttpConstants.HttpHeaders once DTC headers are added centrally
-        private const string IdempotencyTokenHeader = "x-ms-dtc-operation-id";
-
         private readonly IReadOnlyList<DistributedTransactionOperation> operations;
         private readonly CosmosClientContext clientContext;
 
@@ -92,7 +89,8 @@ namespace Microsoft.Azure.Cosmos
         private void EnrichRequestMessage(RequestMessage requestMessage, DistributedTransactionServerRequest serverRequest)
         {
             // Set DTC-specific headers
-            requestMessage.Headers.Add(IdempotencyTokenHeader, serverRequest.IdempotencyToken.ToString());
+            //TODO: update to HttpConstants.HttpHeaders.IdempotencyToken
+            requestMessage.Headers.Add("x-ms-cosmos-idempotency-token", serverRequest.IdempotencyToken.ToString());
             //TODO: update to HttpConstants.HttpHeaders.OperationType
             requestMessage.Headers.Add("x-ms-cosmos-operation-type", OperationType.CommitDistributedTransaction.ToString());
             requestMessage.UseGatewayMode = true;
