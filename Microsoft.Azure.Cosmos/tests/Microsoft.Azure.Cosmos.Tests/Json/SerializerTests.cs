@@ -168,5 +168,35 @@
             DateTime value = DateTime.MinValue;
             _ = JsonSerializer.Serialize(value);
         }
+
+        [TestMethod]
+        public void TestMaxNestingDepethResize()
+        {
+            Person person = null;
+
+            for(int generation = 500; generation > 0; generation--)
+            {
+                person = new Person("Name " + generation, generation, 0, Person.Gender.Agender, new List<Person>() { person });
+            }
+
+            ReadOnlyMemory<byte> result = JsonSerializer.Serialize(person);
+
+            CosmosElement cosmosElement = CosmosElement.CreateFromBuffer(result);
+
+            while (cosmosElement is CosmosObject cosmosObject)
+            {
+                Assert.IsTrue(cosmosObject.TryGetValue("Name", out CosmosString personName));
+                Assert.AreEqual(person.Name, personName.Value.ToString());
+
+                Assert.IsTrue(cosmosObject.TryGetValue("Age", out CosmosNumber personAge));
+                Assert.AreEqual(person.Age, personAge.Value);
+
+                Assert.IsTrue(cosmosObject.TryGetValue("Children", out CosmosArray personChildren));
+                Assert.AreEqual(person.Children.Count, personChildren.Count);
+
+                cosmosElement = personChildren?[0];
+                person = person.Children?[0];
+            }
+        }
     }
 }
