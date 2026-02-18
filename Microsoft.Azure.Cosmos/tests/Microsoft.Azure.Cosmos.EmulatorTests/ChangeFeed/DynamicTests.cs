@@ -79,6 +79,44 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         }
 
         [TestMethod]
+        public async Task TestWithRunningProcessor_ImmediateWriteAfterStart()
+        {
+            int partitionKey = 0;
+            ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
+
+            int processedDocCount = 0;
+            string accumulator = string.Empty;
+            ChangeFeedProcessor processor = this.Container
+                .GetChangeFeedProcessorBuilder("test", async (ChangeFeedProcessorContext context, IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+                {
+                    await this.ValidateContextAsync(context);
+                    processedDocCount += docs.Count();
+                    foreach (dynamic doc in docs)
+                    {
+                        accumulator += doc.id.ToString() + ".";
+                    }
+
+                    if (processedDocCount == 10)
+                    {
+                        allDocsProcessed.Set();
+                    }
+                })
+                .WithInstanceName("random")
+                .WithLeaseContainer(this.LeaseContainer).Build();
+
+            await processor.StartAsync();
+            foreach (int id in Enumerable.Range(0, 10))
+            {
+                await this.Container.CreateItemAsync<dynamic>(new { id = id.ToString(), pk = partitionKey });
+            }
+
+            bool isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+            await processor.StopAsync();
+            Assert.IsTrue(isStartOk, "Timed out waiting for docs to process");
+            Assert.AreEqual("0.1.2.3.4.5.6.7.8.9.", accumulator);
+        }
+
+        [TestMethod]
         public async Task TestWithRunningProcessor_WithManualCheckpoint()
         {
             int leaseAcquireCount = 0;

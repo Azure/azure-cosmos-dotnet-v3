@@ -132,6 +132,142 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         }
 
         [TestMethod]
+        public async Task StartAsync_SetsStartTime_WhenNoStartOptionsProvided()
+        {
+            Mock<DocumentServiceLeaseStore> leaseStore = new Mock<DocumentServiceLeaseStore>();
+            leaseStore.Setup(l => l.IsInitializedAsync()).ReturnsAsync(true);
+
+            Mock<DocumentServiceLeaseContainer> leaseContainer = new Mock<DocumentServiceLeaseContainer>();
+            leaseContainer.Setup(l => l.GetOwnedLeasesAsync()).Returns(Task.FromResult(Enumerable.Empty<DocumentServiceLease>()));
+            leaseContainer.Setup(l => l.GetAllLeasesAsync()).ReturnsAsync(new List<DocumentServiceLease>());
+
+            Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
+            leaseStoreManager.Setup(l => l.LeaseContainer).Returns(leaseContainer.Object);
+            leaseStoreManager.Setup(l => l.LeaseManager).Returns(Mock.Of<DocumentServiceLeaseManager>);
+            leaseStoreManager.Setup(l => l.LeaseStore).Returns(leaseStore.Object);
+            leaseStoreManager.Setup(l => l.LeaseCheckpointer).Returns(Mock.Of<DocumentServiceLeaseCheckpointer>);
+
+            ChangeFeedProcessorOptions options = new ChangeFeedProcessorOptions();
+            ChangeFeedProcessorCore processor = null;
+            try
+            {
+                processor = ChangeFeedProcessorCoreTests.CreateProcessor(out _, out _);
+                processor.ApplyBuildConfiguration(
+                    leaseStoreManager.Object,
+                    null,
+                    "instanceName",
+                    new ChangeFeedLeaseOptions(),
+                    options,
+                    ChangeFeedProcessorCoreTests.GetMockedContainer("monitored"));
+
+                await processor.StartAsync();
+
+                Assert.IsTrue(options.StartTime.HasValue);
+                Assert.AreEqual(DateTimeKind.Utc, options.StartTime.Value.Kind);
+            }
+            finally
+            {
+                if (processor != null)
+                {
+                    await processor.StopAsync();
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task StartAsync_DoesNotOverrideExplicitStartTime()
+        {
+            Mock<DocumentServiceLeaseStore> leaseStore = new Mock<DocumentServiceLeaseStore>();
+            leaseStore.Setup(l => l.IsInitializedAsync()).ReturnsAsync(true);
+
+            Mock<DocumentServiceLeaseContainer> leaseContainer = new Mock<DocumentServiceLeaseContainer>();
+            leaseContainer.Setup(l => l.GetOwnedLeasesAsync()).Returns(Task.FromResult(Enumerable.Empty<DocumentServiceLease>()));
+            leaseContainer.Setup(l => l.GetAllLeasesAsync()).ReturnsAsync(new List<DocumentServiceLease>());
+
+            Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
+            leaseStoreManager.Setup(l => l.LeaseContainer).Returns(leaseContainer.Object);
+            leaseStoreManager.Setup(l => l.LeaseManager).Returns(Mock.Of<DocumentServiceLeaseManager>);
+            leaseStoreManager.Setup(l => l.LeaseStore).Returns(leaseStore.Object);
+            leaseStoreManager.Setup(l => l.LeaseCheckpointer).Returns(Mock.Of<DocumentServiceLeaseCheckpointer>);
+
+            DateTime explicitStartTime = DateTime.UtcNow.AddMinutes(-5);
+            ChangeFeedProcessorOptions options = new ChangeFeedProcessorOptions
+            {
+                StartTime = explicitStartTime,
+            };
+
+            ChangeFeedProcessorCore processor = null;
+            try
+            {
+                processor = ChangeFeedProcessorCoreTests.CreateProcessor(out _, out _);
+                processor.ApplyBuildConfiguration(
+                    leaseStoreManager.Object,
+                    null,
+                    "instanceName",
+                    new ChangeFeedLeaseOptions(),
+                    options,
+                    ChangeFeedProcessorCoreTests.GetMockedContainer("monitored"));
+
+                await processor.StartAsync();
+
+                Assert.AreEqual(explicitStartTime, options.StartTime);
+            }
+            finally
+            {
+                if (processor != null)
+                {
+                    await processor.StopAsync();
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task StartAsync_DoesNotSetStartTime_WhenStartFromBeginning()
+        {
+            Mock<DocumentServiceLeaseStore> leaseStore = new Mock<DocumentServiceLeaseStore>();
+            leaseStore.Setup(l => l.IsInitializedAsync()).ReturnsAsync(true);
+
+            Mock<DocumentServiceLeaseContainer> leaseContainer = new Mock<DocumentServiceLeaseContainer>();
+            leaseContainer.Setup(l => l.GetOwnedLeasesAsync()).Returns(Task.FromResult(Enumerable.Empty<DocumentServiceLease>()));
+            leaseContainer.Setup(l => l.GetAllLeasesAsync()).ReturnsAsync(new List<DocumentServiceLease>());
+
+            Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
+            leaseStoreManager.Setup(l => l.LeaseContainer).Returns(leaseContainer.Object);
+            leaseStoreManager.Setup(l => l.LeaseManager).Returns(Mock.Of<DocumentServiceLeaseManager>);
+            leaseStoreManager.Setup(l => l.LeaseStore).Returns(leaseStore.Object);
+            leaseStoreManager.Setup(l => l.LeaseCheckpointer).Returns(Mock.Of<DocumentServiceLeaseCheckpointer>);
+
+            ChangeFeedProcessorOptions options = new ChangeFeedProcessorOptions
+            {
+                StartFromBeginning = true,
+            };
+
+            ChangeFeedProcessorCore processor = null;
+            try
+            {
+                processor = ChangeFeedProcessorCoreTests.CreateProcessor(out _, out _);
+                processor.ApplyBuildConfiguration(
+                    leaseStoreManager.Object,
+                    null,
+                    "instanceName",
+                    new ChangeFeedLeaseOptions(),
+                    options,
+                    ChangeFeedProcessorCoreTests.GetMockedContainer("monitored"));
+
+                await processor.StartAsync();
+
+                Assert.IsNull(options.StartTime);
+            }
+            finally
+            {
+                if (processor != null)
+                {
+                    await processor.StopAsync();
+                }
+            }
+        }
+
+        [TestMethod]
         public async Task ObserverIsCreated()
         {
             IEnumerable<DocumentServiceLease> ownedLeases = new List<DocumentServiceLease>()

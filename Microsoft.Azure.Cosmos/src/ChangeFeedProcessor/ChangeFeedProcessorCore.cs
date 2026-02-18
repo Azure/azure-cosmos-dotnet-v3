@@ -59,6 +59,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         {
             if (!this.initialized)
             {
+                if (!this.changeFeedProcessorOptions.StartFromBeginning
+                    && this.changeFeedProcessorOptions.StartTime == null
+                    && string.IsNullOrEmpty(this.changeFeedProcessorOptions.StartContinuation))
+                {
+                    this.changeFeedProcessorOptions.StartTime = DateTime.UtcNow;
+                }
+
                 await this.InitializeAsync().ConfigureAwait(false);
             }
 
