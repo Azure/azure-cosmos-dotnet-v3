@@ -298,11 +298,21 @@ namespace Microsoft.Azure.Cosmos
                 request.Headers.Add(HttpConstants.HttpHeaders.ResponseContinuationTokenLimitInKB, this.ResponseContinuationTokenLimitInKb.ToString());
             }
 
-            // All query APIs (GetItemQueryIterator, GetItemLinqQueryable and GetItemQueryStreamIterator) turn into ReadFeed operation if query text is null.
-            // In such a case, query pipelines are still involved (including QueryRequestOptions). In general backend only honors SupportedSerializationFormats
-            //  for OperationType Query but has a bug where it returns a binary response for ReadFeed API when partition key is also specified in the request.
             if (request.OperationType == OperationType.Query)
             {
+                // If a partition key is provided, set the logical partition key header for proper routing
+                // This is used for both full and partial (prefix) partition keys in hierarchical partitioning
+                // Only set the header if it hasn't been set already to avoid clobbering existing values
+                if (this.PartitionKey.HasValue &&
+                    !this.PartitionKey.Value.IsNone &&
+                    string.IsNullOrEmpty(request.Headers.CosmosMessageHeaders.PartitionKey))
+                {
+                    request.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, this.PartitionKey.Value.InternalKey.ToJsonString());
+                }
+
+                // All query APIs (GetItemQueryIterator, GetItemLinqQueryable and GetItemQueryStreamIterator) turn into ReadFeed operation if query text is null.
+                // In such a case, query pipelines are still involved (including QueryRequestOptions). In general backend only honors SupportedSerializationFormats
+                //  for OperationType Query but has a bug where it returns a binary response for ReadFeed API when partition key is also specified in the request.
                 request.Headers.CosmosMessageHeaders.SupportedSerializationFormats = this.SupportedSerializationFormats?.ToString() ?? DocumentQueryExecutionContextBase.DefaultSupportedSerializationFormats;
             }
 
