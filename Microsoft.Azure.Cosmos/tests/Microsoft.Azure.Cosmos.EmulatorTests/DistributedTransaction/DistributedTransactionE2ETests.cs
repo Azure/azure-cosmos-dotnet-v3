@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class DistributedTransactionE2ETests : BaseCosmosClientHelper
     {   
-        private const string IdempotencyTokenHeader = "x-ms-dtc-operation-id";
+        private const string IdempotencyTokenHeader = "x-ms-cosmos-idempotency-token";
         private const string PartitionKeyPath = "/pk";
 
         private Container container;
@@ -357,7 +357,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             public override async Task<ResponseMessage> SendAsync(RequestMessage request, CancellationToken cancellationToken)
             {
-                if (request.RequestUriString?.StartsWith("/dtc/", StringComparison.OrdinalIgnoreCase) == true)
+                if (request.RequestUriString?.EndsWith("/dtc", StringComparison.OrdinalIgnoreCase) == true)
                 {
                     this.CapturedRequest = request;
 
