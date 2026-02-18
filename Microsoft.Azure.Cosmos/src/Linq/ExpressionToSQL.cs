@@ -861,7 +861,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             return list;
         }
 
-        private static SqlObjectProperty[] CreateInitializers(ReadOnlyCollection<Expression> arguments, ReadOnlyCollection<MemberInfo> members, TranslationContext context)
+        private static SqlObjectProperty[] CreateInitializers(ReadOnlyCollection<Expression> arguments, IReadOnlyList<MemberInfo> members, TranslationContext context)
         {
             if (arguments.Count != members.Count)
             {
@@ -916,12 +916,37 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             if (inputExpression.Arguments.Count > 0)
             {
-                if (inputExpression.Members == null)
+                BindingFlags flags = BindingFlags.Instance | BindingFlags.Public;
+                PropertyInfo[] properties = inputExpression.Type.GetProperties(flags);
+                FieldInfo[] fields = inputExpression.Type.GetFields(flags);
+
+                // When serializers bind constructor parameters to fields/ properties during deserialization,
+                // they tipically do so in a case-insensitive manner. (STJ, Newtonsoft)
+                // If we match a parameter here that the serializer doesn't allow, an exception will be thrown later by the serializer.
+                Dictionary<(string Name, Type Type), MemberInfo> memberLookup = new (properties.Length + fields.Length, MemberKeyComparer.Instance);
+                foreach (PropertyInfo property in properties)
                 {
-                    throw new DocumentQueryException(ClientResources.ConstructorInvocationNotSupported);
+                    memberLookup[(property.Name, property.PropertyType)] = property;
+                }
+                foreach (FieldInfo field in fields) 
+                { 
+                    memberLookup[(field.Name, field.FieldType)] = field; 
                 }
 
-                SqlObjectProperty[] propertyBindings = ExpressionToSql.CreateInitializers(inputExpression.Arguments, inputExpression.Members, context);
+                ParameterInfo[] parameters = inputExpression.Constructor.GetParameters();
+                MemberInfo[] members = new MemberInfo[parameters.Length];
+                for (int i = 0; i < parameters.Length; i++)
+                {
+                    ParameterInfo p = parameters[i];
+                    if (!memberLookup.TryGetValue((p.Name, Type: p.ParameterType), out MemberInfo member))
+                    {
+                        throw new DocumentQueryException(ClientResources.ConstructorInvocationNotSupported);
+                    }
+
+                    members[i] = member;
+                }
+
+                SqlObjectProperty[] propertyBindings = ExpressionToSql.CreateInitializers(inputExpression.Arguments, members, context);
                 SqlObjectCreateScalarExpression create = SqlObjectCreateScalarExpression.Create(propertyBindings);
                 return create;
             }
@@ -934,8 +959,14 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         private static SqlScalarExpression VisitMemberInit(MemberInitExpression inputExpression, TranslationContext context)
         {
-            ExpressionToSql.VisitNew(inputExpression.NewExpression, context); // Return value is ignored
+            SqlScalarExpression newExpression = ExpressionToSql.VisitNew(inputExpression.NewExpression, context);
             SqlObjectProperty[] propertyBindings = ExpressionToSql.VisitBindingList(inputExpression.Bindings, context);
+
+            if ((newExpression as SqlObjectCreateScalarExpression) != null)
+            {
+                propertyBindings = propertyBindings.Concat(((SqlObjectCreateScalarExpression)newExpression).Properties).ToArray();
+            }
+
             SqlObjectCreateScalarExpression create = SqlObjectCreateScalarExpression.Create(propertyBindings);
             return create;
         }
@@ -2398,6 +2429,25 @@ namespace Microsoft.Azure.Cosmos.Linq
             ArrayScalarExpression,
             ExistsScalarExpression,
             SubqueryScalarExpression,
+        }
+
+        private sealed class MemberKeyComparer : IEqualityComparer<(string Name, Type Type)>
+        {
+            private MemberKeyComparer()
+            {
+            }
+
+            public static readonly MemberKeyComparer Instance = new ();
+
+            public bool Equals((string Name, Type Type) x, (string Name, Type Type) y)
+            {
+                return StringComparer.OrdinalIgnoreCase.Equals(x.Name, y.Name) && x.Type == y.Type;
+            }
+
+            public int GetHashCode((string Name, Type Type) obj)
+            {
+                return HashCode.Combine(StringComparer.OrdinalIgnoreCase.GetHashCode(obj.Name), obj.Type);
+            }
         }
     }
 }
