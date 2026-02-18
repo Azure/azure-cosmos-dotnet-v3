@@ -122,6 +122,26 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         }
 
         [TestMethod]
+        [Owner("ntripician")]
+        public void ValidateTryGetLocationForGatewayDiagnosticsOnDefaultEndpointForMultiMaster()
+        {
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: true,
+                enableEndpointDiscovery: true,
+                isPreferredLocationsListEmpty: false);
+
+            string expectedHubRegionName = this.databaseAccount.WriteLocationsInternal.First().Name;
+
+            Assert.AreEqual(expectedHubRegionName, this.cache.GetLocation(LocationCacheTests.DefaultEndpoint));
+
+            Assert.AreEqual(true, this.cache.TryGetLocationForGatewayDiagnostics(LocationCacheTests.DefaultEndpoint, out string regionName));
+            Assert.AreEqual(expectedHubRegionName, regionName);
+
+            Assert.AreEqual(true, this.cache.TryGetLocationForGatewayDiagnostics(new Uri(LocationCacheTests.DefaultEndpoint, "random/path"), out regionName));
+            Assert.AreEqual(expectedHubRegionName, regionName);
+        }
+
+        [TestMethod]
         [Owner("atulk")]
         public async Task ValidateRetryOnSessionNotAvailableWithDisableMultipleWriteLocationsAndEndpointDiscoveryDisabled()
         {
