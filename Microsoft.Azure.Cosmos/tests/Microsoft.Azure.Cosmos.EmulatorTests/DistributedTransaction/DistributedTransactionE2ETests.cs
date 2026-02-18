@@ -168,9 +168,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     ("partitionKey", JsonValueKind.Array),
                     ("index", JsonValueKind.Number),
                     ("operationType", JsonValueKind.String),
-                    ("resourceType", JsonValueKind.String),
-                    ("sessionToken", JsonValueKind.String),
-                    ("etag", JsonValueKind.String)
+                    ("resourceType", JsonValueKind.String)
                 };
 
                 foreach ((string property, JsonValueKind expectedKind) in requiredFields)
@@ -182,6 +180,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     ("id", JsonValueKind.String),
                     ("resourceBody", JsonValueKind.Object),
+                    ("sessionToken", JsonValueKind.String),
+                    ("etag", JsonValueKind.String),
                 };
 
                 foreach ((string property, JsonValueKind expectedKind) in optionalFields)
