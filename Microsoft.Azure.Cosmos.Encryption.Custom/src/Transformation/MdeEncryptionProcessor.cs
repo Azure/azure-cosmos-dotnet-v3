@@ -138,14 +138,25 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            MemoryStream ms = new ();
-            DecryptionContext context = await this.StreamProcessor.DecryptStreamAsync(input, ms, encryptor, properties, diagnosticsContext, cancellationToken);
-            if (context == null)
+            PooledMemoryStream ms = new ();
+            try
             {
-                return (input, null);
-            }
+                DecryptionContext context = await this.StreamProcessor.DecryptStreamAsync(input, ms, encryptor, properties, diagnosticsContext, cancellationToken);
+                if (context == null)
+                {
+                    // CRITICAL: Must dispose PooledMemoryStream to prevent memory leak
+                    await ms.DisposeAsync();
+                    return (input, null);
+                }
 
-            return (ms, context);
+                return (ms, context);  // Ownership transfers successfully
+            }
+            catch
+            {
+                // CRITICAL: Dispose PooledMemoryStream on exception to prevent memory leak
+                await ms.DisposeAsync();
+                throw;  // Rethrow to preserve original exception
+            }
         }
 
         public async Task<DecryptionContext> DecryptStreamAsync(

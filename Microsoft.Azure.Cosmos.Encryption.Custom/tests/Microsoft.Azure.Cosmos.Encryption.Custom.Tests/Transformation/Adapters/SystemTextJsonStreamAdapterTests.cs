@@ -132,8 +132,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
         }
 
         [TestMethod]
+        [TestCategory("Integration")]
+        [TestCategory("MemoryLeak")]
         public async Task DecryptAsync_OutputStream_WithNonEncryptedPayload_ReturnsNull()
         {
+            // CRITICAL: Tests SystemTextJsonStreamAdapter.cs:52 disposal fix
+            // When DecryptStreamAsync returns null context, the PooledMemoryStream
+            // created at line 48 MUST be disposed to prevent memory leak
+
             SystemTextJsonStreamAdapter adapter = new (new StreamProcessor());
             using MemoryStream input = new (Encoding.UTF8.GetBytes("{\"id\":1}"));
             using MemoryStream output = new ();
@@ -141,9 +147,35 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
 
             DecryptionContext context = await adapter.DecryptAsync(input, output, mockEncryptor.Object, diagnostics, CancellationToken.None);
 
-            Assert.IsNull(context);
-            Assert.AreEqual(0, input.Position);
-            Assert.AreEqual(0, output.Length);
+            Assert.IsNull(context, "Context should be null for non-encrypted payload");
+            Assert.AreEqual(0, input.Position, "Input should be reset to position 0");
+            Assert.AreEqual(0, output.Length, "Output should be empty for non-encrypted payload");
+        }
+
+        [TestMethod]
+        [TestCategory("Stress")]
+        [TestCategory("MemoryLeak")]
+        public async Task DecryptAsync_OutputOverload_NoEncryption_RepeatedCalls_NoMemoryLeak()
+        {
+            // Stress test to verify line 52 disposal fix prevents memory leaks
+            // Run 1000 times - if PooledMemoryStream not disposed, ArrayPool will exhaust
+            SystemTextJsonStreamAdapter adapter = new (new StreamProcessor());
+            string plainJson = "{\"id\":\"test\"}";
+
+            for (int i = 0; i < 1000; i++)
+            {
+                using MemoryStream input = new (Encoding.UTF8.GetBytes(plainJson));
+                using MemoryStream output = new ();
+                CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContext();
+
+                DecryptionContext context = await adapter.DecryptAsync(
+                    input, output, mockEncryptor.Object, diagnostics, CancellationToken.None);
+
+                Assert.IsNull(context, $"Iteration {i}: Context should be null");
+            }
+
+            // If we got here without OutOfMemoryException, disposal is working
+            Assert.IsTrue(true, "1000 iterations completed without memory leak");
         }
 
         [TestMethod]

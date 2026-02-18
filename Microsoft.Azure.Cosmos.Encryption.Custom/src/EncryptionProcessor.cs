@@ -247,24 +247,34 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Debug.Assert(diagnosticsContext != null);
             input.Position = 0;
 
-            EncryptionPropertiesWrapper properties = await System.Text.Json.JsonSerializer.DeserializeAsync<EncryptionPropertiesWrapper>(input, cancellationToken: cancellationToken);
+            EncryptionPropertiesWrapper properties = await PooledJsonSerializer.DeserializeFromStreamAsync<EncryptionPropertiesWrapper>(input, cancellationToken: cancellationToken);
             input.Position = 0;
             if (properties?.EncryptionProperties == null)
             {
                 return (input, null);
             }
 
-            MemoryStream ms = new ();
-
-            DecryptionContext context = await MdeEncryptionProcessor.DecryptStreamAsync(input, ms, encryptor, properties.EncryptionProperties, diagnosticsContext, cancellationToken);
-            if (context == null)
+            PooledMemoryStream ms = new ();
+            try
             {
-                input.Position = 0;
-                return (input, null);
-            }
+                DecryptionContext context = await MdeEncryptionProcessor.DecryptStreamAsync(input, ms, encryptor, properties.EncryptionProperties, diagnosticsContext, cancellationToken);
+                if (context == null)
+                {
+                    // CRITICAL: Must dispose PooledMemoryStream to prevent memory leak
+                    await ms.DisposeAsync();
+                    input.Position = 0;
+                    return (input, null);
+                }
 
-            await input.DisposeAsync();
-            return (ms, context);
+                await input.DisposeAsync();
+                return (ms, context);  // Ownership transfers successfully
+            }
+            catch
+            {
+                // CRITICAL: Dispose PooledMemoryStream on exception to prevent memory leak
+                await ms.DisposeAsync();
+                throw;  // Rethrow to preserve original exception
+            }
         }
 #endif
 
