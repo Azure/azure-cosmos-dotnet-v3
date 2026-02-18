@@ -143,13 +143,56 @@ namespace Microsoft.Azure.Cosmos
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            requestOptions.MaxItemCount = pageSize;
+            // Create a copy of the requestOptions to avoid modifying the original object
+            // that users might be caching. This fixes issue #5225.
+            QueryRequestOptions requestOptionsCopy = new QueryRequestOptions
+            {
+                ResponseContinuationTokenLimitInKb = requestOptions.ResponseContinuationTokenLimitInKb,
+                EnableScanInQuery = requestOptions.EnableScanInQuery,
+                EnableLowPrecisionOrderBy = requestOptions.EnableLowPrecisionOrderBy,
+                EnableOptimisticDirectExecution = requestOptions.EnableOptimisticDirectExecution,
+                MaxBufferedItemCount = requestOptions.MaxBufferedItemCount,
+                MaxItemCount = requestOptions.MaxItemCount,
+                MaxConcurrency = requestOptions.MaxConcurrency,
+                PartitionKey = requestOptions.PartitionKey,
+                PopulateIndexMetrics = requestOptions.PopulateIndexMetrics,
+                PopulateQueryAdvice = requestOptions.PopulateQueryAdvice,
+                ConsistencyLevel = requestOptions.ConsistencyLevel,
+                SessionToken = requestOptions.SessionToken,
+                DedicatedGatewayRequestOptions = requestOptions.DedicatedGatewayRequestOptions,
+                QueryTextMode = requestOptions.QueryTextMode,
+                CosmosElementContinuationToken = requestOptions.CosmosElementContinuationToken,
+                StartId = requestOptions.StartId,
+                EndId = requestOptions.EndId,
+                EnumerationDirection = requestOptions.EnumerationDirection,
+                CosmosSerializationFormatOptions = requestOptions.CosmosSerializationFormatOptions,
+                SupportedSerializationFormats = requestOptions.SupportedSerializationFormats,
+                ReturnResultsInDeterministicOrder = requestOptions.ReturnResultsInDeterministicOrder,
+                TestSettings = requestOptions.TestSettings,
+                FeedRange = requestOptions.FeedRange,
+                IsHybridSearchQueryPlanOptimizationDisabled = requestOptions.IsHybridSearchQueryPlanOptimizationDisabled,
+                EnableDistributedQueryGatewayMode = requestOptions.EnableDistributedQueryGatewayMode,
+                // Base RequestOptions properties
+                IfMatchEtag = requestOptions.IfMatchEtag,
+                IfNoneMatchEtag = requestOptions.IfNoneMatchEtag,
+                Properties = requestOptions.Properties,
+                AddRequestHeaders = requestOptions.AddRequestHeaders,
+                PriorityLevel = requestOptions.PriorityLevel,
+                CosmosThresholdOptions = requestOptions.CosmosThresholdOptions,
+                ExcludeRegions = requestOptions.ExcludeRegions,
+                AvailabilityStrategy = requestOptions.AvailabilityStrategy,
+                IsEffectivePartitionKeyRouting = requestOptions.IsEffectivePartitionKeyRouting,
+                BaseConsistencyLevel = requestOptions.BaseConsistencyLevel
+            };
+
+            // Now modify the copy instead of the original
+            requestOptionsCopy.MaxItemCount = pageSize;
 
             ResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,
                 resourceType: resourceType,
                 operationType: operationType,
-                requestOptions: requestOptions,
+                requestOptions: requestOptionsCopy,
                 feedRange: feedRange,
                 cosmosContainerCore: this.cosmosContainerCore,
                 streamPayload: this.clientContext.SerializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, resourceType),
