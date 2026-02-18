@@ -165,7 +165,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     ("collectionName", JsonValueKind.String),
                     ("collectionResourceId", JsonValueKind.String),
                     ("databaseResourceId", JsonValueKind.String),
-                    ("partitionKey", JsonValueKind.String),
+                    ("partitionKey", JsonValueKind.Array),
                     ("index", JsonValueKind.Number),
                     ("operationType", JsonValueKind.String),
                     ("resourceType", JsonValueKind.String),
