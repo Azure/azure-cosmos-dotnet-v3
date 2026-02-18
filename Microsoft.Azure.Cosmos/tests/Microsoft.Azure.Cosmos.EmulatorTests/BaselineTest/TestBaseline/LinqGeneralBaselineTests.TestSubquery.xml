@@ -960,7 +960,7 @@ JOIN (
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE POWER(v0, v2) 
+SELECT VALUE POWER(v0, v1) 
 FROM root 
 JOIN (
     SELECT VALUE SUM(ARRAY_LENGTH(c0["Pets"])) 
@@ -970,13 +970,11 @@ JOIN (
         SELECT VALUE COUNT(1) 
         FROM root 
         JOIN c1 IN root["Children"] 
-        JOIN (
-            SELECT VALUE EXISTS(
-                SELECT VALUE p0 
-                FROM c1 
-                JOIN p0 IN c1["Pets"] 
-                WHERE ((LENGTH(p0["GivenName"]) = 0) OR (SUBSTRING(p0["GivenName"], 0, 1) = "A")))) AS v1 
-                WHERE v1) AS v2
+        WHERE EXISTS(
+            SELECT VALUE p0 
+            FROM c1 
+            JOIN p0 IN c1["Pets"] 
+            WHERE ((LENGTH(p0["GivenName"]) = 0) OR (SUBSTRING(p0["GivenName"], 0, 1) = "A")))) AS v1
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1178,19 +1176,17 @@ FROM (
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE v1 
+SELECT VALUE v0 
 FROM root 
 JOIN (
-    SELECT VALUE EXISTS(
+    SELECT VALUE SUM(ARRAY_LENGTH(c1["Pets"])) 
+    FROM root 
+    JOIN c1 IN root["Children"]) AS v0 
+    WHERE (EXISTS(
         SELECT VALUE c0 
         FROM root 
         JOIN c0 IN root["Children"] 
-        WHERE (c0["Grade"] > 90))) AS v0 
-        JOIN (
-            SELECT VALUE SUM(ARRAY_LENGTH(c1["Pets"])) 
-            FROM root 
-            JOIN c1 IN root["Children"]) AS v1 
-            WHERE (v0 AND root["IsRegistered"])
+        WHERE (c0["Grade"] > 90)) AND root["IsRegistered"])
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1201,25 +1197,23 @@ JOIN (
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE v2 
+SELECT VALUE v1 
 FROM root 
 JOIN (
-    SELECT VALUE EXISTS(
-        SELECT VALUE c0 
+    SELECT VALUE COUNT(1) 
+    FROM root 
+    JOIN c1 IN root["Children"] 
+    WHERE (ARRAY_LENGTH(c1["Things"]) > 3)) AS v0 
+    JOIN (
+        SELECT VALUE SUM(ARRAY_LENGTH(c2["Pets"])) 
         FROM root 
-        JOIN c0 IN root["Children"] 
-        WHERE (c0["Grade"] > 90))) AS v0 
-        JOIN (
-            SELECT VALUE COUNT(1) 
+        JOIN c2 IN root["Children"]) AS v1 
+        WHERE (EXISTS(
+            SELECT VALUE c0 
             FROM root 
-            JOIN c1 IN root["Children"] 
-            WHERE (ARRAY_LENGTH(c1["Things"]) > 3)) AS v1 
-            JOIN (
-                SELECT VALUE SUM(ARRAY_LENGTH(c2["Pets"])) 
-                FROM root 
-                JOIN c2 IN root["Children"]) AS v2 
-                WHERE (v0 AND root["IsRegistered"]) 
-                ORDER BY v1 ASC
+            JOIN c0 IN root["Children"] 
+            WHERE (c0["Grade"] > 90)) AND root["IsRegistered"]) 
+            ORDER BY v0 ASC
 ]]></SqlQuery>
       <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","code":2206,"message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]},0x800A0B00]]></ErrorMessage>
     </Output>
@@ -1371,13 +1365,11 @@ JOIN (
 SELECT VALUE c0 
 FROM root 
 JOIN c0 IN root["Children"] 
-JOIN (
-    SELECT VALUE EXISTS(
-        SELECT VALUE p0 
-        FROM c0 
-        JOIN p0 IN c0["Pets"] 
-        WHERE (LENGTH(p0["GivenName"]) > 10))) AS v0 
-        WHERE v0
+WHERE EXISTS(
+    SELECT VALUE p0 
+    FROM c0 
+    JOIN p0 IN c0["Pets"] 
+    WHERE (LENGTH(p0["GivenName"]) > 10))
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1431,20 +1423,18 @@ JOIN (
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-JOIN (
-    SELECT VALUE EXISTS(
-        SELECT VALUE r0 
-        FROM (
-            SELECT VALUE v0 
-            FROM root 
-            JOIN c0 IN root["Children"] 
-            JOIN (
-                SELECT VALUE ARRAY(
-                    SELECT VALUE p0["GivenName"] 
-                    FROM c0 
-                    JOIN p0 IN c0["Pets"])) AS v0) AS r0 
-                    WHERE (ARRAY_LENGTH(r0) > 3))) AS v1 
-                    WHERE v1
+WHERE EXISTS(
+    SELECT VALUE r0 
+    FROM (
+        SELECT VALUE v0 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        JOIN (
+            SELECT VALUE ARRAY(
+                SELECT VALUE p0["GivenName"] 
+                FROM c0 
+                JOIN p0 IN c0["Pets"])) AS v0) AS r0 
+                WHERE (ARRAY_LENGTH(r0) > 3))
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1492,21 +1482,19 @@ JOIN (
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE v1 
+SELECT VALUE v0 
 FROM root 
 JOIN c0 IN root["Children"] 
 JOIN (
-    SELECT VALUE EXISTS(
-        SELECT VALUE p0 
+    SELECT VALUE ARRAY(
+        SELECT VALUE LENGTH(p1["GivenName"]) 
         FROM c0 
-        JOIN p0 IN c0["Pets"] 
-        WHERE (LENGTH(p0["GivenName"]) > 20))) AS v0 
-        JOIN (
-            SELECT VALUE ARRAY(
-                SELECT VALUE LENGTH(p1["GivenName"]) 
-                FROM c0 
-                JOIN p1 IN c0["Pets"])) AS v1 
-                WHERE ((c0["Grade"] > 80) AND v0)
+        JOIN p1 IN c0["Pets"])) AS v0 
+        WHERE ((c0["Grade"] > 80) AND EXISTS(
+            SELECT VALUE p0 
+            FROM c0 
+            JOIN p0 IN c0["Pets"] 
+            WHERE (LENGTH(p0["GivenName"]) > 20)))
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1523,20 +1511,18 @@ FROM (
     FROM (
         SELECT DISTINCT VALUE root 
         FROM root) AS r0) AS r1 
-        JOIN (
-            SELECT VALUE EXISTS(
-                SELECT VALUE r2 
-                FROM (
-                    SELECT VALUE v1 
-                    FROM r1 
-                    JOIN c0 IN r1["Family"]["Children"] 
-                    JOIN (
-                        SELECT VALUE ARRAY(
-                            SELECT VALUE p0["GivenName"] 
-                            FROM c0 
-                            JOIN p0 IN c0["Pets"])) AS v1) AS r2 
-                            WHERE (ARRAY_LENGTH(r2) > 3))) AS v2 
-                            WHERE v2
+        WHERE EXISTS(
+            SELECT VALUE r2 
+            FROM (
+                SELECT VALUE v1 
+                FROM r1 
+                JOIN c0 IN r1["Family"]["Children"] 
+                JOIN (
+                    SELECT VALUE ARRAY(
+                        SELECT VALUE p0["GivenName"] 
+                        FROM c0 
+                        JOIN p0 IN c0["Pets"])) AS v1) AS r2 
+                        WHERE (ARRAY_LENGTH(r2) > 3))
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1688,20 +1674,18 @@ JOIN (
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE v1 
+SELECT VALUE v0 
 FROM root 
 JOIN (
     SELECT VALUE EXISTS(
         SELECT VALUE c0 
         FROM root 
         JOIN c0 IN root["Children"] 
-        JOIN (
-            SELECT VALUE EXISTS(
-                SELECT VALUE p0 
-                FROM c0 
-                JOIN p0 IN c0["Pets"] 
-                WHERE (LENGTH(p0["GivenName"]) > 10))) AS v0 
-                WHERE v0)) AS v1
+        WHERE EXISTS(
+            SELECT VALUE p0 
+            FROM c0 
+            JOIN p0 IN c0["Pets"] 
+            WHERE (LENGTH(p0["GivenName"]) > 10)))) AS v0
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1714,13 +1698,11 @@ JOIN (
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-JOIN (
-    SELECT VALUE EXISTS(
-        SELECT VALUE c0 
-        FROM root 
-        JOIN c0 IN root["Children"] 
-        WHERE (ARRAY_LENGTH(c0["Pets"]) > 0))) AS v0 
-        WHERE v0
+WHERE EXISTS(
+    SELECT VALUE c0 
+    FROM root 
+    JOIN c0 IN root["Children"] 
+    WHERE (ARRAY_LENGTH(c0["Pets"]) > 0))
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1733,13 +1715,11 @@ JOIN (
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-JOIN (
-    SELECT VALUE EXISTS(
-        SELECT VALUE c0 
-        FROM root 
-        JOIN c0 IN root["Children"] 
-        WHERE (ARRAY_LENGTH(c0["Pets"]) > 0))) AS v0 
-        WHERE (CONTAINS(root["FamilyId"], "a") AND v0)
+WHERE (CONTAINS(root["FamilyId"], "a") AND EXISTS(
+    SELECT VALUE c0 
+    FROM root 
+    JOIN c0 IN root["Children"] 
+    WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)))
 ]]></SqlQuery>
     </Output>
   </Result>

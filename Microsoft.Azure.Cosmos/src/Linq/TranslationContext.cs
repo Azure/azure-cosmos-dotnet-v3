@@ -79,6 +79,12 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </summary>
         private Stack<SubqueryBinding> subqueryBindingStack;
 
+        /// <summary>
+        /// Tracks the depth within WHERE clause predicates.
+        /// When > 0, we're inside a WHERE predicate and can potentially inline EXISTS expressions.
+        /// </summary>
+        private int wherePredicateDepth;
+
         private static readonly ICosmosLinqSerializerInternal DefaultLinqSerializer = new DefaultCosmosLinqSerializer(new CosmosLinqSerializerOptions().PropertyNamingPolicy);
 
         private static readonly MemberNames DefaultMemberNames = new MemberNames(new CosmosLinqSerializerOptions());
@@ -360,6 +366,34 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.NewBindings = new List<Binding>();
                 return bindings;
             }
+        }
+
+        /// <summary>
+        /// Enter a WHERE predicate context. While in this context, EXISTS expressions
+        /// can potentially be inlined instead of creating JOIN bindings.
+        /// </summary>
+        public void EnterWherePredicate()
+        {
+            this.wherePredicateDepth++;
+        }
+
+        /// <summary>
+        /// Exit a WHERE predicate context.
+        /// </summary>
+        public void ExitWherePredicate()
+        {
+            this.wherePredicateDepth--;
+            Debug.Assert(this.wherePredicateDepth >= 0, "WHERE predicate depth should not go negative");
+        }
+
+        /// <summary>
+        /// Returns true if we're at the top level of a WHERE predicate,
+        /// meaning EXISTS expressions can be inlined directly.
+        /// </summary>
+        /// <returns>True if at top level of WHERE predicate</returns>
+        public bool IsInWherePredicateContext()
+        {
+            return this.wherePredicateDepth > 0;
         }
     }
 
