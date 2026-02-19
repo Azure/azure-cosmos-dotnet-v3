@@ -7,10 +7,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
     using System;
     using System.Collections.Generic;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
     using Constants = Documents.Constants;
+    using PartitionKeyDefinition = Documents.PartitionKeyDefinition;
+    using PartitionKeyInternal = Documents.Routing.PartitionKeyInternal;
 
     internal sealed class PartitionedQueryExecutionInfo
     {
+        private List<Documents.Routing.Range<string>> queryRanges;
+
         public PartitionedQueryExecutionInfo()
         {
             this.Version = Constants.PartitionedQueryExecutionInfo.CurrentVersion;
@@ -30,8 +35,44 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             set;
         }
 
-        [JsonProperty(Constants.Properties.QueryRanges)]
+        /// <summary>
+        /// Gets or sets the query ranges. In thin client mode, this property
+        /// lazily converts PartitionKeyInternal ranges to EPK hex string ranges.
+        /// </summary>
+        [JsonIgnore]
         public List<Documents.Routing.Range<string>> QueryRanges
+        {
+            get
+            {
+                if (this.queryRanges != null)
+                {
+                    return this.queryRanges;
+                }
+
+                if (this.RawQueryRanges != null)
+                {
+                    if (this.PartitionKeyDefinition != null)
+                    {
+                        // convert PartitionKeyInternal format to EPK strings
+                        this.queryRanges = this.ParseQueryRangesWithPartitionKeyDefinition();
+                    }
+                    else
+                    {
+                        this.queryRanges = this.RawQueryRanges.ToObject<List<Documents.Routing.Range<string>>>();
+                    }
+                }
+
+                return this.queryRanges;
+            }
+            set => this.queryRanges = value;
+        }
+
+        /// <summary>
+        /// Raw query ranges from JSON deserialization. Used for thin client mode parsing.
+        /// In non-thin client mode, this is deserialized directly to QueryRanges.
+        /// </summary>
+        [JsonProperty(Constants.Properties.QueryRanges)]
+        internal JArray RawQueryRanges
         {
             get;
             set;
@@ -45,6 +86,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             get;
             set;
         }
+        /// <summary>
+        /// Partition key definition used for converting PartitionKeyInternal to EPK strings.
+        /// Must be set before accessing QueryRanges property in thin client mode.
+        /// </summary>
+        [JsonIgnore]
+        internal PartitionKeyDefinition PartitionKeyDefinition { get; set; }
 
         public override string ToString()
         {
@@ -67,6 +114,61 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             {
                 partitionedQueryExecutionInfo = default;
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// Parses query ranges for thin client mode where the proxy returns ranges 
+        /// in PartitionKeyInternal format (e.g., {"min": [[""]], "max": [["Infinity"]]})
+        /// and converts them to EPK hex string ranges.
+        /// </summary>
+        private List<Documents.Routing.Range<string>> ParseQueryRangesWithPartitionKeyDefinition()
+        {
+            List<Documents.Routing.Range<string>> epkRanges = new List<Documents.Routing.Range<string>>(this.RawQueryRanges.Count);
+
+            foreach (JToken rangeToken in this.RawQueryRanges)
+            {
+                if (!(rangeToken is JObject rangeObject))
+                {
+                    continue;
+                }
+
+                JToken minToken = rangeObject["min"];
+                JToken maxToken = rangeObject["max"];
+
+                PartitionKeyInternal minPk = PartitionedQueryExecutionInfo.ParsePartitionKeyInternal(minToken);
+                PartitionKeyInternal maxPk = PartitionedQueryExecutionInfo.ParsePartitionKeyInternal(maxToken);
+
+                string minEpk = minPk.GetEffectivePartitionKeyString(this.PartitionKeyDefinition);
+                string maxEpk = maxPk.GetEffectivePartitionKeyString(this.PartitionKeyDefinition);
+
+                bool isMinInclusive = rangeObject["isMinInclusive"]?.Value<bool>() ?? true;
+                bool isMaxInclusive = rangeObject["isMaxInclusive"]?.Value<bool>() ?? false;
+
+                epkRanges.Add(new Documents.Routing.Range<string>(minEpk, maxEpk, isMinInclusive, isMaxInclusive));
+            }
+
+            return epkRanges;
+        }
+
+        /// <summary>
+        /// Parses a JSON token representing a PartitionKeyInternal.
+        /// Handles formats like [[""]] (empty), [["Infinity"]] (infinity), or actual partition key values.
+        /// </summary>
+        private static PartitionKeyInternal ParsePartitionKeyInternal(JToken token)
+        {
+            if (token == null || token.Type == JTokenType.Null)
+            {
+                return PartitionKeyInternal.Empty;
+            }
+
+            try
+            {
+                return token.ToObject<PartitionKeyInternal>();
+            }
+            catch (JsonException)
+            {
+                return PartitionKeyInternal.Empty;
             }
         }
     }

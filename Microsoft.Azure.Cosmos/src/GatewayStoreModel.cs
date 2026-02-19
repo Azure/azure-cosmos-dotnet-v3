@@ -101,11 +101,15 @@ namespace Microsoft.Azure.Cosmos
                     request.RequestContext.RegionName = regionName;
                 }
 
+                bool isQueryPlanInThinClientMode = this.isThinClientEnabled
+                    && request.OperationType == OperationType.QueryPlan
+                    && request.ResourceType == ResourceType.Document;
+
                 bool isPPAFEnabled = this.IsPartitionLevelFailoverEnabled();
                 // This is applicable for both per partition automatic failover and per partition circuit breaker.
                 if ((isPPAFEnabled || this.isThinClientEnabled)
                     && !ReplicatedResourceClient.IsMasterResource(request.ResourceType)
-                    && (request.ResourceType.IsPartitioned() || request.ResourceType == ResourceType.StoredProcedure))
+                    && (request.ResourceType.IsPartitioned() || request.ResourceType == ResourceType.StoredProcedure || isQueryPlanInThinClientMode))
                 {
                     (bool isSuccess, PartitionKeyRange partitionKeyRange) = await TryResolvePartitionKeyRangeAsync(
                         request: request,
@@ -562,7 +566,8 @@ namespace Microsoft.Azure.Cosmos
                 || request.OperationType == OperationType.Upsert
                 || request.OperationType == OperationType.Replace
                 || request.OperationType == OperationType.Delete
-                || request.OperationType == OperationType.Query))
+                || request.OperationType == OperationType.Query
+                || request.OperationType == OperationType.QueryPlan))
             {
                 return true;
             }

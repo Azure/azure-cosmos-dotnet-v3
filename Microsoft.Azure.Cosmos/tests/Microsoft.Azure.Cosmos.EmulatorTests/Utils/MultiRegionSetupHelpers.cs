@@ -77,6 +77,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             [JsonPropertyName("other")]
             public string Other { get; set; }
+
+            [JsonPropertyName("sortField")]
+            public int SortField { get; set; }
         }
 
         internal class CosmosSystemTextJsonSerializer : CosmosSerializer
