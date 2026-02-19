@@ -92,6 +92,7 @@ namespace Microsoft.Azure.Cosmos
             requestMessage.Headers.Add("x-ms-cosmos-idempotency-token", serverRequest.IdempotencyToken.ToString());
             requestMessage.Headers.Add("x-ms-cosmos-operation-type", requestMessage.OperationType.ToString());
             requestMessage.UseGatewayMode = true;
+            requestMessage.Headers.Add("x-ms-cosmos-resource-type", requestMessage.ResourceType.ToString());
         }
 
         private Task AbortTransactionAsync(CancellationToken cancellationToken)

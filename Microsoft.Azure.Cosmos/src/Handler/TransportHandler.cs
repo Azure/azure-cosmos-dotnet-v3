@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 authorization = await ((ICosmosAuthorizationTokenProvider)this.client.DocumentClient).GetUserAuthorizationTokenAsync(
                     serviceRequest.ResourceAddress,
-                    String.Empty,
+                    "databaseaccount",
                     request.Method.ToString(),
                     serviceRequest.Headers,
                     AuthorizationTokenType.PrimaryMasterKey,

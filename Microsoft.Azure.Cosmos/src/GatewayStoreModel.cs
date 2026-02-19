@@ -129,7 +129,7 @@ namespace Microsoft.Azure.Cosmos
 
                 if (request.ResourceType == ResourceType.DistributedTransactionBatch && request.OperationType == OperationType.CommitDistributedTransaction)
                 {
-                    physicalAddress = new Uri(this.endpointManager.ResolveServiceEndpoint(request), String.Empty);
+                    physicalAddress = new Uri(this.endpointManager.ResolveServiceEndpoint(request), "/operations/dtc");
                 }
                 else
                 {
