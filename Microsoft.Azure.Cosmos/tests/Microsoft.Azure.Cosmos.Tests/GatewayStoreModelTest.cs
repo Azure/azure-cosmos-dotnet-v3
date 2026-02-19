@@ -1333,7 +1333,7 @@ namespace Microsoft.Azure.Cosmos
                 .ReturnsAsync(successResponse);
 
             DocumentServiceRequest request = DocumentServiceRequest.Create(
-                operationType: OperationType.QueryPlan,
+                operationType: OperationType.ReadFeed,
                 resourceType: ResourceType.Document,
                 resourceId: "NH1uAJ6ANm0=",
                 body: null,
