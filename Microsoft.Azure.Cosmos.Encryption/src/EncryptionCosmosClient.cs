@@ -249,6 +249,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <inheritdoc/>
         protected override void Dispose(bool disposing)
         {
+            if (disposing)
+            {
+                this.EncryptionKeyStoreProviderImpl.Dispose();
+            }
+
             this.cosmosClient.Dispose();
         }
 
