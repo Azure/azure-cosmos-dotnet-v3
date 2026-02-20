@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             // Arrange
             InMemoryKeyResolver resolver = new InMemoryKeyResolver();
             resolver.RegisterKey(TestKeyId, shift: 1);
-            EncryptionKeyStoreProviderImpl provider = new EncryptionKeyStoreProviderImpl(resolver, TestProviderName);
+            EncryptionKeyStoreProviderImpl provider = new CachingEncryptionKeyStoreProviderImpl(resolver, TestProviderName);
 
             // Act — prefetch the key asynchronously
             await provider.PrefetchUnwrapKeyAsync(TestKeyId, EncryptedKey, CancellationToken.None);
@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             // Arrange
             InMemoryKeyResolver resolver = new InMemoryKeyResolver();
             resolver.RegisterKey(TestKeyId, shift: 1);
-            EncryptionKeyStoreProviderImpl provider = new EncryptionKeyStoreProviderImpl(resolver, TestProviderName);
+            EncryptionKeyStoreProviderImpl provider = new CachingEncryptionKeyStoreProviderImpl(resolver, TestProviderName);
 
             // Act — prefetch twice in quick succession
             await provider.PrefetchUnwrapKeyAsync(TestKeyId, EncryptedKey, CancellationToken.None);
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             InMemoryKeyResolver resolver = new InMemoryKeyResolver();
             resolver.RegisterKey(TestKeyId, shift: 1);
             resolver.ResolveAsyncDelay = TimeSpan.FromSeconds(10); // simulate slow resolve
-            EncryptionKeyStoreProviderImpl provider = new EncryptionKeyStoreProviderImpl(resolver, TestProviderName);
+            EncryptionKeyStoreProviderImpl provider = new CachingEncryptionKeyStoreProviderImpl(resolver, TestProviderName);
 
             using CancellationTokenSource cts = new CancellationTokenSource();
             cts.Cancel(); // pre-cancel
@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             // Arrange
             InMemoryKeyResolver resolver = new InMemoryKeyResolver();
             resolver.RegisterKey(TestKeyId, shift: 1);
-            EncryptionKeyStoreProviderImpl provider = new EncryptionKeyStoreProviderImpl(resolver, TestProviderName);
+            EncryptionKeyStoreProviderImpl provider = new CachingEncryptionKeyStoreProviderImpl(resolver, TestProviderName);
 
             // Act
             await provider.PrefetchUnwrapKeyAsync(TestKeyId, EncryptedKey, CancellationToken.None);
@@ -126,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             byte[] encKeyA = PlainKey.Select(b => (byte)(b + 1)).ToArray();
             byte[] encKeyB = PlainKey.Select(b => (byte)(b + 2)).ToArray();
 
-            EncryptionKeyStoreProviderImpl provider = new EncryptionKeyStoreProviderImpl(resolver, TestProviderName);
+            EncryptionKeyStoreProviderImpl provider = new CachingEncryptionKeyStoreProviderImpl(resolver, TestProviderName);
 
             // Act
             await provider.PrefetchUnwrapKeyAsync("key-A", encKeyA, CancellationToken.None);
@@ -151,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             // Arrange — no prefetch call; cache is empty
             InMemoryKeyResolver resolver = new InMemoryKeyResolver();
             resolver.RegisterKey(TestKeyId, shift: 1);
-            EncryptionKeyStoreProviderImpl provider = new EncryptionKeyStoreProviderImpl(resolver, TestProviderName);
+            EncryptionKeyStoreProviderImpl provider = new CachingEncryptionKeyStoreProviderImpl(resolver, TestProviderName);
 
             // Act
             byte[] result = provider.UnwrapKey(TestKeyId, KeyEncryptionKeyAlgorithm.RSA_OAEP, EncryptedKey);
@@ -170,7 +170,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             // Arrange — cold cache, sync fallback will populate it
             InMemoryKeyResolver resolver = new InMemoryKeyResolver();
             resolver.RegisterKey(TestKeyId, shift: 1);
-            EncryptionKeyStoreProviderImpl provider = new EncryptionKeyStoreProviderImpl(resolver, TestProviderName);
+            EncryptionKeyStoreProviderImpl provider = new CachingEncryptionKeyStoreProviderImpl(resolver, TestProviderName);
 
             // Act — first call goes through sync path
             provider.UnwrapKey(TestKeyId, KeyEncryptionKeyAlgorithm.RSA_OAEP, EncryptedKey);
@@ -197,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             byte[] enc1 = plain.Select(b => (byte)(b + 3)).ToArray();
             byte[] enc2 = plain.Select(b => (byte)(b + 7)).ToArray();
 
-            EncryptionKeyStoreProviderImpl provider = new EncryptionKeyStoreProviderImpl(resolver, TestProviderName);
+            EncryptionKeyStoreProviderImpl provider = new CachingEncryptionKeyStoreProviderImpl(resolver, TestProviderName);
 
             // Act
             byte[] result1 = provider.UnwrapKey("key1", KeyEncryptionKeyAlgorithm.RSA_OAEP, enc1);
@@ -218,7 +218,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             // Arrange — prefetch the key, then hammer UnwrapKey from many threads
             InMemoryKeyResolver resolver = new InMemoryKeyResolver();
             resolver.RegisterKey(TestKeyId, shift: 1);
-            EncryptionKeyStoreProviderImpl provider = new EncryptionKeyStoreProviderImpl(resolver, TestProviderName);
+            EncryptionKeyStoreProviderImpl provider = new CachingEncryptionKeyStoreProviderImpl(resolver, TestProviderName);
 
             await provider.PrefetchUnwrapKeyAsync(TestKeyId, EncryptedKey, CancellationToken.None);
             int resolveCountAfterPrefetch = resolver.ResolveAsyncCallCount;
@@ -258,7 +258,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             // Arrange — no prefetch, all threads hit the sync fallback
             InMemoryKeyResolver resolver = new InMemoryKeyResolver();
             resolver.RegisterKey(TestKeyId, shift: 1);
-            EncryptionKeyStoreProviderImpl provider = new EncryptionKeyStoreProviderImpl(resolver, TestProviderName);
+            EncryptionKeyStoreProviderImpl provider = new CachingEncryptionKeyStoreProviderImpl(resolver, TestProviderName);
 
             int concurrency = 20;
             ConcurrentBag<byte[]> results = new ConcurrentBag<byte[]>();
@@ -290,7 +290,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             // Simulate the real pattern: some threads prefetch while others are already unwrapping.
             InMemoryKeyResolver resolver = new InMemoryKeyResolver();
             resolver.RegisterKey(TestKeyId, shift: 1);
-            EncryptionKeyStoreProviderImpl provider = new EncryptionKeyStoreProviderImpl(resolver, TestProviderName);
+            EncryptionKeyStoreProviderImpl provider = new CachingEncryptionKeyStoreProviderImpl(resolver, TestProviderName);
 
             int totalOps = 40;
             ConcurrentBag<byte[]> results = new ConcurrentBag<byte[]>();
@@ -341,7 +341,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             byte[] encB = PlainKey.Select(b => (byte)(b + 2)).ToArray();
             byte[] encC = PlainKey.Select(b => (byte)(b + 3)).ToArray();
 
-            EncryptionKeyStoreProviderImpl provider = new EncryptionKeyStoreProviderImpl(resolver, TestProviderName);
+            EncryptionKeyStoreProviderImpl provider = new CachingEncryptionKeyStoreProviderImpl(resolver, TestProviderName);
 
             // Prefetch all keys
             await provider.PrefetchUnwrapKeyAsync("keyA", encA, CancellationToken.None);
@@ -385,7 +385,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             // Arrange
             InMemoryKeyResolver resolver = new InMemoryKeyResolver();
             resolver.RegisterKey(TestKeyId, shift: 1);
-            EncryptionKeyStoreProviderImpl provider = new EncryptionKeyStoreProviderImpl(resolver, TestProviderName);
+            EncryptionKeyStoreProviderImpl provider = new CachingEncryptionKeyStoreProviderImpl(resolver, TestProviderName);
 
             // Act
             byte[] wrapped = provider.WrapKey(TestKeyId, KeyEncryptionKeyAlgorithm.RSA_OAEP, PlainKey);
@@ -405,7 +405,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             InMemoryKeyResolver resolver = new InMemoryKeyResolver();
             resolver.RegisterKey(TestKeyId, shift: 1);
             resolver.ResolveAsyncDelay = TimeSpan.FromMilliseconds(200);
-            EncryptionKeyStoreProviderImpl provider = new EncryptionKeyStoreProviderImpl(resolver, TestProviderName);
+            EncryptionKeyStoreProviderImpl provider = new CachingEncryptionKeyStoreProviderImpl(resolver, TestProviderName);
 
             // Act — prefetch absorbs the latency
             await provider.PrefetchUnwrapKeyAsync(TestKeyId, EncryptedKey, CancellationToken.None);
@@ -429,7 +429,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             InMemoryKeyResolver resolver = new InMemoryKeyResolver();
             resolver.RegisterKey(TestKeyId, shift: 1);
             resolver.ResolveAsyncDelay = TimeSpan.FromMilliseconds(500);
-            EncryptionKeyStoreProviderImpl provider = new EncryptionKeyStoreProviderImpl(resolver, TestProviderName);
+            EncryptionKeyStoreProviderImpl provider = new CachingEncryptionKeyStoreProviderImpl(resolver, TestProviderName);
 
             // Prefetch outside the hot path (absorbs the 500ms)
             await provider.PrefetchUnwrapKeyAsync(TestKeyId, EncryptedKey, CancellationToken.None);
@@ -513,29 +513,67 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         #endregion
 
-        #region Dispose / Lifecycle Tests
+        #region Base Class No-Op Tests
 
         [TestMethod]
-        public void Dispose_CanBeCalledMultipleTimes()
+        public async Task BaseClass_PrefetchUnwrapKeyAsync_IsNoOp()
+        {
+            // Arrange — use the base class directly (no caching)
+            InMemoryKeyResolver resolver = new InMemoryKeyResolver();
+            resolver.RegisterKey(TestKeyId, shift: 1);
+            EncryptionKeyStoreProviderImpl provider = new EncryptionKeyStoreProviderImpl(resolver, TestProviderName);
+
+            // Act — prefetch should be a no-op on the base class
+            await provider.PrefetchUnwrapKeyAsync(TestKeyId, EncryptedKey, CancellationToken.None);
+
+            // Assert — no resolver calls made (base class returns Task.CompletedTask)
+            Assert.AreEqual(0, resolver.ResolveAsyncCallCount,
+                "Base class PrefetchUnwrapKeyAsync should be a no-op.");
+
+            // UnwrapKey should use the sync Resolve path
+            byte[] result = provider.UnwrapKey(TestKeyId, KeyEncryptionKeyAlgorithm.RSA_OAEP, EncryptedKey);
+            CollectionAssert.AreEqual(PlainKey, result);
+            Assert.AreEqual(1, resolver.ResolveSyncCallCount,
+                "Base class UnwrapKey should use the sync Resolve path.");
+        }
+
+        [TestMethod]
+        public void BaseClass_Cleanup_IsNoOp()
         {
             // Arrange
             InMemoryKeyResolver resolver = new InMemoryKeyResolver();
             EncryptionKeyStoreProviderImpl provider = new EncryptionKeyStoreProviderImpl(resolver, TestProviderName);
 
-            // Act & Assert — should not throw on double-dispose
-            provider.Dispose();
-            provider.Dispose();
+            // Act & Assert — should not throw
+            provider.Cleanup();
+            provider.Cleanup(); // double-call safe
+        }
+
+        #endregion
+
+        #region Cleanup / Lifecycle Tests
+
+        [TestMethod]
+        public void Cleanup_CanBeCalledMultipleTimes()
+        {
+            // Arrange
+            InMemoryKeyResolver resolver = new InMemoryKeyResolver();
+            CachingEncryptionKeyStoreProviderImpl provider = new CachingEncryptionKeyStoreProviderImpl(resolver, TestProviderName);
+
+            // Act & Assert — should not throw on double-cleanup
+            provider.Cleanup();
+            provider.Cleanup();
         }
 
         [TestMethod]
-        public async Task Dispose_CancelsInFlightBackgroundRefresh()
+        public async Task Cleanup_CancelsInFlightBackgroundRefresh()
         {
-            // Arrange — use a very slow resolver so the background refresh is still in-flight when we dispose
+            // Arrange — use a very slow resolver so the background refresh is still in-flight when we clean up
             InMemoryKeyResolver resolver = new InMemoryKeyResolver();
             resolver.RegisterKey(TestKeyId, shift: 1);
             resolver.ResolveAsyncDelay = TimeSpan.FromSeconds(30); // very slow
 
-            EncryptionKeyStoreProviderImpl provider = new EncryptionKeyStoreProviderImpl(resolver, TestProviderName);
+            CachingEncryptionKeyStoreProviderImpl provider = new CachingEncryptionKeyStoreProviderImpl(resolver, TestProviderName);
 
             // Pre-warm with a fast resolve first (bypass the slow delay for initial population)
             TimeSpan originalDelay = resolver.ResolveAsyncDelay;
@@ -543,48 +581,41 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             await provider.PrefetchUnwrapKeyAsync(TestKeyId, EncryptedKey, CancellationToken.None);
             resolver.ResolveAsyncDelay = originalDelay;
 
-            // Manually expire the cached entry by calling UnwrapKey enough that
-            // the proactive refresh would fire. We can't wait 1h55m, so instead
-            // verify that Dispose doesn't hang even if a refresh is in-flight.
-            // (The actual proactive trigger depends on TTL proximity — here we
-            // just test that Dispose completes promptly.)
-
-            // Act — dispose should return quickly, not block on the 30s resolve
+            // Act — cleanup should return quickly, not block on the 30s resolve
             System.Diagnostics.Stopwatch sw = System.Diagnostics.Stopwatch.StartNew();
-            provider.Dispose();
+            provider.Cleanup();
             sw.Stop();
 
             Assert.IsTrue(sw.ElapsedMilliseconds < 1000,
-                $"Dispose should complete promptly (not block on background I/O), took {sw.ElapsedMilliseconds}ms.");
+                $"Cleanup should complete promptly (not block on background I/O), took {sw.ElapsedMilliseconds}ms.");
         }
 
         [TestMethod]
-        public async Task Dispose_ClearsPrefetchCache()
+        public async Task Cleanup_ClearsPrefetchCache()
         {
             // Arrange
             InMemoryKeyResolver resolver = new InMemoryKeyResolver();
             resolver.RegisterKey(TestKeyId, shift: 1);
-            EncryptionKeyStoreProviderImpl provider = new EncryptionKeyStoreProviderImpl(resolver, TestProviderName);
+            CachingEncryptionKeyStoreProviderImpl provider = new CachingEncryptionKeyStoreProviderImpl(resolver, TestProviderName);
 
             await provider.PrefetchUnwrapKeyAsync(TestKeyId, EncryptedKey, CancellationToken.None);
 
             // Verify cache is warm
             byte[] warmResult = provider.UnwrapKey(TestKeyId, KeyEncryptionKeyAlgorithm.RSA_OAEP, EncryptedKey);
             CollectionAssert.AreEqual(PlainKey, warmResult);
-            int resolveCountBeforeDispose = resolver.ResolveAsyncCallCount + resolver.ResolveSyncCallCount;
+            int resolveCountBeforeCleanup = resolver.ResolveAsyncCallCount + resolver.ResolveSyncCallCount;
 
             // Act
-            provider.Dispose();
+            provider.Cleanup();
 
-            // After dispose, UnwrapKey should go through the sync fallback
-            // (prefetch cache was cleared). This also verifies the provider
-            // is still functionally usable for in-flight operations.
-            byte[] postDisposeResult = provider.UnwrapKey(TestKeyId, KeyEncryptionKeyAlgorithm.RSA_OAEP, EncryptedKey);
-            CollectionAssert.AreEqual(PlainKey, postDisposeResult);
+            // After cleanup, UnwrapKey should go through the sync fallback
+            // (prefetch cache was cleared).
+            byte[] postCleanupResult = provider.UnwrapKey(TestKeyId, KeyEncryptionKeyAlgorithm.RSA_OAEP, EncryptedKey);
+            CollectionAssert.AreEqual(PlainKey, postCleanupResult);
 
-            int resolveCountAfterDispose = resolver.ResolveAsyncCallCount + resolver.ResolveSyncCallCount;
-            Assert.IsTrue(resolveCountAfterDispose > resolveCountBeforeDispose,
-                "After Dispose clears prefetch cache, UnwrapKey should require a new Resolve call.");
+            int resolveCountAfterCleanup = resolver.ResolveAsyncCallCount + resolver.ResolveSyncCallCount;
+            Assert.IsTrue(resolveCountAfterCleanup > resolveCountBeforeCleanup,
+                "After Cleanup clears prefetch cache, UnwrapKey should require a new Resolve call.");
         }
 
         #endregion

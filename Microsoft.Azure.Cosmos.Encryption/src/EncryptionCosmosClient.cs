@@ -18,6 +18,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
     {
         internal static readonly SemaphoreSlim EncryptionKeyCacheSemaphore = new SemaphoreSlim(1, 1);
 
+        private static readonly string OptimisticDecryptionEnabledEnvironmentVariable = "AZURE_COSMOS_ENCRYPTION_OPTIMISTIC_DECRYPTION_ENABLED";
+
         private readonly CosmosClient cosmosClient;
 
         private readonly AsyncCache<string, ClientEncryptionKeyProperties> clientEncryptionKeyPropertiesCacheByKeyId;
@@ -32,7 +34,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.KeyEncryptionKeyResolver = keyEncryptionKeyResolver ?? throw new ArgumentNullException(nameof(keyEncryptionKeyResolver));
             this.KeyEncryptionKeyResolverName = keyEncryptionKeyResolverName ?? throw new ArgumentNullException(nameof(keyEncryptionKeyResolverName));
             this.clientEncryptionKeyPropertiesCacheByKeyId = new AsyncCache<string, ClientEncryptionKeyProperties>();
-            this.EncryptionKeyStoreProviderImpl = new EncryptionKeyStoreProviderImpl(keyEncryptionKeyResolver, keyEncryptionKeyResolverName);
+
+            bool optimisticDecryption = EncryptionCosmosClient.IsOptimisticDecryptionEnabled();
+            this.EnableAlgorithmCaching = optimisticDecryption;
+            this.EncryptionKeyStoreProviderImpl = optimisticDecryption
+                ? new CachingEncryptionKeyStoreProviderImpl(keyEncryptionKeyResolver, keyEncryptionKeyResolverName)
+                : new EncryptionKeyStoreProviderImpl(keyEncryptionKeyResolver, keyEncryptionKeyResolverName);
 
             keyCacheTimeToLive ??= TimeSpan.FromHours(1);
 
@@ -65,6 +72,16 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public override CosmosResponseFactory ResponseFactory => this.cosmosClient.ResponseFactory;
 
         public override Uri Endpoint => this.cosmosClient.Endpoint;
+
+        /// <summary>
+        /// Gets a value indicating whether optimistic decryption is enabled.
+        /// When true, <see cref="EncryptionSettingForProperty"/> caches the
+        /// <see cref="Microsoft.Data.Encryption.Cryptography.AeadAes256CbcHmac256EncryptionAlgorithm"/>
+        /// to avoid per-property semaphore acquisition, and <see cref="EncryptionKeyStoreProviderImpl"/>
+        /// uses async key prefetch with proactive refresh.  Controlled by environment variable
+        /// <c>AZURE_COSMOS_ENCRYPTION_OPTIMISTIC_DECRYPTION_ENABLED</c>.  Default: false.
+        /// </summary>
+        internal bool EnableAlgorithmCaching { get; }
 
         public override async Task<DatabaseResponse> CreateDatabaseAsync(
             string id,
@@ -251,10 +268,16 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             if (disposing)
             {
-                this.EncryptionKeyStoreProviderImpl.Dispose();
+                this.EncryptionKeyStoreProviderImpl.Cleanup();
             }
 
             this.cosmosClient.Dispose();
+        }
+
+        private static bool IsOptimisticDecryptionEnabled()
+        {
+            string value = Environment.GetEnvironmentVariable(OptimisticDecryptionEnabledEnvironmentVariable);
+            return bool.TryParse(value, out bool result) && result;
         }
 
         private async Task<ClientEncryptionKeyProperties> FetchClientEncryptionKeyPropertiesAsync(

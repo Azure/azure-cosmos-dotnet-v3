@@ -74,14 +74,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 return this.injectedAlgorithm;
             }
 
-            // Return cached algorithm if still valid. This eliminates the per-property
-            // semaphore acquisition that causes contention under concurrent decryption.
-            // The cached algorithm holds a reference to the ProtectedDataEncryptionKey
-            // whose underlying key bytes don't change — only the cache entry expires.
-            AeadAes256CbcHmac256EncryptionAlgorithm cached = this.cachedEncryptionAlgorithm;
-            if (cached != null && DateTime.UtcNow.Ticks < Interlocked.Read(ref this.cachedAlgorithmExpiryTicks))
+            // Return cached algorithm if still valid and algorithm caching is enabled.
+            // This eliminates the per-property semaphore acquisition that causes
+            // contention under concurrent decryption.  Gated by
+            // AZURE_COSMOS_ENCRYPTION_ALGORITHM_CACHING_ENABLED (default: off).
+            if (this.encryptionContainer.EncryptionCosmosClient.EnableAlgorithmCaching)
             {
-                return cached;
+                AeadAes256CbcHmac256EncryptionAlgorithm cached = this.cachedEncryptionAlgorithm;
+                if (cached != null && DateTime.UtcNow.Ticks < Interlocked.Read(ref this.cachedAlgorithmExpiryTicks))
+                {
+                    return cached;
+                }
             }
 
             ClientEncryptionKeyProperties clientEncryptionKeyProperties = await this.encryptionContainer.EncryptionCosmosClient.GetClientEncryptionKeyPropertiesAsync(
@@ -141,8 +144,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             // Cache the algorithm so subsequent calls for this property skip the semaphore entirely.
             // Use the same TTL as ProtectedDataEncryptionKey (defaults to 2hrs).
-            this.cachedEncryptionAlgorithm = aeadAes256CbcHmac256EncryptionAlgorithm;
-            Interlocked.Exchange(ref this.cachedAlgorithmExpiryTicks, DateTime.UtcNow.Add(ProtectedDataEncryptionKey.TimeToLive).Ticks);
+            // Only active when AZURE_COSMOS_ENCRYPTION_ALGORITHM_CACHING_ENABLED is set.
+            if (this.encryptionContainer.EncryptionCosmosClient.EnableAlgorithmCaching)
+            {
+                this.cachedEncryptionAlgorithm = aeadAes256CbcHmac256EncryptionAlgorithm;
+                Interlocked.Exchange(ref this.cachedAlgorithmExpiryTicks, DateTime.UtcNow.Add(ProtectedDataEncryptionKey.TimeToLive).Ticks);
+            }
 
             return aeadAes256CbcHmac256EncryptionAlgorithm;
         }
@@ -208,9 +215,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CancellationToken cancellationToken)
         {
             // Pre-warm the unwrap key cache asynchronously, BEFORE acquiring the global
-            // semaphore.  When ProtectedDataEncryptionKey's constructor later calls
-            // UnwrapKey (sync, inside the semaphore), it will find a warm prefetch cache
-            // and return instantly — no Key Vault I/O under the lock.
+            // semaphore.  Only active when AZURE_COSMOS_ENCRYPTION_KEY_PREFETCH_ENABLED
+            // is set on EncryptionKeyStoreProviderImpl (checked internally by PrefetchUnwrapKeyAsync).
+            // When ProtectedDataEncryptionKey's constructor later calls UnwrapKey (sync,
+            // inside the semaphore), it will find a warm prefetch cache and return
+            // instantly — no Key Vault I/O under the lock.
             // Best-effort: if prefetch fails, the sync fallback inside UnwrapKey handles
             // it, and the L2 PDEK cache may avoid the unwrap call entirely.
             try
