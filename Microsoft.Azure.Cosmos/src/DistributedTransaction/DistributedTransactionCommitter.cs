@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos
                 using (MemoryStream bodyStream = serverRequest.TransferBodyStream())
                 {
                     ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
-                        resourceUri: "/operations/dtc",
+                        resourceUri: DistributedTransactionConstants.EndpointPath,
                         resourceType: ResourceType.DistributedTransactionBatch,
                         operationType: OperationType.CommitDistributedTransaction,
                         requestOptions: null,
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos
                         partitionKey: null,
                         itemId: null,
                         streamPayload: bodyStream,
-                        requestEnricher: requestMessage => this.EnrichRequestMessage(requestMessage, serverRequest),
+                        requestEnricher: requestMessage => DistributedTransactionCommitter.EnrichRequestMessage(requestMessage, serverRequest),
                         trace: trace,
                         cancellationToken: cancellationToken);
 
@@ -86,13 +86,13 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private void EnrichRequestMessage(RequestMessage requestMessage, DistributedTransactionServerRequest serverRequest)
+        private static void EnrichRequestMessage(RequestMessage requestMessage, DistributedTransactionServerRequest serverRequest)
         {
             // Set DTC-specific headers
-            //TODO: update to HttpConstants.HttpHeaders.IdempotencyToken
-            requestMessage.Headers.Add("x-ms-cosmos-idempotency-token", serverRequest.IdempotencyToken.ToString());
-            //TODO: update to HttpConstants.HttpHeaders.OperationType
-            requestMessage.Headers.Add("x-ms-cosmos-operation-type", OperationType.CommitDistributedTransaction.ToString());
+            //TODO: update to headers in HttpConstants.HttpHeaders
+            requestMessage.Headers.Add(DistributedTransactionConstants.IdempotencyTokenHeader, serverRequest.IdempotencyToken.ToString());
+            requestMessage.Headers.Add(DistributedTransactionConstants.OperationTypeHeader, requestMessage.OperationType.ToString());
+            requestMessage.Headers.Add(DistributedTransactionConstants.ResourceTypeHeader, requestMessage.ResourceType.ToString());
             requestMessage.UseGatewayMode = true;
         }
 
