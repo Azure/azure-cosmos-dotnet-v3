@@ -191,7 +191,7 @@ namespace Microsoft.Azure.Cosmos
                                     // or the hedgeTimer task failed (or more commonly since this is a linked CTS was cancelled)
                                     // in both of these cases we do not want to spawn new hedge requests
                                     // but just consolidate the outcome of previous requests
-                                    (!completedTask.IsCompleted || applicationProvidedCancellationToken.IsCancellationRequested));
+                                    (completedTask.IsFaulted || completedTask.IsCanceled || applicationProvidedCancellationToken.IsCancellationRequested));
 
                                 if (completedTask == hedgeTimer)
                                 {
