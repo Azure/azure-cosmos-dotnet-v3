@@ -236,7 +236,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal async Task AssertPartitioningDetailsAsync(CosmosClient client, CancellationToken cancellationToken, ITrace trace)
         {
-            if (this.IsMasterOperation())
+            if (this.IsMasterOperation() || DistributedTransactionConstants.IsDistributedTransactionRequest(this.OperationType, this.ResourceType))
             {
                 return;
             }
@@ -266,7 +266,8 @@ namespace Microsoft.Azure.Cosmos
             if (this.DocumentServiceRequest == null)
             {
                 DocumentServiceRequest serviceRequest;
-                if (this.OperationType == OperationType.ReadFeed && this.ResourceType == ResourceType.Database)
+                if ((this.OperationType == OperationType.ReadFeed && this.ResourceType == ResourceType.Database)
+                    || DistributedTransactionConstants.IsDistributedTransactionRequest(this.OperationType, this.ResourceType))
                 {
                     serviceRequest = new DocumentServiceRequest(
                         operationType: this.OperationType,
