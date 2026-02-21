@@ -16,11 +16,19 @@ namespace Microsoft.Azure.Cosmos
     /// Represents a document container in the Azure Cosmos DB service. A container is a named logical container for documents.
     /// </summary>
     /// <remarks>
-    /// A database may contain zero or more named containers and each container consists of zero or more JSON documents.
+    /// <para><strong>Container Design Best Practices:</strong></para>
+    /// <list type="bullet">
+    /// <item><description>Choose partition keys carefully to ensure even distribution of data and requests</description></item>
+    /// <item><description>Avoid hot partitions by selecting high-cardinality partition keys</description></item>
+    /// <item><description>Design your indexing policy to optimize for your query patterns</description></item>
+    /// <item><description>Use appropriate throughput settings (manual vs autoscale) based on traffic patterns</description></item>
+    /// <item><description>Consider TTL settings for automatic data cleanup</description></item>
+    /// </list>
+    /// <para><strong>Architecture:</strong> A database may contain zero or more named containers and each container consists of zero or more JSON documents.
     /// Being schema-free, the documents in a container do not need to share the same structure or fields. Since containers are application resources,
-    /// they can be authorized using either the master key or resource keys.
+    /// they can be authorized using either the master key or resource keys.</para>
     /// </remarks>
-    /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/databases-containers-items"/>
+    /// <seealso href="https://learn.microsoft.com/azure/cosmos-db/databases-containers-items"/>
     /// <example>
     /// The example below creates a new partitioned container with 50000 Request-per-Unit throughput.
     /// The partition key is the first level 'country' property in all the documents within this container.
