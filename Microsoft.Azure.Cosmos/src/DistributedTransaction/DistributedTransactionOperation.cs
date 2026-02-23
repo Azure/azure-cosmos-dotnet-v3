@@ -6,16 +6,19 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.IO;
-
-    //using Microsoft.Azure.Documents;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
-    /// Represents an operation on a document whichwill be executed as a part of a distributed transaction.
+    /// Represents an operation on a document which will be executed as a part of a distributed transaction.
     /// </summary>
     internal class DistributedTransactionOperation
     {
+        protected Memory<byte> body;
+
         public DistributedTransactionOperation(
-            Documents.OperationType operationType,
+            OperationType operationType,
             int operationIndex,
             string database,
             string container,
@@ -36,11 +39,37 @@ namespace Microsoft.Azure.Cosmos
 
         public string Container { get; internal set; }
 
-        public Documents.OperationType OperationType { get; internal set; }
+        public OperationType OperationType { get; internal set; }
 
-        public int OperationIndex { get; internal set; } 
+        public int OperationIndex { get; internal set; }
 
         public string Id { get; internal set; }
+
+        public string CollectionResourceId { get; internal set; }
+
+        public string DatabaseResourceId { get; internal set; }
+
+        internal string PartitionKeyJson { get; set; }
+
+        internal string SessionToken { get; set; }
+
+        internal string ETag { get; set; }
+
+        internal Stream ResourceStream { get; set; }
+
+        internal Memory<byte> ResourceBody
+        {
+            get => this.body;
+            set => this.body = value;
+        }
+
+        internal virtual async Task MaterializeResourceAsync(CosmosSerializerCore serializerCore, CancellationToken cancellationToken)
+        {
+            if (this.body.IsEmpty && this.ResourceStream != null)
+            {
+                this.body = await BatchExecUtils.StreamToMemoryAsync(this.ResourceStream, cancellationToken);
+            }
+        }
     }
 
     internal class DistributedTransactionOperation<T> : DistributedTransactionOperation
@@ -69,6 +98,18 @@ namespace Microsoft.Azure.Cosmos
         {
             this.Resource = resource;
         }
+
         public T Resource { get; internal set; }
+
+        internal override Task MaterializeResourceAsync(CosmosSerializerCore serializerCore, CancellationToken cancellationToken)
+        {
+            if (this.body.IsEmpty && this.Resource != null)
+            {
+                this.ResourceStream = serializerCore.ToStream(this.Resource);
+                return base.MaterializeResourceAsync(serializerCore, cancellationToken);
+            }
+
+            return Task.CompletedTask;
+        }
     }
 }
