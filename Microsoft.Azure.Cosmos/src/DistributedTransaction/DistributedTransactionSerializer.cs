@@ -83,7 +83,8 @@ namespace Microsoft.Azure.Cosmos
             // partitionKey
             if (operation.PartitionKeyJson != null)
             {
-                jsonWriter.WriteString("partitionKey", operation.PartitionKeyJson);
+                jsonWriter.WritePropertyName("partitionKey");
+                jsonWriter.WriteRawValue(operation.PartitionKeyJson, skipInputValidation: true);
             }
 
             // index (uint32)
@@ -112,11 +113,11 @@ namespace Microsoft.Azure.Cosmos
                 jsonWriter.WriteString("etag", operation.ETag);
             }
 
-            // operationType (uint16)
-            jsonWriter.WriteNumber("operationType", (ushort)operation.OperationType);
+            // operationType (string)
+            jsonWriter.WriteString("operationType", operation.OperationType.ToString());
 
-            // resourceType (uint16)
-            jsonWriter.WriteNumber("resourceType", (ushort)ResourceType.Document);
+            // resourceType (string)
+            jsonWriter.WriteString("resourceType", ResourceType.Document.ToString());
 
             jsonWriter.WriteEndObject();
         }
