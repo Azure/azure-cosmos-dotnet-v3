@@ -109,12 +109,18 @@ namespace Microsoft.Azure.Cosmos
             //check to see if it is a not a read-only request/ if multimaster writes are enabled
             if (!OperationTypeExtensions.IsReadOperation(request.OperationType))
             {
-                if ((this.EnableMultiWriteRegionHedge
-                    || this.ppafEnabled)
+                if (this.EnableMultiWriteRegionHedge
                     && client.DocumentClient.GlobalEndpointManager.CanSupportMultipleWriteLocations(request.ResourceType, request.OperationType))
                 {
                     return true;
                 }
+
+                // PPAF single-master: hedge writes using read regions as failover targets
+                if (this.ppafEnabled)
+                {
+                    return true;
+                }
+
                 return false;
             }
 
@@ -154,7 +160,7 @@ namespace Microsoft.Azure.Cosmos
                     IReadOnlyCollection<string> hedgeRegions = client.DocumentClient.GlobalEndpointManager
                         .GetApplicableRegions(
                             request.RequestOptions?.ExcludeRegions,
-                            OperationTypeExtensions.IsReadOperation(request.OperationType));
+                            this.ppafEnabled || OperationTypeExtensions.IsReadOperation(request.OperationType));
 
                     List<Task> requestTasks = new List<Task>(hedgeRegions.Count + 1);
 
