@@ -674,6 +674,22 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void GetSerializedConfiguration_WithSTJSerializerOptions_DoesNotThrow()
+        {
+            CosmosClientOptions options = new CosmosClientOptions()
+            {
+                UseSystemTextJsonSerializerWithOptions = new System.Text.Json.JsonSerializerOptions()
+                {
+                    PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+                }
+            };
+
+            string serializedConfig = options.GetSerializedConfiguration();
+            Assert.IsNotNull(serializedConfig);
+            Assert.IsTrue(serializedConfig.Contains("System.Text.Json.JsonSerializerOptions"));
+        }
+
+        [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
         public void ThrowOnNullTokenCredential()
         {

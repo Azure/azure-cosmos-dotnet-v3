@@ -424,6 +424,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        [JsonConverter(typeof(ClientOptionJsonConverter))]
         public System.Text.Json.JsonSerializerOptions UseSystemTextJsonSerializerWithOptions
         {
             get => this.stjSerializerOptions;
@@ -1319,6 +1320,12 @@ namespace Microsoft.Azure.Cosmos
                 if (value is Collection<RequestHandler> handlers)
                 {
                     writer.WriteValue(string.Join(":", handlers.Select(x => x.GetType())));
+                    return;
+                }
+
+                if (value is System.Text.Json.JsonSerializerOptions stjOptions)
+                {
+                    writer.WriteValue(stjOptions.GetType().ToString());
                     return;
                 }
 
