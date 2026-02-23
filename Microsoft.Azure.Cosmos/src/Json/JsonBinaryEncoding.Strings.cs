@@ -64,13 +64,13 @@ namespace Microsoft.Azure.Cosmos.Json
 
             // String Values [0x70, 0x78)
             false,  // <empty> 0x70
-            false,  // <empty> 0x71
-            false,  // <empty> 0x72
-            false,  // <empty> 0x73
-            false,  // <empty> 0x74
-            false,  // StrGL (Lowercase GUID string)
-            false,  // StrGU (Uppercase GUID string)
-            false,  // StrGQ (Double-quoted lowercase GUID string)
+            false,  // Standard Base64-encoded string with 1-byte length and 1-byte padding length
+            false,  // Standard Base64-encoded string with 2-byte length and 1-byte padding length
+            false,  // URL-safe Base64-encoded string with 1-byte length and 1-byte padding length
+            false,  // URL-safe Base64-encoded string with 2-byte length and 1-byte padding length
+            false,  // Lowercase GUID string
+            false,  // Uppercase GUID string
+            false,  // Double-quoted lowercase GUID string
 
             // Compressed strings [falsex78, falsex8false)
             false,  // String 1-byte length - Lowercase hexadecimal digits encoded as 4-bit characters
@@ -270,11 +270,13 @@ namespace Microsoft.Azure.Cosmos.Json
                 return bufferedStringValue.Memory;
             }
 
-            if (JsonBinaryEncoding.TypeMarker.IsCompressedString(typeMarker) || JsonBinaryEncoding.TypeMarker.IsGuidString(typeMarker))
+            if (JsonBinaryEncoding.TypeMarker.IsCompressedString(typeMarker) ||
+                JsonBinaryEncoding.TypeMarker.IsGuidString(typeMarker) ||
+                JsonBinaryEncoding.TypeMarker.IsBase64String(typeMarker))
             {
                 DecodeString(stringToken.Span, Span<byte>.Empty, out int valueLength);
                 Memory<byte> bytes = new byte[valueLength];
-                DecodeString(stringToken.Span, bytes.Span, out valueLength);
+                DecodeString(stringToken.Span, bytes.Span, out _);
                 return bytes;
             }
 
@@ -317,7 +319,9 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 valueLength = bufferedStringValue.Length;
             }
-            else if (JsonBinaryEncoding.TypeMarker.IsCompressedString(typeMarker) || JsonBinaryEncoding.TypeMarker.IsGuidString(typeMarker))
+            else if (JsonBinaryEncoding.TypeMarker.IsCompressedString(typeMarker) ||
+                JsonBinaryEncoding.TypeMarker.IsGuidString(typeMarker) ||
+                JsonBinaryEncoding.TypeMarker.IsBase64String(typeMarker))
             {
                 DecodeString(stringToken.Span, destinationBuffer, out valueLength);
             }
@@ -452,7 +456,7 @@ namespace Microsoft.Azure.Cosmos.Json
             if (JsonBinaryEncoding.TypeMarker.IsEncodedLengthString(typeMarker))
             {
                 start = JsonBinaryEncoding.TypeMarkerLength;
-                length = JsonBinaryEncoding.GetStringLengths(typeMarker);
+                length = typeMarker - JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin;
             }
             else
             {
@@ -612,7 +616,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// Try Get Encoded User String Type Marker
         /// </summary>
         /// <param name="utf8Span">The value.</param>
-        /// <param name="jsonStringDictionary">The optional json string dictionary.</param>
+        /// <param name="jsonStringDictionary">The optional JSON string dictionary.</param>
         /// <param name="multiByteTypeMarker">The multi byte type marker if found.</param>
         /// <returns>Whether or not the Encoded User String Type Marker was found.</returns>
         private static bool TryGetEncodedUserStringTypeMarker(
@@ -632,7 +636,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 return false;
             }
 
-            // Convert the stringId to a multibyte type marker
+            // Convert the stringId to a multi-byte type marker
             const byte OneByteCount = TypeMarker.UserString1ByteLengthMax - TypeMarker.UserString1ByteLengthMin;
             const int TwoByteCount = (TypeMarker.UserString2ByteLengthMax - TypeMarker.UserString2ByteLengthMin) * 256;
             const int MaxStringId = OneByteCount + TwoByteCount;
@@ -754,23 +758,52 @@ namespace Microsoft.Azure.Cosmos.Json
             return true;
         }
 
+        private enum Base64Encoding
+        {
+            None,
+            StdBase64,
+            UrlBase64
+        }
+
         public static bool TryEncodeCompressedString(
             ReadOnlySpan<byte> stringValue,
             Span<byte> destinationBuffer,
+            bool enableBase64Strings,
             out int bytesWritten)
         {
-            if (destinationBuffer.Length < MinCompressedStringLength)
+            if (stringValue.Length < MinCompressedStringLength)
             {
                 bytesWritten = default;
                 return false;
             }
 
+            // Determine if the string is a base64 candidate
+            enableBase64Strings &= IsBase64StringCandidate(stringValue);
+
+            // If the string length is a multiple of 4, we need to check whether it's padded with '='
+            int padding = 0;
+            if (enableBase64Strings && ((stringValue.Length % 4) == 0))
+            {
+                // We either have one or two padding characters at the end of the string
+                if (stringValue[stringValue.Length - 1] == '=')
+                {
+                    padding++;
+                    if (stringValue[stringValue.Length - 2] == '=')
+                    {
+                        padding++;
+                    }
+                }
+            }
+
+            int valueLength = stringValue.Length - padding;
+
             int firstSetBit = 128;
             int lastSetBit = 0;
             int charCount = 0;
-            BitArray valueCharSet = new BitArray(length: 128);
+
             // Create a bit-set with all the ASCII character of the string value
-            for (int index = 0; index < stringValue.Length; index++)
+            BitArray valueCharSet = new BitArray(length: 128);
+            for (int index = 0; index < valueLength; index++)
             {
                 byte charValue = stringValue[index];
 
@@ -792,7 +825,36 @@ namespace Microsoft.Azure.Cosmos.Json
                 valueCharSet.Set(charValue, true);
             }
 
-            int charRange = (lastSetBit - firstSetBit) + 1;
+            // First, check if the string is a valid base64 string
+            Base64Encoding base64Encoding;
+            if (enableBase64Strings)
+            {
+                // Check if the string is a valid Base64 string
+                base64Encoding = valueCharSet.IsSubset(Base64StringEncodingLookupTables.StdBase64.Bitmap)
+                    ? Base64Encoding.StdBase64
+                    : valueCharSet.IsSubset(Base64StringEncodingLookupTables.UrlBase64.Bitmap) ? Base64Encoding.UrlBase64 : Base64Encoding.None;
+            }
+            else
+            {
+                base64Encoding = Base64Encoding.None;
+            }
+
+            // Undo base64 padding if present
+            if (padding > 0)
+            {
+                // Register the padding characters
+                const char charValue = '=';
+                if (!valueCharSet[charValue])
+                {
+                    charCount++;
+                    firstSetBit = Math.Min(charValue, firstSetBit);
+                    lastSetBit = Math.Max(charValue, lastSetBit);
+                }
+
+                valueCharSet.Set(charValue, true);
+            }
+
+            int charRange = lastSetBit - firstSetBit + 1;
 
             // Attempt to encode the string as 4-bit packed values over a defined character set
             if ((stringValue.Length <= 0xFF) && (charCount <= 16) && (stringValue.Length >= Min4BitCharSetStringLength))
@@ -835,6 +897,16 @@ namespace Microsoft.Azure.Cosmos.Json
                 if ((charRange <= 64) && (stringValue.Length >= MinCompressedStringLength6))
                 {
                     return TryEncodeString(JsonBinaryEncoding.TypeMarker.Packed6BitString, stringValue, baseChar: (byte)firstSetBit, destinationBuffer, out bytesWritten);
+                }
+            }
+
+            // Attempt to encode the string as a Base64 string
+            if (base64Encoding != Base64Encoding.None)
+            {
+                bool isUrlBase64 = base64Encoding == Base64Encoding.UrlBase64;
+                if (TryConvertBase64StringToBytes(stringValue, isUrlBase64, destinationBuffer, out bytesWritten))
+                {
+                    return true;
                 }
             }
 
@@ -1143,15 +1215,61 @@ namespace Microsoft.Azure.Cosmos.Json
             bool isDateTimeString = JsonBinaryEncoding.TypeMarker.IsDateTimeString(typeMarker);
             bool isCompressedString = JsonBinaryEncoding.TypeMarker.IsCompressedString(typeMarker);
             bool isGuidString = JsonBinaryEncoding.TypeMarker.IsGuidString(typeMarker);
+            bool isBase64String = JsonBinaryEncoding.TypeMarker.IsBase64String(typeMarker);
 
-            if (!(isHexadecimalString || isDateTimeString || isCompressedString || isGuidString))
+            if (!(isHexadecimalString || isDateTimeString || isCompressedString || isGuidString || isBase64String))
             {
-                throw new ArgumentException("token must be a hex, datetime, compressed, or guid string.");
+                throw new ArgumentException("Token must be a Hexadecimal, DateTime, Compressed, Guid, or Base64 string.");
             }
 
-            int lengthByteCount = (isHexadecimalString || isDateTimeString) ? 1 : (isCompressedString ? ((typeMarker == JsonBinaryEncoding.TypeMarker.Packed7BitStringLength2) ? 2 : 1) : 0);
-            int baseCharByteCount = JsonBinaryEncoding.TypeMarker.InRange(typeMarker, JsonBinaryEncoding.TypeMarker.Packed4BitString, TypeMarker.Packed6BitString + 1) ? 1 : 0;
-            int prefixByteCount = TypeMarkerLength + lengthByteCount + baseCharByteCount;
+            int lengthByteCount;
+            switch (typeMarker)
+            {
+                case JsonBinaryEncoding.TypeMarker.LowercaseGuidString:
+                case JsonBinaryEncoding.TypeMarker.UppercaseGuidString:
+                case JsonBinaryEncoding.TypeMarker.DoubleQuotedLowercaseGuidString:
+                    lengthByteCount = 0;
+                    break;
+                case JsonBinaryEncoding.TypeMarker.Base64StringLength1:
+                case JsonBinaryEncoding.TypeMarker.Base64UrlStringLength1:
+                case JsonBinaryEncoding.TypeMarker.CompressedLowercaseHexString:
+                case JsonBinaryEncoding.TypeMarker.CompressedUppercaseHexString:
+                case JsonBinaryEncoding.TypeMarker.CompressedDateTimeString:
+                case JsonBinaryEncoding.TypeMarker.Packed4BitString:
+                case JsonBinaryEncoding.TypeMarker.Packed5BitString:
+                case JsonBinaryEncoding.TypeMarker.Packed6BitString:
+                case JsonBinaryEncoding.TypeMarker.Packed7BitStringLength1:
+                    lengthByteCount = 1;
+                    break;
+                case JsonBinaryEncoding.TypeMarker.Base64StringLength2:
+                case JsonBinaryEncoding.TypeMarker.Base64UrlStringLength2:
+                case JsonBinaryEncoding.TypeMarker.Packed7BitStringLength2:
+                    lengthByteCount = 2;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException($"Unexpected type marker: {typeMarker}.");
+            }
+
+            int extraByteCount;
+            switch (typeMarker)
+            {
+                case JsonBinaryEncoding.TypeMarker.Packed4BitString:
+                case JsonBinaryEncoding.TypeMarker.Packed5BitString:
+                case JsonBinaryEncoding.TypeMarker.Packed6BitString:
+                    extraByteCount = 1; // base char
+                    break;
+                case JsonBinaryEncoding.TypeMarker.Base64StringLength1:
+                case JsonBinaryEncoding.TypeMarker.Base64StringLength2:
+                case JsonBinaryEncoding.TypeMarker.Base64UrlStringLength1:
+                case JsonBinaryEncoding.TypeMarker.Base64UrlStringLength2:
+                    extraByteCount = 1; // padding byte
+                    break;
+                default:
+                    extraByteCount = 0;
+                    break;
+            }
+
+            int prefixByteCount = TypeMarkerLength + lengthByteCount + extraByteCount;
 
             if (stringToken.Length < prefixByteCount)
             {
@@ -1160,12 +1278,6 @@ namespace Microsoft.Azure.Cosmos.Json
 
             bytesWritten = GetEncodedStringValueLength(stringToken);
             int encodedLength = GetEncodedStringBufferLength(stringToken);
-            byte baseChar = GetEncodedStringBaseChar(stringToken);
-
-            if (stringToken.Length < (prefixByteCount + encodedLength))
-            {
-                throw new JsonInvalidTokenException();
-            }
 
             if (!destinationBuffer.IsEmpty)
             {
@@ -1174,9 +1286,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new InvalidOperationException("buffer is too small");
                 }
 
-                ReadOnlySpan<byte> encodedString = stringToken.Slice(start: prefixByteCount, length: encodedLength);
-
-                DecodeStringValue(typeMarker, encodedString, baseChar, destinationBuffer.Slice(start: 0, length: bytesWritten));
+                DecodeStringValue(stringToken, prefixByteCount, encodedLength, destinationBuffer.Slice(start: 0, length: bytesWritten));
             }
         }
 
@@ -1186,6 +1296,21 @@ namespace Microsoft.Azure.Cosmos.Json
 
             switch (typeMarker)
             {
+                case JsonBinaryEncoding.TypeMarker.Base64StringLength1:
+                case JsonBinaryEncoding.TypeMarker.Base64UrlStringLength1:
+                    return JsonBinaryEncoding.ValueLengths.ComputeBase64StringLength(stringToken[1], stringToken[2]);
+
+                case JsonBinaryEncoding.TypeMarker.Base64StringLength2:
+                case JsonBinaryEncoding.TypeMarker.Base64UrlStringLength2:
+                    return JsonBinaryEncoding.ValueLengths.ComputeBase64StringLength(GetFixedSizedValue<ushort>(stringToken.Slice(start: 1)), stringToken[3]);
+
+                case JsonBinaryEncoding.TypeMarker.LowercaseGuidString:
+                case JsonBinaryEncoding.TypeMarker.UppercaseGuidString:
+                    return GuidLength;
+
+                case JsonBinaryEncoding.TypeMarker.DoubleQuotedLowercaseGuidString:
+                    return GuidWithQuotesLength;
+
                 case JsonBinaryEncoding.TypeMarker.CompressedLowercaseHexString:
                 case JsonBinaryEncoding.TypeMarker.CompressedUppercaseHexString:
                 case JsonBinaryEncoding.TypeMarker.CompressedDateTimeString:
@@ -1198,13 +1323,6 @@ namespace Microsoft.Azure.Cosmos.Json
                 case JsonBinaryEncoding.TypeMarker.Packed7BitStringLength2:
                     return GetFixedSizedValue<ushort>(stringToken.Slice(start: 1));
 
-                case JsonBinaryEncoding.TypeMarker.LowercaseGuidString:
-                case JsonBinaryEncoding.TypeMarker.UppercaseGuidString:
-                    return GuidLength;
-
-                case JsonBinaryEncoding.TypeMarker.DoubleQuotedLowercaseGuidString:
-                    return GuidWithQuotesLength;
-
                 default:
                     throw new ArgumentOutOfRangeException($"Unexpected type marker: {typeMarker}.");
             }
@@ -1216,6 +1334,19 @@ namespace Microsoft.Azure.Cosmos.Json
 
             switch (typeMarker)
             {
+                case JsonBinaryEncoding.TypeMarker.Base64StringLength1:
+                case JsonBinaryEncoding.TypeMarker.Base64UrlStringLength1:
+                    return JsonBinaryEncoding.ValueLengths.GetBase64ByteCount(stringToken[1], stringToken[2]);
+
+                case JsonBinaryEncoding.TypeMarker.Base64StringLength2:
+                case JsonBinaryEncoding.TypeMarker.Base64UrlStringLength2:
+                    return JsonBinaryEncoding.ValueLengths.GetBase64ByteCount(GetFixedSizedValue<ushort>(stringToken.Slice(start: 1)), stringToken[3]);
+
+                case JsonBinaryEncoding.TypeMarker.LowercaseGuidString:
+                case JsonBinaryEncoding.TypeMarker.UppercaseGuidString:
+                case JsonBinaryEncoding.TypeMarker.DoubleQuotedLowercaseGuidString:
+                    return 16;
+
                 case JsonBinaryEncoding.TypeMarker.CompressedLowercaseHexString:
                 case JsonBinaryEncoding.TypeMarker.CompressedUppercaseHexString:
                 case JsonBinaryEncoding.TypeMarker.CompressedDateTimeString:
@@ -1236,11 +1367,6 @@ namespace Microsoft.Azure.Cosmos.Json
                 case JsonBinaryEncoding.TypeMarker.Packed7BitStringLength2:
                     return JsonBinaryEncoding.ValueLengths.GetCompressedStringLength(GetFixedSizedValue<ushort>(stringToken.Slice(1)), numberOfBits: 7);
 
-                case JsonBinaryEncoding.TypeMarker.LowercaseGuidString:
-                case JsonBinaryEncoding.TypeMarker.UppercaseGuidString:
-                case JsonBinaryEncoding.TypeMarker.DoubleQuotedLowercaseGuidString:
-                    return 16;
-
                 default:
                     throw new ArgumentException($"Invalid type marker: {typeMarker}");
             }
@@ -1252,6 +1378,17 @@ namespace Microsoft.Azure.Cosmos.Json
 
             switch (typeMarker)
             {
+                case JsonBinaryEncoding.TypeMarker.Base64StringLength1:
+                case JsonBinaryEncoding.TypeMarker.Base64StringLength2:
+                case JsonBinaryEncoding.TypeMarker.Base64UrlStringLength1:
+                case JsonBinaryEncoding.TypeMarker.Base64UrlStringLength2:
+                    return 0;
+
+                case JsonBinaryEncoding.TypeMarker.LowercaseGuidString:
+                case JsonBinaryEncoding.TypeMarker.UppercaseGuidString:
+                case JsonBinaryEncoding.TypeMarker.DoubleQuotedLowercaseGuidString:
+                    return 0;
+
                 case JsonBinaryEncoding.TypeMarker.CompressedLowercaseHexString:
                 case JsonBinaryEncoding.TypeMarker.CompressedUppercaseHexString:
                 case JsonBinaryEncoding.TypeMarker.CompressedDateTimeString:
@@ -1266,67 +1403,31 @@ namespace Microsoft.Azure.Cosmos.Json
                 case JsonBinaryEncoding.TypeMarker.Packed7BitStringLength2:
                     return 0;
 
-                case JsonBinaryEncoding.TypeMarker.LowercaseGuidString:
-                case JsonBinaryEncoding.TypeMarker.UppercaseGuidString:
-                case JsonBinaryEncoding.TypeMarker.DoubleQuotedLowercaseGuidString:
-                    return 0;
-
                 default:
                     throw new ArgumentException($"Invalid type marker: {typeMarker}");
             }
         }
 
-        private static void DecodeStringValue(byte typeMarker, ReadOnlySpan<byte> encodedString, byte baseChar, Span<byte> destinationBuffer)
+        private static void DecodeStringValue(ReadOnlySpan<byte> encodedValue, int prefixLength, int encodedLength, Span<byte> destinationBuffer)
         {
+            if (encodedValue.Length < (prefixLength + encodedLength))
+            {
+                throw new JsonInvalidTokenException();
+            }
+
+            byte typeMarker = encodedValue[0];
+            ReadOnlySpan<byte> encodedString = encodedValue.Slice(start: prefixLength, length: encodedLength);
+
             switch (typeMarker)
             {
-                case JsonBinaryEncoding.TypeMarker.CompressedLowercaseHexString:
-                    if (baseChar != 0)
-                    {
-                        throw new InvalidOperationException("base char needs to be 0.");
-                    }
-
-                    Decode4BitCharacterStringValue(StringCompressionLookupTables.LowercaseHex, encodedString, destinationBuffer);
+                case JsonBinaryEncoding.TypeMarker.Base64StringLength1:
+                case JsonBinaryEncoding.TypeMarker.Base64StringLength2:
+                    ConvertBytesToBase64String(encodedString, padding: encodedValue[prefixLength - 1], isBase64Url: false, destinationBuffer);
                     break;
 
-                case JsonBinaryEncoding.TypeMarker.CompressedUppercaseHexString:
-                    if (baseChar != 0)
-                    {
-                        throw new InvalidOperationException("base char needs to be 0.");
-                    }
-
-                    Decode4BitCharacterStringValue(StringCompressionLookupTables.UppercaseHex, encodedString, destinationBuffer);
-                    break;
-
-                case JsonBinaryEncoding.TypeMarker.CompressedDateTimeString:
-                    if (baseChar != 0)
-                    {
-                        throw new InvalidOperationException("base char needs to be 0.");
-                    }
-
-                    Decode4BitCharacterStringValue(StringCompressionLookupTables.DateTime, encodedString, destinationBuffer);
-                    break;
-
-                case JsonBinaryEncoding.TypeMarker.Packed4BitString:
-                    DecodeCompressedStringValue(numberOfBits: 4, encodedString, baseChar, destinationBuffer);
-                    break;
-
-                case JsonBinaryEncoding.TypeMarker.Packed5BitString:
-                    DecodeCompressedStringValue(numberOfBits: 5, encodedString, baseChar, destinationBuffer);
-                    break;
-
-                case JsonBinaryEncoding.TypeMarker.Packed6BitString:
-                    DecodeCompressedStringValue(numberOfBits: 6, encodedString, baseChar, destinationBuffer);
-                    break;
-
-                case JsonBinaryEncoding.TypeMarker.Packed7BitStringLength1:
-                case JsonBinaryEncoding.TypeMarker.Packed7BitStringLength2:
-                    if (baseChar != 0)
-                    {
-                        throw new InvalidOperationException("base char needs to be 0.");
-                    }
-
-                    DecodeCompressedStringValue(numberOfBits: 7, encodedString, baseChar, destinationBuffer);
+                case JsonBinaryEncoding.TypeMarker.Base64UrlStringLength1:
+                case JsonBinaryEncoding.TypeMarker.Base64UrlStringLength2:
+                    ConvertBytesToBase64String(encodedString, padding: encodedValue[prefixLength - 1], isBase64Url: true, destinationBuffer);
                     break;
 
                 case JsonBinaryEncoding.TypeMarker.LowercaseGuidString:
@@ -1338,6 +1439,35 @@ namespace Microsoft.Azure.Cosmos.Json
                     destinationBuffer[0] = (byte)'"';
                     DecodeGuidStringValue(encodedString, isUpperCaseGuid: false, destinationBuffer.Slice(start: 1));
                     destinationBuffer[GuidWithQuotesLength - 1] = (byte)'"';
+                    break;
+
+                case JsonBinaryEncoding.TypeMarker.CompressedLowercaseHexString:
+                    Decode4BitCharacterStringValue(StringCompressionLookupTables.LowercaseHex, encodedString, destinationBuffer);
+                    break;
+
+                case JsonBinaryEncoding.TypeMarker.CompressedUppercaseHexString:
+                    Decode4BitCharacterStringValue(StringCompressionLookupTables.UppercaseHex, encodedString, destinationBuffer);
+                    break;
+
+                case JsonBinaryEncoding.TypeMarker.CompressedDateTimeString:
+                    Decode4BitCharacterStringValue(StringCompressionLookupTables.DateTime, encodedString, destinationBuffer);
+                    break;
+
+                case JsonBinaryEncoding.TypeMarker.Packed4BitString:
+                    DecodeCompressedStringValue(numberOfBits: 4, encodedString, baseChar: encodedValue[2], destinationBuffer);
+                    break;
+
+                case JsonBinaryEncoding.TypeMarker.Packed5BitString:
+                    DecodeCompressedStringValue(numberOfBits: 5, encodedString, baseChar: encodedValue[2], destinationBuffer);
+                    break;
+
+                case JsonBinaryEncoding.TypeMarker.Packed6BitString:
+                    DecodeCompressedStringValue(numberOfBits: 6, encodedString, baseChar: encodedValue[2], destinationBuffer);
+                    break;
+
+                case JsonBinaryEncoding.TypeMarker.Packed7BitStringLength1:
+                case JsonBinaryEncoding.TypeMarker.Packed7BitStringLength2:
+                    DecodeCompressedStringValue(numberOfBits: 7, encodedString, baseChar: 0, destinationBuffer);
                     break;
 
                 default:
@@ -1464,6 +1594,169 @@ namespace Microsoft.Azure.Cosmos.Json
             SetFixedSizedValue<ushort>(destinationBuffer.Slice(start: 30), byteLookupTable[encodedString[13]]);
             SetFixedSizedValue<ushort>(destinationBuffer.Slice(start: 32), byteLookupTable[encodedString[14]]);
             SetFixedSizedValue<ushort>(destinationBuffer.Slice(start: 34), byteLookupTable[encodedString[15]]);
+        }
+
+        private static bool TryConvertBase64StringToBytes(
+            ReadOnlySpan<byte> stringValue,
+            bool isBase64Url,
+            Span<byte> destinationBuffer,
+            out int bytesWritten)
+        {
+            if (stringValue.IsEmpty || (stringValue.Length % 4 == 1))
+            {
+                throw new ArgumentException("Invalid Base64 string.", nameof(stringValue));
+            }
+
+            int padding = 0;
+            if (stringValue[stringValue.Length - 1] == '=')
+            {
+                padding++;
+                if (stringValue[stringValue.Length - 2] == '=')
+                {
+                    padding++;
+                }
+            }
+
+            int unpaddedLength = stringValue.Length - padding;
+            int paddedLength = (unpaddedLength + 3) / 4 * 4;
+
+            // Since the string padded length is a multiple of 4, we can write the length divided by 4
+            int paddedLengthDiv4 = paddedLength / 4;
+
+            if (paddedLengthDiv4 > 0xFFFF)
+            {
+                throw new ArgumentException("Base64 string length is too large.", nameof(stringValue));
+            }
+
+            // Compute the encoding prefix length
+            //  TypeMarker (1 byte) + Length (1 or 2 bytes) + Padding Length (1 byte)
+            int prefixLength = TypeMarkerLength + (paddedLengthDiv4 <= 0xFF ? OneByteLength : TwoByteLength) + OneByteLength;
+
+            // Compute the required buffer length
+            int byteCount = unpaddedLength * 3 / 4;
+
+            // Write the value prefix
+            if (paddedLengthDiv4 <= 0xFF)
+            {
+                destinationBuffer[0] = isBase64Url ? TypeMarker.Base64UrlStringLength1 : TypeMarker.Base64StringLength1;
+                destinationBuffer[1] = (byte)paddedLengthDiv4;
+            }
+            else
+            {
+                destinationBuffer[0] = isBase64Url ? TypeMarker.Base64UrlStringLength2 : TypeMarker.Base64StringLength2;
+                SetFixedSizedValue<ushort>(destinationBuffer.Slice(start: 1), (ushort)paddedLengthDiv4);
+            }
+
+            // Write the padding length
+            byte requiredPadding = (byte)(paddedLength - unpaddedLength);
+
+            // When actual padding is less than required, write the bit-wise negation of the required
+            // padding length to indicate that padding was omitted.
+            destinationBuffer[prefixLength - 1] = requiredPadding > padding ? (byte)~requiredPadding : requiredPadding;
+
+            char[] base64Chars = new char[paddedLength];
+            for (int i = 0; i < unpaddedLength; i++)
+            {
+                char c = (char)stringValue[i];
+                if (isBase64Url)
+                {
+                    if (c == '-')
+                    {
+                        c = '+';
+                    }
+                    else if (c == '_')
+                    {
+                        c = '/';
+                    }
+                }
+
+                base64Chars[i] = c;
+            }
+
+            for (int i = unpaddedLength; i < paddedLength; i++)
+            {
+                base64Chars[i] = '=';
+            }
+
+            try
+            {
+                byte[] decodedBytes = Convert.FromBase64CharArray(base64Chars, 0, base64Chars.Length);
+
+                // Convert.FromBase64CharArray does not verify whether the character preceding the
+                // padding results in partial (truncated) bits. This validation must be performed manually.
+                if (requiredPadding > 0)
+                {
+                    char c = base64Chars[unpaddedLength - 1];
+                    byte b = Base64StringEncodingLookupTables.StdBase64.CharToByte[c];
+                    byte mask = requiredPadding == 1 ? (byte)0x3 : (byte)0xF;
+                    if ((b & mask) != 0)
+                    {
+                        bytesWritten = 0;
+                        return false;
+                    }
+                }
+
+                decodedBytes.CopyTo(destinationBuffer.Slice(start: prefixLength, length: byteCount));
+            }
+            catch (FormatException)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            bytesWritten = prefixLength + byteCount;
+            return true;
+        }
+
+        private static void ConvertBytesToBase64String(
+            ReadOnlySpan<byte> encodedString,
+            byte padding,
+            bool isBase64Url,
+            Span<byte> destinationBuffer)
+        {
+            // Adjust the padding value to reflect whether padding was omitted.
+            int paddedLength = (encodedString.Length + (padding > 2 ? (byte)~padding : padding)) / 3 * 4;
+            int valueLength = paddedLength - (padding > 2 ? (byte)~padding : 0);
+
+            if (destinationBuffer.Length != valueLength)
+            {
+                throw new InvalidOperationException("Invalid string buffer length.");
+            }
+
+            string base64String = Convert.ToBase64String(encodedString.ToArray());
+
+            for (int i = 0; i < valueLength; i++)
+            {
+                char c = base64String[i];
+                if (isBase64Url)
+                {
+                    if (c == '+')
+                    {
+                        c = '-';
+                    }
+                    else if (c == '/')
+                    {
+                        c = '_';
+                    }
+                }
+
+                destinationBuffer[i] = (byte)c;
+            }
+        }
+
+        private static bool IsBase64StringCandidate(ReadOnlySpan<byte> stringValue)
+        {
+            // This is the maximum string length that can be encoded
+            if (stringValue.Length > (4 * ushort.MaxValue)) return false;
+
+            // Accept the value as a candidate if its length is greater than or equal to the minimum
+            // 6-bit compressed string length, and its length modulo 4 is not equal to 1.
+            if (stringValue.Length >= MinCompressedStringLength6) return (stringValue.Length % 4) != 1;
+
+            // If the length is greater than or equal to 24, accept it as a candidate only if it is a
+            // multiple of 4 and ends with '='.
+            // This primarily ensures that values like the '_rid' property are included.
+            return (stringValue.Length >= 24) && ((stringValue.Length % 4) == 0) && (stringValue[stringValue.Length - 1] == '=');
         }
     }
 }

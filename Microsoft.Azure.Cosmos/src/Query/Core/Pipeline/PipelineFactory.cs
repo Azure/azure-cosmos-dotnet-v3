@@ -40,6 +40,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             IReadOnlyList<FeedRangeEpk> allRanges,
             bool isContinuationExpected,
             int maxConcurrency,
+            FullTextScoreScope fullTextScoreScope,
             CosmosElement requestContinuationToken)
         {
             if (documentContainer == null)
@@ -59,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
             if (targetRanges.Count == 0)
             {
-                throw new ArgumentException($"{nameof(targetRanges)} must not be empty.");
+                return TryCatch<IQueryPipelineStage>.FromResult(new EmptyQueryPipelineStage());
             }
 
             if (queryInfo == null && hybridSearchQueryInfo == null)
@@ -105,7 +106,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                     allRanges: allRanges,
                     maxItemCount: maxItemCount,
                     isContinuationExpected: isContinuationExpected,
-                    maxConcurrency: maxConcurrency);
+                    maxConcurrency: maxConcurrency,
+                    fullTextScoreScope: fullTextScoreScope);
 
                 if (hybridSearchQueryInfo.Skip != null)
                 {

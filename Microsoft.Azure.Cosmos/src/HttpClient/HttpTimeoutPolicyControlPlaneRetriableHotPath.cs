@@ -36,13 +36,6 @@ namespace Microsoft.Azure.Cosmos
             return this.TimeoutsAndDelays.GetEnumerator();
         }
 
-        // The hot path should always be safe to retires since it should be retrieving meta data 
-        // information that is not idempotent.
-        public override bool IsSafeToRetry(HttpMethod httpMethod)
-        {
-            return true;
-        }
-
         public override bool ShouldRetryBasedOnResponse(HttpMethod requestHttpMethod, HttpResponseMessage responseMessage)
         { 
             if (responseMessage == null)
@@ -51,11 +44,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             if (responseMessage.StatusCode != System.Net.HttpStatusCode.RequestTimeout)
-            {
-                return false;
-            }
-
-            if (!this.IsSafeToRetry(requestHttpMethod))
             {
                 return false;
             }

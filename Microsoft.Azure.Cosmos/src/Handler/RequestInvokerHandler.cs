@@ -394,6 +394,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 operationType == OperationType.SqlQuery ||
                 operationType == OperationType.QueryPlan ||
                 operationType == OperationType.Batch ||
+                operationType == OperationType.CommitDistributedTransaction ||
                 operationType == OperationType.ExecuteJavaScript ||
                 operationType == OperationType.CompleteUserTransaction ||
                 (resourceType == ResourceType.PartitionKey && operationType == OperationType.Delete))

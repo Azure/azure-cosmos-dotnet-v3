@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
 {
     using System;
     using System.Collections.Generic;
-    using System.Runtime.CompilerServices;
 
     /// <summary>
     /// Interface to represent a single node in a trace tree.

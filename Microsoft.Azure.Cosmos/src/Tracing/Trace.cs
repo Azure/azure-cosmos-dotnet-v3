@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
     internal sealed class Trace : ITrace
     {
         private static readonly IReadOnlyDictionary<string, object> EmptyDictionary = new Dictionary<string, object>();
+        private readonly object lockObject;
         private volatile List<ITrace> children;
         private volatile Dictionary<string, object> data;
         private ValueStopwatch stopwatch;
@@ -25,6 +26,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
             TraceSummary summary)
         {
             this.Name = name ?? throw new ArgumentNullException(nameof(name));
+            this.lockObject = new object();
             this.Id = Guid.NewGuid();
             this.StartTime = DateTime.UtcNow;
             this.stopwatch = ValueStopwatch.StartNew();
@@ -122,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public void AddChild(ITrace child)
         {
-            lock (this.Name)
+            lock (this.lockObject)
             {
                 if (!this.isBeingWalked)
                 {
@@ -172,7 +174,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public void AddDatum(string key, object value)
         {
-            lock (this.Name)
+            lock (this.lockObject)
             {
                 this.data ??= new Dictionary<string, object>();
 
@@ -192,7 +194,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public void AddOrUpdateDatum(string key, object value)
         {
-            lock (this.Name)
+            lock (this.lockObject)
             {
                 this.data ??= new Dictionary<string, object>();
 
@@ -217,7 +219,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 return; // Already set, return early
             }
 
-            lock (this.Name)
+            lock (this.lockObject)
             {
                 if (this.isBeingWalked)
                 {
@@ -239,7 +241,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         bool ITrace.TryGetDatum(string key, out object datum)
         {
-            lock (this.Name)
+            lock (this.lockObject)
             {
                 if (this.data == null)
                 {

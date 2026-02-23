@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
     using FullTextPath = Microsoft.Azure.Cosmos.FullTextPath;
+    using FullTextPolicy = Microsoft.Azure.Cosmos.FullTextPolicy;
 
     [TestClass]
     public class SettingsContractTests
@@ -1203,6 +1204,71 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(JTokenType.String, fullTextLanguageDeSerialized.Type, "Full Text Policy serialized language should be a string.");
             Assert.IsTrue(fullTextPath1.Equals(fullTextPathsDeSerialized.Value<JArray>()[0].ToObject<Cosmos.FullTextPath>()));
             Assert.IsTrue(fullTextPath2.Equals(fullTextPathsDeSerialized.Value<JArray>()[1].ToObject<Cosmos.FullTextPath>()));
+        }
+
+        [TestMethod]
+        [DataRow("en-US")]
+        [DataRow("fr-FR")]
+        [DataRow("de-DE")]
+        [DataRow("it-IT")]
+        [DataRow("pt-BR")]
+        [DataRow("pt-PT")]
+        [DataRow("es-ES")]
+        public void FullTextPolicySerializationWithAllSupportedLanguages(string language)
+        {
+            FullTextPolicy fullTextPolicy = new FullTextPolicy
+            {
+                DefaultLanguage = language,
+                FullTextPaths = new Collection<FullTextPath>
+                {
+                    new FullTextPath { Path = "/text1", Language = language },
+                    new FullTextPath { Path = "/text2", Language = "en-US" },
+                    new FullTextPath { Path = "/text3" } // No language specified, should use default
+                }
+            };
+
+            string serialized = CosmosSerialize(fullTextPolicy);
+            Assert.IsNotNull(serialized);
+            Assert.IsTrue(serialized.Contains($"\"defaultLanguage\":\"{language}\""),
+                $"Serialized JSON should contain defaultLanguage: {language}");
+
+            FullTextPolicy deserialized = CosmosDeserialize<FullTextPolicy>(serialized);
+            Assert.IsNotNull(deserialized);
+            Assert.AreEqual(language, deserialized.DefaultLanguage,
+                $"DefaultLanguage mismatch after deserialization for: {language}");
+            Assert.AreEqual(3, deserialized.FullTextPaths.Count);
+            Assert.AreEqual(language, deserialized.FullTextPaths[0].Language);
+            Assert.AreEqual("en-US", deserialized.FullTextPaths[1].Language);
+            Assert.IsNull(deserialized.FullTextPaths[2].Language);
+        }
+
+        [TestMethod]
+        [DataRow("en-US")]
+        [DataRow("fr-FR")]
+        [DataRow("de-DE")]
+        [DataRow("it-IT")]
+        [DataRow("ja-JP")]
+        [DataRow("pt-BR")]
+        [DataRow("pt-PT")]
+        [DataRow("es-ES")]
+        public void FullTextPathSerializationWithAllLanguages(string language)
+        {
+            FullTextPath fullTextPath = new FullTextPath
+            {
+                Path = "/testPath",
+                Language = language
+            };
+
+            string serialized = CosmosSerialize(fullTextPath);
+            Assert.IsNotNull(serialized);
+            Assert.IsTrue(serialized.Contains($"\"language\":\"{language}\""),
+                $"Serialized JSON should contain language: {language}");
+
+            FullTextPath deserialized = CosmosDeserialize<FullTextPath>(serialized);
+            Assert.IsNotNull(deserialized);
+            Assert.AreEqual("/testPath", deserialized.Path);
+            Assert.AreEqual(language, deserialized.Language,
+                $"Language mismatch after deserialization for: {language}");
         }
 
         private static T CosmosDeserialize<T>(string payload)

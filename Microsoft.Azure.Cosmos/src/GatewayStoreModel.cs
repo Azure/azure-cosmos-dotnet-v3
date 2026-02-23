@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos
                 // This is applicable for both per partition automatic failover and per partition circuit breaker.
                 if ((isPPAFEnabled || this.isThinClientEnabled)
                     && !ReplicatedResourceClient.IsMasterResource(request.ResourceType)
-                    && request.ResourceType.IsPartitioned())
+                    && (request.ResourceType.IsPartitioned() || request.ResourceType == ResourceType.StoredProcedure))
                 {
                     (bool isSuccess, PartitionKeyRange partitionKeyRange) = await TryResolvePartitionKeyRangeAsync(
                         request: request,
@@ -126,9 +126,18 @@ namespace Microsoft.Azure.Cosmos
                     this.thinClientStoreClient != null &&
                     GatewayStoreModel.IsOperationSupportedByThinClient(request);
 
-                Uri physicalAddress = ThinClientStoreClient.IsFeedRequest(request.OperationType)
+                Uri physicalAddress;
+
+                if (DistributedTransactionConstants.IsDistributedTransactionRequest(request.OperationType, request.ResourceType))
+                {
+                    physicalAddress = new Uri(this.endpointManager.ResolveServiceEndpoint(request), DistributedTransactionConstants.EndpointPath);
+                }
+                else
+                {
+                    physicalAddress = ThinClientStoreClient.IsFeedRequest(request.OperationType)
                         ? this.GetFeedUri(request)
                         : this.GetEntityUri(request);
+                }
 
                 if (canUseThinClient)
                 {
@@ -325,7 +334,8 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // Master resource operations don't require session token.
-            if (GatewayStoreModel.IsMasterOperation(request.ResourceType, request.OperationType))
+            if (GatewayStoreModel.IsMasterOperation(request.ResourceType, request.OperationType) 
+                || DistributedTransactionConstants.IsDistributedTransactionRequest(request.OperationType, request.ResourceType))
             {
                 if (!string.IsNullOrEmpty(request.Headers[HttpConstants.HttpHeaders.SessionToken]))
                 {
@@ -553,15 +563,28 @@ namespace Microsoft.Azure.Cosmos
 
         internal static bool IsOperationSupportedByThinClient(DocumentServiceRequest request)
         {
-            return request.ResourceType == ResourceType.Document
-                   && (request.OperationType == OperationType.Batch
-                   || request.OperationType == OperationType.Patch
-                   || request.OperationType == OperationType.Create
-                   || request.OperationType == OperationType.Read
-                   || request.OperationType == OperationType.Upsert
-                   || request.OperationType == OperationType.Replace
-                   || request.OperationType == OperationType.Delete
-                   || request.OperationType == OperationType.Query);
+            // Document operations
+            if (request.ResourceType == ResourceType.Document
+                && (request.OperationType == OperationType.Batch
+                || request.OperationType == OperationType.Patch
+                || request.OperationType == OperationType.Create
+                || request.OperationType == OperationType.Read
+                || request.OperationType == OperationType.Upsert
+                || request.OperationType == OperationType.Replace
+                || request.OperationType == OperationType.Delete
+                || request.OperationType == OperationType.Query))
+            {
+                return true;
+            }
+
+            // Stored Procedure execution
+            if (request.ResourceType == ResourceType.StoredProcedure
+                && request.OperationType == OperationType.ExecuteJavaScript)
+            {
+                return true;
+            }
+
+            return false;
         }
         private async Task<AccountProperties> GetDatabaseAccountPropertiesAsync()
         {

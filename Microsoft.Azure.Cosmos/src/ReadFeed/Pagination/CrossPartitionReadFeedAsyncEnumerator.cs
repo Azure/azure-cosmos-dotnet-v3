@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Tests.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
-    using Microsoft.Azure.Documents;
 
     internal sealed class CrossPartitionReadFeedAsyncEnumerator : ITracingAsyncEnumerator<TryCatch<CrossFeedRangePage<ReadFeedPage, ReadFeedState>>>
     {

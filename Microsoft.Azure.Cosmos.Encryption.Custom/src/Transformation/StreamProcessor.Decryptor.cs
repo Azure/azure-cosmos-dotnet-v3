@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
 namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 {
     using System;
@@ -39,16 +39,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         {
             _ = diagnosticsContext;
 
-            if (properties.EncryptionFormatVersion != EncryptionFormatVersion.Mde && properties.EncryptionFormatVersion != EncryptionFormatVersion.MdeWithCompression)
+            if (properties.EncryptionFormatVersion != EncryptionFormatVersion.Mde)
             {
                 throw new NotSupportedException($"Unknown encryption format version: {properties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
-            }
-
-            bool containsCompressed = properties.CompressedEncryptedPaths?.Count > 0;
-
-            if (properties.CompressionAlgorithm != CompressionOptions.CompressionAlgorithm.Brotli && containsCompressed)
-            {
-                throw new NotSupportedException($"Unknown compression algorithm {properties.CompressionAlgorithm}");
             }
 
             using ArrayPoolManager arrayPoolManager = new ();
@@ -212,15 +205,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 }
 
                 (byte[] bytes, int processedBytes) = this.Encryptor.Decrypt(encryptionKey, cipherTextWithTypeMarker, cipherTextLength, arrayPoolManager);
-
-                if (containsCompressed && properties.CompressedEncryptedPaths.TryGetValue(decryptPropertyName, out int decompressedSize))
-                {
-                    BrotliCompressor decompressor = new ();
-                    byte[] buffer = arrayPoolManager.Rent(decompressedSize);
-                    processedBytes = decompressor.Decompress(bytes, processedBytes, buffer);
-
-                    bytes = buffer;
-                }
 
                 ReadOnlySpan<byte> bytesToWrite = bytes.AsSpan(0, processedBytes);
                 switch ((TypeMarker)cipherTextWithTypeMarker[0])

@@ -7,6 +7,7 @@
     using System.Linq;
     using System.Text;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using static Microsoft.Azure.Cosmos.Tests.Json.JsonTestUtils;
 
@@ -630,7 +631,7 @@
         [Owner("mayapainter")]
         public void UserStringTest()
         {
-            IJsonStringDictionary jsonStringDictionary = 
+            IJsonStringDictionary jsonStringDictionary =
                 new JsonStringDictionary(new List<string> { "double", "string", "boolean", "null", "datetime", "spatialPoint", "text" });
 
             int userStringId = 0;
@@ -1548,6 +1549,1245 @@
                 };
 
                 this.VerifyWriter(tokensToWrite, binaryPayload);
+            }
+        }
+
+        [TestMethod]
+        [Owner("mayapainter")]
+        public void Base64StringsTest()
+        {
+            // --------------------------------------
+            // Base64: Small Length (4 to 36 bytes)
+            // --------------------------------------
+            {
+                JsonToken[] tokensToWrite =
+                {
+                    JsonToken.ArrayStart(),
+                        JsonToken.String("TQ=="),
+                        JsonToken.String("TWE="),
+                        JsonToken.String("TWFu"),
+                        JsonToken.String("T3Blbg=="),
+                        JsonToken.String("T3BlbkE="),
+                        JsonToken.String("T3BlbkFJ"),
+                        JsonToken.String("TGl2ZXJwbw=="),
+                        JsonToken.String("TGl2ZXJwb28="),
+                        JsonToken.String("TGl2ZXJwb29s"),
+                        JsonToken.String("TG9uZG9uIEJyaQ=="),
+                        JsonToken.String("TG9uZG9uIEJyaWQ="),
+                        JsonToken.String("TG9uZG9uIEJyaWRn"),
+                        JsonToken.String("Um9ja3dhbGwgVGV4YQ=="),
+                        JsonToken.String("Um9ja3dhbGwgVGV4YXM="),
+                        JsonToken.String("Um9ja3dhbGwgVGV4YXMg"),
+                        JsonToken.String("VGhlIGJyb3duIGRvZyBqdQ=="),
+                        JsonToken.String("VGhlIGJyb3duIGRvZyBqdW0="),
+                        JsonToken.String("VGhlIGJyb3duIGRvZyBqdW1w"),
+                        JsonToken.String("TWljcm9zb2Z0IEF6dXJlIENsbw=="),
+                        JsonToken.String("TWljcm9zb2Z0IEF6dXJlIENsb3U="),
+                        JsonToken.String("TWljcm9zb2Z0IEF6dXJlIENsb3Vk"),
+                        JsonToken.String("ZHJlYW0gaG9wZSBtb29uIGhvcGUgcw=="),
+                        JsonToken.String("ZHJlYW0gaG9wZSBtb29uIGhvcGUgc3U="),
+                        JsonToken.String("ZHJlYW0gaG9wZSBtb29uIGhvcGUgc3Vu"),
+                        JsonToken.String("ir4fbPMf40FNh58zuCRR0C14HYLSLFxuAw=="),
+                        JsonToken.String("ir4fbPMf40FNh58zuCRR0C14HYLSLFxuAw0="),
+                        JsonToken.String("ir4fbPMf40FNh58zuCRR0C14HYLSLFxuAw06"),
+                    JsonToken.ArrayEnd(),
+                };
+
+                string[] expectedText =
+                {
+                    @"[""TQ=="",""TWE="",""TWFu"",""T3Blbg=="",""T3BlbkE="",""T3BlbkFJ"",""TGl2ZXJwbw=="",""TGl2ZXJwb28="",""TGl2ZXJwb29s"",",
+                    @"""TG9uZG9uIEJyaQ=="",""TG9uZG9uIEJyaWQ="",""TG9uZG9uIEJyaWRn"",""Um9ja3dhbGwgVGV4YQ=="",""Um9ja3dhbGwgVGV4YXM",
+                    @"="",""Um9ja3dhbGwgVGV4YXMg"",""VGhlIGJyb3duIGRvZyBqdQ=="",""VGhlIGJyb3duIGRvZyBqdW0="",""VGhlIGJyb3duIGRvZyB",
+                    @"qdW1w"",""TWljcm9zb2Z0IEF6dXJlIENsbw=="",""TWljcm9zb2Z0IEF6dXJlIENsb3U="",""TWljcm9zb2Z0IEF6dXJlIENsb3Vk"",",
+                    @"""ZHJlYW0gaG9wZSBtb29uIGhvcGUgcw=="",""ZHJlYW0gaG9wZSBtb29uIGhvcGUgc3U="",""ZHJlYW0gaG9wZSBtb29uIGhvcGUgc",
+                    @"3Vu"",""ir4fbPMf40FNh58zuCRR0C14HYLSLFxuAw=="",""ir4fbPMf40FNh58zuCRR0C14HYLSLFxuAw0="",""ir4fbPMf40FNh58z",
+                    @"uCRR0C14HYLSLFxuAw06""]",
+                };
+
+                string[] expectedBinary1 =
+                {
+                    "00000000  80 E6 37 02 1B 00 84 54  51 3D 3D 84 54 57 45 3D",
+                    "00000010  84 54 57 46 75 88 54 33  42 6C 62 67 3D 3D 88 54",
+                    "00000020  33 42 6C 62 6B 45 3D 88  54 33 42 6C 62 6B 46 4A",
+                    "00000030  8C 54 47 6C 32 5A 58 4A  77 62 77 3D 3D 8C 54 47",
+                    "00000040  6C 32 5A 58 4A 77 62 32  38 3D 8C 54 47 6C 32 5A",
+                    "00000050  58 4A 77 62 32 39 73 90  54 47 39 75 5A 47 39 75",
+                    "00000060  49 45 4A 79 61 51 3D 3D  90 54 47 39 75 5A 47 39",
+                    "00000070  75 49 45 4A 79 61 57 51  3D 90 54 47 39 75 5A 47",
+                    "00000080  39 75 49 45 4A 79 61 57  52 6E 94 55 6D 39 6A 61",
+                    "00000090  33 64 68 62 47 77 67 56  47 56 34 59 51 3D 3D 94",
+                    "000000A0  55 6D 39 6A 61 33 64 68  62 47 77 67 56 47 56 34",
+                    "000000B0  59 58 4D 3D 94 55 6D 39  6A 61 33 64 68 62 47 77",
+                    "000000C0  67 56 47 56 34 59 58 4D  67 98 56 47 68 6C 49 47",
+                    "000000D0  4A 79 62 33 64 75 49 47  52 76 5A 79 42 71 64 51",
+                    "000000E0  3D 3D 98 56 47 68 6C 49  47 4A 79 62 33 64 75 49",
+                    "000000F0  47 52 76 5A 79 42 71 64  57 30 3D 98 56 47 68 6C",
+                    "00000100  49 47 4A 79 62 33 64 75  49 47 52 76 5A 79 42 71",
+                    "00000110  64 57 31 77 9C 54 57 6C  6A 63 6D 39 7A 62 32 5A",
+                    "00000120  30 49 45 46 36 64 58 4A  6C 49 45 4E 73 62 77 3D",
+                    "00000130  3D 9C 54 57 6C 6A 63 6D  39 7A 62 32 5A 30 49 45",
+                    "00000140  46 36 64 58 4A 6C 49 45  4E 73 62 33 55 3D 9C 54",
+                    "00000150  57 6C 6A 63 6D 39 7A 62  32 5A 30 49 45 46 36 64",
+                    "00000160  58 4A 6C 49 45 4E 73 62  33 56 6B A0 5A 48 4A 6C",
+                    "00000170  59 57 30 67 61 47 39 77  5A 53 42 74 62 32 39 75",
+                    "00000180  49 47 68 76 63 47 55 67  63 77 3D 3D A0 5A 48 4A",
+                    "00000190  6C 59 57 30 67 61 47 39  77 5A 53 42 74 62 32 39",
+                    "000001A0  75 49 47 68 76 63 47 55  67 63 33 55 3D A0 5A 48",
+                    "000001B0  4A 6C 59 57 30 67 61 47  39 77 5A 53 42 74 62 32",
+                    "000001C0  39 75 49 47 68 76 63 47  55 67 63 33 56 75 A4 69",
+                    "000001D0  72 34 66 62 50 4D 66 34  30 46 4E 68 35 38 7A 75",
+                    "000001E0  43 52 52 30 43 31 34 48  59 4C 53 4C 46 78 75 41",
+                    "000001F0  77 3D 3D A4 69 72 34 66  62 50 4D 66 34 30 46 4E",
+                    "00000200  68 35 38 7A 75 43 52 52  30 43 31 34 48 59 4C 53",
+                    "00000210  4C 46 78 75 41 77 30 3D  A4 69 72 34 66 62 50 4D",
+                    "00000220  66 34 30 46 4E 68 35 38  7A 75 43 52 52 30 43 31",
+                    "00000230  34 48 59 4C 53 4C 46 78  75 41 77 30 36"
+                };
+
+                string[] expectedBinary2 =
+                {
+                    "00000000  80 E6 FF 01 1B 00 84 54  51 3D 3D 84 54 57 45 3D",
+                    "00000010  84 54 57 46 75 88 54 33  42 6C 62 67 3D 3D 88 54",
+                    "00000020  33 42 6C 62 6B 45 3D 88  54 33 42 6C 62 6B 46 4A",
+                    "00000030  8C 54 47 6C 32 5A 58 4A  77 62 77 3D 3D 8C 54 47",
+                    "00000040  6C 32 5A 58 4A 77 62 32  38 3D 8C 54 47 6C 32 5A",
+                    "00000050  58 4A 77 62 32 39 73 90  54 47 39 75 5A 47 39 75",
+                    "00000060  49 45 4A 79 61 51 3D 3D  90 54 47 39 75 5A 47 39",
+                    "00000070  75 49 45 4A 79 61 57 51  3D 90 54 47 39 75 5A 47",
+                    "00000080  39 75 49 45 4A 79 61 57  52 6E 94 55 6D 39 6A 61",
+                    "00000090  33 64 68 62 47 77 67 56  47 56 34 59 51 3D 3D 94",
+                    "000000A0  55 6D 39 6A 61 33 64 68  62 47 77 67 56 47 56 34",
+                    "000000B0  59 58 4D 3D 94 55 6D 39  6A 61 33 64 68 62 47 77",
+                    "000000C0  67 56 47 56 34 59 58 4D  67 71 06 02 54 68 65 20",
+                    "000000D0  62 72 6F 77 6E 20 64 6F  67 20 6A 75 71 06 01 54",
+                    "000000E0  68 65 20 62 72 6F 77 6E  20 64 6F 67 20 6A 75 6D",
+                    "000000F0  98 56 47 68 6C 49 47 4A  79 62 33 64 75 49 47 52",
+                    "00000100  76 5A 79 42 71 64 57 31  77 71 07 02 4D 69 63 72",
+                    "00000110  6F 73 6F 66 74 20 41 7A  75 72 65 20 43 6C 6F 71",
+                    "00000120  07 01 4D 69 63 72 6F 73  6F 66 74 20 41 7A 75 72",
+                    "00000130  65 20 43 6C 6F 75 9C 54  57 6C 6A 63 6D 39 7A 62",
+                    "00000140  32 5A 30 49 45 46 36 64  58 4A 6C 49 45 4E 73 62",
+                    "00000150  33 56 6B 71 08 02 64 72  65 61 6D 20 68 6F 70 65",
+                    "00000160  20 6D 6F 6F 6E 20 68 6F  70 65 20 73 71 08 01 64",
+                    "00000170  72 65 61 6D 20 68 6F 70  65 20 6D 6F 6F 6E 20 68",
+                    "00000180  6F 70 65 20 73 75 A0 5A  48 4A 6C 59 57 30 67 61",
+                    "00000190  47 39 77 5A 53 42 74 62  32 39 75 49 47 68 76 63",
+                    "000001A0  47 55 67 63 33 56 75 71  09 02 8A BE 1F 6C F3 1F",
+                    "000001B0  E3 41 4D 87 9F 33 B8 24  51 D0 2D 78 1D 82 D2 2C",
+                    "000001C0  5C 6E 03 71 09 01 8A BE  1F 6C F3 1F E3 41 4D 87",
+                    "000001D0  9F 33 B8 24 51 D0 2D 78  1D 82 D2 2C 5C 6E 03 0D",
+                    "000001E0  A4 69 72 34 66 62 50 4D  66 34 30 46 4E 68 35 38",
+                    "000001F0  7A 75 43 52 52 30 43 31  34 48 59 4C 53 4C 46 78",
+                    "00000200  75 41 77 30 36"
+                };
+
+                ExecuteAndValidate(tokensToWrite, expectedText, expectedBinary1, JsonWriteOptions.None);
+                ExecuteAndValidate(tokensToWrite, expectedText, expectedBinary2, JsonWriteOptions.EnableBase64Strings);
+            }
+
+            // --------------------------------------
+            // Base64 URL: Small Length (20 to 36 bytes)
+            // --------------------------------------
+            {
+                JsonToken[] tokensToWrite =
+                {
+                    JsonToken.ArrayStart(),
+                        JsonToken.String("ZJZ_zM4oK2kvKhQXzlxi"),
+                        JsonToken.String("hgRyg26Sbn5_YGwaQRo="),
+                        JsonToken.String("bNGd7-Tca1Cmo2J9qA=="),
+                        JsonToken.String("qOZlu3Ocr-8tmGkqkLKJxc04"),
+                        JsonToken.String("KOCBGwtjEr513bB1r_5q0FA="),
+                        JsonToken.String("G1CsCUEqvx13pX4f-qF3VA=="),
+                        JsonToken.String("ibuKLVzkgEnBBaFF42IBOOkcb_wA"),
+                        JsonToken.String("pC3TLU5-EVHSFLBzAO29YUUzs5I="),
+                        JsonToken.String("seiItBOs1nFpsI48wXL4BjO-Gg=="),
+                        JsonToken.String("_Yc2bE4qf54zF6pYh3Lw729v0P9xQW5l"),
+                        JsonToken.String("i2A_Yu-maR9HlvRyNp0Zmr5zU8KrTGo="),
+                        JsonToken.String("_7K8d9X-Ld5yA23i_5yA8x3j_2rVv5P_=="),
+                        JsonToken.String("fc3N3-fJqHh4ueJ5eUo_Ungx5uFzweKnyifK"),
+                        JsonToken.String("Lpnrursx4ZEmEV10E2YmHaR8Bk_ICZjV6dA="),
+                        JsonToken.String("Lw3pggK6Zbnh3vDvRSyITbim-5Ku8W8GNQ=="),
+                    JsonToken.ArrayEnd(),
+                };
+
+                string[] expectedText =
+                {
+                    @"[""ZJZ_zM4oK2kvKhQXzlxi"",""hgRyg26Sbn5_YGwaQRo="",""bNGd7-Tca1Cmo2J9qA=="",""qOZlu3Ocr-8tmGkqkLKJxc04"",""KO",
+                    @"CBGwtjEr513bB1r_5q0FA="",""G1CsCUEqvx13pX4f-qF3VA=="",""ibuKLVzkgEnBBaFF42IBOOkcb_wA"",""pC3TLU5-EVHSFLBzA",
+                    @"O29YUUzs5I="",""seiItBOs1nFpsI48wXL4BjO-Gg=="",""_Yc2bE4qf54zF6pYh3Lw729v0P9xQW5l"",""i2A_Yu-maR9HlvRyNp0Z",
+                    @"mr5zU8KrTGo="",""_7K8d9X-Ld5yA23i_5yA8x3j_2rVv5P_=="",""fc3N3-fJqHh4ueJ5eUo_Ungx5uFzweKnyifK"",""Lpnrursx4",
+                    @"ZEmEV10E2YmHaR8Bk_ICZjV6dA="",""Lw3pggK6Zbnh3vDvRSyITbim-5Ku8W8GNQ==""]"
+                };
+
+                string[] expectedBinary1 =
+                {
+                    "00000000  80 E3 B5 01 94 5A 4A 5A  5F 7A 4D 34 6F 4B 32 6B",
+                    "00000010  76 4B 68 51 58 7A 6C 78  69 94 68 67 52 79 67 32",
+                    "00000020  36 53 62 6E 35 5F 59 47  77 61 51 52 6F 3D 94 62",
+                    "00000030  4E 47 64 37 2D 54 63 61  31 43 6D 6F 32 4A 39 71",
+                    "00000040  41 3D 3D 98 71 4F 5A 6C  75 33 4F 63 72 2D 38 74",
+                    "00000050  6D 47 6B 71 6B 4C 4B 4A  78 63 30 34 98 4B 4F 43",
+                    "00000060  42 47 77 74 6A 45 72 35  31 33 62 42 31 72 5F 35",
+                    "00000070  71 30 46 41 3D 98 47 31  43 73 43 55 45 71 76 78",
+                    "00000080  31 33 70 58 34 66 2D 71  46 33 56 41 3D 3D 9C 69",
+                    "00000090  62 75 4B 4C 56 7A 6B 67  45 6E 42 42 61 46 46 34",
+                    "000000A0  32 49 42 4F 4F 6B 63 62  5F 77 41 9C 70 43 33 54",
+                    "000000B0  4C 55 35 2D 45 56 48 53  46 4C 42 7A 41 4F 32 39",
+                    "000000C0  59 55 55 7A 73 35 49 3D  9C 73 65 69 49 74 42 4F",
+                    "000000D0  73 31 6E 46 70 73 49 34  38 77 58 4C 34 42 6A 4F",
+                    "000000E0  2D 47 67 3D 3D A0 5F 59  63 32 62 45 34 71 66 35",
+                    "000000F0  34 7A 46 36 70 59 68 33  4C 77 37 32 39 76 30 50",
+                    "00000100  39 78 51 57 35 6C A0 69  32 41 5F 59 75 2D 6D 61",
+                    "00000110  52 39 48 6C 76 52 79 4E  70 30 5A 6D 72 35 7A 55",
+                    "00000120  38 4B 72 54 47 6F 3D A2  5F 37 4B 38 64 39 58 2D",
+                    "00000130  4C 64 35 79 41 32 33 69  5F 35 79 41 38 78 33 6A",
+                    "00000140  5F 32 72 56 76 35 50 5F  3D 3D A4 66 63 33 4E 33",
+                    "00000150  2D 66 4A 71 48 68 34 75  65 4A 35 65 55 6F 5F 55",
+                    "00000160  6E 67 78 35 75 46 7A 77  65 4B 6E 79 69 66 4B A4",
+                    "00000170  4C 70 6E 72 75 72 73 78  34 5A 45 6D 45 56 31 30",
+                    "00000180  45 32 59 6D 48 61 52 38  42 6B 5F 49 43 5A 6A 56",
+                    "00000190  36 64 41 3D A4 4C 77 33  70 67 67 4B 36 5A 62 6E",
+                    "000001A0  68 33 76 44 76 52 53 79  49 54 62 69 6D 2D 35 4B",
+                    "000001B0  75 38 57 38 47 4E 51 3D  3D"
+                };
+
+                string[] expectedBinary2 =
+                {
+                    "00000000  80 E3 85 01 94 5A 4A 5A  5F 7A 4D 34 6F 4B 32 6B",
+                    "00000010  76 4B 68 51 58 7A 6C 78  69 94 68 67 52 79 67 32",
+                    "00000020  36 53 62 6E 35 5F 59 47  77 61 51 52 6F 3D 94 62",
+                    "00000030  4E 47 64 37 2D 54 63 61  31 43 6D 6F 32 4A 39 71",
+                    "00000040  41 3D 3D 98 71 4F 5A 6C  75 33 4F 63 72 2D 38 74",
+                    "00000050  6D 47 6B 71 6B 4C 4B 4A  78 63 30 34 73 06 01 28",
+                    "00000060  E0 81 1B 0B 63 12 BE 75  DD B0 75 AF FE 6A D0 50",
+                    "00000070  73 06 02 1B 50 AC 09 41  2A BF 1D 77 A5 7E 1F FA",
+                    "00000080  A1 77 54 9C 69 62 75 4B  4C 56 7A 6B 67 45 6E 42",
+                    "00000090  42 61 46 46 34 32 49 42  4F 4F 6B 63 62 5F 77 41",
+                    "000000A0  73 07 01 A4 2D D3 2D 4E  7E 11 51 D2 14 B0 73 00",
+                    "000000B0  ED BD 61 45 33 B3 92 73  07 02 B1 E8 88 B4 13 AC",
+                    "000000C0  D6 71 69 B0 8E 3C C1 72  F8 06 33 BE 1A A0 5F 59",
+                    "000000D0  63 32 62 45 34 71 66 35  34 7A 46 36 70 59 68 33",
+                    "000000E0  4C 77 37 32 39 76 30 50  39 78 51 57 35 6C 73 08",
+                    "000000F0  01 8B 60 3F 62 EF A6 69  1F 47 96 F4 72 36 9D 19",
+                    "00000100  9A BE 73 53 C2 AB 4C 6A  A2 5F 37 4B 38 64 39 58",
+                    "00000110  2D 4C 64 35 79 41 32 33  69 5F 35 79 41 38 78 33",
+                    "00000120  6A 5F 32 72 56 76 35 50  5F 3D 3D A4 66 63 33 4E",
+                    "00000130  33 2D 66 4A 71 48 68 34  75 65 4A 35 65 55 6F 5F",
+                    "00000140  55 6E 67 78 35 75 46 7A  77 65 4B 6E 79 69 66 4B",
+                    "00000150  73 09 01 2E 99 EB BA BB  31 E1 91 26 11 5D 74 13",
+                    "00000160  66 26 1D A4 7C 06 4F C8  09 98 D5 E9 D0 73 09 02",
+                    "00000170  2F 0D E9 82 02 BA 65 B9  E1 DE F0 EF 45 2C 88 4D",
+                    "00000180  B8 A6 FB 92 AE F1 6F 06  35"
+                };
+
+                ExecuteAndValidate(tokensToWrite, expectedText, expectedBinary1, JsonWriteOptions.None);
+                ExecuteAndValidate(tokensToWrite, expectedText, expectedBinary2, JsonWriteOptions.EnableBase64Strings);
+            }
+
+            // --------------------------------------
+            // Base64: Medium Length (100 to 256 bytes)
+            // --------------------------------------
+            {
+                JsonToken[] tokensToWrite =
+                {
+                    JsonToken.ArrayStart(),
+                        JsonToken.String("EbyPEDnfimRJnmBJYW7Iq6Gl1wYzV760XwvpBa6fVbR52O8YobNkdf+A3q10fhbrMe5Moxw3fmn6BgW4JYg2acfC1znUZ5IvThoT"),
+                        JsonToken.String("gAAAAABnkrrmWjhg614TGDpZKHblrTxUMtXPPoaOQdJke7QQN5orn1+hOJt5UPK65sNflmKJRqnkqKzAWMiPBDQxTMCa9uHQ6skp574NXqwonY5IssV5LWsFT+vk6bLeXLehrrA0VPIHjK1LKhTuIm4mymkhvHhA3g=="),
+                        JsonToken.String("tgrstY0naYHJDU+8Xjf6PUFVl4GKtC+Un2e7OuaFKc7+I2D7Q1OAtnPVpfQzpwkPm5+Pa19gCn0H7w38+L73EzsbKDuYiAFGQ8SRo/k3MvAljfOvviKCoVKjM0AKyYdsWL5r69ufoTPAjHwJhDw+zQ16y6EN90VnZnkQAmAiQ4tAg3qFSf9ynv7Pk2bZsbMmoFMH7bI="),
+                        JsonToken.String("WTXMDL2XdMOaRnNRNeAlaw8jsUcaEPBxJvSC47SEz2v3i1FRkNvvxbDFXtEThuhuqkXLjpZw9dIO4Oq/xIc3JcqE/JE87POOxrG35PH6wBCpa0LvRDQITI/S7/zOjX1EqoI4Ku/l58l7mfVqAa3rquaqKzwd3YYitB2ikTHGuAQ7oIu2e8bV60OjtmDZoCdGsdyforPa7YjK5MIt/Rv31bWh9CimjyNGzzCXzhDK96h/oeWsjuJVXUOS+Ujefg=="),
+                    JsonToken.ArrayEnd(),
+                };
+
+                string[] expectedText =
+                {
+                    @"[""EbyPEDnfimRJnmBJYW7Iq6Gl1wYzV760XwvpBa6fVbR52O8YobNkdf+A3q10fhbrMe5Moxw3fmn6BgW4JYg2acfC1znUZ5IvTh",
+                    @"oT"",""gAAAAABnkrrmWjhg614TGDpZKHblrTxUMtXPPoaOQdJke7QQN5orn1+hOJt5UPK65sNflmKJRqnkqKzAWMiPBDQxTMCa9uH",
+                    @"Q6skp574NXqwonY5IssV5LWsFT+vk6bLeXLehrrA0VPIHjK1LKhTuIm4mymkhvHhA3g=="",""tgrstY0naYHJDU+8Xjf6PUFVl4GK",
+                    @"tC+Un2e7OuaFKc7+I2D7Q1OAtnPVpfQzpwkPm5+Pa19gCn0H7w38+L73EzsbKDuYiAFGQ8SRo/k3MvAljfOvviKCoVKjM0AKyYds",
+                    @"WL5r69ufoTPAjHwJhDw+zQ16y6EN90VnZnkQAmAiQ4tAg3qFSf9ynv7Pk2bZsbMmoFMH7bI="",""WTXMDL2XdMOaRnNRNeAlaw8js",
+                    @"UcaEPBxJvSC47SEz2v3i1FRkNvvxbDFXtEThuhuqkXLjpZw9dIO4Oq/xIc3JcqE/JE87POOxrG35PH6wBCpa0LvRDQITI/S7/zOj",
+                    @"X1EqoI4Ku/l58l7mfVqAa3rquaqKzwd3YYitB2ikTHGuAQ7oIu2e8bV60OjtmDZoCdGsdyforPa7YjK5MIt/Rv31bWh9CimjyNGz",
+                    @"zCXzhDK96h/oeWsjuJVXUOS+Ujefg==""]"
+                };
+
+                string[] expectedBinary1 =
+                {
+                    "00000000  80 E3 80 02 7E 64 45 71  1E 5A 24 BA CD E9 B6 54",
+                    "00000010  E9 6E 0B 95 D9 EB 2D 19  B7 1D D9 B1 7B 56 6F BD",
+                    "00000020  D9 60 D8 BB 1D 2E 0C DB  CC 56 B1 B4 26 7B E2 B2",
+                    "00000030  6F B1 73 4D 36 AF 82 B3  78 0C 66 46 8B E5 CD 72",
+                    "00000040  AD F9 C6 DF 67 E6 B6 DB  26 3C 5F 69 CA EC 59 16",
+                    "00000050  1E 9B 87 31 BD BB AA AD  25 ED 54 F4 9B 0A 7E A4",
+                    "00000060  E7 60 30 18 0C 0A DD 6B  B9 BC 7D 55 A3 CF B6 18",
+                    "00000070  8D 7A 24 C2 B5 4B A4 98  2D A7 E2 AB 4D 3A 16 0A",
+                    "00000080  7D 87 9F 51 B2 72 5D BE  45 A3 CE DA 5B EE 8E AD",
+                    "00000090  D0 4F 25 BD 56 85 2E 6D  B5 B9 D3 CC 6E 2F 95 D2",
+                    "000000A0  B8 7B 1D 5F EA 83 D7 66  1A 2A 24 46 F1 D4 E6 30",
+                    "000000B0  9C AB 23 A3 B6 F9 1A 5E  BB D1 9C D8 F8 FD ED CE",
+                    "000000C0  D6 92 F3 B9 B5 C6 BC CE  8D D4 95 7D 6D 13 33 CB",
+                    "000000D0  58 66 19 2D 97 07 61 56  68 12 A9 5E C6 98 4B 34",
+                    "000000E0  B5 9E 6C D3 DA F9 F6 1A  6D 47 A2 83 B3 73 AF 07",
+                    "000000F0  7E C8 F4 B3 7C 4E CF C2  DC E1 2C 52 49 AC AE 70",
+                    "00000100  58 B5 D9 06 AD 1A AD 6C  DA 71 49 1F AE AA 6E 59",
+                    "00000110  F9 F6 AC 87 8D CB F1 6D  95 94 11 6F D1 D8 33 48",
+                    "00000120  77 43 AD 70 73 54 0F BF  AF A1 ED DA 0A 1A 8E E5",
+                    "00000130  CE 43 37 0C 79 BB CF 70  2B E6 6D 56 D4 CF C5 4B",
+                    "00000140  62 3D 9B 0E 1A 8F 51 DC  54 FA 7E AD 67 4D 7B 90",
+                    "00000150  AD 36 3F ED F6 F4 72 F8  B6 2E D5 4D 58 70 99 CF",
+                    "00000160  92 E7 57 66 4D 6E CB D5  CD 6F 2A 34 A8 46 DE 95",
+                    "00000170  68 E2 7D A5 8F C6 6C 79  5B D1 99 83 59 DD 5A F7",
+                    "00000180  3A 1A 6C 07 D3 51 1A 3D  78 9E C5 8D 53 73 2E EF",
+                    "00000190  B6 DF A0 6B 99 58 3B 17  37 DB 6F 63 13 79 13 27",
+                    "000001A0  7B 7F 00 01 57 2A B6 49  64 CA B0 E4 E6 33 2C 75",
+                    "000001B0  3B A5 CE 72 90 1D BE E3  D4 F3 EA 38 5C 84 0A F1",
+                    "000001C0  4A FB 74 48 BB 4D 8B 7A  99 7D 96 8E 19 A5 6B A7",
+                    "000001D0  DD 8E 17 13 8D 58 7A 91  8A AE A3 EB F1 35 96 A9",
+                    "000001E0  86 6B EF 39 72 F2 49 7B  C6 5F F8 E4 78 A6 1C C7",
+                    "000001F0  8B 2F 65 11 77 83 3E 9F  78 F9 71 56 83 22 6D 77",
+                    "00000200  E1 10 1E 86 31 ED 52 62  34 49 4D BE A6 B7 97 FE",
+                    "00000210  A9 C6 C6 8A F1 77 92 B6  AC BF D8 35 1C FB D6 36",
+                    "00000220  5B E3 C1 F0 4C 1E AF 87  E3 4B FD 9D 3C CB 66 D3",
+                    "00000230  74 A1 2C BD A6 22 8F F5  60 F4 F6 4E D6 65 65 9C",
+                    "00000240  D8 6A 83 3D D5 F4 36 51  FB 1E 92 8F 73 72 DE FC",
+                    "00000250  96 43 C3 B7 AC 7A 59 6B  26 E9 2F A9 7D 16 13 5F",
+                    "00000260  D1 B9 61 BA AD CE 3B 8F  7A FD 10 AB 47 13 97 39",
+                    "00000270  1B FA F5 2E 5F E7 EA BA  D2 8A AD 3E A7 AB AA BA",
+                    "00000280  6C 3E F7 7A"
+                };
+
+                string[] expectedBinary2 =
+                {
+                    "00000000  80 E3 23 02 71 19 00 11  BC 8F 10 39 DF 8A 64 49",
+                    "00000010  9E 60 49 61 6E C8 AB A1  A5 D7 06 33 57 BE B4 5F",
+                    "00000020  0B E9 05 AE 9F 55 B4 79  D8 EF 18 A1 B3 64 75 FF",
+                    "00000030  80 DE AD 74 7E 16 EB 31  EE 4C A3 1C 37 7E 69 FA",
+                    "00000040  06 05 B8 25 88 36 69 C7  C2 D7 39 D4 67 92 2F 4E",
+                    "00000050  1A 13 71 29 02 80 00 00  00 00 67 92 BA E6 5A 38",
+                    "00000060  60 EB 5E 13 18 3A 59 28  76 E5 AD 3C 54 32 D5 CF",
+                    "00000070  3E 86 8E 41 D2 64 7B B4  10 37 9A 2B 9F 5F A1 38",
+                    "00000080  9B 79 50 F2 BA E6 C3 5F  96 62 89 46 A9 E4 A8 AC",
+                    "00000090  C0 58 C8 8F 04 34 31 4C  C0 9A F6 E1 D0 EA C9 29",
+                    "000000A0  E7 BE 0D 5E AC 28 9D 8E  48 B2 C5 79 2D 6B 05 4F",
+                    "000000B0  EB E4 E9 B2 DE 5C B7 A1  AE B0 34 54 F2 07 8C AD",
+                    "000000C0  4B 2A 14 EE 22 6E 26 CA  69 21 BC 78 40 DE 71 32",
+                    "000000D0  01 B6 0A EC B5 8D 27 69  81 C9 0D 4F BC 5E 37 FA",
+                    "000000E0  3D 41 55 97 81 8A B4 2F  94 9F 67 BB 3A E6 85 29",
+                    "000000F0  CE FE 23 60 FB 43 53 80  B6 73 D5 A5 F4 33 A7 09",
+                    "00000100  0F 9B 9F 8F 6B 5F 60 0A  7D 07 EF 0D FC F8 BE F7",
+                    "00000110  13 3B 1B 28 3B 98 88 01  46 43 C4 91 A3 F9 37 32",
+                    "00000120  F0 25 8D F3 AF BE 22 82  A1 52 A3 33 40 0A C9 87",
+                    "00000130  6C 58 BE 6B EB DB 9F A1  33 C0 8C 7C 09 84 3C 3E",
+                    "00000140  CD 0D 7A CB A1 0D F7 45  67 66 79 10 02 60 22 43",
+                    "00000150  8B 40 83 7A 85 49 FF 72  9E FE CF 93 66 D9 B1 B3",
+                    "00000160  26 A0 53 07 ED B2 71 40  02 59 35 CC 0C BD 97 74",
+                    "00000170  C3 9A 46 73 51 35 E0 25  6B 0F 23 B1 47 1A 10 F0",
+                    "00000180  71 26 F4 82 E3 B4 84 CF  6B F7 8B 51 51 90 DB EF",
+                    "00000190  C5 B0 C5 5E D1 13 86 E8  6E AA 45 CB 8E 96 70 F5",
+                    "000001A0  D2 0E E0 EA BF C4 87 37  25 CA 84 FC 91 3C EC F3",
+                    "000001B0  8E C6 B1 B7 E4 F1 FA C0  10 A9 6B 42 EF 44 34 08",
+                    "000001C0  4C 8F D2 EF FC CE 8D 7D  44 AA 82 38 2A EF E5 E7",
+                    "000001D0  C9 7B 99 F5 6A 01 AD EB  AA E6 AA 2B 3C 1D DD 86",
+                    "000001E0  22 B4 1D A2 91 31 C6 B8  04 3B A0 8B B6 7B C6 D5",
+                    "000001F0  EB 43 A3 B6 60 D9 A0 27  46 B1 DC 9F A2 B3 DA ED",
+                    "00000200  88 CA E4 C2 2D FD 1B F7  D5 B5 A1 F4 28 A6 8F 23",
+                    "00000210  46 CF 30 97 CE 10 CA F7  A8 7F A1 E5 AC 8E E2 55",
+                    "00000220  5D 43 92 F9 48 DE 7E"
+                };
+
+                ExecuteAndValidate(tokensToWrite, expectedText, expectedBinary1, JsonWriteOptions.None);
+                ExecuteAndValidate(tokensToWrite, expectedText, expectedBinary2, JsonWriteOptions.EnableBase64Strings);
+            }
+
+            // --------------------------------------
+            // Base64 URL: Medium Length (100 to 256 bytes)
+            // --------------------------------------
+            {
+                JsonToken[] tokensToWrite =
+                {
+                    JsonToken.ArrayStart(),
+                        JsonToken.String("EbyPEDnfimRJnmBJYW7Iq6Gl1wYzV760XwvpBa6fVbR52O8YobNkdf-A3q10fhbrMe5Moxw3fmn6BgW4JYg2acfC1znUZ5IvThoT"),
+                        JsonToken.String("gAAAAABnkrrmWjhg614TGDpZKHblrTxUMtXPPoaOQdJke7QQN5orn1-hOJt5UPK65sNflmKJRqnkqKzAWMiPBDQxTMCa9uHQ6skp574NXqwonY5IssV5LWsFT-vk6bLeXLehrrA0VPIHjK1LKhTuIm4mymkhvHhA3g=="),
+                        JsonToken.String("tgrstY0naYHJDU-8Xjf6PUFVl4GKtC-Un2e7OuaFKc7-I2D7Q1OAtnPVpfQzpwkPm5-Pa19gCn0H7w38-L73EzsbKDuYiAFGQ8SRo_k3MvAljfOvviKCoVKjM0AKyYdsWL5r69ufoTPAjHwJhDw-zQ16y6EN90VnZnkQAmAiQ4tAg3qFSf9ynv7Pk2bZsbMmoFMH7bI="),
+                        JsonToken.String("WTXMDL2XdMOaRnNRNeAlaw8jsUcaEPBxJvSC47SEz2v3i1FRkNvvxbDFXtEThuhuqkXLjpZw9dIO4Oq_xIc3JcqE_JE87POOxrG35PH6wBCpa0LvRDQITI_S7_zOjX1EqoI4Ku_l58l7mfVqAa3rquaqKzwd3YYitB2ikTHGuAQ7oIu2e8bV60OjtmDZoCdGsdyforPa7YjK5MIt_Rv31bWh9CimjyNGzzCXzhDK96h_oeWsjuJVXUOS-Ujefg=="),
+                    JsonToken.ArrayEnd(),
+                };
+
+                string[] expectedText =
+                {
+                    @"[""EbyPEDnfimRJnmBJYW7Iq6Gl1wYzV760XwvpBa6fVbR52O8YobNkdf-A3q10fhbrMe5Moxw3fmn6BgW4JYg2acfC1znUZ5IvTh",
+                    @"oT"",""gAAAAABnkrrmWjhg614TGDpZKHblrTxUMtXPPoaOQdJke7QQN5orn1-hOJt5UPK65sNflmKJRqnkqKzAWMiPBDQxTMCa9uH",
+                    @"Q6skp574NXqwonY5IssV5LWsFT-vk6bLeXLehrrA0VPIHjK1LKhTuIm4mymkhvHhA3g=="",""tgrstY0naYHJDU-8Xjf6PUFVl4GK",
+                    @"tC-Un2e7OuaFKc7-I2D7Q1OAtnPVpfQzpwkPm5-Pa19gCn0H7w38-L73EzsbKDuYiAFGQ8SRo_k3MvAljfOvviKCoVKjM0AKyYds",
+                    @"WL5r69ufoTPAjHwJhDw-zQ16y6EN90VnZnkQAmAiQ4tAg3qFSf9ynv7Pk2bZsbMmoFMH7bI="",""WTXMDL2XdMOaRnNRNeAlaw8js",
+                    @"UcaEPBxJvSC47SEz2v3i1FRkNvvxbDFXtEThuhuqkXLjpZw9dIO4Oq_xIc3JcqE_JE87POOxrG35PH6wBCpa0LvRDQITI_S7_zOj",
+                    @"X1EqoI4Ku_l58l7mfVqAa3rquaqKzwd3YYitB2ikTHGuAQ7oIu2e8bV60OjtmDZoCdGsdyforPa7YjK5MIt_Rv31bWh9CimjyNGz",
+                    @"zCXzhDK96h_oeWsjuJVXUOS-Ujefg==""]"
+                };
+
+                string[] expectedBinary1 =
+                {
+                    "00000000  80 E3 80 02 7E 64 45 71  1E 5A 24 BA CD E9 B6 54",
+                    "00000010  E9 6E 0B 95 D9 EB 2D 19  B7 1D D9 B1 7B 56 6F BD",
+                    "00000020  D9 60 D8 BB 1D 2E 0C DB  CC 56 B1 B4 26 7B E2 B2",
+                    "00000030  6F B1 73 4D 36 B7 82 B3  78 0C 66 46 8B E5 CD 72",
+                    "00000040  AD F9 C6 DF 67 E6 B6 DB  26 3C 5F 69 CA EC 59 16",
+                    "00000050  1E 9B 87 31 BD BB AA AD  25 ED 54 F4 9B 0A 7E A4",
+                    "00000060  E7 60 30 18 0C 0A DD 6B  B9 BC 7D 55 A3 CF B6 18",
+                    "00000070  8D 7A 24 C2 B5 4B A4 98  2D A7 E2 AB 4D 3A 16 0A",
+                    "00000080  7D 87 9F 51 B2 72 5D BE  45 A3 CE DA 5B EE 8E B5",
+                    "00000090  D0 4F 25 BD 56 85 2E 6D  B5 B9 D3 CC 6E 2F 95 D2",
+                    "000000A0  B8 7B 1D 5F EA 83 D7 66  1A 2A 24 46 F1 D4 E6 30",
+                    "000000B0  9C AB 23 A3 B6 F9 1A 5E  BB D1 9C D8 F8 FD ED CE",
+                    "000000C0  D6 92 F3 B9 B5 C6 BC CE  8D D4 96 7D 6D 13 33 CB",
+                    "000000D0  58 66 19 2D 97 07 61 56  68 12 A9 5E C6 98 4B 34",
+                    "000000E0  B5 9E 6C D3 DA F9 F6 1A  6D 47 A2 83 B3 73 AF 07",
+                    "000000F0  7E C8 F4 B3 7C 4E CF C2  DC E1 2C 52 49 AC B6 70",
+                    "00000100  58 B5 D9 06 AD 1A AD 6C  DA 71 49 1F B6 AA 6E 59",
+                    "00000110  F9 F6 AC 87 8D CB F1 AD  95 94 11 6F D1 D8 33 48",
+                    "00000120  77 43 AD 70 73 54 0F BF  AF A1 ED 5A 0B 1A 8E E5",
+                    "00000130  CE 43 37 0C 79 BB CF 70  2D E6 6D 56 D4 CF C5 4B",
+                    "00000140  62 3D 9B 0E 1A 8F 51 DC  54 FA FE AE 67 4D 7B 90",
+                    "00000150  AD 36 3F ED F6 F4 72 F8  B6 2E D5 4D 58 70 99 CF",
+                    "00000160  92 E7 57 66 4D 6E CB D5  CD 6F 2A 34 A8 46 DE 95",
+                    "00000170  68 E2 BD A5 8F C6 6C 79  5B D1 99 83 59 DD 5A F7",
+                    "00000180  3A 1A 6C 07 D3 51 1A 3D  78 9E C5 8D 53 73 2E EF",
+                    "00000190  B6 DF A0 6B 99 58 3B 17  37 DB 6F 63 13 79 13 27",
+                    "000001A0  7B 7F 00 01 57 2A B6 49  64 CA B0 E4 E6 33 2C 75",
+                    "000001B0  3B A5 CE 72 90 1D BE E3  D4 F3 EA 38 5C 84 0A F1",
+                    "000001C0  4A FB 74 48 BB 4D 8B 7A  99 7D 96 8E 19 A5 6B A7",
+                    "000001D0  DD 8E 17 13 8D 58 7A 91  8A AE A3 EB F1 35 96 A9",
+                    "000001E0  86 6B EF 39 72 F2 49 7B  C6 BF F8 E4 78 A6 1C C7",
+                    "000001F0  8B 5F 65 11 77 83 3E 9F  78 F9 71 56 83 22 6D 77",
+                    "00000200  E1 10 1E 86 31 ED 52 62  34 49 4D 7E A7 B7 AF FE",
+                    "00000210  A9 C6 C6 8A F1 77 92 B6  AC 7F D9 35 1C FB D6 36",
+                    "00000220  5B E3 C1 F0 4C 1E AF 87  E3 4B FD 9D 3C CB 66 D3",
+                    "00000230  74 A1 2C BD A6 22 8F F5  60 F4 F6 4E D6 65 65 9C",
+                    "00000240  D8 6A 83 3D D5 F4 36 51  FB 1E 92 8F 73 72 DE FC",
+                    "00000250  96 43 C3 B7 AC 7A 59 6B  26 E9 5F A9 7D 16 13 5F",
+                    "00000260  D1 B9 61 BA AD CE 3B 8F  7A FD 10 AB 47 13 97 39",
+                    "00000270  1B FA FB 2E 5F E7 EA BA  D2 8A AD 3E A7 AD AA BA",
+                    "00000280  6C 3E F7 7A"
+                };
+
+                string[] expectedBinary2 =
+                {
+                    "00000000  80 E3 23 02 73 19 00 11  BC 8F 10 39 DF 8A 64 49",
+                    "00000010  9E 60 49 61 6E C8 AB A1  A5 D7 06 33 57 BE B4 5F",
+                    "00000020  0B E9 05 AE 9F 55 B4 79  D8 EF 18 A1 B3 64 75 FF",
+                    "00000030  80 DE AD 74 7E 16 EB 31  EE 4C A3 1C 37 7E 69 FA",
+                    "00000040  06 05 B8 25 88 36 69 C7  C2 D7 39 D4 67 92 2F 4E",
+                    "00000050  1A 13 73 29 02 80 00 00  00 00 67 92 BA E6 5A 38",
+                    "00000060  60 EB 5E 13 18 3A 59 28  76 E5 AD 3C 54 32 D5 CF",
+                    "00000070  3E 86 8E 41 D2 64 7B B4  10 37 9A 2B 9F 5F A1 38",
+                    "00000080  9B 79 50 F2 BA E6 C3 5F  96 62 89 46 A9 E4 A8 AC",
+                    "00000090  C0 58 C8 8F 04 34 31 4C  C0 9A F6 E1 D0 EA C9 29",
+                    "000000A0  E7 BE 0D 5E AC 28 9D 8E  48 B2 C5 79 2D 6B 05 4F",
+                    "000000B0  EB E4 E9 B2 DE 5C B7 A1  AE B0 34 54 F2 07 8C AD",
+                    "000000C0  4B 2A 14 EE 22 6E 26 CA  69 21 BC 78 40 DE 73 32",
+                    "000000D0  01 B6 0A EC B5 8D 27 69  81 C9 0D 4F BC 5E 37 FA",
+                    "000000E0  3D 41 55 97 81 8A B4 2F  94 9F 67 BB 3A E6 85 29",
+                    "000000F0  CE FE 23 60 FB 43 53 80  B6 73 D5 A5 F4 33 A7 09",
+                    "00000100  0F 9B 9F 8F 6B 5F 60 0A  7D 07 EF 0D FC F8 BE F7",
+                    "00000110  13 3B 1B 28 3B 98 88 01  46 43 C4 91 A3 F9 37 32",
+                    "00000120  F0 25 8D F3 AF BE 22 82  A1 52 A3 33 40 0A C9 87",
+                    "00000130  6C 58 BE 6B EB DB 9F A1  33 C0 8C 7C 09 84 3C 3E",
+                    "00000140  CD 0D 7A CB A1 0D F7 45  67 66 79 10 02 60 22 43",
+                    "00000150  8B 40 83 7A 85 49 FF 72  9E FE CF 93 66 D9 B1 B3",
+                    "00000160  26 A0 53 07 ED B2 73 40  02 59 35 CC 0C BD 97 74",
+                    "00000170  C3 9A 46 73 51 35 E0 25  6B 0F 23 B1 47 1A 10 F0",
+                    "00000180  71 26 F4 82 E3 B4 84 CF  6B F7 8B 51 51 90 DB EF",
+                    "00000190  C5 B0 C5 5E D1 13 86 E8  6E AA 45 CB 8E 96 70 F5",
+                    "000001A0  D2 0E E0 EA BF C4 87 37  25 CA 84 FC 91 3C EC F3",
+                    "000001B0  8E C6 B1 B7 E4 F1 FA C0  10 A9 6B 42 EF 44 34 08",
+                    "000001C0  4C 8F D2 EF FC CE 8D 7D  44 AA 82 38 2A EF E5 E7",
+                    "000001D0  C9 7B 99 F5 6A 01 AD EB  AA E6 AA 2B 3C 1D DD 86",
+                    "000001E0  22 B4 1D A2 91 31 C6 B8  04 3B A0 8B B6 7B C6 D5",
+                    "000001F0  EB 43 A3 B6 60 D9 A0 27  46 B1 DC 9F A2 B3 DA ED",
+                    "00000200  88 CA E4 C2 2D FD 1B F7  D5 B5 A1 F4 28 A6 8F 23",
+                    "00000210  46 CF 30 97 CE 10 CA F7  A8 7F A1 E5 AC 8E E2 55",
+                    "00000220  5D 43 92 F9 48 DE 7E"
+                };
+
+                ExecuteAndValidate(tokensToWrite, expectedText, expectedBinary1, JsonWriteOptions.None);
+                ExecuteAndValidate(tokensToWrite, expectedText, expectedBinary2, JsonWriteOptions.EnableBase64Strings);
+            }
+
+            // --------------------------------------
+            // Base64: Large Length (1200 bytes)
+            // --------------------------------------
+            {
+                JsonToken[] tokensToWrite =
+                {
+                    JsonToken.String(
+                        "2hhLDu+G0Ca3khg9lR4cjTF3gwDffhdQ8dC8lzXzV9l6I/ahWqUwNc0Deqobc3pjqVIpujXVFLQc5r64k4oj0s8PhsbFeNsnqJ43SXRG3e/iYTNEIflgVyLT" +
+                        "c6Z5SQq8KvKapY0R+bgg8GgoUcIKIxcgmOds1MTN+deCcrNUkFgz5pelkIGfVxZEFZVWvsG6osL7pMMBzA/YSRhctJyX1Sx3f6921S1ySlWjpIbLH/nAthBw" +
+                        "mCuZ38nPu7vU7yWDKHIu3KhfQOqV03Ld1OSgkjCSZEZGfkImWP4ZaA1OpU40Jnf2SZf8By/VdOx0/bMS1rMw6rOlNQiDzmG438fSKureqDyFLvIi8VpOyWjO" +
+                        "7GBZKTEzGleOxPqOcVzL2l0zGa9wjDGTIP837XVTGF1Dt2iNjG8EjuXtdiZO6xCgTRiPHnF5iL2rl9rX+C/7raMVDKpSwa8H3Pdbya3OsaDsUlqr1P7Z+VC7" +
+                        "Hkxu+cGwrgNVcpClURWHzoz86wt+XvrNJ2WPaDBPIkfRFyvkHPkkhGwxU0nrc0dQBTKWVIRVNpvh//S1WwIYU0l/SuRzNopu0h7729wH9zlUqI/2DlodjIJx" +
+                        "ObBihPOFWWMo7DX5zWK+dtEGTAF3hEPzLQ2FM3ooq03XZuLfgumXfOSnyx3an1D0fgcefn83tecnp5yZtwEigAQsUGuT702xPN8fzpxQcSOJ7TtKYGiQkFqD" +
+                        "RiAxVIeJvxKRBQHZYjVh4g4ESrMDCaEYCy1Fab2tk6MNfSY+tO5CKPZAN8nerbYfc0pUoeJPw39M2R5ws+lPlLx8OSu3RBK8W5Q4Se71Fo6EkTpfIaAXS0go" +
+                        "6luJcbZnLzvlQsJ2RY4llIUhLR8ZJIPfx3bmhX3bpmmnYmZdntv51B61+ckts2ZGIId9dQ3ki4jNQzLRb1ogzdpexzmK7EBttjh5uNvSLQemwIznAEXQsWV8" +
+                        "dIxM6XwGWW0ai8/42aunfOp3wrP/NRd4Z+8uis3M72e/6BuofyRtAssb2enUdGoD0x7OlxTC3mMf3GKIloWN3t8npKWNeQuRfsWmEKLQNmWOd2Pvkh9H0iYN" +
+                        "TeGSHJ2Bs/rRdd7nycHct3IIypDs8EFWIdrJj3Ug/ZgpX8nUNGihNDLYR7wEwNxsinqHmluynDaHahH7/lWWgAxfKRkHg4yelZpY8fBJNnDwjUk/1sXO3g==")
+                };
+
+                string[] expectedText =
+                {
+                    @"""2hhLDu+G0Ca3khg9lR4cjTF3gwDffhdQ8dC8lzXzV9l6I/ahWqUwNc0Deqobc3pjqVIpujXVFLQc5r64k4oj0s8PhsbFeNsnqJ4",
+                    @"3SXRG3e/iYTNEIflgVyLTc6Z5SQq8KvKapY0R+bgg8GgoUcIKIxcgmOds1MTN+deCcrNUkFgz5pelkIGfVxZEFZVWvsG6osL7pMM",
+                    @"BzA/YSRhctJyX1Sx3f6921S1ySlWjpIbLH/nAthBwmCuZ38nPu7vU7yWDKHIu3KhfQOqV03Ld1OSgkjCSZEZGfkImWP4ZaA1OpU4",
+                    @"0Jnf2SZf8By/VdOx0/bMS1rMw6rOlNQiDzmG438fSKureqDyFLvIi8VpOyWjO7GBZKTEzGleOxPqOcVzL2l0zGa9wjDGTIP837XV",
+                    @"TGF1Dt2iNjG8EjuXtdiZO6xCgTRiPHnF5iL2rl9rX+C/7raMVDKpSwa8H3Pdbya3OsaDsUlqr1P7Z+VC7Hkxu+cGwrgNVcpClURW",
+                    @"Hzoz86wt+XvrNJ2WPaDBPIkfRFyvkHPkkhGwxU0nrc0dQBTKWVIRVNpvh//S1WwIYU0l/SuRzNopu0h7729wH9zlUqI/2DlodjIJ",
+                    @"xObBihPOFWWMo7DX5zWK+dtEGTAF3hEPzLQ2FM3ooq03XZuLfgumXfOSnyx3an1D0fgcefn83tecnp5yZtwEigAQsUGuT702xPN8",
+                    @"fzpxQcSOJ7TtKYGiQkFqDRiAxVIeJvxKRBQHZYjVh4g4ESrMDCaEYCy1Fab2tk6MNfSY+tO5CKPZAN8nerbYfc0pUoeJPw39M2R5",
+                    @"ws+lPlLx8OSu3RBK8W5Q4Se71Fo6EkTpfIaAXS0go6luJcbZnLzvlQsJ2RY4llIUhLR8ZJIPfx3bmhX3bpmmnYmZdntv51B61+ck",
+                    @"ts2ZGIId9dQ3ki4jNQzLRb1ogzdpexzmK7EBttjh5uNvSLQemwIznAEXQsWV8dIxM6XwGWW0ai8/42aunfOp3wrP/NRd4Z+8uis3",
+                    @"M72e/6BuofyRtAssb2enUdGoD0x7OlxTC3mMf3GKIloWN3t8npKWNeQuRfsWmEKLQNmWOd2Pvkh9H0iYNTeGSHJ2Bs/rRdd7nycH",
+                    @"ct3IIypDs8EFWIdrJj3Ug/ZgpX8nUNGihNDLYR7wEwNxsinqHmluynDaHahH7/lWWgAxfKRkHg4yelZpY8fBJNnDwjUk/1sXO3g=",
+                    @"="""
+                };
+
+                string[] expectedBinary1 =
+                {
+                    "00000000  80 7F B0 04 32 34 9A 49  AC AF 8E B0 61 78 B6 46",
+                    "00000010  9F 73 6C 29 6D AC A6 1A  67 E7 3B D1 6C 46 93 A3",
+                    "00000020  38 F2 10 C7 D6 63 F5 D6  1C DB 96 7C 85 D1 D7 78",
+                    "00000030  F5 EE 1C C3 88 E5 F8 5B  3C 9E C1 D5 71 6B 12 5E",
+                    "00000040  57 63 AD 46 66 74 5C 93  DB 68 6B DA 5B 0D 9B E3",
+                    "00000050  A0 E8 B9 D8 58 76 CE DD  71 25 6D 36 C5 4A 8F B3",
+                    "00000060  F2 2B 9D A5 3A 8B 49 33  FB 6C CD 33 A9 63 9B B6",
+                    "00000070  36 8D C6 71 4B FB 32 0C  CF C2 A4 2B F1 F9 8C 3B",
+                    "00000080  9E DF D5 71 72 99 C4 8F  CF ED 27 79 1E 6B 52 9D",
+                    "00000090  2B 72 79 38 96 3B AB 6B  E3 59 5F 83 97 D9 EB E4",
+                    "000000A0  D1 6C C5 6B 8B 46 AD F5  6A 9F 1F 6D EF 39 F3 06",
+                    "000000B0  6F 36 85 FA E0 2B 3B 95  A2 C7 74 65 1E 1B 9B E2",
+                    "000000C0  67 66 5B 4E 16 9B C6 F2  53 F6 55 0D 4F 8A 99 C8",
+                    "000000D0  97 3B 48 47 0B EF ED 61  5D 3B C3 B9 A1 F5 9B BD",
+                    "000000E0  7A CB 5F 89 4B 64 B2 3E  5B A2 CD D1 67 DC 0A 9B",
+                    "000000F0  31 C9 B1 E7 F4 BC 56 0F  A7 DA A2 F6 68 5E 27 DB",
+                    "00000100  57 28 4D 1B 0E C6 9E F0  2A 0D A6 74 9B 65 53 AD",
+                    "00000110  19 27 CC BF AC E4 27 1E  F6 12 37 A7 31 79 F3 6E",
+                    "00000120  93 3F D9 CE 68 9A A8 6F  1F 69 33 9C 79 BA AC CB",
+                    "00000130  CB 71 62 DE C8 B4 27 D3  38 2B FC 99 BF AA 9F B7",
+                    "00000140  A3 50 BB A4 16 F5 47 76  F9 89 87 C6 9F 63 AB 9E",
+                    "00000150  29 63 C3 F4 C7 70 EE AE  26 1E A9 49 28 6E 76 C3",
+                    "00000160  5A A9 47 63 8C 48 97 A5  9D EA 23 AE A8 AE 63 E9",
+                    "00000170  E4 B4 F6 69 C3 0F CF 54  69 1A 8A 74 1B 6B 69 A6",
+                    "00000180  4C CE CE C9 B1 AB E1 EB  26 0F 37 AD C4 25 7C 7A",
+                    "00000190  0F E3 90 33 28 59 9C 0F  CF 9E F3 30 71 5E 65 C7",
+                    "000001A0  E5 31 E8 4D BB B2 0E 6F  C8 35 BE BE 1A 1F EF F2",
+                    "000001B0  B3 D3 3A 86 0F D9 55 E9  15 A9 7F EB 71 B6 3B 7D",
+                    "000001C0  85 B5 CB 9D 4A D9 15 1A  26 0A A1 C9 B5 59 6A CC",
+                    "000001D0  DB D7 48 E8 7A 8D 3E DE  F1 55 98 5B 3E 86 91 A3",
+                    "000001E0  42 EA F2 6A 4D 4A AD 4E  B8 1D FD 7A 4D 63 D7 7B",
+                    "000001F0  32 5B 85 B1 5F D3 BA 54  EF 7C C3 EB 30 F4 ED 26",
+                    "00000200  CB DD 91 39 3D BB 1A 4F  BE 64 44 F6 9B AC 4E 2A",
+                    "00000210  F1 4F B1 30 8D 86 3E 8D  D7 6B F3 7D 23 62 6B FA",
+                    "00000220  EB 72 45 A6 17 8F D4 A0  71 86 2E 42 F5 CC A8 CC",
+                    "00000230  D8 9C BD DF 71 D8 0C AB  AD 33 CD E7 7A 1B 6B 7E",
+                    "00000240  4E DD 79 FC 2C EC 8E 11  61 E6 F3 B8 6C 76 E3 66",
+                    "00000250  F4 F2 D8 0D AF E5 B5 F4  7B 31 7D 0E 46 E7 D5 63",
+                    "00000260  9D 7A 83 C9 F0 50 27 CE  AC 87 E3 A3 E3 E9 53 79",
+                    "00000270  A3 D2 97 D9 63 3A BA 36  C6 89 D2 74 10 6F 4D 96",
+                    "00000280  95 76 FC 52 2A 8C 22 B5  59 B5 15 4D 3B D3 8A 53",
+                    "00000290  79 93 38 0C 17 B3 C3 7C  CC 18 16 CB E8 6B 5B D3",
+                    "000002A0  69 9E 66 57 F4 67 6D B8  84 6A 83 4E 9C BB 2C 17",
+                    "000002B0  67 CD 63 18 BC FA 2E 2B  A1 F7 59 AE 29 93 D6 EE",
+                    "000002C0  F3 15 1B CA 66 E2 71 CF  69 7D 26 15 2E 71 D7 5A",
+                    "000002D0  94 36 2D DF 62 C6 B7 AD  B8 A6 C2 CD C9 70 10 3B",
+                    "000002E0  85 9D DF 36 76 5D 39 16  6B DD 4C BD 9D 1D 9D 2B",
+                    "000002F0  65 D2 2C 8D CD 4E 56 D1  4C 29 4E AB 4C 42 CD F8",
+                    "00000300  99 B8 8D C6 CE C4 F0 76  DB 9D 6D 6B C9 6E BA BD",
+                    "00000310  16 13 DA 62 AB F1 9A 3E  97 69 8F C9 24 39 47 8E",
+                    "00000320  CE D6 69 9A DA 19 D5 33  A5 E2 D8 FB AC 27 C3 CB",
+                    "00000330  78 7D 7B 79 2B 0A E9 74  35 BA 56 77 DA A7 CC 68",
+                    "00000340  B9 7D 4F EA DD C1 22 36  3A BF 5A 71 E4 24 BE 69",
+                    "00000350  C3 DE 8F D7 2B 2C 9C C6  BD 68 B2 70 DD 6D 7E C2",
+                    "00000360  67 77 39 F4 E5 94 92 69  DA 15 AE 9E 9E CF 9A 37",
+                    "00000370  59 F9 65 13 D6 DF E6 BC  94 1E 9C CF C5 B2 B2 BB",
+                    "00000380  4A 3E BE 89 30 FC ED C9  C6 53 87 B3 76 D3 3C 3B",
+                    "00000390  2E 93 EC F7 D5 39 A3 E3  DC F0 E5 D5 59 8E D6 A5",
+                    "000003A0  E6 F9 B5 5D 5C 32 A3 CE  F6 F5 49 96 41 ED 6B 74",
+                    "000003B0  0E 09 4B 67 9D D4 F2 71  8A 54 CA 84 F3 97 5C 4A",
+                    "000003C0  26 DF DC F9 31 72 4C 9F  25 93 79 38 71 8E 2B 1A",
+                    "000003D0  AF 49 B2 5C A9 9E 55 CF  2F ED 19 8E C5 B9 AB CE",
+                    "000003E0  63 1A ED 24 32 B3 D2 DB  BD 78 77 E2 E7 69 77 1C",
+                    "000003F0  D9 66 D7 F3 6E 62 18 19  46 23 6F 2F F6 F5 7A 0E",
+                    "00000400  E2 CD 4B E9 1A 79 A6 E5  CB 6C 2D 3C 8B 33 0B 95",
+                    "00000410  4E 37 F1 AE AE AE 5F B1  39 F6 39 3B F7 7A"
+                };
+
+                string[] expectedBinary2 =
+                {
+                    "00000000  80 72 2C 01 02 DA 18 4B  0E EF 86 D0 26 B7 92 18",
+                    "00000010  3D 95 1E 1C 8D 31 77 83  00 DF 7E 17 50 F1 D0 BC",
+                    "00000020  97 35 F3 57 D9 7A 23 F6  A1 5A A5 30 35 CD 03 7A",
+                    "00000030  AA 1B 73 7A 63 A9 52 29  BA 35 D5 14 B4 1C E6 BE",
+                    "00000040  B8 93 8A 23 D2 CF 0F 86  C6 C5 78 DB 27 A8 9E 37",
+                    "00000050  49 74 46 DD EF E2 61 33  44 21 F9 60 57 22 D3 73",
+                    "00000060  A6 79 49 0A BC 2A F2 9A  A5 8D 11 F9 B8 20 F0 68",
+                    "00000070  28 51 C2 0A 23 17 20 98  E7 6C D4 C4 CD F9 D7 82",
+                    "00000080  72 B3 54 90 58 33 E6 97  A5 90 81 9F 57 16 44 15",
+                    "00000090  95 56 BE C1 BA A2 C2 FB  A4 C3 01 CC 0F D8 49 18",
+                    "000000A0  5C B4 9C 97 D5 2C 77 7F  AF 76 D5 2D 72 4A 55 A3",
+                    "000000B0  A4 86 CB 1F F9 C0 B6 10  70 98 2B 99 DF C9 CF BB",
+                    "000000C0  BB D4 EF 25 83 28 72 2E  DC A8 5F 40 EA 95 D3 72",
+                    "000000D0  DD D4 E4 A0 92 30 92 64  46 46 7E 42 26 58 FE 19",
+                    "000000E0  68 0D 4E A5 4E 34 26 77  F6 49 97 FC 07 2F D5 74",
+                    "000000F0  EC 74 FD B3 12 D6 B3 30  EA B3 A5 35 08 83 CE 61",
+                    "00000100  B8 DF C7 D2 2A EA DE A8  3C 85 2E F2 22 F1 5A 4E",
+                    "00000110  C9 68 CE EC 60 59 29 31  33 1A 57 8E C4 FA 8E 71",
+                    "00000120  5C CB DA 5D 33 19 AF 70  8C 31 93 20 FF 37 ED 75",
+                    "00000130  53 18 5D 43 B7 68 8D 8C  6F 04 8E E5 ED 76 26 4E",
+                    "00000140  EB 10 A0 4D 18 8F 1E 71  79 88 BD AB 97 DA D7 F8",
+                    "00000150  2F FB AD A3 15 0C AA 52  C1 AF 07 DC F7 5B C9 AD",
+                    "00000160  CE B1 A0 EC 52 5A AB D4  FE D9 F9 50 BB 1E 4C 6E",
+                    "00000170  F9 C1 B0 AE 03 55 72 90  A5 51 15 87 CE 8C FC EB",
+                    "00000180  0B 7E 5E FA CD 27 65 8F  68 30 4F 22 47 D1 17 2B",
+                    "00000190  E4 1C F9 24 84 6C 31 53  49 EB 73 47 50 05 32 96",
+                    "000001A0  54 84 55 36 9B E1 FF F4  B5 5B 02 18 53 49 7F 4A",
+                    "000001B0  E4 73 36 8A 6E D2 1E FB  DB DC 07 F7 39 54 A8 8F",
+                    "000001C0  F6 0E 5A 1D 8C 82 71 39  B0 62 84 F3 85 59 63 28",
+                    "000001D0  EC 35 F9 CD 62 BE 76 D1  06 4C 01 77 84 43 F3 2D",
+                    "000001E0  0D 85 33 7A 28 AB 4D D7  66 E2 DF 82 E9 97 7C E4",
+                    "000001F0  A7 CB 1D DA 9F 50 F4 7E  07 1E 7E 7F 37 B5 E7 27",
+                    "00000200  A7 9C 99 B7 01 22 80 04  2C 50 6B 93 EF 4D B1 3C",
+                    "00000210  DF 1F CE 9C 50 71 23 89  ED 3B 4A 60 68 90 90 5A",
+                    "00000220  83 46 20 31 54 87 89 BF  12 91 05 01 D9 62 35 61",
+                    "00000230  E2 0E 04 4A B3 03 09 A1  18 0B 2D 45 69 BD AD 93",
+                    "00000240  A3 0D 7D 26 3E B4 EE 42  28 F6 40 37 C9 DE AD B6",
+                    "00000250  1F 73 4A 54 A1 E2 4F C3  7F 4C D9 1E 70 B3 E9 4F",
+                    "00000260  94 BC 7C 39 2B B7 44 12  BC 5B 94 38 49 EE F5 16",
+                    "00000270  8E 84 91 3A 5F 21 A0 17  4B 48 28 EA 5B 89 71 B6",
+                    "00000280  67 2F 3B E5 42 C2 76 45  8E 25 94 85 21 2D 1F 19",
+                    "00000290  24 83 DF C7 76 E6 85 7D  DB A6 69 A7 62 66 5D 9E",
+                    "000002A0  DB F9 D4 1E B5 F9 C9 2D  B3 66 46 20 87 7D 75 0D",
+                    "000002B0  E4 8B 88 CD 43 32 D1 6F  5A 20 CD DA 5E C7 39 8A",
+                    "000002C0  EC 40 6D B6 38 79 B8 DB  D2 2D 07 A6 C0 8C E7 00",
+                    "000002D0  45 D0 B1 65 7C 74 8C 4C  E9 7C 06 59 6D 1A 8B CF",
+                    "000002E0  F8 D9 AB A7 7C EA 77 C2  B3 FF 35 17 78 67 EF 2E",
+                    "000002F0  8A CD CC EF 67 BF E8 1B  A8 7F 24 6D 02 CB 1B D9",
+                    "00000300  E9 D4 74 6A 03 D3 1E CE  97 14 C2 DE 63 1F DC 62",
+                    "00000310  88 96 85 8D DE DF 27 A4  A5 8D 79 0B 91 7E C5 A6",
+                    "00000320  10 A2 D0 36 65 8E 77 63  EF 92 1F 47 D2 26 0D 4D",
+                    "00000330  E1 92 1C 9D 81 B3 FA D1  75 DE E7 C9 C1 DC B7 72",
+                    "00000340  08 CA 90 EC F0 41 56 21  DA C9 8F 75 20 FD 98 29",
+                    "00000350  5F C9 D4 34 68 A1 34 32  D8 47 BC 04 C0 DC 6C 8A",
+                    "00000360  7A 87 9A 5B B2 9C 36 87  6A 11 FB FE 55 96 80 0C",
+                    "00000370  5F 29 19 07 83 8C 9E 95  9A 58 F1 F0 49 36 70 F0",
+                    "00000380  8D 49 3F D6 C5 CE DE"
+                };
+
+                ExecuteAndValidate(tokensToWrite, expectedText, expectedBinary1, JsonWriteOptions.None);
+                ExecuteAndValidate(tokensToWrite, expectedText, expectedBinary2, JsonWriteOptions.EnableBase64Strings);
+            }
+
+            // --------------------------------------
+            // Base64 URL: Large Length (1200 bytes)
+            // --------------------------------------
+            {
+                JsonToken[] tokensToWrite =
+                {
+                    JsonToken.String(
+                        "2hhLDu-G0Ca3khg9lR4cjTF3gwDffhdQ8dC8lzXzV9l6I_ahWqUwNc0Deqobc3pjqVIpujXVFLQc5r64k4oj0s8PhsbFeNsnqJ43SXRG3e_iYTNEIflgVyLT" +
+                        "c6Z5SQq8KvKapY0R-bgg8GgoUcIKIxcgmOds1MTN-deCcrNUkFgz5pelkIGfVxZEFZVWvsG6osL7pMMBzA_YSRhctJyX1Sx3f6921S1ySlWjpIbLH_nAthBw" +
+                        "mCuZ38nPu7vU7yWDKHIu3KhfQOqV03Ld1OSgkjCSZEZGfkImWP4ZaA1OpU40Jnf2SZf8By_VdOx0_bMS1rMw6rOlNQiDzmG438fSKureqDyFLvIi8VpOyWjO" +
+                        "7GBZKTEzGleOxPqOcVzL2l0zGa9wjDGTIP837XVTGF1Dt2iNjG8EjuXtdiZO6xCgTRiPHnF5iL2rl9rX-C_7raMVDKpSwa8H3Pdbya3OsaDsUlqr1P7Z-VC7" +
+                        "Hkxu-cGwrgNVcpClURWHzoz86wt-XvrNJ2WPaDBPIkfRFyvkHPkkhGwxU0nrc0dQBTKWVIRVNpvh__S1WwIYU0l_SuRzNopu0h7729wH9zlUqI_2DlodjIJx" +
+                        "ObBihPOFWWMo7DX5zWK-dtEGTAF3hEPzLQ2FM3ooq03XZuLfgumXfOSnyx3an1D0fgcefn83tecnp5yZtwEigAQsUGuT702xPN8fzpxQcSOJ7TtKYGiQkFqD" +
+                        "RiAxVIeJvxKRBQHZYjVh4g4ESrMDCaEYCy1Fab2tk6MNfSY-tO5CKPZAN8nerbYfc0pUoeJPw39M2R5ws-lPlLx8OSu3RBK8W5Q4Se71Fo6EkTpfIaAXS0go" +
+                        "6luJcbZnLzvlQsJ2RY4llIUhLR8ZJIPfx3bmhX3bpmmnYmZdntv51B61-ckts2ZGIId9dQ3ki4jNQzLRb1ogzdpexzmK7EBttjh5uNvSLQemwIznAEXQsWV8" +
+                        "dIxM6XwGWW0ai8_42aunfOp3wrP_NRd4Z-8uis3M72e_6BuofyRtAssb2enUdGoD0x7OlxTC3mMf3GKIloWN3t8npKWNeQuRfsWmEKLQNmWOd2Pvkh9H0iYN" +
+                        "TeGSHJ2Bs_rRdd7nycHct3IIypDs8EFWIdrJj3Ug_ZgpX8nUNGihNDLYR7wEwNxsinqHmluynDaHahH7_lWWgAxfKRkHg4yelZpY8fBJNnDwjUk_1sXO3g==")
+                };
+
+                string[] expectedText =
+                {
+                    @"""2hhLDu-G0Ca3khg9lR4cjTF3gwDffhdQ8dC8lzXzV9l6I_ahWqUwNc0Deqobc3pjqVIpujXVFLQc5r64k4oj0s8PhsbFeNsnqJ4",
+                    @"3SXRG3e_iYTNEIflgVyLTc6Z5SQq8KvKapY0R-bgg8GgoUcIKIxcgmOds1MTN-deCcrNUkFgz5pelkIGfVxZEFZVWvsG6osL7pMM",
+                    @"BzA_YSRhctJyX1Sx3f6921S1ySlWjpIbLH_nAthBwmCuZ38nPu7vU7yWDKHIu3KhfQOqV03Ld1OSgkjCSZEZGfkImWP4ZaA1OpU4",
+                    @"0Jnf2SZf8By_VdOx0_bMS1rMw6rOlNQiDzmG438fSKureqDyFLvIi8VpOyWjO7GBZKTEzGleOxPqOcVzL2l0zGa9wjDGTIP837XV",
+                    @"TGF1Dt2iNjG8EjuXtdiZO6xCgTRiPHnF5iL2rl9rX-C_7raMVDKpSwa8H3Pdbya3OsaDsUlqr1P7Z-VC7Hkxu-cGwrgNVcpClURW",
+                    @"Hzoz86wt-XvrNJ2WPaDBPIkfRFyvkHPkkhGwxU0nrc0dQBTKWVIRVNpvh__S1WwIYU0l_SuRzNopu0h7729wH9zlUqI_2DlodjIJ",
+                    @"xObBihPOFWWMo7DX5zWK-dtEGTAF3hEPzLQ2FM3ooq03XZuLfgumXfOSnyx3an1D0fgcefn83tecnp5yZtwEigAQsUGuT702xPN8",
+                    @"fzpxQcSOJ7TtKYGiQkFqDRiAxVIeJvxKRBQHZYjVh4g4ESrMDCaEYCy1Fab2tk6MNfSY-tO5CKPZAN8nerbYfc0pUoeJPw39M2R5",
+                    @"ws-lPlLx8OSu3RBK8W5Q4Se71Fo6EkTpfIaAXS0go6luJcbZnLzvlQsJ2RY4llIUhLR8ZJIPfx3bmhX3bpmmnYmZdntv51B61-ck",
+                    @"ts2ZGIId9dQ3ki4jNQzLRb1ogzdpexzmK7EBttjh5uNvSLQemwIznAEXQsWV8dIxM6XwGWW0ai8_42aunfOp3wrP_NRd4Z-8uis3",
+                    @"M72e_6BuofyRtAssb2enUdGoD0x7OlxTC3mMf3GKIloWN3t8npKWNeQuRfsWmEKLQNmWOd2Pvkh9H0iYNTeGSHJ2Bs_rRdd7nycH",
+                    @"ct3IIypDs8EFWIdrJj3Ug_ZgpX8nUNGihNDLYR7wEwNxsinqHmluynDaHahH7_lWWgAxfKRkHg4yelZpY8fBJNnDwjUk_1sXO3g=",
+                    @"="""
+                };
+
+                string[] expectedBinary1 =
+                {
+                    "00000000  80 7F B0 04 32 34 9A 49  AC B7 8E B0 61 78 B6 46",
+                    "00000010  9F 73 6C 29 6D AC A6 1A  67 E7 3B D1 6C 46 93 A3",
+                    "00000020  38 F2 10 C7 D6 63 F5 D6  1C DB 96 FC 86 D1 D7 78",
+                    "00000030  F5 EE 1C C3 88 E5 F8 5B  3C 9E C1 D5 71 6B 12 5E",
+                    "00000040  57 63 AD 46 66 74 5C 93  DB 68 6B DA 5B 0D 9B E3",
+                    "00000050  A0 E8 B9 D8 58 76 CE DD  71 25 6D 36 C5 4A 8F B3",
+                    "00000060  F2 37 9D A5 3A 8B 49 33  FB 6C CD 33 A9 63 9B B6",
+                    "00000070  36 8D C6 71 4B FB 32 0C  CF C2 A4 2D F1 F9 8C 3B",
+                    "00000080  9E DF D5 71 72 99 C4 8F  CF ED 27 79 1E 6B 52 9D",
+                    "00000090  2D 72 79 38 96 3B AB 6B  E3 59 5F 83 97 D9 EB E4",
+                    "000000A0  D1 6C C5 6B 8B 46 AD F5  6A 9F 1F 6D EF 39 F3 06",
+                    "000000B0  6F 36 85 FA E0 37 3B 95  A2 C7 74 65 1E 1B 9B E2",
+                    "000000C0  67 66 5B 4E 16 9B C6 F2  53 F6 55 0D 4F 8A 99 C8",
+                    "000000D0  AF 3B 48 47 0B EF ED 61  5D 3B C3 B9 A1 F5 9B BD",
+                    "000000E0  7A CB 5F 89 4B 64 B2 3E  5B A2 CD D1 67 DC 0A 9B",
+                    "000000F0  31 C9 B1 E7 F4 BC 56 0F  A7 DA A2 F6 68 5E 27 DB",
+                    "00000100  57 28 4D 1B 0E C6 9E F0  2A 0D A6 74 9B 65 53 AD",
+                    "00000110  19 27 CC 7F AD E4 27 1E  F6 15 37 A7 31 79 F3 6E",
+                    "00000120  93 3F D9 CE 68 9A A8 6F  1F 69 33 9C 79 BA AC CB",
+                    "00000130  CB 71 62 DE C8 B4 27 D3  38 2B FC 99 BF AA 9F B7",
+                    "00000140  A3 50 BB A4 16 F5 47 76  F9 89 87 C6 9F 63 AB 9E",
+                    "00000150  29 63 C3 F4 C7 70 EE AE  26 1E A9 49 28 6E 76 C3",
+                    "00000160  5A A9 47 63 8C 48 97 A5  9D EA 23 AE A8 AE 63 E9",
+                    "00000170  E4 B4 F6 69 C3 0F CF 54  69 1A 8A 74 1B 6B 69 A6",
+                    "00000180  4C CE CE C9 B1 AD E1 F7  26 0F 37 AD C4 25 7C 7A",
+                    "00000190  0F E3 90 33 28 59 9C 0F  CF 9E F3 30 71 5E 65 C7",
+                    "000001A0  E5 31 E8 4D DB B2 0E 6F  C8 35 BE DE 1A 1F EF F2",
+                    "000001B0  B3 D3 3A 86 0F D9 55 E9  15 A9 7F EB 71 B6 3B BD",
+                    "000001C0  85 B5 CB 9D 4A D9 15 1A  26 0A A1 C9 B5 59 6A CC",
+                    "000001D0  DB D7 48 E8 7A 8D 3E DE  F1 55 98 5B 3E 86 91 A3",
+                    "000001E0  42 EA F2 6A 4D 4A AD 4E  B8 1D FD FD 4E 63 D7 7B",
+                    "000001F0  32 5B 85 B1 BF D3 BA 54  EF 7C C3 EB 30 F4 ED 26",
+                    "00000200  CB DD 91 39 3D BB 1A 4F  7E 65 44 F6 9B AC 4E 2A",
+                    "00000210  F1 4F B1 30 8D 86 3E 8D  D7 6B F3 7D 23 62 6B FA",
+                    "00000220  EB B2 45 A6 17 8F D4 A0  71 86 2E 42 F5 CC A8 CC",
+                    "00000230  D8 9C BD DF 71 D8 0C AB  AD 33 CD E7 7A 1B 6B 7E",
+                    "00000240  4E DD 79 FC 2C EC 8E 11  61 E6 F3 B8 6C 76 E3 66",
+                    "00000250  F4 F2 D8 0D AF E5 B5 F4  7B 31 7D 0E 46 E7 D5 63",
+                    "00000260  9D 7A 83 C9 F0 50 27 CE  AC 87 E3 A3 E3 E9 53 79",
+                    "00000270  A3 D2 97 D9 63 3A BA 36  C6 89 D2 74 10 6F 4D 96",
+                    "00000280  95 76 FC 52 2A 8C 22 B5  59 B5 15 4D 3B D3 8A 53",
+                    "00000290  79 93 38 0C 17 B3 C3 7C  CC 18 16 CB E8 6B 5B D3",
+                    "000002A0  69 9E 66 5B F4 67 6D B8  84 6A 83 4E 9C BB 2C 17",
+                    "000002B0  67 CD 63 18 BC FA 2E 2B  A1 F7 59 AE 29 93 D6 EE",
+                    "000002C0  F3 16 1B CA 66 E2 71 CF  69 7D 26 15 2E 71 D7 5A",
+                    "000002D0  94 36 2D DF 62 C6 B7 AD  B8 A6 C2 CD C9 70 10 3B",
+                    "000002E0  85 9D DF 36 76 5D 39 16  6B DD 4C BD 9D 1D 9D 2B",
+                    "000002F0  65 D2 2C 8D CD 4E 56 D1  4C 29 4E AB 4C 42 CD F8",
+                    "00000300  99 B8 8D C6 CE C4 F0 76  DB 9D 6D 6B C9 6E BA BD",
+                    "00000310  16 13 DA 62 AD F1 9A 3E  97 69 8F C9 24 39 47 8E",
+                    "00000320  CE D6 69 9A DA 19 D5 33  A5 E2 D8 FB AC 27 C3 CB",
+                    "00000330  78 7D 7B 79 2B 0A E9 74  35 BA 56 77 DA A7 CC 68",
+                    "00000340  B9 7D 4F EA DD C1 22 36  3A BF 5A 71 E4 24 BE 69",
+                    "00000350  C3 DE 8F D7 2B 2C 9C C6  7D 69 B2 70 DD 6D 7E C2",
+                    "00000360  67 77 39 F4 EB 94 92 69  DA 16 AE 9E 9E CF 9A 37",
+                    "00000370  59 F9 6B 13 D6 DF E6 BC  94 1E 9C CF C5 B2 B2 BB",
+                    "00000380  4A 3E BE 89 30 FC ED C9  C6 53 87 B3 76 D3 3C 3B",
+                    "00000390  2E 93 EC F7 D5 39 A3 E3  DC F0 E5 D5 59 8E D6 A5",
+                    "000003A0  E6 F9 B5 5D 5C 32 A3 CE  F6 F5 49 96 41 ED 6B 74",
+                    "000003B0  0E 09 4B 67 9D D4 F2 71  8A 54 CA 84 F3 AF 5C 4A",
+                    "000003C0  26 DF DC F9 31 72 4C 9F  25 93 79 38 71 8E 2B 1A",
+                    "000003D0  AF 49 B2 5C A9 9E 55 CF  5F ED 19 8E C5 B9 AB CE",
+                    "000003E0  63 1A ED 24 32 B3 D2 DB  BD 78 77 E2 E7 69 77 1C",
+                    "000003F0  D9 66 D7 F3 6E 62 18 19  46 23 6F 5F F6 F5 7A 0E",
+                    "00000400  E2 CD 4B E9 1A 79 A6 E5  CB 6C 2D 3C 8B 33 0B 95",
+                    "00000410  4E 37 F1 AE AE AE BF B1  39 F6 39 3B F7 7A"
+                };
+
+                string[] expectedBinary2 =
+                {
+                    "00000000  80 74 2C 01 02 DA 18 4B  0E EF 86 D0 26 B7 92 18",
+                    "00000010  3D 95 1E 1C 8D 31 77 83  00 DF 7E 17 50 F1 D0 BC",
+                    "00000020  97 35 F3 57 D9 7A 23 F6  A1 5A A5 30 35 CD 03 7A",
+                    "00000030  AA 1B 73 7A 63 A9 52 29  BA 35 D5 14 B4 1C E6 BE",
+                    "00000040  B8 93 8A 23 D2 CF 0F 86  C6 C5 78 DB 27 A8 9E 37",
+                    "00000050  49 74 46 DD EF E2 61 33  44 21 F9 60 57 22 D3 73",
+                    "00000060  A6 79 49 0A BC 2A F2 9A  A5 8D 11 F9 B8 20 F0 68",
+                    "00000070  28 51 C2 0A 23 17 20 98  E7 6C D4 C4 CD F9 D7 82",
+                    "00000080  72 B3 54 90 58 33 E6 97  A5 90 81 9F 57 16 44 15",
+                    "00000090  95 56 BE C1 BA A2 C2 FB  A4 C3 01 CC 0F D8 49 18",
+                    "000000A0  5C B4 9C 97 D5 2C 77 7F  AF 76 D5 2D 72 4A 55 A3",
+                    "000000B0  A4 86 CB 1F F9 C0 B6 10  70 98 2B 99 DF C9 CF BB",
+                    "000000C0  BB D4 EF 25 83 28 72 2E  DC A8 5F 40 EA 95 D3 72",
+                    "000000D0  DD D4 E4 A0 92 30 92 64  46 46 7E 42 26 58 FE 19",
+                    "000000E0  68 0D 4E A5 4E 34 26 77  F6 49 97 FC 07 2F D5 74",
+                    "000000F0  EC 74 FD B3 12 D6 B3 30  EA B3 A5 35 08 83 CE 61",
+                    "00000100  B8 DF C7 D2 2A EA DE A8  3C 85 2E F2 22 F1 5A 4E",
+                    "00000110  C9 68 CE EC 60 59 29 31  33 1A 57 8E C4 FA 8E 71",
+                    "00000120  5C CB DA 5D 33 19 AF 70  8C 31 93 20 FF 37 ED 75",
+                    "00000130  53 18 5D 43 B7 68 8D 8C  6F 04 8E E5 ED 76 26 4E",
+                    "00000140  EB 10 A0 4D 18 8F 1E 71  79 88 BD AB 97 DA D7 F8",
+                    "00000150  2F FB AD A3 15 0C AA 52  C1 AF 07 DC F7 5B C9 AD",
+                    "00000160  CE B1 A0 EC 52 5A AB D4  FE D9 F9 50 BB 1E 4C 6E",
+                    "00000170  F9 C1 B0 AE 03 55 72 90  A5 51 15 87 CE 8C FC EB",
+                    "00000180  0B 7E 5E FA CD 27 65 8F  68 30 4F 22 47 D1 17 2B",
+                    "00000190  E4 1C F9 24 84 6C 31 53  49 EB 73 47 50 05 32 96",
+                    "000001A0  54 84 55 36 9B E1 FF F4  B5 5B 02 18 53 49 7F 4A",
+                    "000001B0  E4 73 36 8A 6E D2 1E FB  DB DC 07 F7 39 54 A8 8F",
+                    "000001C0  F6 0E 5A 1D 8C 82 71 39  B0 62 84 F3 85 59 63 28",
+                    "000001D0  EC 35 F9 CD 62 BE 76 D1  06 4C 01 77 84 43 F3 2D",
+                    "000001E0  0D 85 33 7A 28 AB 4D D7  66 E2 DF 82 E9 97 7C E4",
+                    "000001F0  A7 CB 1D DA 9F 50 F4 7E  07 1E 7E 7F 37 B5 E7 27",
+                    "00000200  A7 9C 99 B7 01 22 80 04  2C 50 6B 93 EF 4D B1 3C",
+                    "00000210  DF 1F CE 9C 50 71 23 89  ED 3B 4A 60 68 90 90 5A",
+                    "00000220  83 46 20 31 54 87 89 BF  12 91 05 01 D9 62 35 61",
+                    "00000230  E2 0E 04 4A B3 03 09 A1  18 0B 2D 45 69 BD AD 93",
+                    "00000240  A3 0D 7D 26 3E B4 EE 42  28 F6 40 37 C9 DE AD B6",
+                    "00000250  1F 73 4A 54 A1 E2 4F C3  7F 4C D9 1E 70 B3 E9 4F",
+                    "00000260  94 BC 7C 39 2B B7 44 12  BC 5B 94 38 49 EE F5 16",
+                    "00000270  8E 84 91 3A 5F 21 A0 17  4B 48 28 EA 5B 89 71 B6",
+                    "00000280  67 2F 3B E5 42 C2 76 45  8E 25 94 85 21 2D 1F 19",
+                    "00000290  24 83 DF C7 76 E6 85 7D  DB A6 69 A7 62 66 5D 9E",
+                    "000002A0  DB F9 D4 1E B5 F9 C9 2D  B3 66 46 20 87 7D 75 0D",
+                    "000002B0  E4 8B 88 CD 43 32 D1 6F  5A 20 CD DA 5E C7 39 8A",
+                    "000002C0  EC 40 6D B6 38 79 B8 DB  D2 2D 07 A6 C0 8C E7 00",
+                    "000002D0  45 D0 B1 65 7C 74 8C 4C  E9 7C 06 59 6D 1A 8B CF",
+                    "000002E0  F8 D9 AB A7 7C EA 77 C2  B3 FF 35 17 78 67 EF 2E",
+                    "000002F0  8A CD CC EF 67 BF E8 1B  A8 7F 24 6D 02 CB 1B D9",
+                    "00000300  E9 D4 74 6A 03 D3 1E CE  97 14 C2 DE 63 1F DC 62",
+                    "00000310  88 96 85 8D DE DF 27 A4  A5 8D 79 0B 91 7E C5 A6",
+                    "00000320  10 A2 D0 36 65 8E 77 63  EF 92 1F 47 D2 26 0D 4D",
+                    "00000330  E1 92 1C 9D 81 B3 FA D1  75 DE E7 C9 C1 DC B7 72",
+                    "00000340  08 CA 90 EC F0 41 56 21  DA C9 8F 75 20 FD 98 29",
+                    "00000350  5F C9 D4 34 68 A1 34 32  D8 47 BC 04 C0 DC 6C 8A",
+                    "00000360  7A 87 9A 5B B2 9C 36 87  6A 11 FB FE 55 96 80 0C",
+                    "00000370  5F 29 19 07 83 8C 9E 95  9A 58 F1 F0 49 36 70 F0",
+                    "00000380  8D 49 3F D6 C5 CE DE"
+                };
+
+                ExecuteAndValidate(tokensToWrite, expectedText, expectedBinary1, JsonWriteOptions.None);
+                ExecuteAndValidate(tokensToWrite, expectedText, expectedBinary2, JsonWriteOptions.EnableBase64Strings);
+            }
+
+            // --------------------------------------
+            // Base64/Base64 URL: No Padding
+            // --------------------------------------
+            {
+                JsonToken[] tokensToWrite =
+                {
+                    JsonToken.ArrayStart(),
+                        JsonToken.String("bcaW+OlS0pKrBj83ZNPAnuMa+7CA7q0kUWaC1wg="),
+                        JsonToken.String("bcaW+OlS0pKrBj83ZNPAnuMa+7CA7q0kUWaC1wg"),
+                        JsonToken.String("bcaW-OlS0pKrBj83ZNPAnuMa-7CA7q0kUWaC1wg"),
+                        JsonToken.String("vFniJGPEGDCL7ijlj68HafJ9uzmmR6JyXvs6Jl5si+W2LA=="),
+                        JsonToken.String("vFniJGPEGDCL7ijlj68HafJ9uzmmR6JyXvs6Jl5si+W2LA"),
+                        JsonToken.String("vFniJGPEGDCL7ijlj68HafJ9uzmmR6JyXvs6Jl5si-W2LA"),
+                        JsonToken.String("d/8fH/1VHFcZLeMe5mCf4pUR1WMoy9c3plC8ZBvruB7YPVk="),
+                        JsonToken.String("d/8fH/1VHFcZLeMe5mCf4pUR1WMoy9c3plC8ZBvruB7YPVk"),
+                        JsonToken.String("d_8fH_1VHFcZLeMe5mCf4pUR1WMoy9c3plC8ZBvruB7YPVk"),
+                        JsonToken.String("LtV/FCBuonw12i57cKNa+p0oV40zI4Anw/Qhbg6K0JFVDQ=="),
+                        JsonToken.String("LtV/FCBuonw12i57cKNa+p0oV40zI4Anw/Qhbg6K0JFVDQ"),
+                        JsonToken.String("LtV_FCBuonw12i57cKNa-p0oV40zI4Anw_Qhbg6K0JFVDQ"),
+                        JsonToken.String("tl80G/hSrQX1khaCMajsybfL/hLKz2dnujkXpDeuK1qhKGYZionK3C/1tg=="),
+                        JsonToken.String("tl80G/hSrQX1khaCMajsybfL/hLKz2dnujkXpDeuK1qhKGYZionK3C/1tg"),
+                        JsonToken.String("tl80G_hSrQX1khaCMajsybfL_hLKz2dnujkXpDeuK1qhKGYZionK3C_1tg"),
+                    JsonToken.ArrayEnd(),
+                };
+
+                string[] expectedText =
+                {
+                    @"[""bcaW+OlS0pKrBj83ZNPAnuMa+7CA7q0kUWaC1wg="",""bcaW+OlS0pKrBj83ZNPAnuMa+7CA7q0kUWaC1wg"",""bcaW-OlS0pKrB",
+                    @"j83ZNPAnuMa-7CA7q0kUWaC1wg"",""vFniJGPEGDCL7ijlj68HafJ9uzmmR6JyXvs6Jl5si+W2LA=="",""vFniJGPEGDCL7ijlj68H",
+                    @"afJ9uzmmR6JyXvs6Jl5si+W2LA"",""vFniJGPEGDCL7ijlj68HafJ9uzmmR6JyXvs6Jl5si-W2LA"",""d/8fH/1VHFcZLeMe5mCf4p",
+                    @"UR1WMoy9c3plC8ZBvruB7YPVk="",""d/8fH/1VHFcZLeMe5mCf4pUR1WMoy9c3plC8ZBvruB7YPVk"",""d_8fH_1VHFcZLeMe5mCf4",
+                    @"pUR1WMoy9c3plC8ZBvruB7YPVk"",""LtV/FCBuonw12i57cKNa+p0oV40zI4Anw/Qhbg6K0JFVDQ=="",""LtV/FCBuonw12i57cKNa",
+                    @"+p0oV40zI4Anw/Qhbg6K0JFVDQ"",""LtV_FCBuonw12i57cKNa-p0oV40zI4Anw_Qhbg6K0JFVDQ"",""tl80G/hSrQX1khaCMajsyb",
+                    @"fL/hLKz2dnujkXpDeuK1qhKGYZionK3C/1tg=="",""tl80G/hSrQX1khaCMajsybfL/hLKz2dnujkXpDeuK1qhKGYZionK3C/1tg""",
+                    @",""tl80G_hSrQX1khaCMajsybfL_hLKz2dnujkXpDeuK1qhKGYZionK3C_1tg""]"
+                };
+
+                string[] expectedBinary1 =
+                {
+                    "00000000  80 E3 DB 02 A8 62 63 61  57 2B 4F 6C 53 30 70 4B",
+                    "00000010  72 42 6A 38 33 5A 4E 50  41 6E 75 4D 61 2B 37 43",
+                    "00000020  41 37 71 30 6B 55 57 61  43 31 77 67 3D A7 62 63",
+                    "00000030  61 57 2B 4F 6C 53 30 70  4B 72 42 6A 38 33 5A 4E",
+                    "00000040  50 41 6E 75 4D 61 2B 37  43 41 37 71 30 6B 55 57",
+                    "00000050  61 43 31 77 67 A7 62 63  61 57 2D 4F 6C 53 30 70",
+                    "00000060  4B 72 42 6A 38 33 5A 4E  50 41 6E 75 4D 61 2D 37",
+                    "00000070  43 41 37 71 30 6B 55 57  61 43 31 77 67 B0 76 46",
+                    "00000080  6E 69 4A 47 50 45 47 44  43 4C 37 69 6A 6C 6A 36",
+                    "00000090  38 48 61 66 4A 39 75 7A  6D 6D 52 36 4A 79 58 76",
+                    "000000A0  73 36 4A 6C 35 73 69 2B  57 32 4C 41 3D 3D AE 76",
+                    "000000B0  46 6E 69 4A 47 50 45 47  44 43 4C 37 69 6A 6C 6A",
+                    "000000C0  36 38 48 61 66 4A 39 75  7A 6D 6D 52 36 4A 79 58",
+                    "000000D0  76 73 36 4A 6C 35 73 69  2B 57 32 4C 41 AE 76 46",
+                    "000000E0  6E 69 4A 47 50 45 47 44  43 4C 37 69 6A 6C 6A 36",
+                    "000000F0  38 48 61 66 4A 39 75 7A  6D 6D 52 36 4A 79 58 76",
+                    "00000100  73 36 4A 6C 35 73 69 2D  57 32 4C 41 B0 64 2F 38",
+                    "00000110  66 48 2F 31 56 48 46 63  5A 4C 65 4D 65 35 6D 43",
+                    "00000120  66 34 70 55 52 31 57 4D  6F 79 39 63 33 70 6C 43",
+                    "00000130  38 5A 42 76 72 75 42 37  59 50 56 6B 3D AF 64 2F",
+                    "00000140  38 66 48 2F 31 56 48 46  63 5A 4C 65 4D 65 35 6D",
+                    "00000150  43 66 34 70 55 52 31 57  4D 6F 79 39 63 33 70 6C",
+                    "00000160  43 38 5A 42 76 72 75 42  37 59 50 56 6B AF 64 5F",
+                    "00000170  38 66 48 5F 31 56 48 46  63 5A 4C 65 4D 65 35 6D",
+                    "00000180  43 66 34 70 55 52 31 57  4D 6F 79 39 63 33 70 6C",
+                    "00000190  43 38 5A 42 76 72 75 42  37 59 50 56 6B B0 4C 74",
+                    "000001A0  56 2F 46 43 42 75 6F 6E  77 31 32 69 35 37 63 4B",
+                    "000001B0  4E 61 2B 70 30 6F 56 34  30 7A 49 34 41 6E 77 2F",
+                    "000001C0  51 68 62 67 36 4B 30 4A  46 56 44 51 3D 3D AE 4C",
+                    "000001D0  74 56 2F 46 43 42 75 6F  6E 77 31 32 69 35 37 63",
+                    "000001E0  4B 4E 61 2B 70 30 6F 56  34 30 7A 49 34 41 6E 77",
+                    "000001F0  2F 51 68 62 67 36 4B 30  4A 46 56 44 51 AE 4C 74",
+                    "00000200  56 5F 46 43 42 75 6F 6E  77 31 32 69 35 37 63 4B",
+                    "00000210  4E 61 2D 70 30 6F 56 34  30 7A 49 34 41 6E 77 5F",
+                    "00000220  51 68 62 67 36 4B 30 4A  46 56 44 51 BC 74 6C 38",
+                    "00000230  30 47 2F 68 53 72 51 58  31 6B 68 61 43 4D 61 6A",
+                    "00000240  73 79 62 66 4C 2F 68 4C  4B 7A 32 64 6E 75 6A 6B",
+                    "00000250  58 70 44 65 75 4B 31 71  68 4B 47 59 5A 69 6F 6E",
+                    "00000260  4B 33 43 2F 31 74 67 3D  3D BA 74 6C 38 30 47 2F",
+                    "00000270  68 53 72 51 58 31 6B 68  61 43 4D 61 6A 73 79 62",
+                    "00000280  66 4C 2F 68 4C 4B 7A 32  64 6E 75 6A 6B 58 70 44",
+                    "00000290  65 75 4B 31 71 68 4B 47  59 5A 69 6F 6E 4B 33 43",
+                    "000002A0  2F 31 74 67 BA 74 6C 38  30 47 5F 68 53 72 51 58",
+                    "000002B0  31 6B 68 61 43 4D 61 6A  73 79 62 66 4C 5F 68 4C",
+                    "000002C0  4B 7A 32 64 6E 75 6A 6B  58 70 44 65 75 4B 31 71",
+                    "000002D0  68 4B 47 59 5A 69 6F 6E  4B 33 43 5F 31 74 67"
+                };
+
+                string[] expectedBinary2 =
+                {
+                    "00000000  80 E3 4A 02 71 0A 01 6D  C6 96 F8 E9 52 D2 92 AB",
+                    "00000010  06 3F 37 64 D3 C0 9E E3  1A FB B0 80 EE AD 24 51",
+                    "00000020  66 82 D7 08 A7 62 63 61  57 2B 4F 6C 53 30 70 4B",
+                    "00000030  72 42 6A 38 33 5A 4E 50  41 6E 75 4D 61 2B 37 43",
+                    "00000040  41 37 71 30 6B 55 57 61  43 31 77 67 A7 62 63 61",
+                    "00000050  57 2D 4F 6C 53 30 70 4B  72 42 6A 38 33 5A 4E 50",
+                    "00000060  41 6E 75 4D 61 2D 37 43  41 37 71 30 6B 55 57 61",
+                    "00000070  43 31 77 67 71 0C 02 BC  59 E2 24 63 C4 18 30 8B",
+                    "00000080  EE 28 E5 8F AF 07 69 F2  7D BB 39 A6 47 A2 72 5E",
+                    "00000090  FB 3A 26 5E 6C 8B E5 B6  2C 71 0C FD BC 59 E2 24",
+                    "000000A0  63 C4 18 30 8B EE 28 E5  8F AF 07 69 F2 7D BB 39",
+                    "000000B0  A6 47 A2 72 5E FB 3A 26  5E 6C 8B E5 B6 2C 73 0C",
+                    "000000C0  FD BC 59 E2 24 63 C4 18  30 8B EE 28 E5 8F AF 07",
+                    "000000D0  69 F2 7D BB 39 A6 47 A2  72 5E FB 3A 26 5E 6C 8B",
+                    "000000E0  E5 B6 2C 71 0C 01 77 FF  1F 1F FD 55 1C 57 19 2D",
+                    "000000F0  E3 1E E6 60 9F E2 95 11  D5 63 28 CB D7 37 A6 50",
+                    "00000100  BC 64 1B EB B8 1E D8 3D  59 71 0C FE 77 FF 1F 1F",
+                    "00000110  FD 55 1C 57 19 2D E3 1E  E6 60 9F E2 95 11 D5 63",
+                    "00000120  28 CB D7 37 A6 50 BC 64  1B EB B8 1E D8 3D 59 73",
+                    "00000130  0C FE 77 FF 1F 1F FD 55  1C 57 19 2D E3 1E E6 60",
+                    "00000140  9F E2 95 11 D5 63 28 CB  D7 37 A6 50 BC 64 1B EB",
+                    "00000150  B8 1E D8 3D 59 71 0C 02  2E D5 7F 14 20 6E A2 7C",
+                    "00000160  35 DA 2E 7B 70 A3 5A FA  9D 28 57 8D 33 23 80 27",
+                    "00000170  C3 F4 21 6E 0E 8A D0 91  55 0D 71 0C FD 2E D5 7F",
+                    "00000180  14 20 6E A2 7C 35 DA 2E  7B 70 A3 5A FA 9D 28 57",
+                    "00000190  8D 33 23 80 27 C3 F4 21  6E 0E 8A D0 91 55 0D 73",
+                    "000001A0  0C FD 2E D5 7F 14 20 6E  A2 7C 35 DA 2E 7B 70 A3",
+                    "000001B0  5A FA 9D 28 57 8D 33 23  80 27 C3 F4 21 6E 0E 8A",
+                    "000001C0  D0 91 55 0D 71 0F 02 B6  5F 34 1B F8 52 AD 05 F5",
+                    "000001D0  92 16 82 31 A8 EC C9 B7  CB FE 12 CA CF 67 67 BA",
+                    "000001E0  39 17 A4 37 AE 2B 5A A1  28 66 19 8A 89 CA DC 2F",
+                    "000001F0  F5 B6 71 0F FD B6 5F 34  1B F8 52 AD 05 F5 92 16",
+                    "00000200  82 31 A8 EC C9 B7 CB FE  12 CA CF 67 67 BA 39 17",
+                    "00000210  A4 37 AE 2B 5A A1 28 66  19 8A 89 CA DC 2F F5 B6",
+                    "00000220  73 0F FD B6 5F 34 1B F8  52 AD 05 F5 92 16 82 31",
+                    "00000230  A8 EC C9 B7 CB FE 12 CA  CF 67 67 BA 39 17 A4 37",
+                    "00000240  AE 2B 5A A1 28 66 19 8A  89 CA DC 2F F5 B6"
+                };
+
+                ExecuteAndValidate(tokensToWrite, expectedText, expectedBinary1, JsonWriteOptions.None);
+                ExecuteAndValidate(tokensToWrite, expectedText, expectedBinary2, JsonWriteOptions.EnableBase64Strings);
+            }
+
+            // --------------------------------------
+            // Base64/Base64 URL: Regular Strings
+            // --------------------------------------
+            {
+                JsonToken[] tokensToWrite =
+                {
+                    JsonToken.ArrayStart(),
+                        JsonToken.String("HNF_DietTracker_Aggregate2014-08-10_-5561547689238327167"),
+                        JsonToken.String("HNF_DietTracker_Aggregate2014-09-05_3143222292013052466"),
+                        JsonToken.String("HNF_DietTracker_Aggregate2014-09-05_3143222292013052464"),
+                        JsonToken.String("--QHPKZTRVMNSFYSNXFHIAIMIZEIBIWAQJLMPVDZVNDXCXYTFQTKLUBBHEYQGQSIYL__"),
+                        JsonToken.String("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"),
+                    JsonToken.ArrayEnd(),
+                };
+
+                string[] expectedText =
+                {
+                    @"[""HNF_DietTracker_Aggregate2014-08-10_-5561547689238327167"",""HNF_DietTracker_Aggregate2014-09-05_314",
+                    @"3222292013052466"",""HNF_DietTracker_Aggregate2014-09-05_3143222292013052464"",""--QHPKZTRVMNSFYSNXFHIAI",
+                    @"MIZEIBIWAQJLMPVDZVNDXCXYTFQTKLUBBHEYQGQSIYL__"",""abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
+                    @"0123456789-_""]"
+                };
+
+                string[] expectedBinary1 =
+                {
+                    "00000000  80 E3 21 01 B8 48 4E 46  5F 44 69 65 74 54 72 61",
+                    "00000010  63 6B 65 72 5F 41 67 67  72 65 67 61 74 65 32 30",
+                    "00000020  31 34 2D 30 38 2D 31 30  5F 2D 35 35 36 31 35 34",
+                    "00000030  37 36 38 39 32 33 38 33  32 37 31 36 37 B7 48 4E",
+                    "00000040  46 5F 44 69 65 74 54 72  61 63 6B 65 72 5F 41 67",
+                    "00000050  67 72 65 67 61 74 65 32  30 31 34 2D 30 39 2D 30",
+                    "00000060  35 5F 33 31 34 33 32 32  32 32 39 32 30 31 33 30",
+                    "00000070  35 32 34 36 36 B7 48 4E  46 5F 44 69 65 74 54 72",
+                    "00000080  61 63 6B 65 72 5F 41 67  67 72 65 67 61 74 65 32",
+                    "00000090  30 31 34 2D 30 39 2D 30  35 5F 33 31 34 33 32 32",
+                    "000000A0  32 32 39 32 30 31 33 30  35 32 34 36 34 7D 44 2D",
+                    "000000B0  00 40 6E A3 D7 9E 65 0A  86 66 C6 9A E1 9A 6D 1C",
+                    "000000C0  C5 81 5C 8B 71 15 A7 52  64 F7 81 63 7A B5 69 78",
+                    "000000D0  AD D6 CA 9E 19 79 7A 1F  5A 55 1B C6 92 1A 69 72",
+                    "000000E0  EC 27 CB C0 40 61 62 63  64 65 66 67 68 69 6A 6B",
+                    "000000F0  6C 6D 6E 6F 70 71 72 73  74 75 76 77 78 79 7A 41",
+                    "00000100  42 43 44 45 46 47 48 49  4A 4B 4C 4D 4E 4F 50 51",
+                    "00000110  52 53 54 55 56 57 58 59  5A 30 31 32 33 34 35 36",
+                    "00000120  37 38 39 2D 5F"
+                };
+
+                string[] expectedBinary2 =
+                {
+                    "00000000  80 E2 FA 73 0E 00 1C D1  7F 0E 27 AD 4E B6 9C 91",
+                    "00000010  EA FF 02 08 2B 7A 06 AD  7B 6D 35 E3 ED 3C FB 5D",
+                    "00000020  3F FB 9E 7A D7 9E 3B EB  CF 76 DF CD F6 EF 5E BB",
+                    "00000030  B7 48 4E 46 5F 44 69 65  74 54 72 61 63 6B 65 72",
+                    "00000040  5F 41 67 67 72 65 67 61  74 65 32 30 31 34 2D 30",
+                    "00000050  39 2D 30 35 5F 33 31 34  33 32 32 32 32 39 32 30",
+                    "00000060  31 33 30 35 32 34 36 36  73 0E FE 1C D1 7F 0E 27",
+                    "00000070  AD 4E B6 9C 91 EA FF 02  08 2B 7A 06 AD 7B 6D 35",
+                    "00000080  E3 ED 3D FB 4E 7F DF 5E  37 DB 6D B6 F7 6D 35 DF",
+                    "00000090  4E 76 E3 AE 7D 44 2D 00  40 6E A3 D7 9E 65 0A 86",
+                    "000000A0  66 C6 9A E1 9A 6D 1C C5  81 5C 8B 71 15 A7 52 64",
+                    "000000B0  F7 81 63 7A B5 69 78 AD  D6 CA 9E 19 79 7A 1F 5A",
+                    "000000C0  55 1B C6 92 1A 69 72 EC  27 CB 73 10 00 69 B7 1D",
+                    "000000D0  79 F8 21 8A 39 25 9A 7A  29 AA BB 2D BA FC 31 CB",
+                    "000000E0  30 01 08 31 05 18 72 09  28 B3 0D 38 F4 11 49 35",
+                    "000000F0  15 59 76 19 D3 5D B7 E3  9E BB F3 DF BF"
+                };
+
+                ExecuteAndValidate(tokensToWrite, expectedText, expectedBinary1, JsonWriteOptions.None);
+                ExecuteAndValidate(tokensToWrite, expectedText, expectedBinary2, JsonWriteOptions.EnableBase64Strings);
+            }
+
+            // --------------------------------------
+            // Special Values: _rid property
+            // --------------------------------------
+            {
+                JsonToken[] tokensToWrite =
+                {
+                    JsonToken.String("q4sGAMXtnQ0CAAAAAAAAAg=="),
+                };
+
+                string[] expectedText =
+                {
+                    @"""q4sGAMXtnQ0CAAAAAAAAAg=="""
+                };
+
+                string[] expectedBinary1 =
+                {
+                    "00000000  80 98 71 34 73 47 41 4D  58 74 6E 51 30 43 41 41",
+                    "00000010  41 41 41 41 41 41 41 67  3D 3D"
+                };
+
+                string[] expectedBinary2 =
+                {
+                    "00000000  80 71 06 02 AB 8B 06 00  C5 ED 9D 0D 02 00 00 00",
+                    "00000010  00 00 00 02"
+                };
+
+                ExecuteAndValidate(tokensToWrite, expectedText, expectedBinary1, JsonWriteOptions.None);
+                ExecuteAndValidate(tokensToWrite, expectedText, expectedBinary2, JsonWriteOptions.EnableBase64Strings);
+            }
+
+            // --------------------------------------
+            // Object property names and values
+            // --------------------------------------
+            {
+                JsonToken[] tokensToWrite =
+                {
+                    JsonToken.ObjectStart(),
+                        JsonToken.FieldName("9mGv2f6n4k9i5h3b7u9a4z1n=="),
+                        JsonToken.String("Redmond WA"),
+                        JsonToken.FieldName("a6k3h2b7m9a5r0o9g8k6q0n4="),
+                        JsonToken.String("a6k3h2b7m9a5r0o9g8k6q0n4="),
+                        JsonToken.FieldName("TWljcm9zb2Z0IEF6dXJlIENsb3U="),
+                        JsonToken.String("q4sGAMXtnQ0CAAAAAAAAAg=="),
+                        JsonToken.FieldName("q4sGAMXtnQ0CAAAAAAAAAg=="),
+                        JsonToken.String("Dallas TX"),
+                    JsonToken.ObjectEnd(),
+                };
+
+                string[] expectedText =
+                {
+                    @"{""9mGv2f6n4k9i5h3b7u9a4z1n=="":""Redmond WA"",""a6k3h2b7m9a5r0o9g8k6q0n4="":""a6k3h2b7m9a5r0o9g8k6q0n4="",""",
+                    @"TWljcm9zb2Z0IEF6dXJlIENsb3U="":""q4sGAMXtnQ0CAAAAAAAAAg=="",""q4sGAMXtnQ0CAAAAAAAAAg=="":""Dallas TX""}"
+                };
+
+                string[] expectedBinary1 =
+                {
+                    "00000000  80 EA 84 9A 39 6D 47 76  32 66 36 6E 34 6B 39 69",
+                    "00000010  35 68 33 62 37 75 39 61  34 7A 31 6E 3D 3D 8A 52",
+                    "00000020  65 64 6D 6F 6E 64 20 57  41 99 61 36 6B 33 68 32",
+                    "00000030  62 37 6D 39 61 35 72 30  6F 39 67 38 6B 36 71 30",
+                    "00000040  6E 34 3D C3 29 9C 54 57  6C 6A 63 6D 39 7A 62 32",
+                    "00000050  5A 30 49 45 46 36 64 58  4A 6C 49 45 4E 73 62 33",
+                    "00000060  55 3D 98 71 34 73 47 41  4D 58 74 6E 51 30 43 41",
+                    "00000070  41 41 41 41 41 41 41 41  67 3D 3D C3 62 89 44 61",
+                    "00000080  6C 6C 61 73 20 54 58"
+                };
+
+                string[] expectedBinary2 =
+                {
+                    "00000000  80 EA 95 9A 39 6D 47 76  32 66 36 6E 34 6B 39 69",
+                    "00000010  35 68 33 62 37 75 39 61  34 7A 31 6E 3D 3D 8A 52",
+                    "00000020  65 64 6D 6F 6E 64 20 57  41 99 61 36 6B 33 68 32",
+                    "00000030  62 37 6D 39 61 35 72 30  6F 39 67 38 6B 36 71 30",
+                    "00000040  6E 34 3D C3 29 9C 54 57  6C 6A 63 6D 39 7A 62 32",
+                    "00000050  5A 30 49 45 46 36 64 58  4A 6C 49 45 4E 73 62 33",
+                    "00000060  55 3D 71 06 02 AB 8B 06  00 C5 ED 9D 0D 02 00 00",
+                    "00000070  00 00 00 00 02 98 71 34  73 47 41 4D 58 74 6E 51",
+                    "00000080  30 43 41 41 41 41 41 41  41 41 41 67 3D 3D 89 44",
+                    "00000090  61 6C 6C 61 73 20 54 58"
+                };
+
+                ExecuteAndValidate(tokensToWrite, expectedText, expectedBinary1, JsonWriteOptions.None);
+                ExecuteAndValidate(tokensToWrite, expectedText, expectedBinary2, JsonWriteOptions.EnableBase64Strings);
+            }
+
+            // --------------------------------------
+            // Malformed: Missing padding
+            // --------------------------------------
+            {
+                JsonToken[] tokensToWrite =
+                {
+                    JsonToken.ArrayStart(),
+                        JsonToken.String("AtBughWl9PS9ax1B1NGkwt48Xfmy9g=="),
+                        JsonToken.String("AtBughWl9PS9ax1B1NGkwt48Xfmy9g="),
+                        JsonToken.String("AtBughWl9PS9ax1B1NGkwt48Xfmy9g"),
+                    JsonToken.ArrayEnd(),
+                };
+
+                string[] expectedText =
+                {
+                    @"[""AtBughWl9PS9ax1B1NGkwt48Xfmy9g=="",""AtBughWl9PS9ax1B1NGkwt48Xfmy9g="",""AtBughWl9PS9ax1B1NGkwt48Xfmy9",
+                    @"g""]"
+                };
+
+                string[] expectedBinary1 =
+                {
+                    "00000000  80 E2 60 A0 41 74 42 75  67 68 57 6C 39 50 53 39",
+                    "00000010  61 78 31 42 31 4E 47 6B  77 74 34 38 58 66 6D 79",
+                    "00000020  39 67 3D 3D 9F 41 74 42  75 67 68 57 6C 39 50 53",
+                    "00000030  39 61 78 31 42 31 4E 47  6B 77 74 34 38 58 66 6D",
+                    "00000040  79 39 67 3D 9E 41 74 42  75 67 68 57 6C 39 50 53",
+                    "00000050  39 61 78 31 42 31 4E 47  6B 77 74 34 38 58 66 6D",
+                    "00000060  79 39 67"
+                };
+
+                string[] expectedBinary2 =
+                {
+                    "00000000  80 E2 58 71 08 02 02 D0  6E 82 15 A5 F4 F4 BD 6B",
+                    "00000010  1D 41 D4 D1 A4 C2 DE 3C  5D F9 B2 F6 9F 41 74 42",
+                    "00000020  75 67 68 57 6C 39 50 53  39 61 78 31 42 31 4E 47",
+                    "00000030  6B 77 74 34 38 58 66 6D  79 39 67 3D 9E 41 74 42",
+                    "00000040  75 67 68 57 6C 39 50 53  39 61 78 31 42 31 4E 47",
+                    "00000050  6B 77 74 34 38 58 66 6D  79 39 67"
+                };
+
+                ExecuteAndValidate(tokensToWrite, expectedText, expectedBinary1, JsonWriteOptions.None);
+                ExecuteAndValidate(tokensToWrite, expectedText, expectedBinary2, JsonWriteOptions.EnableBase64Strings);
+            }
+
+            // --------------------------------------
+            // Malformed: Extra padding
+            // --------------------------------------
+            {
+                JsonToken[] tokensToWrite =
+                {
+                    JsonToken.ArrayStart(),
+                        JsonToken.String("1z9d6l4p2k7i5m1n8j3c7j4k9f2l"),
+                        JsonToken.String("1z9d6l4p2k7i5m1n8j3c7j4k9f2l="),
+                        JsonToken.String("1z9d6l4p2k7i5m1n8j3c7j4k9f2l=="),
+                    JsonToken.ArrayEnd(),
+                };
+
+                string[] expectedText =
+                {
+                    @"[""1z9d6l4p2k7i5m1n8j3c7j4k9f2l"",""1z9d6l4p2k7i5m1n8j3c7j4k9f2l="",""1z9d6l4p2k7i5m1n8j3c7j4k9f2l==""]"
+                };
+
+                string[] expectedBinary =
+                {
+                    "00000000  80 E2 5A 9C 31 7A 39 64  36 6C 34 70 32 6B 37 69",
+                    "00000010  35 6D 31 6E 38 6A 33 63  37 6A 34 6B 39 66 32 6C",
+                    "00000020  9D 31 7A 39 64 36 6C 34  70 32 6B 37 69 35 6D 31",
+                    "00000030  6E 38 6A 33 63 37 6A 34  6B 39 66 32 6C 3D 9E 31",
+                    "00000040  7A 39 64 36 6C 34 70 32  6B 37 69 35 6D 31 6E 38",
+                    "00000050  6A 33 63 37 6A 34 6B 39  66 32 6C 3D 3D"
+                };
+
+
+                ExecuteAndValidate(tokensToWrite, expectedText, expectedBinary, JsonWriteOptions.None);
+                ExecuteAndValidate(tokensToWrite, expectedText, expectedBinary, JsonWriteOptions.EnableBase64Strings);
+            }
+
+            // --------------------------------------
+            // Malformed: Includes invalid characters
+            // --------------------------------------
+            {
+                JsonToken[] tokensToWrite =
+                {
+                    JsonToken.ArrayStart(),
+                        JsonToken.String("B8u6p9c3a6r7m1e8d4v0n9z5f2l3k4o7*"),
+                        JsonToken.String("B8u6p9c3a6r*m1e8d4v0n9z5f2l3k4o7="),
+                        JsonToken.String("*8u6p9c3a6r7m1e8d4v0n9z5f2l3k4o7="),
+                    JsonToken.ArrayEnd(),
+                };
+
+                string[] expectedText =
+                {
+                    @"[""B8u6p9c3a6r7m1e8d4v0n9z5f2l3k4o7*"",""B8u6p9c3a6r*m1e8d4v0n9z5f2l3k4o7="",""*8u6p9c3a6r7m1e8d4v0n9z5f2",
+                    @"l3k4o7=""]"
+                };
+
+                string[] expectedBinary =
+                {
+                    "00000000  80 E2 66 A1 42 38 75 36  70 39 63 33 61 36 72 37",
+                    "00000010  6D 31 65 38 64 34 76 30  6E 39 7A 35 66 32 6C 33",
+                    "00000020  6B 34 6F 37 2A A1 42 38  75 36 70 39 63 33 61 36",
+                    "00000030  72 2A 6D 31 65 38 64 34  76 30 6E 39 7A 35 66 32",
+                    "00000040  6C 33 6B 34 6F 37 3D A1  2A 38 75 36 70 39 63 33",
+                    "00000050  61 36 72 37 6D 31 65 38  64 34 76 30 6E 39 7A 35",
+                    "00000060  66 32 6C 33 6B 34 6F 37  3D"
+                };
+
+                ExecuteAndValidate(tokensToWrite, expectedText, expectedBinary, JsonWriteOptions.None);
+                ExecuteAndValidate(tokensToWrite, expectedText, expectedBinary, JsonWriteOptions.EnableBase64Strings);
+            }
+
+            // --------------------------------------
+            // Malformed: Incorrectly truncated
+            // --------------------------------------
+            {
+                JsonToken[] tokensToWrite =
+                {
+                    JsonToken.ArrayStart(),
+                        JsonToken.String("bbi4HWG/pwvvcLKJfWqrOguE4p/sFte="),
+                        JsonToken.String("4x9h7c6m8k4p7i5m1n8j3c7j4k9fzx=="),
+                        JsonToken.String("HGbeioIfU1C5U0MQloI07mg5MpQPwmzwoLUbOGO3I9CiASJgeSMocqq6ZfXbwAB2fdisq2V4NfjLP19KSBWF7joEpZRon4R1G7AudOL2+PVA+dIgvr=="),
+                    JsonToken.ArrayEnd(),
+                };
+
+                string[] expectedText =
+                {
+                    @"[""bbi4HWG/pwvvcLKJfWqrOguE4p/sFte="",""4x9h7c6m8k4p7i5m1n8j3c7j4k9fzx=="",""HGbeioIfU1C5U0MQloI07mg5MpQP",
+                    @"wmzwoLUbOGO3I9CiASJgeSMocqq6ZfXbwAB2fdisq2V4NfjLP19KSBWF7joEpZRon4R1G7AudOL2+PVA+dIgvr==""]"
+                };
+
+                string[] expectedBinary =
+                {
+                    "00000000  80 E2 AA A0 62 62 69 34  48 57 47 2F 70 77 76 76",
+                    "00000010  63 4C 4B 4A 66 57 71 72  4F 67 75 45 34 70 2F 73",
+                    "00000020  46 74 65 3D A0 34 78 39  68 37 63 36 6D 38 6B 34",
+                    "00000030  70 37 69 35 6D 31 6E 38  6A 33 63 37 6A 34 6B 39",
+                    "00000040  66 7A 78 3D 3D 7E 74 C8  A3 B8 9C 7E 27 CD D5 D8",
+                    "00000050  B0 56 85 35 A3 EC 77 12  76 6B 9F 6B 4D 78 14 7A",
+                    "00000060  6F EB EF 6F 66 55 FC 3C  3E 67 C9 DC 30 1D 9C 2A",
+                    "00000070  CF E5 69 F3 3D 8E C7 6D  5A 33 56 7C 0F 0A 65 66",
+                    "00000080  72 7A 1E 97 59 69 4E B3  9A 09 8D E5 96 53 E1 D5",
+                    "00000090  78 53 BF 8B 70 AD F4 ED  A6 49 63 C7 5B B0 4E 7E",
+                    "000000A0  32 65 2B A8 35 B8 22 27  CF 76 79 AF 07"
+                };
+
+                ExecuteAndValidate(tokensToWrite, expectedText, expectedBinary, JsonWriteOptions.None);
+                ExecuteAndValidate(tokensToWrite, expectedText, expectedBinary, JsonWriteOptions.EnableBase64Strings);
             }
         }
         #endregion
@@ -8862,7 +10102,7 @@
                 }
             }
 
-            if(!skipRoundTripTest)
+            if (!skipRoundTripTest)
             {
                 SerializationSpec[] serializationSpecs = new SerializationSpec[]
                 {
@@ -8891,12 +10131,23 @@
                         RoundTripResult roundTripResult = null;
                         foreach (RewriteScenario rewriteScenario in rewriteScenarios)
                         {
-                            // For Binary(EnableNumberArrays) to Binary(EnableNumberArrays) we need
-                            // to relax the strict comparison since the logic of converting a regular
-                            // array into a uniform number array might be different from the input.
-                            bool strictComparison = !object.ReferenceEquals(inputSpec, outputSpec) ||
-                                (inputSpec.SerializationFormat != JsonSerializationFormat.Binary) ||
-                                (inputSpec.WriteOptions != JsonWriteOptions.EnableNumberArrays);
+                            bool strictComparison = true;
+
+                            // For Binary+NumberArrays → Binary+NumberArrays rewrites, relax strict
+                            // comparison, since the conversion logic from a regular array to a uniform
+                            // number array may differ from the input representation.
+                            if (inputSpec.IsBinary && inputSpec.EnablesNumberArrays && outputSpec.IsBinary && outputSpec.EnablesNumberArrays)
+                            {
+                                strictComparison = false;
+                            }
+
+                            // Disable strict comparison for Binary → Binary+Base64 rewrites.
+                            // In this case, already-compressed strings (e.g., 7-bit packed characters)
+                            // are copied as-is without being re-encoded as Base64.
+                            if (inputSpec.IsBinary && outputSpec.IsBinary && outputSpec.EnablesBase64Strings)
+                            {
+                                strictComparison = false;
+                            }
 
                             RoundTripBaseline roundTripBaseline = roundTripResult != null ? new RoundTripBaseline(roundTripResult.OutputResult, strictComparison) : null;
 

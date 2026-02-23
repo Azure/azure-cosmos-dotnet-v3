@@ -8,16 +8,12 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Collections.ObjectModel;
-    using System.Data.Common;
     using System.Diagnostics;
     using System.Globalization;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
-    using System.Text.RegularExpressions;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan.Cql;
-    using Microsoft.Azure.Cosmos.Serialization.HybridRow;
     using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.Azure.Cosmos.SqlObjects;
