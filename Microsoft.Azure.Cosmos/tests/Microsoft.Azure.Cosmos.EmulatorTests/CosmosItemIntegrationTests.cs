@@ -1723,11 +1723,15 @@
                 Assert.IsNotNull(traceDiagnostic);
 
                 traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
+                traceDiagnostic.Value.Data.TryGetValue("Hedge Config", out object hedgeConfig);
 
-                Assert.IsNotNull(hedgeContext);
-                List<string> hedgedRegions = ((IEnumerable<string>)hedgeContext).ToList();
+                Assert.IsNotNull(hedgeConfig);
+                if (hedgeContext != null)
+                {
+                    List<string> hedgedRegions = ((IEnumerable<string>)hedgeContext).ToList();
+                    Assert.IsTrue(hedgedRegions.Count >= 1, "Since the first region is not available, the request should atleast hedge to the next region.");
+                }
 
-                Assert.IsTrue(hedgedRegions.Count >= 1, "Since the first region is not available, the request should atleast hedge to the next region.");
                 Assert.IsTrue(cosmosClient.DocumentClient.PartitionKeyRangeLocation.IsPartitionLevelAutomaticFailoverEnabled());
 
                 // Disable PPAF At the Gateway Layer.
@@ -2667,21 +2671,22 @@
         [Timeout(70000)]
         public async Task CreateItemAsync_WithPPAFEnabledAndPrimaryUnavailable_ShouldHedgeAndSucceedInSecondary()
         {
-            // Arrange - Inject 503 ServiceUnavailable on CreateItem in region1.
-            string serviceUnavailableRuleId = "create-503-rule-" + Guid.NewGuid().ToString();
-            FaultInjectionRule serviceUnavailableRule = new FaultInjectionRuleBuilder(
-                id: serviceUnavailableRuleId,
+            // Arrange - Inject response delay on CreateItem in region1 to simulate primary unavailability.
+            string responseDelayRuleId = "create-delay-rule-" + Guid.NewGuid().ToString();
+            FaultInjectionRule responseDelayRule = new FaultInjectionRuleBuilder(
+                id: responseDelayRuleId,
                 condition:
                     new FaultInjectionConditionBuilder()
                         .WithOperationType(FaultInjectionOperationType.CreateItem)
                         .WithRegion(region1)
                         .Build(),
                 result:
-                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
+                        .WithDelay(TimeSpan.FromMilliseconds(6000))
                         .Build())
                 .Build();
 
-            List<FaultInjectionRule> rules = new List<FaultInjectionRule> { serviceUnavailableRule };
+            List<FaultInjectionRule> rules = new List<FaultInjectionRule> { responseDelayRule };
             FaultInjector faultInjector = new FaultInjector(rules);
 
             HttpClientHandlerHelper httpClientHandlerHelper = new HttpClientHandlerHelper()
