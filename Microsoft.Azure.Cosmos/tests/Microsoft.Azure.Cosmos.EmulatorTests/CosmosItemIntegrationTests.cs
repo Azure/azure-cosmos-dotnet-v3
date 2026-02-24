@@ -2531,6 +2531,7 @@
             List<string> preferredRegions = new List<string> { region1, region2, region3 };
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
             {
+                Serializer = this.cosmosSystemTextJsonSerializer,
                 ConsistencyLevel = ConsistencyLevel.Session,
                 FaultInjector = faultInjector,
                 RequestTimeout = TimeSpan.FromSeconds(5),
@@ -2619,6 +2620,7 @@
             List<string> preferredRegions = new List<string> { region1, region2, region3 };
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
             {
+                Serializer = this.cosmosSystemTextJsonSerializer,
                 ConsistencyLevel = ConsistencyLevel.Session,
                 RequestTimeout = TimeSpan.FromSeconds(5),
                 ApplicationPreferredRegions = preferredRegions,
@@ -2711,6 +2713,7 @@
             List<string> preferredRegions = new List<string> { region1, region2, region3 };
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
             {
+                Serializer = this.cosmosSystemTextJsonSerializer,
                 ConsistencyLevel = ConsistencyLevel.Session,
                 FaultInjector = faultInjector,
                 RequestTimeout = TimeSpan.FromSeconds(5),
