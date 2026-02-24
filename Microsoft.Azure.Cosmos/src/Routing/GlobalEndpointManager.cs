@@ -462,6 +462,21 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public virtual Uri ResolveServiceEndpoint(DocumentServiceRequest request)
         {
+            // For PPAF write hedging in single-master: route to read endpoints
+            // when ExcludeRegions is set to allow failover to read regions
+            if (this.connectionPolicy.EnablePartitionLevelFailover
+                && request.OperationType.IsWriteOperation()
+                && !this.locationCache.CanUseMultipleWriteLocations(request)
+                && request.RequestContext?.ExcludeRegions != null
+                && request.RequestContext.ExcludeRegions.Count > 0)
+            {
+                ReadOnlyCollection<Uri> readEndpoints = this.locationCache.GetApplicableEndpoints(request, isReadRequest: true);
+                int locationIndex = request.RequestContext.LocationIndexToRoute.GetValueOrDefault(0);
+                Uri endpoint = readEndpoints[locationIndex % readEndpoints.Count];
+                request.RequestContext.RouteToLocation(endpoint);
+                return endpoint;
+            }
+
             return this.locationCache.ResolveServiceEndpoint(request);
         }
 
