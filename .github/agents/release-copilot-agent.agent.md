@@ -5,7 +5,7 @@
 
 ## Quick Start Prompt
 
-**For a full release:**
+**For a minor release:**
 ```
 @ReleaseCopilotAgent start release
 ```
@@ -63,14 +63,14 @@ Test-Path "tools/GenAPI/GenAPI.exe"
 When the agent is invoked, ask the user:
 
 > **Which release mode would you like to run?**
-> 1. **Release Mode** — Full release (GA + Preview)
+> 1. **Release Mode** — Minor release (GA + Preview)
 > 2. **Hotfix Mode** — Patch release on an existing release branch
 
 Based on the selection, proceed to the corresponding section below.
 
 ---
 
-## 2. Release Mode (Full Release)
+## 2. Release Mode (Minor Release)
 
 ### 2.1 Determine Current Versions
 
@@ -96,7 +96,7 @@ Example: If releasing `3.58.0`:
 
 ### 2.2 Determine the Previous Release Version
 
-Identify the last full release by checking:
+Identify the last minor release by checking:
 1. The latest GA entry in `changelog.md` (look for the most recent non-preview, non-hotfix heading)
 2. Or the latest `releases/X.Y.Z` branch: `git branch -r --list "origin/releases/*"`
 
@@ -275,28 +275,13 @@ After the PR is approved and merged:
    git push origin releases/X.Y.Z
    ```
 
-2. **Queue release pipeline:**
-   - Queue `CosmosDB-Official-Release` against `releases/X.Y.Z` on Azure DevOps
-   - **Do NOT select any additional parameters**
-
-3. **After pipeline completes:**
-   - Find the blob path from the pipeline output (e.g., `cosmosdb/csharp/Microsoft.Azure.Cosmos/X.Y.Z`)
-   - Queue `Azure SDK Partner Release to Nuget` with the blob path
-   - Get approval from another team member
-
-4. **Preview release (same branch):**
-   - Queue `CosmosDB-Official-Release` against `releases/X.Y.Z`
-   - Set `BlobVersion` = `X.Y+1.0-preview.Z`
-   - Set `IsPreview` = `true`
-   - After pipeline completes, follow the same NuGet publish steps
-
-5. **Create GitHub Release:**
+2. **Create GitHub Release:**
    - Go to https://github.com/Azure/azure-cosmos-dotnet-v3/releases
    - Tag: `X.Y.Z`, Target: `releases/X.Y.Z`
    - Body: Copy changelog notes
    - For preview: Check "This is a pre-release"
 
-6. **Metadata XML update:**
+3. **Metadata XML update:**
    - Fork `azure-docs-sdk-dotnet` repo
    - Update version in the metadata file
    - Submit PR
@@ -419,14 +404,7 @@ gh pr create --base releases/X.Y.Z+1 --title "Hotfix: Bumps version to X.Y.Z+1" 
 
 After the hotfix PR is merged:
 
-1. **Queue release pipeline:**
-   - Queue `CosmosDB-Official-Release` against `releases/X.Y.Z+1`
-   - Set `BlobVersion` = `X.Y.Z+1`
-
-2. **NuGet publish:**
-   - Follow the same publish steps as in Section 2.8
-
-3. **Create GitHub Release:**
+1. **Create GitHub Release:**
    - Tag: `X.Y.Z+1`, Target: `releases/X.Y.Z+1`
    - Body: Copy changelog notes
 
@@ -472,7 +450,7 @@ All PRs must follow the lint regex:
 
 - **Kiran (@Kiran Kumar Kolli)** — Required sign-off for all SDK releases
 - **Kiran & Kirill** — API contract diff approval
-- **Team email:** `azurecosmossdkdotnet@microsoft.com` — Preview API review (full release only)
+- **Team email:** `azurecosmossdkdotnet@microsoft.com` — Preview API review (minor release only)
 
 ### 4.6 Pipeline Links
 
