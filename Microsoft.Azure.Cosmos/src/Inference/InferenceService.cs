@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
+    using System.Net;
     using System.Net.Http;
     using System.Net.Http.Headers;
     using System.Text;
@@ -88,6 +89,17 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Internal constructor for unit testing. Accepts an HttpMessageHandler to allow mocking HTTP responses.
+        /// </summary>
+        internal InferenceService(HttpMessageHandler messageHandler, Uri inferenceEndpoint, AuthorizationTokenProvider cosmosAuthorization)
+        {
+            this.httpClient = new HttpClient(messageHandler);
+            this.CreateClientHelper(this.httpClient);
+            this.inferenceEndpoint = inferenceEndpoint;
+            this.cosmosAuthorization = cosmosAuthorization;
+        }
+
+        /// <summary>
         /// Sends a semantic rerank request to the inference service.
         /// </summary>
         /// <param name="rerankContext">The context/query for reranking.</param>
@@ -125,9 +137,19 @@ namespace Microsoft.Azure.Cosmos
                 Encoding.UTF8,
                 RuntimeConstants.MediaTypes.Json);
 
-            // Send the request and ensure success.
+            // Send the request and check for success.
             HttpResponseMessage responseMessage = await this.httpClient.SendAsync(message, cancellationToken);
-            responseMessage.EnsureSuccessStatusCode();
+
+            if (!responseMessage.IsSuccessStatusCode)
+            {
+                string responseBody = await responseMessage.Content.ReadAsStringAsync();
+                throw new CosmosException(
+                    message: responseBody,
+                    statusCode: responseMessage.StatusCode,
+                    subStatusCode: 0,
+                    activityId: string.Empty,
+                    requestCharge: 0);
+            }
 
             // Deserialize and return the response content as a dictionary.
             return await SemanticRerankResult.DeserializeSemanticRerankResultAsync(responseMessage);
