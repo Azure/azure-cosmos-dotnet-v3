@@ -5,9 +5,9 @@
 
 ## Quick Start Prompt
 
-**For a minor release:**
+**For a minor version release:**
 ```
-@ReleaseCopilotAgent start release
+@ReleaseCopilotAgent start minor
 ```
 
 **For a hotfix release:**
