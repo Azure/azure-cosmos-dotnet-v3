@@ -185,7 +185,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         /// <summary>
         /// Set region name for a location if present in the locationcache otherwise set region name as null.
-        /// For multi-master accounts, if endpoint's hostname is same as default endpoint hostname,
+        /// For multi-master accounts (server-side EnableMultipleWriteLocations), if endpoint's hostname is same as default endpoint hostname,
         /// set regionName to the write hub region.
         /// </summary>
         /// <param name="endpoint"></param>
@@ -200,7 +200,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     UriFormat.SafeUnescaped, 
                     StringComparison.OrdinalIgnoreCase) == 0)
             {
-                if (this.CanUseMultipleWriteLocations())
+                if (this.enableMultipleWriteLocations)
                 {
                     regionName = this.GetLocation(this.defaultEndpoint);
                     return regionName != null;
