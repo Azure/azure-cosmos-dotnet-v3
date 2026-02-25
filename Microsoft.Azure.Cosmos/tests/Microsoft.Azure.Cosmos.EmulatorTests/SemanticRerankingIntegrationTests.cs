@@ -15,6 +15,7 @@
     [TestClass]
     public class SemanticRerankingIntegrationTests
     {
+#if PREVIEW
         private string connectionString;
         private CosmosClient client;
 
@@ -63,7 +64,7 @@
             this.client?.Dispose();
         }
 
-#if PREVIEW
+
         [TestMethod]
         [TestCategory("Ignore")]
         [Timeout(70000)]
