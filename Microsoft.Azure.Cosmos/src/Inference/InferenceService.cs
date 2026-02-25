@@ -184,7 +184,7 @@ namespace Microsoft.Azure.Cosmos
                             }
                         }
 
-                        /// Send the request and check for success.
+                        // Send the request and check for success.
                         HttpResponseMessage responseMessage = await this.httpClient.SendAsync(message, cancellationToken);
 
                         // Execute OnAfterHttpSendAsync for fault injection if chaos interceptor is enabled
@@ -195,7 +195,6 @@ namespace Microsoft.Azure.Cosmos
                             await this.InjectResponseDelayAsync(additionalHeaders, fiToken);
                         }
 
-                        
                         if (!responseMessage.IsSuccessStatusCode)
                         {
                             string responseBody = await responseMessage.Content.ReadAsStringAsync();
