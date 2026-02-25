@@ -109,6 +109,8 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal InferenceService(HttpMessageHandler messageHandler, Uri inferenceEndpoint, AuthorizationTokenProvider cosmosAuthorization)
         {
+            this.inferenceRequestTimeout = TimeSpan.FromSeconds(5);
+            this.inferenceTimeoutPolicy = HttpTimeoutPolicyInference.Create(this.inferenceRequestTimeout);
             this.httpClient = new HttpClient(messageHandler);
             this.CreateClientHelper(this.httpClient);
             this.inferenceEndpoint = inferenceEndpoint;
