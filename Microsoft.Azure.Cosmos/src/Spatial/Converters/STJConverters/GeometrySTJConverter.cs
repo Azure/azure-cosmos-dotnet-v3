@@ -117,13 +117,13 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
             BoundingBox boundingBox = null;
             if (rootElement.TryGetProperty("bbox", out JsonElement bboxElement))
             {
-                boundingBox = JsonSerializer.Deserialize<BoundingBox>(bboxElement.GetRawText(), options);
+                boundingBox = bboxElement.Deserialize<BoundingBox>(options);
             }
 
             Crs crs = null;
             if (rootElement.TryGetProperty("crs", out JsonElement crsElement))
             {
-                crs = JsonSerializer.Deserialize<Crs>(crsElement.GetRawText(), options);
+                crs = crsElement.Deserialize<Crs>(options);
             }
 
             if (crs != null && crs.Equals(Crs.Unspecified))
@@ -153,25 +153,25 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
             switch (typeName)
             {
                 case "Point":
-                    Position pointCoordinates = JsonSerializer.Deserialize<Position>(rootElement.GetProperty("coordinates").GetRawText(), options);
+                    Position pointCoordinates = rootElement.GetProperty("coordinates").Deserialize<Position>(options);
                     return new Point(pointCoordinates, geometryParams);
                 case "MultiPoint":
-                    List<Position> multiPointCoordinates = JsonSerializer.Deserialize<List<Position>>(rootElement.GetProperty("coordinates").GetRawText(), options);
+                    List<Position> multiPointCoordinates = rootElement.GetProperty("coordinates").Deserialize<List<Position>>(options);
                     return new MultiPoint(multiPointCoordinates, geometryParams);
                 case "LineString":
-                    List<Position> lineStringCoordinates = JsonSerializer.Deserialize<List<Position>>(rootElement.GetProperty("coordinates").GetRawText(), options);
+                    List<Position> lineStringCoordinates = rootElement.GetProperty("coordinates").Deserialize<List<Position>>(options);
                     return new LineString(lineStringCoordinates, geometryParams);
                 case "MultiLineString":
-                    List<LineStringCoordinates> multiLineStringCoordinates = JsonSerializer.Deserialize<List<LineStringCoordinates>>(rootElement.GetProperty("coordinates").GetRawText(), options);
+                    List<LineStringCoordinates> multiLineStringCoordinates = rootElement.GetProperty("coordinates").Deserialize<List<LineStringCoordinates>>(options);
                     return new MultiLineString(multiLineStringCoordinates, geometryParams);
                 case "Polygon":
-                    List<LinearRing> polygonCoordinates = JsonSerializer.Deserialize<List<LinearRing>>(rootElement.GetProperty("coordinates").GetRawText(), options);
+                    List<LinearRing> polygonCoordinates = rootElement.GetProperty("coordinates").Deserialize<List<LinearRing>>(options);
                     return new Polygon(polygonCoordinates, geometryParams);
                 case "MultiPolygon":
-                    List<PolygonCoordinates> multiPolygonCoordinates = JsonSerializer.Deserialize<List<PolygonCoordinates>>(rootElement.GetProperty("coordinates").GetRawText(), options);
+                    List<PolygonCoordinates> multiPolygonCoordinates = rootElement.GetProperty("coordinates").Deserialize<List<PolygonCoordinates>>(options);
                     return new MultiPolygon(multiPolygonCoordinates, geometryParams);
                 case "GeometryCollection":
-                    List<Geometry> geometries = JsonSerializer.Deserialize<List<Geometry>>(rootElement.GetProperty("geometries").GetRawText(), options);
+                    List<Geometry> geometries = rootElement.GetProperty("geometries").Deserialize<List<Geometry>>(options);
                     return new GeometryCollection(geometries, geometryParams);
                 default:
                     throw new JsonException($"Unknown geometry type: {typeName}");
