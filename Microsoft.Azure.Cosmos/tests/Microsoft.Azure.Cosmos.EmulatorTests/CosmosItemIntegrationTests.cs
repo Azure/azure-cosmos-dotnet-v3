@@ -2682,7 +2682,7 @@
                         .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
-                        .WithDelay(TimeSpan.FromMilliseconds(6000))
+                        .WithDelay(TimeSpan.FromMilliseconds(3000))
                         .Build())
                 .Build();
 
