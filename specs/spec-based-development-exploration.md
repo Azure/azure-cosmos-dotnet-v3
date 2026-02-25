@@ -138,16 +138,43 @@ Spec-based development (SDD) is a methodology where **formal specifications are 
 
 **Fit for this SDK**: ✅ EARS notation is particularly good for SDK behavior specifications (e.g., "WHEN a 429 response is received, THEN the SDK SHALL retry up to MaxRetryAttemptsOnRateLimitedRequests times")
 
+### 3.6 OpenSpec (Fission AI)
+
+**What it is**: A lightweight, open-source, tool-agnostic SDD framework designed specifically for AI coding assistants. Built with Node.js (requires 20.19+), it provides a structured change-proposal workflow that works across 20+ AI agents (Copilot, Claude, Cursor, Codex, etc.).
+
+**Structure**: Each change proposal creates a self-contained folder:
+```
+.openspec/
+├── system-spec.md          # Persistent system-level context and conventions
+└── changes/
+    └── <change-name>/
+        ├── proposal.md     # Change proposal (what and why)
+        ├── specs/           # Detailed specifications for the change
+        ├── design.md        # Technical design
+        └── tasks.md         # Implementation tasks
+```
+
+**Key insights**:
+- **Brownfield-first**: Unlike many SDD tools that target greenfield projects (0→1), OpenSpec excels at evolving existing codebases (1→n) — directly relevant for a mature SDK like this one
+- **Change-folder model**: Each change proposal is self-contained with its own proposal, specs, design, and tasks, making it natural to track incremental evolution
+- **Agent-native workflow**: Slash commands (`/opsx:new`, `/opsx:ff`, `/opsx:apply`, `/opsx:archive`) integrate directly into AI assistant conversations
+- **No vendor lock-in**: Works with any AI assistant, any editor, any model — no proprietary IDE required
+- **Persistent context**: The `system-spec.md` acts as always-on project memory, similar to `.github/copilot-instructions.md` but specifically for spec-driven workflows
+
+**Fit for this SDK**: ✅ The brownfield-first philosophy is a strong fit for this mature SDK. The change-folder model naturally maps to feature development and bug fixes. The tool-agnostic approach means team members can use their preferred AI assistants. However, the Node.js dependency may be a consideration for a .NET-focused team.
+
 ### Comparison matrix
 
-| Aspect | RFC | ADR | Design Doc | Spec-Kit | Kiro |
-|---|---|---|---|---|---|
-| Focus | Proposal & consensus | Single decision | Implementation plan | What + plan + tasks | Requirements + design + tasks |
-| Granularity | Feature-level | Decision-level | Feature-level | Feature-level | Feature-level |
-| Lifecycle | Draft → Accepted/Rejected | Proposed → Accepted → Superseded | Draft → Final | Living doc | Living doc |
-| Agent-friendly | Medium | Low (too terse) | Medium | High | High |
-| Overhead | Medium-High | Low | Medium | Medium | Medium |
-| Already in repo? | ❌ | ❌ | Partially (docs/) | ❌ | ❌ |
+| Aspect | RFC | ADR | Design Doc | Spec-Kit | Kiro | OpenSpec |
+|---|---|---|---|---|---|---|
+| Focus | Proposal & consensus | Single decision | Implementation plan | What + plan + tasks | Requirements + design + tasks | Change proposals + specs + tasks |
+| Granularity | Feature-level | Decision-level | Feature-level | Feature-level | Feature-level | Change-level (feature or fix) |
+| Lifecycle | Draft → Accepted/Rejected | Proposed → Accepted → Superseded | Draft → Final | Living doc | Living doc | Propose → Review → Implement → Archive |
+| Agent-friendly | Medium | Low (too terse) | Medium | High | High | Very High (built for agents) |
+| Overhead | Medium-High | Low | Medium | Medium | Medium | Low-Medium |
+| Brownfield support | ✅ | ✅ | ✅ | Partial | Partial | ✅ (primary focus) |
+| Tool lock-in | None | None | None | Low (GitHub-aligned) | High (Kiro IDE) | None (20+ agents) |
+| Already in repo? | ❌ | ❌ | Partially (docs/) | ❌ | ❌ | ❌ |
 
 ---
 
@@ -702,9 +729,11 @@ CosmosClientOptions options = new CosmosClientOptions()
 
 - [GitHub Spec Kit](https://github.com/github/spec-kit) — Open-source toolkit for spec-driven development
 - [Kiro by AWS](https://kiro.dev/) — Agentic IDE with spec-driven development support
+- [OpenSpec by Fission AI](https://openspec.dev/) — Lightweight, tool-agnostic SDD framework for AI coding assistants ([GitHub](https://github.com/Fission-AI/OpenSpec))
 - [Architecture Decision Records](https://adr.github.io/) — Lightweight decision recording
 - [Martin Fowler on SDD](https://martinfowler.com/articles/exploring-gen-ai/sdd-3-tools.html) — Analysis of spec-driven development tools
 - [Design Docs](https://www.designdocs.dev/) — Design document patterns and templates
 - [RFCs and Design Docs in Practice](https://blog.pragmaticengineer.com/rfcs-and-design-docs/) — How companies use RFCs
 - [EARS (Easy Approach to Requirements Syntax)](https://en.wikipedia.org/wiki/Easy_Approach_to_Requirements_Syntax) — Structured requirements notation
 - [Azure SDK .NET Guidelines](https://azure.github.io/azure-sdk/dotnet_introduction.html) — Central SDK design guidelines
+- [OpenSpec vs Spec Kit Comparison](https://avasdream.com/blog/openspec-vs-spec-kit-ai-development) — Side-by-side framework comparison
