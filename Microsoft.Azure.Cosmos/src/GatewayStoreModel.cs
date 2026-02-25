@@ -130,9 +130,18 @@ namespace Microsoft.Azure.Cosmos
                     this.thinClientStoreClient != null &&
                     GatewayStoreModel.IsOperationSupportedByThinClient(request);
 
-                Uri physicalAddress = ThinClientStoreClient.IsFeedRequest(request.OperationType)
+                Uri physicalAddress;
+
+                if (DistributedTransactionConstants.IsDistributedTransactionRequest(request.OperationType, request.ResourceType))
+                {
+                    physicalAddress = new Uri(this.endpointManager.ResolveServiceEndpoint(request), DistributedTransactionConstants.EndpointPath);
+                }
+                else
+                {
+                    physicalAddress = ThinClientStoreClient.IsFeedRequest(request.OperationType)
                         ? this.GetFeedUri(request)
                         : this.GetEntityUri(request);
+                }
 
                 if (canUseThinClient)
                 {
@@ -329,7 +338,8 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // Master resource operations don't require session token.
-            if (GatewayStoreModel.IsMasterOperation(request.ResourceType, request.OperationType))
+            if (GatewayStoreModel.IsMasterOperation(request.ResourceType, request.OperationType) 
+                || DistributedTransactionConstants.IsDistributedTransactionRequest(request.OperationType, request.ResourceType))
             {
                 if (!string.IsNullOrEmpty(request.Headers[HttpConstants.HttpHeaders.SessionToken]))
                 {
