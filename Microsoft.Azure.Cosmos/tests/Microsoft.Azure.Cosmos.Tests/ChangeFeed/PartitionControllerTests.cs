@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 {
     using System;
+    using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
@@ -229,7 +230,22 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 .Returns(new PartitionSupervisorCore(this.lease, this.observer, this.partitionProcessor, this.leaseRenewer));
 
             await this.sut.AddOrUpdateLeaseAsync(this.lease).ConfigureAwait(false);
-            await Task.Delay(TimeSpan.FromMilliseconds(500)).ConfigureAwait(false);
+
+            // Poll for lease release with a bounded timeout instead of a fixed delay
+            Stopwatch sw = Stopwatch.StartNew();
+            while (sw.Elapsed < TimeSpan.FromSeconds(5))
+            {
+                try
+                {
+                    Mock.Get(this.leaseManager)
+                        .Verify(manager => manager.ReleaseAsync(It.IsAny<DocumentServiceLease>()), Times.Once);
+                    break;
+                }
+                catch (MockException)
+                {
+                    await Task.Delay(50).ConfigureAwait(false);
+                }
+            }
 
             Mock.Get(this.leaseManager)
                 .Verify(manager => manager.ReleaseAsync(It.IsAny<DocumentServiceLease>()), Times.Once);

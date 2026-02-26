@@ -95,11 +95,20 @@ namespace Microsoft.Azure.Cosmos
                     Assert.AreEqual(globalEndpointManager.WriteEndpoints[0], globalEndpointManager.ReadEndpoints[0]);
 
                     getAccountInfoCount = 0;
-                    //Sleep for the unavailable endpoint entry to expire and background refresh timer to kick in
-                    await Task.Delay(TimeSpan.FromSeconds(5));
+                    //Poll for the unavailable endpoint entry to expire and background refresh timer to kick in
+                    Stopwatch sw = Stopwatch.StartNew();
+                    while (sw.Elapsed < TimeSpan.FromSeconds(10))
+                    {
+                        await Task.Delay(200);
+                        await globalEndpointManager.RefreshLocationAsync();
+                        if (globalEndpointManager.ReadEndpoints[0].Equals(new Uri(readLocation1.Endpoint)))
+                        {
+                            break;
+                        }
+                    }
+
                     Assert.IsTrue(getAccountInfoCount > 0, "Callback is not working. There should be at least one call in this time frame.");
 
-                    await globalEndpointManager.RefreshLocationAsync();
                     Assert.AreEqual(new Uri(readLocation1.Endpoint), globalEndpointManager.ReadEndpoints[0], "Read endpoint did not switch back to location 1 after the unavailable entry expired.");
                 }
 

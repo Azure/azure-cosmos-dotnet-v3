@@ -296,14 +296,17 @@
 
                 if (callNumber == 1)
                 {
-                    // First request: cancel the app token after a brief delay
+                    // First request: cancel the app token immediately
                     // This simulates an e2e timeout scenario
-                    _ = Task.Delay(50).ContinueWith(_ => appCts.Cancel());
+                    appCts.Cancel();
                 }
 
-                // All requests wait - they will be cancelled when appCts fires
-                // This prevents a hedge from returning OK before the cancellation propagates
-                await Task.Delay(TimeSpan.FromSeconds(30), ct);
+                // All requests block deterministically until cancelled via the token
+                TaskCompletionSource<ResponseMessage> tcs = new TaskCompletionSource<ResponseMessage>();
+                using (ct.Register(() => tcs.TrySetCanceled(ct)))
+                {
+                    await tcs.Task;
+                }
 
                 return new ResponseMessage(HttpStatusCode.OK);
             };
