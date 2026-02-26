@@ -298,18 +298,12 @@
                 {
                     // First request: cancel the app token after a brief delay
                     // This simulates an e2e timeout scenario
-                    _ = Task.Delay(150).ContinueWith(_ => appCts.Cancel());
-
-                    // Then wait - this will be cancelled
-                    try
-                    {
-                        await Task.Delay(TimeSpan.FromSeconds(30), ct);
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        throw;
-                    }
+                    _ = Task.Delay(50).ContinueWith(_ => appCts.Cancel());
                 }
+
+                // All requests wait - they will be cancelled when appCts fires
+                // This prevents a hedge from returning OK before the cancellation propagates
+                await Task.Delay(TimeSpan.FromSeconds(30), ct);
 
                 return new ResponseMessage(HttpStatusCode.OK);
             };
