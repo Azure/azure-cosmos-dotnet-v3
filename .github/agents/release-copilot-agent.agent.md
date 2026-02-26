@@ -23,7 +23,8 @@
 5. Bump version numbers following versioning rules
 6. Build the SDK and generate API contract files via GenAPI
 7. Create a release PR with API diff in the description
-8. Guide through post-merge pipeline queuing and NuGet publish
+8. Ensure that a full test suite passes, including contract enforcement tests.
+9. Guide through post-merge pipeline queuing and NuGet publish
 
 ---
 
