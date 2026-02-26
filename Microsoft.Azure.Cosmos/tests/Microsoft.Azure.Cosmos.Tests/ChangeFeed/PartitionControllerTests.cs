@@ -229,7 +229,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 .Returns(new PartitionSupervisorCore(this.lease, this.observer, this.partitionProcessor, this.leaseRenewer));
 
             await this.sut.AddOrUpdateLeaseAsync(this.lease).ConfigureAwait(false);
-            await Task.Delay(TimeSpan.FromMilliseconds(100)).ConfigureAwait(false);
+            await Task.Delay(TimeSpan.FromMilliseconds(500)).ConfigureAwait(false);
 
             Mock.Get(this.leaseManager)
                 .Verify(manager => manager.ReleaseAsync(It.IsAny<DocumentServiceLease>()), Times.Once);

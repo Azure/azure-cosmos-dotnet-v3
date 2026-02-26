@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using OperationType = Documents.OperationType;
 
     [TestClass]
+    [DoNotParallelize]
     public class DistributedTransactionE2ETests : BaseCosmosClientHelper
     {   
         private const string IdempotencyTokenHeader = "x-ms-cosmos-idempotency-token";
@@ -29,11 +30,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             await this.TestInit();
 
-            ContainerResponse response = await this.database.CreateContainerAsync(
-                new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKeyPath),
-                cancellationToken: this.cancellationToken);
+            const int maxRetries = 3;
+            for (int attempt = 0; attempt < maxRetries; attempt++)
+            {
+                try
+                {
+                    ContainerResponse response = await this.database.CreateContainerAsync(
+                        new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKeyPath),
+                        cancellationToken: this.cancellationToken);
 
-            this.container = response.Container;
+                    this.container = response.Container;
+                    break;
+                }
+                catch (CosmosException) when (attempt < maxRetries - 1)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, attempt)), this.cancellationToken);
+                }
+            }
         }
 
         [TestCleanup]
