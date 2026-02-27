@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
 
     internal sealed class DocumentServiceLeaseContainerCosmos : DocumentServiceLeaseContainer
@@ -57,6 +58,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
+                // Only support EPK-based leases for export
+                if (lease is not DocumentServiceLeaseCoreEpk)
+                {
+                    throw new LeaseOperationNotSupportedException(lease, "ExportLeases");
+                }
+
                 using (Stream stream = CosmosContainerExtensions.DefaultJsonSerializer.ToStream(lease))
                 using (StreamReader reader = new StreamReader(stream))
                 {
@@ -97,6 +104,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                     if (lease == null)
                     {
                         continue;
+                    }
+
+                    // Only support EPK-based leases for import
+                    if (lease is not DocumentServiceLeaseCoreEpk)
+                    {
+                        throw new LeaseOperationNotSupportedException(lease, "ImportLeases");
                     }
 
                     if (overwriteExisting)
