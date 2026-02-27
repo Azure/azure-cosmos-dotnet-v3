@@ -16,7 +16,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// </summary>
     internal sealed class EncryptionCosmosClient : CosmosClient
     {
-        internal static readonly SemaphoreSlim EncryptionKeyCacheSemaphore = new SemaphoreSlim(1, 1);
+        // Static lock used only in the constructor to safely update the static
+        // ProtectedDataEncryptionKey.TimeToLive across concurrent client creations.
+        private static readonly object ProtectedDataEncryptionKeyTimeToLiveLock = new object();
+
+        // Instance-level semaphore: limits thundering-herd on a single client's PDEK cache
+        // without blocking threads from other EncryptionCosmosClient instances.
+        private readonly SemaphoreSlim encryptionKeyCacheSemaphore = new SemaphoreSlim(1, 1);
 
         private readonly CosmosClient cosmosClient;
 
@@ -32,26 +38,20 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.KeyEncryptionKeyResolver = keyEncryptionKeyResolver ?? throw new ArgumentNullException(nameof(keyEncryptionKeyResolver));
             this.KeyEncryptionKeyResolverName = keyEncryptionKeyResolverName ?? throw new ArgumentNullException(nameof(keyEncryptionKeyResolverName));
             this.clientEncryptionKeyPropertiesCacheByKeyId = new AsyncCache<string, ClientEncryptionKeyProperties>();
-            this.EncryptionKeyStoreProviderImpl = new EncryptionKeyStoreProviderImpl(keyEncryptionKeyResolver, keyEncryptionKeyResolverName);
 
             keyCacheTimeToLive ??= TimeSpan.FromHours(1);
 
-            if (EncryptionCosmosClient.EncryptionKeyCacheSemaphore.Wait(-1))
+            lock (EncryptionCosmosClient.ProtectedDataEncryptionKeyTimeToLiveLock)
             {
-                try
+                // We pick the minimum between the existing and passed in value given this is a static cache.
+                // This also means that the maximum cache duration is the originally initialized value for ProtectedDataEncryptionKey.TimeToLive which is 2 hours.
+                if (keyCacheTimeToLive < ProtectedDataEncryptionKey.TimeToLive)
                 {
-                    // We pick the minimum between the existing and passed in value given this is a static cache.
-                    // This also means that the maximum cache duration is the originally initialized value for ProtectedDataEncryptionKey.TimeToLive which is 2 hours.
-                    if (keyCacheTimeToLive < ProtectedDataEncryptionKey.TimeToLive)
-                    {
-                        ProtectedDataEncryptionKey.TimeToLive = keyCacheTimeToLive.Value;
-                    }
-                }
-                finally
-                {
-                    EncryptionCosmosClient.EncryptionKeyCacheSemaphore.Release(1);
+                    ProtectedDataEncryptionKey.TimeToLive = keyCacheTimeToLive.Value;
                 }
             }
+
+            this.EncryptionKeyStoreProviderImpl = new EncryptionKeyStoreProviderImpl(keyEncryptionKeyResolver, keyEncryptionKeyResolverName, keyCacheTimeToLive.Value);
         }
 
         public EncryptionKeyStoreProviderImpl EncryptionKeyStoreProviderImpl { get; }
@@ -65,6 +65,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public override CosmosResponseFactory ResponseFactory => this.cosmosClient.ResponseFactory;
 
         public override Uri Endpoint => this.cosmosClient.Endpoint;
+
+        internal SemaphoreSlim EncryptionKeyCacheSemaphore => this.encryptionKeyCacheSemaphore;
 
         public override async Task<DatabaseResponse> CreateDatabaseAsync(
             string id,

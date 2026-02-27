@@ -27,11 +27,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         private readonly IKeyEncryptionKeyResolver keyEncryptionKeyResolver;
 
-        public EncryptionKeyStoreProviderImpl(IKeyEncryptionKeyResolver keyEncryptionKeyResolver, string providerName)
+        public EncryptionKeyStoreProviderImpl(IKeyEncryptionKeyResolver keyEncryptionKeyResolver, string providerName, TimeSpan keyCacheTimeToLive)
         {
             this.keyEncryptionKeyResolver = keyEncryptionKeyResolver;
             this.ProviderName = providerName;
-            this.DataEncryptionKeyCacheTimeToLive = TimeSpan.Zero;
+            this.DataEncryptionKeyCacheTimeToLive = keyCacheTimeToLive;
         }
 
         public override string ProviderName { get; }

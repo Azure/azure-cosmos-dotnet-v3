@@ -178,7 +178,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string keyId,
             CancellationToken cancellationToken)
         {
-            if (await EncryptionCosmosClient.EncryptionKeyCacheSemaphore.WaitAsync(-1, cancellationToken))
+            if (await this.encryptionContainer.EncryptionCosmosClient.EncryptionKeyCacheSemaphore.WaitAsync(-1, cancellationToken))
             {
                 try
                 {
@@ -196,7 +196,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
                 finally
                 {
-                    EncryptionCosmosClient.EncryptionKeyCacheSemaphore.Release(1);
+                    this.encryptionContainer.EncryptionCosmosClient.EncryptionKeyCacheSemaphore.Release(1);
                 }
             }
 
