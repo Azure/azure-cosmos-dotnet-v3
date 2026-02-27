@@ -1122,6 +1122,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             try
             {
+                Environment.SetEnvironmentVariable(ConfigurationManager.BypassQueryParsing, "True");
+
                 for (int i = 0; i < 5; i++)
                 {
                     items.Add(new TestObject
@@ -1169,6 +1171,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             finally
             {
+                Environment.SetEnvironmentVariable(ConfigurationManager.BypassQueryParsing, null);
+
                 foreach (TestObject item in items)
                 {
                     try
@@ -1189,6 +1193,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             try
             {
+                Environment.SetEnvironmentVariable(ConfigurationManager.BypassQueryParsing, "True");
+
                 string[] partitionKeys = {
                     $"pk_filter_1_{baseGuid}",
                     $"pk_filter_2_{baseGuid}",
@@ -1248,6 +1254,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             finally
             {
+                Environment.SetEnvironmentVariable(ConfigurationManager.BypassQueryParsing, null);
+
                 foreach (TestObject item in items)
                 {
                     try

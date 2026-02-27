@@ -298,10 +298,6 @@ namespace Microsoft.Azure.Cosmos
 
         public override bool BypassQueryParsing()
         {
-            if (ConfigurationManager.IsThinClientEnabled(defaultValue: false))
-            {
-                return true;
-            }
             return QueryPlanRetriever.BypassQueryParsing();
         }
 
