@@ -13,6 +13,7 @@
     [JsonDerivedType(typeof(CosmosDBNoSql.Configuration), "CosmosDBNoSql")]
     [JsonDerivedType(typeof(CosmosDBCassandra.Configuration), "CosmosDBCassandra")]
     [JsonDerivedType(typeof(Postgres.Configuration), "Postgres")]
+    [JsonDerivedType(typeof(DynamoDB.Configuration), "DynamoDB")]
     internal class CommonConfiguration
     {
         public static readonly int RandomSeed = DateTime.UtcNow.Millisecond;

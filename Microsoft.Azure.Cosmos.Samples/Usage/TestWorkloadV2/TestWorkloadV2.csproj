@@ -22,6 +22,7 @@
 	<PackageReference Include="npgsql" Version="*" />
 	<PackageReference Include="Azure.Storage.Blobs" Version="*" />
 	<PackageReference Include="Azure.Identity" Version="*" />
+	<PackageReference Include="AWSSDK.DynamoDBv2" Version="*" />
   </ItemGroup>
   <ItemGroup>
     <None Include="AppSettings.json">

@@ -80,7 +80,7 @@
 
             long mid = (start + end) / 2;
             string midId = DataSource.GetId(mid);
-            await foreach(BlobItem x in this.blobContainerClient.GetBlobsAsync(prefix: midId))
+            //await foreach(BlobItem x in this.blobContainerClient.GetBlobsAsync(prefix: midId))
             {
                 start = mid + 1;
                 return await this.BinarySearchExistingIdAsync(start, end);

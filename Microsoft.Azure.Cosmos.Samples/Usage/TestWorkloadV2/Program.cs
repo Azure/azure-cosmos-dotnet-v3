@@ -37,7 +37,7 @@
         {
             try
             {
-                this.driver = new CosmosDBNoSql();
+                this.driver = new DynamoDB();
                 await this.InitializeAsync(args);
                 await this.PerformOperationsAsync();
             }
