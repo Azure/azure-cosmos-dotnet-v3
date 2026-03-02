@@ -1044,5 +1044,102 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response.Headers.ActivityId);
             Assert.IsNotNull(response.ActivityId);
         }
+
+        /// <summary>
+        /// Test class with Dictionary property for OBJECTTOARRAY test.
+        /// </summary>
+        private class ItemWithDictionary
+        {
+            public string id { get; set; }
+            public string pk { get; set; }
+            public string Name { get; set; }
+            public Dictionary<string, object> AdditionalData { get; set; }
+        }
+
+        /// <summary>
+        /// E2E test for issue #5547: Dictionary.Any() should generate correct SQL with OBJECTTOARRAY.
+        /// This test verifies that querying a Dictionary property with .Any() works correctly
+        /// against the emulator and returns the expected results.
+        /// 
+        /// Note: OBJECTTOARRAY converts a JSON object to an array of {"k": key, "v": value} pairs.
+        /// When using KeyValuePair&lt;K,V&gt; in LINQ, the SDK maps .Key to ["k"] and .Value to ["v"].
+        /// </summary>
+        [TestMethod]
+        [TestCategory("Query")]
+        public async Task LinqDictionaryAnyWithObjectToArrayTest()
+        {
+            // Arrange: Create items with Dictionary<string, object> properties
+            ItemWithDictionary item1 = new ItemWithDictionary
+            {
+                id = Guid.NewGuid().ToString(),
+                pk = "testPk",
+                Name = "Item1",
+                AdditionalData = new Dictionary<string, object>
+                {
+                    { "color", "red" },
+                    { "size", 10 }
+                }
+            };
+
+            ItemWithDictionary item2 = new ItemWithDictionary
+            {
+                id = Guid.NewGuid().ToString(),
+                pk = "testPk",
+                Name = "Item2",
+                AdditionalData = new Dictionary<string, object>
+                {
+                    { "color", "blue" },
+                    { "weight", 5.5 }
+                }
+            };
+
+            ItemWithDictionary item3 = new ItemWithDictionary
+            {
+                id = Guid.NewGuid().ToString(),
+                pk = "testPk",
+                Name = "Item3",
+                AdditionalData = new Dictionary<string, object>() // Empty dictionary
+            };
+
+            await this.Container.CreateItemAsync(item1);
+            await this.Container.CreateItemAsync(item2);
+            await this.Container.CreateItemAsync(item3);
+
+            // Act: Query using Dictionary.Any() - should use OBJECTTOARRAY
+            // OBJECTTOARRAY returns array of {"k": key, "v": value} pairs
+            string searchValue = "red";
+            IOrderedQueryable<ItemWithDictionary> linqQueryable = this.Container.GetItemLinqQueryable<ItemWithDictionary>(
+                allowSynchronousQueryExecution: true);
+
+            // Test 1: Verify the generated SQL contains OBJECTTOARRAY
+            QueryDefinition queryDefinition = linqQueryable
+                .Where(x => x.AdditionalData.Any(kvp => kvp.Value.ToString() == searchValue))
+                .ToQueryDefinition();
+
+            string sqlQuery = queryDefinition.ToSqlQuerySpec().QueryText;
+            Assert.IsTrue(
+                sqlQuery.Contains("ObjectToArray", StringComparison.OrdinalIgnoreCase),
+                $"Expected SQL to contain OBJECTTOARRAY. Actual SQL: {sqlQuery}");
+
+            // Test 2: Any() without predicate (checks if dictionary has any entries)
+            // This verifies OBJECTTOARRAY is used for iteration
+            IQueryable<ItemWithDictionary> queryHasAny = linqQueryable
+                .Where(x => x.AdditionalData.Any());
+
+            List<ItemWithDictionary> resultsWithAny = queryHasAny.ToList();
+
+            // Assert: Should find item1 and item2 (both have entries), but not item3 (empty)
+            Assert.AreEqual(2, resultsWithAny.Count, "Expected 2 items with non-empty AdditionalData");
+            CollectionAssert.AreEquivalent(
+                new[] { "Item1", "Item2" },
+                resultsWithAny.Select(x => x.Name).ToArray());
+
+            // Verify that the Any() query also uses OBJECTTOARRAY
+            QueryDefinition anyQueryDefinition = queryHasAny.ToQueryDefinition();
+            string anySqlQuery = anyQueryDefinition.ToSqlQuerySpec().QueryText;
+            Assert.IsTrue(
+                anySqlQuery.Contains("ObjectToArray", StringComparison.OrdinalIgnoreCase),
+                $"Expected Any() SQL to contain OBJECTTOARRAY. Actual SQL: {anySqlQuery}");
+        }
     }
 }
