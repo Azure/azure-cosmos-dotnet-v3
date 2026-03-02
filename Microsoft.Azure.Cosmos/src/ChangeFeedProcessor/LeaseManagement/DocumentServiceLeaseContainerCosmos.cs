@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
+    using Microsoft.Azure.Documents;
 
     internal sealed class DocumentServiceLeaseContainerCosmos : DocumentServiceLeaseContainer
     {
@@ -50,27 +51,58 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         public override async Task<IReadOnlyList<JsonElement>> ExportLeasesAsync(
             CancellationToken cancellationToken = default)
         {
-            IReadOnlyList<DocumentServiceLease> allLeases = await this.GetAllLeasesAsync().ConfigureAwait(false);
-
             List<JsonElement> exportedLeases = new List<JsonElement>();
 
-            foreach (DocumentServiceLease lease in allLeases)
+            string prefix = this.options.ContainerNamePrefix;
+            string query = "SELECT * FROM c WHERE STARTSWITH(c.id, '" + prefix + "')";
+
+            using FeedIterator iterator = this.container.GetItemQueryStreamIterator(
+                query,
+                continuationToken: null,
+                requestOptions: queryRequestOptions);
+
+            while (iterator.HasMoreResults)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                // Only support EPK-based leases for export
-                if (lease is not DocumentServiceLeaseCoreEpk)
+                using (ResponseMessage responseMessage = await iterator.ReadNextAsync().ConfigureAwait(false))
                 {
-                    throw new LeaseOperationNotSupportedException(lease, "ExportLeases");
-                }
+                    responseMessage.EnsureSuccessStatusCode();
 
-                using (Stream stream = CosmosContainerExtensions.DefaultJsonSerializer.ToStream(lease))
-                using (StreamReader reader = new StreamReader(stream))
-                {
-                    string payload = await reader.ReadToEndAsync().ConfigureAwait(false);
-                    using (JsonDocument doc = JsonDocument.Parse(payload))
+                    using (JsonDocument feedResponse = await JsonDocument.ParseAsync(responseMessage.Content).ConfigureAwait(false))
                     {
-                        exportedLeases.Add(doc.RootElement.Clone());
+                        if (!feedResponse.RootElement.TryGetProperty("Documents", out JsonElement documents))
+                        {
+                            continue;
+                        }
+
+                        foreach (JsonElement docElement in documents.EnumerateArray())
+                        {
+                            if (!docElement.TryGetProperty("id", out JsonElement idElement)
+                                || idElement.ValueKind != JsonValueKind.String)
+                            {
+                                continue;
+                            }
+
+                            string id = idElement.GetString();
+
+                            if (!this.IsMetadataDocumentId(id))
+                            {
+                                // Regular lease - deserialize, validate FeedRange
+                                string raw = docElement.GetRawText();
+                                using (MemoryStream ms = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(raw)))
+                                {
+                                    DocumentServiceLease lease = CosmosContainerExtensions.DefaultJsonSerializer.FromStream<DocumentServiceLease>(ms);
+
+                                    if (lease.FeedRange == null)
+                                    {
+                                        throw new LeaseOperationNotSupportedException(lease, "ExportLeases");
+                                    }
+                                }
+                            }
+
+                            exportedLeases.Add(docElement.Clone());
+                        }
                     }
                 }
             }
@@ -97,33 +129,81 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                     continue;
                 }
 
-                string payloadJson = leaseElement.GetRawText();
-                using (MemoryStream stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(payloadJson)))
+                // Detect metadata document from the raw JSON before deserializing
+                bool isMetadataDocument = leaseElement.TryGetProperty("id", out JsonElement idElement)
+                    && this.IsMetadataDocumentId(idElement.GetString());
+
+                if (isMetadataDocument)
                 {
-                    DocumentServiceLease lease = CosmosContainerExtensions.DefaultJsonSerializer.FromStream<DocumentServiceLease>(stream);
-                    if (lease == null)
-                    {
-                        continue;
-                    }
+                    // Metadata document (.info, .lock) - import raw JSON to preserve original structure
+                    string id = idElement.GetString();
+                    Microsoft.Azure.Cosmos.PartitionKey pk = new Microsoft.Azure.Cosmos.PartitionKey(id);
+                    byte[] bytes = System.Text.Encoding.UTF8.GetBytes(leaseElement.GetRawText());
 
-                    // Only support EPK-based leases for import
-                    if (lease is not DocumentServiceLeaseCoreEpk)
+                    using (MemoryStream stream = new MemoryStream(bytes))
                     {
-                        throw new LeaseOperationNotSupportedException(lease, "ImportLeases");
+                        if (overwriteExisting)
+                        {
+                            using (ResponseMessage response = await this.container.UpsertItemStreamAsync(stream, pk).ConfigureAwait(false))
+                            {
+                                response.EnsureSuccessStatusCode();
+                            }
+                        }
+                        else
+                        {
+                            using (ResponseMessage response = await this.container.CreateItemStreamAsync(stream, pk).ConfigureAwait(false))
+                            {
+                                if (response.StatusCode != HttpStatusCode.Conflict)
+                                {
+                                    response.EnsureSuccessStatusCode();
+                                }
+                            }
+                        }
                     }
+                }
+                else
+                {
+                    // Regular lease - deserialize and validate
+                    string payloadJson = leaseElement.GetRawText();
+                    using (MemoryStream stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(payloadJson)))
+                    {
+                        DocumentServiceLease lease = CosmosContainerExtensions.DefaultJsonSerializer.FromStream<DocumentServiceLease>(stream);
+                        if (lease == null)
+                        {
+                            continue;
+                        }
 
-                    if (overwriteExisting)
-                    {
-                        // Use upsert to create or replace
-                        await this.UpsertLeaseAsync(lease).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        // Try to create, ignore if already exists
-                        await this.TryCreateLeaseAsync(lease).ConfigureAwait(false);
+                        if (lease.FeedRange == null)
+                        {
+                            throw new LeaseOperationNotSupportedException(lease, "ImportLeases");
+                        }
+
+                        if (overwriteExisting)
+                        {
+                            await this.UpsertLeaseAsync(lease).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            await this.TryCreateLeaseAsync(lease).ConfigureAwait(false);
+                        }
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Determines if a document ID belongs to a metadata document.
+        /// Metadata documents are system artifacts like ".info" and ".lock" documents.
+        /// </summary>
+        private bool IsMetadataDocumentId(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                return false;
+            }
+
+            return id.EndsWith(".info", StringComparison.Ordinal)
+                || id.EndsWith(".lock", StringComparison.Ordinal);
         }
 
         private async Task<IReadOnlyList<DocumentServiceLease>> ListDocumentsAsync(string prefix)
@@ -153,7 +233,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
         private async Task<bool> TryCreateLeaseAsync(DocumentServiceLease lease)
         {
-            PartitionKey partitionKey = this.GetPartitionKey(lease);
+            Microsoft.Azure.Cosmos.PartitionKey partitionKey = this.GetPartitionKey(lease);
             ItemResponse<DocumentServiceLease> response = await this.container.TryCreateItemAsync(
                 partitionKey,
                 lease).ConfigureAwait(false);
@@ -163,7 +243,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
         private async Task UpsertLeaseAsync(DocumentServiceLease lease)
         {
-            PartitionKey partitionKey = this.GetPartitionKey(lease);
+            Microsoft.Azure.Cosmos.PartitionKey partitionKey = this.GetPartitionKey(lease);
 
             using (System.IO.Stream itemStream = CosmosContainerExtensions.DefaultJsonSerializer.ToStream(lease))
             {
@@ -176,15 +256,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             }
         }
 
-        private PartitionKey GetPartitionKey(DocumentServiceLease lease)
+        private Microsoft.Azure.Cosmos.PartitionKey GetPartitionKey(DocumentServiceLease lease)
         {
             // If the lease has a partition key, use it; otherwise use the lease ID
             if (!string.IsNullOrEmpty(lease.PartitionKey))
             {
-                return new PartitionKey(lease.PartitionKey);
+                return new Microsoft.Azure.Cosmos.PartitionKey(lease.PartitionKey);
             }
 
-            return new PartitionKey(lease.Id);
+            return new Microsoft.Azure.Cosmos.PartitionKey(lease.Id);
         }
     }
 }
