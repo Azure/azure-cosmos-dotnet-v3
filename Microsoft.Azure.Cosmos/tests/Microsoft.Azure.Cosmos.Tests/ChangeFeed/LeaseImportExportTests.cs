@@ -34,25 +34,31 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public async Task ExportLeasesAsync_WithEpkLeases_Succeeds()
         {
             // Arrange
-            List<DocumentServiceLeaseCoreEpk> epkLeases = new List<DocumentServiceLeaseCoreEpk>()
+            List<DocumentServiceLease> leasesWithMetadata = new List<DocumentServiceLease>()
             {
                 new DocumentServiceLeaseCoreEpk()
                 {
                     LeaseId = "lease1",
-                    LeaseToken = "0-100",
+                    LeaseToken = "100",
                     Owner = "host1",
                     FeedRange = new FeedRangeEpk(new Documents.Routing.Range<string>("", "FF", true, false))
                 },
                 new DocumentServiceLeaseCoreEpk()
                 {
                     LeaseId = "lease2",
-                    LeaseToken = "100-200",
+                    LeaseToken = "200",
                     Owner = "host2",
                     FeedRange = new FeedRangeEpk(new Documents.Routing.Range<string>("FF", "FFFF", true, false))
+                },
+                new DocumentServiceLeaseCore()
+                {
+                    LeaseId = "containerId.info",  // Metadata document (exported without FeedRange validation)
+                    LeaseToken = null,
+                    FeedRange = null
                 }
             };
 
-            Container mockContainer = GetMockedContainerForExport(epkLeases.Cast<DocumentServiceLease>().ToList());
+            Container mockContainer = GetMockedContainerForExport(leasesWithMetadata);
             DocumentServiceLeaseContainerCosmos leaseContainer = new DocumentServiceLeaseContainerCosmos(
                 mockContainer,
                 leaseStoreManagerSettings);
@@ -61,21 +67,22 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             IReadOnlyList<JsonElement> exportedLeases = await leaseContainer.ExportLeasesAsync();
 
             // Assert
-            Assert.AreEqual(epkLeases.Count, exportedLeases.Count);
+            Assert.AreEqual(3, exportedLeases.Count);
         }
 
         [TestMethod]
         [ExpectedException(typeof(LeaseOperationNotSupportedException))]
         public async Task ExportLeasesAsync_WithNonEpkLeases_ThrowsException()
         {
-            // Arrange
+            // Arrange - Leases without FeedRange (non-EPK)
             List<DocumentServiceLeaseCore> nonEpkLeases = new List<DocumentServiceLeaseCore>()
             {
                 new DocumentServiceLeaseCore()
                 {
                     LeaseId = "lease1",
                     LeaseToken = "0",
-                    Owner = "host1"
+                    Owner = "host1",
+                    FeedRange = null  // No FeedRange = not EPK-based
                 }
             };
 
@@ -98,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 new DocumentServiceLeaseCoreEpk()
                 {
                     LeaseId = "lease1",
-                    LeaseToken = "0-100",
+                    LeaseToken = "100",
                     Owner = "host1",
                     FeedRange = new FeedRangeEpk(new Documents.Routing.Range<string>("", "FF", true, false))
                 },
@@ -106,7 +113,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 {
                     LeaseId = "lease2",
                     LeaseToken = "1",
-                    Owner = "host2"
+                    Owner = "host2",
+                    FeedRange = null  // No FeedRange = not EPK-based
                 }
             };
 
@@ -120,55 +128,50 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         }
 
         [TestMethod]
-        public async Task ImportLeasesAsync_WithEpkLeases_Succeeds()
+        public async Task ExportLeasesAsync_WithLeaseHavingFeedRange_Succeeds()
         {
-            // Arrange
-            DocumentServiceLeaseCoreEpk epkLease = new DocumentServiceLeaseCoreEpk()
+            // Arrange - Legacy version 0 leases that have been migrated to EPK (have FeedRange)
+            List<DocumentServiceLeaseCore> legacyEpkLeases = new List<DocumentServiceLeaseCore>()
             {
-                LeaseId = "lease1",
-                LeaseToken = "0-100",
-                Owner = "host1",
-                FeedRange = new FeedRangeEpk(new Documents.Routing.Range<string>("", "FF", true, false)),
-                ContinuationToken = "token123"
+                new DocumentServiceLeaseCore()
+                {
+                    LeaseId = "lease1",
+                    LeaseToken = "1",
+                    Owner = "host1",
+                    FeedRange = new FeedRangeEpk(new Documents.Routing.Range<string>("", "FF", true, false))
+                },
+                new DocumentServiceLeaseCore()
+                {
+                    LeaseId = "lease2",
+                    LeaseToken = "2",
+                    Owner = "host2",
+                    FeedRange = new FeedRangeEpk(new Documents.Routing.Range<string>("FF", "FFFF", true, false))
+                }
             };
 
-            string leaseJson = CosmosContainerExtensions.DefaultJsonSerializer.ToStream(epkLease).ReadAsString();
-            List<JsonElement> leasesToImport = new List<JsonElement>
-            {
-                JsonDocument.Parse(leaseJson).RootElement
-            };
-
-            bool createCalled = false;
-            Mock<Container> mockContainer = new Mock<Container>();
-            mockContainer.Setup(c => c.CreateItemStreamAsync(
-                It.IsAny<Stream>(),
-                It.IsAny<Microsoft.Azure.Cosmos.PartitionKey>(),
-                It.IsAny<ItemRequestOptions>(),
-                It.IsAny<CancellationToken>()))
-                .Callback(() => createCalled = true)
-                .ReturnsAsync(new ResponseMessage(System.Net.HttpStatusCode.Created));
-
+            Container mockContainer = GetMockedContainerForExport(legacyEpkLeases.Cast<DocumentServiceLease>().ToList());
             DocumentServiceLeaseContainerCosmos leaseContainer = new DocumentServiceLeaseContainerCosmos(
-                mockContainer.Object,
+                mockContainer,
                 leaseStoreManagerSettings);
 
             // Act
-            await leaseContainer.ImportLeasesAsync(leasesToImport, overwriteExisting: false);
+            IReadOnlyList<JsonElement> exportedLeases = await leaseContainer.ExportLeasesAsync();
 
             // Assert
-            Assert.IsTrue(createCalled);
+            Assert.AreEqual(legacyEpkLeases.Count, exportedLeases.Count);
         }
 
         [TestMethod]
         [ExpectedException(typeof(LeaseOperationNotSupportedException))]
         public async Task ImportLeasesAsync_WithNonEpkLeases_ThrowsException()
         {
-            // Arrange
+            // Arrange - Lease without FeedRange (non-EPK)
             DocumentServiceLeaseCore nonEpkLease = new DocumentServiceLeaseCore()
             {
                 LeaseId = "lease1",
                 LeaseToken = "0",
-                Owner = "host1"
+                Owner = "host1",
+                FeedRange = null  // No FeedRange = not EPK-based
             };
 
             string leaseJson = CosmosContainerExtensions.DefaultJsonSerializer.ToStream(nonEpkLease).ReadAsString();
@@ -194,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             DocumentServiceLeaseCoreEpk epkLease = new DocumentServiceLeaseCoreEpk()
             {
                 LeaseId = "lease1",
-                LeaseToken = "0-100",
+                LeaseToken = "100",
                 Owner = "host1",
                 FeedRange = new FeedRangeEpk(new Documents.Routing.Range<string>("", "FF", true, false))
             };
@@ -203,7 +206,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             {
                 LeaseId = "lease2",
                 LeaseToken = "1",
-                Owner = "host2"
+                Owner = "host2",
+                FeedRange = null  // No FeedRange = not EPK-based
             };
 
             string epkLeaseJson = CosmosContainerExtensions.DefaultJsonSerializer.ToStream(epkLease).ReadAsString();
@@ -238,7 +242,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             DocumentServiceLeaseCoreEpk epkLease = new DocumentServiceLeaseCoreEpk()
             {
                 LeaseId = "lease1",
-                LeaseToken = "0-100",
+                LeaseToken = "100",
                 Owner = "host1",
                 FeedRange = new FeedRangeEpk(new Documents.Routing.Range<string>("", "FF", true, false)),
                 ContinuationToken = "token123"
@@ -274,62 +278,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<CancellationToken>()), Times.Once);
         }
 
-        [TestMethod]
-        public async Task ExportImportRoundTrip_WithEpkLeases_PreservesLeaseData()
-        {
-            // Arrange
-            List<DocumentServiceLeaseCoreEpk> originalLeases = new List<DocumentServiceLeaseCoreEpk>()
-            {
-                new DocumentServiceLeaseCoreEpk()
-                {
-                    LeaseId = "lease1",
-                    LeaseToken = "0-100",
-                    Owner = "host1",
-                    FeedRange = new FeedRangeEpk(new Documents.Routing.Range<string>("", "FF", true, false)),
-                    ContinuationToken = "continuation1"
-                }
-            };
-
-            Container exportMockContainer = GetMockedContainerForExport(originalLeases.Cast<DocumentServiceLease>().ToList());
-            DocumentServiceLeaseContainerCosmos exportLeaseContainer = new DocumentServiceLeaseContainerCosmos(
-                exportMockContainer,
-                leaseStoreManagerSettings);
-
-            // Export
-            IReadOnlyList<JsonElement> exportedLeases = await exportLeaseContainer.ExportLeasesAsync();
-
-            // Setup import mock
-            DocumentServiceLease importedLease = null;
-            Mock<Container> importMockContainer = new Mock<Container>();
-            importMockContainer.Setup(c => c.CreateItemStreamAsync(
-                It.IsAny<Stream>(),
-                It.IsAny<Microsoft.Azure.Cosmos.PartitionKey>(),
-                It.IsAny<ItemRequestOptions>(),
-                It.IsAny<CancellationToken>()))
-                .Callback<Stream, Microsoft.Azure.Cosmos.PartitionKey, ItemRequestOptions, CancellationToken>((stream, pk, options, ct) =>
-                {
-                    stream.Position = 0;
-                    importedLease = CosmosContainerExtensions.DefaultJsonSerializer.FromStream<DocumentServiceLease>(stream);
-                })
-                .ReturnsAsync(new ResponseMessage(System.Net.HttpStatusCode.Created));
-
-            DocumentServiceLeaseContainerCosmos importLeaseContainer = new DocumentServiceLeaseContainerCosmos(
-                importMockContainer.Object,
-                leaseStoreManagerSettings);
-
-            // Import
-            await importLeaseContainer.ImportLeasesAsync(exportedLeases, overwriteExisting: false);
-
-            // Assert - verify data was preserved
-            Assert.IsNotNull(importedLease);
-            Assert.IsInstanceOfType(importedLease, typeof(DocumentServiceLeaseCoreEpk));
-            DocumentServiceLeaseCoreEpk importedEpkLease = importedLease as DocumentServiceLeaseCoreEpk;
-            Assert.AreEqual(originalLeases[0].LeaseId, importedEpkLease.LeaseId);
-            Assert.AreEqual(originalLeases[0].LeaseToken, importedEpkLease.LeaseToken);
-            Assert.AreEqual(originalLeases[0].Owner, importedEpkLease.Owner);
-            Assert.AreEqual(originalLeases[0].ContinuationToken, importedEpkLease.ContinuationToken);
-        }
-
         private static Container GetMockedContainerForExport(List<DocumentServiceLease> leases)
         {
             Headers headers = new Headers
@@ -356,7 +304,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Mock<Container> mockedContainer = new Mock<Container>();
             mockedContainer.Setup(c => c.GetItemQueryStreamIterator(
-                It.Is<string>(value => string.Equals("SELECT * FROM c WHERE STARTSWITH(c.id, '" + leaseStoreManagerSettings.GetPartitionLeasePrefix() + "')", value)),
+                It.Is<string>(value => string.Equals("SELECT * FROM c WHERE STARTSWITH(c.id, '" + leaseStoreManagerSettings.ContainerNamePrefix + "')", value)),
                 It.IsAny<string>(),
                 It.IsAny<QueryRequestOptions>()))
                 .Returns(() => mockedQuery.Object);

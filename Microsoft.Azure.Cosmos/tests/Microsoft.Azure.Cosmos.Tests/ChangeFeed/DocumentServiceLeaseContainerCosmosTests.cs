@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             await leaseContainer.ImportLeasesAsync(leasesToImport, overwriteExisting: false);
         }
 
-        private static Container GetMockedContainer(string containerName = "myColl")
+        private static Container GetMockedContainer()
         {
             Headers headers = new Headers
             {
@@ -151,6 +151,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             mockedItems.Setup(i => i.GetItemQueryStreamIterator(
                 // To make sure the SQL Query gets correctly created
                 It.Is<string>(value => string.Equals("SELECT * FROM c WHERE STARTSWITH(c.id, '" + DocumentServiceLeaseContainerCosmosTests.leaseStoreManagerSettings.GetPartitionLeasePrefix() + "')", value)),
+                It.IsAny<string>(),
+                It.IsAny<QueryRequestOptions>()))
+                .Returns(() => mockedQuery.Object);
+
+            // Export uses ContainerNamePrefix (broader query to include metadata documents)
+            mockedItems.Setup(i => i.GetItemQueryStreamIterator(
+                It.Is<string>(value => string.Equals("SELECT * FROM c WHERE STARTSWITH(c.id, '" + DocumentServiceLeaseContainerCosmosTests.leaseStoreManagerSettings.ContainerNamePrefix + "')", value)),
                 It.IsAny<string>(),
                 It.IsAny<QueryRequestOptions>()))
                 .Returns(() => mockedQuery.Object);
