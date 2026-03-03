@@ -42,7 +42,13 @@ namespace Microsoft.Azure.Cosmos
 
             if (typeof(Stream).IsAssignableFrom(typeof(T)))
             {
-                return (T)(object)stream;
+                if (stream is T typedStream)
+                {
+                    return typedStream;
+                }
+
+                throw new InvalidCastException(
+                    $"Stream of type '{stream.GetType().FullName}' is not compatible with the requested type '{typeof(T).FullName}'.");
             }
 
             if (stream.CanSeek && stream.Length == 0)

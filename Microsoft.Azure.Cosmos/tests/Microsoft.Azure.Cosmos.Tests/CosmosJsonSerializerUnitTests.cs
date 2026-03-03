@@ -33,6 +33,32 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
         private readonly string toDoActivityJson = @"{""id"":""c1d433c1-369d-430e-91e5-14e3ce588f71"",""taskNum"":42,""cost"":1.7976931348623157E+308,""description"":""cosmos json serializer"",""status"":""TBD""}";
 
         [TestMethod]
+        public void ValidateFromStreamWithBaseStreamType()
+        {
+            CosmosJsonDotNetSerializer cosmosDefaultJsonSerializer = new CosmosJsonDotNetSerializer();
+            using MemoryStream memoryStream = new MemoryStream(new byte[] { 1, 2, 3 });
+
+            // FromStream<Stream> with a MemoryStream should succeed
+            Stream result = cosmosDefaultJsonSerializer.FromStream<Stream>(memoryStream);
+            Assert.IsNotNull(result);
+            Assert.AreSame(memoryStream, result);
+        }
+
+        [TestMethod]
+        public void ValidateFromStreamWithIncompatibleStreamTypeThrowsDescriptiveError()
+        {
+            CosmosJsonDotNetSerializer cosmosDefaultJsonSerializer = new CosmosJsonDotNetSerializer();
+            using MemoryStream memoryStream = new MemoryStream(new byte[] { 1, 2, 3 });
+
+            // FromStream<FileStream> with a MemoryStream should throw InvalidCastException
+            // with a descriptive message, not a raw InvalidCastException
+            InvalidCastException exception = Assert.ThrowsException<InvalidCastException>(
+                () => cosmosDefaultJsonSerializer.FromStream<FileStream>(memoryStream));
+            Assert.IsTrue(exception.Message.Contains("MemoryStream"));
+            Assert.IsTrue(exception.Message.Contains("FileStream"));
+        }
+
+        [TestMethod]
         public void ValidateSerializer()
         {
             CosmosJsonDotNetSerializer cosmosDefaultJsonSerializer = new CosmosJsonDotNetSerializer();
