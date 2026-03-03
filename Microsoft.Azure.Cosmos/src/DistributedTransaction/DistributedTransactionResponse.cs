@@ -25,8 +25,6 @@ namespace Microsoft.Azure.Cosmos
 #endif
     class DistributedTransactionResponse : IReadOnlyList<DistributedTransactionOperationResult>, IDisposable
     {
-        private const string IdempotencyTokenHeader = "x-ms-dtc-operation-id";
-
         private List<DistributedTransactionOperationResult> results;
         private bool isDisposed;
 
@@ -272,7 +270,7 @@ namespace Microsoft.Azure.Cosmos
         private static Guid GetIdempotencyTokenFromHeaders(Headers headers, Guid fallbackToken)
         {
             if (headers != null &&
-                headers.TryGetValue(IdempotencyTokenHeader, out string tokenValue) &&
+                headers.TryGetValue(HttpConstants.HttpHeaders.IdempotencyToken, out string tokenValue) &&
                 Guid.TryParse(tokenValue, out Guid idempotencyToken))
             {
                 return idempotencyToken;
