@@ -96,14 +96,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
             ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, request.Trace);
             serviceRequest.RequestContext.ClientRequestStatistics = clientSideRequestStatisticsTraceDatum;
 
-            string resourceTypeForAuth = DistributedTransactionConstants.IsDistributedTransactionRequest(request.OperationType, request.ResourceType)
-                ? DistributedTransactionConstants.AuthorizationResourceType
-                : PathsHelper.GetResourcePath(request.ResourceType);
-
             //TODO: extract auth into a separate handler
             string authorization = await ((ICosmosAuthorizationTokenProvider)this.client.DocumentClient).GetUserAuthorizationTokenAsync(
                 serviceRequest.ResourceAddress,
-                resourceTypeForAuth,
+                PathsHelper.GetResourcePath(request.ResourceType),
                 request.Method.ToString(),
                 serviceRequest.Headers,
                 AuthorizationTokenType.PrimaryMasterKey,

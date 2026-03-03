@@ -13,14 +13,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using OperationType = Documents.OperationType;
+    using PartitionKey = Cosmos.PartitionKey;
 
     [TestClass]
     [DoNotParallelize]
     public class DistributedTransactionE2ETests : BaseCosmosClientHelper
     {   
-        private const string IdempotencyTokenHeader = "x-ms-cosmos-idempotency-token";
+        private const string IdempotencyTokenHeader = HttpConstants.HttpHeaders.IdempotencyToken;
         private const string PartitionKeyPath = "/pk";
 
         private Container container;
