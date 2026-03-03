@@ -62,12 +62,23 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             return this;
         }
 
+        /// <summary>
+        /// Sets whether to suppress the service request when the fault is injected.
+        /// </summary>
+        /// <param name="suppressServiceRequest">If true, the service request will be suppressed.</param>
+        /// <returns>The current <see cref="FaultInjectionServerErrorResultBuilder"/>.</returns>
         public FaultInjectionServerErrorResultBuilder WithSuppressServiceRequest(bool suppressServiceRequest)
         {
             this.suppressServiceRequest = suppressServiceRequest;
             return this;
         }
 
+        /// <summary>
+        /// Sets the injection rate, which determines the probability that the fault will be injected.
+        /// Must be a value in the range (0, 1]. Default is 1 (100%).
+        /// </summary>
+        /// <param name="injectionRate">The injection rate, in the range (0, 1].</param>
+        /// <returns>The current <see cref="FaultInjectionServerErrorResultBuilder"/>.</returns>
         public FaultInjectionServerErrorResultBuilder WithInjectionRate(double injectionRate)
         {
             if (injectionRate <= 0 || injectionRate > 1)
