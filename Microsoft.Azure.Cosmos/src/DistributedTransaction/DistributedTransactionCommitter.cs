@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos
                 using (MemoryStream bodyStream = serverRequest.TransferBodyStream())
                 {
                     ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
-                        resourceUri: DistributedTransactionConstants.EndpointPath,
+                        resourceUri: DistributedTransactionCommitter.GetResourceUri(),
                         resourceType: ResourceType.DistributedTransactionBatch,
                         operationType: OperationType.CommitDistributedTransaction,
                         requestOptions: null,
@@ -86,13 +86,17 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        private static string GetResourceUri()
+        {
+            return Paths.OperationsPathSegment + "/" + Paths.Operations_Dtc;
+        }
+
         private static void EnrichRequestMessage(RequestMessage requestMessage, DistributedTransactionServerRequest serverRequest)
         {
             // Set DTC-specific headers
-            //TODO: update to headers in HttpConstants.HttpHeaders
-            requestMessage.Headers.Add(DistributedTransactionConstants.IdempotencyTokenHeader, serverRequest.IdempotencyToken.ToString());
-            requestMessage.Headers.Add(DistributedTransactionConstants.OperationTypeHeader, requestMessage.OperationType.ToString());
-            requestMessage.Headers.Add(DistributedTransactionConstants.ResourceTypeHeader, requestMessage.ResourceType.ToString());
+            requestMessage.Headers.Add(HttpConstants.HttpHeaders.IdempotencyToken, serverRequest.IdempotencyToken.ToString());
+            requestMessage.Headers.Add(HttpConstants.HttpHeaders.OperationType, requestMessage.OperationType.ToString());
+            requestMessage.Headers.Add(HttpConstants.HttpHeaders.ResourceType, requestMessage.ResourceType.ToString());
             requestMessage.UseGatewayMode = true;
         }
 
