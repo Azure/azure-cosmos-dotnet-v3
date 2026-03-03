@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, request.Trace);
             serviceRequest.RequestContext.ClientRequestStatistics = clientSideRequestStatisticsTraceDatum;
 
-            //TODO: extrace auth into a separate handler
+            //TODO: extract auth into a separate handler
             string authorization = await ((ICosmosAuthorizationTokenProvider)this.client.DocumentClient).GetUserAuthorizationTokenAsync(
                 serviceRequest.ResourceAddress,
                 PathsHelper.GetResourcePath(request.ResourceType),
