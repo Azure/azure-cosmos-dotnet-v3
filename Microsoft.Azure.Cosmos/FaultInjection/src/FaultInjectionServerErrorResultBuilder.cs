@@ -86,7 +86,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         public FaultInjectionServerErrorResult Build()
         {
             if ((this.serverErrorType == FaultInjectionServerErrorType.ResponseDelay
-                || this.serverErrorType == FaultInjectionServerErrorType.ConnectionDelay)
+                || this.serverErrorType == FaultInjectionServerErrorType.ConnectionDelay
+                || this.serverErrorType == FaultInjectionServerErrorType.SendDelay)
                 && !this.isDelaySet)
             {
                 throw new ArgumentNullException(nameof(this.delay), "Argument 'delay' required for server error type: " + this.serverErrorType);

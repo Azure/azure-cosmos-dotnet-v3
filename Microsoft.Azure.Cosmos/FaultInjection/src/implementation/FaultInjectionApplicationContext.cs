@@ -22,15 +22,29 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         
         internal void AddRuleExecution(string ruleId, Guid activityId)
         {
-            if(!this.executionsByRuleId.TryAdd(ruleId, new List<(DateTime, Guid)>() { (DateTime.UtcNow, activityId) }))
-            {
-                this.executionsByRuleId[ruleId].Add((DateTime.UtcNow, activityId));
-            }
+            this.executionsByRuleId.AddOrUpdate(
+                ruleId,
+                _ => new List<(DateTime, Guid)>() { (DateTime.UtcNow, activityId) },
+                (_, existing) =>
+                {
+                    lock (existing)
+                    {
+                        existing.Add((DateTime.UtcNow, activityId));
+                    }
+                    return existing;
+                });
 
-            if (!this.executionsByActivityId.TryAdd(activityId, new List<(DateTime, string)>() { (DateTime.UtcNow, ruleId) }))
-            {
-                this.executionsByActivityId[activityId].Add((DateTime.UtcNow, ruleId));
-            }
+            this.executionsByActivityId.AddOrUpdate(
+                activityId,
+                _ => new List<(DateTime, string)>() { (DateTime.UtcNow, ruleId) },
+                (_, existing) =>
+                {
+                    lock (existing)
+                    {
+                        existing.Add((DateTime.UtcNow, ruleId));
+                    }
+                    return existing;
+                });
 
             this.values.Add((DateTime.UtcNow, ruleId, activityId));
         }
