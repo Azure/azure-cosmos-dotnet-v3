@@ -79,5 +79,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// Returns true if circuit breaker logic for partition key ranges is active, otherwise false.
         /// </summary>
         public abstract bool IsPartitionLevelCircuitBreakerEnabled();
+        public abstract void CacheDiscoveredHubRegionForPartition(PartitionKeyRange partitionKeyRange, Uri hubRegion);
+        public abstract Uri? GetCachedHubRegionForPartition(PartitionKeyRange partitionKeyRange);
     }
 }

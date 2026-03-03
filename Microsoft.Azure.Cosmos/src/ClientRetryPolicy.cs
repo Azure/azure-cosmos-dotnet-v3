@@ -218,29 +218,71 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (this.retryContext.RouteToHub)
                 {
-                    request.RequestContext.RouteToLocation(this.globalEndpointManager.GetHubUri());
+                    request.RequestContext.RouteToLocation(
+                        this.TryGetCachedHubRegion(request) ?? this.globalEndpointManager.GetHubUri());
+
+                    this.locationEndpoint = request.RequestContext.LocationEndpointToRoute;
+                    return;
                 }
-                else
-                {
-                    // set location-based routing directive based on request retry context
-                    request.RequestContext.RouteToLocation(this.retryContext.RetryLocationIndex, this.retryContext.RetryRequestOnPreferredLocations);
-                }
+
+                // set location-based routing directive based on request retry context
+                request.RequestContext.RouteToLocation(this.retryContext.RetryLocationIndex, this.retryContext.RetryRequestOnPreferredLocations);
             }
+
 #if !INTERNAL
-            // If previous attempt failed with 404/1002, add the hub-region-processing-only header to all subsequent retry attempts
-            if (this.addHubRegionProcessingOnlyHeader)
+            // Cache lookup should work for all account types
+            Uri cachedHub = this.TryGetCachedHubRegion(request);
+            if (cachedHub != null)
+            {
+                this.addHubRegionProcessingOnlyHeader = true;
+                request.RequestContext.RouteToLocation(cachedHub);
+                request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion] = bool.TrueString;
+                this.locationEndpoint = request.RequestContext.LocationEndpointToRoute;
+                return;
+            }
+
+            // Only add header on retry for single-master
+            if (!this.canUseMultipleWriteLocations && this.addHubRegionProcessingOnlyHeader)
             {
                 request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion] = bool.TrueString;
             }
 #endif
+
             // Resolve the endpoint for the request and pin the resolution to the resolved endpoint
-            // This enables marking the endpoint unavailability on endpoint failover/unreachability
             this.locationEndpoint = this.isThinClientEnabled
                 && GatewayStoreModel.IsOperationSupportedByThinClient(request)
                 ? this.globalEndpointManager.ResolveThinClientEndpoint(request)
                 : this.globalEndpointManager.ResolveServiceEndpoint(request);
 
             request.RequestContext.RouteToLocation(this.locationEndpoint);
+        }
+
+        /// <summary>
+        /// Returns a previously cached hub region URI for the partition of the given request, or null if none is cached.
+        /// </summary>
+        private Uri TryGetCachedHubRegion(DocumentServiceRequest request)
+        {
+            PartitionKeyRange pkRange = request.RequestContext?.ResolvedPartitionKeyRange;
+            return pkRange != null
+                ? this.partitionKeyRangeLocationCache.GetCachedHubRegionForPartition(pkRange)
+                : null;
+        }
+
+        public void OnHubRoutedRequestSuccess(DocumentServiceRequest request)
+        {
+            bool wasHubRouted = this.retryContext?.RouteToHub == true;
+#if !INTERNAL
+            wasHubRouted = wasHubRouted || this.addHubRegionProcessingOnlyHeader;
+#endif
+
+            if (wasHubRouted
+                && request?.RequestContext?.ResolvedPartitionKeyRange != null
+                && request.RequestContext.LocationEndpointToRoute != null)
+            {
+                this.partitionKeyRangeLocationCache.CacheDiscoveredHubRegionForPartition(
+                    request.RequestContext.ResolvedPartitionKeyRange,
+                    request.RequestContext.LocationEndpointToRoute);
+            }
         }
 
         private async Task<ShouldRetryResult> ShouldRetryInternalAsync(
@@ -337,6 +379,15 @@ namespace Microsoft.Azure.Cosmos
                 if (!this.canUseMultipleWriteLocations && this.sessionTokenRetryCount >= 1)
                 {
                     this.addHubRegionProcessingOnlyHeader = true;
+
+                    // Bypass ShouldRetryOnSessionNotAvailable — it would return NoRetry here
+                    // because sessionTokenRetryCount is already >= 1. Use the endpoint failure
+                    // path instead so the hub header actually gets sent on the next attempt.
+                    return await this.ShouldRetryOnEndpointFailureAsync(
+                        isReadRequest: this.isReadRequest,
+                        markBothReadAndWriteAsUnavailable: false,
+                        forceRefresh: false,
+                        retryOnPreferredLocations: true);
                 }
 #endif
                 return this.ShouldRetryOnSessionNotAvailable(this.documentServiceRequest);

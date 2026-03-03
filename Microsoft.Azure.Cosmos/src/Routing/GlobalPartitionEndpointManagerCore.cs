@@ -68,6 +68,14 @@ namespace Microsoft.Azure.Cosmos.Routing
             () => new ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>());
 
         /// <summary>
+        /// Cache for discovered hub region per partition. 
+        /// Unlike PPAF cache, this is NOT cleared by background failback.
+        /// Key: PartitionKeyRange.Id (string), Value: Discovered hub region URI
+        /// </summary>
+        private readonly Lazy<ConcurrentDictionary<string, Uri>> PartitionKeyRangeToHubRegion = new (
+            () => new ConcurrentDictionary<string, Uri>());
+
+        /// <summary>
         /// An integer indicating how many times the dispose was invoked.
         /// </summary>
         private int disposeCounter = 0;
@@ -625,6 +633,40 @@ namespace Microsoft.Azure.Cosmos.Routing
             partitionKeyRangeToLocationMapping.Value.TryRemove(partitionKeyRange, out PartitionKeyRangeFailoverInfo _);
 
             return false;
+        }
+
+        public override void CacheDiscoveredHubRegionForPartition(PartitionKeyRange partitionKeyRange, Uri hubRegion)
+        {
+            if (partitionKeyRange == null || string.IsNullOrEmpty(partitionKeyRange.Id) || hubRegion == null)
+            {
+                return;
+            }
+
+            this.PartitionKeyRangeToHubRegion.Value[partitionKeyRange.Id] = hubRegion;
+
+            DefaultTrace.TraceInformation(
+                "Cached hub region {0} for partition {1}",
+                hubRegion,
+                partitionKeyRange.Id);
+        }
+
+        /// <summary>
+        /// Gets the cached hub region for a partition if available.
+        /// </summary>
+        public override Uri? GetCachedHubRegionForPartition(PartitionKeyRange partitionKeyRange)
+        {
+            if (partitionKeyRange == null || string.IsNullOrEmpty(partitionKeyRange.Id))
+            {
+                return null;
+            }
+
+            if (this.PartitionKeyRangeToHubRegion.IsValueCreated
+                && this.PartitionKeyRangeToHubRegion.Value.TryGetValue(partitionKeyRange.Id, out Uri? hubRegion))
+            {
+                return hubRegion;
+            }
+
+            return null;
         }
 
         internal sealed class PartitionKeyRangeFailoverInfo
