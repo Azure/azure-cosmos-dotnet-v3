@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         public override string ToString()
         {
             return String.Format(
-                "FaultInjectionServerErrorResult{{ serverErrorType: {0}, times: {1}, delay: {2}, applicationPercentage: {3}}",
+                "FaultInjectionServerErrorResult{{ serverErrorType: {0}, times: {1}, delay: {2}, applicationPercentage: {3}}}",
                 this.serverErrorType,
                 this.times,
                 this.delay,
