@@ -6,6 +6,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     using System;
     using System.Collections.Concurrent;
 
+    /// <summary>
+    /// Provides tracking and observability for fault injection rule executions, 
+    /// including lookups by rule ID and activity ID.
+    /// </summary>
     public class FaultInjectionApplicationContext
     { 
 
@@ -44,16 +48,30 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             return this.values;
         }
 
+        /// <summary>
+        /// Gets all rule executions indexed by rule ID.
+        /// </summary>
+        /// <returns>A <see cref="ConcurrentDictionary{TKey, TValue}"/> mapping rule IDs to their executions.</returns>
         public ConcurrentDictionary<string, List<(DateTime, Guid)>> GetAllRuleExecutionsByRuleId()
         {
             return this.executionsByRuleId;
         }
 
+        /// <summary>
+        /// Gets all rule executions indexed by activity ID.
+        /// </summary>
+        /// <returns>A <see cref="ConcurrentDictionary{TKey, TValue}"/> mapping activity IDs to their executions.</returns>
         public ConcurrentDictionary<Guid, List<(DateTime, string)>> GetAllRuleExecutionsByActivityId()
         {
             return this.executionsByActivityId;
         }
 
+        /// <summary>
+        /// Tries to get rule executions for the given rule ID.
+        /// </summary>
+        /// <param name="ruleId">The rule ID to look up.</param>
+        /// <param name="execution">The list of executions for the rule, or an empty list if not found.</param>
+        /// <returns>True if executions were found, false otherwise.</returns>
         public bool TryGetRuleExecutionsByRuleId(string ruleId, out List<(DateTime, Guid)> execution)
         {
             if (this.executionsByRuleId.TryGetValue(ruleId, out List<(DateTime, Guid)>? ruleExecutions))
