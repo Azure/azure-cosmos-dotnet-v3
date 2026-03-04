@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                         accumulator += doc.id.ToString() + ".";
                     }
 
-                    if (processedDocCount == 10)
+                    if (processedDocCount >= 10)
                     {
                         allDocsProcessed.Set();
                     }
