@@ -4329,6 +4329,142 @@ SUBSTRING(
   </Result>
   <Result>
     <Input>
+      <Description>SubstringAfter</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "SubstringAfter"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": "Hello world"
+      }
+    },
+    {
+      "Literal": {
+        "Value": "o"
+      }
+    }
+  ],
+  "IsUdf": false
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[SubstringAfter("Hello world", "o")]]></TextOutput>
+      <PrettyPrint><![CDATA[
+SubstringAfter(
+    "Hello world", 
+    "o"
+)
+]]></PrettyPrint>
+      <HashCode>1519983960</HashCode>
+      <ObfusctedQuery><![CDATA[SubstringAfter("str1__11", "o")]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SubstringAfterLast</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "SubstringAfterLast"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": "Hello world"
+      }
+    },
+    {
+      "Literal": {
+        "Value": "o"
+      }
+    }
+  ],
+  "IsUdf": false
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[SubstringAfterLast("Hello world", "o")]]></TextOutput>
+      <PrettyPrint><![CDATA[
+SubstringAfterLast(
+    "Hello world", 
+    "o"
+)
+]]></PrettyPrint>
+      <HashCode>263341754</HashCode>
+      <ObfusctedQuery><![CDATA[SubstringAfterLast("str1__11", "o")]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SubstringBefore</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "SubstringBefore"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": "Hello world"
+      }
+    },
+    {
+      "Literal": {
+        "Value": "o"
+      }
+    }
+  ],
+  "IsUdf": false
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[SubstringBefore("Hello world", "o")]]></TextOutput>
+      <PrettyPrint><![CDATA[
+SubstringBefore(
+    "Hello world", 
+    "o"
+)
+]]></PrettyPrint>
+      <HashCode>516840642</HashCode>
+      <ObfusctedQuery><![CDATA[SubstringBefore("str1__11", "o")]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SubstringBeforeLast</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "SubstringBeforeLast"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": "Hello world"
+      }
+    },
+    {
+      "Literal": {
+        "Value": "o"
+      }
+    }
+  ],
+  "IsUdf": false
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[SubstringBeforeLast("Hello world", "o")]]></TextOutput>
+      <PrettyPrint><![CDATA[
+SubstringBeforeLast(
+    "Hello world", 
+    "o"
+)
+]]></PrettyPrint>
+      <HashCode>1171747440</HashCode>
+      <ObfusctedQuery><![CDATA[SubstringBeforeLast("str1__11", "o")]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
       <Description>SUM</Description>
       <SqlObject><![CDATA[{
   "Name": {
