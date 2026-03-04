@@ -86,12 +86,13 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
         /// <summary>
         /// Gets the fault injection rule id for the given activity id
-        /// If multible FaultInjectionRules are applied to the same activity, the first rule applied will be returned
+        /// If multiple FaultInjectionRules are applied to the same activity, the first rule applied will be returned
         /// </summary>
         /// <returns>the fault injection rule id</returns>
         public bool TryGetRuleExecutionByActivityId(Guid activityId, out (DateTime, string) execution)
         {
-            if (this.executionsByActivityId.TryGetValue(activityId, out List<(DateTime, string)>? ruleExecutions))
+            if (this.executionsByActivityId.TryGetValue(activityId, out List<(DateTime, string)>? ruleExecutions)
+                && ruleExecutions.Count > 0)
             {
                 execution = ruleExecutions[0];
                 return true;
