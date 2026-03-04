@@ -16,6 +16,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
         public FaultInjector(List<FaultInjectionRule> rules)
         {
+            if (rules == null)
+            {
+                throw new ArgumentNullException(nameof(rules));
+            }
+
             this.chaosInterceptorFactory = new ChaosInterceptorFactory(rules);
         }
 
