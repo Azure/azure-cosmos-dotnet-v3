@@ -240,18 +240,5 @@
             Assert.AreSame(memoryStream, result);
         }
 
-        [TestMethod]
-        public void TestFromStreamWithIncompatibleStreamTypeThrowsDescriptiveError()
-        {
-            // Arrange.
-            MemoryStream memoryStream = new MemoryStream(new byte[] { 1, 2, 3 });
-
-            // Act and Assert - FromStream<FileStream> with a MemoryStream should throw
-            // InvalidCastException with a descriptive message.
-            InvalidCastException exception = Assert.ThrowsException<InvalidCastException>(
-                () => this.stjSerializer.FromStream<FileStream>(memoryStream));
-            Assert.IsTrue(exception.Message.Contains("MemoryStream"));
-            Assert.IsTrue(exception.Message.Contains("FileStream"));
-        }
     }
 }

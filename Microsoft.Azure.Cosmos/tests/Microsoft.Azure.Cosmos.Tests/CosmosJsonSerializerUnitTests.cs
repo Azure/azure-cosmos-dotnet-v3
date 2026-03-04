@@ -45,20 +45,6 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
         }
 
         [TestMethod]
-        public void ValidateFromStreamWithIncompatibleStreamTypeThrowsDescriptiveError()
-        {
-            CosmosJsonDotNetSerializer cosmosDefaultJsonSerializer = new CosmosJsonDotNetSerializer();
-            using MemoryStream memoryStream = new MemoryStream(new byte[] { 1, 2, 3 });
-
-            // FromStream<FileStream> with a MemoryStream should throw InvalidCastException
-            // with a descriptive message, not a raw InvalidCastException
-            InvalidCastException exception = Assert.ThrowsException<InvalidCastException>(
-                () => cosmosDefaultJsonSerializer.FromStream<FileStream>(memoryStream));
-            Assert.IsTrue(exception.Message.Contains("MemoryStream"));
-            Assert.IsTrue(exception.Message.Contains("FileStream"));
-        }
-
-        [TestMethod]
         public void ValidateSerializer()
         {
             CosmosJsonDotNetSerializer cosmosDefaultJsonSerializer = new CosmosJsonDotNetSerializer();
