@@ -174,7 +174,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             {
                 Version = isProxyCall ? new Version(2, 0) : new Version(1, 1),
                 StatusCode = (HttpStatusCode)this.statusCode,
-                Content = new FaultInjectionServerErrorResultInternal.FauntInjectionHttpContent(
+                Content = new FaultInjectionServerErrorResultInternal.FaultInjectionHttpContent(
                     new MemoryStream(
                         isProxyCall
                             ? FaultInjectionServerErrorResultInternal.FaultInjectionResponseEncoding.GetBytes(
