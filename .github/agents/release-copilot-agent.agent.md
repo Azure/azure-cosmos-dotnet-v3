@@ -16,7 +16,7 @@
 ```
 
 **What the agent will do:**
-1. Ask whether to run in **Release Mode** or **Hotfix Mode**
+1. Ask whether to run in **Minor Mode** or **Hotfix Mode**
 2. Verify environment setup (.NET SDK, `gh` CLI, GenAPI tool)
 3. Determine current and target versions from `Directory.Build.props`
 4. Generate changelog entries from merged PRs (filtering out `[Internal]`)
@@ -64,14 +64,14 @@ Test-Path "tools/GenAPI/GenAPI.exe"
 When the agent is invoked, ask the user:
 
 > **Which release mode would you like to run?**
-> 1. **Release Mode** — Minor release (GA + Preview)
-> 2. **Hotfix Mode** — Patch release on an existing release branch
+> 1. **Minor Mode** — Minor release (GA + Preview)
+> 2. **Hotfix Mode** — Patch release on an existing release branch (GA + Preview)
 
 Based on the selection, proceed to the corresponding section below.
 
 ---
 
-## 2. Release Mode (Minor Release)
+## 2. Minor Mode (Minor Release)
 
 ### 2.1 Determine Current Versions
 
@@ -97,11 +97,7 @@ Example: If releasing `3.58.0`:
 
 ### 2.2 Determine the Previous Release Version
 
-Identify the last minor release by checking:
-1. The latest GA entry in `changelog.md` (look for the most recent non-preview, non-hotfix heading)
-2. Or the latest `releases/X.Y.Z` branch: `git branch -r --list "origin/releases/*"`
-
-This is needed to determine which PRs to include in the changelog.
+Read `Directory.Build.props` on the `master` branch — the current `ClientOfficialVersion` value represents the last released version. Use this to determine which PRs to include in the changelog.
 
 ### 2.3 Generate Changelog
 
@@ -345,7 +341,7 @@ If there are conflicts, notify the user and assist with resolution.
 
 ### 3.6 Version Bump on Hotfix Branch
 
-Update `Directory.Build.props` on the hotfix branch with the new patch version (same rules as Release Mode).
+Update `Directory.Build.props` on the hotfix branch with the new patch version (same rules as Minor Mode).
 
 ### 3.7 Changelog Update
 
