@@ -9,109 +9,68 @@ Cross-region request hedging improves read latency during regional degradation b
 ### Requirement: Availability Strategy Configuration
 The SDK SHALL provide a configurable availability strategy for cross-region hedging.
 
-#### Scenario: Enable hedging via client options
-- GIVEN `CosmosClientOptions.AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(threshold: TimeSpan.FromMilliseconds(1500), thresholdStep: TimeSpan.FromMilliseconds(500))`
-- AND `ApplicationPreferredRegions` is set with multiple regions
-- WHEN requests are made through this client
-- THEN hedging behavior is active for eligible operations
+#### Enable hedging via client options
+**Where** `CosmosClientOptions.AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(threshold: TimeSpan.FromMilliseconds(1500), thresholdStep: TimeSpan.FromMilliseconds(500))` and `ApplicationPreferredRegions` is set with multiple regions, **when** requests are made through this client, the SDK shall activate hedging behavior for eligible operations.
 
-#### Scenario: Disabled strategy
-- GIVEN `AvailabilityStrategy.DisabledStrategy()` or no strategy configured
-- WHEN requests are made
-- THEN no hedging occurs and requests go to a single region
+#### Disabled strategy
+**Where** `AvailabilityStrategy.DisabledStrategy()` is configured or no strategy is set, **when** requests are made, the SDK shall not perform hedging and shall send requests to a single region.
 
-#### Scenario: Per-request override
-- GIVEN a client-level availability strategy is configured
-- WHEN `RequestOptions.AvailabilityStrategy` is set on a specific request
-- THEN the per-request strategy overrides the client-level strategy for that request
+#### Per-request override
+**Where** a client-level availability strategy is configured, **when** `RequestOptions.AvailabilityStrategy` is set on a specific request, the SDK shall use the per-request strategy instead of the client-level strategy for that request.
 
-#### Scenario: No preferred regions
-- GIVEN `ApplicationPreferredRegions` is NOT set
-- WHEN an availability strategy is configured
-- THEN the SDK SHALL NOT apply any hedging behavior
+#### No preferred regions
+**If** `ApplicationPreferredRegions` is NOT set when an availability strategy is configured, **then** the SDK shall not apply any hedging behavior.
 
 ### Requirement: Hedging Trigger
 The SDK SHALL initiate hedged requests after the configured threshold elapses without a response.
 
-#### Scenario: Primary responds before threshold
-- GIVEN threshold is 1500ms
-- WHEN the primary region responds within 1500ms
-- THEN no hedged request is sent
-- AND the primary response is returned
+#### Primary responds before threshold
+**While** the hedging threshold is 1500ms, **when** the primary region responds within 1500ms, the SDK shall return the primary response without sending any hedged request.
 
-#### Scenario: Primary exceeds threshold
-- GIVEN threshold is 1500ms
-- WHEN the primary region has not responded after 1500ms
-- THEN a hedged request is sent to the next region in `ApplicationPreferredRegions`
+#### Primary exceeds threshold
+**While** the hedging threshold is 1500ms, **when** the primary region has not responded after 1500ms, the SDK shall send a hedged request to the next region in `ApplicationPreferredRegions`.
 
-#### Scenario: Subsequent hedges at thresholdStep intervals
-- GIVEN threshold is 1500ms and thresholdStep is 500ms
-- WHEN neither primary nor first hedge has responded
-- THEN a second hedge is sent at 2000ms (threshold + thresholdStep)
-- AND a third hedge is sent at 2500ms (threshold + 2 * thresholdStep)
-- AND hedging continues until all preferred regions are tried
+#### Subsequent hedges at thresholdStep intervals
+**While** the hedging threshold is 1500ms and thresholdStep is 500ms, **when** neither primary nor previous hedged requests have responded, the SDK shall send additional hedged requests at thresholdStep intervals (at 2000ms, 2500ms, and so on) until all preferred regions are tried.
 
 ### Requirement: Response Selection
 The SDK SHALL return the first final response received from any region.
 
-#### Scenario: Final status codes
-- GIVEN hedged requests are in flight to multiple regions
-- WHEN any region returns a status code in {1xx, 2xx, 3xx, 400, 401, 404/0, 409, 405, 412, 413}
-- THEN that response is considered final and returned to the caller
-- AND outstanding hedged requests are cancelled
+#### Final status codes
+**When** any region returns a status code in {1xx, 2xx, 3xx, 400, 401, 404/0, 409, 405, 412, 413} during hedged requests, the SDK shall consider that response final, return it to the caller, and cancel outstanding hedged requests.
 
-#### Scenario: Non-final responses
-- GIVEN all regions return non-final status codes (e.g., transient 5xx)
-- WHEN the last hedged request completes
-- THEN the last response received is returned to the caller
+#### Non-final responses
+**If** all regions return non-final status codes (e.g., transient 5xx) during hedged requests, **then** the SDK shall return the last response received to the caller.
 
 ### Requirement: Hedging Scope
 The SDK SHALL apply hedging based on operation type.
 
-#### Scenario: Read operations
-- GIVEN hedging is configured
-- WHEN a read operation is performed (ReadItem, Query, ReadMany, ChangeFeed)
-- THEN hedging is applied
+#### Read operations
+**Where** hedging is configured, **when** a read operation is performed (ReadItem, Query, ReadMany, ChangeFeed), the SDK shall apply hedging.
 
-#### Scenario: Write operations (single-master)
-- GIVEN a single-master account
-- WHEN a write operation is performed
-- THEN hedging sends requests to read regions (not the write region)
-- AND this enables reads from read replicas during write region degradation
+#### Write operations (single-master)
+**While** operating against a single-master account with hedging configured, **when** a write operation is performed, the SDK shall send hedged requests to read regions (not the write region), enabling reads from read replicas during write region degradation.
 
-#### Scenario: Write operations (multi-master)
-- GIVEN a multi-master account AND `enableMultiWriteRegionHedge = true`
-- WHEN a write operation is performed
-- THEN hedging sends requests to other write regions
-- AND the application is responsible for handling potential conflicts
+#### Write operations (multi-master)
+**While** operating against a multi-master account with `enableMultiWriteRegionHedge = true`, **when** a write operation is performed, the SDK shall send hedged requests to other write regions. The application is responsible for handling potential conflicts.
 
 ### Requirement: Independent Retry Per Hedge
 The SDK SHALL ensure each hedged request has its own independent retry policy.
 
-#### Scenario: Isolated retry chains
-- GIVEN a hedged request to Region 2 encounters a transient error
-- WHEN the retry policy evaluates the error
-- THEN Region 2's retry operates independently
-- AND the hedged request does NOT trigger cross-region retries (no hedging within hedging)
+#### Isolated retry chains
+**If** a hedged request to a secondary region encounters a transient error, **then** the SDK shall retry independently for that region without triggering cross-region retries (no hedging within hedging).
 
 ### Requirement: Hedging Diagnostics
 The SDK SHALL include hedging metadata in diagnostics output.
 
-#### Scenario: Diagnostics content
-- GIVEN a hedged request completes
-- WHEN `response.Diagnostics.ToString()` is called
-- THEN the output includes hedge configuration (threshold, thresholdStep)
-- AND a list of regions that received hedged requests
-- AND per-region response details (status code, latency)
+#### Diagnostics content
+**When** a hedged request completes and `response.Diagnostics.ToString()` is called, the SDK shall include hedge configuration (threshold, thresholdStep), a list of regions that received hedged requests, and per-region response details (status code, latency) in the output.
 
 ### Requirement: Default Hedging Configuration
 The SDK SHALL use sensible defaults when hedging is enabled without explicit thresholds.
 
-#### Scenario: Default threshold
-- GIVEN `AvailabilityStrategy.CrossRegionHedgingStrategy()` is called with default parameters
-- WHEN the SDK computes the threshold
-- THEN it uses `min(1000ms, RequestTimeout / 2)` as the threshold
-- AND 500ms as the thresholdStep
+#### Default threshold
+**Where** `AvailabilityStrategy.CrossRegionHedgingStrategy()` is called with default parameters, the SDK shall use `min(1000ms, RequestTimeout / 2)` as the threshold and 500ms as the thresholdStep.
 
 ## Key Source Files
 - `Microsoft.Azure.Cosmos/src/Routing/AvailabilityStrategy/AvailabilityStrategy.cs` — public factory

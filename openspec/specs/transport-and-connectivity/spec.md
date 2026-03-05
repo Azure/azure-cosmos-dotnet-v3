@@ -9,133 +9,86 @@ The SDK supports two transport modes — Gateway (HTTPS) and Direct (TCP) — wi
 ### Requirement: Connection Mode Selection
 The SDK SHALL support two connection modes with distinct transport characteristics.
 
-#### Scenario: Gateway mode
-- GIVEN `CosmosClientOptions.ConnectionMode = ConnectionMode.Gateway`
-- WHEN requests are made
-- THEN all requests are routed through the Cosmos DB gateway proxy via HTTPS (port 443)
-- AND the protocol is forced to HTTPS regardless of other settings
+#### Gateway mode
+**Where** `CosmosClientOptions.ConnectionMode = ConnectionMode.Gateway`, **when** requests are made, the SDK shall route all requests through the Cosmos DB gateway proxy via HTTPS (port 443) and force the protocol to HTTPS regardless of other settings.
 
-#### Scenario: Direct mode (default)
-- GIVEN `CosmosClientOptions.ConnectionMode = ConnectionMode.Direct` (or not specified, as Direct is the default)
-- WHEN requests are made
-- THEN data-plane requests use direct TCP connections to backend replicas
-- AND metadata requests still use the gateway
+#### Direct mode (default)
+**Where** `CosmosClientOptions.ConnectionMode = ConnectionMode.Direct` (or not specified, as Direct is the default), **when** requests are made, the SDK shall use direct TCP connections to backend replicas for data-plane requests and use the gateway for metadata requests.
 
 ### Requirement: Gateway Mode Configuration
 The SDK SHALL support configuring HTTP connection behavior for Gateway mode.
 
-#### Scenario: Max connection limit
-- GIVEN `CosmosClientOptions.GatewayModeMaxConnectionLimit = 100`
-- WHEN multiple concurrent requests are made in Gateway mode
-- THEN at most 100 simultaneous HTTP connections are maintained (default: 50)
+#### Max connection limit
+**Where** `CosmosClientOptions.GatewayModeMaxConnectionLimit = 100`, **when** multiple concurrent requests are made in Gateway mode, the SDK shall maintain at most 100 simultaneous HTTP connections (default: 50).
 
-#### Scenario: Custom HttpClient
-- GIVEN `CosmosClientOptions.HttpClientFactory` is set
-- WHEN the SDK creates HTTP connections
-- THEN it uses the provided HttpClient factory
-- AND `GatewayModeMaxConnectionLimit` and `WebProxy` settings are ignored
+#### Custom HttpClient
+**Where** `CosmosClientOptions.HttpClientFactory` is set, **when** the SDK creates HTTP connections, the SDK shall use the provided HttpClient factory and ignore `GatewayModeMaxConnectionLimit` and `WebProxy` settings.
 
-#### Scenario: Web proxy
-- GIVEN `CosmosClientOptions.WebProxy` is set
-- WHEN requests are made in Gateway mode
-- THEN HTTP traffic is routed through the specified proxy
+#### Web proxy
+**Where** `CosmosClientOptions.WebProxy` is set, **when** requests are made in Gateway mode, the SDK shall route HTTP traffic through the specified proxy.
 
 ### Requirement: Direct Mode TCP Configuration
 The SDK SHALL support fine-grained TCP connection tuning for Direct mode.
 
-#### Scenario: Idle connection timeout
-- GIVEN `CosmosClientOptions.IdleTcpConnectionTimeout = TimeSpan.FromMinutes(20)`
-- WHEN a TCP connection is idle for 20 minutes
-- THEN it is closed to free resources (minimum: 10 minutes)
+#### Idle connection timeout
+**Where** `CosmosClientOptions.IdleTcpConnectionTimeout = TimeSpan.FromMinutes(20)`, **when** a TCP connection is idle for 20 minutes, the SDK shall close it to free resources (minimum: 10 minutes).
 
-#### Scenario: Connection open timeout
-- GIVEN `CosmosClientOptions.OpenTcpConnectionTimeout = TimeSpan.FromSeconds(10)`
-- WHEN establishing a new TCP connection
-- THEN the connection attempt times out after 10 seconds (default: 5 seconds)
+#### Connection open timeout
+**Where** `CosmosClientOptions.OpenTcpConnectionTimeout = TimeSpan.FromSeconds(10)`, **when** establishing a new TCP connection, the SDK shall time out the connection attempt after 10 seconds (default: 5 seconds).
 
-#### Scenario: Max requests per connection
-- GIVEN `CosmosClientOptions.MaxRequestsPerTcpConnection = 50`
-- WHEN concurrent requests are sent over TCP
-- THEN at most 50 requests are multiplexed per TCP connection (default: 30)
+#### Max requests per connection
+**Where** `CosmosClientOptions.MaxRequestsPerTcpConnection = 50`, **when** concurrent requests are sent over TCP, the SDK shall multiplex at most 50 requests per TCP connection (default: 30).
 
-#### Scenario: Max connections per endpoint
-- GIVEN `CosmosClientOptions.MaxTcpConnectionsPerEndpoint = 32`
-- WHEN connecting to a backend node
-- THEN at most 32 TCP connections are established to that endpoint
+#### Max connections per endpoint
+**Where** `CosmosClientOptions.MaxTcpConnectionsPerEndpoint = 32`, **when** connecting to a backend node, the SDK shall establish at most 32 TCP connections to that endpoint.
 
-#### Scenario: Port reuse mode
-- GIVEN `CosmosClientOptions.PortReuseMode` is set
-- WHEN new TCP connections are created
-- THEN the specified port reuse strategy is applied
+#### Port reuse mode
+**Where** `CosmosClientOptions.PortReuseMode` is set, **when** new TCP connections are created, the SDK shall apply the specified port reuse strategy.
 
 ### Requirement: Request Timeout
 The SDK SHALL enforce a configurable timeout for individual requests.
 
-#### Scenario: Default timeout
-- GIVEN no timeout is configured
-- WHEN a request is made
-- THEN it times out after 6 seconds (default `RequestTimeout`)
+#### Default timeout
+**While** no timeout is configured, **when** a request is made, the SDK shall time out after 6 seconds (default `RequestTimeout`).
 
-#### Scenario: Custom timeout
-- GIVEN `CosmosClientOptions.RequestTimeout = TimeSpan.FromSeconds(15)`
-- WHEN a request exceeds 15 seconds
-- THEN a `CosmosException` with status 408 (RequestTimeout) is thrown
+#### Custom timeout
+**Where** `CosmosClientOptions.RequestTimeout = TimeSpan.FromSeconds(15)`, **when** a request exceeds 15 seconds, the SDK shall throw a `CosmosException` with status 408 (RequestTimeout).
 
 ### Requirement: Endpoint Discovery
 The SDK SHALL automatically discover and connect to available service endpoints.
 
-#### Scenario: Automatic region discovery
-- GIVEN `CosmosClientOptions.LimitToEndpoint = false` (default)
-- WHEN the client is initialized
-- THEN the SDK queries the account for available regions
-- AND populates the endpoint cache
+#### Automatic region discovery
+**Where** `CosmosClientOptions.LimitToEndpoint = false` (default), **when** the client is initialized, the SDK shall query the account for available regions and populate the endpoint cache.
 
-#### Scenario: Limit to single endpoint
-- GIVEN `CosmosClientOptions.LimitToEndpoint = true`
-- WHEN the client is initialized
-- THEN only the provided endpoint URI is used
-- AND no region discovery is performed
-- AND `ApplicationRegion` and `ApplicationPreferredRegions` MUST NOT be set
+#### Limit to single endpoint
+**Where** `CosmosClientOptions.LimitToEndpoint = true`, **when** the client is initialized, the SDK shall use only the provided endpoint URI, perform no region discovery, and require that `ApplicationRegion` and `ApplicationPreferredRegions` are not set.
 
-#### Scenario: TCP connection endpoint rediscovery
-- GIVEN `CosmosClientOptions.EnableTcpConnectionEndpointRediscovery = true` (default)
-- WHEN a TCP connection is reset
-- THEN the SDK refreshes the endpoint address cache
-- AND establishes connections to newly discovered endpoints
+#### TCP connection endpoint rediscovery
+**Where** `CosmosClientOptions.EnableTcpConnectionEndpointRediscovery = true` (default), **when** a TCP connection is reset, the SDK shall refresh the endpoint address cache and establish connections to newly discovered endpoints.
 
 ### Requirement: Custom Initialization Endpoints
 The SDK SHALL support custom endpoints for account initialization in geo-failover scenarios.
 
-#### Scenario: Custom init endpoints
-- GIVEN `CosmosClientOptions.AccountInitializationCustomEndpoints` contains fallback URIs
-- WHEN the primary account endpoint is unreachable during initialization
-- THEN the SDK attempts to initialize from the custom endpoints
+#### Custom init endpoints
+**Where** `CosmosClientOptions.AccountInitializationCustomEndpoints` contains fallback URIs, **if** the primary account endpoint is unreachable during initialization, **then** the SDK shall attempt to initialize from the custom endpoints.
 
 ### Requirement: SSL/TLS Configuration
 The SDK SHALL support custom certificate validation for Direct mode.
 
-#### Scenario: Custom certificate validation
-- GIVEN `CosmosClientOptions.ServerCertificateCustomValidationCallback` is set
-- WHEN a TLS connection is established
-- THEN the custom callback is invoked for certificate validation
+#### Custom certificate validation
+**Where** `CosmosClientOptions.ServerCertificateCustomValidationCallback` is set, **when** a TLS connection is established, the SDK shall invoke the custom callback for certificate validation.
 
 ### Requirement: Mutual Exclusivity of Settings
 The SDK SHALL enforce that conflicting connection settings cannot be used together.
 
-#### Scenario: WebProxy with HttpClientFactory
-- GIVEN both `WebProxy` and `HttpClientFactory` are set
-- WHEN the client is constructed
-- THEN an `ArgumentException` is thrown
+#### WebProxy with HttpClientFactory
+**If** both `WebProxy` and `HttpClientFactory` are set, **then** the SDK shall throw an `ArgumentException` when the client is constructed.
 
-#### Scenario: ApplicationRegion with ApplicationPreferredRegions
-- GIVEN both `ApplicationRegion` and `ApplicationPreferredRegions` are set
-- WHEN the client is constructed
-- THEN an `ArgumentException` is thrown
+#### ApplicationRegion with ApplicationPreferredRegions
+**If** both `ApplicationRegion` and `ApplicationPreferredRegions` are set, **then** the SDK shall throw an `ArgumentException` when the client is constructed.
 
-#### Scenario: LimitToEndpoint with regions
-- GIVEN `LimitToEndpoint = true` and either region setting is configured
-- WHEN the client is constructed
-- THEN an `ArgumentException` is thrown
+#### LimitToEndpoint with regions
+**If** `LimitToEndpoint = true` and either region setting is configured, **then** the SDK shall throw an `ArgumentException` when the client is constructed.
 
 ## Key Source Files
 - `Microsoft.Azure.Cosmos/src/CosmosClientOptions.cs` — all connection configuration

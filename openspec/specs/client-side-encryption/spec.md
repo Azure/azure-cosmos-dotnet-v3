@@ -9,85 +9,56 @@ Client-side encryption enables encrypting sensitive item properties before they 
 ### Requirement: Client Encryption Key Management
 The SDK SHALL support creating and managing client encryption keys (CEKs) in the Cosmos DB account.
 
-#### Scenario: Create encryption key
-- GIVEN a database
-- WHEN `database.CreateClientEncryptionKeyAsync(new ClientEncryptionKeyProperties(keyId, algorithm, wrappedDataEncryptionKey, encryptionKeyWrapMetadata))` is called
-- THEN a client encryption key is created in the database
-- AND the key material is wrapped (encrypted) using the specified key wrap provider
+#### Create encryption key
+**When** `database.CreateClientEncryptionKeyAsync(new ClientEncryptionKeyProperties(keyId, algorithm, wrappedDataEncryptionKey, encryptionKeyWrapMetadata))` is called, the SDK shall create a client encryption key in the database with the key material wrapped (encrypted) using the specified key wrap provider.
 
-#### Scenario: Read encryption key
-- GIVEN an existing client encryption key
-- WHEN `database.GetClientEncryptionKey(keyId).ReadAsync()` is called
-- THEN the key properties are returned (metadata only, not raw key material)
+#### Read encryption key
+**When** `database.GetClientEncryptionKey(keyId).ReadAsync()` is called for an existing client encryption key, the SDK shall return the key properties (metadata only, not raw key material).
 
-#### Scenario: Replace (rewrap) encryption key
-- GIVEN an existing client encryption key
-- WHEN `database.GetClientEncryptionKey(keyId).ReplaceAsync(updatedProperties)` is called
-- THEN the key is rewrapped with the new key wrap metadata (key rotation)
+#### Replace (rewrap) encryption key
+**When** `database.GetClientEncryptionKey(keyId).ReplaceAsync(updatedProperties)` is called for an existing client encryption key, the SDK shall rewrap the key with the new key wrap metadata (key rotation).
 
 ### Requirement: Encryption Policy
 The SDK SHALL support defining encryption policies on containers to specify which properties are encrypted.
 
-#### Scenario: Define encryption policy
-- GIVEN `ContainerProperties.ClientEncryptionPolicy` with a list of `ClientEncryptionIncludedPath` entries
-- WHEN the container is created
-- THEN the specified property paths are encrypted on write and decrypted on read
+#### Define encryption policy
+**Where** `ContainerProperties.ClientEncryptionPolicy` is configured with a list of `ClientEncryptionIncludedPath` entries, **when** the container is created, the SDK shall encrypt the specified property paths on write and decrypt them on read.
 
-#### Scenario: Encryption path configuration
-- GIVEN a `ClientEncryptionIncludedPath` with `Path`, `ClientEncryptionKeyId`, `EncryptionType` (Deterministic or Randomized), and `EncryptionAlgorithm`
-- WHEN items are written to the container
-- THEN the property at the specified path is encrypted using the referenced CEK
+#### Encryption path configuration
+**Where** a `ClientEncryptionIncludedPath` is configured with `Path`, `ClientEncryptionKeyId`, `EncryptionType` (Deterministic or Randomized), and `EncryptionAlgorithm`, **when** items are written to the container, the SDK shall encrypt the property at the specified path using the referenced CEK.
 
-#### Scenario: Deterministic encryption
-- GIVEN `EncryptionType = "Deterministic"` for a path
-- WHEN the same value is encrypted multiple times
-- THEN the same ciphertext is produced
-- AND equality queries on the encrypted property are supported
+#### Deterministic encryption
+**Where** `EncryptionType = "Deterministic"` is set for a path, **when** the same value is encrypted multiple times, the SDK shall produce the same ciphertext and support equality queries on the encrypted property.
 
-#### Scenario: Randomized encryption
-- GIVEN `EncryptionType = "Randomized"` for a path
-- WHEN the same value is encrypted multiple times
-- THEN different ciphertext is produced each time
-- AND equality queries on the encrypted property are NOT supported
+#### Randomized encryption
+**Where** `EncryptionType = "Randomized"` is set for a path, **when** the same value is encrypted multiple times, the SDK shall produce different ciphertext each time and shall NOT support equality queries on the encrypted property.
 
 ### Requirement: Key Wrap Providers
 The SDK SHALL support pluggable key wrap providers for wrapping/unwrapping data encryption keys.
 
-#### Scenario: Azure Key Vault provider
-- GIVEN `EncryptionKeyWrapMetadata` with type `"akv"` and an Azure Key Vault key URL
-- WHEN the encryption key is used
-- THEN the SDK uses Azure Key Vault to wrap/unwrap the data encryption key
+#### Azure Key Vault provider
+**Where** `EncryptionKeyWrapMetadata` is configured with type `"akv"` and an Azure Key Vault key URL, **when** the encryption key is used, the SDK shall use Azure Key Vault to wrap/unwrap the data encryption key.
 
-#### Scenario: Custom key wrap provider
-- GIVEN a custom `EncryptionKeyWrapProvider` implementation
-- WHEN registered with the encryption container
-- THEN the custom provider is used for all key wrap/unwrap operations
+#### Custom key wrap provider
+**Where** a custom `EncryptionKeyWrapProvider` implementation is registered with the encryption container, the SDK shall use the custom provider for all key wrap/unwrap operations.
 
 ### Requirement: Transparent Encryption/Decryption
 The SDK SHALL transparently encrypt and decrypt properties without requiring application code changes for standard CRUD operations.
 
-#### Scenario: Transparent encryption on write
-- GIVEN a container with an encryption policy
-- WHEN `Container.CreateItemAsync(item)` is called
-- THEN encrypted properties are automatically encrypted before sending to the service
+#### Transparent encryption on write
+**While** a container has an encryption policy configured, **when** `Container.CreateItemAsync(item)` is called, the SDK shall automatically encrypt the specified properties before sending to the service.
 
-#### Scenario: Transparent decryption on read
-- GIVEN a container with encrypted properties
-- WHEN `Container.ReadItemAsync<T>(id, pk)` is called
-- THEN encrypted properties are automatically decrypted in the returned item
+#### Transparent decryption on read
+**While** a container has encrypted properties, **when** `Container.ReadItemAsync<T>(id, pk)` is called, the SDK shall automatically decrypt the encrypted properties in the returned item.
 
 ### Requirement: Encryption with Cosmos Client Extensions
 The SDK SHALL provide encryption through separate extension packages.
 
-#### Scenario: Microsoft.Azure.Cosmos.Encryption package
-- GIVEN the `Microsoft.Azure.Cosmos.Encryption` NuGet package is referenced
-- WHEN `cosmosClient.WithEncryption(keyEncryptionKeyResolver, KeyEncryptionKeyResolverName.AzureKeyVault)` is called
-- THEN the client is configured for client-side encryption with Azure Key Vault
+#### Microsoft.Azure.Cosmos.Encryption package
+**Where** the `Microsoft.Azure.Cosmos.Encryption` NuGet package is referenced, **when** `cosmosClient.WithEncryption(keyEncryptionKeyResolver, KeyEncryptionKeyResolverName.AzureKeyVault)` is called, the SDK shall configure the client for client-side encryption with Azure Key Vault.
 
-#### Scenario: Microsoft.Azure.Cosmos.Encryption.Custom package
-- GIVEN the `Microsoft.Azure.Cosmos.Encryption.Custom` NuGet package is referenced
-- WHEN a custom `EncryptionKeyWrapProvider` is configured
-- THEN the client supports encryption with custom key management
+#### Microsoft.Azure.Cosmos.Encryption.Custom package
+**Where** the `Microsoft.Azure.Cosmos.Encryption.Custom` NuGet package is referenced, **when** a custom `EncryptionKeyWrapProvider` is configured, the SDK shall support encryption with custom key management.
 
 ## Key Source Files
 - `Microsoft.Azure.Cosmos/src/Resource/ClientEncryptionKey/ClientEncryptionKey.cs` — key management API

@@ -9,101 +9,65 @@ The SDK supports five consistency levels and automatically manages session token
 ### Requirement: Consistency Level Configuration
 The SDK SHALL support overriding the account-level consistency at the client and request levels.
 
-#### Scenario: Client-level consistency override
-- GIVEN `CosmosClientOptions.ConsistencyLevel = ConsistencyLevel.Eventual`
-- WHEN requests are made through this client
-- THEN the Eventual consistency level is used by default for all requests
-- AND this MAY only weaken the account-level consistency, never strengthen it
+#### Client-level consistency override
+**Where** `CosmosClientOptions.ConsistencyLevel = ConsistencyLevel.Eventual`, **when** requests are made through this client, the SDK shall use the Eventual consistency level by default for all requests. This MAY only weaken the account-level consistency, never strengthen it.
 
-#### Scenario: Per-request consistency override
-- GIVEN `RequestOptions.ConsistencyLevel = ConsistencyLevel.Strong`
-- WHEN a specific request is made
-- THEN the Strong consistency level is used for that request only
+#### Per-request consistency override
+**Where** `RequestOptions.ConsistencyLevel = ConsistencyLevel.Strong`, **when** a specific request is made, the SDK shall use the Strong consistency level for that request only.
 
-#### Scenario: No override (account default)
-- GIVEN neither client-level nor request-level consistency is set
-- WHEN requests are made
-- THEN the account's default consistency level is used
+#### No override (account default)
+**Where** neither client-level nor request-level consistency is set, **when** requests are made, the SDK shall use the account's default consistency level.
 
 ### Requirement: Consistency Levels
 The SDK SHALL support all five Azure Cosmos DB consistency levels.
 
-#### Scenario: Strong consistency
-- GIVEN `ConsistencyLevel.Strong` is configured
-- WHEN a read is performed
-- THEN the most recent committed write is always returned
-- AND reads are linearizable
+#### Strong consistency
+**Where** `ConsistencyLevel.Strong` is configured, **when** a read is performed, the SDK shall always return the most recent committed write and ensure reads are linearizable.
 
-#### Scenario: Bounded staleness
-- GIVEN `ConsistencyLevel.BoundedStaleness` is configured
-- WHEN a read is performed
-- THEN the read is at most K versions or T seconds behind the latest write
+#### Bounded staleness
+**Where** `ConsistencyLevel.BoundedStaleness` is configured, **when** a read is performed, the SDK shall return data that is at most K versions or T seconds behind the latest write.
 
-#### Scenario: Session consistency (default)
-- GIVEN `ConsistencyLevel.Session` is configured (or account default is Session)
-- WHEN reads and writes are performed within the same session
-- THEN monotonic reads and read-your-writes are guaranteed within that session
+#### Session consistency (default)
+**Where** `ConsistencyLevel.Session` is configured (or account default is Session), **when** reads and writes are performed within the same session, the SDK shall guarantee monotonic reads and read-your-writes within that session.
 
-#### Scenario: Consistent prefix
-- GIVEN `ConsistencyLevel.ConsistentPrefix` is configured
-- WHEN reads are performed
-- THEN reads never see out-of-order writes (no gaps in write sequence)
+#### Consistent prefix
+**Where** `ConsistencyLevel.ConsistentPrefix` is configured, **when** reads are performed, the SDK shall ensure reads never see out-of-order writes (no gaps in write sequence).
 
-#### Scenario: Eventual consistency
-- GIVEN `ConsistencyLevel.Eventual` is configured
-- WHEN a read is performed
-- THEN the read returns data that will eventually converge to the latest write
+#### Eventual consistency
+**Where** `ConsistencyLevel.Eventual` is configured, **when** a read is performed, the SDK shall return data that will eventually converge to the latest write.
 
 ### Requirement: Session Token Management
 The SDK SHALL automatically manage session tokens to maintain session consistency guarantees.
 
-#### Scenario: Automatic session token capture
-- GIVEN a write operation completes
-- WHEN the response is received
-- THEN the SDK automatically captures and stores the session token from the response
-- AND associates it with the container and partition key range
+#### Automatic session token capture
+**When** a write operation completes and a response is received, the SDK shall automatically capture and store the session token from the response and associate it with the container and partition key range.
 
-#### Scenario: Automatic session token propagation
-- GIVEN a session token has been captured from a previous write
-- WHEN a subsequent read request is made to the same container
-- THEN the SDK automatically includes the stored session token in the request header
+#### Automatic session token propagation
+**While** a session token has been captured from a previous write, **when** a subsequent read request is made to the same container, the SDK shall automatically include the stored session token in the request header.
 
-#### Scenario: Session token across partitions
-- GIVEN writes to partition A and partition B
-- WHEN reads are performed
-- THEN each partition has its own session token
-- AND session consistency is maintained independently per partition
+#### Session token across partitions
+**When** writes are performed to multiple partitions and subsequent reads are performed, the SDK shall maintain a separate session token for each partition and ensure session consistency is maintained independently per partition.
 
-#### Scenario: Manual session token
-- GIVEN `RequestOptions.SessionToken` is explicitly set
-- WHEN the request is made
-- THEN the provided session token is used instead of the SDK-managed token
+#### Manual session token
+**Where** `RequestOptions.SessionToken` is explicitly set, **when** the request is made, the SDK shall use the provided session token instead of the SDK-managed token.
 
 ### Requirement: Session Container
 The SDK SHALL maintain an internal session container for token storage.
 
-#### Scenario: Token storage lifecycle
-- GIVEN a `CosmosClient` instance
-- WHEN operations are performed
-- THEN session tokens are stored in memory for the lifetime of the client
+#### Token storage lifecycle
+**While** a `CosmosClient` instance is active, **when** operations are performed, the SDK shall store session tokens in memory for the lifetime of the client.
 
-#### Scenario: Cross-client session continuity
-- GIVEN a session token obtained from one client's response
-- WHEN that token is passed to another client via `RequestOptions.SessionToken`
-- THEN the second client can achieve session-consistent reads relative to the first client's writes
+#### Cross-client session continuity
+**When** a session token obtained from one client's response is passed to another client via `RequestOptions.SessionToken`, the SDK shall enable the second client to achieve session-consistent reads relative to the first client's writes.
 
 ### Requirement: Consistency Weakening Validation
 The SDK SHALL only allow weakening the account-level consistency, not strengthening it.
 
-#### Scenario: Weaken from Strong to Session
-- GIVEN account-level consistency is Strong
-- WHEN `CosmosClientOptions.ConsistencyLevel = ConsistencyLevel.Session` is set
-- THEN the client uses Session consistency (valid weakening)
+#### Weaken from Strong to Session
+**Where** `CosmosClientOptions.ConsistencyLevel = ConsistencyLevel.Session` is set on an account with Strong consistency, the SDK shall use Session consistency as a valid weakening of the account-level consistency.
 
-#### Scenario: Attempt to strengthen
-- GIVEN account-level consistency is Eventual
-- WHEN `CosmosClientOptions.ConsistencyLevel = ConsistencyLevel.Strong` is set
-- THEN the service rejects the request with a 400 (Bad Request) error
+#### Attempt to strengthen
+**If** `CosmosClientOptions.ConsistencyLevel = ConsistencyLevel.Strong` is set on an account with Eventual consistency, **then** the SDK shall have the service reject the request with a 400 (Bad Request) error.
 
 ## Key Source Files
 - `Microsoft.Azure.Cosmos/src/CosmosClientOptions.cs` — `ConsistencyLevel` property

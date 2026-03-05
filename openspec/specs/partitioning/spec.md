@@ -9,96 +9,62 @@ Partitioning is the fundamental data distribution mechanism in Azure Cosmos DB. 
 ### Requirement: Partition Key Specification
 The SDK SHALL support specifying partition keys for all item-level operations.
 
-#### Scenario: Single partition key
-- GIVEN a container with a partition key path `/tenantId`
-- WHEN `new PartitionKey("tenant-1")` is provided to an operation
-- THEN the request is routed to the correct physical partition
+#### Single partition key
+**When** `new PartitionKey("tenant-1")` is provided to an operation on a container with partition key path `/tenantId`, the SDK shall route the request to the correct physical partition.
 
-#### Scenario: Partition key from item
-- GIVEN an item with the partition key property populated
-- WHEN `Container.CreateItemAsync(item)` is called without an explicit partition key
-- THEN the SDK extracts the partition key from the item using the container's partition key definition
+#### Partition key from item
+**When** `Container.CreateItemAsync(item)` is called without an explicit partition key, the SDK shall extract the partition key from the item using the container's partition key definition.
 
-#### Scenario: None partition key
-- GIVEN an item that does not have a partition key property (or it is null)
-- WHEN `PartitionKey.None` is used
-- THEN the item is stored in the system-defined "none" partition
+#### None partition key
+**When** `PartitionKey.None` is used for an item that does not have a partition key property (or it is null), the SDK shall store the item in the system-defined "none" partition.
 
 ### Requirement: Hierarchical Partition Keys
 The SDK SHALL support hierarchical (multi-level) partition keys.
 
-#### Scenario: Build hierarchical key
-- GIVEN a container with partition key paths `["/tenantId", "/userId", "/sessionId"]`
-- WHEN `new PartitionKeyBuilder().Add("tenant-1").Add("user-1").Add("session-1").Build()` is called
-- THEN a hierarchical partition key is created for routing
+#### Build hierarchical key
+**When** `new PartitionKeyBuilder().Add("tenant-1").Add("user-1").Add("session-1").Build()` is called for a container with partition key paths `["/tenantId", "/userId", "/sessionId"]`, the SDK shall create a hierarchical partition key for routing.
 
-#### Scenario: Partial partition key for queries
-- GIVEN a hierarchical partition key container
-- WHEN a query is executed with only the first level partition key (e.g., tenantId only)
-- THEN the query fans out to all sub-partitions under that prefix
+#### Partial partition key for queries
+**While** using a hierarchical partition key container, **when** a query is executed with only the first level partition key (e.g., tenantId only), the SDK shall fan out the query to all sub-partitions under that prefix.
 
-#### Scenario: Full hierarchical key for point operations
-- GIVEN a hierarchical partition key container
-- WHEN a point operation (Read, Replace, Delete) is performed
-- THEN the full hierarchical key MUST be provided
+#### Full hierarchical key for point operations
+**While** using a hierarchical partition key container, **when** a point operation (Read, Replace, Delete) is performed, the full hierarchical key MUST be provided.
 
 ### Requirement: Feed Ranges
 The SDK SHALL support FeedRange for parallel processing across partitions.
 
-#### Scenario: Get all feed ranges
-- GIVEN a container
-- WHEN `Container.GetFeedRangesAsync()` is called
-- THEN a list of `FeedRange` objects is returned, each representing a partition key range
+#### Get all feed ranges
+**When** `Container.GetFeedRangesAsync()` is called, the SDK shall return a list of `FeedRange` objects, each representing a partition key range.
 
-#### Scenario: Use feed range for change feed
-- GIVEN a `FeedRange` from `GetFeedRangesAsync()`
-- WHEN `ChangeFeedStartFrom.Beginning(feedRange)` is used
-- THEN only changes within that partition range are returned
+#### Use feed range for change feed
+**When** `ChangeFeedStartFrom.Beginning(feedRange)` is used with a `FeedRange` from `GetFeedRangesAsync()`, the SDK shall return only changes within that partition range.
 
-#### Scenario: Use feed range for query
-- GIVEN a `FeedRange`
-- WHEN a query is executed with `QueryRequestOptions.FeedRange` set
-- THEN the query only executes against the specified partition range
+#### Use feed range for query
+**When** a query is executed with `QueryRequestOptions.FeedRange` set to a specific `FeedRange`, the SDK shall execute the query only against the specified partition range.
 
-#### Scenario: FeedRange from partition key
-- GIVEN a partition key value
-- WHEN `FeedRange.FromPartitionKey(partitionKey)` is called
-- THEN a `FeedRange` scoped to that single logical partition is returned
+#### FeedRange from partition key
+**When** `FeedRange.FromPartitionKey(partitionKey)` is called, the SDK shall return a `FeedRange` scoped to that single logical partition.
 
 ### Requirement: Partition Key Range Caching
 The SDK SHALL cache partition key range information to avoid repeated metadata lookups.
 
-#### Scenario: Cache hit
-- GIVEN a partition key range has been resolved previously
-- WHEN a new request targets the same partition
-- THEN the cached routing information is used without a metadata call
+#### Cache hit
+**While** a partition key range has been resolved previously, **when** a new request targets the same partition, the SDK shall use the cached routing information without a metadata call.
 
-#### Scenario: Cache invalidation on 410 Gone
-- GIVEN the service returns 410 (Gone) with sub-status 1002 (PartitionKeyRangeGone)
-- WHEN the SDK handles this response
-- THEN the partition key range cache is invalidated
-- AND the operation is retried with refreshed routing
+#### Cache invalidation on 410 Gone
+**If** the service returns 410 (Gone) with sub-status 1002 (PartitionKeyRangeGone), **then** the SDK shall invalidate the partition key range cache and retry the operation with refreshed routing.
 
-#### Scenario: Partition split
-- GIVEN a physical partition is split by the service
-- WHEN a request targets the old partition range
-- THEN the SDK receives a 410 response
-- AND refreshes the routing map to discover the new partition ranges
-- AND retries the operation against the correct new partition
+#### Partition split
+**If** a physical partition is split by the service and a request targets the old partition range, **then** the SDK shall handle the 410 response, refresh the routing map to discover the new partition ranges, and retry the operation against the correct new partition.
 
 ### Requirement: Cross-Partition Operations
 The SDK SHALL support operations that span multiple partitions.
 
-#### Scenario: Cross-partition query
-- GIVEN a query without a partition key filter
-- WHEN the query is executed
-- THEN the SDK fans out the query to all partitions
-- AND merges results according to the query's ORDER BY requirements
+#### Cross-partition query
+**When** a query without a partition key filter is executed, the SDK shall fan out the query to all partitions and merge results according to the query's ORDER BY requirements.
 
-#### Scenario: Change feed across all partitions
-- GIVEN `ChangeFeedStartFrom.Beginning()` without a FeedRange
-- WHEN the change feed iterator is used
-- THEN changes from all partitions are returned
+#### Change feed across all partitions
+**When** `ChangeFeedStartFrom.Beginning()` is used without a FeedRange, the SDK shall return changes from all partitions via the change feed iterator.
 
 ## Key Source Files
 - `Microsoft.Azure.Cosmos/src/PartitionKey.cs` — partition key value type

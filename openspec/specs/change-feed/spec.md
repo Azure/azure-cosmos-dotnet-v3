@@ -9,131 +9,83 @@ Change feed provides an ordered stream of changes (creates, updates, and optiona
 ### Requirement: Change Feed Iterator
 The SDK SHALL provide a pull-based iterator for reading changes from a container.
 
-#### Scenario: Read all changes from beginning
-- GIVEN a container with existing items
-- WHEN `Container.GetChangeFeedIterator<T>(ChangeFeedStartFrom.Beginning(), ChangeFeedMode.Incremental)` is called
-- THEN all historical creates and updates are returned in order per partition
+#### Read all changes from beginning
+**When** `Container.GetChangeFeedIterator<T>(ChangeFeedStartFrom.Beginning(), ChangeFeedMode.Incremental)` is called on a container with existing items, the SDK shall return all historical creates and updates in order per partition.
 
-#### Scenario: Read changes from now
-- GIVEN a container
-- WHEN `Container.GetChangeFeedIterator<T>(ChangeFeedStartFrom.Now())` is called
-- THEN only changes occurring after this point are returned
+#### Read changes from now
+**When** `Container.GetChangeFeedIterator<T>(ChangeFeedStartFrom.Now())` is called, the SDK shall return only changes occurring after this point.
 
-#### Scenario: Read changes from specific time
-- GIVEN a UTC timestamp
-- WHEN `Container.GetChangeFeedIterator<T>(ChangeFeedStartFrom.Time(dateTimeUtc))` is called
-- THEN changes are returned starting from the first change after that timestamp (exclusive)
+#### Read changes from specific time
+**When** `Container.GetChangeFeedIterator<T>(ChangeFeedStartFrom.Time(dateTimeUtc))` is called with a UTC timestamp, the SDK shall return changes starting from the first change after that timestamp (exclusive).
 
-#### Scenario: Resume from continuation token
-- GIVEN a continuation token from a previous change feed read
-- WHEN `Container.GetChangeFeedIterator<T>(ChangeFeedStartFrom.ContinuationToken(token))` is called
-- THEN reading resumes from the saved position
+#### Resume from continuation token
+**When** `Container.GetChangeFeedIterator<T>(ChangeFeedStartFrom.ContinuationToken(token))` is called with a continuation token from a previous change feed read, the SDK shall resume reading from the saved position.
 
-#### Scenario: No new changes available
-- GIVEN no new changes since the last read
-- WHEN `ReadNextAsync()` is called
-- THEN a `FeedResponse<T>` is returned with status code 304 (Not Modified)
-- AND `HasMoreResults` remains true (change feed never completes)
+#### No new changes available
+**While** no new changes are available since the last read, **when** `ReadNextAsync()` is called, the SDK shall return a `FeedResponse<T>` with status code 304 (Not Modified) and `HasMoreResults` shall remain true (change feed never completes).
 
 ### Requirement: Change Feed Modes
 The SDK SHALL support multiple change feed modes with different fidelity levels.
 
-#### Scenario: Incremental mode (default)
-- GIVEN `ChangeFeedMode.Incremental` (or `LatestVersion`)
-- WHEN changes are read
-- THEN only the latest version of each item is returned
-- AND deletes are NOT included
+#### Incremental mode (default)
+**Where** `ChangeFeedMode.Incremental` (or `LatestVersion`) is used, **when** changes are read, the SDK shall return only the latest version of each item and shall not include deletes.
 
-#### Scenario: All Versions and Deletes mode
-- GIVEN `ChangeFeedMode.AllVersionsAndDeletes` (or `FullFidelity`)
-- WHEN changes are read
-- THEN all intermediate versions of each item are returned
-- AND delete events are included with metadata
-- AND the container MUST have a change feed retention policy configured
+#### All Versions and Deletes mode
+**Where** `ChangeFeedMode.AllVersionsAndDeletes` (or `FullFidelity`) is used, **when** changes are read, the SDK shall return all intermediate versions of each item and include delete events with metadata. The container MUST have a change feed retention policy configured.
 
 ### Requirement: Change Feed Processor
 The SDK SHALL provide a distributed change feed processing framework with automatic partition assignment and checkpointing.
 
-#### Scenario: Start processing
-- GIVEN a processor built with `Container.GetChangeFeedProcessorBuilder<T>(processorName, handler)`
-- AND configured with `.WithInstanceName(name).WithLeaseContainer(leaseContainer)`
-- WHEN `processor.StartAsync()` is called
-- THEN the processor begins polling for changes across all partitions
-- AND distributes work across instances sharing the same processor name
+#### Start processing
+**When** `processor.StartAsync()` is called on a processor built with `Container.GetChangeFeedProcessorBuilder<T>(processorName, handler)` and configured with `.WithInstanceName(name).WithLeaseContainer(leaseContainer)`, the SDK shall begin polling for changes across all partitions and distribute work across instances sharing the same processor name.
 
-#### Scenario: Automatic load balancing
-- GIVEN multiple processor instances with the same processor name
-- WHEN a new instance starts or an existing instance stops
-- THEN partition leases are automatically rebalanced across running instances
+#### Automatic load balancing
+**While** multiple processor instances share the same processor name, **when** a new instance starts or an existing instance stops, the SDK shall automatically rebalance partition leases across running instances.
 
-#### Scenario: Automatic checkpointing
-- GIVEN a `ChangesHandler<T>` delegate that completes successfully
-- WHEN the delegate returns without exception
-- THEN the checkpoint is automatically updated in the lease container
+#### Automatic checkpointing
+**When** a `ChangesHandler<T>` delegate returns without exception, the SDK shall automatically update the checkpoint in the lease container.
 
-#### Scenario: Manual checkpointing
-- GIVEN a processor built with `GetChangeFeedProcessorBuilderWithManualCheckpoint<T>`
-- WHEN the delegate is invoked with a `checkpointAsync` function
-- THEN the application controls when checkpoints are saved by calling `checkpointAsync()`
+#### Manual checkpointing
+**Where** a processor is built with `GetChangeFeedProcessorBuilderWithManualCheckpoint<T>`, **when** the delegate is invoked, the SDK shall provide a `checkpointAsync` function that allows the application to control when checkpoints are saved.
 
-#### Scenario: Handler failure
-- GIVEN a `ChangesHandler<T>` delegate that throws an exception
-- WHEN the exception propagates
-- THEN the change batch is retried from the last checkpoint
-- AND the lease is not advanced
+#### Handler failure
+**If** a `ChangesHandler<T>` delegate throws an exception, **then** the SDK shall retry the change batch from the last checkpoint and shall not advance the lease.
 
 ### Requirement: Change Feed Processor Configuration
 The SDK SHALL support configuring processor timing and behavior.
 
-#### Scenario: Poll interval
-- GIVEN `.WithPollInterval(TimeSpan.FromSeconds(5))` is configured
-- WHEN no new changes are available
-- THEN the processor waits 5 seconds before polling again (default: 1 second)
+#### Poll interval
+**Where** `.WithPollInterval(TimeSpan.FromSeconds(5))` is configured, **when** no new changes are available, the SDK shall wait 5 seconds before polling again (default: 1 second).
 
-#### Scenario: Max items per trigger
-- GIVEN `.WithMaxItems(100)` is configured
-- WHEN changes are available
-- THEN at most 100 items are passed per delegate invocation
+#### Max items per trigger
+**Where** `.WithMaxItems(100)` is configured, **when** changes are available, the SDK shall pass at most 100 items per delegate invocation.
 
-#### Scenario: Lease configuration
-- GIVEN custom lease timing via `.WithLeaseConfiguration(acquireInterval, expirationInterval, renewInterval)`
-- WHEN the processor runs
-- THEN leases are acquired at `acquireInterval` (default: 13s), renewed at `renewInterval` (default: 10s), and expire after `expirationInterval` (default: 60s)
+#### Lease configuration
+**Where** custom lease timing is configured via `.WithLeaseConfiguration(acquireInterval, expirationInterval, renewInterval)`, **when** the processor runs, the SDK shall acquire leases at `acquireInterval` (default: 13s), renew at `renewInterval` (default: 10s), and expire leases after `expirationInterval` (default: 60s).
 
-#### Scenario: Start from beginning
-- GIVEN `.WithStartFromBeginning()` is configured
-- WHEN the processor starts for the first time (no existing leases)
-- THEN processing begins from the earliest available changes
+#### Start from beginning
+**Where** `.WithStartFromBeginning()` is configured, **when** the processor starts for the first time (no existing leases), the SDK shall begin processing from the earliest available changes.
 
 ### Requirement: Change Feed Estimator
 The SDK SHALL provide a mechanism to estimate the number of pending changes.
 
-#### Scenario: Estimate remaining work
-- GIVEN an estimator built with `Container.GetChangeFeedEstimator(processorName, leaseContainer)`
-- WHEN `estimator.ReadNextAsync()` is called
-- THEN a `FeedResponse<ChangeFeedProcessorState>` is returned
-- AND each item contains the estimated lag per partition
+#### Estimate remaining work
+**When** `estimator.ReadNextAsync()` is called on an estimator built with `Container.GetChangeFeedEstimator(processorName, leaseContainer)`, the SDK shall return a `FeedResponse<ChangeFeedProcessorState>` where each item contains the estimated lag per partition.
 
 ### Requirement: Change Feed with FeedRange
 The SDK SHALL support reading changes from a specific subset of partitions.
 
-#### Scenario: Scoped to FeedRange
-- GIVEN a `FeedRange` obtained from `Container.GetFeedRangesAsync()`
-- WHEN `ChangeFeedStartFrom.Beginning(feedRange)` is used
-- THEN only changes within that partition range are returned
+#### Scoped to FeedRange
+**When** `ChangeFeedStartFrom.Beginning(feedRange)` is used with a `FeedRange` obtained from `Container.GetFeedRangesAsync()`, the SDK shall return only changes within that partition range.
 
 ### Requirement: Change Feed Ordering
 The SDK SHALL guarantee ordering within a logical partition.
 
-#### Scenario: Within-partition ordering
-- GIVEN multiple changes to items with the same partition key
-- WHEN changes are read via change feed
-- THEN changes appear in the order they were committed
+#### Within-partition ordering
+**When** changes to items with the same partition key are read via change feed, the SDK shall return changes in the order they were committed.
 
-#### Scenario: Cross-partition ordering
-- GIVEN changes across different partitions
-- WHEN changes are read
-- THEN ordering is guaranteed only within each partition, not across partitions
+#### Cross-partition ordering
+**When** changes across different partitions are read, the SDK shall guarantee ordering only within each partition, not across partitions.
 
 ## Key Source Files
 - `Microsoft.Azure.Cosmos/src/ChangeFeed/ChangeFeedIteratorCore.cs` — iterator implementation
