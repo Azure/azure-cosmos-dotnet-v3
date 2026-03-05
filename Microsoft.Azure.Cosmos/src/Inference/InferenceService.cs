@@ -62,7 +62,8 @@ namespace Microsoft.Azure.Cosmos
                 inferenceServiceDefaultMaxConnectionLimit) ?? inferenceServiceDefaultMaxConnectionLimit;
 
             // Get the inference timeout from client options, or use default
-            this.inferenceRequestTimeout = client.ClientOptions?.InferenceRequestTimeout ?? TimeSpan.FromSeconds(5);
+            Debug.Assert(client.ClientOptions != null, "ClientOptions should not be null");
+            this.inferenceRequestTimeout = client.ClientOptions.InferenceRequestTimeout;
 
             // Create timeout policy for inference requests
             this.inferenceTimeoutPolicy = HttpTimeoutInferencePolicy.Create(this.inferenceRequestTimeout);
@@ -160,13 +161,13 @@ namespace Microsoft.Azure.Cosmos
                         RuntimeConstants.MediaTypes.Json);
 
                     // Create linked cancellation token source to honor both user cancellation and timeout policy
-                    using CancellationTokenSource cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                    cancellationTokenSource.CancelAfter(requestTimeout);
+                    using CancellationTokenSource inferenceCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                    inferenceCancellationTokenSource.CancelAfter(requestTimeout);
 
                     try
                     {
                         // Send the request and check for success.
-                        HttpResponseMessage responseMessage = await this.httpClient.SendAsync(message, cancellationTokenSource.Token);
+                        HttpResponseMessage responseMessage = await this.httpClient.SendAsync(message, inferenceCancellationTokenSource.Token);
 
                         if (!responseMessage.IsSuccessStatusCode)
                         {
