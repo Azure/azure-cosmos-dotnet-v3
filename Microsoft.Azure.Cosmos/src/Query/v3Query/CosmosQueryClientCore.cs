@@ -209,13 +209,19 @@ namespace Microsoft.Azure.Cosmos
             {
                 // Syntax exception are argument exceptions and thrown to the user.
                 message.EnsureSuccessStatusCode();
-                partitionedQueryExecutionInfo = this.clientContext.SerializerCore.FromStream<PartitionedQueryExecutionInfo>(message.Content);
 
                 if (ConfigurationManager.IsThinClientEnabled(defaultValue: false))
                 {
                     ContainerProperties containerProperties = await this.clientContext.GetCachedContainerPropertiesAsync(
                         resourceUri, trace, cancellationToken);
-                    partitionedQueryExecutionInfo.PartitionKeyDefinition = containerProperties.PartitionKey;
+
+                    partitionedQueryExecutionInfo = ThinClientQueryPlanHelper.DeserializeQueryPlanResponse(
+                        message.Content,
+                        containerProperties.PartitionKey);
+                }
+                else
+                {
+                    partitionedQueryExecutionInfo = this.clientContext.SerializerCore.FromStream<PartitionedQueryExecutionInfo>(message.Content);
                 }
             }
 
