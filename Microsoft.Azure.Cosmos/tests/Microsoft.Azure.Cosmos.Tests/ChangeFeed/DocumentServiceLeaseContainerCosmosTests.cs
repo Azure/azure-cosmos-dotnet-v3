@@ -6,10 +6,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Documents;
@@ -73,7 +77,53 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
         }
 
-        private static Container GetMockedContainer(string containerName = "myColl")
+        [TestMethod]
+        [ExpectedException(typeof(LeaseOperationNotSupportedException))]
+        public async Task ExportLeasesAsync_WithNonEpkLeases_ThrowsUnsupportedException()
+        {
+            // Arrange - The existing test uses DocumentServiceLeaseCore which is non-EPK
+            DocumentServiceLeaseContainerCosmos documentServiceLeaseContainerCosmos = new DocumentServiceLeaseContainerCosmos(
+                DocumentServiceLeaseContainerCosmosTests.GetMockedContainer(),
+                DocumentServiceLeaseContainerCosmosTests.leaseStoreManagerSettings);
+
+            // Act & Assert - Should throw LeaseOperationNotSupportedException
+            await documentServiceLeaseContainerCosmos.ExportLeasesAsync();
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(LeaseOperationNotSupportedException))]
+        public async Task ImportLeasesAsync_WithNonEpkLeases_ThrowsUnsupportedException()
+        {
+            // Arrange
+            DocumentServiceLeaseCore nonEpkLease = new DocumentServiceLeaseCore()
+            {
+                LeaseId = "lease1",
+                LeaseToken = "0",
+                Owner = "host1"
+            };
+
+            string leaseJson;
+            using (Stream stream = CosmosContainerExtensions.DefaultJsonSerializer.ToStream(nonEpkLease))
+            using (StreamReader reader = new StreamReader(stream))
+            {
+                leaseJson = reader.ReadToEnd();
+            }
+            
+            List<JsonElement> leasesToImport = new List<JsonElement>
+            {
+                JsonDocument.Parse(leaseJson).RootElement
+            };
+
+            Mock<Container> mockContainer = new Mock<Container>();
+            DocumentServiceLeaseContainerCosmos leaseContainer = new DocumentServiceLeaseContainerCosmos(
+                mockContainer.Object,
+                leaseStoreManagerSettings);
+
+            // Act & Assert - Should throw LeaseOperationNotSupportedException
+            await leaseContainer.ImportLeasesAsync(leasesToImport, overwriteExisting: false);
+        }
+
+        private static Container GetMockedContainer()
         {
             Headers headers = new Headers
             {
@@ -101,6 +151,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             mockedItems.Setup(i => i.GetItemQueryStreamIterator(
                 // To make sure the SQL Query gets correctly created
                 It.Is<string>(value => string.Equals("SELECT * FROM c WHERE STARTSWITH(c.id, '" + DocumentServiceLeaseContainerCosmosTests.leaseStoreManagerSettings.GetPartitionLeasePrefix() + "')", value)),
+                It.IsAny<string>(),
+                It.IsAny<QueryRequestOptions>()))
+                .Returns(() => mockedQuery.Object);
+
+            // Export uses ContainerNamePrefix (broader query to include metadata documents)
+            mockedItems.Setup(i => i.GetItemQueryStreamIterator(
+                It.Is<string>(value => string.Equals("SELECT * FROM c WHERE STARTSWITH(c.id, '" + DocumentServiceLeaseContainerCosmosTests.leaseStoreManagerSettings.ContainerNamePrefix + "')", value)),
                 It.IsAny<string>(),
                 It.IsAny<QueryRequestOptions>()))
                 .Returns(() => mockedQuery.Object);
