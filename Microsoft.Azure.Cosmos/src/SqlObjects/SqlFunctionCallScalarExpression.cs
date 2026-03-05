@@ -144,6 +144,10 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             { Names.StringToNumber, Identifiers.StringToNumber },
             { Names.StringToObject, Identifiers.StringToObject },
             { Names.Substring, Identifiers.Substring },
+            { Names.SubstringAfter, Identifiers.SubstringAfter },
+            { Names.SubstringAfterLast, Identifiers.SubstringAfterLast },
+            { Names.SubstringBefore, Identifiers.SubstringBefore },
+            { Names.SubstringBeforeLast, Identifiers.SubstringBeforeLast },
             { Names.Sum, Identifiers.Sum },
             { Names.Tan, Identifiers.Tan },
             { Names.TicksToDateTime, Identifiers.TicksToDateTime },
@@ -399,6 +403,10 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public const string StringToNumber = "StringToNumber";
             public const string StringToObject = "StringToObject";
             public const string Substring = "SUBSTRING";
+            public const string SubstringAfter = "SubstringAfter";
+            public const string SubstringAfterLast = "SubstringAfterLast";
+            public const string SubstringBefore = "SubstringBefore";
+            public const string SubstringBeforeLast = "SubstringBeforeLast";
             public const string Sum = "SUM";
             public const string Tan = "TAN";
             public const string TicksToDateTime = "TicksToDateTime";
@@ -577,6 +585,10 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public static readonly SqlIdentifier StringToNumber = SqlIdentifier.Create(Names.StringToNumber);
             public static readonly SqlIdentifier StringToObject = SqlIdentifier.Create(Names.StringToObject);
             public static readonly SqlIdentifier Substring = SqlIdentifier.Create(Names.Substring);
+            public static readonly SqlIdentifier SubstringAfter = SqlIdentifier.Create(Names.SubstringAfter);
+            public static readonly SqlIdentifier SubstringAfterLast = SqlIdentifier.Create(Names.SubstringAfterLast);
+            public static readonly SqlIdentifier SubstringBefore = SqlIdentifier.Create(Names.SubstringBefore);
+            public static readonly SqlIdentifier SubstringBeforeLast = SqlIdentifier.Create(Names.SubstringBeforeLast);
             public static readonly SqlIdentifier Sum = SqlIdentifier.Create(Names.Sum);
             public static readonly SqlIdentifier Tan = SqlIdentifier.Create(Names.Tan);
             public static readonly SqlIdentifier TicksToDateTime = SqlIdentifier.Create(Names.TicksToDateTime);

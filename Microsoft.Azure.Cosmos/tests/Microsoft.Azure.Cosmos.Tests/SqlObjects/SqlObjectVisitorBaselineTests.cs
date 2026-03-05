@@ -1063,6 +1063,30 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
                     SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1)),
                     SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(2)))),
                 new SqlObjectVisitorInput(
+                SqlFunctionCallScalarExpression.Names.SubstringAfter,
+                SqlFunctionCallScalarExpression.CreateBuiltin(
+                    SqlFunctionCallScalarExpression.Identifiers.SubstringAfter,
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("Hello world")),
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("o")))),
+                new SqlObjectVisitorInput(
+                SqlFunctionCallScalarExpression.Names.SubstringAfterLast,
+                SqlFunctionCallScalarExpression.CreateBuiltin(
+                    SqlFunctionCallScalarExpression.Identifiers.SubstringAfterLast,
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("Hello world")),
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("o")))),
+                new SqlObjectVisitorInput(
+                SqlFunctionCallScalarExpression.Names.SubstringBefore,
+                SqlFunctionCallScalarExpression.CreateBuiltin(
+                    SqlFunctionCallScalarExpression.Identifiers.SubstringBefore,
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("Hello world")),
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("o")))),
+                new SqlObjectVisitorInput(
+                SqlFunctionCallScalarExpression.Names.SubstringBeforeLast,
+                SqlFunctionCallScalarExpression.CreateBuiltin(
+                    SqlFunctionCallScalarExpression.Identifiers.SubstringBeforeLast,
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("Hello world")),
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("o")))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Sum,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Sum,
