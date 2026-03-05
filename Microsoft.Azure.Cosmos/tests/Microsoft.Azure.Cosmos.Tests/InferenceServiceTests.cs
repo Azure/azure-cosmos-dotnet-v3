@@ -94,6 +94,30 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(0, result.RerankScores[0].Index);
         }
 
+        [TestMethod]
+        public async Task SemanticRerankAsync_Timeout_ThrowsRequestTimeoutException()
+        {
+            // DelayedMessageHandler delays for 10 seconds, but the default inference timeout is 5 seconds
+            DelayedMessageHandler delayedHandler = new DelayedMessageHandler(
+                delay: TimeSpan.FromSeconds(10),
+                statusCode: HttpStatusCode.OK,
+                responseContent: "{}");
+
+            Mock<AuthorizationTokenProvider> mockAuth = InferenceServiceTests.CreateMockAuthorizationTokenProvider();
+
+            using InferenceService service = new InferenceService(delayedHandler, TestEndpoint, mockAuth.Object);
+
+            CosmosException exception = await Assert.ThrowsExceptionAsync<CosmosException>(
+                () => service.SemanticRerankAsync(
+                    rerankContext: "test query",
+                    documents: new List<string> { "doc1", "doc2" }));
+
+            Assert.AreEqual(HttpStatusCode.RequestTimeout, exception.StatusCode);
+            Assert.IsTrue(
+                exception.Message.Contains("Inference Service Request Timeout"),
+                $"Expected timeout message. Actual: {exception.Message}");
+        }
+
         private static Mock<AuthorizationTokenProvider> CreateMockAuthorizationTokenProvider()
         {
             Mock<AuthorizationTokenProvider> mockAuth = new Mock<AuthorizationTokenProvider>();
@@ -130,6 +154,38 @@ namespace Microsoft.Azure.Cosmos.Tests
                 };
 
                 return Task.FromResult(response);
+            }
+        }
+
+        /// <summary>
+        /// An HttpMessageHandler that introduces a configurable delay before responding,
+        /// used to test timeout behavior without fault injection.
+        /// </summary>
+        private class DelayedMessageHandler : HttpMessageHandler
+        {
+            private readonly TimeSpan delay;
+            private readonly HttpStatusCode statusCode;
+            private readonly string responseContent;
+
+            public DelayedMessageHandler(TimeSpan delay, HttpStatusCode statusCode, string responseContent)
+            {
+                this.delay = delay;
+                this.statusCode = statusCode;
+                this.responseContent = responseContent;
+            }
+
+            protected override async Task<HttpResponseMessage> SendAsync(
+                HttpRequestMessage request,
+                CancellationToken cancellationToken)
+            {
+                await Task.Delay(this.delay, cancellationToken);
+
+                HttpResponseMessage response = new HttpResponseMessage(this.statusCode)
+                {
+                    Content = new StringContent(this.responseContent, Encoding.UTF8, "application/json")
+                };
+
+                return response;
             }
         }
     }

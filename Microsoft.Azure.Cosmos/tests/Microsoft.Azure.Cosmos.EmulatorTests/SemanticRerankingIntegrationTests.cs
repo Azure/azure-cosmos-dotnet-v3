@@ -14,8 +14,11 @@
     [TestClass]
     public class SemanticRerankingIntegrationTests
     {
+#if PREVIEW
         private string connectionString;
         private CosmosClient client;
+
+        private TokenCredential tokenCredential;
 
         private CosmosSystemTextJsonSerializer cosmosSystemTextJsonSerializer;
 
@@ -23,15 +26,16 @@
         public void TestInitAsync()
         {
             this.connectionString = "https://inferencee2etest.documents.azure.com:443/";
-            Environment.SetEnvironmentVariable("AZURE_COSMOS_SEMANTIC_RERANKER_INFERENCE_ENDPOINT", "https://inferencee2etest.dbinference.azure.com");
+            Environment.SetEnvironmentVariable("AZURE_COSMOS_SEMANTIC_RERANKER_INFERENCE_ENDPOINT", "https://inferencee2etest.westus3.dbinference.azure.com");
             DefaultAzureCredentialOptions options = new DefaultAzureCredentialOptions
             {
                 TenantId = "72f988bf-86f1-41af-91ab-2d7cd011db47",
-                ExcludeVisualStudioCredential = true
+                ExcludeVisualStudioCredential = true,
+                ExcludeVisualStudioCodeCredential = true,
             };
 
             //Create a cosmos client using AAD authentication
-            TokenCredential tokenCredential = new DefaultAzureCredential(options);
+            this.tokenCredential = new DefaultAzureCredential(options);
 
             JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions()
             {
@@ -45,7 +49,7 @@
             }
             this.client = new CosmosClient(
                 this.connectionString,
-                tokenCredential,
+                this.tokenCredential,
                 new CosmosClientOptions()
                 {
                     Serializer = this.cosmosSystemTextJsonSerializer,
@@ -55,16 +59,16 @@
         [TestCleanup]
         public void TestCleanup()
         {
+            Environment.SetEnvironmentVariable("AZURE_COSMOS_SEMANTIC_RERANKER_INFERENCE_ENDPOINT", null);
             this.client?.Dispose();
         }
 
-#if PREVIEW
+
         [TestMethod]
         [TestCategory("Ignore")]
         [Timeout(70000)]
         public async Task SemanticRerankTest()
-        {
-            Database db = this.client.GetDatabase("virtualstore");
+        {            Database db = this.client.GetDatabase("virtualstore");
             Container container = db.GetContainer("sportinggoods");
 
             string search_text = "integrated pull-up bar";

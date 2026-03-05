@@ -388,6 +388,24 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Sets the request timeout for inference service operations (e.g., semantic reranking).
+        /// </summary>
+        /// <param name="inferenceRequestTimeout">A time to use as timeout for inference operations.</param>
+        /// <value>Default value is 5 seconds.</value>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
+        /// <seealso cref="CosmosClientOptions.InferenceRequestTimeout"/>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        CosmosClientBuilder WithInferenceRequestTimeout(TimeSpan inferenceRequestTimeout)
+        {
+            this.clientOptions.InferenceRequestTimeout = inferenceRequestTimeout;
+            return this;
+        }
+
+        /// <summary>
         /// Sets the connection mode to Direct. This is used by the client when connecting to the Azure Cosmos DB service.
         /// </summary>
         /// <remarks>
