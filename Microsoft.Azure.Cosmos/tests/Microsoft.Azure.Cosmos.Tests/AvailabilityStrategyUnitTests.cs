@@ -298,7 +298,7 @@
                 {
                     // First request: cancel the app token after a brief delay
                     // This simulates an e2e timeout scenario
-                    _ = Task.Delay(15).ContinueWith(_ => appCts.Cancel());
+                    _ = Task.Delay(1).ContinueWith(_ => appCts.Cancel());
 
                     // Then wait - this will be cancelled
                     try
