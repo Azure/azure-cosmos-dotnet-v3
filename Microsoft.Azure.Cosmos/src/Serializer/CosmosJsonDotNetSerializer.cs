@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos
         {
             using (stream)
             {
-                if (stream is T typedStream)
+                if (typeof(Stream).IsAssignableFrom(typeof(T)) && stream is T typedStream)
                 {
                     return typedStream;
                 }
