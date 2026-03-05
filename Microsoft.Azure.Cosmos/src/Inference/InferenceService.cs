@@ -18,15 +18,12 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
-    using Microsoft.Azure.Documents.FaultInjection;
 
     /// <summary>
     /// Provides functionality to interact with the Cosmos DB Inference Service for semantic reranking.
     /// </summary>
     internal class InferenceService : IDisposable
     {
-        private const string FaultInjectionId = "FaultInjectionId";
-
         // Base path for the inference service endpoint.
         private const string basePath = "/inference/semanticReranking";
         // User agent string for inference requests.
@@ -40,7 +37,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly Uri inferenceEndpoint;
         private readonly TimeSpan inferenceRequestTimeout;
         private readonly HttpTimeoutPolicy inferenceTimeoutPolicy;
-        private readonly IChaosInterceptor chaosInterceptor;
+        private readonly InferenceFaultInjector faultInjector;
 
         private HttpClient httpClient;
         private AuthorizationTokenProvider cosmosAuthorization;
@@ -71,8 +68,8 @@ namespace Microsoft.Azure.Cosmos
             // Create timeout policy for inference requests
             this.inferenceTimeoutPolicy = HttpTimeoutInferencePolicy.Create(this.inferenceRequestTimeout);
 
-            // Get fault injection interceptor if available from the DocumentClient
-            this.chaosInterceptor = client.DocumentClient.ChaosInterceptor;
+            // Create fault injector adapter if chaos interceptor is available
+            var chaosInterceptor = client.DocumentClient.ChaosInterceptor;
 
             // Create and configure HttpClient for inference requests.
             HttpMessageHandler httpMessageHandler = CosmosHttpClientCore.CreateHttpClientHandler(
@@ -86,6 +83,11 @@ namespace Microsoft.Azure.Cosmos
 
             // Construct the inference service endpoint URI.
             this.inferenceEndpoint = new Uri($"{this.inferenceServiceBaseUrl}/{basePath}");
+
+            // Create fault injector adapter now that endpoint is available
+            this.faultInjector = chaosInterceptor != null
+                ? new InferenceFaultInjector(chaosInterceptor, this.inferenceEndpoint)
+                : null;
 
             // Ensure AAD authentication is used.
             if (client.DocumentClient.cosmosAuthorization.GetType() != typeof(AuthorizationTokenProviderTokenCredential))
@@ -172,10 +174,10 @@ namespace Microsoft.Azure.Cosmos
 
                     try
                     {
-                        // Inject faults for testing if chaos interceptor is enabled
-                        if (this.chaosInterceptor != null)
+                        // Inject faults for testing if fault injector is configured
+                        if (this.faultInjector != null)
                         {
-                            (bool hasFault, HttpResponseMessage fiResponseMessage) = await this.InjectFaultsAsync(
+                            (bool hasFault, HttpResponseMessage fiResponseMessage) = await this.faultInjector.TryInjectFaultAsync(
                                 cancellationTokenSource,
                                 additionalHeaders,
                                 message);
@@ -189,12 +191,12 @@ namespace Microsoft.Azure.Cosmos
                         // Send the request and check for success.
                         HttpResponseMessage responseMessage = await this.httpClient.SendAsync(message, cancellationToken);
 
-                        // Execute OnAfterHttpSendAsync for fault injection if chaos interceptor is enabled
-                        if (this.chaosInterceptor != null)
+                        // Execute post-response fault injection if fault injector is configured
+                        if (this.faultInjector != null)
                         {
                             CancellationToken fiToken = cancellationTokenSource.Token;
                             fiToken.ThrowIfCancellationRequested();
-                            await this.InjectResponseDelayAsync(additionalHeaders, fiToken);
+                            await this.faultInjector.TryInjectResponseDelayAsync(additionalHeaders, fiToken);
                         }
 
                         if (!responseMessage.IsSuccessStatusCode)
@@ -307,76 +309,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return payload;
-        }
-
-        /// <summary>
-        /// Injects faults for testing purposes using the chaos interceptor.
-        /// </summary>
-        /// <param name="cancellationTokenSource">The cancellation token source for the request.</param>
-        /// <param name="headers">The request headers.</param>
-        /// <param name="requestMessage">The HTTP request message.</param>
-        /// <returns>A tuple indicating if a fault was injected and the fault response message.</returns>
-        private async Task<(bool, HttpResponseMessage)> InjectFaultsAsync(
-            CancellationTokenSource cancellationTokenSource,
-            INameValueCollection headers,
-            HttpRequestMessage requestMessage)
-        {
-            CancellationToken fiToken = cancellationTokenSource.Token;
-            fiToken.ThrowIfCancellationRequested();
-
-            // Create a DocumentServiceRequest for fault injection tracking
-            using DocumentServiceRequest documentServiceRequest = DocumentServiceRequest.Create(
-                OperationType.Read,
-                Microsoft.Azure.Documents.ResourceType.Document,
-                AuthorizationTokenType.AadToken);
-
-            // Set a request fault injection id for rule limit tracking
-            if (string.IsNullOrEmpty(headers.Get(InferenceService.FaultInjectionId)))
-            {
-                headers.Set(InferenceService.FaultInjectionId, Guid.NewGuid().ToString());
-            }
-
-            // Copy headers to the DocumentServiceRequest
-            foreach (string key in headers.AllKeys())
-            {
-                documentServiceRequest.Headers.Set(key, headers[key]);
-            }
-            documentServiceRequest.RequestContext.RouteToLocation(this.inferenceEndpoint);
-
-            await this.chaosInterceptor.OnBeforeHttpSendAsync(documentServiceRequest, fiToken);
-
-            (bool hasFault,
-                HttpResponseMessage fiResponseMessage) = await this.chaosInterceptor.OnHttpRequestCallAsync(documentServiceRequest, fiToken);
-
-            if (hasFault)
-            {
-                fiResponseMessage.RequestMessage = requestMessage;
-            }
-
-            return (hasFault, fiResponseMessage);
-        }
-
-        /// <summary>
-        /// Injects response delay for testing purposes using the chaos interceptor.
-        /// </summary>
-        /// <param name="headers">The request headers.</param>
-        /// <param name="fiToken">The fault injection cancellation token.</param>
-        private async Task InjectResponseDelayAsync(INameValueCollection headers, CancellationToken fiToken)
-        {
-            // Create a DocumentServiceRequest for fault injection tracking
-            using DocumentServiceRequest documentServiceRequest = DocumentServiceRequest.Create(
-                OperationType.Read,
-                Microsoft.Azure.Documents.ResourceType.Document,
-                AuthorizationTokenType.AadToken);
-            documentServiceRequest.RequestContext.RouteToLocation(this.inferenceEndpoint);
-
-            // Copy headers to the DocumentServiceRequest
-            foreach (string key in headers.AllKeys())
-            {
-                documentServiceRequest.Headers.Set(key, headers[key]);
-            }
-
-            await this.chaosInterceptor.OnAfterHttpSendAsync(documentServiceRequest, fiToken);
         }
 
         /// <summary>
