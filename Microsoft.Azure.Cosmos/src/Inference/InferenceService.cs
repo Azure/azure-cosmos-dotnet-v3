@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Net.Http;
     using System.Net.Http.Headers;
+    using System.Runtime.ExceptionServices;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -126,17 +127,14 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             DateTime startDateTimeUtc = DateTime.UtcNow;
-            IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> timeoutEnumerator = this.inferenceTimeoutPolicy.GetTimeoutEnumerator();
-            timeoutEnumerator.MoveNext();
 
-            while (true)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                (TimeSpan requestTimeout, TimeSpan delayForNextRequest) = timeoutEnumerator.Current;
-
-                using (HttpRequestMessage message = new HttpRequestMessage(HttpMethod.Post, this.inferenceEndpoint))
+            return await HttpTimeoutPolicyHelper.ExecuteWithTimeoutAsync(
+                this.inferenceTimeoutPolicy,
+                cancellationToken,
+                executeAsync: async (CancellationToken ct) =>
                 {
+                    using HttpRequestMessage message = new HttpRequestMessage(HttpMethod.Post, this.inferenceEndpoint);
+
                     // Prepare HTTP request for semantic reranking.
                     INameValueCollection additionalHeaders = new RequestNameValueCollection();
                     await this.cosmosAuthorization.AddInferenceAuthorizationHeaderAsync(
@@ -160,76 +158,64 @@ namespace Microsoft.Azure.Cosmos
                         Encoding.UTF8,
                         RuntimeConstants.MediaTypes.Json);
 
-                    // Create linked cancellation token source to honor both user cancellation and timeout policy
-                    using CancellationTokenSource inferenceCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                    inferenceCancellationTokenSource.CancelAfter(requestTimeout);
+                    // Send the request and check for success.
+                    HttpResponseMessage responseMessage = await this.httpClient.SendAsync(message, ct);
 
-                    try
+                    if (!responseMessage.IsSuccessStatusCode)
                     {
-                        // Send the request and check for success.
-                        HttpResponseMessage responseMessage = await this.httpClient.SendAsync(message, inferenceCancellationTokenSource.Token);
-
-                        if (!responseMessage.IsSuccessStatusCode)
-                        {
-                            string responseBody = await responseMessage.Content.ReadAsStringAsync();
-                            throw new CosmosException(
-                                message: responseBody,
-                                statusCode: responseMessage.StatusCode,
-                                subStatusCode: 0,
-                                activityId: string.Empty,
-                                requestCharge: 0);
-                        }
-
-                        responseMessage.EnsureSuccessStatusCode();
-
-                        // Deserialize and return the response content.
-                        return await SemanticRerankResult.DeserializeSemanticRerankResultAsync(responseMessage);
+                        string responseBody = await responseMessage.Content.ReadAsStringAsync();
+                        throw new CosmosException(
+                            message: responseBody,
+                            statusCode: responseMessage.StatusCode,
+                            subStatusCode: 0,
+                            activityId: string.Empty,
+                            requestCharge: 0);
                     }
-                    catch (OperationCanceledException operationCanceledException)
-                    {
-                        // Throw if the user passed in cancellation was requested
-                        if (cancellationToken.IsCancellationRequested)
-                        {
-                            throw;
-                        }
 
-                        // Convert OperationCanceledException to timeout exception when the HTTP client throws it
-                        bool isOutOfRetries = !timeoutEnumerator.MoveNext();
-                        if (isOutOfRetries)
-                        {
-                            string errorMessage = $"Inference Service Request Timeout. Start Time UTC:{startDateTimeUtc}; Total Duration:{(DateTime.UtcNow - startDateTimeUtc).TotalMilliseconds} Ms; Request Timeout {requestTimeout.TotalMilliseconds} Ms; Http Client Timeout:{this.httpClient.Timeout.TotalMilliseconds} Ms; Activity id: {System.Diagnostics.Trace.CorrelationManager.ActivityId};";
-                            throw CosmosExceptionFactory.CreateRequestTimeoutException(
-                                message: errorMessage,
-                                headers: new Headers()
-                                {
-                                    ActivityId = System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString()
-                                },
-                                innerException: operationCanceledException);
-                        }
-                    }
-                    catch (HttpRequestException httpRequestException)
-                    {
-                        bool isOutOfRetries = !timeoutEnumerator.MoveNext();
-                        if (isOutOfRetries)
-                        {
-                            string errorMessage = $"Inference Service Request Failed. Start Time UTC:{startDateTimeUtc}; Total Duration:{(DateTime.UtcNow - startDateTimeUtc).TotalMilliseconds} Ms; Activity id: {System.Diagnostics.Trace.CorrelationManager.ActivityId};";
-                            throw CosmosExceptionFactory.CreateServiceUnavailableException(
-                                message: errorMessage,
-                                headers: new Headers()
-                                {
-                                    ActivityId = System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString(),
-                                    SubStatusCode = SubStatusCodes.TransportGenerated503
-                                },
-                                innerException: httpRequestException);
-                        }
-                    }
-                }
+                    responseMessage.EnsureSuccessStatusCode();
 
-                if (delayForNextRequest != TimeSpan.Zero)
+                    // Deserialize and return the response content.
+                    return await SemanticRerankResult.DeserializeSemanticRerankResultAsync(responseMessage);
+                },
+                shouldRetryOnResult: null,
+                onException: (Exception exception, bool isOutOfRetries, TimeSpan requestTimeout) =>
                 {
-                    await Task.Delay(delayForNextRequest);
-                }
-            }
+                    switch (exception)
+                    {
+                        case OperationCanceledException operationCanceledException:
+                            if (isOutOfRetries)
+                            {
+                                string errorMessage = $"Inference Service Request Timeout. Start Time UTC:{startDateTimeUtc}; Total Duration:{(DateTime.UtcNow - startDateTimeUtc).TotalMilliseconds} Ms; Request Timeout {requestTimeout.TotalMilliseconds} Ms; Http Client Timeout:{this.httpClient.Timeout.TotalMilliseconds} Ms; Activity id: {System.Diagnostics.Trace.CorrelationManager.ActivityId};";
+                                throw CosmosExceptionFactory.CreateRequestTimeoutException(
+                                    message: errorMessage,
+                                    headers: new Headers()
+                                    {
+                                        ActivityId = System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString()
+                                    },
+                                    innerException: operationCanceledException);
+                            }
+
+                            break;
+                        case HttpRequestException httpRequestException:
+                            if (isOutOfRetries)
+                            {
+                                string errorMessage = $"Inference Service Request Failed. Start Time UTC:{startDateTimeUtc}; Total Duration:{(DateTime.UtcNow - startDateTimeUtc).TotalMilliseconds} Ms; Activity id: {System.Diagnostics.Trace.CorrelationManager.ActivityId};";
+                                throw CosmosExceptionFactory.CreateServiceUnavailableException(
+                                    message: errorMessage,
+                                    headers: new Headers()
+                                    {
+                                        ActivityId = System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString(),
+                                        SubStatusCode = SubStatusCodes.TransportGenerated503
+                                    },
+                                    innerException: httpRequestException);
+                            }
+
+                            break;
+                        default:
+                            ExceptionDispatchInfo.Capture(exception).Throw();
+                            break;
+                    }
+                });
         }
 
         /// <summary>
