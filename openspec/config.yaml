@@ -1,0 +1,48 @@
+schema: spec-driven
+
+# Project context
+# This is shown to AI when creating artifacts.
+context: |
+  This is the Azure Cosmos DB .NET v3 SDK — a thick client SDK for Azure Cosmos DB.
+  Tech stack: C#, .NET 6+, NuGet packaging, Azure Pipelines CI.
+  
+  Key architecture layers:
+  - Public APIs (CosmosClient, Container, Database)
+  - Handler pipeline (chain-of-responsibility pattern for request processing)
+  - Retry policies (cross-region, throttle, PPAF, timeout)
+  - Transport (Gateway HTTP mode, Direct TCP mode)
+  - Serialization (Newtonsoft JSON.NET default, System.Text.Json optional)
+  
+  Conventions:
+  - Follow Azure SDK .NET guidelines where compatible with v3 API
+  - Public contract changes require API review
+  - All public APIs must support unit testing and mocking
+  - Request options should not be sealed
+  - Feature/preview builds gated by MSBuild properties (IsPreview, IsNightly)
+  - Strong-name signed assemblies
+  - Existing design docs live in docs/ — specs should reference them, not duplicate
+  
+  Testing:
+  - Unit tests: Microsoft.Azure.Cosmos.Tests (no external dependencies)
+  - Integration tests: Microsoft.Azure.Cosmos.EmulatorTests (requires Cosmos DB Emulator)
+  - Performance tests: Microsoft.Azure.Cosmos.Performance.Tests (micro benchmarks)
+
+# Per-artifact rules
+rules:
+  proposal:
+    - Reference existing design docs in docs/ when applicable
+    - Include backward compatibility impact analysis
+    - Consider both Gateway and Direct mode implications
+  specs:
+    - Capture behavioral contracts and invariants, not implementation details
+    - Include error handling and edge cases
+    - Document public API surface with usage examples
+    - Note differences between GA and Preview behavior where applicable
+  design:
+    - Reference key source files and classes by path
+    - Use mermaid diagrams for architectural flows (consistent with docs/SdkDesign.md)
+    - Consider thread safety and async patterns
+  tasks:
+    - Keep tasks focused and independently testable
+    - Include test requirements (unit and/or emulator tests)
+    - Note if changes affect public API contract

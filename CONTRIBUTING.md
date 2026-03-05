@@ -93,6 +93,7 @@ When evaluating adding new tests, please search in the existing test files if th
 
 1. Create a branch for your contribution (if you are an external contributor, on your own fork).
 1. Make sure your work is adding [tests](#tests) as required (either unit and/or emulator tests depending on the scope of the work).
+1. If your change affects behavior covered by an [OpenSpec spec](#spec-driven-development), update the relevant spec alongside your code changes.
 1. Send a Pull Request to the master branch once your work is ready to be reviewed.
 1. The CI pipeline will start any required tests. If you are an external contributor, a team member will start the verification once we confirm the nature of the contribution through a `/azp run` comment in your Pull Request.
 1. Look for review comments and attempt to answer/address them to the best of your ability.
@@ -136,3 +137,11 @@ Or all through `Re-run failed checks` on the top right corner:
 - [General .NET SDK Troubleshooting](https://docs.microsoft.com/azure/cosmos-db/sql/troubleshoot-dot-net-sdk)
 - [Timeout troubleshooting](https://docs.microsoft.com/azure/cosmos-db/sql/troubleshoot-dot-net-sdk-request-timeout?tabs=cpu-new)
 - [Service unavailable troubleshooting](https://docs.microsoft.com/azure/cosmos-db/sql/troubleshoot-service-unavailable)
+
+## Spec-Driven Development
+
+This repository uses [OpenSpec](https://github.com/openspec-dev/openspec) for spec-driven development. Behavioral specifications for major SDK feature areas live in `openspec/specs/`.
+
+When contributing changes that affect documented behavior, check if an existing spec covers the area and update it as part of your PR. For new features or significant changes, consider using the OpenSpec workflow to propose, design, and implement changes with AI assistance.
+
+See [`openspec/README.md`](openspec/README.md) for the full developer guide, workflow instructions, and best practices.
