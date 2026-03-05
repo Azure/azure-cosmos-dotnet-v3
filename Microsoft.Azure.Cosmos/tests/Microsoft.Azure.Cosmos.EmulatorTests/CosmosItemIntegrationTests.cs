@@ -1724,10 +1724,10 @@
 
                 traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
 
-                Assert.IsNotNull(hedgeContext);
-                List<string> hedgedRegions = ((IEnumerable<string>)hedgeContext).ToList();
-
-                Assert.IsTrue(hedgedRegions.Count >= 1, "Since the first region is not available, the request should atleast hedge to the next region.");
+                // When PPAF is enabled, the primary request handles failover internally
+                // (retrying to another region at the transport layer). No cross-region
+                // hedging occurs, so HedgeContext should be absent.
+                Assert.IsNull(hedgeContext);
                 Assert.IsTrue(cosmosClient.DocumentClient.PartitionKeyRangeLocation.IsPartitionLevelAutomaticFailoverEnabled());
 
                 // Disable PPAF At the Gateway Layer.
