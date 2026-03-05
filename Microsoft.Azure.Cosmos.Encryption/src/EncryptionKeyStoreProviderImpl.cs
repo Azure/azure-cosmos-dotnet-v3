@@ -5,8 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
-    using System.Threading;
-    using System.Threading.Tasks;
     using global::Azure.Core.Cryptography;
     using Microsoft.Data.Encryption.Cryptography;
 
@@ -37,11 +35,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
         public override string ProviderName { get; }
-
-        /// <summary>
-        /// Gets the key encryption key resolver for use by derived classes.
-        /// </summary>
-        internal IKeyEncryptionKeyResolver KeyEncryptionKeyResolver => this.keyEncryptionKeyResolver;
 
         public override byte[] UnwrapKey(string encryptionKeyId, KeyEncryptionKeyAlgorithm algorithm, byte[] encryptedKey)
         {
@@ -81,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             throw new NotSupportedException("The Verify operation is not supported.");
         }
 
-        internal static string GetNameForKeyEncryptionKeyAlgorithm(KeyEncryptionKeyAlgorithm algorithm)
+        private static string GetNameForKeyEncryptionKeyAlgorithm(KeyEncryptionKeyAlgorithm algorithm)
         {
             if (algorithm == KeyEncryptionKeyAlgorithm.RSA_OAEP)
             {
@@ -89,26 +82,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             throw new InvalidOperationException(string.Format("Unexpected algorithm {0}", algorithm));
-        }
-
-        /// <summary>
-        /// No-op in the base implementation. Overridden in <see cref="CachingEncryptionKeyStoreProviderImpl"/>
-        /// to asynchronously pre-warm the unwrapped-key cache.
-        /// </summary>
-        internal virtual Task PrefetchUnwrapKeyAsync(
-            string encryptionKeyId,
-            byte[] encryptedKey,
-            CancellationToken cancellationToken)
-        {
-            return Task.CompletedTask;
-        }
-
-        /// <summary>
-        /// No-op in the base implementation. Overridden in <see cref="CachingEncryptionKeyStoreProviderImpl"/>
-        /// to cancel background tasks and release resources.
-        /// </summary>
-        internal virtual void Cleanup()
-        {
         }
     }
 }
