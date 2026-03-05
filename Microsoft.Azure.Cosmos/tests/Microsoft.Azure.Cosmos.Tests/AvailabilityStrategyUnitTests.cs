@@ -281,8 +281,8 @@
         {
             // Arrange
             CrossRegionHedgingAvailabilityStrategy availabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
-                threshold: TimeSpan.FromMilliseconds(10),
-                thresholdStep: TimeSpan.FromMilliseconds(10));
+                threshold: TimeSpan.FromMilliseconds(100),
+                thresholdStep: TimeSpan.FromMilliseconds(100));
 
             using RequestMessage request = CreateReadRequest();
             using CosmosClient mockCosmosClient = CreateMockClientWithRegions(3);
@@ -296,19 +296,16 @@
 
                 if (callNumber == 1)
                 {
-                    // First request: cancel the app token after a brief delay
+                    // First request: cancel the app token immediately
                     // This simulates an e2e timeout scenario
-                    _ = Task.Delay(15).ContinueWith(_ => appCts.Cancel());
+                    appCts.Cancel();
+                }
 
-                    // Then wait - this will be cancelled
-                    try
-                    {
-                        await Task.Delay(TimeSpan.FromSeconds(30), ct);
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        throw;
-                    }
+                // All requests block deterministically until cancelled via the token
+                TaskCompletionSource<ResponseMessage> tcs = new TaskCompletionSource<ResponseMessage>();
+                using (ct.Register(() => tcs.TrySetCanceled(ct)))
+                {
+                    await tcs.Task;
                 }
 
                 return new ResponseMessage(HttpStatusCode.OK);

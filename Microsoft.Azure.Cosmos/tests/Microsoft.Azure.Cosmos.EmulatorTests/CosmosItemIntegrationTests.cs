@@ -798,7 +798,7 @@
                 await this.TryCreateItems(itemsList);
 
                 //Must Ensure the data is replicated to all regions
-                await Task.Delay(3000);
+                await Task.Delay(5000);
 
                 bool isRegion1Available = true;
                 bool isRegion2Available = true;
@@ -1061,7 +1061,7 @@
                 await this.TryCreateItems(itemsList);
 
                 //Must Ensure the data is replicated to all regions
-                await Task.Delay(3000);
+                await Task.Delay(5000);
 
                 int consecutiveFailureCount = 10;
                 for (int attemptCount = 1; attemptCount <= consecutiveFailureCount; attemptCount++)
