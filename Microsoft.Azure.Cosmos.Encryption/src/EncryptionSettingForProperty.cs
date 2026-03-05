@@ -22,6 +22,20 @@ namespace Microsoft.Azure.Cosmos.Encryption
         // through InternalsVisibleTo.
         private readonly Microsoft.Data.Encryption.Cryptography.AeadAes256CbcHmac256EncryptionAlgorithm injectedAlgorithm;
 
+        // Cached encryption algorithm to avoid repeated semaphore acquisition per property per document.
+        // The underlying ProtectedDataEncryptionKey has its own TTL (default 2hrs) managed by MDE's LocalCache.
+        // We cache at this level to eliminate the amplification problem: without this cache,
+        // BuildEncryptionAlgorithmForSettingAsync acquires the global semaphore once per encrypted
+        // property leaf per document per page. With this cache, it's once per key per TTL period.
+        //
+        // Thread-safety note: these fields are read/written by concurrent async tasks without a lock.
+        // The worst-case race is that a thread reads a stale null/expired value and falls through to
+        // the semaphore path — one redundant cache build, no correctness issue. Using volatile to
+        // prevent the JIT from caching stale register copies across await boundaries.
+        // DateTime cannot be volatile (struct > pointer size), so we store expiry as ticks (long).
+        private volatile AeadAes256CbcHmac256EncryptionAlgorithm cachedEncryptionAlgorithm;
+        private long cachedAlgorithmExpiryTicks;
+
         public EncryptionSettingForProperty(
             string clientEncryptionKeyId,
             Data.Encryption.Cryptography.EncryptionType encryptionType,
@@ -58,6 +72,19 @@ namespace Microsoft.Azure.Cosmos.Encryption
             if (this.injectedAlgorithm != null)
             {
                 return this.injectedAlgorithm;
+            }
+
+            // Return cached algorithm if still valid and algorithm caching is enabled.
+            // This eliminates the per-property semaphore acquisition that causes
+            // contention under concurrent decryption.  Gated by
+            // AZURE_COSMOS_ENCRYPTION_ALGORITHM_CACHING_ENABLED (default: off).
+            if (this.encryptionContainer.EncryptionCosmosClient.EnableAlgorithmCaching)
+            {
+                AeadAes256CbcHmac256EncryptionAlgorithm cached = this.cachedEncryptionAlgorithm;
+                if (cached != null && DateTime.UtcNow.Ticks < Interlocked.Read(ref this.cachedAlgorithmExpiryTicks))
+                {
+                    return cached;
+                }
             }
 
             ClientEncryptionKeyProperties clientEncryptionKeyProperties = await this.encryptionContainer.EncryptionCosmosClient.GetClientEncryptionKeyPropertiesAsync(
@@ -114,6 +141,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
             AeadAes256CbcHmac256EncryptionAlgorithm aeadAes256CbcHmac256EncryptionAlgorithm = new AeadAes256CbcHmac256EncryptionAlgorithm(
                    protectedDataEncryptionKey,
                    this.EncryptionType);
+
+            // Cache the algorithm so subsequent calls for this property skip the semaphore entirely.
+            // Use the same TTL as ProtectedDataEncryptionKey (defaults to 2hrs).
+            // Only active when AZURE_COSMOS_ENCRYPTION_ALGORITHM_CACHING_ENABLED is set.
+            if (this.encryptionContainer.EncryptionCosmosClient.EnableAlgorithmCaching)
+            {
+                this.cachedEncryptionAlgorithm = aeadAes256CbcHmac256EncryptionAlgorithm;
+                Interlocked.Exchange(ref this.cachedAlgorithmExpiryTicks, DateTime.UtcNow.Add(ProtectedDataEncryptionKey.TimeToLive).Ticks);
+            }
 
             return aeadAes256CbcHmac256EncryptionAlgorithm;
         }
@@ -178,6 +214,29 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string keyId,
             CancellationToken cancellationToken)
         {
+            // Pre-warm the unwrap key cache asynchronously, BEFORE acquiring the global
+            // semaphore.  Only active when AZURE_COSMOS_ENCRYPTION_KEY_PREFETCH_ENABLED
+            // is set on EncryptionKeyStoreProviderImpl (checked internally by PrefetchUnwrapKeyAsync).
+            // When ProtectedDataEncryptionKey's constructor later calls UnwrapKey (sync,
+            // inside the semaphore), it will find a warm prefetch cache and return
+            // instantly — no Key Vault I/O under the lock.
+            // Best-effort: if prefetch fails, the sync fallback inside UnwrapKey handles
+            // it, and the L2 PDEK cache may avoid the unwrap call entirely.
+            try
+            {
+                await this.encryptionContainer.EncryptionCosmosClient.EncryptionKeyStoreProviderImpl
+                    .PrefetchUnwrapKeyAsync(
+                        clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Value,
+                        clientEncryptionKeyProperties.WrappedDataEncryptionKey,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            catch (Exception ex) when (!(ex is OperationCanceledException))
+            {
+                // Swallow non-cancellation prefetch errors — the sync path inside the
+                // semaphore will serve as fallback.
+            }
+
             if (await EncryptionCosmosClient.EncryptionKeyCacheSemaphore.WaitAsync(-1, cancellationToken))
             {
                 try
