@@ -8,7 +8,6 @@
     using System.Threading.Tasks;
     using global::Azure.Core;
     using global::Azure.Identity;
-    using Microsoft.Azure.Cosmos.FaultInjection;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.MultiRegionSetupHelpers;
 
@@ -69,8 +68,7 @@
         [TestCategory("Ignore")]
         [Timeout(70000)]
         public async Task SemanticRerankTest()
-        {
-            Database db = this.client.GetDatabase("virtualstore");
+        {            Database db = this.client.GetDatabase("virtualstore");
             Container container = db.GetContainer("sportinggoods");
 
             string search_text = "integrated pull-up bar";
@@ -118,77 +116,6 @@
             Assert.AreEqual(4, results.RerankScores[0].Index);
             Assert.IsNotNull(results.Latency);
             Assert.IsNotNull(results.TokenUseage);
-        }
-
-        [TestMethod]
-        [TestCategory("Ignore")]
-        [Timeout(70000)]
-        public async Task SemanticRerankTimeoutFaultInjectionTest()
-        {
-            // Create a fault injection rule with a delay greater than the default inference timeout (5 seconds)
-            string timeoutRuleId = "inferenceTimeoutRule-" + Guid.NewGuid().ToString();
-            FaultInjectionRule timeoutRule = new FaultInjectionRuleBuilder(
-                id: timeoutRuleId,
-                condition:
-                    new FaultInjectionConditionBuilder()
-                        .Build(),
-                result:
-                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
-                        .WithDelay(TimeSpan.FromSeconds(10))
-                        .Build())
-                .WithDuration(TimeSpan.FromMinutes(5))
-                .Build();
-
-            List<FaultInjectionRule> rules = new List<FaultInjectionRule> { timeoutRule };
-            FaultInjector faultInjector = new FaultInjector(rules);
-
-            JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions()
-            {
-                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-            };
-
-            CosmosSystemTextJsonSerializer cosmosSystemTextJsonSerializer = 
-                new MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer(jsonSerializerOptions);
-
-            CosmosClientOptions clientOptions = new CosmosClientOptions()
-            {
-                Serializer = cosmosSystemTextJsonSerializer,
-                InferenceRequestTimeout = TimeSpan.FromSeconds(5)
-            };
-
-            using (CosmosClient faultInjectionClient = new CosmosClient(
-                accountEndpoint: this.connectionString,
-                tokenCredential: this.tokenCredential,
-                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
-            {
-                Database db = faultInjectionClient.GetDatabase("virtualstore");
-                Container container = db.GetContainer("sportinggoods");
-
-                List<string> documents = new List<string>
-                {
-                    "{\"id\":\"1\",\"text\":\"document 1\"}",
-                    "{\"id\":\"2\",\"text\":\"document 2\"}"
-                };
-
-                string rerankingContext = "test context";
-
-                await container.ReadContainerAsync();
-                // Enable the fault injection rule
-                timeoutRule.Enable();
-
-                // Verify that a CosmosException with request timeout is thrown
-                CosmosException cosmosException = await Assert.ThrowsExceptionAsync<CosmosException>(
-                    async () => await container.SemanticRerankAsync(
-                        rerankingContext,
-                        documents));
-
-                // Verify it's a timeout exception (status code 408)
-                Assert.AreEqual(System.Net.HttpStatusCode.RequestTimeout, cosmosException.StatusCode);
-                Assert.IsTrue(cosmosException.Message.Contains("Inference Service Request Timeout"));
-
-                // Disable the rule after test
-                timeoutRule.Disable();
-            }
         }
 #endif
     }

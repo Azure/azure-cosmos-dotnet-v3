@@ -37,7 +37,6 @@ namespace Microsoft.Azure.Cosmos
         private readonly Uri inferenceEndpoint;
         private readonly TimeSpan inferenceRequestTimeout;
         private readonly HttpTimeoutPolicy inferenceTimeoutPolicy;
-        private readonly InferenceFaultInjector faultInjector;
 
         private HttpClient httpClient;
         private AuthorizationTokenProvider cosmosAuthorization;
@@ -68,9 +67,6 @@ namespace Microsoft.Azure.Cosmos
             // Create timeout policy for inference requests
             this.inferenceTimeoutPolicy = HttpTimeoutInferencePolicy.Create(this.inferenceRequestTimeout);
 
-            // Create fault injector adapter if chaos interceptor is available
-            var chaosInterceptor = client.DocumentClient.ChaosInterceptor;
-
             // Create and configure HttpClient for inference requests.
             HttpMessageHandler httpMessageHandler = CosmosHttpClientCore.CreateHttpClientHandler(
                         gatewayModeMaxConnectionLimit: this.inferenceServiceMaxConnectionLimit,
@@ -83,11 +79,6 @@ namespace Microsoft.Azure.Cosmos
 
             // Construct the inference service endpoint URI.
             this.inferenceEndpoint = new Uri($"{this.inferenceServiceBaseUrl}/{basePath}");
-
-            // Create fault injector adapter now that endpoint is available
-            this.faultInjector = chaosInterceptor != null
-                ? new InferenceFaultInjector(chaosInterceptor, this.inferenceEndpoint)
-                : null;
 
             // Ensure AAD authentication is used.
             if (client.DocumentClient.cosmosAuthorization.GetType() != typeof(AuthorizationTokenProviderTokenCredential))
@@ -174,30 +165,8 @@ namespace Microsoft.Azure.Cosmos
 
                     try
                     {
-                        // Inject faults for testing if fault injector is configured
-                        if (this.faultInjector != null)
-                        {
-                            (bool hasFault, HttpResponseMessage fiResponseMessage) = await this.faultInjector.TryInjectFaultAsync(
-                                cancellationTokenSource,
-                                additionalHeaders,
-                                message);
-                            if (hasFault)
-                            {
-                                fiResponseMessage.EnsureSuccessStatusCode();
-                                return await SemanticRerankResult.DeserializeSemanticRerankResultAsync(fiResponseMessage);
-                            }
-                        }
-
                         // Send the request and check for success.
-                        HttpResponseMessage responseMessage = await this.httpClient.SendAsync(message, cancellationToken);
-
-                        // Execute post-response fault injection if fault injector is configured
-                        if (this.faultInjector != null)
-                        {
-                            CancellationToken fiToken = cancellationTokenSource.Token;
-                            fiToken.ThrowIfCancellationRequested();
-                            await this.faultInjector.TryInjectResponseDelayAsync(additionalHeaders, fiToken);
-                        }
+                        HttpResponseMessage responseMessage = await this.httpClient.SendAsync(message, cancellationTokenSource.Token);
 
                         if (!responseMessage.IsSuccessStatusCode)
                         {

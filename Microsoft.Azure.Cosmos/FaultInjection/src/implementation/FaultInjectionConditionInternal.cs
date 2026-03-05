@@ -205,8 +205,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             {
                 bool isApplicable = this.regionEndpoints.Any(uri =>
                     request.RequestContext.LocationEndpointToRoute.Host
-                    .StartsWith(uri.Host))
-                    ||request.RequestContext.LocationEndpointToRoute.AbsoluteUri.Contains(".dbinference.azure.com");
+                    .StartsWith(uri.Host));
 
                 return isApplicable;
             }
