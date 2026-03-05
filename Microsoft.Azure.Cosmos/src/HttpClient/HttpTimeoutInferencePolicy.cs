@@ -11,17 +11,17 @@ namespace Microsoft.Azure.Cosmos
     /// Timeout policy for inference service requests without retry on timeout.
     /// This policy allows for future expansion including handling errors and cross-regional retries.
     /// </summary>
-    internal sealed class HttpTimeoutPolicyInference : HttpTimeoutPolicy
+    internal sealed class HttpTimeoutInferencePolicy : HttpTimeoutPolicy
     {
-        private static readonly string Name = nameof(HttpTimeoutPolicyInference);
+        private static readonly string Name = nameof(HttpTimeoutInferencePolicy);
         private readonly IReadOnlyList<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> timeoutsAndDelays;
 
         /// <summary>
         /// Creates an instance with default timeout of 5 seconds and no retries.
         /// </summary>
-        public static readonly HttpTimeoutPolicyInference InstanceDefault = new HttpTimeoutPolicyInference(TimeSpan.FromSeconds(5));
+        public static readonly HttpTimeoutInferencePolicy InstanceDefault = new HttpTimeoutInferencePolicy(TimeSpan.FromSeconds(5));
 
-        private HttpTimeoutPolicyInference(TimeSpan requestTimeout)
+        private HttpTimeoutInferencePolicy(TimeSpan requestTimeout)
         {
             // No retries on timeout - single attempt only
             this.timeoutsAndDelays = new List<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)>()
@@ -34,13 +34,13 @@ namespace Microsoft.Azure.Cosmos
         /// Creates a custom timeout policy for inference service with the specified timeout.
         /// </summary>
         /// <param name="requestTimeout">The timeout to use for each request attempt.</param>
-        /// <returns>A new HttpTimeoutPolicyInference instance.</returns>
-        public static HttpTimeoutPolicyInference Create(TimeSpan requestTimeout)
+        /// <returns>A new HttpTimeoutInferencePolicy instance.</returns>
+        public static HttpTimeoutInferencePolicy Create(TimeSpan requestTimeout)
         {
-            return new HttpTimeoutPolicyInference(requestTimeout);
+            return new HttpTimeoutInferencePolicy(requestTimeout);
         }
 
-        public override string TimeoutPolicyName => HttpTimeoutPolicyInference.Name;
+        public override string TimeoutPolicyName => HttpTimeoutInferencePolicy.Name;
 
         public override int TotalRetryCount => this.timeoutsAndDelays.Count;
 

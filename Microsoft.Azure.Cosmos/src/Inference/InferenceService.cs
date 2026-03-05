@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos
             this.inferenceRequestTimeout = client.ClientOptions?.InferenceRequestTimeout ?? TimeSpan.FromSeconds(5);
 
             // Create timeout policy for inference requests
-            this.inferenceTimeoutPolicy = HttpTimeoutPolicyInference.Create(this.inferenceRequestTimeout);
+            this.inferenceTimeoutPolicy = HttpTimeoutInferencePolicy.Create(this.inferenceRequestTimeout);
 
             // Get fault injection interceptor if available from the DocumentClient
             this.chaosInterceptor = client.DocumentClient.ChaosInterceptor;
@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos
         internal InferenceService(HttpMessageHandler messageHandler, Uri inferenceEndpoint, AuthorizationTokenProvider cosmosAuthorization)
         {
             this.inferenceRequestTimeout = TimeSpan.FromSeconds(5);
-            this.inferenceTimeoutPolicy = HttpTimeoutPolicyInference.Create(this.inferenceRequestTimeout);
+            this.inferenceTimeoutPolicy = HttpTimeoutInferencePolicy.Create(this.inferenceRequestTimeout);
             this.httpClient = new HttpClient(messageHandler);
             this.CreateClientHelper(this.httpClient);
             this.inferenceEndpoint = inferenceEndpoint;
