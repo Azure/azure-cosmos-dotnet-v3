@@ -524,6 +524,11 @@ namespace Microsoft.Azure.Cosmos.Routing
             return this.locationCache.GetApplicableRegions(excludeRegions, isReadRequest);
         }
 
+        public ReadOnlyCollection<string> GetApplicableAccountLevelReadRegions(IEnumerable<string> excludeRegions)
+        {
+            return this.locationCache.GetApplicableAccountLevelReadRegions(excludeRegions);
+        }
+
         public bool TryGetLocationForGatewayDiagnostics(Uri endpoint, out string regionName)
         {
             return this.locationCache.TryGetLocationForGatewayDiagnostics(endpoint, out regionName);

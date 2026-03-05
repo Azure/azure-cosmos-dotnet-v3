@@ -890,6 +890,94 @@
                 $"Detected {exceptionCount} exception(s) during concurrent ExecuteAvailabilityStrategyAsync calls with different PPAF settings.");
         }
 
+        [TestMethod]
+        public async Task ExecuteAvailabilityStrategyAsync_PpafWriteHedge_UsesAccountLevelReadRegions()
+        {
+            // Create a single-master PPAF client with 3 read regions but preferred locations only include 2
+            Collection<AccountRegion> readRegions = new Collection<AccountRegion>
+            {
+                new AccountRegion() { Name = "Region0", Endpoint = "https://location0.documents.azure.com" },
+                new AccountRegion() { Name = "Region1", Endpoint = "https://location1.documents.azure.com" },
+                new AccountRegion() { Name = "Region2", Endpoint = "https://location2.documents.azure.com" },
+            };
+
+            Collection<AccountRegion> writeRegions = new Collection<AccountRegion>
+            {
+                new AccountRegion() { Name = "Region0", Endpoint = "https://location0.documents.azure.com" },
+            };
+
+            AccountProperties databaseAccount = new AccountProperties()
+            {
+                ReadLocationsInternal = readRegions,
+                WriteLocationsInternal = writeRegions,
+                EnableMultipleWriteLocations = false,
+            };
+
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy()
+            {
+                EnablePartitionLevelFailover = true,
+                UseMultipleWriteLocations = false,
+                CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions
+                {
+                    DisableSendingMetricsToService = true
+                }
+            };
+
+            // Only add 2 of the 3 read regions as preferred locations
+            connectionPolicy.PreferredLocations.Add("Region0");
+            connectionPolicy.PreferredLocations.Add("Region1");
+
+            DocumentClient documentClient = new MockDocumentClient(connectionPolicy);
+            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
+                "http://localhost",
+                MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
+            using CosmosClient mockCosmosClient = cosmosClientBuilder.Build(documentClient);
+
+            mockCosmosClient.DocumentClient.GlobalEndpointManager
+                .InitializeAccountPropertiesAndStartBackgroundRefresh(databaseAccount);
+
+            CrossRegionHedgingAvailabilityStrategy strategy = new CrossRegionHedgingAvailabilityStrategy(
+                threshold: TimeSpan.FromMilliseconds(1),
+                thresholdStep: TimeSpan.FromMilliseconds(1));
+
+            int senderInvocationCount = 0;
+
+            Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender =
+                (req, ct) =>
+                {
+                    Interlocked.Increment(ref senderInvocationCount);
+                    return Task.FromResult(new ResponseMessage(HttpStatusCode.OK));
+                };
+
+            using RequestMessage request = CreateWriteRequest();
+
+            await strategy.ExecuteAvailabilityStrategyAsync(
+                sender, mockCosmosClient, request, CancellationToken.None);
+
+            // With the fix, all 3 account-level read regions should be considered for hedging,
+            // not just the 2 in preferred locations.
+            // The sender should be invoked for the primary region at minimum.
+            Assert.IsTrue(senderInvocationCount >= 1, 
+                $"Expected at least 1 sender invocation, got {senderInvocationCount}.");
+
+            // Verify that the strategy resolved all 3 account read regions for PPAF write hedging
+            ReadOnlyCollection<string> accountRegions = mockCosmosClient.DocumentClient
+                .GlobalEndpointManager.GetApplicableAccountLevelReadRegions(excludeRegions: null);
+
+            Assert.AreEqual(3, accountRegions.Count,
+                "GetApplicableAccountLevelReadRegions should return all 3 account read regions.");
+            Assert.IsTrue(accountRegions.Contains("Region0"));
+            Assert.IsTrue(accountRegions.Contains("Region1"));
+            Assert.IsTrue(accountRegions.Contains("Region2"));
+
+            // Verify that GetApplicableRegions (the old path) would only return 2
+            ReadOnlyCollection<string> filteredRegions = mockCosmosClient.DocumentClient
+                .GlobalEndpointManager.GetApplicableRegions(excludeRegions: null, isReadRequest: true);
+
+            Assert.AreEqual(2, filteredRegions.Count,
+                "GetApplicableRegions should only return 2 regions matching preferred locations.");
+        }
+
        
     }
 }

@@ -157,10 +157,17 @@ namespace Microsoft.Azure.Cosmos
                     ? null
                     : await StreamExtension.AsClonableStreamAsync(request.Content)))
                 {
-                    IReadOnlyCollection<string> hedgeRegions = client.DocumentClient.GlobalEndpointManager
-                        .GetApplicableRegions(
-                            request.RequestOptions?.ExcludeRegions,
-                            this.ppafEnabled || OperationTypeExtensions.IsReadOperation(request.OperationType));
+                    bool isReadRequest = OperationTypeExtensions.IsReadOperation(request.OperationType);
+
+                    // For PPAF write hedging, use all account-level read regions (consistent with
+                    // GlobalPartitionEndpointManagerCore's use of AccountReadEndpoints for PPAF failover).
+                    // GetApplicableRegions filters through EffectivePreferredLocations, which could
+                    // drop valid hedge targets not in the user's PreferredLocations.
+                    IReadOnlyCollection<string> hedgeRegions = this.ppafEnabled && !isReadRequest
+                        ? client.DocumentClient.GlobalEndpointManager
+                            .GetApplicableAccountLevelReadRegions(request.RequestOptions?.ExcludeRegions)
+                        : client.DocumentClient.GlobalEndpointManager
+                            .GetApplicableRegions(request.RequestOptions?.ExcludeRegions, isReadRequest);
 
                     List<Task> requestTasks = new List<Task>(hedgeRegions.Count + 1);
 
