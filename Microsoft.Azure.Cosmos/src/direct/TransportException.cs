@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Documents
             string sourceDescription,
             bool userPayload,
             bool payloadSent) :
-            base(TransportException.LoadMessage(errorCode), innerException)
+            base($"{errorCode}", innerException)
         {
             this.Timestamp = DateTime.UtcNow;
             this.ErrorCode = errorCode;

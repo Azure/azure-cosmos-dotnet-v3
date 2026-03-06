@@ -113,7 +113,7 @@ namespace Microsoft.Azure.Documents
             SubStatusCodes? substatusCode = null,
             bool traceCallStack = false,
             bool rawErrorMessageOnly = false)
-            : base(DocumentClientException.MessageWithActivityId(message, responseHeaders), innerException)
+            : base($"{message}, {responseHeaders}", innerException)
         {
             this.responseHeaders = new StoreResponseNameValueCollection();
             this.StatusCode = statusCode;

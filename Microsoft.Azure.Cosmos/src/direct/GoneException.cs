@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Documents
                         base.Message,
                         this.LocalIp);
                 }
-                return base.Message;
+                return "Gone Exception";
             }
         }
 

@@ -82,9 +82,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 else
                 {
                     ex = new GoneException(
-                        string.Format(CultureInfo.CurrentUICulture,
-                            RMResources.ExceptionMessage,
-                            RMResources.Gone),
+                        "Gone",
                         inner,
                         SubStatusCodes.TransportGenerated410,
                         targetAddress);
@@ -216,6 +214,22 @@ namespace Microsoft.Azure.Documents.Rntbd
                 targetAddress);
             exception.Headers.Add(HttpConstants.HttpHeaders.RequestValidationFailure, "1");
             return exception;
+        }
+
+        internal static ServiceUnavailableException GetDnsResolutionFailedException(
+            Uri targetAddress,
+            Guid activityId,
+            Exception inner)
+        {
+            Trace.CorrelationManager.ActivityId = activityId;
+            ServiceUnavailableException dnsException = ServiceUnavailableException.Create(
+                SubStatusCodes.YashException,
+                innerException: inner,
+                requestUri: targetAddress);
+
+            dnsException.Headers.Add(HttpConstants.HttpHeaders.ActivityId, activityId.ToString());
+            dnsException.Headers.Add(HttpConstants.HttpHeaders.RequestValidationFailure, "1");
+            return dnsException;
         }
     }
 }

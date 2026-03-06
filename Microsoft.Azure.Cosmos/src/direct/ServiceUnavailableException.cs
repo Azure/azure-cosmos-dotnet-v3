@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Documents
         public static ServiceUnavailableException Create(SubStatusCodes? subStatusCode, Exception innerException = null, HttpResponseHeaders headers = null, Uri requestUri = null)
         {
             subStatusCode ??= GetSubStatus(headers);
-            return new ServiceUnavailableException(GetExceptionMessage(subStatusCode), innerException, headers, subStatusCode);
+            return new ServiceUnavailableException($"{subStatusCode}", innerException, headers, subStatusCode);
         }
 
         public static ServiceUnavailableException Create(INameValueCollection headers, SubStatusCodes? subStatusCode, Uri requestUri = null)

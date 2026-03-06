@@ -133,7 +133,7 @@ namespace Microsoft.Azure.Documents
                 storeResponse = retryPolicy != null
                     ? await BackoffRetryUtility<StoreResponse>.ExecuteAsync(() => this.replicatedResourceClient.InvokeAsync(request, cancellationToken), retryPolicy, cancellationToken)
                     : await this.replicatedResourceClient.InvokeAsync(request, cancellationToken);
-            }
+                }
             catch (DocumentClientException exception)
             {
                 if(request.RequestContext.ClientRequestStatistics != null)

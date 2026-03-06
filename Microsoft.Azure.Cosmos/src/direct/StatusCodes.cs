@@ -424,6 +424,8 @@ namespace Microsoft.Azure.Documents
         Channel_Closed = 20006,
         MalformedContinuationToken = 20007,
         // EndToEndOperationCancelled = 20008 - cancellation by e2e retry policy - currently only applicable in Java
+        DnsResolutionFailed = 20009,
+        YashException = 20010,
 
         // SubStatusCodes for Client generated 500 -currently only applicable in java
         // MISSING_PARTITION_KEY_RANGE_ID_IN_CONTEXT = 20902;

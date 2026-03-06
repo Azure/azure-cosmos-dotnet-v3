@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class ClientRetryPolicy : IDocumentClientRetryPolicy
     {
         private const int RetryIntervalInMS = 1000; // Once we detect failover wait for 1 second before retrying request.
-        private const int MaxRetryCount = 120;
+        private const int MaxRetryCount = 1;
         private const int MaxServiceUnavailableRetryCount = 1;
 
         private readonly IDocumentClientRetryPolicy throttlingRetry;

@@ -163,6 +163,10 @@ namespace Microsoft.Azure.Documents.Rntbd
                     this.TestOnInitializeComplete?.Invoke();
                 });
             }
+            catch (Exception e)
+            {
+                DefaultTrace.TraceInformation("------------------------------Exception had happened---------------------------- {0}", e.Message);
+            }
             finally
             {
                 this.stateLock.ExitWriteLock();
@@ -242,7 +246,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 Debug.Assert(TransportException.IsTimeout(timeoutCode));
                 this.dispatcher.CancelCallAndNotifyConnectionOnTimeoutEvent(callArguments.PreparedCall, request.IsReadOnlyRequest);
                 Channel.HandleTaskTimeout(tasks[1], activityId, this.ConnectionCorrelationId);
-                Exception ex = completedTask.Exception?.InnerException;
+                Exception ex = tasks[1].Exception?.InnerException ?? completedTask.Exception?.InnerException;
                 DefaultTrace.TraceWarning("[RNTBD Channel {0}] RNTBD call timed out on channel {1}. Error: {2}",
                     this.ConnectionCorrelationId, this, timeoutCode);
                 Debug.Assert(callArguments.CommonArguments.UserPayload);
@@ -375,6 +379,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             bool slimAcquired = false;
             try
             {
+                
                 if (this.chaosInterceptor != null)
                 {
                     await onChannelOpen?.Invoke(activityId, this.ConnectionCorrelationId, this.serverUri, this);
@@ -431,15 +436,15 @@ namespace Microsoft.Azure.Documents.Rntbd
                             tasks[1],
                             this.openArguments.CommonArguments.ActivityId,
                             this.ConnectionCorrelationId);
-                        Exception ex = completedTask.Exception?.InnerException;
+                        Exception ex = tasks[1].Exception?.InnerException ?? completedTask.Exception?.InnerException;
                         DefaultTrace.TraceWarning(
                             "[RNTBD Channel {0}] RNTBD open timed out on channel {1}. Error: {2}",
                             this.ConnectionCorrelationId, this, timeoutCode);
                         Debug.Assert(!this.openArguments.CommonArguments.UserPayload);
-                        throw new TransportException(
-                            timeoutCode, ex, this.openArguments.CommonArguments.ActivityId,
-                            this.serverUri, this.ToString(),
-                            this.openArguments.CommonArguments.UserPayload, payloadSent);
+                        //throw new TransportException(
+                        //    timeoutCode, ex, this.openArguments.CommonArguments.ActivityId,
+                        //    this.serverUri, this.ToString(),
+                        //    this.openArguments.CommonArguments.UserPayload, payloadSent);
                     }
                     else
                     {

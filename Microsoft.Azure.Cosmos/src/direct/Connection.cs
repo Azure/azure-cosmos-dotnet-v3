@@ -609,11 +609,23 @@ namespace Microsoft.Azure.Documents.Rntbd
 #endif
 
                 DefaultTrace.TraceInformation(
-                    "[RNTBD Connection {0}] Connection.OpenSocketAsync failed. Converting to TransportException. " +
-                    "Connection: {1}. Inner exception: {2}", this.connectionCorrelationId, this, ex.Message);
+                    "[RNTBD Connection {0}] Connection.OpenSocketAsync failed. Converting to Custom Transport Exception. " +
+                    "Connection: {1}. Inner exception: {2} errorCode: {3}", this.connectionCorrelationId, this, ex.Message, errorCode);
                 Debug.Assert(errorCode != TransportErrorCode.Unknown);
                 Debug.Assert(!args.CommonArguments.UserPayload);
                 Debug.Assert(!args.CommonArguments.PayloadSent);
+
+                if (errorCode == TransportErrorCode.DnsResolutionFailed || errorCode == TransportErrorCode.DnsResolutionTimeout)
+                {
+                    DefaultTrace.TraceInformation(
+                    "[RNTBD Connection {0}] Connection.OpenSocketAsync failed. Converting to Custom DNS Exception. " +
+                    "Connection: {1}. Inner exception: {2} errorCode: {3}", this.connectionCorrelationId, this, ex.Message, errorCode);
+                    throw TransportExceptions.GetDnsResolutionFailedException(
+                        this.serverUri,
+                        args.CommonArguments.ActivityId,
+                        ex);
+                }
+
                 throw new TransportException(errorCode, ex,
                     args.CommonArguments.ActivityId, this.serverUri,
                     this.ToString(), args.CommonArguments.UserPayload,
