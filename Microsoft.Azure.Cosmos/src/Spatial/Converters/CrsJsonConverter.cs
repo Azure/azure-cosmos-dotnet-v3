@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters
                         throw new JsonSerializationException(RMResources.SpatialFailedToDeserializeCrs);
                     }
 
-                    return new LinkedCrs(crsHref.Value<string>(), crsHrefType.Value<string>());
+                    return new LinkedCrs(crsHref.Value<string>(), crsHrefType?.Value<string>());
 
                 default:
                     throw new JsonSerializationException(RMResources.SpatialFailedToDeserializeCrs);
