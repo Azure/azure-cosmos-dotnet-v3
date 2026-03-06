@@ -42,10 +42,9 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DistributedTransactionOperationResult"/> class.
-        /// This protected constructor is intended for use by derived classes.
         /// </summary>
         [JsonConstructor]
-        protected DistributedTransactionOperationResult()
+        public DistributedTransactionOperationResult()
         {
         }
 
@@ -60,7 +59,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the HTTP status code returned by the operation.
         /// </summary>
         [JsonInclude]
-        [JsonPropertyName("statuscode")]
+        [JsonPropertyName("statusCode")]
         public virtual HttpStatusCode StatusCode { get; internal set; }
 
         /// <summary>
@@ -92,31 +91,22 @@ namespace Microsoft.Azure.Cosmos
         public virtual Stream ResourceStream { get; internal set; }
 
         /// <summary>
-        /// Used for JSON deserialization of the base64-encoded resource body.
-        /// </summary>
-        [JsonInclude]
-        [JsonPropertyName("resourcebody")]
-        internal string ResourceBodyBase64
-        {
-            get => null; // Write-only for deserialization
-            set
-            {
-                if (!string.IsNullOrEmpty(value))
-                {
-                    byte[] resourceBody = Convert.FromBase64String(value);
-                    this.ResourceStream = new MemoryStream(resourceBody, 0, resourceBody.Length, writable: false, publiclyVisible: true);
-                }
-            }
-        }
-
-        /// <summary>
         /// Request charge in request units for the operation.
         /// </summary>
+        [JsonInclude]
         [JsonPropertyName("requestCharge")]
-        internal virtual double RequestCharge { get; set; }
+        public virtual double RequestCharge { get; internal set; }
 
-        [JsonPropertyName("substatuscode")]
+        [JsonIgnore]
         internal virtual SubStatusCodes SubStatusCode { get; set; }
+
+        [JsonInclude]
+        [JsonPropertyName("subStatusCode")]
+        public virtual uint SubStatusCodeValue
+        {
+            get => (uint)this.SubStatusCode;
+            internal set => this.SubStatusCode = (SubStatusCodes)value;
+        }
 
         /// <summary>
         /// ActivityId related to the operation.
@@ -128,13 +118,34 @@ namespace Microsoft.Azure.Cosmos
         internal ITrace Trace { get; set; }
 
         /// <summary>
+        /// Gets or sets the resource body as a JSON element.
+        /// Setting this property populates <see cref="ResourceStream"/> with the serialized bytes.
+        /// </summary>
+        [JsonInclude]
+        [JsonPropertyName("resourceBody")]
+        public virtual JsonElement? ResourceBody
+        {
+            get => null;
+            internal set
+            {
+                if (value.HasValue
+                    && value.Value.ValueKind != JsonValueKind.Undefined
+                    && value.Value.ValueKind != JsonValueKind.Null)
+                {
+                    byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(value.Value);
+                    this.ResourceStream = new MemoryStream(bytes, 0, bytes.Length, writable: false, publiclyVisible: true);
+                }
+            }
+        }
+
+        /// <summary>
         /// Creates a <see cref="DistributedTransactionOperationResult"/> from a JSON element.
         /// </summary>
         /// <param name="json">The JSON element containing the operation result.</param>
         /// <returns>The deserialized operation result.</returns>
         internal static DistributedTransactionOperationResult FromJson(JsonElement json)
         {
-            return JsonSerializer.Deserialize<DistributedTransactionOperationResult>(json);
+            return JsonSerializer.Deserialize<DistributedTransactionOperationResult>(json.GetRawText());
         }
     }
 }
