@@ -1122,7 +1122,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             try
             {
-                Environment.SetEnvironmentVariable(ConfigurationManager.BypassQueryParsing, "True");
+                Environment.SetEnvironmentVariable(ConfigurationManager.BypassQueryParsing, Boolean.TrueString);
 
                 for (int i = 0; i < 5; i++)
                 {
@@ -1137,8 +1137,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 List<TestObject> createdItems = await this.CreateItemsSafeAsync(items);
                 Assert.AreEqual(5, createdItems.Count, "All items should be created");
-
-                await Task.Delay(1000);
 
                 // Execute ORDER BY query - this requires QueryPlan and EPK range conversion
                 string query = "SELECT * FROM c WHERE c.pk = @pk ORDER BY c.SortField DESC";
