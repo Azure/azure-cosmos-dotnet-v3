@@ -176,15 +176,15 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override async Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
-            string resourceUri,
-            ResourceType resourceType,
-            OperationType operationType,
-            SqlQuerySpec sqlQuerySpec,
-            PartitionKey? partitionKey,
-            string supportedQueryFeatures,
-            Guid clientQueryCorrelationId,
-            ITrace trace,
-            CancellationToken cancellationToken)
+             string resourceUri,
+             ResourceType resourceType,
+             OperationType operationType,
+             SqlQuerySpec sqlQuerySpec,
+             PartitionKey? partitionKey,
+             string supportedQueryFeatures,
+             Guid clientQueryCorrelationId,
+             ITrace trace,
+             CancellationToken cancellationToken)
         {
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
             using (ResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
@@ -209,7 +209,20 @@ namespace Microsoft.Azure.Cosmos
             {
                 // Syntax exception are argument exceptions and thrown to the user.
                 message.EnsureSuccessStatusCode();
-                partitionedQueryExecutionInfo = this.clientContext.SerializerCore.FromStream<PartitionedQueryExecutionInfo>(message.Content);
+
+                if (this.documentClient.isThinClientEnabled)
+                {
+                    ContainerProperties containerProperties = await this.clientContext.GetCachedContainerPropertiesAsync(
+                        resourceUri, trace, cancellationToken);
+
+                    partitionedQueryExecutionInfo = ThinClientQueryPlanHelper.DeserializeQueryPlanResponse(
+                        message.Content,
+                        containerProperties.PartitionKey);
+                }
+                else
+                {
+                    partitionedQueryExecutionInfo = this.clientContext.SerializerCore.FromStream<PartitionedQueryExecutionInfo>(message.Content);
+                }
             }
 
             return partitionedQueryExecutionInfo;
