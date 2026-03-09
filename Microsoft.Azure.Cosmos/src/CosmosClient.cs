@@ -7,6 +7,8 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.IO;
+    using System.Linq.Expressions;
     using System.Net;
     using System.Runtime.InteropServices;
     using System.Text;
@@ -607,11 +609,11 @@ namespace Microsoft.Azure.Cosmos
         public virtual CosmosClientOptions ClientOptions => this.ClientContext.ClientOptions;
 
         /// <summary>
-        /// The response factory used to create CosmosClient response types.
+        /// The readTransactionResponse factory used to create CosmosClient readTransactionResponse types.
         /// </summary>
         /// <remarks>
         /// This can be used for generating responses for tests, and allows users to create
-        /// a custom container that modifies the response. For example the client encryption
+        /// a custom container that modifies the readTransactionResponse. For example the client encryption
         /// uses this to decrypt responses before returning to the caller.
         /// </remarks>
         public virtual CosmosResponseFactory ResponseFactory => this.ClientContext.ResponseFactory;
@@ -675,7 +677,7 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// Database db = cosmosClient.GetDatabase("myDatabaseId");
-        /// DatabaseResponse response = await db.ReadAsync();
+        /// DatabaseResponse readTransactionResponse = await db.ReadAsync();
         /// ]]>
         /// </code>
         /// </example>
@@ -978,8 +980,8 @@ namespace Microsoft.Azure.Cosmos
         /// {
         ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         FeedResponse<DatabaseProperties> response = await feedIterator.ReadNextAsync();
-        ///         foreach (var database in response)
+        ///         FeedResponse<DatabaseProperties> readTransactionResponse = await feedIterator.ReadNextAsync();
+        ///         foreach (var database in readTransactionResponse)
         ///         {
         ///             Console.WriteLine(database);
         ///         }
@@ -1027,13 +1029,13 @@ namespace Microsoft.Azure.Cosmos
         /// {
         ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         // Stream iterator returns a response with status for errors
-        ///         using(ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///         // Stream iterator returns a readTransactionResponse with status for errors
+        ///         using(ResponseMessage readTransactionResponse = await feedIterator.ReadNextAsync())
         ///         {
         ///             // Handle failure scenario. 
-        ///             if(!response.IsSuccessStatusCode)
+        ///             if(!readTransactionResponse.IsSuccessStatusCode)
         ///             {
-        ///                 // Log the response.Diagnostics and handle the error
+        ///                 // Log the readTransactionResponse.Diagnostics and handle the error
         ///             }
         ///         }
         ///     }
@@ -1077,8 +1079,8 @@ namespace Microsoft.Azure.Cosmos
         /// {
         ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         FeedResponse<DatabaseProperties> response = await feedIterator.ReadNextAsync();
-        ///         foreach (var database in response)
+        ///         FeedResponse<DatabaseProperties> readTransactionResponse = await feedIterator.ReadNextAsync();
+        ///         foreach (var database in readTransactionResponse)
         ///         {
         ///             Console.WriteLine(database);
         ///         }
@@ -1129,13 +1131,13 @@ namespace Microsoft.Azure.Cosmos
         /// {
         ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         // Stream iterator returns a response with status for errors
-        ///         using(ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///         // Stream iterator returns a readTransactionResponse with status for errors
+        ///         using(ResponseMessage readTransactionResponse = await feedIterator.ReadNextAsync())
         ///         {
         ///             // Handle failure scenario. 
-        ///             if(!response.IsSuccessStatusCode)
+        ///             if(!readTransactionResponse.IsSuccessStatusCode)
         ///             {
-        ///                 // Log the response.Diagnostics and handle the error
+        ///                 // Log the readTransactionResponse.Diagnostics and handle the error
         ///             }
         ///         }
         ///     }
@@ -1223,6 +1225,407 @@ namespace Microsoft.Azure.Cosmos
                  },
                  openTelemetry: new (OpenTelemetryConstants.Operations.CreateDatabase, (response) => new OpenTelemetryResponse(response)));
         }
+
+#pragma warning disable SA1600 // ElementsMustBeDocumented
+#pragma warning disable CS1001 // ElementsMustBeDocumented
+#pragma warning disable SA1602 // ElementsMustBeDocumented
+#pragma warning disable CS1591 // ElementsMustBeDocumented
+#pragma warning disable IDE0090 // Use 'new(...)'
+        public async Task Usage1Async()
+        {
+            CosmosClient testClient = null;
+
+            // SessionConsistency: So-far we are hiding under a logical PK concept but not its widening much broadly, so sessionToken needs to come from DTC orchestrator
+
+            // Option-1: Existence check modeled as Read => 404 == Check failure
+            // TBD: Non-existence with-out side-affects is a new construct we need to add (if its not a BE operation then its co-ordinator responsibility)
+            {
+                DistributeTransaction distributeTransaction = testClient.CreateDistributedTransaction();
+                distributeTransaction.ReadItem("db1", "container1", new PartitionKey("User1"), "doc1", new TransactionalBatchItemRequestOptions() { IfMatchEtag = "???" });
+                distributeTransaction.CreateItem("db2", "container2", new PartitionKey("User1"), "doc1", new TransactionalBatchItemRequestOptions() { IfMatchEtag = "???" });
+                distributeTransaction.CreateItem("db3", "container3", new PartitionKey("User1"), "doc1", new TransactionalBatchItemRequestOptions() { IfMatchEtag = "???" });
+
+                TransactionalBatchResponse results = await distributeTransaction.ExecuteAsync();
+                ResponseMessage readResult = results[0].ToResponseMessage();
+                ResponseMessage create1Result = results[1].ToResponseMessage();
+                ResponseMessage create2Result = results[2].ToResponseMessage();
+
+                System.Diagnostics.Trace.TraceInformation($"DTC activityId {results.ActivityId}");
+                System.Diagnostics.Trace.TraceInformation($"DTC ops status codes {readResult.IsSuccessStatusCode} {create1Result.IsSuccessStatusCode}  {create2Result.IsSuccessStatusCode}");
+            }
+
+            // Option-2: Model explicit Check API (BE support ??)
+            {
+                DistributeTransaction distributeTransaction = testClient.CreateDistributedTransaction();
+                distributeTransaction.CheckItem("db1", "container1", new PartitionKey("User1"), "doc1", new TransactionalBatchItemRequestOptions() { IfMatchEtag = "???" });
+                distributeTransaction.CheckNotItem("db1", "container1", new PartitionKey("User1"), "doc2", new TransactionalBatchItemRequestOptions() { IfMatchEtag = "???" });
+                distributeTransaction.CreateItem("db2", "container2", new PartitionKey("User1"), "doc1", new TransactionalBatchItemRequestOptions() { IfMatchEtag = "???" });
+                distributeTransaction.CreateItem("db3", "container3", new PartitionKey("User1"), "doc1", new TransactionalBatchItemRequestOptions() { IfMatchEtag = "???" });
+
+                TransactionalBatchResponse results = await distributeTransaction.ExecuteAsync();
+                ResponseMessage readResult = results[0].ToResponseMessage();
+                ResponseMessage create1Result = results[1].ToResponseMessage();
+                ResponseMessage create2Result = results[2].ToResponseMessage();
+
+                System.Diagnostics.Trace.TraceInformation($"DTC activityId {results.ActivityId}");
+                System.Diagnostics.Trace.TraceInformation($"DTC ops status codes {readResult.IsSuccessStatusCode} {create1Result.IsSuccessStatusCode}  {create2Result.IsSuccessStatusCode}");
+            }
+        }
+
+        /// <summary>
+        /// Two phase transfer
+        ///     - Read transaction
+        ///     - Write transaction
+        ///     
+        /// 
+        /// Notes: 
+        ///     - Transaction at the scope of account -> API at CosmosClient level
+        ///     - TransactionId: CX needs to define (control back to application for control on retries)
+        ///         - => No guarantee of TransactionId -> payload/contents
+        ///         - ** Service side transaction retention period: how long for clients to retry for idempotency? (Committed/Aborted: Minimal transactional record TTL, response-might not be saved ??)
+        ///             - ETag is ideal to avoid overstepping BUT there are non-Etag possiblilities as well?
+        ///                 - Blind replace
+        ///     - ActivityId: So-far the model is on uniqueue activityid per NW call 
+        ///         => single activityId for all the composed operations
+        ///             -> Part of the transaction NOT per operation?
+        ///     - Possible conditon modeling
+        ///         - Item/Document existnece: Read operation (implicit) -> TBD: Model as existence
+        ///         - Item/Document content: (including system properties)
+        ///             - Currently assumed to be some form of query-where clause
+        ///                 - Non-intutive for CX to grasp the standing variable? (From c)
+        ///                 - To be hand crafted (C# expression is a bonus not available in other languages and limited to user-types not system properties)
+        ///             - Is an option needed to return on condition failure? (ex: withReturnValuesOnConditionCheckFailure)
+        ///                 - ** Might help avoid read again?
+        ///     - RUs: Will they be hierarchical and cumulative? (Operation level and transaction level)
+        ///     
+        ///     - Partition and Id: mandatory arguments
+        ///         - partial HPK: Not supported
+        ///         
+        ///   
+        ///     - Significantly deviates from existing TransactionalBatch API model (scoped to a single partition-key)
+        ///         - https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/transactional-batch?tabs=dotnet#how-to-create-a-transactional-batch-operation
+        ///         
+        /// -- Closures
+        ///     - Read and write transactions: Explicit (implicit might get mis-interpreted, reads with writes are not allowed)
+        ///     - ConditionExistence as replacement for WriteTrasaction
+        ///     - ActivityId: Per NEW interaction across all hops (SDK -> Co-ordinator, Co-ordinator-> BE)
+        ///     
+        /// -- Open items
+        ///     - Ability to get transactionId before execution
+        ///     - Transaction Retry API ??
+        ///         -- SDK retry for higher reliability
+        ///         -- User Retry ??
+        ///     - Cover existing batchAPI (JAVA vs .NET diovergence)
+        ///     
+        /// -- Fabian notes
+        ///     - Wondering whether fluent API model to define distributed transaction makes it easier to read/reason about it
+        ///     - ActivityId comment - IMO we should consider having a dedictaed service API to execute a distributed transaction 
+        ///     - how that service deals with correlation is one question - but SDK to service a single activityId should be sufficient?
+        ///     - RequestOptiosn should be separated - only subset will be relevant(for example no individual consistency settings, no session token etc.)
+        ///     - Timeouts/retry policies - not quite sure how to reason over this from the APIs - my hunch would be that this is something the service API would dela with 
+        ///         but might require to expose config settings
+        ///     - Becomes quite chaleenging form a teleemtry/observability point of view - but also depends on whether there is really this DTS processor API in teh service 
+        ///         then diagnostics could be provided by it in more granular form to SDK - or we keep it compeletely internal (hard to get done I guess because there are so
+        ///         manny failure conditions and we need soem way to self-service)
+        ///     
+        /// </summary>
+        /// <param name="transferAmount">Amount to transfer</param>
+        /// <returns>
+        ///     <see cref="Task"/> representing the asynchronous operation.
+        /// </returns>
+        public async Task Bob2AliceTransferAsync(int transferAmount)
+        {
+            CosmosClient client = new CosmosClient();
+
+            // Phase1: Read Transaction
+            Guid readTransactionId = Guid.NewGuid();
+            DistributedTransactionResponse readTransactionResponse = await client.ExecuteDistributedTransactionsAsync(
+                readTransactionId,
+                new Operation[]
+                {
+                    Operation.Read("BranchDB", "BobBranchContainer", new PartitionKey("Bob"), "Bob"),
+                    Operation.Read("BranchDB", "AiceBranchContainer", new PartitionKey("Alice"), "Alice"),
+                });
+
+            // Persistence
+
+            TransactionalBatchOperationResult<AccountDetails> bobDetails = readTransactionResponse.At<AccountDetails>(0);
+            TransactionalBatchOperationResult<AccountDetails> aliceDetails = readTransactionResponse.At<AccountDetails>(1);
+
+            AccountDetails bobAcctDetails = bobDetails.Resource;
+            AccountDetails aliceAcctDetails = aliceDetails.Resource;
+
+            bobAcctDetails.Amount -= transferAmount;
+            aliceAcctDetails.Amount += transferAmount;
+
+            if (bobAcctDetails.Amount < 0)
+            {
+                throw new InvalidOperationException("Negative balance");
+            }
+
+            // Phase2: Transfer/commit transaction
+            Guid transferTransactionId = Guid.NewGuid();
+            DistributedTransactionResponse transferTransactionResponse = await client.ExecuteDistributedTransactionsAsync(
+                transferTransactionId,
+                new Operation[]
+                {
+                    Operation.ConditionalCheck<AccountDetails>("BranchDB", "BobBranchContainer", new PartitionKey("Bob"), "Bob",
+                                        acctDetails => acctDetails.Amount >= transferAmount, // TODO: will it be a query condition? If so then a standing from variable needed?
+                                        new ItemRequestOptions() { IfMatchEtag = bobDetails.ETag }), // TODO: Etag as first class concept? 
+                    Operation.ConditionalCheck<AccountDetails>("BranchDB", "AiceBranchContainer", new PartitionKey("Alice"), "Alice",
+                                        null,
+                                        new ItemRequestOptions() { IfMatchEtag = aliceDetails.ETag }),
+
+                    Operation.Replace<AccountDetails>("BranchDB", "BobBranchContainer", new PartitionKey("Bob"), "Bob", bobAcctDetails),
+                    Operation.Replace<AccountDetails>("BranchDB", "AiceBranchContainer", new PartitionKey("Alice"), "Alice", aliceAcctDetails),
+                });
+        }
+
+        /// <summary>
+        /// Modeling based on existing TransactionalBatch API's
+        /// </summary>
+        /// <param name="transferAmount"></param>
+        /// <returns></returns>
+        /// <exception cref="InvalidOperationException"></exception>
+        public async Task Bob2AliceTransferWithBatchAPIsAsync(int transferAmount)
+        {
+            CosmosClient client = new CosmosClient();
+
+            // Phase1: Read Transaction
+            Guid readTransactionId = Guid.NewGuid();
+            IDistributedTransactionalBatch readTransactionResponse = client.CreateDistributedTransaction(readTransactionId);
+            readTransactionResponse.Add("BranchDB", "BobBranchContainer", new PartitionKey("Bob"))
+                .ReadItem("Bob");
+            readTransactionResponse.Add("BranchDB", "AiceBranchContainer", new PartitionKey("Alice"))
+                .ReadItem("Alice");
+
+            // Observations: 
+            // - ReadTransactionResponse.Add() -> TransactionalBatch whcih also had ExecuteAsync() => Mis-leading of nested transactions
+            // - Reponse handling: Order is not explicit but implicit with nested operations ordered inline
+            TransactionalBatchResponse transactionalBatchReadOperationResults = await readTransactionResponse.ExecuteAsync();
+
+            TransactionalBatchOperationResult<AccountDetails> bobDetails = transactionalBatchReadOperationResults.GetOperationResultAtIndex<AccountDetails>(0);
+            TransactionalBatchOperationResult<AccountDetails> aliceDetails = transactionalBatchReadOperationResults.GetOperationResultAtIndex<AccountDetails>(1);
+
+            AccountDetails bobAcctDetails = bobDetails.Resource;
+            AccountDetails aliceAcctDetails = aliceDetails.Resource;
+
+            bobAcctDetails.Amount -= transferAmount;
+            aliceAcctDetails.Amount += transferAmount;
+
+            if (bobAcctDetails.Amount < 0)
+            {
+                throw new InvalidOperationException("Negative balance");
+            }
+
+            // Phase2: Transfer/commit transaction
+            Guid transferTransactionId = Guid.NewGuid();
+            IDistributedTransactionalBatch transferTransactionResponse = client.CreateDistributedTransaction(transferTransactionId);
+
+            readTransactionResponse.Add("BranchDB", "BobBranchContainer", new PartitionKey("Bob"))
+                .ConditionalCheck<AccountDetails>("Bob", acctDetails => acctDetails.Amount >= transferAmount, new ItemRequestOptions() { IfMatchEtag = bobDetails.ETag })
+                .ReplaceItem<AccountDetails>("Bob", bobAcctDetails);
+            readTransactionResponse.Add("BranchDB", "AiceBranchContainer", new PartitionKey("Alice"))
+                .ConditionalCheck<AccountDetails>("Alice", null, new ItemRequestOptions() { IfMatchEtag = aliceDetails.ETag })
+                .ReplaceItem<AccountDetails>("Alice", aliceAcctDetails);
+
+            await transferTransactionResponse.ExecuteAsync();
+        }
+
+        public async Task Bob2AliceTransferWithPatchAsync(int transferAmount)
+        {
+            CosmosClient client = new CosmosClient();
+
+            // One phase: Transfer/commit transaction
+            Guid transferTransactionId = Guid.NewGuid();
+            DistributedTransactionResponse transferTransactionResponse = await client.ExecuteDistributedTransactionsAsync(
+                transferTransactionId,
+                new Operation[]
+                {
+                    Operation.Patch<AccountDetails>("BranchDB", "BobBranchContainer", new PartitionKey("Bob"), "Bob", PatchOperation.Increment("/Amount", -transferAmount)),
+                    Operation.Patch<AccountDetails>("BranchDB", "AiceBranchContainer", new PartitionKey("Alice"), "Alice", PatchOperation.Increment("/Amount", transferAmount)),
+                    Operation.ConditionalCheck<AccountDetails>("BranchDB", "BobBranchContainer", new PartitionKey("Bob"), "Bob",
+                                        acctDetails => acctDetails.Amount >= 0), 
+                });
+        }
+
+        public virtual DistributeTransaction CreateDistributedTransaction()
+        {
+            throw new NotImplementedException();
+        }
+
+        public enum OperationType
+        {
+            Check,
+            Read, 
+            Create,
+            Replace,
+            Upsert, 
+            Delete
+        }
+
+        public class Operation
+        {
+            internal Operation(OperationType, string, string, PartitionKey, string, ItemRequestOptions = null)
+            {
+
+            }
+
+            internal Operation(OperationType, string, string, PartitionKey, string, Stream payload, ItemRequestOptions = null)
+            {
+
+            }
+
+            public OperationType OperationType { get; internal set; }
+            public string Database { get; internal set; }
+            public string Container { get; internal set; }
+            public PartitionKey PartitionKey { get; internal set; }
+            public string Id { get; internal set; }
+            public Stream Payload { get; internal set; }
+            public ItemRequestOptions RequestOptions { get; internal set; }
+
+            public static Operation Read(string dbName, string collectionName, PartitionKey partitionKey, string id, ItemRequestOptions options = null)
+            {
+                throw new NotImplementedException();
+            }
+
+            public static Operation Replace<T>(string dbName, string collectionName, PartitionKey partitionKey, string id, T itemPayload, ItemRequestOptions options = null)
+            {
+                throw new NotImplementedException();
+            }
+
+            public static Operation ConditionalCheck(string dbName, string collectionName, PartitionKey partitionKey, string id, string condition, ItemRequestOptions options = null)
+            {
+                throw new NotImplementedException();
+            }
+
+            public static Operation ConditionalCheck<T>(string dbName, string collectionName, PartitionKey partitionKey, string id, Func<T, bool> condition, ItemRequestOptions options = null)
+            {
+                throw new NotImplementedException();
+            }
+
+            public static Operation Patch<T>(string dbName, string collectionName, PartitionKey partitionKey, string id, PatchOperation, ItemRequestOptions options = null)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        public class DistributedTransactionResponse : ResponseMessage
+        {
+            public virtual TransactionalBatchOperationResult this[int index] => null;
+
+            /// <summary>
+            /// Gets the result of the operation at the provided index in the batch - the returned result has a Resource of provided type.
+            /// </summary>
+            /// <typeparam name="T">Type to which the Resource in the operation result needs to be deserialized to, when present.</typeparam>
+            /// <param name="index">0-based index of the operation in the batch whose result needs to be returned.</param>
+            /// <returns>Result of batch operation that contains a Resource deserialized to specified type.</returns>
+            public virtual TransactionalBatchOperationResult<T> At<T>(int index)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        public virtual Task<DistributedTransactionResponse> ExecuteDistributedTransactionsAsync(
+            Guid transactionId,
+            Operation[] operations)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual IDistributedTransactionalBatch CreateDistributedTransaction(Guid transactionId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public interface IDistributedTransactionalBatch
+        {
+            public TransactionalBatch Add(string dbName, string collectionName, PartitionKey partitionKey);
+
+            public abstract Task<TransactionalBatchResponse> ExecuteAsync(
+               TransactionalBatchRequestOptions requestOptions = default,
+               CancellationToken cancellationToken = default);
+        }
+
+        public abstract class DistributeTransaction
+        {
+            public abstract TransactionalBatch CreateItem<T>(
+                string database, 
+                string container,
+                PartitionKey partitionKey,
+                T item,
+                TransactionalBatchItemRequestOptions requestOptions = null);
+
+            public abstract TransactionalBatch CheckItem(
+                string database,
+                string container,
+                PartitionKey partitionKey,
+                string id,
+                TransactionalBatchItemRequestOptions requestOptions = null);
+
+            public abstract TransactionalBatch CheckNotItem(
+                string database,
+                string container,
+                PartitionKey partitionKey,
+                string id,
+                TransactionalBatchItemRequestOptions requestOptions = null);
+
+            public abstract TransactionalBatch ReadItem(
+                string database,
+                string container,
+                PartitionKey partitionKey,
+                string id,
+                TransactionalBatchItemRequestOptions requestOptions = null);
+
+            public abstract TransactionalBatch UpsertItem<T>(
+                string database,
+                string container,
+                PartitionKey partitionKey,
+                T item,
+                TransactionalBatchItemRequestOptions requestOptions = null);
+
+            public abstract TransactionalBatch ReplaceItem<T>(
+                string database,
+                string container,
+                PartitionKey partitionKey,
+                string id,
+                T item,
+                TransactionalBatchItemRequestOptions requestOptions = null);
+
+            public abstract TransactionalBatch DeleteItem(
+                string database,
+                string container,
+                PartitionKey partitionKey,
+                string id,
+                TransactionalBatchItemRequestOptions requestOptions = null);
+
+            public abstract TransactionalBatch PatchItem(
+                string database,
+                string container,
+                PartitionKey partitionKey,
+                string id,
+                IReadOnlyList<PatchOperation> patchOperations,
+                TransactionalBatchPatchItemRequestOptions requestOptions = null);
+
+            public abstract Task<TransactionalBatchResponse> ExecuteAsync(
+                CancellationToken cancellationToken = default);
+
+            public abstract Task<TransactionalBatchResponse> ExecuteAsync(
+               TransactionalBatchRequestOptions requestOptions,
+               CancellationToken cancellationToken = default);
+        }
+
+        public class AccountDetails
+        {
+            public static AccountDetails New()
+            {
+                throw new NotImplementedException();
+            }
+
+            public double Amount { get; set; }
+        }
+#pragma warning restore SA1600 // ElementsMustBeDocumented
+#pragma warning restore CS1591 // ElementsMustBeDocumented
 
         /// <summary>
         /// Removes the DefaultTraceListener which causes locking issues which leads to avability problems. 
