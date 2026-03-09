@@ -829,5 +829,25 @@ namespace Microsoft.Azure.Cosmos.Fluent
             this.clientOptions.ThroughputBucket = throughputBucket;
             return this;
         }
+
+        /// <summary>
+        /// Sets the <see cref="Cosmos.ReadConsistencyStrategy"/> to be used for read operations.
+        /// </summary>
+        /// <remarks>
+        /// When set, this takes precedence over the consistency level set via <see cref="WithConsistencyLevel(Cosmos.ConsistencyLevel)"/>.
+        /// If also set at request level, the request-level value is used.
+        /// </remarks>
+        /// <param name="readConsistencyStrategy">The desired read consistency strategy for the client.</param>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        CosmosClientBuilder WithReadConsistencyStrategy(Cosmos.ReadConsistencyStrategy readConsistencyStrategy)
+        {
+            this.clientOptions.ReadConsistencyStrategy = readConsistencyStrategy;
+            return this;
+        }
     }
 }

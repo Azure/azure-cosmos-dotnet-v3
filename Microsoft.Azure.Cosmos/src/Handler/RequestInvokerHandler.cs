@@ -29,6 +29,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         private readonly CosmosClient client;
         private readonly Cosmos.ConsistencyLevel? RequestedClientConsistencyLevel;
+        private readonly Cosmos.ReadConsistencyStrategy? RequestedClientReadConsistencyStrategy;
         private readonly Cosmos.PriorityLevel? RequestedClientPriorityLevel;
         private readonly int? RequestedClientThroughputBucket;
 
@@ -38,12 +39,14 @@ namespace Microsoft.Azure.Cosmos.Handlers
         public RequestInvokerHandler(
             CosmosClient client,
             Cosmos.ConsistencyLevel? requestedClientConsistencyLevel,
+            Cosmos.ReadConsistencyStrategy? requestedClientReadConsistencyStrategy,
             Cosmos.PriorityLevel? requestedClientPriorityLevel,
             int? requestedClientThroughputBucket)
         {
             this.client = client;
 
-            this.RequestedClientConsistencyLevel = requestedClientConsistencyLevel;       
+            this.RequestedClientConsistencyLevel = requestedClientConsistencyLevel;
+            this.RequestedClientReadConsistencyStrategy = requestedClientReadConsistencyStrategy;
             this.RequestedClientPriorityLevel = requestedClientPriorityLevel;
             this.RequestedClientThroughputBucket = requestedClientThroughputBucket;
         }
@@ -78,6 +81,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             await this.ValidateAndSetConsistencyLevelAsync(request);
+            await this.ValidateAndSetReadConsistencyStrategyAsync(request);
             this.SetPriorityLevel(request);
             this.ValidateAndSetThroughputBucket(request);
 
@@ -501,6 +505,58 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             consistencyLevel.Value.ToString(),
                             this.AccountConsistencyLevel));
                 }
+            }
+        }
+
+        /// <summary>
+        /// Validate and set the ReadConsistencyStrategy header.
+        /// When set, this overrides the ConsistencyLevel header with the mapped value.
+        /// </summary>
+        private async Task ValidateAndSetReadConsistencyStrategyAsync(RequestMessage requestMessage)
+        {
+            Cosmos.ReadConsistencyStrategy? readConsistencyStrategy = null;
+            RequestOptions promotedRequestOptions = requestMessage.RequestOptions;
+
+            if (promotedRequestOptions?.BaseReadConsistencyStrategy.HasValue == true)
+            {
+                readConsistencyStrategy = promotedRequestOptions.BaseReadConsistencyStrategy;
+            }
+            else if (this.RequestedClientReadConsistencyStrategy.HasValue)
+            {
+                readConsistencyStrategy = this.RequestedClientReadConsistencyStrategy;
+            }
+
+            if (readConsistencyStrategy.HasValue)
+            {
+                if (!this.AccountConsistencyLevel.HasValue)
+                {
+                    this.AccountConsistencyLevel = await this.client.GetAccountConsistencyLevelAsync();
+                }
+
+                // GlobalStrong is only valid for Strong consistency accounts
+                if (readConsistencyStrategy.Value == Cosmos.ReadConsistencyStrategy.GlobalStrong
+                    && this.AccountConsistencyLevel.Value != Cosmos.ConsistencyLevel.Strong)
+                {
+                    throw new ArgumentException(string.Format(
+                        CultureInfo.CurrentUICulture,
+                        "ReadConsistencyStrategy.GlobalStrong is only valid for accounts configured with Strong consistency. Current account consistency: {0}",
+                        this.AccountConsistencyLevel.Value));
+                }
+
+                // The Direct layer's ServerStoreModel rejects requests with both
+                // x-ms-consistency-level and x-ms-cosmos-read-consistency-strategy headers.
+                // Remove ConsistencyLevel if it was set by ValidateAndSetConsistencyLevelAsync.
+                requestMessage.Headers.Remove(HttpConstants.HttpHeaders.ConsistencyLevel);
+
+                // Set only the ReadConsistencyStrategy header; the Direct layer's
+                // RequestHelper.GetReadConsistencyStrategyToUse handles the mapping
+                // to the appropriate read mode internally.
+                requestMessage.Headers.Set(
+                    HttpConstants.HttpHeaders.ReadConsistencyStrategy,
+                    readConsistencyStrategy.Value.ToString());
+
+                // Store the resolved strategy on RequestMessage for the Direct layer
+                requestMessage.ReadConsistencyStrategy = (Documents.ReadConsistencyStrategy)(int)readConsistencyStrategy.Value;
             }
         }
 

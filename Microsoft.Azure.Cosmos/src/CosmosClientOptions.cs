@@ -327,6 +327,24 @@ namespace Microsoft.Azure.Cosmos
         public ConsistencyLevel? ConsistencyLevel { get; set; }
 
         /// <summary>
+        /// Gets or sets the <see cref="ReadConsistencyStrategy"/> to be used for read operations.
+        /// </summary>
+        /// <remarks>
+        /// When set, this takes precedence over <see cref="ConsistencyLevel"/> for read and query operations.
+        /// If also set at request level (e.g., in <see cref="ItemRequestOptions.ReadConsistencyStrategy"/>),
+        /// the request-level value is used.
+        /// <para>
+        /// <see cref="ReadConsistencyStrategy.GlobalStrong"/> is only valid for accounts configured with Strong consistency.
+        /// </para>
+        /// </remarks>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        ReadConsistencyStrategy? ReadConsistencyStrategy { get; set; }
+
+        /// <summary>
         /// Sets the priority level for requests created using cosmos client.
         /// </summary>
         /// <remarks>

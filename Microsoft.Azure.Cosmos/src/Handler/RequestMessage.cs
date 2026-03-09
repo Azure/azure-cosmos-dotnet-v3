@@ -140,6 +140,12 @@ namespace Microsoft.Azure.Cosmos
         internal PartitionKeyRangeIdentity PartitionKeyRangeId { get; set; }
 
         /// <summary>
+        /// Set by RequestInvokerHandler when a ReadConsistencyStrategy is configured.
+        /// Uses Documents namespace type for Direct layer compatibility.
+        /// </summary>
+        internal Documents.ReadConsistencyStrategy? ReadConsistencyStrategy { get; set; }
+
+        /// <summary>
         /// Used to override the client default. This is used for scenarios
         /// in query where the service interop is not present.
         /// </summary>
@@ -365,6 +371,7 @@ namespace Microsoft.Azure.Cosmos
         private void OnBeforeRequestHandler(DocumentServiceRequest serviceRequest)
         {
             serviceRequest.RequestContext.ExcludeRegions = this.RequestOptions?.ExcludeRegions;
+            serviceRequest.RequestContext.ReadConsistencyStrategy = this.ReadConsistencyStrategy;
             this.OnBeforeSendRequestActions?.Invoke(serviceRequest);
         }
 

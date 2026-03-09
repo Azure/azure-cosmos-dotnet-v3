@@ -10,11 +10,13 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Documents;
 
     internal class ClientPipelineBuilder
     {
         private readonly CosmosClient client;
         private readonly ConsistencyLevel? requestedClientConsistencyLevel;
+        private readonly ReadConsistencyStrategy? requestedClientReadConsistencyStrategy;
         private readonly PriorityLevel? requestedPriorityLevel;
         private readonly DiagnosticsHandler diagnosticsHandler;
         private readonly RequestHandler invalidPartitionExceptionRetryHandler;
@@ -28,6 +30,7 @@ namespace Microsoft.Azure.Cosmos
         public ClientPipelineBuilder(
             CosmosClient client,
             ConsistencyLevel? requestedClientConsistencyLevel,
+            ReadConsistencyStrategy? requestedClientReadConsistencyStrategy,
             PriorityLevel? requestedClientPriorityLevel,
             IReadOnlyCollection<RequestHandler> customHandlers,
             TelemetryToServiceHelper telemetryToServiceHelper,
@@ -35,6 +38,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.client = client ?? throw new ArgumentNullException(nameof(client));
             this.requestedClientConsistencyLevel = requestedClientConsistencyLevel;
+            this.requestedClientReadConsistencyStrategy = requestedClientReadConsistencyStrategy;
             this.requestedPriorityLevel = requestedClientPriorityLevel;
             this.requestedClientThroughputBucket = requestedClientThroughputBucket;
             this.transportHandler = new TransportHandler(client);
@@ -156,6 +160,7 @@ namespace Microsoft.Azure.Cosmos
             RequestInvokerHandler root = new RequestInvokerHandler(
                 this.client,
                 this.requestedClientConsistencyLevel,
+                this.requestedClientReadConsistencyStrategy,
                 this.requestedPriorityLevel,
                 this.requestedClientThroughputBucket);
 
