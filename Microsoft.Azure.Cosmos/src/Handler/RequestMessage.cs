@@ -354,6 +354,7 @@ namespace Microsoft.Azure.Cosmos
             clone.UseGatewayMode = this.UseGatewayMode;
             clone.ContainerId = this.ContainerId;
             clone.DatabaseId = this.DatabaseId;
+            clone.ReadConsistencyStrategy = this.ReadConsistencyStrategy;
 
             return clone;
         }

@@ -111,10 +111,11 @@
             ConsistencyLevel consistencyLevel = ConsistencyLevel.Session;
             string appRegion = "EastUS";
 
-            ConsistencyConfig consistencyConfig = new ConsistencyConfig(consistencyLevel, preferredRegions, appRegion);
+            ConsistencyConfig consistencyConfig = new ConsistencyConfig(consistencyLevel, null, preferredRegions, appRegion);
             Assert.AreEqual(consistencyConfig.ToString(), "(consistency: Session, prgns:[EastUS, WestUs], apprgn: EastUS)");
 
             ConsistencyConfig consistencyConfigWithNull = new ConsistencyConfig(consistencyLevel: null,
+                                                                                readConsistencyStrategy: null,
                                                                                 preferredRegions: null,
                                                                                 applicationRegion: null);
 
