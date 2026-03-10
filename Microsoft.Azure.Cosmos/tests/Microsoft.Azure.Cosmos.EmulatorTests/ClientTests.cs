@@ -1185,6 +1185,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 Assert.AreEqual<SpatialItem>(readItem, inputItem);
                 Assert.AreEqual<SpatialItem>(result, inputItem);
+
+                Point updatedPoint = new Point(new Position(40, 50));
+                SpatialItem patchedItem = await container.PatchItemAsync<SpatialItem>(
+                    GUID,
+                    new Cosmos.PartitionKey(GUID),
+                    patchOperations: new[]
+                    {
+                        PatchOperation.Set("/Location", updatedPoint)
+                    });
+
+                Assert.AreEqual(updatedPoint, patchedItem.Location);
+
+                SpatialItem readAfterPatch = await container.ReadItemAsync<SpatialItem>(GUID, new Cosmos.PartitionKey(GUID));
+                Assert.AreEqual(updatedPoint, readAfterPatch.Location);
             }
 
         }
@@ -1225,6 +1239,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 Assert.AreEqual<SpatialItem>(readItem, inputItem);
                 Assert.AreEqual<SpatialItem>(result, inputItem);
+
+                Point updatedPoint = new Point(new Position(40, 50));
+                SpatialItem patchedItem = await container.PatchItemAsync<SpatialItem>(
+                    GUID,
+                    new Cosmos.PartitionKey(GUID),
+                    patchOperations: new[]
+                    {
+                        PatchOperation.Set("/Location", updatedPoint)
+                    });
+
+                Assert.AreEqual(updatedPoint, patchedItem.Location);
+
+                SpatialItem readAfterPatch = await container.ReadItemAsync<SpatialItem>(GUID, new Cosmos.PartitionKey(GUID));
+                Assert.AreEqual(updatedPoint, readAfterPatch.Location);
             }
 
         }
