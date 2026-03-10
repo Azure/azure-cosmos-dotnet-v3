@@ -22,11 +22,25 @@ The distributed transactions feature is being actively developed with the follow
 3. **Partition key serialization**: Support for partition key serialization across transaction boundaries.
 4. **Direct package integration**: Requires specific `Microsoft.Azure.Cosmos.Direct` package versions for DTS support.
 
-## Behavioral Invariants (Preliminary)
+## Requirements (Preliminary)
 
-1. **Cross-partition atomicity**: All operations in a distributed transaction commit or roll back together, even across partition key ranges.
-2. **Coordination protocol**: Uses a two-phase commit-like protocol coordinated by the service.
-3. **Resource type**: Operations target `ResourceType.Document` items.
+### Requirement: Cross-Partition Atomicity
+
+The SDK SHALL support atomic operations across multiple partition key ranges.
+
+**When** a distributed transaction is committed, all operations SHALL commit or roll back together, even across partition key ranges.
+
+### Requirement: Coordination Protocol
+
+The SDK SHALL coordinate distributed transactions via a two-phase commit-like protocol.
+
+**When** a distributed transaction is executed, the SDK SHALL coordinate with the service using a two-phase commit-like protocol.
+
+### Requirement: Resource Type Scope
+
+The SDK SHALL scope distributed transactions to document operations.
+
+**When** operations are added to a distributed transaction, only `ResourceType.Document` items SHALL be supported.
 
 ## Open Questions
 

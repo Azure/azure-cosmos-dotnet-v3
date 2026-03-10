@@ -31,21 +31,21 @@ Custom handlers are inserted after `RequestInvokerHandler` and before `Diagnosti
 
 ```
 RequestInvokerHandler          (#1 - entry point, validates, applies options)
-    ↓
+    |
 Custom Handlers                (#2 - user-provided, in registration order)
-    ↓
+    |
 DiagnosticsHandler             (#3 - captures CPU/system usage)
-    ↓
+    |
 TelemetryHandler               (#4 - collects operation telemetry)
-    ↓
+    |
 RetryHandler                   (#5 - cross-region + throttle retries)
-    ↓
+    |
 RouterHandler                  (#6 - routes to point or feed pipeline)
-    ├── Point operations ────→ TransportHandler
-    └── Feed operations ────→ NamedCacheRetryHandler
-                                  ↓
+    |-- Point operations ----> TransportHandler
+    +-- Feed operations -----> NamedCacheRetryHandler
+                                  |
                                PartitionKeyRangeHandler
-                                  ↓
+                                  |
                                TransportHandler
 ```
 
@@ -96,8 +96,8 @@ RouterHandler                  (#6 - routes to point or feed pipeline)
 - **File**: `Microsoft.Azure.Cosmos/src/Handler/RouterHandler.cs`
 - **Responsibilities**: Routes requests to one of two sub-pipelines based on operation type.
 - **Decision**: Reads `request.IsPartitionKeyRangeHandlerRequired`:
-  - **`false`** (point operations) → `TransportHandler` directly
-  - **`true`** (feed operations: queries, change feed, read feed) → `NamedCacheRetryHandler` → `PartitionKeyRangeHandler` → `TransportHandler`
+  - **`false`** (point operations) -> `TransportHandler` directly
+  - **`true`** (feed operations: queries, change feed, read feed) -> `NamedCacheRetryHandler` -> `PartitionKeyRangeHandler` -> `TransportHandler`
 
 ### 7. NamedCacheRetryHandler (Feed Pipeline Only)
 
@@ -119,14 +119,43 @@ RouterHandler                  (#6 - routes to point or feed pipeline)
   - Converts exceptions to `ResponseMessage`
   - Captures client-side request statistics
 
-## Behavioral Invariants
+## Requirements
 
-1. **All handlers are stateless** — no request-specific state is stored between calls.
-2. **Pipeline is immutable after client creation** — handlers are linked during `CosmosClient` construction and cannot be modified afterward.
-3. **Custom handlers execute before SDK handlers** (except `RequestInvokerHandler`) — this means custom handlers see the raw request before retries, diagnostics, or telemetry.
-4. **Each hedged request traverses its own independent pipeline** — when availability strategy (hedging) is active, each parallel request gets its own handler pipeline execution, including independent retry behavior.
-5. **Feed operations go through extra handlers** — `NamedCacheRetryHandler` and `PartitionKeyRangeHandler` only process feed operations (queries, change feed), not point reads/writes.
-6. **Handler exceptions are converted to ResponseMessage** — handlers should never throw unhandled exceptions. The pipeline catches exceptions and wraps them in `ResponseMessage` with appropriate status codes.
+### Requirement: Handler Statelessness
+
+The SDK SHALL ensure all handlers are stateless.
+
+**When** a handler processes a request, the SDK SHALL NOT store request-specific state between calls. Each invocation of `SendAsync` SHALL be independent.
+
+### Requirement: Pipeline Immutability
+
+The SDK SHALL ensure the pipeline is immutable after client creation.
+
+**When** `CosmosClient` is constructed, the SDK SHALL link all handlers during construction. **After** construction, the pipeline SHALL NOT be modifiable.
+
+### Requirement: Custom Handler Ordering
+
+The SDK SHALL execute custom handlers before SDK handlers (except `RequestInvokerHandler`).
+
+**When** custom handlers are registered via `CosmosClientOptions.CustomHandlers`, the SDK SHALL insert them after `RequestInvokerHandler` (position #1) and before `DiagnosticsHandler` (position #3). Custom handlers SHALL see the raw request before retries, diagnostics, or telemetry processing.
+
+### Requirement: Independent Pipeline Per Hedge
+
+The SDK SHALL provide each hedged request its own independent pipeline.
+
+**When** an availability strategy (hedging) is active, the SDK SHALL execute each parallel request through its own handler pipeline instance, including independent retry behavior.
+
+### Requirement: Feed Operation Routing
+
+The SDK SHALL route feed operations through additional handlers.
+
+**When** `request.IsPartitionKeyRangeHandlerRequired` is `true` (queries, change feed, read feed), the SDK SHALL route the request through `NamedCacheRetryHandler` and `PartitionKeyRangeHandler` before reaching `TransportHandler`. Point operations SHALL go directly to `TransportHandler`.
+
+### Requirement: Exception Conversion
+
+The SDK SHALL convert handler exceptions to `ResponseMessage`.
+
+**When** a handler throws an unhandled exception, the SDK SHALL catch the exception and wrap it in a `ResponseMessage` with an appropriate status code. Handlers SHALL NOT propagate unhandled exceptions up the pipeline.
 
 ## Interactions
 

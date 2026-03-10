@@ -43,15 +43,55 @@ Task<ResponseMessage> PatchItemStreamAsync(
 | `IfMatchEtag` | `string` | Conditional patch; 412 if ETag mismatch |
 | `EnableContentResponseOnWrite` | `bool?` | Skip response payload |
 
-## Behavioral Invariants
+## Requirements
 
-1. **Atomic execution**: All patch operations in a single call execute atomically — all succeed or all fail.
-2. **`Set` vs `Add` vs `Replace`**: `Set` creates the property if it doesn't exist (upsert semantics for properties). `Replace` fails if the property doesn't exist. `Add` adds to arrays or creates properties.
-3. **`Increment` is atomic**: Server-side atomic increment/decrement without read-modify-write race conditions.
-4. **Conditional patches**: `FilterPredicate` evaluates a SQL condition against the current item. If the condition is false, the patch returns 412 Precondition Failed without modifying the item.
-5. **Path syntax**: Uses JSON pointer-like path syntax (e.g., `/address/city`, `/tags/0`).
-6. **Partition key and id are immutable**: Patch operations cannot modify the `id` or partition key properties.
-7. **Max operations**: Up to 10 patch operations per call.
+### Requirement: Atomic Execution
+
+The SDK SHALL execute all patch operations in a single call atomically.
+
+**When** `PatchItemAsync` is called with multiple `PatchOperation` entries, all operations SHALL succeed or all SHALL fail. No partial application SHALL occur.
+
+### Requirement: Set vs Add vs Replace Semantics
+
+The SDK SHALL differentiate Set, Add, and Replace operations.
+
+#### Set (upsert semantics)
+
+**When** `PatchOperation.Set(path, value)` is used, the SDK SHALL create the property if it does not exist, or replace it if it does.
+
+#### Replace (strict)
+
+**When** `PatchOperation.Replace(path, value)` is used, the SDK SHALL fail if the property does not exist.
+
+#### Add
+
+**When** `PatchOperation.Add(path, value)` is used, the SDK SHALL add the property or array element at the specified path.
+
+### Requirement: Atomic Increment
+
+The SDK SHALL support server-side atomic increment/decrement.
+
+**When** `PatchOperation.Increment(path, value)` is used, the SDK SHALL perform a server-side atomic increment without read-modify-write race conditions.
+
+### Requirement: Conditional Patches
+
+The SDK SHALL support conditional patches via filter predicates.
+
+**Where** `PatchItemRequestOptions.FilterPredicate` is set to a SQL condition, **if** the condition evaluates to false against the current item, the SDK SHALL return 412 (Precondition Failed) without modifying the item.
+
+### Requirement: Path Syntax
+
+The SDK SHALL use JSON pointer-like path syntax for patch operations (e.g., `/address/city`, `/tags/0`).
+
+### Requirement: Immutable Fields
+
+The SDK SHALL prevent modification of immutable fields via patch.
+
+**When** a patch operation targets the `id` or partition key properties, the SDK SHALL reject the operation.
+
+### Requirement: Operation Limit
+
+The SDK SHALL enforce a maximum of 10 patch operations per call.
 
 ## Interactions
 

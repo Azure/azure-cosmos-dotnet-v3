@@ -45,38 +45,56 @@ List<Task> tasks = items.Select(item =>
 await Task.WhenAll(tasks);
 ```
 
-## Behavioral Invariants
+## Requirements
 
-### TransactionalBatch Atomicity
+### Requirement: TransactionalBatch Atomicity
 
-1. **All-or-nothing**: If ANY operation fails, the ENTIRE batch is rolled back. Zero operations are committed.
-2. **Same partition key**: All items in a batch MUST share the same partition key (specified at `CreateTransactionalBatch`).
-3. **Ordered execution**: Operations execute in submission order (`x-ms-cosmos-batch-ordered: true`).
-4. **No exceptions on failure**: `ExecuteAsync` does NOT throw exceptions for batch failures. Check `response.IsSuccessStatusCode`.
-5. **Failed dependency**: When one operation causes the batch to fail, subsequent operations return status code 424 (Failed Dependency). The failing operation returns the actual error code.
+The SDK SHALL execute all operations in a TransactionalBatch atomically.
 
-### TransactionalBatch Limits
+#### All-or-nothing execution
+
+**When** `TransactionalBatch.ExecuteAsync()` is called, **if** ANY operation fails, the SDK SHALL roll back the ENTIRE batch. Zero operations SHALL be committed.
+
+#### Same partition key constraint
+
+**When** creating a TransactionalBatch, all items in the batch SHALL share the same partition key (specified at `CreateTransactionalBatch`).
+
+#### Ordered execution
+
+**When** a TransactionalBatch is executed, the SDK SHALL execute operations in submission order (`x-ms-cosmos-batch-ordered: true`).
+
+#### No exceptions on failure
+
+**When** a TransactionalBatch fails, `ExecuteAsync` SHALL NOT throw exceptions. The caller SHALL check `response.IsSuccessStatusCode` to determine success or failure.
+
+#### Failed dependency status
+
+**When** one operation causes the batch to fail, subsequent operations SHALL return status code 424 (Failed Dependency). The failing operation SHALL return the actual error code.
+
+### Requirement: TransactionalBatch Limits
+
+The SDK SHALL enforce server-side limits on batch operations.
 
 | Limit | Value |
 |-------|-------|
 | Max operations per batch | 100 (server-enforced) |
 | Max payload size | 2 MB (server-enforced) |
 
-### TransactionalBatchResponse
+### Requirement: TransactionalBatch Response
 
-```csharp
-response.IsSuccessStatusCode   // true if all operations succeeded
-response.StatusCode            // Overall status (200 = success, or first error code)
-response.RequestCharge         // Total RU consumption
-response[0].StatusCode         // Per-operation status
-response[0].ETag               // Per-operation ETag
-response.GetOperationResultAtIndex<T>(0).Resource  // Deserialized result
-```
+The SDK SHALL provide per-operation results in the batch response.
 
-- Implements `IReadOnlyList<TransactionalBatchOperationResult>` and `IDisposable`.
-- If response is 207 (Multi-Status), the status is promoted to the first failing operation's error code.
+#### Response structure
 
-### Per-Operation Request Options
+**When** a TransactionalBatch completes, the response SHALL implement `IReadOnlyList<TransactionalBatchOperationResult>` and `IDisposable`, providing per-operation `StatusCode`, `ETag`, and typed results via `GetOperationResultAtIndex<T>`.
+
+#### Multi-Status promotion
+
+**If** the response is 207 (Multi-Status), the SDK SHALL promote the status to the first failing operation's error code.
+
+### Requirement: Per-Operation Request Options
+
+The SDK SHALL support per-operation configuration within a batch.
 
 | Option | Type | Effect |
 |--------|------|--------|
@@ -85,13 +103,25 @@ response.GetOperationResultAtIndex<T>(0).Resource  // Deserialized result
 | `EnableContentResponseOnWrite` | `bool?` | Skip response payload |
 | `IndexingDirective` | `IndexingDirective?` | Include/Exclude indexing |
 
-### Bulk Execution (`AllowBulkExecution`)
+### Requirement: Bulk Execution
 
-1. **Automatic batching**: The SDK groups individual item operations by partition key range and sends them as server batches.
-2. **Throughput over latency**: Designed for high-volume scenarios (thousands of operations/second). Individual operation latency may increase due to batching overhead.
-3. **Not atomic**: Unlike `TransactionalBatch`, individual operations in bulk execution are independent. Some may succeed while others fail.
-4. **Per-partition-key-range streaming**: Each partition key range has its own `BatchAsyncStreamer` that accumulates operations and flushes when full or when a timer expires.
-5. **Individual options respected**: Each operation's `ItemRequestOptions` (ETags, consistency, etc.) are honored within the batch.
+The SDK SHALL support automatic throughput-optimized batching via `AllowBulkExecution`.
+
+#### Automatic batching
+
+**Where** `CosmosClientOptions.AllowBulkExecution = true`, **when** individual item operations are called, the SDK SHALL automatically group operations by partition key range and send them as server batches.
+
+#### Non-atomic execution
+
+**While** bulk execution is enabled, individual operations SHALL be independent. Some MAY succeed while others fail (unlike TransactionalBatch).
+
+#### Per-partition-key-range streaming
+
+**While** bulk execution is enabled, each partition key range SHALL have its own `BatchAsyncStreamer` that accumulates operations and flushes when full or when a timer expires.
+
+#### Individual options respected
+
+**While** bulk execution is enabled, each operation's `ItemRequestOptions` (ETags, consistency, etc.) SHALL be honored within the batch.
 
 ### TransactionalBatch vs Bulk Execution
 

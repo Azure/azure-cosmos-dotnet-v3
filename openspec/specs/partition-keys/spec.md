@@ -11,19 +11,14 @@ Every Azure Cosmos DB container is partitioned by a partition key, which determi
 ```csharp
 public readonly struct PartitionKey
 {
-    // Constructors
     public PartitionKey(string partitionKeyValue);
     public PartitionKey(bool partitionKeyValue);
     public PartitionKey(double partitionKeyValue);
 
-    // Static members
     public static readonly PartitionKey None;   // No partition key value
     public static readonly PartitionKey Null;   // Explicit null value
 
-    // Properties
     public bool IsNone { get; }
-
-    // Methods
     public override string ToString();
     public static bool TryParseJsonString(string json, out PartitionKey partitionKey);
 }
@@ -46,27 +41,28 @@ public sealed class PartitionKeyBuilder
 ### ContainerProperties Partition Key Access
 
 ```csharp
-// Single partition key path
 string path = containerProperties.PartitionKeyPath;  // e.g., "/userId"
-
-// Hierarchical partition key paths
 IReadOnlyList<string> paths = containerProperties.PartitionKeyPaths;  // e.g., ["/tenantId", "/userId"]
 ```
 
-## Behavioral Invariants
+## Requirements
 
-### PartitionKey.None vs PartitionKey.Null
+### Requirement: PartitionKey.None vs PartitionKey.Null
+
+The SDK SHALL distinguish between `PartitionKey.None` and `PartitionKey.Null`.
 
 | Aspect | `PartitionKey.None` | `PartitionKey.Null` |
 |--------|---------------------|---------------------|
 | `IsNone` | `true` | `false` |
 | Meaning | No partition key value provided or applicable | Explicit `null` value |
 | Usage | Legacy or schema-flexible containers | Any container — `null` is a valid PK value |
-| Multi-hash support | ❌ Not allowed | ✅ Allowed per component |
+| Multi-hash support | Not allowed | Allowed per component |
 | Construction | `PartitionKey.None` | `new PartitionKey((string)null)` |
 | ToString | `"None"` | `"null"` (JSON) |
 
-### Partition Key Requirements by Operation
+### Requirement: Partition Key Per Operation
+
+The SDK SHALL enforce partition key requirements per operation type.
 
 | Operation | Partition Key | Behavior |
 |-----------|--------------|----------|
@@ -79,27 +75,59 @@ IReadOnlyList<string> paths = containerProperties.PartitionKeyPaths;  // e.g., [
 | `CreateTransactionalBatch` | Required | All items in batch must share same PK |
 | Query (via `QueryRequestOptions`) | Optional | Null = cross-partition query |
 
-### Auto-Extraction from Documents
+### Requirement: Auto-Extraction from Documents
 
-1. When a typed write operation receives `partitionKey=null`, the SDK serializes the item, navigates the JSON tree using the container's partition key path(s), and extracts the value(s).
-2. For hierarchical keys, each path level must have a corresponding value in the document.
-3. If a path is missing from the document, the extracted value is `Undefined`, which maps to `PartitionKey.None` semantics.
-4. If extraction fails due to a stale partition key definition cache, the SDK retries with a refreshed cache via `PartitionKeyMismatchRetryPolicy`.
+The SDK SHALL automatically extract partition key values from typed items.
 
-### Hierarchical (Multi-Hash) Partition Keys
+#### Typed write auto-extraction
 
-1. Requires `PartitionKeyDefinitionVersion.V2` and `PartitionKind.MultiHash`.
-2. Paths are ordered — `PartitionKeyBuilder.Add()` calls correspond to paths in definition order.
-3. Point operations MUST provide all path components. Incomplete keys return 400 Bad Request.
-4. Query operations support prefix routing: providing only the first N components of an M-level key routes to partitions matching that prefix.
-5. `PartitionKeyBuilder.Build()` throws `ArgumentException` if no values were added.
+**When** a typed write operation receives `partitionKey=null`, the SDK SHALL serialize the item, navigate the JSON tree using the container's partition key path(s), and extract the value(s).
 
-### Partition Key Immutability
+#### Hierarchical key extraction
 
-1. An item's partition key value is immutable. You cannot change it via Replace or Upsert.
-2. To change an item's partition key, delete the item and create a new one with the desired key.
+**When** a container uses hierarchical partition keys, the SDK SHALL extract each path level's corresponding value from the document.
 
-### Supported Value Types
+#### Missing path handling
+
+**If** a path is missing from the document, the SDK SHALL extract the value as `Undefined`, which maps to `PartitionKey.None` semantics.
+
+#### Stale cache retry
+
+**If** extraction fails due to a stale partition key definition cache, the SDK SHALL retry with a refreshed cache via `PartitionKeyMismatchRetryPolicy`.
+
+### Requirement: Hierarchical (Multi-Hash) Partition Keys
+
+The SDK SHALL support hierarchical partition keys with `PartitionKeyBuilder`.
+
+#### Version and kind requirements
+
+**When** hierarchical partition keys are used, the container SHALL require `PartitionKeyDefinitionVersion.V2` and `PartitionKind.MultiHash`.
+
+#### Ordered path components
+
+**When** building a hierarchical partition key via `PartitionKeyBuilder`, `Add()` calls SHALL correspond to paths in definition order.
+
+#### Complete key for point operations
+
+**When** a point operation is performed with a hierarchical partition key, all path components SHALL be provided. Incomplete keys SHALL return 400 Bad Request.
+
+#### Prefix routing for queries
+
+**When** a query operation provides only the first N components of an M-level hierarchical key, the SDK SHALL route to partitions matching that prefix.
+
+#### Empty builder validation
+
+**When** `PartitionKeyBuilder.Build()` is called with no values added, the SDK SHALL throw `ArgumentException`.
+
+### Requirement: Partition Key Immutability
+
+The SDK SHALL enforce that an item's partition key value is immutable.
+
+**When** a Replace or Upsert operation is performed, the SDK SHALL NOT allow changing the item's partition key value. To change an item's partition key, the item SHALL be deleted and recreated with the desired key.
+
+### Requirement: Supported Value Types
+
+The SDK SHALL support the following partition key value types.
 
 | Type | Constructor | Notes |
 |------|------------|-------|
@@ -108,10 +136,11 @@ IReadOnlyList<string> paths = containerProperties.PartitionKeyPaths;  // e.g., [
 | `double` | `new PartitionKey(42.0)` | All numeric types as double |
 | `null` | `new PartitionKey((string)null)` | Creates `PartitionKey.Null` |
 
-### Equality and Hashing
+### Requirement: Equality and Hashing
 
-- `PartitionKey` supports `==`, `!=`, `Equals()`, and `GetHashCode()` based on internal representation.
-- Two `PartitionKey` instances with the same value are equal regardless of how they were constructed.
+The SDK SHALL support value-based equality for `PartitionKey`.
+
+**When** two `PartitionKey` instances have the same value, the SDK SHALL consider them equal via `==`, `!=`, `Equals()`, and `GetHashCode()`, regardless of how they were constructed.
 
 ## Configuration
 

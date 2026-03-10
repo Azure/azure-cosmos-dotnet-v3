@@ -46,19 +46,37 @@ Container container = cosmosClient.GetContainer("myDb", "myContainer"); // No ne
 
 These return proxy references — they do NOT validate existence. Use `CreateDatabaseIfNotExistsAsync` / `CreateContainerIfNotExistsAsync` to ensure resources exist.
 
-## Behavioral Invariants
+## Requirements
 
-### Client Lifecycle
+### Requirement: Client Lifecycle
 
-1. **Thread-safe**: `CosmosClient` is fully thread-safe and should be shared across threads.
-2. **Singleton pattern**: One instance per application lifetime is recommended for optimal connection pooling and cache reuse.
-3. **No network validation at construction**: Constructors perform NO network calls. Connectivity issues surface on the first operation.
-4. **Immutable after construction**: `ClientOptions` are read-only after the client is created.
-5. **Disposal**: Implements `IDisposable`. After disposal, all operations throw errors. `DisposedDateTimeUtc` tracks when disposal occurred.
+The SDK SHALL manage `CosmosClient` as a thread-safe, long-lived singleton.
 
-### Connection Modes
+#### Thread safety
 
-| Aspect | Gateway (`ConnectionMode.Gateway`) | Direct (`ConnectionMode.Direct`) — Default |
+**When** multiple threads access a `CosmosClient` instance concurrently, the SDK SHALL handle all operations safely without requiring external synchronization.
+
+#### Singleton pattern
+
+**When** creating a `CosmosClient`, the SDK SHALL optimize for a single instance per application lifetime to maximize connection pooling and cache reuse.
+
+#### No network validation at construction
+
+**When** a `CosmosClient` is constructed, the SDK SHALL NOT perform any network calls. Connectivity issues SHALL surface on the first operation.
+
+#### Immutable after construction
+
+**When** a `CosmosClient` is constructed, the SDK SHALL treat `ClientOptions` as read-only. Modifications after construction SHALL NOT be possible.
+
+#### Disposal behavior
+
+**When** a `CosmosClient` is disposed, all subsequent operations SHALL throw errors. The SDK SHALL track disposal via `DisposedDateTimeUtc`.
+
+### Requirement: Connection Modes
+
+The SDK SHALL support two connection modes with distinct characteristics.
+
+| Aspect | Gateway (`ConnectionMode.Gateway`) | Direct (`ConnectionMode.Direct`) - Default |
 |--------|-----------------------------------|-------------------------------------------|
 | Protocol | HTTPS (port 443) | TCP/SSL (multiple ports) |
 | Routing | Via gateway proxy | Direct to data nodes |
@@ -67,11 +85,27 @@ These return proxy references — they do NOT validate existence. Use `CreateDat
 | Firewall | Simple (one endpoint) | Complex (multiple ports) |
 | Key options | `GatewayModeMaxConnectionLimit`, `WebProxy` | `MaxRequestsPerTcpConnection`, `MaxTcpConnectionsPerEndpoint`, `IdleTcpConnectionTimeout` |
 
-### Region Configuration
+### Requirement: Region Configuration
 
-- **`ApplicationRegion`** (single string): SDK generates proximity-ordered fallback list. Mutually exclusive with `ApplicationPreferredRegions`.
-- **`ApplicationPreferredRegions`** (ordered list): Explicit failover order. Invalid regions are silently ignored but used if later added to account. Mutually exclusive with `ApplicationRegion`.
-- **`LimitToEndpoint`** (bool, default `false`): When `true`, disables region auto-discovery. Incompatible with `ApplicationRegion`/`ApplicationPreferredRegions`.
+The SDK SHALL support configuring preferred regions for request routing.
+
+#### ApplicationRegion
+
+**Where** `CosmosClientOptions.ApplicationRegion` is set (single string), **when** the client initializes, the SDK SHALL generate a proximity-ordered fallback list. This setting SHALL be mutually exclusive with `ApplicationPreferredRegions`.
+
+#### ApplicationPreferredRegions
+
+**Where** `CosmosClientOptions.ApplicationPreferredRegions` is set (ordered list), **when** requests are routed, the SDK SHALL follow the explicit failover order. Invalid regions SHALL be silently ignored but used if later added to the account.
+
+#### LimitToEndpoint
+
+**Where** `CosmosClientOptions.LimitToEndpoint = true`, **when** the client initializes, the SDK SHALL disable region auto-discovery. This setting SHALL be incompatible with `ApplicationRegion`/`ApplicationPreferredRegions`.
+
+### Requirement: Proxy Reference Semantics
+
+The SDK SHALL return lightweight proxy references for database and container access.
+
+**When** `GetDatabase()` or `GetContainer()` is called, the SDK SHALL return a reference without making network calls. Operations on non-existent resources SHALL return 404.
 
 ## Configuration
 
@@ -114,6 +148,8 @@ See `serialization` spec for details.
 - **Retry Policies**: `MaxRetryAttemptsOnRateLimitedRequests` and `MaxRetryWaitTimeOnRateLimitedRequests` configure `ResourceThrottleRetryPolicy`. See `retry-and-failover` spec.
 - **Hedging**: `AvailabilityStrategy` configures cross-region hedging. See `cross-region-hedging` spec.
 - **Serialization**: Serializer configuration affects all typed APIs. See `serialization` spec.
+- **Transport**: Connection mode and TCP settings affect transport behavior. See `transport-and-connectivity` spec.
+- **Consistency**: `ConsistencyLevel` affects read guarantees. See `consistency-and-session` spec.
 
 ## References
 

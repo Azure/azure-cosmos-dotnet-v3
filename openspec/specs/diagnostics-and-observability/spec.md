@@ -42,25 +42,53 @@ string fullDiagnostics = diagnostics.ToString();  // JSON — lazy materialized
 | `Azure.Cosmos.Client.Operation` | Operation-level metrics (duration, payload sizes) |
 | `Azure.Cosmos.Client.Request` | Network-level request metrics |
 
-## Behavioral Invariants
+## Requirements
 
-### Diagnostics Lifecycle
+### Requirement: Diagnostics Lifecycle
 
-1. **Lazy materialization**: `ToString()` serializes the trace tree to JSON only when called. This avoids allocation overhead for operations where diagnostics are not inspected.
-2. **Attached to every response**: `ResponseMessage.Diagnostics` is always available, defaulting to `NoOpTrace` if no trace was captured.
-3. **Immutable once materialized**: The trace tree is frozen (walked state set recursively) before serialization to ensure consistency.
-4. **Thread-safe region tracking**: `TraceSummary` uses `HashSet` under lock for region deduplication and `Interlocked.Increment` for failure counting.
+**Scenario: Lazy materialization of diagnostics**
+When `ToString()` is called on a `CosmosDiagnostics` instance,
+the system shall serialize the trace tree to JSON only at that point, avoiding allocation overhead for operations where diagnostics are not inspected.
 
-### OpenTelemetry Integration
+**Scenario: Diagnostics always attached to responses**
+While the SDK is processing any operation,
+`ResponseMessage.Diagnostics` shall always be available, defaulting to `NoOpTrace` if no trace was captured.
 
-1. **Disabled by default (GA builds)**: `CosmosClientTelemetryOptions.DisableDistributedTracing` defaults to `true` in GA, `false` in Preview.
-2. **No overhead when disabled**: When distributed tracing is disabled, no `Activity` objects are created.
-3. **Semantic conventions**: Activities follow [OpenTelemetry Cosmos DB semantic conventions](https://opentelemetry.io/docs/specs/semconv/database/cosmosdb/).
-4. **Activity kind**: `ActivityKind.Internal` for Gateway mode, `ActivityKind.Client` for Direct mode.
+**Scenario: Immutability after materialization**
+When the trace tree is serialized,
+the system shall freeze the tree (walked state set recursively) before serialization to ensure consistency.
 
-### Events
+**Scenario: Thread-safe region tracking**
+While multiple threads are recording diagnostics concurrently,
+`TraceSummary` shall use `HashSet` under lock for region deduplication and `Interlocked.Increment` for failure counting to guarantee thread safety.
 
-Three event types are emitted when distributed tracing is enabled:
+### Requirement: OpenTelemetry Distributed Tracing
+
+**Scenario: Distributed tracing disabled by default in GA**
+When the SDK is built as a GA release,
+`CosmosClientTelemetryOptions.DisableDistributedTracing` shall default to `true`.
+
+**Scenario: Distributed tracing enabled by default in Preview**
+When the SDK is built as a Preview release,
+`CosmosClientTelemetryOptions.DisableDistributedTracing` shall default to `false`.
+
+**Scenario: No overhead when tracing is disabled**
+While distributed tracing is disabled,
+the system shall not create any `Activity` objects.
+
+**Scenario: Semantic conventions compliance**
+When distributed tracing is enabled,
+activities shall follow [OpenTelemetry Cosmos DB semantic conventions](https://opentelemetry.io/docs/specs/semconv/database/cosmosdb/).
+
+**Scenario: Activity kind selection**
+When an operation uses Gateway mode,
+the activity kind shall be `ActivityKind.Internal`.
+When an operation uses Direct mode,
+the activity kind shall be `ActivityKind.Client`.
+
+### Requirement: Telemetry Events
+
+When distributed tracing is enabled, three event types are emitted:
 
 | Event | Level | Trigger | Payload |
 |-------|-------|---------|---------|
@@ -68,7 +96,19 @@ Three event types are emitted when distributed tracing is enabled:
 | **LatencyOverThreshold** | Warning | Latency exceeds threshold OR RU/payload exceeds configured limits | Full diagnostics JSON |
 | **Exception** | Error | Any exception during operation | Exception diagnostics |
 
-### Threshold Configuration
+**Scenario: Failed request event emission**
+When an operation returns a non-success status code (≥300, excluding 404/0, 304/0, 409/0, 412/0),
+the system shall emit a **FailedRequest** event at Error level with the full diagnostics JSON as payload.
+
+**Scenario: Latency over threshold event emission**
+When an operation's latency exceeds the configured threshold, or the RU charge or payload size exceeds configured limits,
+the system shall emit a **LatencyOverThreshold** event at Warning level with the full diagnostics JSON as payload.
+
+**Scenario: Exception event emission**
+When any exception occurs during an operation,
+the system shall emit an **Exception** event at Error level with the exception diagnostics as payload.
+
+### Requirement: Threshold-Based Diagnostics
 
 ```csharp
 CosmosClientTelemetryOptions telemetryOptions = new()
@@ -84,7 +124,17 @@ CosmosClientTelemetryOptions telemetryOptions = new()
 };
 ```
 
-Thresholds can also be overridden per-request via `RequestOptions.CosmosThresholdOptions`.
+**Scenario: Default point operation latency threshold**
+If no custom threshold is configured for point operations,
+the system shall use a default latency threshold of 1 second.
+
+**Scenario: Default non-point operation latency threshold**
+If no custom threshold is configured for non-point operations,
+the system shall use a default latency threshold of 3 seconds.
+
+**Scenario: Per-request threshold override**
+When `RequestOptions.CosmosThresholdOptions` is set on an individual request,
+the system shall use the per-request thresholds instead of the client-level thresholds for that operation.
 
 ## Configuration
 

@@ -43,58 +43,141 @@ public abstract class FeedIterator : IDisposable
 public class QueryDefinition
 {
     public string QueryText { get; }
-    public QueryDefinition WithParameter(string name, object value);      // Replaces if exists
-    public QueryDefinition WithParameterStream(string name, Stream value); // For pre-serialized values
+    public QueryDefinition WithParameter(string name, object value);
+    public QueryDefinition WithParameterStream(string name, Stream value);
     public IReadOnlyList<(string Name, object Value)> GetQueryParameters();
 }
 ```
 
-## Behavioral Invariants
+## Requirements
 
-### FeedIterator Lifecycle
+### Requirement: FeedIterator Lifecycle
 
-1. `HasMoreResults` is `true` initially and remains `true` until the server returns a `null` continuation token or a 304 Not Modified status.
-2. Once `HasMoreResults` is `false`, the query is exhausted. No more pages exist.
-3. `HasMoreResults` remains `true` after a `ReadNextAsync()` that throws an exception. The caller decides whether to retry.
-4. `FeedIterator` implements `IDisposable` and MUST be disposed to avoid resource leaks. Use `using` statements.
-5. Pages may be empty (0 items) with a non-null continuation token. This is valid behavior — the caller must continue iterating.
+The SDK SHALL manage query results through the FeedIterator pattern with specific lifecycle guarantees.
 
-### Parameterized Queries
+#### HasMoreResults initial state
 
-1. Parameters are name-indexed (e.g., `@status`). Calling `WithParameter` with an existing name replaces the previous value.
-2. Parameter values are never parsed as SQL — they prevent SQL injection by design.
-3. Supported types: primitives, objects, arrays, and `Stream` (via `WithParameterStream`).
+**When** a FeedIterator is created, `HasMoreResults` SHALL be `true` and SHALL remain `true` until the server returns a `null` continuation token or 304 Not Modified.
 
-### Cross-Partition vs Single-Partition
+#### Exhaustion semantics
 
-1. When `QueryRequestOptions.PartitionKey` is set, the query targets a single partition (fast, cheaper RU cost).
-2. When `PartitionKey` is `null`, the SDK executes a cross-partition query (fan-out to all physical partitions, merged results).
-3. A `null` `QueryDefinition` or `queryText` is treated as a read feed — returns all items with no WHERE clause.
-4. Cross-partition queries have no implicit ordering across partitions. `ORDER BY` requires server-side sorting which may increase RU cost.
+**When** `HasMoreResults` becomes `false`, the query SHALL be exhausted with no more pages available.
 
-### FeedRange-Based Parallelism
+#### Exception resilience
 
-1. `GetFeedRangesAsync()` returns one `FeedRange` per physical partition. Ranges are mutually exclusive (no item duplication).
-2. Each `FeedRange` can be queried independently in parallel via `GetItemQueryIterator<T>(feedRange, ...)`.
-3. Continuation tokens are FeedRange-specific and not interchangeable between ranges.
-4. If a physical partition splits during iteration, the SDK handles it transparently.
+**When** `ReadNextAsync()` throws an exception, `HasMoreResults` SHALL remain `true`. The caller SHALL decide whether to retry.
 
-### Continuation Tokens
+#### Disposal requirement
 
-1. Continuation tokens are opaque — never parse or construct them manually.
-2. Tokens are version-bound and container-bound. A token from one container or SDK version is invalid for another.
-3. Tokens can be persisted within a session for resumption: pass a saved token to `GetItemQueryIterator(queryDef, continuationToken: savedToken)`.
-4. `QueryRequestOptions.ResponseContinuationTokenLimitInKb` controls maximum token size.
-5. `QueryRequestOptions` are copied at iterator creation time. Modifying options after creation has no effect.
+**When** a FeedIterator is no longer needed, it SHALL be disposed to avoid resource leaks. The SDK SHALL implement `IDisposable`.
 
-### LINQ Provider
+#### Empty pages
 
-1. `GetItemLinqQueryable<T>()` returns an `IOrderedQueryable<T>` backed by `CosmosLinqQuery<T>`.
-2. **Supported operators**: `Where`, `Select`, `OrderBy`, `OrderByDescending`, `ThenBy`, `Take`, `Skip`, `Distinct`, `Count`, `Sum`, `Average`, `Min`, `Max`, `Join`, `GroupJoin`, `OfType<T>`.
-3. LINQ expressions are lazily built — no execution occurs until materialization.
-4. **Async execution (recommended)**: Call `.ToFeedIterator()` to get a `FeedIterator<T>`, then iterate with `ReadNextAsync()`.
-5. **Synchronous execution**: Only available when `allowSynchronousQueryExecution=true`. Calling `.ToList()` or enumerating directly blocks the thread.
-6. Non-translatable expressions (custom methods, `ToString()`, etc.) fail at query time with an exception, not at expression-build time.
+**When** a page is returned with 0 items but a non-null continuation token, the SDK SHALL treat this as valid behavior. The caller SHALL continue iterating.
+
+### Requirement: Parameterized Queries
+
+The SDK SHALL support parameterized queries for safe SQL execution.
+
+#### Parameter replacement
+
+**When** `WithParameter` is called with an existing parameter name, the SDK SHALL replace the previous value.
+
+#### SQL injection prevention
+
+**When** parameter values are provided, the SDK SHALL NOT parse them as SQL. Parameters SHALL prevent SQL injection by design.
+
+#### Supported parameter types
+
+**When** parameters are added, the SDK SHALL support primitives, objects, arrays, and `Stream` (via `WithParameterStream`).
+
+### Requirement: Cross-Partition vs Single-Partition Queries
+
+The SDK SHALL support both single-partition and cross-partition query execution.
+
+#### Single-partition routing
+
+**Where** `QueryRequestOptions.PartitionKey` is set, **when** a query is executed, the SDK SHALL target a single partition for faster execution and lower RU cost.
+
+#### Cross-partition fan-out
+
+**Where** `QueryRequestOptions.PartitionKey` is null, **when** a query is executed, the SDK SHALL execute a cross-partition query, fanning out to all physical partitions and merging results.
+
+#### Null query as read feed
+
+**When** `QueryDefinition` or `queryText` is `null`, the SDK SHALL treat this as a read feed, returning all items with no WHERE clause.
+
+#### Cross-partition ordering
+
+**When** a cross-partition query uses `ORDER BY`, the SDK SHALL perform server-side sorting, which MAY increase RU cost. No implicit ordering SHALL be guaranteed across partitions.
+
+### Requirement: FeedRange-Based Parallelism
+
+The SDK SHALL support partition-scoped parallel queries via FeedRange.
+
+#### FeedRange per physical partition
+
+**When** `GetFeedRangesAsync()` is called, the SDK SHALL return one `FeedRange` per physical partition. Ranges SHALL be mutually exclusive.
+
+#### Independent parallel queries
+
+**When** a query is scoped to a `FeedRange`, the SDK SHALL execute it independently against that partition.
+
+#### Range-specific continuation tokens
+
+**When** continuation tokens are generated for FeedRange queries, they SHALL be range-specific and not interchangeable between ranges.
+
+#### Transparent split handling
+
+**When** a physical partition splits during iteration, the SDK SHALL handle it transparently.
+
+### Requirement: Continuation Tokens
+
+The SDK SHALL manage opaque, version-bound continuation tokens for query resumption.
+
+#### Opaque tokens
+
+**When** a continuation token is returned, callers SHALL NOT parse or construct tokens manually. The SDK SHALL treat them as opaque.
+
+#### Version and container binding
+
+**When** a continuation token is used, the SDK SHALL validate it is compatible with the current container and SDK version. Tokens from different containers or SDK versions SHALL be invalid.
+
+#### Token size control
+
+**Where** `QueryRequestOptions.ResponseContinuationTokenLimitInKb` is set, the SDK SHALL limit the maximum token size accordingly.
+
+#### Options snapshot at creation
+
+**When** a FeedIterator is created, `QueryRequestOptions` SHALL be copied at creation time. Modifying options after creation SHALL have no effect.
+
+### Requirement: LINQ Provider
+
+The SDK SHALL support LINQ-to-SQL translation for type-safe queries.
+
+#### Queryable interface
+
+**When** `GetItemLinqQueryable<T>()` is called, the SDK SHALL return an `IOrderedQueryable<T>` backed by `CosmosLinqQuery<T>`.
+
+#### Supported operators
+
+**When** LINQ expressions are built, the SDK SHALL support: `Where`, `Select`, `OrderBy`, `OrderByDescending`, `ThenBy`, `Take`, `Skip`, `Distinct`, `Count`, `Sum`, `Average`, `Min`, `Max`, `Join`, `GroupJoin`, `OfType<T>`.
+
+#### Lazy expression building
+
+**When** LINQ expressions are composed, the SDK SHALL NOT execute them until materialization (e.g., `ToFeedIterator()` or enumeration).
+
+#### Async execution (recommended)
+
+**When** executing LINQ queries, callers SHOULD call `.ToFeedIterator()` to get a `FeedIterator<T>` and iterate with `ReadNextAsync()`.
+
+#### Synchronous execution
+
+**Where** `allowSynchronousQueryExecution=true`, **when** `.ToList()` or direct enumeration is used, the SDK SHALL execute the query synchronously, blocking the calling thread.
+
+#### Non-translatable expressions
+
+**When** a LINQ expression contains non-translatable methods (custom methods, `ToString()`, etc.), the SDK SHALL fail at query execution time, not at expression-build time.
 
 ## Configuration
 
@@ -106,7 +189,7 @@ public class QueryDefinition
 | `MaxConcurrency` | `int?` | Parallelism for cross-partition; -1 = auto |
 | `MaxBufferedItemCount` | `int?` | Client-side buffer during parallel execution |
 | `PartitionKey` | `PartitionKey?` | Single-partition routing (null = cross-partition) |
-| `EnableScanInQuery` | `bool?` | Allow scans when indexes don't cover query |
+| `EnableScanInQuery` | `bool?` | Allow scans when indexes do not cover query |
 | `EnableOptimisticDirectExecution` | `bool` | Try direct execution before query plan |
 | `PopulateIndexMetrics` | `bool?` | Return index usage stats |
 | `ConsistencyLevel` | `ConsistencyLevel?` | Override account default |

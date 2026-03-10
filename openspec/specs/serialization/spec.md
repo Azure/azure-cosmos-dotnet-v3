@@ -52,16 +52,19 @@ CosmosClientOptions options = new()
 };
 ```
 
-## Behavioral Invariants
+## Requirements
 
-### Serializer Contract
+### Requirement: Serializer Contract
 
-1. **`FromStream<T>` must dispose the stream**: The serializer implementation is responsible for disposing the input stream, including on exceptions. The SDK validates this and throws `InvalidOperationException` if the stream is still readable after `FromStream` returns.
-2. **`ToStream<T>` must return a readable stream**: The returned stream must have `CanRead = true` and position at 0. The SDK validates this and throws `InvalidOperationException` if the stream is null or not readable.
-3. **Stream pass-through**: If `T` is `Stream`, the input stream is returned directly without deserialization.
-4. **Empty stream handling**: Returns `default(T)` for empty seekable streams.
+**EARS-SC-1 (FromStream dispose):** When `FromStream<T>` is called on a serializer implementation, the serializer shall dispose the input stream before returning, including on exceptions. If the stream is still readable after `FromStream` returns, the SDK shall throw `InvalidOperationException`.
 
-### Serializer Routing
+**EARS-SC-2 (ToStream readable):** When `ToStream<T>` is called on a serializer implementation, the serializer shall return a stream with `CanRead = true` and position at 0. If the returned stream is null or not readable, the SDK shall throw `InvalidOperationException`.
+
+**EARS-SC-3 (Stream pass-through):** When `T` is `Stream`, the SDK shall return the input stream directly without deserialization.
+
+**EARS-SC-4 (Empty stream):** When the input stream is empty and seekable, the SDK shall return `default(T)`.
+
+### Requirement: Serializer Routing
 
 The SDK maintains separate serializers for different type categories:
 
@@ -72,9 +75,15 @@ The SDK maintains separate serializers for different type categories:
 | `PatchSpec` | `PatchOperationsSerializer` | Patch operation payloads |
 | `SqlQuerySpec` | `SqlQuerySpecSerializer` | Query definitions with parameters |
 
-**Key rule**: Custom serializers are NEVER used for SDK internal types. This ensures SDK resource management works correctly regardless of custom serializer behavior.
+**EARS-SR-1 (User type routing):** When a typed API operation targets a user-defined type (application POCOs, `dynamic`, `Document`), the SDK shall use the custom or configured serializer.
 
-### Configuration Options
+**EARS-SR-2 (Internal type routing):** When a typed API operation targets an SDK internal type (`DatabaseProperties`, `ContainerProperties`, `ThroughputProperties`), the SDK shall always use the default JSON.NET serializer, regardless of any custom serializer configured by the user. This ensures SDK resource management works correctly regardless of custom serializer behavior.
+
+**EARS-SR-3 (PatchSpec routing):** When serializing patch operation payloads, the SDK shall use `PatchOperationsSerializer`.
+
+**EARS-SR-4 (SqlQuerySpec routing):** When serializing query definitions with parameters, the SDK shall use `SqlQuerySpecSerializer`.
+
+### Requirement: Serialization Configuration
 
 #### CosmosSerializationOptions (Newtonsoft.Json)
 
@@ -91,14 +100,23 @@ The SDK maintains separate serializers for different type categories:
 | `Default` | No transformation — property names used as-is |
 | `CamelCase` | First letter lowercased: `PropertyName` → `propertyName` |
 
-### LINQ Property Name Translation
+**EARS-CF-1 (Null value handling):** When `IgnoreNullValues` is set to `true`, the Newtonsoft.Json serializer shall use `NullValueHandling.Ignore`; when set to `false`, it shall use `NullValueHandling.Include`.
 
-1. `CosmosLinqSerializer.SerializeMemberName(MemberInfo)` is called during LINQ-to-SQL translation to determine the JSON property name for `SELECT`, `WHERE`, and `ORDER BY` clauses.
-2. **System.Text.Json serializer** respects `[JsonPropertyName]` and `JsonSerializerOptions.PropertyNamingPolicy`.
-3. **Newtonsoft.Json serializer** respects `[JsonProperty]` attribute and contract resolver naming.
-4. Custom `CosmosLinqSerializer` implementations must use `PropertyNamingPolicy = Default` (validated internally).
+**EARS-CF-2 (Indentation):** When `Indented` is set to `true`, the Newtonsoft.Json serializer shall use `Formatting.Indented`; when set to `false`, it shall use `Formatting.None`.
 
-### Operations Using Serialization
+**EARS-CF-3 (Camel case naming):** When `PropertyNamingPolicy` is set to `CamelCase`, the Newtonsoft.Json serializer shall use `CamelCasePropertyNamesContractResolver`, lowercasing the first letter of property names (`PropertyName` → `propertyName`). When set to `Default`, property names shall be used as-is.
+
+### Requirement: LINQ Property Name Translation
+
+**EARS-LQ-1 (Member name resolution):** When the SDK translates a LINQ expression to SQL, it shall call `CosmosLinqSerializer.SerializeMemberName(MemberInfo)` to determine the JSON property name for `SELECT`, `WHERE`, and `ORDER BY` clauses.
+
+**EARS-LQ-2 (System.Text.Json attributes):** When the System.Text.Json serializer is configured, the LINQ translator shall respect `[JsonPropertyName]` attributes and `JsonSerializerOptions.PropertyNamingPolicy`.
+
+**EARS-LQ-3 (Newtonsoft.Json attributes):** When the Newtonsoft.Json serializer is configured, the LINQ translator shall respect `[JsonProperty]` attributes and contract resolver naming.
+
+**EARS-LQ-4 (Custom LINQ serializer naming policy):** When a custom `CosmosLinqSerializer` implementation is registered, the SDK shall validate that `PropertyNamingPolicy` is set to `Default` and reject other values.
+
+### Requirement: Serialization Scope
 
 **Typed APIs (use serializer)**:
 - `CreateItemAsync<T>`, `ReadItemAsync<T>`, `ReplaceItemAsync<T>`, `UpsertItemAsync<T>`
@@ -110,16 +128,21 @@ The SDK maintains separate serializers for different type categories:
 - `CreateItemStreamAsync`, `ReadItemStreamAsync`, `ReplaceItemStreamAsync`
 - `GetItemQueryStreamIterator`, `GetChangeFeedStreamIterator`
 
-### Partition Key Extraction
+**EARS-SS-1 (Typed API serialization):** When a typed API operation (`CreateItemAsync<T>`, `ReadItemAsync<T>`, `ReplaceItemAsync<T>`, `UpsertItemAsync<T>`, `GetItemQueryIterator<T>`, `GetItemLinqQueryable<T>`, `TransactionalBatch` typed operations, stored procedure parameter serialization) is invoked, the SDK shall use the configured serializer to serialize and/or deserialize the payload.
 
-When auto-extracting partition key from typed items (e.g., `CreateItemAsync<T>(item, partitionKey: null)`):
-1. The item is serialized using the configured serializer.
-2. Partition key extraction always uses `JToken.FromObject()` (Newtonsoft) on the deserialized object.
-3. This means partition key paths must be deserializable via `JToken.FromObject()` even when using a custom serializer.
+**EARS-SS-2 (Stream API bypass):** When a stream API operation (`CreateItemStreamAsync`, `ReadItemStreamAsync`, `ReplaceItemStreamAsync`, `GetItemQueryStreamIterator`, `GetChangeFeedStreamIterator`) is invoked, the SDK shall bypass the serializer entirely and pass the raw stream.
 
-### Max Depth Protection
+### Requirement: Partition Key Extraction
 
-The default JSON.NET serializer sets `MaxDepth = 64` to prevent denial-of-service attacks via deeply nested JSON (GHSA-5crp-9r3c-p9vr).
+**EARS-PK-1 (Auto-extraction serialization):** When auto-extracting a partition key from a typed item (e.g., `CreateItemAsync<T>(item, partitionKey: null)`), the SDK shall first serialize the item using the configured serializer.
+
+**EARS-PK-2 (JToken extraction):** When extracting the partition key value after serialization, the SDK shall always use `JToken.FromObject()` (Newtonsoft) on the deserialized object, regardless of the configured serializer.
+
+**EARS-PK-3 (Cross-serializer compatibility):** Because partition key extraction always uses `JToken.FromObject()`, partition key paths shall be deserializable via `JToken.FromObject()` even when using a custom serializer.
+
+### Requirement: Max Depth Protection
+
+**EARS-MD-1 (Depth limit):** The default JSON.NET serializer shall set `MaxDepth = 64` to prevent denial-of-service attacks via deeply nested JSON (GHSA-5crp-9r3c-p9vr).
 
 ## Interactions
 

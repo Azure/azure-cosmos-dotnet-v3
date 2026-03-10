@@ -57,14 +57,59 @@ The Azure Cosmos DB .NET SDK provides APIs for managing databases and containers
 | `SpatialIndexes` | `Collection<SpatialPath>` | Geospatial indexes |
 | `VectorIndexes` | `Collection<VectorIndexPath>` | Vector similarity search indexes (Preview) |
 
-## Behavioral Invariants
+## Requirements
 
-1. **Proxy references don't validate existence**: `GetDatabase()` and `GetContainer()` return lightweight references without network calls. Operations on non-existent resources return 404.
-2. **`CreateIfNotExists` idempotency**: Returns 200 with existing resource if it already exists, 201 if newly created.
-3. **Partition key is immutable**: Cannot be changed after container creation.
-4. **IndexingPolicy changes**: Some indexing policy changes trigger background re-indexing. Others (like adding vector indexes) may require container recreation.
-5. **TTL behavior**: Setting `DefaultTimeToLive = -1` enables TTL without a default expiry. Individual items can set their own TTL via the `ttl` property.
-6. **Throughput**: Can be provisioned at database level (shared) or container level (dedicated). Use `ThroughputProperties.CreateAutoscaleThroughput()` for autoscale.
+### Requirement: Proxy Reference Semantics
+
+The SDK SHALL return lightweight proxy references that do not validate resource existence.
+
+**When** `GetDatabase()` or `GetContainer()` is called, the SDK SHALL return a reference without making network calls. Operations on non-existent resources SHALL return 404.
+
+### Requirement: CreateIfNotExists Idempotency
+
+The SDK SHALL support idempotent create operations.
+
+**When** `CreateDatabaseIfNotExistsAsync` or `CreateContainerIfNotExistsAsync` is called, the SDK SHALL return 200 with the existing resource if it already exists, or 201 if newly created.
+
+### Requirement: Partition Key Immutability
+
+The SDK SHALL enforce that partition keys cannot be changed after container creation.
+
+**When** a container is created with a partition key definition, the SDK SHALL NOT allow the partition key to be changed via `ReplaceContainerAsync` or any other operation.
+
+### Requirement: Indexing Policy Management
+
+The SDK SHALL support configuring indexing policies on containers.
+
+#### Background re-indexing
+
+**When** indexing policy changes are applied via `ReplaceContainerAsync`, the SDK SHALL allow the service to trigger background re-indexing as needed.
+
+#### Vector indexes
+
+**Where** `IndexingPolicy.VectorIndexes` are configured (Preview), the SDK SHALL support creating vector similarity search indexes with types: Flat, QuantizedFlat, DiskANN.
+
+### Requirement: Time-to-Live (TTL)
+
+The SDK SHALL support configuring item expiration via TTL.
+
+#### Container-level TTL
+
+**Where** `ContainerProperties.DefaultTimeToLive` is set to a positive value, **when** items are created without an explicit TTL, the SDK SHALL expire items after the specified duration.
+
+#### Enable without default expiry
+
+**Where** `ContainerProperties.DefaultTimeToLive = -1`, the SDK SHALL enable TTL without a default expiry. Individual items SHALL set their own TTL via the `ttl` property.
+
+#### Item-level TTL override
+
+**While** a container has default TTL enabled, **when** an item is created with `ttl = -1`, the SDK SHALL ensure that item never expires.
+
+### Requirement: Throughput Management
+
+The SDK SHALL support provisioning throughput at database or container level.
+
+**When** `ReadThroughputAsync` or `ReplaceThroughputAsync` is called, the SDK SHALL manage throughput using `ThroughputProperties`, supporting both manual (`CreateManualThroughput()`) and autoscale (`CreateAutoscaleThroughput()`) modes.
 
 ## References
 

@@ -36,7 +36,6 @@ while (iterator.HasMoreResults)
     FeedResponse<T> response = await iterator.ReadNextAsync();
     if (response.StatusCode == HttpStatusCode.NotModified)
     {
-        // No changes — save continuation token, sleep, retry later
         string token = response.Headers.ContinuationToken;
         await Task.Delay(pollInterval);
         continue;
@@ -58,43 +57,102 @@ ChangeFeedProcessor processor = container
     .Build();
 
 await processor.StartAsync();
-// ... runs until stopped
 await processor.StopAsync();
 ```
 
-## Behavioral Invariants
+## Requirements
 
-### Change Feed Modes
+### Requirement: Change Feed Modes
 
-1. **Incremental mode** returns only the latest version of each item. Intermediate updates between polls are collapsed into the final state.
-2. **AllVersionsAndDeletes mode** returns all intermediate versions and deletes within the configured retention window. Reading beyond the retention window returns 400 Bad Request.
-3. **AllVersionsAndDeletes forces Gateway mode** for split-handling logic, regardless of `CosmosClientOptions.ConnectionMode`.
+The SDK SHALL support two change feed modes with distinct behavior.
 
-### FeedIterator Semantics
+#### Incremental mode
 
-1. **304 Not Modified**: Indicates no changes since last checkpoint. The response is empty but includes a continuation token for resumption.
-2. **Continuation tokens are always available** in response headers, even on 304 responses.
-3. **Transactional grouping**: Items committed in the same transaction are returned together in the same page, even if this exceeds `PageSizeHint`.
-4. **`PageSizeHint`** is a hint, not a guarantee. Pages may contain fewer or more items than requested.
-5. **Ordering**: Changes within a single partition are ordered by logical sequence number (LSN). No ordering guarantee across partitions.
+**When** `ChangeFeedMode.LatestVersion` is used, the SDK SHALL return only the latest version of each item. Intermediate updates between polls SHALL be collapsed into the final state.
 
-### ChangeFeedProcessor
+#### AllVersionsAndDeletes mode
 
-1. **Lease container required**: Must be a Cosmos container (shared or dedicated). Partition key should be `/id`.
-2. **Instance name required**: Identifies this host/pod in a distributed processor cluster. Must be unique per instance.
-3. **Automatic partition balancing**: The processor distributes partitions evenly across instances. When instances are added or removed, partitions are rebalanced automatically.
-4. **Auto-checkpointing**: The default `ChangeFeedHandler<T>` delegate auto-checkpoints after successful completion. Use `ChangeFeedHandlerWithManualCheckpoint<T>` for explicit checkpointing.
-5. **Error handling**: Unhandled exceptions in the delegate pause processing for that partition. The `WithErrorNotification` callback is invoked. Processing retries after `PollInterval`.
-6. **Lease expiration**: Leases expire after `LeaseExpirationInterval` (default 60s) if not renewed. Expired leases are redistributed to other instances.
-7. **`WithStartFromBeginning()` is prohibited** with `AllVersionsAndDeletes` mode.
+**When** `ChangeFeedMode.AllVersionsAndDeletes` is used, the SDK SHALL return all intermediate versions and deletes within the configured retention window.
 
-### Lease Management
+#### AllVersionsAndDeletes retention boundary
 
-1. Leases are stored as documents in the lease container with optimistic concurrency via ETags.
-2. Each lease tracks: partition range, owner instance, continuation token, last timestamp.
-3. **Lease renewal** occurs every `LeaseRenewInterval` (default 17s).
-4. **Lease acquisition** checked every `LeaseAcquireInterval` (default 13s).
-5. **Partition splits** are handled automatically: new leases are created for split ranges.
+**If** a read in AllVersionsAndDeletes mode attempts to read beyond the retention window, the SDK SHALL return 400 Bad Request.
+
+#### AllVersionsAndDeletes forces Gateway mode
+
+**When** AllVersionsAndDeletes mode is used, the SDK SHALL force Gateway mode for split-handling logic, regardless of `CosmosClientOptions.ConnectionMode`.
+
+### Requirement: FeedIterator Semantics
+
+The SDK SHALL provide change feed results through the FeedIterator pattern with specific guarantees.
+
+#### 304 Not Modified
+
+**When** no changes exist since the last checkpoint, the SDK SHALL return a response with status code 304 (Not Modified) and an empty result set. Continuation tokens SHALL still be available in the response headers.
+
+#### Transactional grouping
+
+**When** items are committed in the same transaction, the SDK SHALL return them together in the same page, even if this exceeds `PageSizeHint`.
+
+#### Ordering guarantee
+
+**When** reading changes within a single partition, the SDK SHALL return changes ordered by logical sequence number (LSN). No ordering guarantee SHALL be provided across partitions.
+
+#### PageSizeHint semantics
+
+**Where** `ChangeFeedRequestOptions.PageSizeHint` is set, the SDK SHALL treat it as a hint, not a guarantee. Pages MAY contain fewer or more items than requested.
+
+### Requirement: ChangeFeedProcessor
+
+The SDK SHALL provide a high-level processor framework for distributed change feed consumption.
+
+#### Lease container requirement
+
+**When** building a ChangeFeedProcessor, a lease container SHALL be required. The lease container partition key SHOULD be `/id`.
+
+#### Instance name requirement
+
+**When** building a ChangeFeedProcessor, an instance name SHALL be required. It SHALL be unique per instance in a distributed processor cluster.
+
+#### Automatic partition balancing
+
+**When** instances are added or removed from a processor cluster, the SDK SHALL automatically rebalance partition ownership evenly across instances.
+
+#### Auto-checkpointing
+
+**When** using the default `ChangeFeedHandler<T>` delegate, the SDK SHALL auto-checkpoint after successful completion of each batch. For explicit checkpointing, `ChangeFeedHandlerWithManualCheckpoint<T>` SHALL be used.
+
+#### Error handling
+
+**When** an unhandled exception occurs in the user delegate, the SDK SHALL pause processing for that partition, invoke the `WithErrorNotification` callback, and retry after `PollInterval`.
+
+#### Lease expiration
+
+**If** a lease is not renewed within `LeaseExpirationInterval` (default 60s), the SDK SHALL treat it as expired and redistribute it to other instances.
+
+#### StartFromBeginning with AllVersionsAndDeletes
+
+**When** `WithStartFromBeginning()` is used with `AllVersionsAndDeletes` mode, the SDK SHALL prohibit this combination.
+
+### Requirement: Lease Management
+
+The SDK SHALL manage leases with optimistic concurrency.
+
+#### Lease storage
+
+**When** leases are created, the SDK SHALL store them as documents in the lease container with optimistic concurrency via ETags. Each lease SHALL track: partition range, owner instance, continuation token, and last timestamp.
+
+#### Lease renewal
+
+**While** a processor is running, the SDK SHALL renew held leases every `LeaseRenewInterval` (default 17s).
+
+#### Lease acquisition
+
+**While** a processor is running, the SDK SHALL check for unowned leases every `LeaseAcquireInterval` (default 13s).
+
+#### Partition split handling
+
+**When** a physical partition splits, the SDK SHALL automatically create new leases for the split ranges.
 
 ## Configuration
 
