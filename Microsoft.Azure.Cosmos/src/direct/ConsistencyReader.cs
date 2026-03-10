@@ -354,11 +354,13 @@ namespace Microsoft.Azure.Documents
             throw new NotFoundException(RMResources.ReadSessionNotAvailable, responseHeaders);
         }
 
-        private ReadMode DeduceReadMode(DocumentServiceRequest request, out ConsistencyLevel targetConsistencyLevel, out bool useSessionToken)
+        private ReadMode DeduceReadMode(
+             DocumentServiceRequest request,
+             out ReadConsistencyStrategy readConsistencyStrategy,
+             out bool useSessionToken)
         {
-            targetConsistencyLevel = RequestHelper.GetConsistencyLevelToUse(this.serviceConfigReader, request);
-
-            useSessionToken = targetConsistencyLevel == ConsistencyLevel.Session;
+            readConsistencyStrategy = RequestHelper.GetReadConsistencyStrategyToUse(this.serviceConfigReader, request);
+            useSessionToken = (readConsistencyStrategy == ReadConsistencyStrategy.Session);
 
             if (request.DefaultReplicaIndex.HasValue)
             {
@@ -368,21 +370,16 @@ namespace Microsoft.Azure.Documents
                 return ReadMode.Primary;  //Let the addressResolver decides which replica to connect to.
             }
 
-            switch (targetConsistencyLevel)
+            switch (readConsistencyStrategy)
             {
-                case ConsistencyLevel.Eventual:
+                case ReadConsistencyStrategy.Eventual:
+                case ReadConsistencyStrategy.Session:
                     return ReadMode.Any;
 
-                case ConsistencyLevel.ConsistentPrefix:
-                    return ReadMode.Any;
-
-                case ConsistencyLevel.Session:
-                    return ReadMode.Any;
-
-                case ConsistencyLevel.BoundedStaleness:
+                case ReadConsistencyStrategy.LatestCommitted:
                     return ReadMode.BoundedStaleness;
 
-                case ConsistencyLevel.Strong:
+                case ReadConsistencyStrategy.GlobalStrong:
                     return ReadMode.Strong;
 
                 default:

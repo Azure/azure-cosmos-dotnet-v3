@@ -272,8 +272,12 @@ namespace Microsoft.Azure.Documents
 
                 //either request overrides consistency level with strong, or request does not override and account default consistency level is strong
                 bool isGlobalStrongReadCandidate =
-                    (ReplicatedResourceClient.IsGlobalStrongEnabled() && this.serviceConfigReader.DefaultConsistencyLevel == ConsistencyLevel.Strong) &&
-                    (!entity.RequestContext.OriginalRequestConsistencyLevel.HasValue || entity.RequestContext.OriginalRequestConsistencyLevel == ConsistencyLevel.Strong);
+                    (ReplicatedResourceClient.IsGlobalStrongEnabled() &&
+                     this.serviceConfigReader.DefaultConsistencyLevel == ConsistencyLevel.Strong) &&
+                    (!entity.RequestContext.OriginalRequestConsistencyLevel.HasValue ||
+                     entity.RequestContext.OriginalRequestConsistencyLevel == ConsistencyLevel.Strong) &&
+                    (!entity.RequestContext.ReadConsistencyStrategy.HasValue ||
+                     entity.RequestContext.ReadConsistencyStrategy == ReadConsistencyStrategy.GlobalStrong);
 
                 if (isGlobalStrongReadCandidate && readMode != ReadMode.Strong)
                 {

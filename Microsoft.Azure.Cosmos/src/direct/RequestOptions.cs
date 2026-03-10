@@ -72,6 +72,13 @@ namespace Microsoft.Azure.Documents.Client
         /// <see cref="Microsoft.Azure.Documents.Trigger"/>
         public IList<string> PostTriggerInclude { get; set; }
 
+        /// <summary>
+        /// Gets or sets the <see cref="ReadConsistencyStrategy"/> for read operations.
+        /// When set, this takes precedence over ConsistencyLevel for determining read behavior.
+        /// </summary>
+        internal ReadConsistencyStrategy? ReadConsistencyStrategy { get; set; }
+
+
 #pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
         /// <summary>
         /// Gets or sets the condition (ETag) associated with the request in the Azure Cosmos DB service.
