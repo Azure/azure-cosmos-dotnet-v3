@@ -5,15 +5,23 @@
 
 ## Quick Start Prompt
 
-**For a minor version release:**
+**In VS Code Copilot Chat:**
 ```
 @ReleaseCopilotAgent start minor
 ```
-
-**For a hotfix release:**
 ```
 @ReleaseCopilotAgent start hotfix
 ```
+
+**In the Copilot CLI (terminal):**
+```
+I want to start a minor release
+```
+```
+I want to start a hotfix release
+```
+
+> **Note:** The Copilot CLI loads these instructions via `.github/copilot-instructions.md`. All GitHub MCP tools, PowerShell, and file editing tools are built-in — no additional extensions needed.
 
 **What the agent will do:**
 1. Ask whether to run in **Minor Mode** or **Hotfix Mode**
@@ -36,7 +44,7 @@
 |------|---------|----------|
 | **.NET SDK** | Build the SDK, produce release DLLs | ✅ Yes |
 | **GitHub CLI (`gh`)** | PR creation, branch management | ✅ Yes |
-| **GitHub MCP Server** | List PRs, search code, create PRs | ✅ Yes |
+| **GitHub MCP tools** | List PRs, search code, create PRs (built-in for Copilot CLI; requires GitHub MCP Server extension for VS Code) | ✅ Yes |
 | **GenAPI tool** | Generate API contract files | ✅ Yes (bundled in `tools/GenAPI/`) |
 | **Windows OS** | GenAPI.exe is Windows-only | ✅ Yes |
 
@@ -293,34 +301,67 @@ Ask the user:
 > **Which PR(s) should be included in this hotfix?**
 > Please provide the PR number(s).
 
-Fetch details for each PR using the GitHub MCP server.
+Fetch details for each PR using GitHub MCP tools or `gh` CLI.
 
 ### 3.2 Identify Release Branch
 
-Determine the latest release branch to hotfix:
+Ask the user which release branch to hotfix. If they specify a version number (e.g., "3.50"), search for matching branches:
 
 ```powershell
-git branch -r --list "origin/releases/3.*" | Sort-Object | Select-Object -Last 5
+# List all release branches (or filter by the user's specified minor version)
+git fetch origin
+git branch -r --list "origin/releases/3.Y.*" | Sort-Object
+
+# If the user hasn't specified, show recent branches
+git branch -r --list "origin/releases/3.*" | Sort-Object | Select-Object -Last 20
 ```
 
-Ask the user to confirm which release branch to hotfix. The new hotfix branch will bump the patch version (e.g., `releases/3.57.0` → `releases/3.57.1`).
+The user can hotfix **any** release branch, not just the most recent one. Ask for confirmation:
+
+> **Which release branch should be hotfixed?**
+> (e.g., `releases/3.57.0`, `releases/3.50.0`, etc.)
 
 ### 3.3 Determine Hotfix Version
 
-Based on the selected release branch:
-- If hotfixing `releases/3.57.0`, the new version is `3.57.1`
-- Update versioning accordingly:
-  - `ClientOfficialVersion` → `3.57.1`
-  - `ClientPreviewVersion` → `3.58.0` (minor + 1)
-  - `ClientPreviewSuffixVersion` → `preview.1` (suffix = patch)
+After the user selects a release branch, check for existing patches on that minor version:
+
+```powershell
+# List all existing patches for the selected minor version
+git branch -r --list "origin/releases/X.Y.*" | Sort-Object
+```
+
+Present the existing versions and **ask the user to confirm the target hotfix version**:
+
+> **Existing versions for 3.Y: 3.Y.0, 3.Y.1**
+> **What version should this hotfix target?** (suggested: 3.Y.2)
+
+After the user confirms, update versioning accordingly. The preview version is calculated relative to the **hotfix base version**, not from `master`:
+
+- `ClientOfficialVersion` → user-confirmed version (e.g., `3.55.2`)
+- `ClientPreviewVersion` → hotfix minor + 1, patch 0 (e.g., `3.56.0`)
+- `ClientPreviewSuffixVersion` → `preview.{hotfix_patch}` (e.g., `preview.2`)
+
+> **⚠️ Important:** Do NOT use the `master` branch preview version. The hotfix preview version is always derived from the hotfix's own minor version.
+
+**Examples:**
+
+| Hotfixing | Existing patches | User target | Preview version | Preview suffix |
+|-----------|-----------------|-------------|-----------------|----------------|
+| `releases/3.57.0` | 3.57.0 | 3.57.1 | 3.58.0 | preview.1 |
+| `releases/3.55.0` | 3.55.0, 3.55.1 | 3.55.2 | 3.56.0 | preview.2 |
+| `releases/3.50.0` | 3.50.0 | 3.50.1 | 3.51.0 | preview.1 |
 
 ### 3.4 Create Hotfix Branch
 
+Create the hotfix release branch using the user-confirmed version:
+
 ```powershell
 git fetch origin
-git checkout -b releases/X.Y.Z+1 origin/releases/X.Y.Z
-git push origin releases/X.Y.Z+1
+git checkout -b releases/X.Y.PATCH origin/releases/X.Y.BASE
+git push origin releases/X.Y.PATCH
 ```
+
+Where `X.Y.PATCH` is the user-confirmed hotfix version (e.g., `3.55.2`) and `X.Y.BASE` is the branch being hotfixed (e.g., the highest existing patch, such as `releases/3.55.1`).
 
 ### 3.5 Cherry-Pick PRs
 
@@ -341,7 +382,7 @@ If there are conflicts, notify the user and assist with resolution.
 
 ### 3.6 Version Bump on Hotfix Branch
 
-Update `Directory.Build.props` on the hotfix branch with the new patch version (same rules as Minor Mode).
+Update `Directory.Build.props` on the hotfix branch with the user-confirmed hotfix version (same versioning rules as Minor Mode, but derived from the hotfix base version — see Section 3.3).
 
 ### 3.7 Changelog Update
 
