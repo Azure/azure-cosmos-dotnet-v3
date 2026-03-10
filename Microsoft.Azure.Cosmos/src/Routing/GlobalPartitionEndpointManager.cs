@@ -79,7 +79,17 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// Returns true if circuit breaker logic for partition key ranges is active, otherwise false.
         /// </summary>
         public abstract bool IsPartitionLevelCircuitBreakerEnabled();
-        public abstract void CacheDiscoveredHubRegionForPartition(PartitionKeyRange partitionKeyRange, Uri hubRegion);
+        /// <summary>
+        /// Caches the discovered hub region URI for the given partition key range.
+        /// For single master accounts, the write region is the hub region, so this
+        /// stores the hub URI in the existing write-location cache.
+        /// </summary>
+        public abstract void CacheDiscoveredHubRegionForPartition(PartitionKeyRange partitionKeyRange, Uri hubRegion, string collectionRid);
+
+        /// <summary>
+        /// Gets the cached hub region URI for a partition if available.
+        /// For single master accounts, the write location is the hub region.
+        /// </summary>
         public abstract Uri? GetCachedHubRegionForPartition(PartitionKeyRange partitionKeyRange);
     }
 }

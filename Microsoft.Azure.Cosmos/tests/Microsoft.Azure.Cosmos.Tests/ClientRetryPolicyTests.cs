@@ -501,16 +501,16 @@
                 mockEndpointManager.Object,
                 isPartitionLevelFailoverEnabled: false);
 
-            PartitionKeyRange pkRange1 = new PartitionKeyRange { Id = "0" };
-            PartitionKeyRange pkRange2 = new PartitionKeyRange { Id = "1" };
-            PartitionKeyRange uncachedPkRange = new PartitionKeyRange { Id = "999" };
+            PartitionKeyRange pkRange1 = new PartitionKeyRange { Id = "0", MinInclusive = "", MaxExclusive = "BB" };
+            PartitionKeyRange pkRange2 = new PartitionKeyRange { Id = "1", MinInclusive = "BB", MaxExclusive = "FF" };
+            PartitionKeyRange uncachedPkRange = new PartitionKeyRange { Id = "999", MinInclusive = "", MaxExclusive = "FF" };
 
             Uri hub1 = new Uri("https://westus.documents.azure.com/");
             Uri hub2 = new Uri("https://eastus.documents.azure.com/");
 
             // Act - Store hub regions for two partitions
-            cache.CacheDiscoveredHubRegionForPartition(pkRange1, hub1);
-            cache.CacheDiscoveredHubRegionForPartition(pkRange2, hub2);
+            cache.CacheDiscoveredHubRegionForPartition(pkRange1, hub1, "testCollectionRid");
+            cache.CacheDiscoveredHubRegionForPartition(pkRange2, hub2, "testCollectionRid");
 
             // Retrieve
             Uri retrieved1 = cache.GetCachedHubRegionForPartition(pkRange1);
@@ -523,8 +523,8 @@
             Assert.IsNull(retrievedUncached, "Uncached partition should return null.");
 
             // Test null/invalid inputs are handled gracefully
-            cache.CacheDiscoveredHubRegionForPartition(null, hub1); // Should not throw
-            cache.CacheDiscoveredHubRegionForPartition(pkRange1, null); // Should not throw
+            cache.CacheDiscoveredHubRegionForPartition(null, hub1, "testCollectionRid"); // Should not throw
+            cache.CacheDiscoveredHubRegionForPartition(pkRange1, null, "testCollectionRid"); // Should not throw
             Uri nullResult = cache.GetCachedHubRegionForPartition(null);
             Assert.IsNull(nullResult, "Null PKRange should return null.");
         }
@@ -546,7 +546,7 @@
                 enforceSingleMasterSingleWriteLocation: true);
 
             GlobalPartitionEndpointManagerCore cacheManager = new GlobalPartitionEndpointManagerCore(endpointManager);
-            PartitionKeyRange pkRange = new PartitionKeyRange { Id = "0" };
+            PartitionKeyRange pkRange = new PartitionKeyRange { Id = "0", MinInclusive = "", MaxExclusive = "FF" };
             Uri discoveredHub = new Uri("https://southcentralus.documents.azure.com/");
 
             // ===== STEP 1: First request - triggers 404/1002, sets hub header, succeeds, caches hub =====

@@ -68,14 +68,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             () => new ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>());
 
         /// <summary>
-        /// Cache for discovered hub region per partition. 
-        /// Unlike PPAF cache, this is NOT cleared by background failback.
-        /// Key: PartitionKeyRange.Id (string), Value: Discovered hub region URI
-        /// </summary>
-        private readonly Lazy<ConcurrentDictionary<string, Uri>> PartitionKeyRangeToHubRegion = new (
-            () => new ConcurrentDictionary<string, Uri>());
-
-        /// <summary>
         /// An integer indicating how many times the dispose was invoked.
         /// </summary>
         private int disposeCounter = 0;
@@ -635,14 +627,18 @@ namespace Microsoft.Azure.Cosmos.Routing
             return false;
         }
 
-        public override void CacheDiscoveredHubRegionForPartition(PartitionKeyRange partitionKeyRange, Uri hubRegion)
+        public override void CacheDiscoveredHubRegionForPartition(PartitionKeyRange partitionKeyRange, Uri hubRegion, string collectionRid)
         {
             if (partitionKeyRange == null || string.IsNullOrEmpty(partitionKeyRange.Id) || hubRegion == null)
             {
                 return;
             }
 
-            this.PartitionKeyRangeToHubRegion.Value[partitionKeyRange.Id] = hubRegion;
+            this.PartitionKeyRangeToLocationForWrite.Value.GetOrAdd(
+                partitionKeyRange,
+                (_) => new PartitionKeyRangeFailoverInfo(
+                    collectionRid ?? string.Empty,
+                    hubRegion));
 
             DefaultTrace.TraceInformation(
                 "Cached hub region {0} for partition {1}",
@@ -650,9 +646,6 @@ namespace Microsoft.Azure.Cosmos.Routing
                 partitionKeyRange.Id);
         }
 
-        /// <summary>
-        /// Gets the cached hub region for a partition if available.
-        /// </summary>
         public override Uri? GetCachedHubRegionForPartition(PartitionKeyRange partitionKeyRange)
         {
             if (partitionKeyRange == null || string.IsNullOrEmpty(partitionKeyRange.Id))
@@ -660,10 +653,17 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return null;
             }
 
-            if (this.PartitionKeyRangeToHubRegion.IsValueCreated
-                && this.PartitionKeyRangeToHubRegion.Value.TryGetValue(partitionKeyRange.Id, out Uri? hubRegion))
+            if (this.PartitionKeyRangeToLocationForWrite.IsValueCreated
+                && this.PartitionKeyRangeToLocationForWrite.Value.TryGetValue(
+                    partitionKeyRange,
+                    out PartitionKeyRangeFailoverInfo? failoverInfo)
+                && failoverInfo.Current == failoverInfo.FirstFailedLocation)
             {
-                return hubRegion;
+                // Only return the cached URI if the entry hasn't been modified by PPAF's
+                // TryMoveNextLocation. Hub-cached entries always have Current == FirstFailedLocation
+                // (both set to the hub URI in the constructor, never moved). PPAF entries have
+                // Current moved to a failover region, so Current != FirstFailedLocation.
+                return failoverInfo.Current;
             }
 
             return null;

@@ -281,7 +281,8 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.partitionKeyRangeLocationCache.CacheDiscoveredHubRegionForPartition(
                     request.RequestContext.ResolvedPartitionKeyRange,
-                    request.RequestContext.LocationEndpointToRoute);
+                    request.RequestContext.LocationEndpointToRoute,
+                    request.RequestContext.ResolvedCollectionRid);
             }
         }
 
