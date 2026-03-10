@@ -545,7 +545,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     EnablePartitionLevelFailover = ppaf
                 };
 
-                CosmosClient cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient(policy));
+                CosmosClient cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient(policy, thinClient));
 
                 CosmosClientOptions cosmosClientOptions = cosmosClient.ClientOptions;
 
