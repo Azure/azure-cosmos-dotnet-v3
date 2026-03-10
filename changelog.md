@@ -57,6 +57,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [5550](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5550) Owner not found: Fixes substatus code 1003 for item operations when container doesn't exist (Direct mode)
 
+### <a name="3.56.0-preview.1"/> [3.56.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.56.0-preview.1) - 2025-3-10
+
+### <a name="3.55.1"/> [3.55.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.55.1) - 2025-3-10
+#### Fixed
+
+-[5613](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5613) CrossRegionHedgingAvailabilityStrategy: Fixes ArgumentNullException race condition in hedging cancellation
+
 ### <a name="3.56.0-preview.0"/> [3.56.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.56.0-preview.0) - 2025-11-14
 #### Fixed
 - [5260](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5260) HPK: Fixes Lengthaware normalized EPK comparators as default (only in preview)
