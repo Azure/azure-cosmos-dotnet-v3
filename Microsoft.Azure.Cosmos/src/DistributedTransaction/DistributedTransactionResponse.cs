@@ -37,6 +37,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosSerializerCore serializer,
             ITrace trace,
             Guid idempotencyToken,
+            bool isRetriable = false,
             string serverDiagnostics = null)
         {
             this.Headers = headers;
@@ -47,6 +48,7 @@ namespace Microsoft.Azure.Cosmos
             this.SerializerCore = serializer;
             this.Trace = trace;
             this.IdempotencyToken = idempotencyToken;
+            this.IsRetriable = isRetriable;
             this.ServerDiagnostics = serverDiagnostics;
         }
 
@@ -110,7 +112,14 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the number of operation results in the distributed transaction response.
         /// </summary>
-        public virtual int Count => this.results?.Count ?? 0;
+        public virtual int Count
+        {
+            get
+            {
+                this.ThrowIfDisposed();
+                return this.results?.Count ?? 0;
+            }
+        }
 
         /// <summary>
         /// Gets the idempotency token associated with this distributed transaction.
@@ -121,6 +130,11 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the server-side diagnostic information for the transaction.
         /// </summary>
         public virtual string ServerDiagnostics { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether the transaction is safe to retry with the same idempotency token.
+        /// </summary>
+        public virtual bool IsRetriable { get; }
 
         internal virtual SubStatusCodes SubStatusCode { get; }
 
@@ -136,6 +150,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An enumerator for the operation results.</returns>
         public virtual IEnumerator<DistributedTransactionOperationResult> GetEnumerator()
         {
+            this.ThrowIfDisposed();
             return this.results?.GetEnumerator()
                 ?? ((IList<DistributedTransactionOperationResult>)Array.Empty<DistributedTransactionOperationResult>()).GetEnumerator();
         }
@@ -165,7 +180,6 @@ namespace Microsoft.Azure.Cosmos
             ResponseMessage responseMessage,
             DistributedTransactionServerRequest serverRequest,
             CosmosSerializerCore serializer,
-            Guid requestIdempotencyToken,
             ITrace trace,
             CancellationToken cancellationToken)
         {
@@ -174,7 +188,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken.ThrowIfCancellationRequested();
 
                 // Extract idempotency token from response headers, fallback to request token if not present
-                Guid idempotencyToken = GetIdempotencyTokenFromHeaders(responseMessage.Headers, requestIdempotencyToken);
+                Guid idempotencyToken = GetIdempotencyTokenFromHeaders(responseMessage.Headers, serverRequest.IdempotencyToken);
 
                 DistributedTransactionResponse response = null;
                 MemoryStream memoryStream = null;
@@ -297,16 +311,46 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             List<DistributedTransactionOperationResult> results = new List<DistributedTransactionOperationResult>();
+            bool isRetriable = false;
+            string serverDiagnostics = null;
 
+            // Scope the JsonException catch to document parse only so that isRetriable and
+            // serverDiagnostics already extracted from the root are not silently discarded
+            // when only the operationResponses array fails to deserialize.
+            JsonDocument responseJson;
             try
             {
-                using (JsonDocument responseJson = await JsonDocument.ParseAsync(content, cancellationToken: cancellationToken))
-                {
-                    JsonElement root = responseJson.RootElement;
+                responseJson = await JsonDocument.ParseAsync(content, cancellationToken: cancellationToken);
+            }
+            catch (JsonException)
+            {
+                // Unparseable body — fall back to default response construction.
+                return null;
+            }
 
-                    // Parse operation results from "operationResponses" array
-                    if (root.TryGetProperty("operationResponses", out JsonElement operationResponses) &&
-                        operationResponses.ValueKind == JsonValueKind.Array)
+            using (responseJson)
+            {
+                JsonElement root = responseJson.RootElement;
+
+                if (root.TryGetProperty("isRetriable", out JsonElement isRetriableElement) &&
+                    isRetriableElement.ValueKind == JsonValueKind.True)
+                {
+                    isRetriable = true;
+                }
+
+                if (root.TryGetProperty("serverDiagnostics", out JsonElement diagElement) &&
+                    diagElement.ValueKind == JsonValueKind.String)
+                {
+                    serverDiagnostics = diagElement.GetString();
+                }
+
+                // Parse operation results from "operationResponses" array.
+                // A failure here must not discard isRetriable/serverDiagnostics already read above;
+                // empty results will trigger CreateAndPopulateResults in the caller.
+                if (root.TryGetProperty("operationResponses", out JsonElement operationResponses) &&
+                    operationResponses.ValueKind == JsonValueKind.Array)
+                {
+                    try
                     {
                         foreach (JsonElement operationElement in operationResponses.EnumerateArray())
                         {
@@ -319,12 +363,11 @@ namespace Microsoft.Azure.Cosmos
                             results.Add(operationResult);
                         }
                     }
+                    catch (JsonException)
+                    {
+                        results.Clear();
+                    }
                 }
-            }
-            catch (JsonException)
-            {
-                // If JSON parsing fails, return null to fall back to default response
-                return null;
             }
 
             HttpStatusCode finalStatusCode = responseMessage.StatusCode;
@@ -353,7 +396,9 @@ namespace Microsoft.Azure.Cosmos
                 serverRequest.Operations,
                 serializer,
                 trace,
-                idempotencyToken)
+                idempotencyToken,
+                isRetriable,
+                serverDiagnostics)
             {
                 results = results
             };
@@ -369,6 +414,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.results.Add(new DistributedTransactionOperationResult(this.StatusCode)
                 {
+                    Index = i,
                     SubStatusCode = this.SubStatusCode,
                     SessionToken = this.Headers?.Session,
                     ActivityId = this.ActivityId,

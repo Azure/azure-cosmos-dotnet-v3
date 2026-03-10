@@ -134,7 +134,8 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The deserialized operation result.</returns>
         internal static DistributedTransactionOperationResult FromJson(JsonElement json)
         {
-            return JsonSerializer.Deserialize<DistributedTransactionOperationResult>(json);
+            return JsonSerializer.Deserialize<DistributedTransactionOperationResult>(json)
+                ?? throw new JsonException($"Failed to deserialize {nameof(DistributedTransactionOperationResult)}.");
         }
     }
 }
