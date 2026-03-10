@@ -124,8 +124,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .WithThrottlingRetryOptions(maxRetryWaitTime, maxRetryAttemptsOnThrottledRequests)
                 .WithBulkExecution(true)
                 .WithSerializerOptions(cosmosSerializerOptions)
-                .WithConsistencyLevel(consistencyLevel)
-                .WithReadConsistencyStrategy(ReadConsistencyStrategy.LatestCommitted)
+                .WithReadConsistencyStrategy(Cosmos.ReadConsistencyStrategy.LatestCommitted)
                 .WithPriorityLevel(priorityLevel)
                 .WithThroughputBucket(throughputBucket);
 
@@ -149,8 +148,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(cosmosSerializerOptions.Indented, clientOptions.SerializerOptions.Indented);
             Assert.IsTrue(object.ReferenceEquals(webProxy, clientOptions.WebProxy));
             Assert.IsTrue(clientOptions.AllowBulkExecution);
-            Assert.AreEqual(consistencyLevel, clientOptions.ConsistencyLevel);
-            Assert.AreEqual(ReadConsistencyStrategy.LatestCommitted, clientOptions.ReadConsistencyStrategy);
+            Assert.IsNull(clientOptions.ConsistencyLevel);
+            Assert.AreEqual(Cosmos.ReadConsistencyStrategy.LatestCommitted, clientOptions.ReadConsistencyStrategy);
             Assert.AreEqual(priorityLevel, clientOptions.PriorityLevel);
             Assert.IsFalse(clientOptions.EnablePartitionLevelCircuitBreaker);
             Assert.IsTrue(clientOptions.EnableAdvancedReplicaSelectionForTcp.HasValue && clientOptions.EnableAdvancedReplicaSelectionForTcp.Value);
@@ -167,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(policy.UseMultipleWriteLocations);
             Assert.AreEqual(maxRetryAttemptsOnThrottledRequests, policy.RetryOptions.MaxRetryAttemptsOnThrottledRequests);
             Assert.AreEqual((int)maxRetryWaitTime.TotalSeconds, policy.RetryOptions.MaxRetryWaitTimeInSeconds);
-            Assert.AreEqual((Documents.ConsistencyLevel)consistencyLevel, clientOptions.GetDocumentsConsistencyLevel());
+            Assert.IsNull(clientOptions.GetDocumentsConsistencyLevel());
             Assert.IsFalse(policy.EnablePartitionLevelFailover);
             Assert.IsTrue(clientOptions.EnableAdvancedReplicaSelectionForTcp.Value);
 

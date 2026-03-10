@@ -844,7 +844,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
 #else
         internal
 #endif
-        CosmosClientBuilder WithReadConsistencyStrategy(ReadConsistencyStrategy readConsistencyStrategy)
+        CosmosClientBuilder WithReadConsistencyStrategy(Cosmos.ReadConsistencyStrategy readConsistencyStrategy)
         {
             this.clientOptions.ReadConsistencyStrategy = readConsistencyStrategy;
             return this;

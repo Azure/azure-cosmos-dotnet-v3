@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
             await this.Container.CreateItemAsync(testItem);
 
-            ReadConsistencyStrategy readConsistencyStrategy = (ReadConsistencyStrategy)Enum.Parse(typeof(ReadConsistencyStrategy), strategy);
+            Cosmos.ReadConsistencyStrategy readConsistencyStrategy = (Cosmos.ReadConsistencyStrategy)Enum.Parse(typeof(ReadConsistencyStrategy), strategy);
 
             ItemResponse<ToDoActivity> readResponse = await this.Container.ReadItemAsync<ToDoActivity>(
                 testItem.id,
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             QueryRequestOptions queryOptions = new QueryRequestOptions
             {
-                ReadConsistencyStrategy = ReadConsistencyStrategy.Session
+                ReadConsistencyStrategy = Cosmos.ReadConsistencyStrategy.Session
             };
 
             FeedIterator<ToDoActivity> iterator = this.Container.GetItemQueryIterator<ToDoActivity>(
@@ -132,7 +132,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClientOptions clientOptions = new CosmosClientOptions
             {
                 ConnectionMode = ConnectionMode.Direct,
-                ReadConsistencyStrategy = ReadConsistencyStrategy.Eventual
+                ReadConsistencyStrategy = Cosmos.ReadConsistencyStrategy.Eventual
             };
             clientOptions.CustomHandlers.Add(interceptor);
 
@@ -146,7 +146,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await container.ReadItemAsync<ToDoActivity>(
                 testItem.id,
                 new Cosmos.PartitionKey(testItem.pk),
-                new ItemRequestOptions { ReadConsistencyStrategy = ReadConsistencyStrategy.Session });
+                new ItemRequestOptions { ReadConsistencyStrategy = Cosmos.ReadConsistencyStrategy.Session });
 
             Assert.AreEqual(
                 ReadConsistencyStrategy.Session.ToString(),
@@ -171,7 +171,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ChangeFeedRequestOptions changeFeedOptions = new ChangeFeedRequestOptions
             {
                 PageSizeHint = 10,
-                ReadConsistencyStrategy = ReadConsistencyStrategy.Eventual
+                ReadConsistencyStrategy = Cosmos.ReadConsistencyStrategy.Eventual
             };
 
             FeedIterator<ToDoActivity> iterator = this.Container.GetChangeFeedIterator<ToDoActivity>(
@@ -221,7 +221,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             ReadManyRequestOptions readManyOptions = new ReadManyRequestOptions
             {
-                ReadConsistencyStrategy = ReadConsistencyStrategy.Session
+                ReadConsistencyStrategy = Cosmos.ReadConsistencyStrategy.Session
             };
 
             FeedResponse<ToDoActivity> response = await this.Container.ReadManyItemsAsync<ToDoActivity>(

@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
     {
         private readonly CosmosClient client;
         private readonly ConsistencyLevel? requestedClientConsistencyLevel;
-        private readonly ReadConsistencyStrategy? requestedClientReadConsistencyStrategy;
+        private readonly Cosmos.ReadConsistencyStrategy? requestedClientReadConsistencyStrategy;
         private readonly PriorityLevel? requestedPriorityLevel;
         private readonly DiagnosticsHandler diagnosticsHandler;
         private readonly RequestHandler invalidPartitionExceptionRetryHandler;
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos
         public ClientPipelineBuilder(
             CosmosClient client,
             ConsistencyLevel? requestedClientConsistencyLevel,
-            ReadConsistencyStrategy? requestedClientReadConsistencyStrategy,
+            Cosmos.ReadConsistencyStrategy? requestedClientReadConsistencyStrategy,
             PriorityLevel? requestedClientPriorityLevel,
             IReadOnlyCollection<RequestHandler> customHandlers,
             TelemetryToServiceHelper telemetryToServiceHelper,

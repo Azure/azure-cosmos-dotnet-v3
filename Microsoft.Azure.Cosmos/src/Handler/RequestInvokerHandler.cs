@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         private readonly CosmosClient client;
         private readonly Cosmos.ConsistencyLevel? RequestedClientConsistencyLevel;
-        private readonly ReadConsistencyStrategy? RequestedClientReadConsistencyStrategy;
+        private readonly Cosmos.ReadConsistencyStrategy? RequestedClientReadConsistencyStrategy;
         private readonly Cosmos.PriorityLevel? RequestedClientPriorityLevel;
         private readonly int? RequestedClientThroughputBucket;
 
@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         public RequestInvokerHandler(
             CosmosClient client,
             Cosmos.ConsistencyLevel? requestedClientConsistencyLevel,
-            ReadConsistencyStrategy? requestedClientReadConsistencyStrategy,
+            Cosmos.ReadConsistencyStrategy? requestedClientReadConsistencyStrategy,
             Cosmos.PriorityLevel? requestedClientPriorityLevel,
             int? requestedClientThroughputBucket)
         {
@@ -525,7 +525,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         /// </summary>
         private async Task<bool> ValidateAndSetReadConsistencyStrategyAsync(RequestMessage requestMessage)
         {
-            ReadConsistencyStrategy? readConsistencyStrategy = null;
+            Cosmos.ReadConsistencyStrategy? readConsistencyStrategy = null;
             RequestOptions promotedRequestOptions = requestMessage.RequestOptions;
 
             if (promotedRequestOptions?.BaseReadConsistencyStrategy.HasValue == true)
@@ -546,7 +546,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             if (readConsistencyStrategy.HasValue)
             {
-                if (readConsistencyStrategy.Value == ReadConsistencyStrategy.GlobalStrong)
+                if (readConsistencyStrategy.Value == Cosmos.ReadConsistencyStrategy.GlobalStrong)
                 {
                     if (!this.AccountConsistencyLevel.HasValue)
                     {
@@ -566,7 +566,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     HttpConstants.HttpHeaders.ReadConsistencyStrategy,
                     readConsistencyStrategy.Value.ToString());
 
-                requestMessage.ReadConsistencyStrategy = readConsistencyStrategy.Value;
+                requestMessage.ReadConsistencyStrategy = (Documents.ReadConsistencyStrategy)(int)readConsistencyStrategy.Value;
                 return true;
             }
 

@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
     {
         public ConsistencyConfig(
             Cosmos.ConsistencyLevel? consistencyLevel,
-            ReadConsistencyStrategy? readConsistencyStrategy,
+            Cosmos.ReadConsistencyStrategy? readConsistencyStrategy,
             IReadOnlyList<string> preferredRegions,
             string applicationRegion)
         {
@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         }
 
         public Cosmos.ConsistencyLevel? ConsistencyLevel { get; }
-        public ReadConsistencyStrategy? ReadConsistencyStrategy { get; }
+        public Cosmos.ReadConsistencyStrategy? ReadConsistencyStrategy { get; }
         public IReadOnlyList<string> PreferredRegions { get; }
         public string ApplicationRegion { get; }
 
