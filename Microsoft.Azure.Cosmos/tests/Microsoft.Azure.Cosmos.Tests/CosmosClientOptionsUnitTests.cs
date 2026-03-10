@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .WithBulkExecution(true)
                 .WithSerializerOptions(cosmosSerializerOptions)
                 .WithConsistencyLevel(consistencyLevel)
-                .WithReadConsistencyStrategy(Cosmos.ReadConsistencyStrategy.LatestCommitted)
+                .WithReadConsistencyStrategy(ReadConsistencyStrategy.LatestCommitted)
                 .WithPriorityLevel(priorityLevel)
                 .WithThroughputBucket(throughputBucket);
 
@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(object.ReferenceEquals(webProxy, clientOptions.WebProxy));
             Assert.IsTrue(clientOptions.AllowBulkExecution);
             Assert.AreEqual(consistencyLevel, clientOptions.ConsistencyLevel);
-            Assert.AreEqual(Cosmos.ReadConsistencyStrategy.LatestCommitted, clientOptions.ReadConsistencyStrategy);
+            Assert.AreEqual(ReadConsistencyStrategy.LatestCommitted, clientOptions.ReadConsistencyStrategy);
             Assert.AreEqual(priorityLevel, clientOptions.PriorityLevel);
             Assert.IsFalse(clientOptions.EnablePartitionLevelCircuitBreaker);
             Assert.IsTrue(clientOptions.EnableAdvancedReplicaSelectionForTcp.HasValue && clientOptions.EnableAdvancedReplicaSelectionForTcp.Value);

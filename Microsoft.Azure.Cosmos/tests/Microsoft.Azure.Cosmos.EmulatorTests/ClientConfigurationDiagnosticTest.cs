@@ -112,14 +112,14 @@
             string appRegion = "EastUS";
 
             ConsistencyConfig consistencyConfig = new ConsistencyConfig(consistencyLevel, null, preferredRegions, appRegion);
-            Assert.AreEqual(consistencyConfig.ToString(), "(consistency: Session, prgns:[EastUS, WestUs], apprgn: EastUS)");
+            Assert.AreEqual(consistencyConfig.ToString(), "(consistency: Session, readStrategy: NotSet, prgns:[EastUS, WestUs], apprgn: EastUS)");
 
             ConsistencyConfig consistencyConfigWithNull = new ConsistencyConfig(consistencyLevel: null,
                                                                                 readConsistencyStrategy: null,
                                                                                 preferredRegions: null,
                                                                                 applicationRegion: null);
 
-            Assert.AreEqual(consistencyConfigWithNull.ToString(), "(consistency: NotSet, prgns:[], apprgn: )");
+            Assert.AreEqual(consistencyConfigWithNull.ToString(), "(consistency: NotSet, readStrategy: NotSet, prgns:[], apprgn: )");
         }
 
         [TestMethod]

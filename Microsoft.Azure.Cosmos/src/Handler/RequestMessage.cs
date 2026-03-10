@@ -140,8 +140,11 @@ namespace Microsoft.Azure.Cosmos
         internal PartitionKeyRangeIdentity PartitionKeyRangeId { get; set; }
 
         /// <summary>
-        /// Set by RequestInvokerHandler when a ReadConsistencyStrategy is configured.
-        /// Uses Documents namespace type for Direct layer compatibility.
+        /// ReadConsistencyStrategy resolved by <see cref="Handlers.RequestInvokerHandler"/>.
+        /// Copied to <see cref="Documents.DocumentServiceRequest.RequestContext"/>
+        /// in <see cref="OnBeforeRequestHandler"/> so the Direct layer
+        /// (<c>ConsistencyReader</c>/<c>QuorumReader</c>) can use it to determine read mode.
+        /// Also preserved across <see cref="Clone"/> for availability-strategy hedging.
         /// </summary>
         internal Documents.ReadConsistencyStrategy? ReadConsistencyStrategy { get; set; }
 

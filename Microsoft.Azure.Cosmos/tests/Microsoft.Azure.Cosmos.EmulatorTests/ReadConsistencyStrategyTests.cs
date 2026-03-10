@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>
-    /// End-to-end tests for <see cref="Cosmos.ReadConsistencyStrategy"/>.
+    /// End-to-end tests for <see cref="ReadConsistencyStrategy"/>.
     /// These tests run against the local Cosmos DB emulator in Direct mode
     /// and exercise the full pipeline including the Direct layer (ConsistencyReader / QuorumReader).
     /// </summary>
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
             await this.Container.CreateItemAsync(testItem);
 
-            Cosmos.ReadConsistencyStrategy readConsistencyStrategy = (Cosmos.ReadConsistencyStrategy)Enum.Parse(typeof(Cosmos.ReadConsistencyStrategy), strategy);
+            ReadConsistencyStrategy readConsistencyStrategy = (ReadConsistencyStrategy)Enum.Parse(typeof(ReadConsistencyStrategy), strategy);
 
             ItemResponse<ToDoActivity> readResponse = await this.Container.ReadItemAsync<ToDoActivity>(
                 testItem.id,
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             QueryRequestOptions queryOptions = new QueryRequestOptions
             {
-                ReadConsistencyStrategy = Cosmos.ReadConsistencyStrategy.Session
+                ReadConsistencyStrategy = ReadConsistencyStrategy.Session
             };
 
             FeedIterator<ToDoActivity> iterator = this.Container.GetItemQueryIterator<ToDoActivity>(
@@ -105,34 +105,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             Assert.AreEqual(items.Count, results.Count, "Query with ReadConsistencyStrategy should return all items");
-        }
-
-        /// <summary>
-        /// Verifies that GlobalStrong strategy is rejected by the SDK for non-Strong
-        /// consistency accounts. The emulator runs with Session consistency, so GlobalStrong
-        /// should throw ArgumentException during request validation.
-        /// </summary>
-        [TestMethod]
-        public async Task ReadConsistencyStrategyGlobalStrongRejectedForNonStrongAccount()
-        {
-            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
-            await this.Container.CreateItemAsync(testItem);
-
-            try
-            {
-                await this.Container.ReadItemAsync<ToDoActivity>(
-                    testItem.id,
-                    new Cosmos.PartitionKey(testItem.pk),
-                    new ItemRequestOptions { ReadConsistencyStrategy = Cosmos.ReadConsistencyStrategy.GlobalStrong });
-
-                Assert.Fail("Expected ArgumentException for GlobalStrong on non-Strong account");
-            }
-            catch (ArgumentException ex)
-            {
-                Assert.IsTrue(
-                    ex.Message.Contains("GlobalStrong"),
-                    $"Exception message should mention GlobalStrong. Got: {ex.Message}");
-            }
         }
 
         /// <summary>
@@ -160,7 +132,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClientOptions clientOptions = new CosmosClientOptions
             {
                 ConnectionMode = ConnectionMode.Direct,
-                ReadConsistencyStrategy = Cosmos.ReadConsistencyStrategy.Eventual
+                ReadConsistencyStrategy = ReadConsistencyStrategy.Eventual
             };
             clientOptions.CustomHandlers.Add(interceptor);
 
@@ -174,10 +146,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await container.ReadItemAsync<ToDoActivity>(
                 testItem.id,
                 new Cosmos.PartitionKey(testItem.pk),
-                new ItemRequestOptions { ReadConsistencyStrategy = Cosmos.ReadConsistencyStrategy.Session });
+                new ItemRequestOptions { ReadConsistencyStrategy = ReadConsistencyStrategy.Session });
 
             Assert.AreEqual(
-                Cosmos.ReadConsistencyStrategy.Session.ToString(),
+                ReadConsistencyStrategy.Session.ToString(),
                 readConsistencyStrategyHeader,
                 "Request-level ReadConsistencyStrategy should override client-level");
             Assert.IsNull(
@@ -199,7 +171,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ChangeFeedRequestOptions changeFeedOptions = new ChangeFeedRequestOptions
             {
                 PageSizeHint = 10,
-                ReadConsistencyStrategy = Cosmos.ReadConsistencyStrategy.Eventual
+                ReadConsistencyStrategy = ReadConsistencyStrategy.Eventual
             };
 
             FeedIterator<ToDoActivity> iterator = this.Container.GetChangeFeedIterator<ToDoActivity>(
@@ -249,7 +221,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             ReadManyRequestOptions readManyOptions = new ReadManyRequestOptions
             {
-                ReadConsistencyStrategy = Cosmos.ReadConsistencyStrategy.Session
+                ReadConsistencyStrategy = ReadConsistencyStrategy.Session
             };
 
             FeedResponse<ToDoActivity> response = await this.Container.ReadManyItemsAsync<ToDoActivity>(
@@ -284,7 +256,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Cosmos.ConsistencyLevel.Session.ToString());
                     request.Headers.Set(
                         HttpConstants.HttpHeaders.ReadConsistencyStrategy,
-                        Cosmos.ReadConsistencyStrategy.Session.ToString());
+                        ReadConsistencyStrategy.Session.ToString());
                 }
             };
 

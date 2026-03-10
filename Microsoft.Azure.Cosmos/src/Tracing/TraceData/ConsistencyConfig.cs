@@ -7,11 +7,12 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
     using System;
     using System.Collections.Generic;
     using System.Globalization;
+    using Microsoft.Azure.Documents;
 
     internal class ConsistencyConfig
     {
         public ConsistencyConfig(
-            ConsistencyLevel? consistencyLevel,
+            Cosmos.ConsistencyLevel? consistencyLevel,
             ReadConsistencyStrategy? readConsistencyStrategy,
             IReadOnlyList<string> preferredRegions,
             string applicationRegion)
@@ -29,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             this.lazyJsonString = new Lazy<string>(() => Newtonsoft.Json.JsonConvert.SerializeObject(this));
         }
 
-        public ConsistencyLevel? ConsistencyLevel { get; }
+        public Cosmos.ConsistencyLevel? ConsistencyLevel { get; }
         public ReadConsistencyStrategy? ReadConsistencyStrategy { get; }
         public IReadOnlyList<string> PreferredRegions { get; }
         public string ApplicationRegion { get; }
