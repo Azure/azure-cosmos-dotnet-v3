@@ -224,7 +224,7 @@ git commit -m "Release: Bumps version to X.Y.Z
 #### 2.6.3 Create PR
 
 ```powershell
-gh pr create --title "Release: Bumps version to X.Y.Z" --body "## Release X.Y.Z
+gh pr create --title "Release: Adds version X.Y.Z" --body "## Release X.Y.Z
 
 ### Version Changes
 - ClientOfficialVersion: PREV → X.Y.Z
@@ -356,17 +356,49 @@ Add hotfix entries to `changelog.md` on the hotfix branch. Only include the PRs 
 
 ### 3.8 Generate API Contract Files
 
-Follow the same GenAPI process as in Section 2.5:
-1. Build the SDK from the hotfix branch
-2. Run GenAPI to produce `API_X.Y.Z+1.txt`
-3. Generate diff against the previous version's contract file
+Both GA and preview contract files must be generated for the hotfix.
+
+#### 3.8.1 Build the SDK
+
+```powershell
+# GA build
+dotnet build Microsoft.Azure.Cosmos\src -c Release
+
+# Preview build
+dotnet build Microsoft.Azure.Cosmos\src /p:IsPreview=true -c Release
+```
+
+#### 3.8.2 Run GenAPI
+
+```powershell
+# GA contract
+tools\GenAPI\GenAPI.exe -assembly:"Microsoft.Azure.Cosmos\src\bin\Release\netstandard2.0\Microsoft.Azure.Cosmos.Client.dll" -apiOnly -s:text -out:"Microsoft.Azure.Cosmos\contracts\API_X.Y.Z+1.txt"
+
+# Rebuild with preview flag, then generate preview contract
+tools\GenAPI\GenAPI.exe -assembly:"Microsoft.Azure.Cosmos\src\bin\Release\netstandard2.0\Microsoft.Azure.Cosmos.Client.dll" -apiOnly -s:text -out:"Microsoft.Azure.Cosmos\contracts\API_X.Y+1.0-preview.Z+1.txt"
+```
+
+> **Note:** Build with `/p:IsPreview=true` before running GenAPI for the preview contract so the DLL includes preview APIs.
+
+#### 3.8.3 Generate API Diff
+
+```powershell
+# Compare GA contract with previous GA version
+git diff --no-index "Microsoft.Azure.Cosmos\contracts\API_X.Y.Z.txt" "Microsoft.Azure.Cosmos\contracts\API_X.Y.Z+1.txt"
+
+# Compare preview contract with previous preview version
+git diff --no-index "Microsoft.Azure.Cosmos\contracts\API_PREV_PREVIEW.txt" "Microsoft.Azure.Cosmos\contracts\API_X.Y+1.0-preview.Z+1.txt"
+```
+
+**Capture both diffs — they must be included in the PR description.**
 
 ### 3.9 Ensure Master Sync
 
 **Important:** Contract file changes and changelog updates must also be reflected on `master`.
 
 1. Create a separate PR targeting `master` that includes:
-   - The new API contract file(s)
+   - The new GA API contract file (`API_X.Y.Z+1.txt`)
+   - The new preview API contract file (`API_X.Y+1.0-preview.Z+1.txt`)
    - Changelog entries for the hotfix version
 2. This ensures `master` stays in sync with released versions
 
@@ -375,7 +407,7 @@ Follow the same GenAPI process as in Section 2.5:
 Create a PR from the working branch targeting the hotfix release branch:
 
 ```powershell
-gh pr create --base releases/X.Y.Z+1 --title "Hotfix: Bumps version to X.Y.Z+1" --body "## Hotfix X.Y.Z+1
+gh pr create --base releases/X.Y.Z+1 --title "Hotfix: Adds version X.Y.Z+1" --body "## Hotfix X.Y.Z+1
 
 ### Cherry-picked PRs
 - #PR1: Title
@@ -383,16 +415,23 @@ gh pr create --base releases/X.Y.Z+1 --title "Hotfix: Bumps version to X.Y.Z+1" 
 
 ### Version Changes
 - ClientOfficialVersion: X.Y.Z → X.Y.Z+1
+- ClientPreviewVersion: PREV → X.Y+1.0
+- ClientPreviewSuffixVersion: PREV → preview.Z+1
 
-### API Contract Diff
+### API Contract Diff (GA)
 \`\`\`diff
-<paste API diff>
+<paste GA API diff>
+\`\`\`
+
+### API Contract Diff (Preview)
+\`\`\`diff
+<paste preview API diff>
 \`\`\`
 
 ### Checklist
 - [ ] Cherry-picks verified
-- [ ] Contract file added to hotfix branch
-- [ ] Contract file synced to master (separate PR)
+- [ ] Contract files (GA and preview) added to hotfix branch
+- [ ] Contract files (GA and preview) synced to master (separate PR)
 - [ ] Kiran sign-off obtained
 "
 ```
