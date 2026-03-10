@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.FaultInjection
@@ -149,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 {
                     DocumentServiceRequest request = DocumentServiceRequest.CreateFromName(
                        operationType: OperationType.Read,
-                       resourceFullName: rule.GetCondition().GetEndpoint().GetResoureName(),
+                       resourceFullName: rule.GetCondition().GetEndpoint().GetResourceName(),
                        resourceType: ResourceType.Document,
                        authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
 
@@ -250,7 +250,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 {
                     DocumentServiceRequest request = DocumentServiceRequest.CreateFromName(
                        operationType: OperationType.Read,
-                       resourceFullName: rule.GetCondition().GetEndpoint().GetResoureName(),
+                       resourceFullName: rule.GetCondition().GetEndpoint().GetResourceName(),
                        resourceType: ResourceType.Document,
                        authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
 
@@ -431,7 +431,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             FeedRangeInternal feedRangeInternal = (FeedRangeInternal)addressEndpoints.GetFeedRange();
             DocumentServiceRequest request = DocumentServiceRequest.CreateFromName(
                     operationType: OperationType.Read,
-                    resourceFullName: addressEndpoints.GetResoureName(),
+                    resourceFullName: addressEndpoints.GetResourceName(),
                     resourceType: ResourceType.Document,
                     authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
 
@@ -478,7 +478,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
             DocumentServiceRequest request = DocumentServiceRequest.CreateFromName(
                     operationType: OperationType.Read,
-                    resourceFullName: condition.GetEndpoint().GetResoureName(),
+                    resourceFullName: condition.GetEndpoint().GetResourceName(),
                     resourceType: ResourceType.Document,
                     authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
 
