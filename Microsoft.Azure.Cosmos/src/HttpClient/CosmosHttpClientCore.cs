@@ -135,8 +135,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public static HttpMessageHandler CreateSocketsHttpHandlerHelper(
-            int gatewayModeMaxConnectionLimit, 
-            IWebProxy webProxy, 
+            int gatewayModeMaxConnectionLimit,
+            IWebProxy webProxy,
             Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback)
         {
             // TODO: Remove Reflection when multitargetting is possible
@@ -162,11 +162,29 @@ namespace Microsoft.Azure.Cosmos
             try
             {
                 PropertyInfo maxConnectionsPerServerInfo = socketHandlerType.GetProperty("MaxConnectionsPerServer");
-                maxConnectionsPerServerInfo.SetValue(socketHttpHandler, gatewayModeMaxConnectionLimit);              
+                maxConnectionsPerServerInfo.SetValue(socketHttpHandler, gatewayModeMaxConnectionLimit);
             }
             // MaxConnectionsPerServer is not supported on some platforms.
             catch (PlatformNotSupportedException)
             {
+            }
+
+            // Enable multiple HTTP/2 connections to the same server (.NET 5+).
+            // This allows the HttpClient to open additional TCP connections when
+            // the maximum concurrent streams limit on an existing connection is reached,
+            // improving throughput for thin client mode which uses HTTP/2.
+            // Safe to set unconditionally — only affects requests with Version = HTTP/2.0.
+            try
+            {
+                PropertyInfo enableMultipleHttp2ConnectionsInfo = socketHandlerType.GetProperty("EnableMultipleHttp2Connections");
+                if (enableMultipleHttp2ConnectionsInfo != null)
+                {
+                    enableMultipleHttp2ConnectionsInfo.SetValue(socketHttpHandler, true);
+                }
+            }
+            catch (Exception)
+            {
+                // Property may not exist on older runtimes (pre .NET 5).
             }
 
             if (serverCertificateCustomValidationCallback != null)
