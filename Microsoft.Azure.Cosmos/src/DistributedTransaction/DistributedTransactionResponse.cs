@@ -37,8 +37,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosSerializerCore serializer,
             ITrace trace,
             Guid idempotencyToken,
-            bool isRetriable = false,
-            string serverDiagnostics = null)
+            bool isRetriable = false)
         {
             this.Headers = headers;
             this.StatusCode = statusCode;
@@ -49,7 +48,6 @@ namespace Microsoft.Azure.Cosmos
             this.Trace = trace;
             this.IdempotencyToken = idempotencyToken;
             this.IsRetriable = isRetriable;
-            this.ServerDiagnostics = serverDiagnostics;
         }
 
         /// <summary>
@@ -312,7 +310,6 @@ namespace Microsoft.Azure.Cosmos
         {
             List<DistributedTransactionOperationResult> results = new List<DistributedTransactionOperationResult>();
             bool isRetriable = false;
-            string serverDiagnostics = null;
 
             // Scope the JsonException catch to document parse only so that isRetriable and
             // serverDiagnostics already extracted from the root are not silently discarded
@@ -338,15 +335,7 @@ namespace Microsoft.Azure.Cosmos
                     isRetriable = true;
                 }
 
-                if (root.TryGetProperty("serverDiagnostics", out JsonElement diagElement) &&
-                    diagElement.ValueKind == JsonValueKind.String)
-                {
-                    serverDiagnostics = diagElement.GetString();
-                }
-
                 // Parse operation results from "operationResponses" array.
-                // A failure here must not discard isRetriable/serverDiagnostics already read above;
-                // empty results will trigger CreateAndPopulateResults in the caller.
                 if (root.TryGetProperty("operationResponses", out JsonElement operationResponses) &&
                     operationResponses.ValueKind == JsonValueKind.Array)
                 {
@@ -397,8 +386,7 @@ namespace Microsoft.Azure.Cosmos
                 serializer,
                 trace,
                 idempotencyToken,
-                isRetriable,
-                serverDiagnostics)
+                isRetriable)
             {
                 results = results
             };
@@ -414,7 +402,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.results.Add(new DistributedTransactionOperationResult(this.StatusCode)
                 {
-                    Index = i,
                     SubStatusCode = this.SubStatusCode,
                     SessionToken = this.Headers?.Session,
                     ActivityId = this.ActivityId,
