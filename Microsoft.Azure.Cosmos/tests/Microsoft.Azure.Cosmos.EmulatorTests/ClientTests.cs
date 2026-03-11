@@ -1192,7 +1192,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     new Cosmos.PartitionKey(GUID),
                     patchOperations: new[]
                     {
-                        PatchOperation.Set("/Location", updatedPoint)
+                        PatchOperation.Set("/location", updatedPoint)
                     });
 
                 Assert.AreEqual(updatedPoint, patchedItem.Location);
