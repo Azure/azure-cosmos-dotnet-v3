@@ -627,6 +627,48 @@ namespace Microsoft.Azure.Cosmos.Routing
             return false;
         }
 
+        public override void CacheDiscoveredHubRegionForPartition(PartitionKeyRange partitionKeyRange, Uri hubRegion, string collectionRid)
+        {
+            if (partitionKeyRange == null || string.IsNullOrEmpty(partitionKeyRange.Id) || hubRegion == null)
+            {
+                return;
+            }
+
+            this.PartitionKeyRangeToLocationForWrite.Value.GetOrAdd(
+                partitionKeyRange,
+                (_) => new PartitionKeyRangeFailoverInfo(
+                    collectionRid ?? string.Empty,
+                    hubRegion));
+
+            DefaultTrace.TraceInformation(
+                "Cached hub region {0} for partition {1}",
+                hubRegion,
+                partitionKeyRange.Id);
+        }
+
+        public override Uri? GetCachedHubRegionForPartition(PartitionKeyRange partitionKeyRange)
+        {
+            if (partitionKeyRange == null || string.IsNullOrEmpty(partitionKeyRange.Id))
+            {
+                return null;
+            }
+
+            if (this.PartitionKeyRangeToLocationForWrite.IsValueCreated
+                && this.PartitionKeyRangeToLocationForWrite.Value.TryGetValue(
+                    partitionKeyRange,
+                    out PartitionKeyRangeFailoverInfo? failoverInfo)
+                && failoverInfo.Current == failoverInfo.FirstFailedLocation)
+            {
+                // Only return the cached URI if the entry hasn't been modified by PPAF's
+                // TryMoveNextLocation. Hub-cached entries always have Current == FirstFailedLocation
+                // (both set to the hub URI in the constructor, never moved). PPAF entries have
+                // Current moved to a failover region, so Current != FirstFailedLocation.
+                return failoverInfo.Current;
+            }
+
+            return null;
+        }
+
         internal sealed class PartitionKeyRangeFailoverInfo
         {
             // HashSet is not thread safe and should only accessed in the lock

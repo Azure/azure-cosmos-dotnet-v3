@@ -70,5 +70,15 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             return false;
         }
+
+        public override void CacheDiscoveredHubRegionForPartition(PartitionKeyRange partitionKeyRange, Uri hubRegion, string collectionRid)
+        {
+            // No-op
+        }
+
+        public override Uri? GetCachedHubRegionForPartition(PartitionKeyRange partitionKeyRange)
+        {
+            return null;
+        }
     }
 }
