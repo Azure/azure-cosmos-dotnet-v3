@@ -149,8 +149,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     $"Endpoints observed: [{string.Join(", ", connectionsByEndpoint.Keys)}]");
 
                 // Step 2: Inject stream-level fault.
-                // In Java: tc netem adds 8s network delay causing real ReadTimeoutException.
-                // In .NET: cancel the request immediately after it starts flowing through
+                // Cancel the request immediately after it starts flowing through
                 // SocketsHttpHandler. Since SendAsync is async, it yields at I/O points
                 // (after synchronously acquiring a pooled H2 stream), and the cancellation
                 // fires while the request is in-flight. For HTTP/2, this triggers RST_STREAM
@@ -185,8 +184,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 int newThinClientConnections = postRecoveryThinClientConnections - preFaultThinClientConnections;
 
                 // Step 4: Assert connection survival.
-                // Java asserts: (pre-delay parentChannelIds ∩ post-delay parentChannelIds).isNotEmpty()
-                // .NET equivalent: if fewer new connections were created than the pre-fault count,
+                // If fewer new connections were created than the pre-fault count,
                 // at least one pre-fault connection must have been reused (survived).
                 //
                 // When preFaultCount == 1: require 0 new connections (the single connection must survive)
@@ -310,9 +308,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         ///
         /// HTTP/1.1 requests (gateway management operations) pass through unaffected.
         ///
-        /// This is the .NET analog of Java's tc netem network delay. The key difference:
-        /// Java tests real network-level failure (delayed TCP packets causing ReadTimeoutException).
-        /// .NET tests application-level cancellation (CancellationToken propagated into the HTTP/2
+        /// It tests application-level cancellation (CancellationToken propagated into the HTTP/2
         /// pipeline). Both trigger RST_STREAM and test parent connection survival.
         /// </summary>
         private class StreamCancellationHandler : DelegatingHandler
@@ -351,7 +347,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
                     {
                         throw new TaskCanceledException(
-                            "Simulated HTTP/2 stream timeout (analogous to Java's ReadTimeoutException via tc netem).");
+                            "Simulated HTTP/2 stream timeout.");
                     }
                 }
 
