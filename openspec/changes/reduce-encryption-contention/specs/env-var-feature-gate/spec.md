@@ -1,28 +1,28 @@
 ## ADDED Requirements
 
 ### Requirement: Single environment variable gates all optimization layers
-The system SHALL use a single environment variable `AZURE_COSMOS_ENCRYPTION_OPTIMISTIC_DECRYPTION_ENABLED` to enable or disable all caching and prefetch layers (resolved-client cache, async prefetch, proactive background refresh).
+The system SHALL use a single environment variable `AZURE_COSMOS_ENCRYPTION_OPTIMISTIC_DECRYPTION_ENABLED` to enable or disable all caching and prefetch layers for Data Encryption Key resolution (resolved-client cache, async Data Encryption Key prefetch, proactive background Data Encryption Key refresh).
 
-#### Scenario: Env var not set — all layers disabled
+#### Scenario: Environment variable not set — all layers disabled
 - **WHEN** `AZURE_COSMOS_ENCRYPTION_OPTIMISTIC_DECRYPTION_ENABLED` is not set in the environment
 - **THEN** all behavior SHALL be identical to the current codebase: no resolved-client cache, no async prefetch, no proactive background refresh
 
-#### Scenario: Env var set to true — all layers enabled
+#### Scenario: Environment variable set to true — all layers enabled
 - **WHEN** `AZURE_COSMOS_ENCRYPTION_OPTIMISTIC_DECRYPTION_ENABLED` is set to `true` (case-insensitive)
 - **THEN** all caching and prefetch layers SHALL be active
 
-#### Scenario: Env var set to false or invalid — all layers disabled
+#### Scenario: Environment variable set to false or invalid — all layers disabled
 - **WHEN** `AZURE_COSMOS_ENCRYPTION_OPTIMISTIC_DECRYPTION_ENABLED` is set to `false`, empty, or any value that does not parse as `true`
 - **THEN** all behavior SHALL be identical to the env-var-not-set case
 
-### Requirement: Env var read at EncryptionCosmosClient construction time
+### Requirement: Environment variable read at EncryptionCosmosClient construction time
 The environment variable SHALL be read once during `EncryptionCosmosClient` construction and the result cached for the client's lifetime. Subsequent changes to the environment variable SHALL NOT affect an already-constructed client.
 
-#### Scenario: Env var read once at startup
+#### Scenario: Environment variable read once at startup
 - **WHEN** `EncryptionCosmosClient` is constructed
-- **THEN** the env var SHALL be read via the SDK's `ConfigurationManager` pattern (or `Environment.GetEnvironmentVariable`) and the boolean result stored as a readonly field
+- **THEN** the environment variable SHALL be read via the SDK's `ConfigurationManager` pattern (or `Environment.GetEnvironmentVariable`) and the boolean result stored as a readonly field
 
-#### Scenario: Env var change after construction has no effect
+#### Scenario: Environment variable change after construction has no effect
 - **WHEN** the environment variable is changed after `EncryptionCosmosClient` is constructed
 - **THEN** the existing client instance SHALL continue using the value read at construction time
 
