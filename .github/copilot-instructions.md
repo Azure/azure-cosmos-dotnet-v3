@@ -55,4 +55,13 @@ Purpose: quick, actionable context so an AI coding assistant can be immediately 
   - Includes: environment setup, issue investigation, fix implementation, testing requirements, PR workflow, and learnings capture.
   - Start with: `@IssueFixAgent investigate issue #XXXX` or see Quick Start in the agent file.
 
+- **OpenSpec — Spec-Driven Development**:
+  - The SDK uses [OpenSpec](https://github.com/openspec-dev/openspec) for spec-driven development. Specs live in `openspec/specs/` and capture behavioral contracts for major feature areas.
+  - **Read `openspec/README.md`** for the full developer guide, workflow instructions, and best practices.
+  - Active changes (in-progress work) live in `openspec/changes/`. Archived changes in `openspec/changes/archive/`.
+  - Configuration and project context: `openspec/config.yaml`.
+  - Slash commands: `/opsx:propose` (create change), `/opsx:apply` (implement), `/opsx:explore` (investigate), `/opsx:archive` (complete).
+  - When making changes, check if an existing spec in `openspec/specs/` covers the affected behavior — if so, update the spec alongside the code change.
+  - When proposing a new feature or significant behavioral change, use `/opsx:propose` to create structured artifacts (proposal, design, tasks) before implementing.
+
 If anything here is unclear or you want the file to include additional examples (specific files, common refactor targets, or typical PR reviewers), tell me what to add and I will iterate.
