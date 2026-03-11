@@ -103,6 +103,8 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             { Names.IsObject, Identifiers.IsObject },
             { Names.IsPrimitive, Identifiers.IsPrimitive },
             { Names.IsString, Identifiers.IsString },
+            { Names.LastSubstringAfter, Identifiers.LastSubstringAfter },
+            { Names.LastSubstringBefore, Identifiers.LastSubstringBefore },
             { Names.Left, Identifiers.Left },
             { Names.Length, Identifiers.Length },
             { Names.Like, Identifiers.Like },
@@ -145,9 +147,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             { Names.StringToObject, Identifiers.StringToObject },
             { Names.Substring, Identifiers.Substring },
             { Names.SubstringAfter, Identifiers.SubstringAfter },
-            { Names.SubstringAfterLast, Identifiers.SubstringAfterLast },
             { Names.SubstringBefore, Identifiers.SubstringBefore },
-            { Names.SubstringBeforeLast, Identifiers.SubstringBeforeLast },
             { Names.Sum, Identifiers.Sum },
             { Names.Tan, Identifiers.Tan },
             { Names.TicksToDateTime, Identifiers.TicksToDateTime },
@@ -355,6 +355,8 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public const string IsPrimitive = "IS_PRIMITIVE";
             public const string IsString = "IS_STRING";
             public const string LastIndexOf = "LastIndexOf";
+            public const string LastSubstringAfter = "LastSubstringAfter";
+            public const string LastSubstringBefore = "LastSubstringBefore";
             public const string Left = "LEFT";
             public const string Length = "LENGTH";
             public const string Like = "LIKE";
@@ -404,9 +406,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public const string StringToObject = "StringToObject";
             public const string Substring = "SUBSTRING";
             public const string SubstringAfter = "SubstringAfter";
-            public const string SubstringAfterLast = "SubstringAfterLast";
             public const string SubstringBefore = "SubstringBefore";
-            public const string SubstringBeforeLast = "SubstringBeforeLast";
             public const string Sum = "SUM";
             public const string Tan = "TAN";
             public const string TicksToDateTime = "TicksToDateTime";
@@ -537,6 +537,8 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public static readonly SqlIdentifier IsPrimitive = SqlIdentifier.Create(Names.IsPrimitive);
             public static readonly SqlIdentifier IsString = SqlIdentifier.Create(Names.IsString);
             public static readonly SqlIdentifier LastIndexOf = SqlIdentifier.Create(Names.LastIndexOf);
+            public static readonly SqlIdentifier LastSubstringAfter = SqlIdentifier.Create(Names.LastSubstringAfter);
+            public static readonly SqlIdentifier LastSubstringBefore = SqlIdentifier.Create(Names.LastSubstringBefore);
             public static readonly SqlIdentifier Left = SqlIdentifier.Create(Names.Left);
             public static readonly SqlIdentifier Length = SqlIdentifier.Create(Names.Length);
             public static readonly SqlIdentifier Like = SqlIdentifier.Create(Names.Like);
@@ -586,9 +588,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public static readonly SqlIdentifier StringToObject = SqlIdentifier.Create(Names.StringToObject);
             public static readonly SqlIdentifier Substring = SqlIdentifier.Create(Names.Substring);
             public static readonly SqlIdentifier SubstringAfter = SqlIdentifier.Create(Names.SubstringAfter);
-            public static readonly SqlIdentifier SubstringAfterLast = SqlIdentifier.Create(Names.SubstringAfterLast);
             public static readonly SqlIdentifier SubstringBefore = SqlIdentifier.Create(Names.SubstringBefore);
-            public static readonly SqlIdentifier SubstringBeforeLast = SqlIdentifier.Create(Names.SubstringBeforeLast);
             public static readonly SqlIdentifier Sum = SqlIdentifier.Create(Names.Sum);
             public static readonly SqlIdentifier Tan = SqlIdentifier.Create(Names.Tan);
             public static readonly SqlIdentifier TicksToDateTime = SqlIdentifier.Create(Names.TicksToDateTime);
