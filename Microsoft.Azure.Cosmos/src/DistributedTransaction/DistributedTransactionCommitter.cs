@@ -17,18 +17,28 @@ namespace Microsoft.Azure.Cosmos
     internal class DistributedTransactionCommitter
     {
         private const int MaxRetryAttempts = 3;
-        private static readonly TimeSpan RetryBaseDelay = TimeSpan.FromSeconds(1);
+        private static readonly TimeSpan DefaultRetryBaseDelay = TimeSpan.FromSeconds(1);
         private static readonly string ResourceUri = Paths.OperationsPathSegment + "/" + Paths.Operations_Dtc;
 
         private readonly IReadOnlyList<DistributedTransactionOperation> operations;
         private readonly CosmosClientContext clientContext;
+        private readonly TimeSpan retryBaseDelay;
 
         public DistributedTransactionCommitter(
             IReadOnlyList<DistributedTransactionOperation> operations,
             CosmosClientContext clientContext)
+            : this(operations, clientContext, DefaultRetryBaseDelay)
+        {
+        }
+
+        internal DistributedTransactionCommitter(
+            IReadOnlyList<DistributedTransactionOperation> operations,
+            CosmosClientContext clientContext,
+            TimeSpan retryBaseDelay)
         {
             this.operations = operations ?? throw new ArgumentNullException(nameof(operations));
             this.clientContext = clientContext ?? throw new ArgumentNullException(nameof(clientContext));
+            this.retryBaseDelay = retryBaseDelay;
         }
 
         public async Task<DistributedTransactionResponse> CommitTransactionAsync(CancellationToken cancellationToken)
@@ -78,7 +88,7 @@ namespace Microsoft.Azure.Cosmos
                     DefaultTrace.TraceWarning(
                         $"Distributed transaction commit timed out (attempt {attempt + 1}/{MaxRetryAttempts + 1}). " +
                         $"Retrying with idempotency token {serverRequest.IdempotencyToken}.");
-                    await Task.Delay(TimeSpan.FromTicks((long)(RetryBaseDelay.Ticks * Math.Pow(2, attempt))), cancellationToken);
+                    await Task.Delay(TimeSpan.FromTicks((long)(this.retryBaseDelay.Ticks * Math.Pow(2, attempt))), cancellationToken);
                     continue;
                 }
 
@@ -90,7 +100,7 @@ namespace Microsoft.Azure.Cosmos
                         $"Distributed transaction commit retriable (StatusCode={response.StatusCode}, IsRetriable={response.IsRetriable}, " +
                         $"attempt {attempt + 1}/{MaxRetryAttempts + 1}). Retrying with idempotency token {serverRequest.IdempotencyToken}.");
                     response.Dispose();
-                    await Task.Delay(TimeSpan.FromTicks((long)(RetryBaseDelay.Ticks * Math.Pow(2, attempt))), cancellationToken);
+                    await Task.Delay(TimeSpan.FromTicks((long)(this.retryBaseDelay.Ticks * Math.Pow(2, attempt))), cancellationToken);
                     continue;
                 }
 
