@@ -9,18 +9,127 @@ The call amplification is severe: `DecryptObjectAsync` calls `BuildEncryptionAlg
 ## Goals / Non-Goals
 
 **Goals:**
-- Move `ProtectedDataEncryptionKey` resolution (Key Vault I/O) off the hot path via async prefetch outside the semaphore
-- Prevent Azure Key Vault overload: proactive background refresh, deduplicated to one call per key per interval
-- Reduce Key Vault calls per refresh: cache resolved `IKeyEncryptionKey` so only `UnwrapKey` hits Azure Key Vault, not `Resolve` + `UnwrapKey`
-- Gate all changes behind an opt-in environment variable for safe rollout — zero behavior change when disabled
+- Eliminate `OperationCanceledException` cascade when `ProtectedDataEncryptionKey` cache expires under concurrent load
+- Reduce semaphore hold time on `ProtectedDataEncryptionKey` cache miss from 200ms–2.4s to microseconds
 - No public API changes. No breaking changes.
+- Minimal complexity: prefer the simplest change that solves the customer’s problem
 
 **Non-Goals:**
-- Changing the Microsoft Data Encryption library's type hierarchy or making the `ProtectedDataEncryptionKey` constructor async
+- Changing the Microsoft Data Encryption library’s type hierarchy or making the `ProtectedDataEncryptionKey` constructor async
 - Removing the semaphore entirely (it guards the Microsoft Data Encryption library internal state mutation — still needed)
 - Per-key semaphores (reduces cross-key contention but same-key still serializes; added complexity for marginal gain)
-- Caching the `AeadAes256CbcHmac256EncryptionAlgorithm` at the `EncryptionSettingForProperty` level (would need to be hoisted above the semaphore to reduce contention, which reintroduces ETag validation and Forbidden retry path complexity; however, the Microsoft Data Encryption library has a built-in `GetOrCreate` cache that the SDK currently bypasses — see Future Considerations)- Enabling the Microsoft Data Encryption library's Data Encryption Key byte cache (`DataEncryptionKeyCacheTimeToLive`) as a standalone layer (redundant when async prefetch is working — the sync `UnwrapKey` path reads from the prefetch cache, never reaching the Microsoft Data Encryption library’s built-in cache)
-- Client Encryption Key rotation handling (Client Encryption Key replacement requires data migration — re-encrypting every document — and is an offline operation; not a runtime concern for caching)- Supporting key rotation detection at the cache level (Client Encryption Key rewrap doesn't change plaintext bytes; new Client Encryption Key policy creates new `EncryptionSettingForProperty` objects)
+- Client Encryption Key rotation handling (Client Encryption Key replacement requires data migration — re-encrypting every document — and is an offline operation; not a runtime concern for caching)
+- Supporting key rotation detection at the cache level (Client Encryption Key rewrap doesn’t change plaintext bytes; new Client Encryption Key policy creates new `EncryptionSettingForProperty` objects)
+
+## Approach Comparison
+
+Two approaches were evaluated. Approach A (enable the Microsoft Data Encryption library’s built-in Data Encryption Key byte cache) is the recommended starting point due to its simplicity and minimal risk surface.
+
+### Approach A: Enable Data Encryption Key Byte Cache (Low-Risk Baseline)
+
+#### Why this was not considered earlier
+
+The original design dismissed the Data Encryption Key byte cache with circular reasoning:
+
+> “Enabling the Microsoft Data Encryption library Data Encryption Key byte cache (`DataEncryptionKeyCacheTimeToLive`) as a standalone layer (redundant when async prefetch is working)”
+
+This is backward — the question is whether the prefetch is needed at all if enabling the built-in cache solves the problem. The oversight occurred because investigation focused on the `ProtectedDataEncryptionKey` cache layer and the semaphore, without tracing the full call chain through `UnwrapKey` → `GetOrCreateDataEncryptionKey` → `LocalCache.GetOrCreate` to discover that the SDK **explicitly disables** a cache that would prevent the Key Vault calls entirely.
+
+#### How the built-in cache works
+
+The Microsoft Data Encryption library’s `EncryptionKeyStoreProvider` base class has a `LocalCache<string, byte[]>` keyed by the hex-encoded wrapped key bytes. It is checked inside `UnwrapKey` → `GetOrCreateDataEncryptionKey` before the `UnwrapKeyCore` delegate (which calls `Resolve()` + `UnwrapKey()` on Key Vault) is invoked.
+
+The Cosmos SDK’s `EncryptionKeyStoreProviderImpl` constructor **explicitly disables** this cache:
+
+```csharp
+this.DataEncryptionKeyCacheTimeToLive = TimeSpan.Zero;
+```
+
+When `TimeToLive <= TimeSpan.Zero`, `LocalCache.GetOrCreate` skips the cache entirely and always invokes the delegate — meaning every `ProtectedDataEncryptionKey` cache miss triggers two Key Vault HTTP calls.
+
+#### What enabling it solves
+
+The customer’s problem is the **steady-state `ProtectedDataEncryptionKey` cache time-to-live expiry** (every 1–2 hours) under sustained concurrent load:
+
+1. `ProtectedDataEncryptionKey` cache time-to-live expires → cache miss → constructor runs under semaphore
+2. Constructor → `KeyEncryptionKey.DecryptEncryptionKey` → `UnwrapKey` → **Data Encryption Key byte cache check**
+3. **Today (cache disabled):** `LocalCache.GetOrCreate` skips cache → `UnwrapKeyCore` → `Resolve()` + `UnwrapKey()` on Key Vault (200ms–2.4s)
+4. **With cache enabled:** `LocalCache.GetOrCreate` finds a warm entry (populated 1 hour ago when the previous `ProtectedDataEncryptionKey` was constructed) → returns instantly → **zero Key Vault calls**
+5. Semaphore hold time drops to **microseconds** — identical to the prefetch approach’s goal
+
+This works because the Data Encryption Key byte cache time-to-live (set to 2 hours or longer) outlives the `ProtectedDataEncryptionKey` cache time-to-live (1–2 hours, defaults to 1 hour via `keyCacheTimeToLive`). When the `ProtectedDataEncryptionKey` expires and is reconstructed, the wrapped key bytes haven’t changed — the Data Encryption Key byte cache key is `encryptedKey.ToHexString()`, which is the same wrapped blob — so the cache hits.
+
+#### Critical limitation: periodic time-to-live alignment causes co-expiry
+
+However, the Data Encryption Key byte cache uses `AbsoluteExpirationRelativeToNow` — the time-to-live is set once at creation and **not renewed on cache hit**. This means the Data Encryption Key byte cache entry created at T=0 expires at T=2h regardless of how many `ProtectedDataEncryptionKey` reconstructions hit it in between.
+
+**With Data Encryption Key byte cache time-to-live = 2h, `ProtectedDataEncryptionKey` time-to-live = 1h (defaults):**
+
+| Time | `ProtectedDataEncryptionKey` cache | Data Encryption Key byte cache | Semaphore hold time |
+|------|-----------|----------------|-----|
+| T=0h | Populated (expires T=1h) | Populated (expires T=2h) | Cold start — Key Vault I/O |
+| T=1h | **MISS** → reconstruct | HIT (not renewed, still expires T=2h) | **Microseconds** |
+| T=2h | **MISS** → reconstruct | **MISS** (co-expired) → Key Vault I/O, repopulated (expires T=4h) | **200ms–2.4s — thundering herd possible** |
+| T=3h | **MISS** → reconstruct | HIT (not renewed, still expires T=4h) | **Microseconds** |
+| T=4h | **MISS** → reconstruct | **MISS** (co-expired) → Key Vault I/O | **200ms–2.4s** |
+
+**Pattern: every `DataEncryptionKeyCacheTimeToLive` interval, both caches co-expire and the full Key Vault call path is hit under the semaphore.** The thundering herd still occurs at these alignment boundaries — just less frequently (every 2h instead of every 1h with defaults).
+
+Setting a much longer Data Encryption Key byte cache time-to-live (e.g. 24h) would reduce the frequency further (1 slow miss per 24h), but:
+- The thundering herd at the 24h alignment boundary is identical to today’s problem — just rare
+- A 24h stale key material window may raise security review concerns
+- If `keyCacheTimeToLive` is configured shorter (e.g. 10 minutes), the alignment frequency increases proportionally
+
+**Verdict: Approach A reduces frequency of the problem but does not eliminate it.** It’s a low-risk improvement but not a complete fix for customers with sustained high-concurrency workloads and strict cancellation timeouts.
+
+#### The change
+
+```csharp
+// EncryptionKeyStoreProviderImpl constructor — change ONE line:
+this.DataEncryptionKeyCacheTimeToLive = TimeSpan.Zero;
+// becomes:
+this.DataEncryptionKeyCacheTimeToLive = TimeSpan.FromHours(2);
+// (or: keyCacheTimeToLive * 2, ensuring it outlives the ProtectedDataEncryptionKey cache)
+```
+
+#### Key rotation correctness
+
+Client Encryption Key rewrap (the only runtime rotation) changes the wrapped key bytes → different `encryptedKey.ToHexString()` → different cache key → cache miss → fresh Key Vault call. The plaintext Data Encryption Key bytes are unchanged, so the result is correct. No cache coherence issue.
+
+#### Summary of Approach A limitations
+
+| Scenario | Approach A behavior |
+|---|---|
+| **Steady-state time-to-live expiry (PDEK miss, DEK hit)** | Fast — no Key Vault calls. Covers most PDEK reconstructions. |
+| **Periodic co-expiry (PDEK miss AND DEK miss)** | Slow — full Key Vault I/O under semaphore. Thundering herd still possible at alignment boundaries. |
+| **Cold start** (first-ever call, no prior cache entry) | Key Vault I/O under semaphore — but at cold start there’s no concurrent load, so no thundering herd |
+| **Reducing Resolve calls** | On a true cache miss, still calls `Resolve()` + `UnwrapKey()` (2 Key Vault calls). Does not cache the resolved `IKeyEncryptionKey` |
+| **Proactive refresh before expiry** | No proactive refresh — relies on the next access to populate |
+
+### Approach B: Async Prefetch with Background Refresh (Recommended)
+
+This is the full approach originally proposed. It adds a sealed subclass `CachingEncryptionKeyStoreProviderImpl` with async prefetch outside the semaphore, inflight deduplication, a resolved-client cache (caching the `IKeyEncryptionKey` / `CryptographyClient` per Customer Master Key URL), proactive background refresh with jitter, a concurrency limiter, disposal lifecycle with `CancellationTokenSource`, and environment variable gating.
+
+Approach B eliminates the co-expiry problem because the prefetch cache is refreshed **proactively before time-to-live expiry** — the sync `UnwrapKey` inside the semaphore always finds a warm prefetch entry. It also covers cold start (prefetch runs outside the semaphore), reduces Key Vault calls from 2 to 1 (via resolved-client cache), and handles the background refresh lifecycle cleanly.
+
+**However**, Approach B is significantly more complex. Consider whether the complexity is justified for the customer’s actual workload.
+
+#### Can the approaches be combined?
+
+**Yes — and this is recommended.** Enabling the Data Encryption Key byte cache (Approach A) as a baseline improvement is low-risk and benefits all customers immediately. Approach B layers on top for customers who need zero-contention guarantees:
+
+- Approach A: default-on, no environment variable needed, reduces slow-miss frequency from every `keyCacheTimeToLive` to every `DataEncryptionKeyCacheTimeToLive`
+- Approach B: opt-in via environment variable, eliminates slow misses entirely via proactive prefetch
+
+The full Approach B design (decisions, risks, migration plan) is retained below.
+
+## Recommendation
+
+1. **Ship Approach A (enable Data Encryption Key byte cache) as a default-on baseline.** One-line change, benefits all customers, reduces slow-miss frequency. Low risk.
+2. **Ship Approach B (async prefetch) gated behind `AZURE_COSMOS_ENCRYPTION_OPTIMISTIC_DECRYPTION_ENABLED` environment variable** for customers who need zero-contention guarantees under sustained concurrent load.
+3. **Benchmark both** against the customer workload to validate: (a) Approach A reduces frequency as expected, (b) Approach B eliminates contention entirely.
+4. The `AeadAes256CbcHmac256EncryptionAlgorithm.GetOrCreate` cleanup (see Future Considerations) can ship independently with either approach.
+
 
 ## Decisions
 
