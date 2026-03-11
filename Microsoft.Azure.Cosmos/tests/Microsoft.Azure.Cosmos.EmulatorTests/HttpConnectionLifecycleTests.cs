@@ -18,24 +18,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     /// <summary>
     /// Integration tests validating HTTP/2 connection lifecycle and reuse behavior in thin client mode.
     ///
-    /// This is the .NET equivalent of the Java SDK's Http2ConnectionLifecycleTests.
     /// The core invariant tested: a stream-level cancellation on an HTTP/2 connection should
     /// NOT close the parent TCP connection. Subsequent requests should reuse the same parent
     /// connections without creating new ones.
-    ///
-    /// Key differences from the Java test:
-    /// - Java uses Linux tc netem for real network delay causing ReadTimeoutException deep in
-    ///   reactor-netty. .NET cancels in-flight requests via CancellationToken immediately after
-    ///   they start flowing through SocketsHttpHandler — this is application-level cancellation,
-    ///   not a real network failure. Both trigger RST_STREAM on the HTTP/2 stream, but Java's
-    ///   approach tests deeper (network-level) resilience.
-    /// - Java tracks parentChannelId from diagnostics per-request. .NET tracks new TCP connections
-    ///   via SocketsHttpHandler.ConnectCallback, filtered by endpoint to isolate thin client (HTTP/2)
-    ///   connections from gateway (HTTP/1.1) connections.
-    /// - Both tests use thin client mode with HTTP/2.0 multiplexed connections.
-    ///
-    /// Requires:
-    /// - Environment variable COSMOSDB_THINCLIENT with a valid connection string
     /// </summary>
     [TestClass]
     public class HttpConnectionLifecycleTests
@@ -70,12 +55,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// server's MAX_CONCURRENT_STREAMS, SocketsHttpHandler opens additional parent
         /// connections. This test sends concurrent reads to force multiple connections,
         /// then injects a stream-level cancellation, and confirms parent connections survive.
-        ///
-        /// Mirrors Java's multiParentChannelConnectionReuse():
-        /// 1. High concurrency warmup → establish HTTP/2 parent TCP connections
-        /// 2. Inject stream-level fault (cancel in-flight request inside SocketsHttpHandler)
-        /// 3. Recovery reads
-        /// 4. Assert: no new thin-client connections created → pre-fault connections survived
         ///
         /// Only HTTP/2.0 requests (thin client data operations) are targeted for cancellation.
         /// HTTP/1.1 requests (gateway management operations) pass through normally.

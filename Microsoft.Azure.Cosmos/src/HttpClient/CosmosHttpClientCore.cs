@@ -169,11 +169,10 @@ namespace Microsoft.Azure.Cosmos
             {
             }
 
-            // Enable multiple HTTP/2 connections to the same server (.NET 5+).
+            // Enable multiple HTTP/2 connections to the same server.
             // This allows the HttpClient to open additional TCP connections when
             // the maximum concurrent streams limit on an existing connection is reached,
             // improving throughput for thin client mode which uses HTTP/2.
-            // Safe to set unconditionally — only affects requests with Version = HTTP/2.0.
             try
             {
                 PropertyInfo enableMultipleHttp2ConnectionsInfo = socketHandlerType.GetProperty("EnableMultipleHttp2Connections");
@@ -184,7 +183,6 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (Exception)
             {
-                // Property may not exist on older runtimes (pre .NET 5).
             }
 
             if (serverCertificateCustomValidationCallback != null)
