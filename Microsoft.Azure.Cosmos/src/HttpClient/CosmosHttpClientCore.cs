@@ -176,13 +176,11 @@ namespace Microsoft.Azure.Cosmos
             try
             {
                 PropertyInfo enableMultipleHttp2ConnectionsInfo = socketHandlerType.GetProperty("EnableMultipleHttp2Connections");
-                if (enableMultipleHttp2ConnectionsInfo != null)
-                {
-                    enableMultipleHttp2ConnectionsInfo.SetValue(socketHttpHandler, true);
-                }
+                enableMultipleHttp2ConnectionsInfo?.SetValue(socketHttpHandler, true);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                DefaultTrace.TraceWarning("Failed to set EnableMultipleHttp2Connections on SocketsHttpHandler: {0}", ex.Message);
             }
 
             if (serverCertificateCustomValidationCallback != null)

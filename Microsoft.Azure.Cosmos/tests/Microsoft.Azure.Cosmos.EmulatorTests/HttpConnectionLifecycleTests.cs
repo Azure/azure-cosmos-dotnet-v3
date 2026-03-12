@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Concurrent;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
@@ -25,23 +26,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class HttpConnectionLifecycleTests
     {
-        private string connectionString;
+        private static string connectionString;
 
-        [TestInitialize]
-        public void TestInit()
+        [ClassInitialize]
+        public static void ClassInit(TestContext _)
         {
             Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
 
-            this.connectionString = Environment.GetEnvironmentVariable("COSMOSDB_THINCLIENT");
+            connectionString = Environment.GetEnvironmentVariable("COSMOSDB_THINCLIENT");
 
-            if (string.IsNullOrEmpty(this.connectionString))
+            if (string.IsNullOrEmpty(connectionString))
             {
                 Assert.Fail("Set environment variable COSMOSDB_THINCLIENT to run the tests.");
             }
         }
 
-        [TestCleanup]
-        public void TestCleanup()
+        [ClassCleanup]
+        public static void ClassCleanUp()
         {
             Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "False");
         }
@@ -101,10 +102,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             StreamCancellationHandler faultHandler = new StreamCancellationHandler(socketsHandler);
             HttpClient httpClient = new HttpClient(faultHandler);
 
-            string databaseId = "H2ConnReuse_" + Guid.NewGuid().ToString("N").Substring(0, 8);
+            string databaseId = "H2ConnReuse_" + Guid.NewGuid().ToString("N")[..8];
 
             using CosmosClient client = new CosmosClient(
-                this.connectionString,
+                connectionString,
                 new CosmosClientOptions()
                 {
                     ConnectionMode = ConnectionMode.Gateway,
@@ -126,7 +127,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 // With EnableMultipleHttp2Connections=true, concurrent requests exceeding
                 // MAX_CONCURRENT_STREAMS per connection force additional TCP connections.
                 // Strategy: fire multiple waves of concurrent bursts until >1 connection observed.
-                int concurrentRequests = 100;
+                int concurrentRequests = 150;
                 int maxWaves = 3;
 
                 for (int wave = 0; wave < maxWaves; wave++)
@@ -238,18 +239,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Parse the gateway endpoint from the connection string
             string gatewayHost = null;
-            if (!string.IsNullOrEmpty(this.connectionString))
+            if (!string.IsNullOrEmpty(connectionString))
             {
                 try
                 {
                     // Extract AccountEndpoint from connection string
-                    string[] parts = this.connectionString.Split(';');
+                    string[] parts = connectionString.Split(';');
                     foreach (string part in parts)
                     {
                         string trimmed = part.Trim();
                         if (trimmed.StartsWith("AccountEndpoint=", StringComparison.OrdinalIgnoreCase))
                         {
-                            string endpoint = trimmed.Substring("AccountEndpoint=".Length);
+                            string endpoint = trimmed["AccountEndpoint=".Length..];
                             gatewayHost = new Uri(endpoint).Host;
                             break;
                         }
@@ -269,7 +270,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Sum connections for all endpoints that are NOT the gateway
             int thinClientCount = 0;
-            foreach (var kvp in connectionsByEndpoint)
+            foreach (KeyValuePair<string, ConcurrentBag<string>> kvp in connectionsByEndpoint)
             {
                 if (!string.Equals(kvp.Key, gatewayHost, StringComparison.OrdinalIgnoreCase))
                 {

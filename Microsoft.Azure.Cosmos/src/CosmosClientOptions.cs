@@ -244,11 +244,39 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <remarks>
         /// This setting is only applicable in Gateway mode.
-        /// EnableMultipleHttp2Connections = true on the underlying SocketsHttpHandler,
-        /// allowing HTTP/2 TCP connections to be opened when the maximum concurrent streams
+        /// The SDK sets EnableMultipleHttp2Connections = true on the underlying SocketsHttpHandler,
+        /// allowing additional HTTP/2 TCP connections to be opened when the maximum concurrent streams
         /// limit on an existing connection is reached. This property controls the upper bound on the
         /// total number of connections per server endpoint.
+        /// When using a custom <see cref="HttpClientFactory"/>, set EnableMultipleHttp2Connections
+        /// directly on your SocketsHttpHandler for equivalent behavior.
         /// </remarks>
+        /// <example>
+        /// Using the SDK-managed handler with a custom connection limit:
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosClientOptions options = new CosmosClientOptions()
+        /// {
+        ///     ConnectionMode = ConnectionMode.Gateway,
+        ///     GatewayModeMaxConnectionLimit = 100
+        /// };
+        /// ]]>
+        /// </code>
+        /// When providing a custom HttpClientFactory, set the properties on SocketsHttpHandler directly:
+        /// <code language="c#">
+        /// <![CDATA[
+        /// SocketsHttpHandler handler = new SocketsHttpHandler
+        /// {
+        ///     MaxConnectionsPerServer = 100,
+        ///     EnableMultipleHttp2Connections = true
+        /// };
+        /// CosmosClientOptions options = new CosmosClientOptions()
+        /// {
+        ///     HttpClientFactory = () => new HttpClient(handler, disposeHandler: false)
+        /// };
+        /// ]]>
+        /// </code>
+        /// </example>
         /// <value>Default value is 50.</value>
         /// <seealso cref="CosmosClientBuilder.WithConnectionModeGateway(int?, IWebProxy)"/>
         public int GatewayModeMaxConnectionLimit
