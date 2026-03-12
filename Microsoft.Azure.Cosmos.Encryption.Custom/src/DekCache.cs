@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         private readonly TimeSpan? proactiveRefreshThreshold;
         private readonly IDistributedCache distributedCache;
         private readonly string cacheKeyPrefix;
+        private readonly TimeProvider timeProvider;
 
         private static readonly ActivitySource ActivitySource = new ("Microsoft.Azure.Cosmos.Encryption.Custom.DekCache");
 
@@ -30,7 +31,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             TimeSpan? dekPropertiesTimeToLive = null,
             IDistributedCache distributedCache = null,
             TimeSpan? proactiveRefreshThreshold = null,
-            string cacheKeyPrefix = "dek")
+            string cacheKeyPrefix = "dek",
+            TimeProvider timeProvider = null)
         {
             this.dekPropertiesTimeToLive = dekPropertiesTimeToLive.HasValue == true ? dekPropertiesTimeToLive.Value : TimeSpan.FromMinutes(Constants.DekPropertiesDefaultTTLInMinutes);
 
@@ -47,6 +49,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             this.distributedCache = distributedCache;
             this.proactiveRefreshThreshold = proactiveRefreshThreshold;
             this.cacheKeyPrefix = cacheKeyPrefix;
+            this.timeProvider = timeProvider ?? TimeProvider.System;
         }
 
         public async Task<DataEncryptionKeyProperties> GetOrAddDekPropertiesAsync(
@@ -66,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                         () => this.FetchDekPropertiesAsync(dekId, fetcher, diagnosticsContext, cancellationToken),
                         cancellationToken);
 
-                if (cachedDekProperties.ServerPropertiesExpiryUtc <= DateTime.UtcNow)
+                if (cachedDekProperties.ServerPropertiesExpiryUtc <= this.timeProvider.GetUtcNow().UtcDateTime)
                 {
                     activity?.SetTag("cache.expired", true);
                     activity?.SetTag("cache.operation", "refresh");
@@ -105,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                    () => unwrapper(dekProperties, diagnosticsContext, cancellationToken),
                    cancellationToken);
 
-            if (inMemoryRawDek.RawDekExpiry <= DateTime.UtcNow)
+            if (inMemoryRawDek.RawDekExpiry <= this.timeProvider.GetUtcNow().UtcDateTime)
             {
                 inMemoryRawDek = await this.RawDekCache.GetAsync(
                    dekProperties.SelfLink,
@@ -165,7 +168,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 activity?.SetTag("cache.system", "cosmos.encryption.dek");
                 activity?.SetTag("cache.key", dekId);
 
-                CachedDekProperties cachedDekProperties = new (dekProperties, DateTime.UtcNow + this.dekPropertiesTimeToLive);
+                CachedDekProperties cachedDekProperties = new (dekProperties, this.timeProvider.GetUtcNow().UtcDateTime + this.dekPropertiesTimeToLive);
 
                 // Update memory cache
                 this.DekPropertiesCache.Set(dekId, cachedDekProperties);
@@ -301,7 +304,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                         CachedDekProperties cachedProps = DeserializeCachedDekProperties(cachedBytes);
 
                         // Validate the cached entry is still valid
-                        if (cachedProps.ServerPropertiesExpiryUtc > DateTime.UtcNow)
+                        if (cachedProps.ServerPropertiesExpiryUtc > this.timeProvider.GetUtcNow().UtcDateTime)
                         {
                             activity?.SetTag("cache.result", "hit");
                             activity?.SetTag("cache.entry.valid", true);
@@ -350,7 +353,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             DataEncryptionKeyProperties serverProperties = await fetcher(dekId, diagnosticsContext, cancellationToken);
             CachedDekProperties cachedProperties = new CachedDekProperties(
                 serverProperties,
-                DateTime.UtcNow + this.dekPropertiesTimeToLive);
+                this.timeProvider.GetUtcNow().UtcDateTime + this.dekPropertiesTimeToLive);
 
             // Update distributed cache (best effort - don't fail if this fails)
             await this.UpdateDistributedCacheAsync(dekId, cachedProperties, cancellationToken);
@@ -403,7 +406,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
 
             DateTime refreshThreshold = cached.ServerPropertiesExpiryUtc - this.proactiveRefreshThreshold.Value;
-            return DateTime.UtcNow >= refreshThreshold;
+            return this.timeProvider.GetUtcNow().UtcDateTime >= refreshThreshold;
         }
 
         private string GetDistributedCacheKey(string dekId)

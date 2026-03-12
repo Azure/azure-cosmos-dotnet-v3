@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Extensions.Caching.Distributed;
+    using Microsoft.Extensions.Time.Testing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -103,11 +104,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         public async Task DekCache_WithProactiveRefresh_TriggersBackgroundRefresh()
         {
             // Arrange
+            FakeTimeProvider fakeTime = new FakeTimeProvider(DateTimeOffset.UtcNow);
             InMemoryDistributedCache distributedCache = new InMemoryDistributedCache();
             DekCache cache = new DekCache(
-                dekPropertiesTimeToLive: TimeSpan.FromSeconds(10),
+                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
                 distributedCache: distributedCache,
-                proactiveRefreshThreshold: TimeSpan.FromSeconds(8)); // Refresh when 2 seconds left
+                proactiveRefreshThreshold: TimeSpan.FromMinutes(25), // Refresh when 5 minutes left
+                timeProvider: fakeTime);
 
             int fetchCount = 0;
 
@@ -119,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                     "AEAD_AES_256_CBC_HMAC_SHA256",
                     new byte[] { 1, 2, 3 },
                     new EncryptionKeyWrapMetadata("test", "test", "RSA-OAEP", "test"),
-                    DateTime.UtcNow);
+                    fakeTime.GetUtcNow().UtcDateTime);
             }
 
             // Act - First fetch
@@ -131,8 +134,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
             Assert.AreEqual(1, fetchCount, "Should fetch once initially");
 
-            // Wait past the proactive refresh threshold (8 seconds)
-            await Task.Delay(TimeSpan.FromSeconds(8.5));
+            // Advance time past the proactive refresh threshold (25 min into 30 min TTL)
+            fakeTime.Advance(TimeSpan.FromMinutes(26));
 
             // Act - Second fetch (should return cached value but trigger background refresh)
             DataEncryptionKeyProperties result2 = await cache.GetOrAddDekPropertiesAsync(
@@ -141,8 +144,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 CosmosDiagnosticsContext.Create(null),
                 CancellationToken.None);
 
-            // Give background refresh time to complete
-            await Task.Delay(TimeSpan.FromSeconds(1));
+            // Give background refresh task time to complete
+            await Task.Delay(TimeSpan.FromMilliseconds(200));
 
             // Assert
             Assert.AreEqual(result1.Id, result2.Id, "Should return cached value immediately");
