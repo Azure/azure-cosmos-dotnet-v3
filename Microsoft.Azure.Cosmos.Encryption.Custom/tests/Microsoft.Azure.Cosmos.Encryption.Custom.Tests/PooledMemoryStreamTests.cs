@@ -493,22 +493,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [TestMethod]
         public void EnsureCapacity_NearIntMaxValue_HandlesOverflowGracefully()
         {
-            // Test that capacity doubling near int.MaxValue is handled correctly
-            // We can't actually allocate arrays this large in tests, but we can verify
-            // the logic by testing growth from a large initial capacity
-            using PooledMemoryStream stream = new(capacity: int.MaxValue / 4);
+            // Test that requesting capacity beyond MaxArrayLength throws a controlled IOException
+            // instead of an unhandled OOM from ArrayPool.Rent.
+            using PooledMemoryStream stream = new(capacity: 1024);
 
-            // Write a small amount to trigger growth
-            byte[] testData = new byte[100];
-            for (int i = 0; i < testData.Length; i++)
+            // SetLength with a value exceeding Array.MaxLength (0x7FFFFFC7) must fail cleanly
+            Assert.ThrowsException<IOException>(() =>
             {
-                testData[i] = (byte)i;
-            }
+                stream.SetLength((long)int.MaxValue);
+            });
 
-            stream.Write(testData, 0, testData.Length);
-
-            Assert.AreEqual(testData.Length, stream.Length);
-            Assert.AreEqual(testData.Length, stream.Position);
+            // Stream should still be usable after the failed growth attempt
+            stream.Write(new byte[] { 1, 2, 3 }, 0, 3);
+            Assert.AreEqual(3, stream.Length);
         }
 
         [TestMethod]

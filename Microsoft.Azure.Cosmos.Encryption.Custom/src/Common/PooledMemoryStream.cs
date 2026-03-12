@@ -64,8 +64,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 throw new ArgumentOutOfRangeException(nameof(capacity));
             }
 
-            this.capacity = capacity;
             this.buffer = capacity > 0 ? ArrayPool<byte>.Shared.Rent(capacity) : Array.Empty<byte>();
+            this.capacity = this.buffer.Length;
             this.position = 0;
             this.length = 0;
         }
@@ -78,8 +78,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
 
             this.clearOnReturn = clearOnReturn;
-            this.capacity = capacity;
             this.buffer = capacity > 0 ? ArrayPool<byte>.Shared.Rent(capacity) : Array.Empty<byte>();
+            this.capacity = this.buffer.Length;
             this.position = 0;
             this.length = 0;
         }
@@ -243,9 +243,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 this.EnsureCapacity(newLength);
             }
 
-            // SECURITY FIX: Zero the newly exposed region when expanding length
-            // to prevent leaking pool garbage data
-            if (newLength > oldLength && this.clearOnReturn)
+            // Zero the newly exposed region when expanding length to prevent
+            // leaking pool garbage data. This is unconditional to maintain
+            // MemoryStream semantics (new bytes must read as zero).
+            if (newLength > oldLength)
             {
                 Array.Clear(this.buffer, oldLength, newLength - oldLength);
             }
@@ -274,9 +275,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 this.EnsureCapacity(newPosition);
             }
 
-            // SECURITY FIX: Zero any gap between current length and write position
-            // to prevent leaking pool garbage when writing beyond the current length
-            if (this.position > this.length && this.clearOnReturn)
+            // Zero any gap between current length and write position to prevent
+            // leaking pool garbage. Unconditional to maintain MemoryStream semantics.
+            if (this.position > this.length)
             {
                 Array.Clear(this.buffer, this.length, this.position - this.length);
             }
@@ -306,9 +307,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 this.EnsureCapacity(newPosition);
             }
 
-            // SECURITY FIX: Zero any gap between current length and write position
-            // to prevent leaking pool garbage when writing beyond the current length
-            if (this.position > this.length && this.clearOnReturn)
+            // Zero any gap between current length and write position to prevent
+            // leaking pool garbage. Unconditional to maintain MemoryStream semantics.
+            if (this.position > this.length)
             {
                 Array.Clear(this.buffer, this.length, this.position - this.length);
             }
@@ -416,19 +417,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 if (this.buffer != null && this.buffer.Length > 0)
                 {
-                    // Defense-in-depth: Explicitly clear sensitive data before returning to pool.
+                    // Defense-in-depth: Explicitly clear the full rented buffer before returning to pool.
                     // ArrayPool.Return's clearArray parameter only clears when the pool decides to retain
-                    // the buffer for reuse. If the pool releases the buffer instead, clearArray is ignored.
-                    // By clearing explicitly here, we guarantee sensitive encryption data is zeroed regardless
-                    // of ArrayPool's internal retention policy.
-                    //
-                    // SECURITY FIX: Clear up to capacity (not length) to handle SetLength(0) scenario.
-                    // When SetLength(0) is called, this.length becomes 0, but sensitive data may still
-                    // exist in the buffer beyond position 0. We must clear the entire capacity to ensure
-                    // no sensitive data leaks back to the pool.
-                    if (this.clearOnReturn && this.capacity > 0)
+                    // the buffer for reuse. By clearing explicitly, we guarantee sensitive encryption data
+                    // is zeroed regardless of ArrayPool's internal retention policy.
+                    if (this.clearOnReturn)
                     {
-                        Array.Clear(this.buffer, 0, this.capacity);
+                        Array.Clear(this.buffer, 0, this.buffer.Length);
                     }
 
                     ArrayPool<byte>.Shared.Return(this.buffer, this.clearOnReturn);
@@ -455,16 +450,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 newCapacity = checked(this.capacity * 2);
                 newCapacity = Math.Max(requiredCapacity, newCapacity);
 
-                // Ensure we don't exceed the maximum array length
+                // Cap at MaxArrayLength; fail if the required capacity itself exceeds the limit
                 if (newCapacity > MaxArrayLength)
                 {
-                    newCapacity = Math.Max(requiredCapacity, MaxArrayLength);
+                    if (requiredCapacity > MaxArrayLength)
+                    {
+                        throw new IOException($"Cannot allocate a buffer larger than {MaxArrayLength} bytes.");
+                    }
+
+                    newCapacity = MaxArrayLength;
                 }
             }
             catch (OverflowException)
             {
                 // If doubling capacity overflows, cap at MaxArrayLength
-                newCapacity = Math.Max(requiredCapacity, MaxArrayLength);
+                if (requiredCapacity > MaxArrayLength)
+                {
+                    throw new IOException($"Cannot allocate a buffer larger than {MaxArrayLength} bytes.");
+                }
+
+                newCapacity = MaxArrayLength;
             }
 
             byte[] newBuffer = ArrayPool<byte>.Shared.Rent(newCapacity);
@@ -481,15 +486,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 Buffer.BlockCopy(this.buffer, 0, newBuffer, 0, this.length);
             }
 
-            // SECURITY FIX: Clear the entire old buffer (up to capacity, not just length)
-            // to ensure sensitive data beyond the current length is also cleared before
-            // returning to the pool. This handles the case where sensitive data exists
-            // beyond the current length due to SetLength shrinking.
+            // Clear the entire old buffer before returning to the pool.
+            // Use buffer.Length (not capacity) to cover the full rented region.
             if (this.buffer.Length > 0)
             {
                 if (this.clearOnReturn)
                 {
-                    Array.Clear(this.buffer, 0, this.capacity);
+                    Array.Clear(this.buffer, 0, this.buffer.Length);
                 }
 
                 ArrayPool<byte>.Shared.Return(this.buffer, this.clearOnReturn);
