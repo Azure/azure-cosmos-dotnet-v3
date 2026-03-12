@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
@@ -213,6 +214,122 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             await processor.StopAsync();
             Mock.Get(leaseContainer.Object)
                 .Verify(store => store.GetAllLeasesAsync(), Times.Exactly(2));
+        }
+
+        [TestMethod]
+        public async Task ExportLeasesAsync_ExportsLeases()
+        {
+            // Arrange
+            using JsonDocument doc = JsonDocument.Parse("{\"id\":\"lease-0\"}");
+            List<JsonElement> expectedExport = new List<JsonElement>
+            {
+                doc.RootElement.Clone()
+            };
+
+            Mock<DocumentServiceLeaseStore> leaseStore = new Mock<DocumentServiceLeaseStore>();
+            leaseStore.Setup(l => l.IsInitializedAsync()).ReturnsAsync(true);
+
+            Mock<DocumentServiceLeaseContainer> leaseContainer = new Mock<DocumentServiceLeaseContainer>();
+            leaseContainer.Setup(l => l.GetOwnedLeasesAsync()).Returns(Task.FromResult(Enumerable.Empty<DocumentServiceLease>()));
+            leaseContainer.Setup(l => l.GetAllLeasesAsync()).ReturnsAsync(new List<DocumentServiceLease>());
+            leaseContainer.Setup(l => l.ExportLeasesAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedExport);
+
+            Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
+            leaseStoreManager.Setup(l => l.LeaseContainer).Returns(leaseContainer.Object);
+            leaseStoreManager.Setup(l => l.LeaseManager).Returns(Mock.Of<DocumentServiceLeaseManager>);
+            leaseStoreManager.Setup(l => l.LeaseStore).Returns(leaseStore.Object);
+            leaseStoreManager.Setup(l => l.LeaseCheckpointer).Returns(Mock.Of<DocumentServiceLeaseCheckpointer>);
+
+            ChangeFeedProcessorCore processor = ChangeFeedProcessorCoreTests.CreateProcessor(out _, out _);
+            processor.ApplyBuildConfiguration(
+                leaseStoreManager.Object,
+                null,
+                "instanceName",
+                new ChangeFeedLeaseOptions(),
+                new ChangeFeedProcessorOptions(),
+                ChangeFeedProcessorCoreTests.GetMockedContainer("monitored"));
+
+            // Act
+            IReadOnlyList<JsonElement> result = await processor.ExportLeasesAsync();
+
+            // Assert
+            Assert.AreEqual(1, result.Count);
+            Assert.AreEqual("lease-0", result[0].GetProperty("id").GetString());
+            Mock.Get(leaseContainer.Object)
+                .Verify(c => c.ExportLeasesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [TestMethod]
+        public async Task ImportLeasesAsync_ImportsLeases()
+        {
+            // Arrange
+            using JsonDocument doc = JsonDocument.Parse("{\"id\":\"lease-0\"}");
+            List<JsonElement> leasesToImport = new List<JsonElement>
+            {
+                doc.RootElement.Clone()
+            };
+
+            Mock<DocumentServiceLeaseStore> leaseStore = new Mock<DocumentServiceLeaseStore>();
+            leaseStore.Setup(l => l.IsInitializedAsync()).ReturnsAsync(true);
+
+            Mock<DocumentServiceLeaseContainer> leaseContainer = new Mock<DocumentServiceLeaseContainer>();
+            leaseContainer.Setup(l => l.GetOwnedLeasesAsync()).Returns(Task.FromResult(Enumerable.Empty<DocumentServiceLease>()));
+            leaseContainer.Setup(l => l.GetAllLeasesAsync()).ReturnsAsync(new List<DocumentServiceLease>());
+            leaseContainer.Setup(l => l.ImportLeasesAsync(It.IsAny<IReadOnlyList<JsonElement>>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
+            leaseStoreManager.Setup(l => l.LeaseContainer).Returns(leaseContainer.Object);
+            leaseStoreManager.Setup(l => l.LeaseManager).Returns(Mock.Of<DocumentServiceLeaseManager>);
+            leaseStoreManager.Setup(l => l.LeaseStore).Returns(leaseStore.Object);
+            leaseStoreManager.Setup(l => l.LeaseCheckpointer).Returns(Mock.Of<DocumentServiceLeaseCheckpointer>);
+
+            ChangeFeedProcessorCore processor = ChangeFeedProcessorCoreTests.CreateProcessor(out _, out _);
+            processor.ApplyBuildConfiguration(
+                leaseStoreManager.Object,
+                null,
+                "instanceName",
+                new ChangeFeedLeaseOptions(),
+                new ChangeFeedProcessorOptions(),
+                ChangeFeedProcessorCoreTests.GetMockedContainer("monitored"));
+
+            // Act
+            await processor.ImportLeasesAsync(leasesToImport);
+
+            // Assert
+            Mock.Get(leaseContainer.Object)
+                .Verify(c => c.ImportLeasesAsync(leasesToImport, false, It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [TestMethod]
+        public async Task ImportLeasesAsync_WithNullLeases_ThrowsArgumentNullException()
+        {
+            // Arrange
+            Mock<DocumentServiceLeaseStore> leaseStore = new Mock<DocumentServiceLeaseStore>();
+            leaseStore.Setup(l => l.IsInitializedAsync()).ReturnsAsync(true);
+
+            Mock<DocumentServiceLeaseContainer> leaseContainer = new Mock<DocumentServiceLeaseContainer>();
+            leaseContainer.Setup(l => l.GetAllLeasesAsync()).ReturnsAsync(new List<DocumentServiceLease>());
+
+            Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
+            leaseStoreManager.Setup(l => l.LeaseContainer).Returns(leaseContainer.Object);
+            leaseStoreManager.Setup(l => l.LeaseManager).Returns(Mock.Of<DocumentServiceLeaseManager>);
+            leaseStoreManager.Setup(l => l.LeaseStore).Returns(leaseStore.Object);
+            leaseStoreManager.Setup(l => l.LeaseCheckpointer).Returns(Mock.Of<DocumentServiceLeaseCheckpointer>);
+
+            ChangeFeedProcessorCore processor = ChangeFeedProcessorCoreTests.CreateProcessor(out _, out _);
+            processor.ApplyBuildConfiguration(
+                leaseStoreManager.Object,
+                null,
+                "instanceName",
+                new ChangeFeedLeaseOptions(),
+                new ChangeFeedProcessorOptions(),
+                ChangeFeedProcessorCoreTests.GetMockedContainer("monitored"));
+
+            // Act & Assert
+            await Assert.ThrowsExceptionAsync<ArgumentNullException>(
+                () => processor.ImportLeasesAsync(null));
         }
 
 
