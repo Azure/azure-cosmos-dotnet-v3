@@ -411,6 +411,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return $"{this.cacheKeyPrefix}:{dekId}";
         }
 
+        private static readonly JsonSerializerSettings CacheSerializerSettings = new JsonSerializerSettings
+        {
+            TypeNameHandling = TypeNameHandling.None,
+            DateFormatHandling = DateFormatHandling.IsoDateFormat,
+            DateTimeZoneHandling = DateTimeZoneHandling.Utc,
+        };
+
         private static byte[] SerializeCachedDekProperties(CachedDekProperties cachedProps)
         {
             // Create a DTO for serialization
@@ -420,14 +427,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 ServerPropertiesExpiryUtc = cachedProps.ServerPropertiesExpiryUtc,
             };
 
-            string json = JsonConvert.SerializeObject(dto);
+            string json = JsonConvert.SerializeObject(dto, CacheSerializerSettings);
             return System.Text.Encoding.UTF8.GetBytes(json);
         }
 
         private static CachedDekProperties DeserializeCachedDekProperties(byte[] bytes)
         {
             string json = System.Text.Encoding.UTF8.GetString(bytes);
-            CachedDekPropertiesDto dto = JsonConvert.DeserializeObject<CachedDekPropertiesDto>(json);
+            CachedDekPropertiesDto dto = JsonConvert.DeserializeObject<CachedDekPropertiesDto>(json, CacheSerializerSettings);
 
             if (dto?.ServerProperties == null)
             {
@@ -439,11 +446,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 dto.ServerPropertiesExpiryUtc);
         }
 
-        // DTO for serialization to distributed cache
+        // DTO for serialization to distributed cache.
+        // JsonProperty names are pinned to ensure cross-process interop
+        // regardless of host-level JsonConvert.DefaultSettings.
         private sealed class CachedDekPropertiesDto
         {
+            [JsonProperty("serverProperties")]
             public DataEncryptionKeyProperties ServerProperties { get; set; }
 
+            [JsonProperty("serverPropertiesExpiryUtc")]
             public DateTime ServerPropertiesExpiryUtc { get; set; }
         }
     }

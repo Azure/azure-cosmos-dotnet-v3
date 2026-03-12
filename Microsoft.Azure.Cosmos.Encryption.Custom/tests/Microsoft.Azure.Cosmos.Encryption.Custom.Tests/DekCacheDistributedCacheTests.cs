@@ -430,6 +430,199 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         }
 
         [TestMethod]
+        public async Task DekCache_SetDekProperties_WritesToDistributedCache()
+        {
+            // Arrange
+            InMemoryDistributedCache distributedCache = new InMemoryDistributedCache();
+            DekCache cache = new DekCache(
+                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
+                distributedCache: distributedCache);
+
+            DataEncryptionKeyProperties dekProps = new DataEncryptionKeyProperties(
+                "dek1",
+                "AEAD_AES_256_CBC_HMAC_SHA256",
+                new byte[] { 1, 2, 3 },
+                new EncryptionKeyWrapMetadata("test", "test", "RSA-OAEP", "test"),
+                DateTime.UtcNow);
+
+            // Act
+            cache.SetDekProperties("dek1", dekProps);
+
+            // Give the fire-and-forget Task.Run time to complete
+            await Task.Delay(TimeSpan.FromMilliseconds(500));
+
+            // Assert
+            Assert.IsTrue(distributedCache.ContainsKey("dek:dek1"), "Distributed cache should contain the key after SetDekProperties");
+        }
+
+        [TestMethod]
+        public async Task DekCache_SetDekProperties_DistributedCacheFailure_DoesNotThrow()
+        {
+            // Arrange
+            Mock<IDistributedCache> mockCache = new Mock<IDistributedCache>();
+            mockCache.Setup(x => x.SetAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<byte[]>(),
+                    It.IsAny<DistributedCacheEntryOptions>(),
+                    It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new InvalidOperationException("Cache unavailable"));
+
+            DekCache cache = new DekCache(
+                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
+                distributedCache: mockCache.Object);
+
+            DataEncryptionKeyProperties dekProps = new DataEncryptionKeyProperties(
+                "dek1",
+                "AEAD_AES_256_CBC_HMAC_SHA256",
+                new byte[] { 1, 2, 3 },
+                new EncryptionKeyWrapMetadata("test", "test", "RSA-OAEP", "test"),
+                DateTime.UtcNow);
+
+            // Act - should not throw
+            cache.SetDekProperties("dek1", dekProps);
+
+            // Give the fire-and-forget Task.Run time to complete
+            await Task.Delay(TimeSpan.FromMilliseconds(500));
+
+            // Assert - memory cache should still have the value
+            CachedDekProperties cached = await cache.DekPropertiesCache.GetAsync(
+                "dek1",
+                null,
+                () => throw new InvalidOperationException("Should not fetch"),
+                CancellationToken.None);
+            Assert.AreEqual("dek1", cached.ServerProperties.Id);
+        }
+
+        [TestMethod]
+        public async Task DekCache_RemoveAsync_RemovesFromDistributedCache()
+        {
+            // Arrange
+            InMemoryDistributedCache distributedCache = new InMemoryDistributedCache();
+            DekCache cache = new DekCache(
+                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
+                distributedCache: distributedCache);
+
+            int fetchCount = 0;
+            await cache.GetOrAddDekPropertiesAsync(
+                "dek1",
+                (id, ctx, ct) =>
+                {
+                    fetchCount++;
+                    return Task.FromResult(new DataEncryptionKeyProperties(
+                        id,
+                        "AEAD_AES_256_CBC_HMAC_SHA256",
+                        new byte[] { 1, 2, 3 },
+                        new EncryptionKeyWrapMetadata("test", "test", "RSA-OAEP", "test"),
+                        DateTime.UtcNow));
+                },
+                CosmosDiagnosticsContext.Create(null),
+                CancellationToken.None);
+
+            Assert.IsTrue(distributedCache.ContainsKey("dek:dek1"), "Precondition: distributed cache should contain the key");
+
+            // Act
+            await cache.RemoveAsync("dek1");
+
+            // Assert
+            Assert.IsFalse(distributedCache.ContainsKey("dek:dek1"), "Distributed cache should be cleared after RemoveAsync");
+        }
+
+        [TestMethod]
+        public async Task DekCache_RemoveAsync_RemovesFromDistributedCache_EvenWhenMemoryCacheIsEmpty()
+        {
+            // Arrange - populate distributed cache via one DekCache instance
+            InMemoryDistributedCache distributedCache = new InMemoryDistributedCache();
+            DekCache cache1 = new DekCache(
+                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
+                distributedCache: distributedCache);
+
+            await cache1.GetOrAddDekPropertiesAsync(
+                "dek1",
+                (id, ctx, ct) => Task.FromResult(new DataEncryptionKeyProperties(
+                    id,
+                    "AEAD_AES_256_CBC_HMAC_SHA256",
+                    new byte[] { 1, 2, 3 },
+                    new EncryptionKeyWrapMetadata("test", "test", "RSA-OAEP", "test"),
+                    DateTime.UtcNow)),
+                CosmosDiagnosticsContext.Create(null),
+                CancellationToken.None);
+
+            Assert.IsTrue(distributedCache.ContainsKey("dek:dek1"), "Precondition: distributed cache populated");
+
+            // Create a fresh instance (simulates process restart) - memory cache is empty
+            DekCache cache2 = new DekCache(
+                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
+                distributedCache: distributedCache);
+
+            // Act - RemoveAsync from a fresh instance with empty memory cache
+            await cache2.RemoveAsync("dek1");
+
+            // Assert - distributed cache should STILL be cleared (BUG-1 fix verification)
+            Assert.IsFalse(distributedCache.ContainsKey("dek:dek1"),
+                "Distributed cache should be cleared even when memory cache doesn't have the entry");
+        }
+
+        [TestMethod]
+        public async Task DekCache_RemoveAsync_DistributedCacheFailure_DoesNotThrow()
+        {
+            // Arrange
+            Mock<IDistributedCache> mockCache = new Mock<IDistributedCache>();
+            mockCache.Setup(x => x.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((byte[])null);
+            mockCache.Setup(x => x.RemoveAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new InvalidOperationException("Cache unavailable"));
+
+            DekCache cache = new DekCache(
+                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
+                distributedCache: mockCache.Object);
+
+            // Act & Assert - should not throw even though distributed cache fails
+            await cache.RemoveAsync("dek1");
+        }
+
+        [TestMethod]
+        public async Task DekCache_DistributedCacheReadFailure_FallsBackToSource()
+        {
+            // Arrange - distributed cache throws on read
+            Mock<IDistributedCache> mockCache = new Mock<IDistributedCache>();
+            mockCache.Setup(x => x.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new InvalidOperationException("Cache read failed"));
+            mockCache.Setup(x => x.SetAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<byte[]>(),
+                    It.IsAny<DistributedCacheEntryOptions>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            DekCache cache = new DekCache(
+                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
+                distributedCache: mockCache.Object);
+
+            int fetchCount = 0;
+
+            // Act - should fall back to source when distributed cache read fails
+            DataEncryptionKeyProperties result = await cache.GetOrAddDekPropertiesAsync(
+                "dek1",
+                (id, ctx, ct) =>
+                {
+                    fetchCount++;
+                    return Task.FromResult(new DataEncryptionKeyProperties(
+                        id,
+                        "AEAD_AES_256_CBC_HMAC_SHA256",
+                        new byte[] { 1, 2, 3 },
+                        new EncryptionKeyWrapMetadata("test", "test", "RSA-OAEP", "test"),
+                        DateTime.UtcNow));
+                },
+                CosmosDiagnosticsContext.Create(null),
+                CancellationToken.None);
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.AreEqual("dek1", result.Id);
+            Assert.AreEqual(1, fetchCount, "Should have fallen back to source fetch");
+        }
+
+        [TestMethod]
         [ExpectedException(typeof(ArgumentException))]
         public void DekCache_WhitespaceCacheKeyPrefix_ThrowsArgumentException()
         {
