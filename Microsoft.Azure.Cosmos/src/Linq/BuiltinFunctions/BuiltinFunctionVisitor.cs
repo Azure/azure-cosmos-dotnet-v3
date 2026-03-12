@@ -60,6 +60,8 @@ namespace Microsoft.Azure.Cosmos.Linq
                         case nameof(CosmosLinqExtensions.FullTextContainsAll):
                         case nameof(CosmosLinqExtensions.FullTextContainsAny):
                             return StringBuiltinFunctions.Visit(methodCallExpression, context);
+                        case nameof(CosmosLinqExtensions.ArrayContainsAll):
+                        case nameof(CosmosLinqExtensions.ArrayContainsAny):
                         case nameof(CosmosLinqExtensions.DocumentId):
                         case nameof(CosmosLinqExtensions.RRF):
                         case nameof(CosmosLinqExtensions.FullTextScore):

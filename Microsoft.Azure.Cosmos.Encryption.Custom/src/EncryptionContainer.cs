@@ -1031,6 +1031,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         }
 #endif
 
+#if PREVIEW && SDKPROJECTREF
+        public override Task<SemanticRerankResult> SemanticRerankAsync(
+            string rerankContext,
+            IEnumerable<string> documents,
+            IDictionary<string, object> options = null,
+            CancellationToken cancellationToken = default)
+        {
+            return this.container.SemanticRerankAsync(
+                rerankContext,
+                documents,
+                options,
+                cancellationToken);
+        }
+#endif
+
         private async Task<ResponseMessage> ReadManyItemsHelperAsync(
            IReadOnlyList<(string id, PartitionKey partitionKey)> items,
            ReadManyRequestOptions readManyRequestOptions = null,
