@@ -82,10 +82,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 {
                     activity?.SetTag("cache.proactive_refresh", true);
 
-                    // Trigger background refresh without blocking caller
+                    // Trigger background refresh without blocking caller.
+                    // Use CancellationToken.None since this runs independently of the caller's request lifecycle.
                     this.DekPropertiesCache.BackgroundRefreshNonBlocking(
                         dekId,
-                        () => this.FetchFromSourceAndUpdateCachesAsync(dekId, fetcher, diagnosticsContext, cancellationToken));
+                        () => this.FetchFromSourceAndUpdateCachesAsync(dekId, fetcher, diagnosticsContext, CancellationToken.None));
                 }
 
                 return cachedDekProperties.ServerProperties;
@@ -218,19 +219,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             if (cachedDekProperties != null)
             {
                 this.RawDekCache.Remove(dekId);
+            }
 
-                // Remove from distributed cache if available
-                if (this.distributedCache != null)
+            // Always remove from distributed cache regardless of memory cache state,
+            // since another instance may have populated it.
+            if (this.distributedCache != null)
+            {
+                try
                 {
-                    try
-                    {
-                        await this.distributedCache.RemoveAsync(this.GetDistributedCacheKey(dekId));
-                    }
-                    catch (Exception ex)
-                    {
-                        // Don't fail the operation if distributed cache removal fails
-                        Debug.WriteLine($"Failed to remove DEK '{dekId}' from distributed cache: {ex.Message}");
-                    }
+                    await this.distributedCache.RemoveAsync(this.GetDistributedCacheKey(dekId));
+                }
+                catch (Exception ex)
+                {
+                    // Don't fail the operation if distributed cache removal fails
+                    Debug.WriteLine($"Failed to remove DEK '{dekId}' from distributed cache: {ex.Message}");
                 }
             }
         }
@@ -314,6 +316,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                         activity?.SetTag("cache.result", "miss");
                     }
                 }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
                 catch (Exception ex)
                 {
                     stopwatch.Stop();
@@ -376,6 +382,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                         AbsoluteExpiration = cachedProperties.ServerPropertiesExpiryUtc,
                     },
                     cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
             }
             catch (Exception ex)
             {
