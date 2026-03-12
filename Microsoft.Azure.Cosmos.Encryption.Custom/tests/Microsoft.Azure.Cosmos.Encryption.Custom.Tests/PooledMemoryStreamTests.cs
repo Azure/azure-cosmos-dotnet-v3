@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Encryption.Tests
 {
     using System;
+    using System.Buffers;
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
@@ -676,5 +677,110 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.AreEqual(50, buffer.Span[4]);
         }
 #endif
+
+        [TestMethod]
+        public void SetLength_Expand_WithClearOnReturnFalse_StillZerosNewBytes()
+        {
+            // Regression: clearOnReturn:false must still zero newly exposed bytes
+            // to maintain MemoryStream semantics (new bytes read as 0, not pool garbage).
+            using PooledMemoryStream stream = new(capacity: 64, clearOnReturn: false);
+            stream.Write(new byte[] { 1, 2, 3 }, 0, 3);
+
+            // Expand length to expose new region
+            stream.SetLength(32);
+
+            // Read the newly exposed region (bytes 3..31) — must be zero
+            stream.Position = 3;
+            byte[] readBuf = new byte[29];
+            int read = stream.Read(readBuf, 0, readBuf.Length);
+            Assert.AreEqual(29, read);
+            for (int i = 0; i < readBuf.Length; i++)
+            {
+                Assert.AreEqual(0, readBuf[i], $"Byte at offset {i + 3} should be zero but was {readBuf[i]}");
+            }
+        }
+
+        [TestMethod]
+        public void Write_BeyondLength_WithClearOnReturnFalse_ZerosGap()
+        {
+            // Regression: writing past current length with clearOnReturn:false
+            // must zero the gap to prevent stale data disclosure.
+            using PooledMemoryStream stream = new(capacity: 64, clearOnReturn: false);
+            stream.Write(new byte[] { 1, 2, 3 }, 0, 3); // length = 3
+
+            // Seek past length and write, creating a gap at bytes 3..9
+            stream.Position = 10;
+            stream.Write(new byte[] { 0xAA }, 0, 1);
+
+            // Read the gap region — must be zero
+            stream.Position = 3;
+            byte[] gap = new byte[7];
+            stream.Read(gap, 0, 7);
+            for (int i = 0; i < gap.Length; i++)
+            {
+                Assert.AreEqual(0, gap[i], $"Gap byte at offset {i + 3} should be zero but was {gap[i]}");
+            }
+        }
+
+        [TestMethod]
+        public void Dispose_ClearsFullRentedBuffer_NotJustCapacity()
+        {
+            // Regression: Array.Clear must use buffer.Length (the full rented size)
+            // not the requested capacity, to cover the ArrayPool bucket-rounding tail.
+            const int requestedCapacity = 100;
+            byte[] bufferReference;
+            int actualBufferLength;
+
+            using (PooledMemoryStream stream = new(capacity: requestedCapacity, clearOnReturn: true))
+            {
+                // Write some sensitive data
+                byte[] data = new byte[requestedCapacity];
+                for (int i = 0; i < data.Length; i++) data[i] = 0xAB;
+                stream.Write(data, 0, data.Length);
+
+                bufferReference = stream.GetBuffer();
+                actualBufferLength = bufferReference.Length;
+
+                // ArrayPool typically rounds up (e.g., 100 → 128)
+                // Write marker bytes in the tail region to verify clearing
+                if (actualBufferLength > requestedCapacity)
+                {
+                    for (int i = requestedCapacity; i < actualBufferLength; i++)
+                    {
+                        bufferReference[i] = 0xCD;
+                    }
+                }
+            } // Dispose clears and returns
+
+            // Verify the ENTIRE rented buffer was cleared, including tail
+            for (int i = 0; i < actualBufferLength; i++)
+            {
+                Assert.AreEqual(0, bufferReference[i],
+                    $"Buffer byte at index {i} (bufLen={actualBufferLength}, requested={requestedCapacity}) was not cleared");
+            }
+        }
+
+        [TestMethod]
+        public void Constructor_CapacityAlignedToRentedBufferLength_NoPrematureRealloc()
+        {
+            // Regression: capacity must track the actual rented buffer.Length
+            // so writing up to that size doesn't trigger a needless reallocation.
+            const int requestedCapacity = 3000;
+            using PooledMemoryStream stream = new(capacity: requestedCapacity, clearOnReturn: true);
+
+            byte[] buf = stream.GetBuffer();
+            int rentedLength = buf.Length; // e.g., 4096 for a 3000-byte request
+
+            // Writing exactly rentedLength bytes should NOT cause a realloc
+            byte[] data = new byte[rentedLength];
+            for (int i = 0; i < data.Length; i++) data[i] = (byte)(i % 256);
+            stream.Write(data, 0, data.Length);
+
+            // The buffer reference should be the SAME object (no realloc occurred)
+            byte[] bufAfterWrite = stream.GetBuffer();
+            Assert.AreSame(buf, bufAfterWrite,
+                $"Buffer was reallocated when writing {rentedLength} bytes to a buffer rented for request {requestedCapacity}");
+            Assert.AreEqual(rentedLength, stream.Length);
+        }
     }
 }

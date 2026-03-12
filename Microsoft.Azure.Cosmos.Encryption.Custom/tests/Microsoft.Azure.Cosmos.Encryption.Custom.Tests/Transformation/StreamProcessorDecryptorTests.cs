@@ -593,6 +593,49 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         // and the encryption pipeline never emits comments. Altering the static readonly field or constructing a custom reader just for coverage would add fragility.
         // The switch case exists defensively; functional risk is negligible.
 
+        [TestMethod]
+        public async Task Decrypt_ViaTrickleStream_SucceedsWithLeftover()
+        {
+            // Regression test for isFinalBlock fix: feed encrypted payload 1 byte at a time
+            // so dataLength==0 with leftOver>0 occurs. Before the fix, isFinalBlock would be
+            // false causing infinite buffer growth. With the fix, isFinalBlock = (dataLength==0)
+            // terminates correctly.
+            var doc = new
+            {
+                id = "1",
+                SensitiveStr = "secret-data",
+            };
+            string[] paths = new[] { "/SensitiveStr" };
+            EncryptionOptions options = CreateOptions(paths);
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+
+            // Re-wrap encrypted data in a TrickleStream that delivers small chunks per read
+            // to force the leftover accumulation path. We use 7-byte chunks (not 1) to avoid
+            // pathological buffer doubling: with 1-byte reads, the buffer doubles on every
+            // byte of every partial JSON token, overflowing before the stream is consumed.
+            byte[] encryptedBytes = encrypted.ToArray();
+            using TrickleStream trickleInput = new(encryptedBytes, bytesPerRead: 7);
+            MemoryStream output = new();
+
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(10));
+            try
+            {
+                DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(
+                    trickleInput, output, mockEncryptor.Object, props,
+                    new CosmosDiagnosticsContext(), cts.Token);
+
+                // Verify decryption succeeded
+                output.Position = 0;
+                using JsonDocument jd = JsonDocument.Parse(output);
+                Assert.AreEqual("secret-data", jd.RootElement.GetProperty("SensitiveStr").GetString());
+                Assert.IsTrue(ctx.DecryptionInfoList[0].PathsDecrypted.Contains("/SensitiveStr"));
+            }
+            catch (OperationCanceledException)
+            {
+                Assert.Fail("Timed out — isFinalBlock bug caused infinite buffer growth");
+            }
+        }
+
         private class NullMarkerMdeEncryptor : MdeEncryptor
         {
             internal override (byte[] plainText, int plainTextLength) Decrypt(DataEncryptionKey encryptionKey, byte[] cipherText, int cipherTextLength, ArrayPoolManager arrayPoolManager)
@@ -641,6 +684,50 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             }
         }
 
+    }
+
+    /// <summary>
+    /// Delivers at most N bytes per ReadAsync to force the StreamProcessor leftover path.
+    /// </summary>
+    internal sealed class TrickleStream : Stream
+    {
+        private readonly byte[] data;
+        private readonly int bytesPerRead;
+        private int pos;
+
+        public TrickleStream(byte[] data, int bytesPerRead)
+        {
+            this.data = data;
+            this.bytesPerRead = bytesPerRead;
+        }
+
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => this.data.Length;
+        public override long Position { get => this.pos; set => throw new NotSupportedException(); }
+        public override void Flush() { }
+        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException("Use ReadAsync");
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            int remaining = this.data.Length - this.pos;
+            if (remaining <= 0) return ValueTask.FromResult(0);
+            int toRead = Math.Min(Math.Min(this.bytesPerRead, remaining), buffer.Length);
+            this.data.AsMemory(this.pos, toRead).CopyTo(buffer);
+            this.pos += toRead;
+            return ValueTask.FromResult(toRead);
+        }
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            var result = ReadAsync(buffer.AsMemory(offset, count), cancellationToken);
+            return result.AsTask();
+        }
     }
 }
 #endif
