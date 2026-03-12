@@ -749,13 +749,6 @@ namespace Microsoft.Azure.Cosmos
         /// <para>
         /// For .NET core applications the default GatewayConnectionLimit will be ignored. It must be set on the HttpClientHandler.MaxConnectionsPerServer to limit the number of connections
         /// </para>
-        /// <para>
-        /// When providing a custom <c>SocketsHttpHandler</c> for thin client (HTTP/2) scenarios,
-        /// it is recommended to set <c>EnableMultipleHttp2Connections = true</c> on the handler.
-        /// This allows the handler to open additional HTTP/2 TCP connections when the maximum concurrent
-        /// streams limit on an existing connection is reached, improving throughput. The SDK sets this
-        /// automatically when no custom <see cref="HttpClientFactory"/> is provided.
-        /// </para>
         /// </remarks>
         [JsonIgnore]
         public Func<HttpClient> HttpClientFactory
