@@ -84,7 +84,6 @@
             httpRequest.UseGatewayMode = true;
             httpRequest.ContainerId = "testcontainer";
             httpRequest.DatabaseId = "testdb";
-            httpRequest.ReadConsistencyStrategy = Documents.ReadConsistencyStrategy.LatestCommitted;
             httpRequest.Content = Stream.Null;
 
             using (CloneableStream clonedBody = await StreamExtension.AsClonableStreamAsync(httpRequest.Content))
@@ -99,7 +98,6 @@
                 Assert.AreEqual(httpRequest.UseGatewayMode, clone.UseGatewayMode);
                 Assert.AreEqual(httpRequest.ContainerId, clone.ContainerId);
                 Assert.AreEqual(httpRequest.DatabaseId, clone.DatabaseId);
-                Assert.AreEqual(httpRequest.ReadConsistencyStrategy, clone.ReadConsistencyStrategy);
             }
         }
 

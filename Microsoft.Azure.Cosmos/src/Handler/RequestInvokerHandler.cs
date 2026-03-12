@@ -44,14 +44,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
             int? requestedClientThroughputBucket)
         {
             this.client = client;
-
-            if (requestedClientConsistencyLevel.HasValue && requestedClientReadConsistencyStrategy.HasValue)
-            {
-                throw new ArgumentException(
-                    "Cannot set both ConsistencyLevel and ReadConsistencyStrategy on CosmosClientOptions. "
-                    + "Use ReadConsistencyStrategy for read consistency control.");
-            }
-
             this.RequestedClientConsistencyLevel = requestedClientConsistencyLevel;
             this.RequestedClientReadConsistencyStrategy = requestedClientReadConsistencyStrategy;
             this.RequestedClientPriorityLevel = requestedClientPriorityLevel;
@@ -87,11 +79,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 request.Headers.Add(HttpConstants.HttpHeaders.SupportedSerializationFormats, RequestInvokerHandler.BinarySerializationFormat);
             }
 
-            bool readConsistencyStrategySet = await this.ValidateAndSetReadConsistencyStrategyAsync(request);
-            if (!readConsistencyStrategySet)
-            {
-                await this.ValidateAndSetConsistencyLevelAsync(request);
-            }
+            await this.ValidateAndSetReadConsistencyStrategyAsync(request);
+            await this.ValidateAndSetConsistencyLevelAsync(request);
             this.SetPriorityLevel(request);
             this.ValidateAndSetThroughputBucket(request);
 
@@ -520,23 +509,14 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         /// <summary>
         /// Validate and set the ReadConsistencyStrategy header.
-        /// Returns true if a strategy was set, indicating that ConsistencyLevel should not be set.
-        /// Throws if both ConsistencyLevel and ReadConsistencyStrategy are explicitly set at the same level.
         /// </summary>
-        private async Task<bool> ValidateAndSetReadConsistencyStrategyAsync(RequestMessage requestMessage)
+        private async Task ValidateAndSetReadConsistencyStrategyAsync(RequestMessage requestMessage)
         {
             Cosmos.ReadConsistencyStrategy? readConsistencyStrategy = null;
             RequestOptions promotedRequestOptions = requestMessage.RequestOptions;
 
             if (promotedRequestOptions?.BaseReadConsistencyStrategy.HasValue == true)
             {
-                if (promotedRequestOptions.BaseConsistencyLevel.HasValue)
-                {
-                    throw new ArgumentException(
-                        "Cannot set both ConsistencyLevel and ReadConsistencyStrategy on the same request. "
-                        + "Use ReadConsistencyStrategy for read consistency control.");
-                }
-
                 readConsistencyStrategy = promotedRequestOptions.BaseReadConsistencyStrategy;
             }
             else if (this.RequestedClientReadConsistencyStrategy.HasValue)
@@ -565,12 +545,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 requestMessage.Headers.Set(
                     HttpConstants.HttpHeaders.ReadConsistencyStrategy,
                     readConsistencyStrategy.Value.ToString());
-
-                requestMessage.ReadConsistencyStrategy = (Documents.ReadConsistencyStrategy)(int)readConsistencyStrategy.Value;
-                return true;
             }
-
-            return false;
         }
 
         /// <summary>

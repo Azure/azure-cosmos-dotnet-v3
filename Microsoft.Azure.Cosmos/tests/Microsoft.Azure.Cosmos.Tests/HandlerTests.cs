@@ -909,11 +909,24 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task ReadConsistencyStrategyRejectsWhenBothSetAtRequestLevel()
+        public async Task ReadConsistencyStrategyAndConsistencyLevelBothSetAtRequestLevel()
         {
-            // Setting both ConsistencyLevel and ReadConsistencyStrategy on the same request
-            // should throw ArgumentException to avoid ambiguity.
+            // When both ConsistencyLevel and ReadConsistencyStrategy are set on the same request,
+            // the SDK sets both headers and lets the service (ServerStoreModel) validate.
             using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(accountConsistencyLevel: Cosmos.ConsistencyLevel.Strong);
+
+            TestHandler testHandler = new TestHandler((request, cancellationToken) =>
+            {
+                Assert.AreEqual(
+                    Cosmos.ReadConsistencyStrategy.Session.ToString(),
+                    request.Headers[HttpConstants.HttpHeaders.ReadConsistencyStrategy],
+                    "ReadConsistencyStrategy header should be set");
+                Assert.AreEqual(
+                    Cosmos.ConsistencyLevel.Eventual.ToString(),
+                    request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel],
+                    "ConsistencyLevel header should also be set");
+                return TestHandler.ReturnSuccess();
+            });
 
             RequestInvokerHandler invoker = new RequestInvokerHandler(
                 client,
@@ -922,7 +935,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 requestedClientPriorityLevel: null,
                 requestedClientThroughputBucket: null)
             {
-                InnerHandler = new TestHandler()
+                InnerHandler = testHandler
             };
 
             RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"))
@@ -937,24 +950,24 @@ namespace Microsoft.Azure.Cosmos.Tests
                 ReadConsistencyStrategy = Cosmos.ReadConsistencyStrategy.Session
             };
 
-            await Assert.ThrowsExceptionAsync<ArgumentException>(() =>
-                invoker.SendAsync(requestMessage, new CancellationToken()));
+            await invoker.SendAsync(requestMessage, new CancellationToken());
         }
 
         [TestMethod]
-        public void ReadConsistencyStrategyRejectsWhenBothSetAtClientLevel()
+        public void ReadConsistencyStrategyAndConsistencyLevelBothSetAtClientLevel()
         {
             // Setting both ConsistencyLevel and ReadConsistencyStrategy at client level
-            // should throw ArgumentException.
+            // should not throw — both headers are set and the service validates.
             using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(accountConsistencyLevel: Cosmos.ConsistencyLevel.Session);
 
-            Assert.ThrowsException<ArgumentException>(() =>
-                new RequestInvokerHandler(
+            RequestInvokerHandler invoker = new RequestInvokerHandler(
                     client,
                     requestedClientConsistencyLevel: Cosmos.ConsistencyLevel.Session,
                     requestedClientReadConsistencyStrategy: Cosmos.ReadConsistencyStrategy.Eventual,
                     requestedClientPriorityLevel: null,
-                    requestedClientThroughputBucket: null));
+                    requestedClientThroughputBucket: null);
+
+            Assert.IsNotNull(invoker);
         }
 
         [TestMethod]
@@ -1000,7 +1013,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     Cosmos.ReadConsistencyStrategy.Session.ToString(),
                     request.Headers[HttpConstants.HttpHeaders.ReadConsistencyStrategy]);
                 Assert.IsNull(request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel],
-                    "ConsistencyLevel header should be removed when ReadConsistencyStrategy is set");
+                    "ConsistencyLevel header should not be set when no ConsistencyLevel was specified");
                 return TestHandler.ReturnSuccess();
             });
 
@@ -1025,37 +1038,5 @@ namespace Microsoft.Azure.Cosmos.Tests
             await invoker.SendAsync(requestMessage, new CancellationToken());
         }
 
-        [TestMethod]
-        public async Task ReadConsistencyStrategyPropagatedToRequestMessage()
-        {
-            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(accountConsistencyLevel: Cosmos.ConsistencyLevel.Strong);
-
-            TestHandler testHandler = new TestHandler((request, cancellationToken) =>
-            {
-                Assert.IsNotNull(request.ReadConsistencyStrategy);
-                Assert.AreEqual(Documents.ReadConsistencyStrategy.LatestCommitted, request.ReadConsistencyStrategy.Value);
-                return TestHandler.ReturnSuccess();
-            });
-
-            RequestInvokerHandler invoker = new RequestInvokerHandler(
-                client,
-                requestedClientConsistencyLevel: null,
-                requestedClientReadConsistencyStrategy: null,
-                requestedClientPriorityLevel: null,
-                requestedClientThroughputBucket: null)
-            {
-                InnerHandler = testHandler
-            };
-
-            RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"))
-            {
-                ResourceType = ResourceType.Document
-            };
-            requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
-            requestMessage.OperationType = OperationType.Read;
-            requestMessage.RequestOptions = new ItemRequestOptions { ReadConsistencyStrategy = Cosmos.ReadConsistencyStrategy.LatestCommitted };
-
-            await invoker.SendAsync(requestMessage, new CancellationToken());
-        }
     }
 }
