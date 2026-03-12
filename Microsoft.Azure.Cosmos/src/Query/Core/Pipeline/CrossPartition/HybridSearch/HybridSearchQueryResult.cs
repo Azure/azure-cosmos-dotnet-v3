@@ -70,7 +70,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                     throw new ArgumentException($"{FieldNames.ComponentScores} must exist.");
                 }
 
-                CosmosElement payload = outerPayloadExists ? outerPayload : CosmosUndefined.Create();
+                if (!cosmosObject.TryGetValue(FieldNames.Payload, out CosmosElement payload))
+                {
+                    payload = CosmosUndefined.Create();
+                }
 
                 result = new HybridSearchQueryResult(rid, componentScores, payload);
             }

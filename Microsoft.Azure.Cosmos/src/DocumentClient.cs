@@ -135,7 +135,8 @@ namespace Microsoft.Azure.Cosmos
         //Auth
         internal readonly AuthorizationTokenProvider cosmosAuthorization;
 
-        private bool isThinClientEnabled = ConfigurationManager.IsThinClientEnabled(defaultValue: false);
+        private readonly bool isThinClientFeatureFlagEnabled = ConfigurationManager.IsThinClientEnabled(defaultValue: false);
+        internal bool isThinClientEnabled;
 
         // Gateway has backoff/retry logic to hide transient errors.
         private RetryPolicy retryPolicy;
@@ -170,6 +171,7 @@ namespace Microsoft.Azure.Cosmos
 
         //Private state.
         private bool isSuccessfullyInitialized;
+        private bool isDisposing;
         private bool isDisposed;
 
         // creator of TransportClient is responsible for disposing it.
@@ -456,6 +458,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cosmosClientTelemetryOptions">This is distributed tracing flag</param>
         /// <param name="chaosInterceptorFactory">This is the chaos interceptor used for fault injection</param>
         /// <param name="enableAsyncCacheExceptionNoSharing">A boolean flag indicating if stack trace optimization is enabled.</param>
+        /// <param name="useLengthAwareRangeComparer">A boolean flag indicating if length-aware range comparators should be used for EPK range comparisons.</param>
         /// <remarks>
         /// The service endpoint can be obtained from the Azure Management Portal.
         /// If you are connecting using one of the Master Keys, these can be obtained along with the endpoint from the Azure Management Portal
@@ -485,7 +488,8 @@ namespace Microsoft.Azure.Cosmos
                               RemoteCertificateValidationCallback remoteCertificateValidationCallback = null,
                               CosmosClientTelemetryOptions cosmosClientTelemetryOptions = null,
                               IChaosInterceptorFactory chaosInterceptorFactory = null,
-                              bool enableAsyncCacheExceptionNoSharing = true)
+                              bool enableAsyncCacheExceptionNoSharing = true,
+                              bool useLengthAwareRangeComparer = false)
         {
             if (sendingRequestEventArgs != null)
             {
@@ -513,6 +517,7 @@ namespace Microsoft.Azure.Cosmos
                 enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
             this.chaosInterceptorFactory = chaosInterceptorFactory;
             this.chaosInterceptor = chaosInterceptorFactory?.CreateInterceptor(this);
+            this.UseLengthAwareRangeComparer = useLengthAwareRangeComparer;
 
             this.Initialize(
                 serviceEndpoint: serviceEndpoint,
@@ -1058,7 +1063,7 @@ namespace Microsoft.Azure.Cosmos
                 this.ConnectionPolicy.EnablePartitionLevelFailover = this.accountServiceConfiguration.AccountProperties.EnablePartitionLevelFailover.Value;
             }
 
-            this.isThinClientEnabled = (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway) &&
+            this.isThinClientEnabled = this.isThinClientFeatureFlagEnabled && (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway) &&
                 (this.accountServiceConfiguration.AccountProperties?.ThinClientWritableLocationsInternal?.Count ?? 0) > 0;
             this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker |= this.ConnectionPolicy.EnablePartitionLevelFailover;
             this.ConnectionPolicy.UserAgentContainer.AppendFeatures(this.GetUserAgentFeatures());
@@ -1100,7 +1105,7 @@ namespace Microsoft.Azure.Cosmos
                     retryPolicy: this.retryPolicy,
                     telemetryToServiceHelper: this.telemetryToServiceHelper,
                     enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
-            this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache, this.GlobalEndpointManager, this.enableAsyncCacheExceptionNoSharing);
+            this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache, this.GlobalEndpointManager, this.UseLengthAwareRangeComparer, this.enableAsyncCacheExceptionNoSharing);
             this.ResetSessionTokenRetryPolicy = new ResetSessionTokenRetryPolicyFactory(this.sessionContainer, this.collectionCache, this.retryPolicy);
 
             gatewayStoreModel.SetCaches(this.partitionKeyRangeCache, this.collectionCache);
@@ -1230,6 +1235,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal bool UseMultipleWriteLocations { get; private set; }
 
+        internal bool UseLengthAwareRangeComparer { get; private set; }
+
         /// <summary>
         /// Gets the endpoint Uri for the service endpoint from the Azure Cosmos DB service.
         /// </summary>
@@ -1337,6 +1344,11 @@ namespace Microsoft.Azure.Cosmos
                 return;
             }
 
+            // Set isDisposing flag FIRST to signal disposal has started
+            // This prevents race conditions where in-flight requests 
+            // could proceed while fields are being nulled
+            this.isDisposing = true;
+
             if (this.telemetryToServiceHelper != null)
             {
                 this.telemetryToServiceHelper.Dispose();
@@ -1414,6 +1426,7 @@ namespace Microsoft.Azure.Cosmos
             DefaultTrace.TraceInformation("DocumentClient with id {0} disposed.", this.traceId);
             DefaultTrace.Flush();
 
+            // Mark disposal complete
             this.isDisposed = true;
         }
 
@@ -6538,6 +6551,14 @@ namespace Microsoft.Azure.Cosmos
                         "GET",
                         AuthorizationTokenType.PrimaryMasterKey);
 
+                    // Added the thinclient endpoint discovery header for account data refresh requests.
+                    // This header signals to the service that the client supports thin client mode
+                    // and needs thinclient-specific endpoint information in the response.
+                    if (this.isThinClientFeatureFlagEnabled)
+                    {
+                        headersCollection[ThinClientConstants.EnableThinClientEndpointDiscoveryHeaderName] = true.ToString();
+                    }
+
                     foreach (string key in headersCollection.AllKeys())
                     {
                         request.Headers.Add(key, headersCollection[key]);
@@ -6571,6 +6592,18 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>Returns <see cref="IStoreModel"/> to which the request must be sent</returns>
         internal IStoreModel GetStoreProxy(DocumentServiceRequest request)
         {
+            // Check if client is being disposed - fail fast with clear error message
+            // This prevents the confusing "StoreProxy cannot be null" error when
+            // requests are in-flight during client disposal
+            // Note: Only check isDisposing since once disposal starts, requests should be rejected
+            if (this.isDisposing)
+            {
+                throw new ObjectDisposedException(
+                    nameof(DocumentClient),
+                    "Cannot process request because the CosmosClient has been disposed. " +
+                    "Ensure all in-flight requests complete before disposing the client.");
+            }
+
             // If a request is configured to always use Gateway mode(in some cases when targeting .NET Core)
             // we return the Gateway store model
             if (request.UseGatewayMode)
@@ -6778,8 +6811,6 @@ namespace Microsoft.Azure.Cosmos
 
         private void CreateStoreModel(bool subscribeRntbdStatus)
         {
-            AccountConfigurationProperties accountConfigurationProperties = new (EnableNRegionSynchronousCommit: this.accountServiceConfiguration.AccountProperties.EnableNRegionSynchronousCommit);
-
             //EnableReadRequestsFallback, if not explicity set on the connection policy,
             //is false if the account's consistency is bounded staleness,
             //and true otherwise.
@@ -6794,8 +6825,7 @@ namespace Microsoft.Azure.Cosmos
                 this.UseMultipleWriteLocations && (this.accountServiceConfiguration.DefaultConsistencyLevel != Documents.ConsistencyLevel.Strong),
                 true,
                 enableReplicaValidation: this.isReplicaAddressValidationEnabled,
-                sessionRetryOptions: this.ConnectionPolicy.SessionRetryOptions,
-                accountConfigurationProperties: accountConfigurationProperties);
+                sessionRetryOptions: this.ConnectionPolicy.SessionRetryOptions);
 
             if (subscribeRntbdStatus)
             {
@@ -6822,7 +6852,7 @@ namespace Microsoft.Azure.Cosmos
                     connectionPolicy: this.ConnectionPolicy,
                     httpClient: this.httpClient,
                     cancellationToken: this.cancellationTokenSource.Token,
-                    isThinClientEnabled: this.isThinClientEnabled);
+                    isThinClientEnabled: this.isThinClientFeatureFlagEnabled);
 
             this.accountServiceConfiguration = new CosmosAccountServiceConfiguration(accountReader.InitializeReaderAsync);
 

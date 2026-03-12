@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Net.Http;
     using System.Text.Json;
     using System.Text.Json.Serialization;
+    using System.Threading;
     using System.Threading.Tasks;
     using global::Azure;
     using global::Azure.Core;
@@ -120,7 +121,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             byte[] capturedPayload = null;
             Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
-            this.connectionString = Environment.GetEnvironmentVariable("COSMOSDB_THINCLIENT");
 
             // Initialize the serializer locally
             JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
@@ -182,6 +182,189 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Cleanup
             await database.DeleteAsync();
+        }
+
+        [TestMethod]
+        [TestCategory("ThinClient")]
+        public async Task TestThinClientWithExecuteStoredProcedureAsync()
+        {
+            Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "true");
+
+            JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = null,
+                PropertyNameCaseInsensitive = true,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            };
+            this.cosmosSystemTextJsonSerializer = new MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer(jsonSerializerOptions);
+
+            this.client = new CosmosClient(
+                    this.connectionString,
+                    new CosmosClientOptions()
+                    {
+                        ConnectionMode = ConnectionMode.Gateway,
+                        Serializer = this.cosmosSystemTextJsonSerializer,
+                    });
+
+            string uniqueDbName = "TestDbStoreProc_" + Guid.NewGuid().ToString();
+            this.database = await this.client.CreateDatabaseIfNotExistsAsync(uniqueDbName);
+            string uniqueContainerName = "TestDbStoreProcContainer_" + Guid.NewGuid().ToString();
+            this.container = await this.database.CreateContainerIfNotExistsAsync(uniqueContainerName, "/pk");
+
+
+            string sprocId = "testSproc_" + Guid.NewGuid().ToString();
+            string sprocBody = @"function(itemToCreate) {
+            var context = getContext();
+            var collection = context.getCollection();
+            var response = context.getResponse();
+        
+            if (!itemToCreate) throw new Error('Item is undefined or null.');
+        
+            // Create a document
+            var accepted = collection.createDocument(
+                collection.getSelfLink(),
+                itemToCreate,
+                function(err, newItem) {
+                    if (err) throw err;
+                
+                    // Query the created document
+                    var query = 'SELECT * FROM c WHERE c.id = ""' + newItem.id + '""';
+                    var isAccepted = collection.queryDocuments(
+                        collection.getSelfLink(),
+                        query,
+                        function(queryErr, documents) {
+                            if (queryErr) throw queryErr;
+                            response.setBody({
+                                created: newItem,
+                                queried: documents[0]
+                            });
+                        }
+                    );
+                    if (!isAccepted) throw 'Query not accepted';
+                });
+        
+            if (!accepted) throw new Error('Create was not accepted.');
+        }";
+
+            // Create stored procedure
+            Scripts.StoredProcedureResponse createResponse = await this.container.Scripts.CreateStoredProcedureAsync(
+                new Scripts.StoredProcedureProperties(sprocId, sprocBody));
+            Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+
+            // Execute stored procedure
+            string testPartitionId = Guid.NewGuid().ToString();
+            TestObject testItem = new TestObject
+            {
+                Id = Guid.NewGuid().ToString(),
+                Pk = testPartitionId,
+                Other = "Created by Stored Procedure"
+            };
+
+            Scripts.StoredProcedureExecuteResponse<dynamic> executeResponse =
+                await this.container.Scripts.ExecuteStoredProcedureAsync<dynamic>(
+                    sprocId,
+                    new PartitionKey(testPartitionId),
+                    new dynamic[] { testItem });
+
+            Assert.AreEqual(HttpStatusCode.OK, executeResponse.StatusCode);
+            Assert.IsNotNull(executeResponse.Resource);
+            string diagnostics = executeResponse.Diagnostics.ToString();
+            Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
+
+            // Delete stored procedure
+            await this.container.Scripts.DeleteStoredProcedureAsync(sprocId);
+        }
+
+        [TestMethod]
+        [TestCategory("ThinClient")]
+        public async Task TestThinClientWithExecuteStoredProcedureStreamAsync()
+        {
+            Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "true");
+
+            JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = null,
+                PropertyNameCaseInsensitive = true,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            };
+            this.cosmosSystemTextJsonSerializer = new MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer(jsonSerializerOptions);
+
+            this.client = new CosmosClient(
+                    this.connectionString,
+                    new CosmosClientOptions()
+                    {
+                        ConnectionMode = ConnectionMode.Gateway,
+                        Serializer = this.cosmosSystemTextJsonSerializer,
+                    });
+
+            string uniqueDbName = "TestDbStoreProc_" + Guid.NewGuid().ToString();
+            this.database = await this.client.CreateDatabaseIfNotExistsAsync(uniqueDbName);
+            string uniqueContainerName = "TestDbStoreProcContainer_" + Guid.NewGuid().ToString();
+            this.container = await this.database.CreateContainerIfNotExistsAsync(uniqueContainerName, "/pk");
+
+
+            string sprocId = "testSproc_" + Guid.NewGuid().ToString();
+            string sprocBody = @"function(itemToCreate) {
+            var context = getContext();
+            var collection = context.getCollection();
+            var response = context.getResponse();
+        
+            if (!itemToCreate) throw new Error('Item is undefined or null.');
+        
+            // Create a document
+            var accepted = collection.createDocument(
+                collection.getSelfLink(),
+                itemToCreate,
+                function(err, newItem) {
+                    if (err) throw err;
+                
+                    // Query the created document
+                    var query = 'SELECT * FROM c WHERE c.id = ""' + newItem.id + '""';
+                    var isAccepted = collection.queryDocuments(
+                        collection.getSelfLink(),
+                        query,
+                        function(queryErr, documents) {
+                            if (queryErr) throw queryErr;
+                            response.setBody({
+                                created: newItem,
+                                queried: documents[0]
+                            });
+                        }
+                    );
+                    if (!isAccepted) throw 'Query not accepted';
+                });
+        
+            if (!accepted) throw new Error('Create was not accepted.');
+        }";
+
+            // Create stored procedure
+            Scripts.StoredProcedureResponse createResponse = await this.container.Scripts.CreateStoredProcedureAsync(
+                new Scripts.StoredProcedureProperties(sprocId, sprocBody));
+            Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+
+            // Execute stored procedure
+            string testPartitionId = Guid.NewGuid().ToString();
+            TestObject testItem = new TestObject
+            {
+                Id = Guid.NewGuid().ToString(),
+                Pk = testPartitionId,
+                Other = "Created by Stored Procedure"
+            };
+
+            using (ResponseMessage executeResponse =
+                await this.container.Scripts.ExecuteStoredProcedureStreamAsync(
+                    sprocId,
+                    new PartitionKey(testPartitionId),
+                    new dynamic[] { testItem }))
+            {
+                Assert.AreEqual(HttpStatusCode.OK, executeResponse.StatusCode);
+                Assert.IsNotNull(executeResponse.Content);
+                string diagnostics = executeResponse.Diagnostics.ToString();
+                Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient");
+            }
+
+            // Delete stored procedure
+            await this.container.Scripts.DeleteStoredProcedureAsync(sprocId);
         }
 
         [TestMethod]
@@ -330,11 +513,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task CreateItemsTestWithThinClientFlagDisabledAccountEnabled()
         {
             Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "False");
-
-            if (string.IsNullOrEmpty(this.connectionString))
-            {
-                Assert.Fail("Set environment variable COSMOSDB_THINCLIENT to run the tests");
-            }
 
             JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
             {
@@ -746,6 +924,112 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             for (int i = 0; i < items.Count; i++)
             {
                 Assert.AreEqual(HttpStatusCode.Created, batchResponse[i].StatusCode);
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("ThinClient")]
+        public async Task RegionalFailoverWithHttpRequestException_EnsuresThinClientHeaderInRefreshRequest()
+        {
+            // Arrange
+            Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
+
+            bool headerFoundInRefreshRequest = false;
+            int accountRefreshCount = 0;
+            bool hasThrown = false;
+
+            JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = null,
+                PropertyNameCaseInsensitive = true,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            };
+            CosmosSystemTextJsonSerializer serializer = new CosmosSystemTextJsonSerializer(jsonSerializerOptions);
+
+            FaultInjectionDelegatingHandler faultHandler = new FaultInjectionDelegatingHandler(
+                (request) =>
+                {
+                    // Check for account refresh requests (GET to "/" with HTTP/1.1)
+                    if (request.Method == HttpMethod.Get &&
+                        request.RequestUri.AbsolutePath == "/" &&
+                        request.Version == new Version(1, 1))
+                    {
+                        accountRefreshCount++;
+
+                        // Only check header after we've thrown the exception
+                        if (hasThrown)
+                        {
+                            if (request.Headers.TryGetValues(
+                                ThinClientConstants.EnableThinClientEndpointDiscoveryHeaderName,
+                                out IEnumerable<string> headerValues))
+                            {
+                                if (headerValues.Contains("True"))
+                                {
+                                    headerFoundInRefreshRequest = true;
+                                }
+                            }
+                        }
+                    }
+
+                    // Throw HttpRequestException only ONCE on ThinClient POST requests
+                    if (!hasThrown &&
+                        request.Method == HttpMethod.Post &&
+                        request.Version == new Version(2, 0))
+                    {
+                        hasThrown = true;
+                        throw new HttpRequestException("Simulated endpoint failure");
+                    }
+                });
+
+            CosmosClientBuilder builder = new CosmosClientBuilder(this.connectionString)
+                .WithConnectionModeGateway()
+                .WithCustomSerializer(serializer)
+                .WithHttpClientFactory(() => new HttpClient(faultHandler));
+
+            using CosmosClient client = builder.Build();
+
+            string uniqueDbName = "TestFailoverDb_" + Guid.NewGuid().ToString();
+            Database database = await client.CreateDatabaseIfNotExistsAsync(uniqueDbName);
+            string uniqueContainerName = "TestFailoverContainer_" + Guid.NewGuid().ToString();
+            Container container = await database.CreateContainerIfNotExistsAsync(uniqueContainerName, "/pk");
+
+            string pk = "pk_failover_test";
+            TestObject testItem = this.GenerateItems(pk).First();
+
+            // Act - CreateItemAsync will fail once, then SDK retries and succeeds
+            ItemResponse<TestObject> response = await container.CreateItemAsync(testItem, new PartitionKey(testItem.Pk));
+
+            // Assert
+            Assert.AreEqual(HttpStatusCode.Created, response.StatusCode, "Request should succeed after retry");
+            Assert.IsTrue(hasThrown, "Exception should have been thrown once");
+            Assert.IsTrue(headerFoundInRefreshRequest, "Account refresh after HttpRequestException should contain thin client header");
+
+            // Cleanup
+            await database.DeleteAsync();
+        }
+
+        /// <summary>
+        /// DelegatingHandler that intercepts HTTP requests and can inject faults
+        /// </summary>
+        private class FaultInjectionDelegatingHandler : DelegatingHandler
+        {
+            private readonly Action<HttpRequestMessage> requestCallback;
+
+            public FaultInjectionDelegatingHandler(Action<HttpRequestMessage> requestCallback)
+                : base(new HttpClientHandler())
+            {
+                this.requestCallback = requestCallback;
+            }
+
+            protected override Task<HttpResponseMessage> SendAsync(
+                HttpRequestMessage request,
+                CancellationToken cancellationToken)
+            {
+                // Invoke callback which can inspect request or throw exceptions
+                this.requestCallback?.Invoke(request);
+
+                // If no exception was thrown, proceed with the actual request
+                return base.SendAsync(request, cancellationToken);
             }
         }
     }

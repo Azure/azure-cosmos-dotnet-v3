@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             private readonly IReadOnlyList<PartitionKeyRange> overlappingRanges;
 
             public TestPartitionKeyRangeCache(IReadOnlyList<PartitionKeyRange> overlappingRanges)
-                : base(null, null, null, null) // Pass nulls or mocks as needed for base constructor
+                : base(null, null, null, null, false, false) // Pass nulls or mocks as needed for base constructor
             {
                 this.overlappingRanges = overlappingRanges;
             }

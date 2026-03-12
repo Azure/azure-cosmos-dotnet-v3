@@ -28,10 +28,11 @@ namespace Microsoft.Azure.Cosmos.Tests
         Mock<PartitionKeyRangeCache> partitionKeyRangeCache;
         private readonly Cosmos.ConsistencyLevel accountConsistencyLevel;
 
-        public MockDocumentClient(ConnectionPolicy connectionPolicy = null)
+        public MockDocumentClient(ConnectionPolicy connectionPolicy = null, bool thinClient = false)
             : base(new Uri("http://localhost"), MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey, connectionPolicy)
         {
             this.Init();
+            this.isThinClientEnabled = thinClient;
         }
 
         public MockDocumentClient(Cosmos.ConsistencyLevel accountConsistencyLevel, ConnectionPolicy connectionPolicy = null)
@@ -230,7 +231,7 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
 
             using GlobalEndpointManager endpointManager = new(mockDocumentClient.Object, new ConnectionPolicy());
 
-            this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null, endpointManager, false);
+            this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null, endpointManager, false, false);
             this.partitionKeyRangeCache.Setup(
                         m => m.TryLookupAsync(
                             It.IsAny<string>(),
@@ -274,7 +275,6 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
                                                                  this.GlobalEndpointManager,
                                                                  default);
             this.sessionContainer = sessionContainer;
-
         }
     }
 }

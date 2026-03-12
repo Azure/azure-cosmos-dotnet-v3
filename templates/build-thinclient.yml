@@ -39,6 +39,8 @@ jobs:
       packageType: 'sdk'
       version: '8.x'
 
+  - template: emulator-setup.yml
+
   - task: DotNetCoreCLI@2
     displayName: Microsoft.Azure.Cosmos.EmulatorTests - ${{ parameters.EmulatorPipeline5CategoryListName }}
     continueOnError: true
