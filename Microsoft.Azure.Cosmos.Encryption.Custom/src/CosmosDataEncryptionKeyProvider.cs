@@ -67,10 +67,27 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         public CosmosDataEncryptionKeyProvider(
             EncryptionKeyWrapProvider encryptionKeyWrapProvider,
             TimeSpan? dekPropertiesTimeToLive = null)
+            : this(encryptionKeyWrapProvider, dekPropertiesTimeToLive, distributedCache: null, proactiveRefreshThreshold: null)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CosmosDataEncryptionKeyProvider"/> class with distributed cache support.
+        /// </summary>
+        /// <param name="encryptionKeyWrapProvider">A provider that will be used to wrap (encrypt) and unwrap (decrypt) data encryption keys for envelope based encryption</param>
+        /// <param name="dekPropertiesTimeToLive">Time to live for DEK properties before having to refresh.</param>
+        /// <param name="distributedCache">Optional distributed cache implementation for cross-process/cross-instance caching of DEK properties.</param>
+        /// <param name="proactiveRefreshThreshold">Optional time window before expiry to trigger proactive background refresh. For example, TimeSpan.FromMinutes(10) will refresh DEKs 10 minutes before they expire.</param>
+        [Obsolete("Please use the constructor with EncryptionKeyStoreProvider only.")]
+        public CosmosDataEncryptionKeyProvider(
+            EncryptionKeyWrapProvider encryptionKeyWrapProvider,
+            TimeSpan? dekPropertiesTimeToLive,
+            Microsoft.Extensions.Caching.Distributed.IDistributedCache distributedCache,
+            TimeSpan? proactiveRefreshThreshold = null)
         {
             this.EncryptionKeyWrapProvider = encryptionKeyWrapProvider ?? throw new ArgumentNullException(nameof(encryptionKeyWrapProvider));
             this.dataEncryptionKeyContainerCore = new DataEncryptionKeyContainerCore(this);
-            this.DekCache = new DekCache(dekPropertiesTimeToLive, distributedCache: null, proactiveRefreshThreshold: null);
+            this.DekCache = new DekCache(dekPropertiesTimeToLive, distributedCache, proactiveRefreshThreshold);
         }
 
         /// <summary>
@@ -127,12 +144,31 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             EncryptionKeyWrapProvider encryptionKeyWrapProvider,
             EncryptionKeyStoreProvider encryptionKeyStoreProvider,
             TimeSpan? dekPropertiesTimeToLive = null)
+            : this(encryptionKeyWrapProvider, encryptionKeyStoreProvider, dekPropertiesTimeToLive, distributedCache: null, proactiveRefreshThreshold: null)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CosmosDataEncryptionKeyProvider"/> class with distributed cache support.
+        /// </summary>
+        /// <param name="encryptionKeyWrapProvider">A provider that will be used to wrap (encrypt) and unwrap (decrypt) data encryption keys for envelope based encryption</param>
+        /// <param name="encryptionKeyStoreProvider"> MDE EncryptionKeyStoreProvider for Wrapping/UnWrapping services. </param>
+        /// <param name="dekPropertiesTimeToLive">Time to live for DEK properties before having to refresh.</param>
+        /// <param name="distributedCache">Optional distributed cache implementation for cross-process/cross-instance caching of DEK properties.</param>
+        /// <param name="proactiveRefreshThreshold">Optional time window before expiry to trigger proactive background refresh. For example, TimeSpan.FromMinutes(10) will refresh DEKs 10 minutes before they expire.</param>
+        [Obsolete("Please use the constructor with EncryptionKeyStoreProvider only.")]
+        public CosmosDataEncryptionKeyProvider(
+            EncryptionKeyWrapProvider encryptionKeyWrapProvider,
+            EncryptionKeyStoreProvider encryptionKeyStoreProvider,
+            TimeSpan? dekPropertiesTimeToLive,
+            Microsoft.Extensions.Caching.Distributed.IDistributedCache distributedCache,
+            TimeSpan? proactiveRefreshThreshold = null)
         {
             this.EncryptionKeyWrapProvider = encryptionKeyWrapProvider ?? throw new ArgumentNullException(nameof(encryptionKeyWrapProvider));
             this.EncryptionKeyStoreProvider = encryptionKeyStoreProvider ?? throw new ArgumentNullException(nameof(encryptionKeyStoreProvider));
             this.MdeKeyWrapProvider = new MdeKeyWrapProvider(encryptionKeyStoreProvider);
             this.dataEncryptionKeyContainerCore = new DataEncryptionKeyContainerCore(this);
-            this.DekCache = new DekCache(dekPropertiesTimeToLive, distributedCache: null, proactiveRefreshThreshold: null);
+            this.DekCache = new DekCache(dekPropertiesTimeToLive, distributedCache, proactiveRefreshThreshold);
             this.PdekCacheTimeToLive = this.EncryptionKeyStoreProvider.DataEncryptionKeyCacheTimeToLive;
             if (this.PdekCacheTimeToLive.HasValue)
             {
