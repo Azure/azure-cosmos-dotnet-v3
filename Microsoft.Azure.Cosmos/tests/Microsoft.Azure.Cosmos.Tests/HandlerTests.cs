@@ -971,10 +971,19 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task ReadConsistencyStrategyGlobalStrongRejectedForNonStrongAccount()
+        public async Task ReadConsistencyStrategyGlobalStrongPassesThroughForNonStrongAccount()
         {
-            // GlobalStrong should throw ArgumentException for accounts not configured with Strong consistency.
+            // GlobalStrong on a non-Strong account should pass through — the service/Direct layer validates this.
             using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(accountConsistencyLevel: Cosmos.ConsistencyLevel.Session);
+
+            TestHandler testHandler = new TestHandler((request, cancellationToken) =>
+            {
+                Assert.AreEqual(
+                    Cosmos.ReadConsistencyStrategy.GlobalStrong.ToString(),
+                    request.Headers[HttpConstants.HttpHeaders.ReadConsistencyStrategy],
+                    "GlobalStrong header should be set even for non-Strong accounts");
+                return TestHandler.ReturnSuccess();
+            });
 
             RequestInvokerHandler invoker = new RequestInvokerHandler(
                 client,
@@ -983,7 +992,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 requestedClientPriorityLevel: null,
                 requestedClientThroughputBucket: null)
             {
-                InnerHandler = new TestHandler()
+                InnerHandler = testHandler
             };
 
             RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"))
@@ -994,8 +1003,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             requestMessage.OperationType = OperationType.Read;
             requestMessage.RequestOptions = new ItemRequestOptions { ReadConsistencyStrategy = Cosmos.ReadConsistencyStrategy.GlobalStrong };
 
-            await Assert.ThrowsExceptionAsync<ArgumentException>(() =>
-                invoker.SendAsync(requestMessage, new CancellationToken()));
+            ResponseMessage response = await invoker.SendAsync(requestMessage, new CancellationToken());
+            Assert.IsNotNull(response);
         }
 
         [TestMethod]

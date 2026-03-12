@@ -510,7 +510,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         /// <summary>
         /// Validate and set the ReadConsistencyStrategy header.
         /// </summary>
-        private async Task ValidateAndSetReadConsistencyStrategyAsync(RequestMessage requestMessage)
+        private Task ValidateAndSetReadConsistencyStrategyAsync(RequestMessage requestMessage)
         {
             Cosmos.ReadConsistencyStrategy? readConsistencyStrategy = null;
             RequestOptions promotedRequestOptions = requestMessage.RequestOptions;
@@ -526,26 +526,12 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             if (readConsistencyStrategy.HasValue)
             {
-                if (readConsistencyStrategy.Value == Cosmos.ReadConsistencyStrategy.GlobalStrong)
-                {
-                    if (!this.AccountConsistencyLevel.HasValue)
-                    {
-                        this.AccountConsistencyLevel = await this.client.GetAccountConsistencyLevelAsync();
-                    }
-
-                    if (this.AccountConsistencyLevel.Value != Cosmos.ConsistencyLevel.Strong)
-                    {
-                        throw new ArgumentException(string.Format(
-                            CultureInfo.CurrentUICulture,
-                            "ReadConsistencyStrategy.GlobalStrong is only valid for accounts configured with Strong consistency. Current account consistency: {0}",
-                            this.AccountConsistencyLevel.Value));
-                    }
-                }
-
                 requestMessage.Headers.Set(
                     HttpConstants.HttpHeaders.ReadConsistencyStrategy,
                     readConsistencyStrategy.Value.ToString());
             }
+
+            return Task.CompletedTask;
         }
 
         /// <summary>
