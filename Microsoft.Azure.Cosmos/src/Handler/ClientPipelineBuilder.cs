@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Telemetry;
-    using Microsoft.Azure.Documents;
 
     internal class ClientPipelineBuilder
     {
