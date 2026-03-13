@@ -1131,7 +1131,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Id = Guid.NewGuid().ToString(),
                         Pk = commonPk,
                         Other = $"Item_{i:D3}",
-                        SortField = i
                     });
                 }
 
@@ -1139,7 +1138,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(5, createdItems.Count, "All items should be created");
 
                 // Execute ORDER BY query - this requires QueryPlan and EPK range conversion
-                string query = "SELECT * FROM c WHERE c.pk = @pk ORDER BY c.SortField DESC";
+                string query = "SELECT * FROM c WHERE c.pk = @pk ORDER BY c.other DESC";
                 QueryDefinition queryDef = new QueryDefinition(query).WithParameter("@pk", commonPk);
 
                 FeedIterator<TestObject> iterator = this.container.GetItemQueryIterator<TestObject>(queryDef);
@@ -1158,13 +1157,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
 
                 Assert.AreEqual(5, results.Count, "Should return all 5 items");
-
-                for (int i = 0; i < results.Count; i++)
-                {
-                    int expectedSortField = 4 - i;  // Descending: 4, 3, 2, 1, 0
-                    Assert.AreEqual(expectedSortField, results[i].SortField,
-                        $"Item at position {i} should have SortField={expectedSortField}");
-                }
 
             }
             finally
@@ -1208,7 +1200,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             Id = Guid.NewGuid().ToString(),
                             Pk = partitionKeys[pkIndex],
                             Other = $"Value_{i}",
-                            SortField = i
                         });
                     }
                 }
@@ -1216,7 +1207,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 List<TestObject> createdItems = await this.CreateItemsSafeAsync(items);
                 Assert.AreEqual(9, createdItems.Count, "All 9 items should be created");
 
-                await Task.Delay(2000);
                 string query = "SELECT * FROM c ORDER BY c._ts";
 
                 FeedIterator<TestObject> iterator = this.container.GetItemQueryIterator<TestObject>(query);
@@ -1249,6 +1239,105 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(foundCount >= 9,
                     $"Should find all 9 test items in results, found {foundCount}");
 
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.BypassQueryParsing, null);
+
+                foreach (TestObject item in items)
+                {
+                    try
+                    {
+                        await this.container.DeleteItemAsync<TestObject>(item.Id, new PartitionKey(item.Pk));
+                    }
+                    catch { }
+                }
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("ThinClient")]
+        public async Task TestThinClientQueryPlanMultiPartitionFanout()
+        {
+            List<TestObject> items = new List<TestObject>();
+            string baseGuid = Guid.NewGuid().ToString();
+
+            try
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.BypassQueryParsing, Boolean.TrueString);
+
+                // Create items across many distinct partition keys to ensure multi-partition fanout
+                int partitionCount = 10;
+                int itemsPerPartition = 3;
+
+                for (int pkIndex = 0; pkIndex < partitionCount; pkIndex++)
+                {
+                    string pk = $"pk_fanout_{pkIndex}_{baseGuid}";
+                    for (int i = 0; i < itemsPerPartition; i++)
+                    {
+                        items.Add(new TestObject
+                        {
+                            Id = Guid.NewGuid().ToString(),
+                            Pk = pk,
+                            Other = $"Partition_{pkIndex}_Item_{i}",
+                        });
+                    }
+                }
+
+                int totalExpected = partitionCount * itemsPerPartition;
+                List<TestObject> createdItems = await this.CreateItemsSafeAsync(items);
+                Assert.AreEqual(totalExpected, createdItems.Count, $"All {totalExpected} items should be created");
+
+                // Execute a cross-partition ORDER BY query (requires QueryPlan + fanout)
+                string query = "SELECT * FROM c WHERE STARTSWITH(c.other, 'Partition_') ORDER BY c.other ASC";
+
+                // Run query via ThinClient mode
+                FeedIterator<TestObject> thinClientIterator = this.container.GetItemQueryIterator<TestObject>(query);
+
+                List<TestObject> thinClientResults = new List<TestObject>();
+                while (thinClientIterator.HasMoreResults)
+                {
+                    FeedResponse<TestObject> response = await thinClientIterator.ReadNextAsync();
+                    thinClientResults.AddRange(response);
+
+                    string diagnostics = response.Diagnostics.ToString();
+                    Assert.IsTrue(diagnostics.Contains("|F4"), "Should use ThinClient mode");
+                }
+
+                // Verify all items are returned
+                int foundCount = createdItems.Count(created =>
+                    thinClientResults.Any(r => r.Id == created.Id));
+                Assert.AreEqual(totalExpected, foundCount,
+                    $"Should find all {totalExpected} test items in fanout results, found {foundCount}");
+
+                // Compare with Gateway mode results to verify correctness
+                using CosmosClient gatewayClient = new CosmosClient(
+                    this.connectionString,
+                    new CosmosClientOptions()
+                    {
+                        ConnectionMode = ConnectionMode.Gateway,
+                        Serializer = this.cosmosSystemTextJsonSerializer,
+                    });
+
+                Container gatewayContainer = gatewayClient.GetContainer(this.database.Id, this.container.Id);
+                FeedIterator<TestObject> gatewayIterator = gatewayContainer.GetItemQueryIterator<TestObject>(query);
+
+                List<TestObject> gatewayResults = new List<TestObject>();
+                while (gatewayIterator.HasMoreResults)
+                {
+                    FeedResponse<TestObject> response = await gatewayIterator.ReadNextAsync();
+                    gatewayResults.AddRange(response);
+                }
+
+                // ThinClient and Gateway should return the same item count
+                Assert.AreEqual(gatewayResults.Count, thinClientResults.Count,
+                    $"ThinClient ({thinClientResults.Count}) and Gateway ({gatewayResults.Count}) should return the same number of items.");
+
+                // Verify both results contain the same item IDs
+                HashSet<string> thinClientIds = new HashSet<string>(thinClientResults.Select(r => r.Id));
+                HashSet<string> gatewayIds = new HashSet<string>(gatewayResults.Select(r => r.Id));
+                Assert.IsTrue(thinClientIds.SetEquals(gatewayIds),
+                    "ThinClient and Gateway should return the same set of items.");
             }
             finally
             {

@@ -176,15 +176,15 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override async Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
-             string resourceUri,
-             ResourceType resourceType,
-             OperationType operationType,
-             SqlQuerySpec sqlQuerySpec,
-             PartitionKey? partitionKey,
-             string supportedQueryFeatures,
-             Guid clientQueryCorrelationId,
-             ITrace trace,
-             CancellationToken cancellationToken)
+            string resourceUri,
+            ResourceType resourceType,
+            OperationType operationType,
+            SqlQuerySpec sqlQuerySpec,
+            PartitionKey? partitionKey,
+            string supportedQueryFeatures,
+            Guid clientQueryCorrelationId,
+            ITrace trace,
+            CancellationToken cancellationToken)
         {
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
             using (ResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(

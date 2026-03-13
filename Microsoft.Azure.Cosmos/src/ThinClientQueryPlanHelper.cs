@@ -7,25 +7,43 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Text.Json;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
     using PartitionKeyDefinition = Documents.PartitionKeyDefinition;
     using PartitionKeyInternal = Documents.Routing.PartitionKeyInternal;
 
     /// <summary>
     /// Handles conversion of thin client query plan responses where query ranges
     /// are returned in PartitionKeyInternal format instead of EPK hex strings.
+    /// Mirrors the conversion logic in <see cref="QueryPartitionProvider.ConvertPartitionedQueryExecutionInfo"/>.
     /// </summary>
+    /// <remarks>
+    /// Uses System.Text.Json for primary parsing and structural validation.
+    /// Newtonsoft.Json is used only for deserializing QueryInfo, HybridSearchQueryInfo,
+    /// and Range&lt;PartitionKeyInternal&gt; because these types and their deep type hierarchies
+    /// (including the external Direct package types) use Newtonsoft [JsonProperty] attributes
+    /// and [JsonObject(MemberSerialization.OptIn)] semantics that have no System.Text.Json equivalent.
+    /// </remarks>
     internal static class ThinClientQueryPlanHelper
     {
+        private static readonly Newtonsoft.Json.JsonSerializerSettings NewtonsoftSettings =
+            new Newtonsoft.Json.JsonSerializerSettings
+            {
+                DateParseHandling = Newtonsoft.Json.DateParseHandling.None,
+                MaxDepth = 64,
+            };
+
         /// <summary>
-        /// Reads the raw query plan JSON from a stream, converts PartitionKeyInternal
-        /// ranges to EPK hex string ranges, and deserializes into a clean
-        /// <see cref="PartitionedQueryExecutionInfo"/> DTO.
+        /// Deserializes a thin client query plan response stream into a
+        /// <see cref="PartitionedQueryExecutionInfo"/> with EPK string ranges.
+        /// The response contains query ranges in PartitionKeyInternal format
+        /// which are converted to EPK hex strings and sorted.
         /// </summary>
         /// <param name="stream">The response stream containing the raw query plan JSON.</param>
         /// <param name="partitionKeyDefinition">The partition key definition for the container.</param>
-        /// <returns><see cref="PartitionedQueryExecutionInfo"/> with EPK string ranges.</returns>
+        /// <returns><see cref="PartitionedQueryExecutionInfo"/> with sorted EPK string ranges.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="stream"/> or <paramref name="partitionKeyDefinition"/> is null.</exception>
+        /// <exception cref="FormatException">Thrown when the response JSON is malformed or missing required properties.</exception>
         public static PartitionedQueryExecutionInfo DeserializeQueryPlanResponse(
             Stream stream,
             PartitionKeyDefinition partitionKeyDefinition)
@@ -40,71 +58,105 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                 throw new ArgumentNullException(nameof(partitionKeyDefinition));
             }
 
-            JObject queryPlanJson;
-            using (StreamReader reader = new StreamReader(stream))
-            using (JsonTextReader jsonReader = new JsonTextReader(reader))
+            using JsonDocument doc = JsonDocument.Parse(stream);
+            JsonElement root = doc.RootElement;
+
+            if (root.ValueKind != JsonValueKind.Object)
             {
-                queryPlanJson = JObject.Load(jsonReader);
+                throw new FormatException(
+                    $"Thin client query plan response must be a JSON object, but was {root.ValueKind}.");
             }
 
-            if (queryPlanJson[Documents.Constants.Properties.QueryRanges] is JArray rawQueryRanges)
+            // Validate and extract queryRanges (required)
+            if (!root.TryGetProperty("queryRanges", out JsonElement queryRangesElement))
             {
-                List<Documents.Routing.Range<string>> epkRanges = ThinClientQueryPlanHelper.ConvertToEpkRanges(
-                    rawQueryRanges,
-                    partitionKeyDefinition);
-
-                queryPlanJson[Documents.Constants.Properties.QueryRanges] = JToken.FromObject(epkRanges);
+                throw new FormatException(
+                    "Thin client query plan response is missing the required 'queryRanges' property.");
             }
 
-            return queryPlanJson.ToObject<PartitionedQueryExecutionInfo>();
-        }
-
-        private static List<Documents.Routing.Range<string>> ConvertToEpkRanges(
-            JArray rawQueryRanges,
-            PartitionKeyDefinition partitionKeyDefinition)
-        {
-            List<Documents.Routing.Range<string>> epkRanges = new List<Documents.Routing.Range<string>>(rawQueryRanges.Count);
-
-            foreach (JToken rangeToken in rawQueryRanges)
+            if (queryRangesElement.ValueKind != JsonValueKind.Array)
             {
-                if (!(rangeToken is JObject rangeObject))
+                throw new FormatException(
+                    $"Expected 'queryRanges' to be a JSON array, but was {queryRangesElement.ValueKind}.");
+            }
+
+            if (queryRangesElement.GetArrayLength() == 0)
+            {
+                throw new FormatException(
+                    "Thin client query plan response 'queryRanges' array must not be empty.");
+            }
+
+            // Deserialize QueryInfo using Newtonsoft because QueryInfo uses
+            // [JsonObject(MemberSerialization.OptIn)] and Newtonsoft-only [JsonProperty] attributes.
+            QueryInfo queryInfo = null;
+            if (root.TryGetProperty("queryInfo", out JsonElement queryInfoElement)
+                && queryInfoElement.ValueKind != JsonValueKind.Null)
+            {
+                queryInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<QueryInfo>(
+                    queryInfoElement.GetRawText(),
+                    ThinClientQueryPlanHelper.NewtonsoftSettings);
+            }
+
+            // Deserialize HybridSearchQueryInfo using Newtonsoft (same constraint as QueryInfo).
+            HybridSearchQueryInfo hybridSearchQueryInfo = null;
+            if (root.TryGetProperty("hybridSearchQueryInfo", out JsonElement hybridElement)
+                && hybridElement.ValueKind != JsonValueKind.Null)
+            {
+                hybridSearchQueryInfo = Newtonsoft.Json.JsonConvert.DeserializeObject<HybridSearchQueryInfo>(
+                    hybridElement.GetRawText(),
+                    ThinClientQueryPlanHelper.NewtonsoftSettings);
+            }
+
+            // Parse and convert query ranges to EPK string ranges.
+            // Range<PartitionKeyInternal> requires Newtonsoft because PartitionKeyInternal
+            // is from the external Direct package with Newtonsoft-based serialization.
+            List<Documents.Routing.Range<string>> effectiveRanges =
+                new List<Documents.Routing.Range<string>>(queryRangesElement.GetArrayLength());
+
+            foreach (JsonElement rangeElement in queryRangesElement.EnumerateArray())
+            {
+                if (rangeElement.ValueKind != JsonValueKind.Object)
                 {
-                    continue;
+                    throw new FormatException(
+                        $"Each query range must be a JSON object, but was {rangeElement.ValueKind}.");
                 }
 
-                JToken minToken = rangeObject["min"];
-                JToken maxToken = rangeObject["max"];
+                if (!rangeElement.TryGetProperty("min", out _))
+                {
+                    throw new FormatException(
+                        "Query range is missing the required 'min' property.");
+                }
 
-                PartitionKeyInternal minPk = ThinClientQueryPlanHelper.ParsePartitionKeyInternal(minToken);
-                PartitionKeyInternal maxPk = ThinClientQueryPlanHelper.ParsePartitionKeyInternal(maxToken);
+                if (!rangeElement.TryGetProperty("max", out _))
+                {
+                    throw new FormatException(
+                        "Query range is missing the required 'max' property.");
+                }
 
-                string minEpk = minPk.GetEffectivePartitionKeyString(partitionKeyDefinition);
-                string maxEpk = maxPk.GetEffectivePartitionKeyString(partitionKeyDefinition);
+                Documents.Routing.Range<PartitionKeyInternal> internalRange =
+                    Newtonsoft.Json.JsonConvert.DeserializeObject<Documents.Routing.Range<PartitionKeyInternal>>(
+                        rangeElement.GetRawText(),
+                        ThinClientQueryPlanHelper.NewtonsoftSettings);
 
-                bool isMinInclusive = rangeObject["isMinInclusive"]?.Value<bool>() ?? true;
-                bool isMaxInclusive = rangeObject["isMaxInclusive"]?.Value<bool>() ?? false;
+                if (internalRange == null)
+                {
+                    throw new FormatException(
+                        "Failed to deserialize query range from thin client response.");
+                }
 
-                epkRanges.Add(new Documents.Routing.Range<string>(minEpk, maxEpk, isMinInclusive, isMaxInclusive));
+                effectiveRanges.Add(PartitionKeyInternal.GetEffectivePartitionKeyRange(
+                    partitionKeyDefinition,
+                    internalRange));
             }
 
-            return epkRanges;
-        }
+            effectiveRanges.Sort(Documents.Routing.Range<string>.MinComparer.Instance);
 
-        private static PartitionKeyInternal ParsePartitionKeyInternal(JToken token)
-        {
-            if (token == null || token.Type == JTokenType.Null)
+            return new PartitionedQueryExecutionInfo()
             {
-                return PartitionKeyInternal.Empty;
-            }
-
-            try
-            {
-                return token.ToObject<PartitionKeyInternal>();
-            }
-            catch (JsonException)
-            {
-                return PartitionKeyInternal.Empty;
-            }
+                QueryInfo = queryInfo,
+                QueryRanges = effectiveRanges,
+                HybridSearchQueryInfo = hybridSearchQueryInfo,
+            };
         }
     }
 }
