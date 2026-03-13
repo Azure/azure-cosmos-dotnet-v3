@@ -146,7 +146,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 partitionController,
                 this.documentServiceLeaseStoreManager.LeaseContainer,
                 loadBalancingStrategy,
-                this.changeFeedLeaseOptions.LeaseAcquireInterval);
+                this.changeFeedLeaseOptions.LeaseAcquireInterval,
+                this.changeFeedProcessorOptions.HealthMonitor);
             return new PartitionManagerCore(bootstrapper, partitionController, partitionLoadBalancer);
         }
     }
