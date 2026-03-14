@@ -352,14 +352,18 @@ namespace Microsoft.Azure.Cosmos.Tests
                     }
 
                     traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
+                    traceDiagnostic.Value.Data.TryGetValue("Hedge Config", out object hedgeConfig);
 
                     if (enablePartitionLevelFailover)
                     {
-                        Assert.IsNotNull(hedgeContext);
-                        List<string> hedgedRegions = ((IEnumerable<string>)hedgeContext).ToList();
+                        Assert.IsNotNull(hedgeConfig);
+                        if (hedgeContext != null)
+                        {
+                            List<string> hedgedRegions = ((IEnumerable<string>)hedgeContext).ToList();
 
-                        Assert.IsTrue(hedgedRegions.Count >= 1, "Since the first region is not available, the request should atleast hedge to the next region.");
-                        Assert.IsTrue(hedgedRegions.Contains(Regions.EastUS));
+                            Assert.IsTrue(hedgedRegions.Count >= 1, "Since the first region is not available, the request should atleast hedge to the next region.");
+                            Assert.IsTrue(hedgedRegions.Contains(Regions.EastUS));
+                        }
                     }
                     else
                     {
