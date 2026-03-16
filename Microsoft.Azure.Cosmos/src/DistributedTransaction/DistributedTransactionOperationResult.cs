@@ -121,34 +121,28 @@ namespace Microsoft.Azure.Cosmos
         internal ITrace Trace { get; set; }
 
         /// <summary>
-        /// Gets or sets the resource body as a JSON element.
-        /// Setting this property populates <see cref="ResourceStream"/> with the serialized bytes.
-        /// </summary>
-        [JsonInclude]
-        [JsonPropertyName("resourceBody")]
-        internal JsonElement? ResourceBody
-        {
-            get => null;
-            set
-            {
-                if (value.HasValue
-                    && value.Value.ValueKind != JsonValueKind.Undefined
-                    && value.Value.ValueKind != JsonValueKind.Null)
-                {
-                    byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(value.Value);
-                    this.ResourceStream = new MemoryStream(bytes, 0, bytes.Length, writable: false, publiclyVisible: true);
-                }
-            }
-        }
-
-        /// <summary>
         /// Creates a <see cref="DistributedTransactionOperationResult"/> from a JSON element.
         /// </summary>
         /// <param name="json">The JSON element containing the operation result.</param>
         /// <returns>The deserialized operation result.</returns>
         internal static DistributedTransactionOperationResult FromJson(JsonElement json)
         {
-            return JsonSerializer.Deserialize<DistributedTransactionOperationResult>(json.GetRawText());
+            DistributedTransactionOperationResult result = JsonSerializer.Deserialize<DistributedTransactionOperationResult>(json.GetRawText());
+
+            if (json.TryGetProperty("resourceBody", out JsonElement resourceBody)
+                && resourceBody.ValueKind != JsonValueKind.Undefined
+                && resourceBody.ValueKind != JsonValueKind.Null)
+            {
+                if (resourceBody.ValueKind != JsonValueKind.Object)
+                {
+                    throw new JsonException($"The 'resourceBody' value must be a JSON object, but was '{resourceBody.ValueKind}'.");
+                }
+
+                byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(resourceBody);
+                result.ResourceStream = new MemoryStream(bytes, 0, bytes.Length, writable: false, publiclyVisible: true);
+            }
+
+            return result;
         }
     }
 }
