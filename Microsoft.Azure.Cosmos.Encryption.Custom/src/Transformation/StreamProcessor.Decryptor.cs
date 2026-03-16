@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
     internal partial class StreamProcessor
     {
+        private const int MaxBufferSize = 64 * 1024 * 1024;
         private const string EncryptionPropertiesPath = "/" + Constants.EncryptedInfo;
         private static readonly SqlBitSerializer SqlBoolSerializer = new ();
         private static readonly SqlFloatSerializer SqlDoubleSerializer = new ();
@@ -124,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     WriteObjectSegment);
 
                 leftOver = dataLength - result.BytesConsumed;
-                buffer = JsonFeedStreamHelper.HandleLeftOver(buffer, dataLength, leftOver, result.BytesConsumed);
+                buffer = JsonFeedStreamHelper.HandleLeftOver(buffer, dataLength, leftOver, result.BytesConsumed, MaxBufferSize);
 
                 if (isFinalBlock && leftOver > 0)
                 {

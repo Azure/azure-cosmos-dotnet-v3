@@ -636,7 +636,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 this.ResponseFactory,
                 this.Encryptor,
                 this.CosmosSerializer,
-                requestOptions);
+                requestOptions?.GetJsonProcessor(this.DefaultJsonProcessor) ?? this.DefaultJsonProcessor);
         }
 
         public override FeedIterator<T> GetItemQueryIterator<T>(
@@ -652,7 +652,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 this.ResponseFactory,
                 this.Encryptor,
                 this.CosmosSerializer,
-                requestOptions);
+                requestOptions?.GetJsonProcessor(this.DefaultJsonProcessor) ?? this.DefaultJsonProcessor);
         }
 
         public override Task<ContainerResponse> ReadContainerAsync(
@@ -732,7 +732,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     continuationToken,
                     requestOptions),
                 this.Encryptor,
-                requestOptions);
+                requestOptions?.GetJsonProcessor(this.DefaultJsonProcessor) ?? this.DefaultJsonProcessor);
         }
 
         public override FeedIterator GetItemQueryStreamIterator(
@@ -746,7 +746,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     continuationToken,
                     requestOptions),
                 this.Encryptor,
-                requestOptions);
+                requestOptions?.GetJsonProcessor(this.DefaultJsonProcessor) ?? this.DefaultJsonProcessor);
         }
 
         public override Task<ThroughputResponse> ReplaceThroughputAsync(
@@ -779,7 +779,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     continuationToken,
                     requestOptions),
                 this.Encryptor,
-                requestOptions);
+                requestOptions?.GetJsonProcessor(this.DefaultJsonProcessor) ?? this.DefaultJsonProcessor);
         }
 
         public override FeedIterator<T> GetItemQueryIterator<T>(
@@ -797,7 +797,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 this.ResponseFactory,
                 this.Encryptor,
                 this.CosmosSerializer,
-                requestOptions);
+                requestOptions?.GetJsonProcessor(this.DefaultJsonProcessor) ?? this.DefaultJsonProcessor);
         }
 
         public override ChangeFeedEstimator GetChangeFeedEstimator(
@@ -818,7 +818,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     changeFeedMode,
                     changeFeedRequestOptions),
                 this.Encryptor,
-                changeFeedRequestOptions);
+                changeFeedRequestOptions?.GetJsonProcessor(this.DefaultJsonProcessor) ?? this.DefaultJsonProcessor);
         }
 
         public override FeedIterator<T> GetChangeFeedIterator<T>(
@@ -834,7 +834,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 this.ResponseFactory,
                 this.Encryptor,
                 this.CosmosSerializer,
-                changeFeedRequestOptions);
+                changeFeedRequestOptions?.GetJsonProcessor(this.DefaultJsonProcessor) ?? this.DefaultJsonProcessor);
         }
 
         public override Task<ItemResponse<T>> PatchItemAsync<T>(

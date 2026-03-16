@@ -170,6 +170,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         [TestMethod]
+        public void HandleLeftOver_WhenBufferExceedsMaxSize_Throws()
+        {
+            int maxBufferSize = 1024;
+            byte[] buffer = new byte[maxBufferSize];
+            int dataLength = maxBufferSize;
+            int leftOver = dataLength;
+            int bytesConsumed = 0;
+
+            InvalidOperationException ex = Assert.ThrowsException<InvalidOperationException>(
+                () => JsonFeedStreamHelper.HandleLeftOver(buffer, dataLength, leftOver, bytesConsumed, maxBufferSize));
+
+            StringAssert.Contains(ex.Message, "maximum buffer size");
+        }
+
+        [TestMethod]
         public async Task SplitIntoSubstreamsAsync_WithBareArrayPayload_ShouldThrow()
         {
             string jsonArray = "[{\"id\":\"doc1\"}]";

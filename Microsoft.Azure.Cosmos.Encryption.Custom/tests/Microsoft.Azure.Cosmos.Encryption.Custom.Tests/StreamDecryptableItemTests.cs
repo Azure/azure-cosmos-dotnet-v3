@@ -382,6 +382,60 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         [TestMethod]
+        public async Task GetItemAsync_AfterDisposeAsync_ThrowsObjectDisposedException()
+        {
+            TestDoc originalDoc = TestDoc.Create();
+            Stream encryptedStream = await CreateEncryptedStreamAsync(originalDoc, mockEncryptor.Object);
+
+            StreamDecryptableItem item = new (encryptedStream, mockEncryptor.Object, cosmosSerializer);
+
+            await item.DisposeAsync();
+
+            await Assert.ThrowsExceptionAsync<ObjectDisposedException>(
+                async () => await item.GetItemAsync<TestDoc>());
+        }
+
+        [TestMethod]
+        public async Task DisposeAsync_WhileGetItemAsyncInFlight_DoesNotCorruptState()
+        {
+            TestDoc originalDoc = TestDoc.Create();
+
+            SemaphoreSlim decryptionStarted = new (0, 1);
+            SemaphoreSlim allowDecryptionToComplete = new (0, 1);
+
+            Mock<Encryptor> slowEncryptor = new Mock<Encryptor>();
+            slowEncryptor.Setup(m => m.EncryptAsync(It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((byte[] plainText, string dekId, string algo, CancellationToken t) => TestCommon.EncryptData(plainText));
+            slowEncryptor.Setup(m => m.DecryptAsync(It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .Returns<byte[], string, string, CancellationToken>(async (cipherText, dekId, algo, token) =>
+                {
+                    decryptionStarted.Release();
+                    await allowDecryptionToComplete.WaitAsync();
+                    return TestCommon.DecryptData(cipherText);
+                });
+
+            Stream encryptedStream = await CreateEncryptedStreamAsync(originalDoc, mockEncryptor.Object);
+            StreamDecryptableItem item = new (encryptedStream, slowEncryptor.Object, cosmosSerializer);
+
+            Task<(TestDoc, DecryptionContext)> getItemTask = item.GetItemAsync<TestDoc>();
+
+            await decryptionStarted.WaitAsync();
+
+            Task disposeTask = item.DisposeAsync().AsTask();
+
+            await Task.Delay(50);
+            Assert.IsFalse(disposeTask.IsCompleted, "DisposeAsync should be blocked waiting for the lock held by GetItemAsync.");
+
+            allowDecryptionToComplete.Release();
+
+            (TestDoc result, DecryptionContext context) = await getItemTask;
+            await disposeTask;
+
+            Assert.IsNotNull(result);
+            Assert.AreEqual(originalDoc.Id, result.Id);
+        }
+
+        [TestMethod]
         public async Task GetItemAsync_StreamDecryptableItem_CachesResultAndDisposesStream()
         {
             TestDoc originalDoc = TestDoc.Create();

@@ -396,7 +396,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return jsonProcessor switch
             {
 #if NET8_0_OR_GREATER
-                JsonProcessor.Stream => await DecryptJsonArraySteamAsync(content, encryptor, cancellationToken),
+                JsonProcessor.Stream => await DecryptJsonArrayStreamAsync(content, encryptor, cancellationToken),
 #endif
                 _ => await DecryptJsonArrayNewtonsoftAsync(content, encryptor, cancellationToken),
             };
@@ -453,7 +453,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         }
 
 #if NET8_0_OR_GREATER
-        private static async Task<Stream> DecryptJsonArraySteamAsync(
+        private static async Task<Stream> DecryptJsonArrayStreamAsync(
             Stream content,
             Encryptor encryptor,
             CancellationToken cancellationToken)

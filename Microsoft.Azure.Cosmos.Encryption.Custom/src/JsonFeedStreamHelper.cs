@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return new ProcessResult(checked((int)reader.BytesConsumed), objectCompleted: false);
         }
 
-        internal static byte[] HandleLeftOver(byte[] buffer, int dataLength, int leftOver, int bytesConsumed, int maxBufferSize = 0)
+        internal static byte[] HandleLeftOver(byte[] buffer, int dataLength, int leftOver, int bytesConsumed, int maxBufferSize)
         {
             if (leftOver == dataLength)
             {

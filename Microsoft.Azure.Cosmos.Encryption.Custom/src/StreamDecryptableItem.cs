@@ -38,11 +38,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         public override async Task<(T, DecryptionContext)> GetItemAsync<T>()
         {
-            ObjectDisposedException.ThrowIf(this.isDisposed, this);
-
             await this.asyncLock.WaitAsync().ConfigureAwait(false);
             try
             {
+                ObjectDisposedException.ThrowIf(this.isDisposed, this);
+
                 // Return cached value if already decrypted
                 if (this.isDecrypted)
                 {
@@ -138,15 +138,24 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         public override async ValueTask DisposeAsync()
         {
-            if (this.isDisposed)
+            await this.asyncLock.WaitAsync().ConfigureAwait(false);
+            try
             {
-                return;
+                if (this.isDisposed)
+                {
+                    return;
+                }
+
+                await this.DisposeContentStreamAsync().ConfigureAwait(false);
+
+                this.isDisposed = true;
+            }
+            finally
+            {
+                this.asyncLock.Release();
             }
 
-            await this.DisposeContentStreamAsync().ConfigureAwait(false);
-
-            this.asyncLock.Dispose();
-            this.isDisposed = true;
+            GC.SuppressFinalize(this);
         }
     }
 }

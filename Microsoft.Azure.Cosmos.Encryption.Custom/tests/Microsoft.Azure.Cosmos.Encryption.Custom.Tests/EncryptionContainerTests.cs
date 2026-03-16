@@ -389,6 +389,61 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             Assert.AreEqual(JsonProcessor.Stream, this.encryptionContainer.DefaultJsonProcessor);
         }
+
+        [TestMethod]
+        public async Task GetItemQueryIterator_WithNullRequestOptions_UsesDefaultJsonProcessor()
+        {
+            this.encryptionContainer.UseStreamingJsonProcessingByDefault();
+
+            this.feedIteratorMock.SetupGet(f => f.HasMoreResults).Returns(true);
+            ResponseMessage responseMessage = CreateOkResponse(CreateFeedPayload());
+            this.feedIteratorMock
+                .Setup(f => f.ReadNextAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(responseMessage);
+            this.innerContainerMock
+                .Setup(c => c.GetItemQueryStreamIterator(It.IsAny<QueryDefinition>(), It.IsAny<string>(), (QueryRequestOptions)null))
+                .Returns(this.feedIteratorMock.Object);
+
+            FeedIterator<DecryptableItem> typedIterator = this.encryptionContainer.GetItemQueryIterator<DecryptableItem>(
+                new QueryDefinition("SELECT * FROM c"),
+                continuationToken: null,
+                requestOptions: null);
+
+            FeedResponse<DecryptableItem> feedResponse = await typedIterator.ReadNextAsync();
+            DecryptableItem decryptableItem = feedResponse.Resource.Single();
+
+            Assert.IsInstanceOfType(decryptableItem, typeof(StreamDecryptableItem),
+                "With UseStreamingJsonProcessingByDefault and null requestOptions, iterator should use Stream processor.");
+        }
+
+        [TestMethod]
+        public async Task GetChangeFeedIterator_WithNullRequestOptions_UsesDefaultJsonProcessor()
+        {
+            this.encryptionContainer.UseStreamingJsonProcessingByDefault();
+
+            ChangeFeedStartFrom startFrom = ChangeFeedStartFrom.Beginning();
+            ChangeFeedMode mode = ChangeFeedMode.Incremental;
+
+            this.feedIteratorMock.SetupGet(f => f.HasMoreResults).Returns(true);
+            ResponseMessage responseMessage = CreateOkResponse(CreateFeedPayload());
+            this.feedIteratorMock
+                .Setup(f => f.ReadNextAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(responseMessage);
+            this.innerContainerMock
+                .Setup(c => c.GetChangeFeedStreamIterator(startFrom, mode, (ChangeFeedRequestOptions)null))
+                .Returns(this.feedIteratorMock.Object);
+
+            FeedIterator<DecryptableItem> typedIterator = this.encryptionContainer.GetChangeFeedIterator<DecryptableItem>(
+                startFrom,
+                mode,
+                changeFeedRequestOptions: null);
+
+            FeedResponse<DecryptableItem> feedResponse = await typedIterator.ReadNextAsync();
+            DecryptableItem decryptableItem = feedResponse.Resource.Single();
+
+            Assert.IsInstanceOfType(decryptableItem, typeof(StreamDecryptableItem),
+                "With UseStreamingJsonProcessingByDefault and null requestOptions, change feed iterator should use Stream processor.");
+        }
 #endif
 
         private static EncryptionContainer CreateEncryptionContainer(
