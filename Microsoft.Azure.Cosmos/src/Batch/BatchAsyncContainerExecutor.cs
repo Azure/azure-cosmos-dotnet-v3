@@ -142,6 +142,7 @@ namespace Microsoft.Azure.Cosmos
             if (itemRequestOptions != null)
             {
                 if (itemRequestOptions.BaseConsistencyLevel.HasValue
+                                || itemRequestOptions.BaseReadConsistencyStrategy.HasValue
                                 || itemRequestOptions.PreTriggers != null
                                 || itemRequestOptions.PostTriggers != null
                                 || itemRequestOptions.SessionToken != null
