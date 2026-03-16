@@ -100,6 +100,9 @@ namespace Microsoft.Azure.Cosmos
         [JsonIgnore]
         internal virtual SubStatusCodes SubStatusCode { get; set; }
 
+        /// <summary>
+        /// Gets the sub-status code value as an unsigned integer.
+        /// </summary>
         [JsonInclude]
         [JsonPropertyName("subStatusCode")]
         public virtual uint SubStatusCodeValue
@@ -123,10 +126,10 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         [JsonInclude]
         [JsonPropertyName("resourceBody")]
-        public virtual JsonElement? ResourceBody
+        internal JsonElement? ResourceBody
         {
             get => null;
-            internal set
+            set
             {
                 if (value.HasValue
                     && value.Value.ValueKind != JsonValueKind.Undefined

@@ -133,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             // 2 operations submitted but server returns only 1 result
             DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 2);
 
-            string json = @"{""operationResponses"":[{""index"":0,""statuscode"":201}]}";
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":201}]}";
             ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
 
             DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
@@ -155,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             // 3 operations submitted but server returns only 1 result
             DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 3);
 
-            string json = @"{""operationResponses"":[{""index"":0,""statuscode"":409}]}";
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":409}]}";
             ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.Conflict, json);
 
             DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
@@ -184,7 +184,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 2);
 
             // index 0 succeeds, index 1 fails with 409
-            string json = @"{""operationResponses"":[{""index"":0,""statuscode"":201},{""index"":1,""statuscode"":409}]}";
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":201},{""index"":1,""statusCode"":409}]}";
             ResponseMessage responseMessage = BuildResponseMessage((HttpStatusCode)StatusCodes.MultiStatus, json);
 
             DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
@@ -208,7 +208,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 3);
 
             // index 0 and 1 succeed; index 2 fails with 503
-            string json = @"{""operationResponses"":[{""index"":0,""statuscode"":201},{""index"":1,""statuscode"":200},{""index"":2,""statuscode"":503}]}";
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":201},{""index"":1,""statusCode"":200},{""index"":2,""statusCode"":503}]}";
             ResponseMessage responseMessage = BuildResponseMessage((HttpStatusCode)StatusCodes.MultiStatus, json);
 
             DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
@@ -231,7 +231,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 2);
 
             // Both results are FailedDependency (424) — excluded from promotion logic
-            string json = $@"{{""operationResponses"":[{{""index"":0,""statuscode"":{(int)StatusCodes.FailedDependency}}},{{""index"":1,""statuscode"":{(int)StatusCodes.FailedDependency}}}]}}";
+            string json = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":{(int)StatusCodes.FailedDependency}}},{{""index"":1,""statusCode"":{(int)StatusCodes.FailedDependency}}}]}}";
             ResponseMessage responseMessage = BuildResponseMessage((HttpStatusCode)StatusCodes.MultiStatus, json);
 
             DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
@@ -255,7 +255,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
             Guid requestToken = Guid.NewGuid();
 
-            string json = @"{""operationResponses"":[{""index"":0,""statuscode"":201}]}";
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":201}]}";
             ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
             // No IdempotencyToken header added
 
@@ -278,7 +278,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
             Guid requestToken = Guid.NewGuid();
 
-            string json = @"{""operationResponses"":[{""index"":0,""statuscode"":201}]}";
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":201}]}";
             ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
             responseMessage.Headers.Add(HttpConstants.HttpHeaders.IdempotencyToken, "not-a-valid-guid");
 
@@ -302,7 +302,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
 
-            string json = @"{""operationResponses"":[{""index"":0,""statuscode"":201,""resourcebody"":{""id"":""item1""}}]}";
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":201,""resourceBody"":{""id"":""item1""}}]}";
             ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
 
             DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
@@ -326,7 +326,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task Dispose_SecondCall_DoesNotThrow()
         {
             DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
-            string json = @"{""operationResponses"":[{""index"":0,""statuscode"":201}]}";
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":201}]}";
             ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
 
             DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
@@ -346,7 +346,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task Indexer_AfterDispose_ThrowsObjectDisposedException()
         {
             DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
-            string json = @"{""operationResponses"":[{""index"":0,""statuscode"":201}]}";
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":201}]}";
             ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
 
             DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
@@ -403,7 +403,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task Indexer_ValidIndex_ReturnsExpectedResult()
         {
             DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 2);
-            string json = @"{""operationResponses"":[{""index"":0,""statuscode"":201},{""index"":1,""statuscode"":200}]}";
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":201},{""index"":1,""statusCode"":200}]}";
             ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
 
             DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
@@ -425,7 +425,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task Indexer_NegativeIndex_ThrowsArgumentOutOfRangeException()
         {
             DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
-            string json = @"{""operationResponses"":[{""index"":0,""statuscode"":201}]}";
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":201}]}";
             ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
 
             DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
@@ -444,7 +444,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task Indexer_IndexEqualsCount_ThrowsArgumentOutOfRangeException()
         {
             DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
-            string json = @"{""operationResponses"":[{""index"":0,""statuscode"":201}]}";
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":201}]}";
             ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
 
             DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
@@ -463,7 +463,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task GetEnumerator_ReturnsAllResults_InOrder()
         {
             DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 3);
-            string json = @"{""operationResponses"":[{""index"":0,""statuscode"":201},{""index"":1,""statuscode"":200},{""index"":2,""statuscode"":204}]}";
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":201},{""index"":1,""statusCode"":200},{""index"":2,""statusCode"":204}]}";
             ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
 
             DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
@@ -494,7 +494,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task Count_ReturnsNumberOfParsedResults()
         {
             DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 4);
-            string json = @"{""operationResponses"":[{""index"":0,""statuscode"":201},{""index"":1,""statuscode"":201},{""index"":2,""statuscode"":201},{""index"":3,""statuscode"":201}]}";
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":201},{""index"":1,""statusCode"":201},{""index"":2,""statusCode"":201},{""index"":3,""statusCode"":201}]}";
             ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
 
             DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
@@ -559,14 +559,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             if (isError)
             {
                 // Produce intentionally mismatched JSON so the padded-results path is exercised
-                json = $@"{{""operationResponses"":[{{""index"":0,""statuscode"":{(int)statusCode}}}]}}";
+                json = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":{(int)statusCode}}}]}}";
             }
             else
             {
                 List<string> results = new List<string>();
                 for (int i = 0; i < operationCount; i++)
                 {
-                    results.Add($@"{{""index"":{i},""statuscode"":{(int)statusCode}}}");
+                    results.Add($@"{{""index"":{i},""statusCode"":{(int)statusCode}}}");
                 }
                 json = $@"{{""operationResponses"":[{string.Join(",", results)}]}}";
             }
