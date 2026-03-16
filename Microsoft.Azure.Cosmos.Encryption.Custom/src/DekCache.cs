@@ -27,6 +27,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         internal AsyncCache<string, InMemoryRawDek> RawDekCache { get; } = new AsyncCache<string, InMemoryRawDek>();
 
+        // Exposed for deterministic test waiting on fire-and-forget distributed cache writes
+        internal Task LastDistributedCacheWriteTask { get; private set; } = Task.CompletedTask;
+
         public DekCache(
             TimeSpan? dekPropertiesTimeToLive = null,
             IDistributedCache distributedCache = null,
@@ -179,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 {
                     activity?.SetTag("cache.distributed.enabled", true);
 
-                    _ = Task.Run(async () =>
+                    this.LastDistributedCacheWriteTask = Task.Run(async () =>
                     {
                         using (Activity dcActivity = ActivitySource.StartActivity("DekCache.UpdateDistributedCache"))
                         {
@@ -382,7 +385,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     serialized,
                     new DistributedCacheEntryOptions
                     {
-                        AbsoluteExpiration = cachedProperties.ServerPropertiesExpiryUtc,
+                        AbsoluteExpiration = new DateTimeOffset(cachedProperties.ServerPropertiesExpiryUtc, TimeSpan.Zero),
                     },
                     cancellationToken);
             }
@@ -419,6 +422,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             TypeNameHandling = TypeNameHandling.None,
             DateFormatHandling = DateFormatHandling.IsoDateFormat,
             DateTimeZoneHandling = DateTimeZoneHandling.Utc,
+            ContractResolver = new Newtonsoft.Json.Serialization.DefaultContractResolver(),
         };
 
         private static byte[] SerializeCachedDekProperties(CachedDekProperties cachedProps)
@@ -454,6 +458,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         // regardless of host-level JsonConvert.DefaultSettings.
         private sealed class CachedDekPropertiesDto
         {
+            [JsonProperty("v")]
+            public int Version { get; set; } = 1;
+
             [JsonProperty("serverProperties")]
             public DataEncryptionKeyProperties ServerProperties { get; set; }
 

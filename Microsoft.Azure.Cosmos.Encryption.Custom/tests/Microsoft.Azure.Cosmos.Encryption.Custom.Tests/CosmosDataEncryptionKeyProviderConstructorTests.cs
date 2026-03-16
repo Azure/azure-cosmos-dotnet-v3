@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 {
     using System;
-    using System.Collections.Concurrent;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Encryption.Tests;
@@ -798,70 +797,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             }
         }
 #pragma warning restore CS0618 // Type or member is obsolete
-
-        /// <summary>
-        /// Simple in-memory implementation of IDistributedCache for testing.
-        /// </summary>
-        private class InMemoryDistributedCache : IDistributedCache
-        {
-            private readonly ConcurrentDictionary<string, CacheEntry> cache = new ConcurrentDictionary<string, CacheEntry>();
-
-            public byte[] Get(string key)
-            {
-                return this.GetAsync(key).GetAwaiter().GetResult();
-            }
-
-            public Task<byte[]> GetAsync(string key, CancellationToken token = default)
-            {
-                if (this.cache.TryGetValue(key, out CacheEntry entry))
-                {
-                    if (!entry.AbsoluteExpiration.HasValue || entry.AbsoluteExpiration.Value > DateTimeOffset.UtcNow)
-                    {
-                        return Task.FromResult(entry.Value);
-                    }
-
-                    this.cache.TryRemove(key, out _);
-                }
-
-                return Task.FromResult<byte[]>(null);
-            }
-
-            public void Set(string key, byte[] value, DistributedCacheEntryOptions options)
-            {
-                this.SetAsync(key, value, options).GetAwaiter().GetResult();
-            }
-
-            public Task SetAsync(string key, byte[] value, DistributedCacheEntryOptions options, CancellationToken token = default)
-            {
-                this.cache[key] = new CacheEntry
-                {
-                    Value = value,
-                    AbsoluteExpiration = options.AbsoluteExpiration,
-                };
-                return Task.CompletedTask;
-            }
-
-            public void Remove(string key) => this.cache.TryRemove(key, out _);
-
-            public Task RemoveAsync(string key, CancellationToken token = default)
-            {
-                this.Remove(key);
-                return Task.CompletedTask;
-            }
-
-            public void Refresh(string key) { }
-
-            public Task RefreshAsync(string key, CancellationToken token = default) => Task.CompletedTask;
-
-            public bool ContainsKey(string key) => this.cache.ContainsKey(key);
-
-            private class CacheEntry
-            {
-                public byte[] Value { get; set; }
-
-                public DateTimeOffset? AbsoluteExpiration { get; set; }
-            }
-        }
 
         #endregion
     }
