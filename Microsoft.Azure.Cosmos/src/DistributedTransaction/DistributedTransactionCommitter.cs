@@ -16,7 +16,6 @@ namespace Microsoft.Azure.Cosmos
 
     internal class DistributedTransactionCommitter
     {
-        private const int MaxRetryAttempts = 3;
         private static readonly TimeSpan DefaultRetryBaseDelay = TimeSpan.FromSeconds(1);
         private static readonly string ResourceUri = Paths.OperationsPathSegment + "/" + Paths.Operations_Dtc;
 
@@ -70,10 +69,10 @@ namespace Microsoft.Azure.Cosmos
             DistributedTransactionServerRequest serverRequest,
             CancellationToken cancellationToken)
         {
-            for (int attempt = 0; attempt <= MaxRetryAttempts; attempt++)
+            int attempt = 0;
+            while (true)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                bool canRetry = attempt < MaxRetryAttempts;
 
                 DistributedTransactionResponse response;
                 try
@@ -82,31 +81,37 @@ namespace Microsoft.Azure.Cosmos
                 }
                 catch (CosmosException cosmosEx) when (
                     !cancellationToken.IsCancellationRequested
-                    && canRetry
                     && cosmosEx.StatusCode == HttpStatusCode.RequestTimeout)
                 {
                     DefaultTrace.TraceWarning(
-                        $"Distributed transaction commit timed out (attempt {attempt + 1}/{MaxRetryAttempts + 1}). " +
+                        $"Distributed transaction commit timed out (attempt {attempt + 1}). " +
                         $"Retrying with idempotency token {serverRequest.IdempotencyToken}.");
-                    await Task.Delay(TimeSpan.FromTicks((long)(this.retryBaseDelay.Ticks * Math.Pow(2, attempt))), cancellationToken);
+                    await Task.Delay(this.GetRetryDelay(attempt), cancellationToken);
+                    attempt++;
                     continue;
                 }
 
-                if (canRetry
-                    && !response.IsSuccessStatusCode
+                if (!response.IsSuccessStatusCode
                     && (response.IsRetriable || response.StatusCode == HttpStatusCode.RequestTimeout))
                 {
                     DefaultTrace.TraceWarning(
                         $"Distributed transaction commit retriable (StatusCode={response.StatusCode}, IsRetriable={response.IsRetriable}, " +
-                        $"attempt {attempt + 1}/{MaxRetryAttempts + 1}). Retrying with idempotency token {serverRequest.IdempotencyToken}.");
+                        $"attempt {attempt + 1}). Retrying with idempotency token {serverRequest.IdempotencyToken}.");
                     response.Dispose();
-                    await Task.Delay(TimeSpan.FromTicks((long)(this.retryBaseDelay.Ticks * Math.Pow(2, attempt))), cancellationToken);
+                    await Task.Delay(this.GetRetryDelay(attempt), cancellationToken);
+                    attempt++;
                     continue;
                 }
 
                 return response;
             }
-            throw new InvalidOperationException("Unexpected state: retry loop exhausted without returning.");
+        }
+
+        private TimeSpan GetRetryDelay(int attempt)
+        {
+            const int maxExponent = 5; // Cap backoff at 32x base delay
+            int exponent = Math.Min(attempt, maxExponent);
+            return TimeSpan.FromTicks((long)(this.retryBaseDelay.Ticks * Math.Pow(2, exponent)));
         }
 
         private async Task<DistributedTransactionResponse> ExecuteCommitAsync(

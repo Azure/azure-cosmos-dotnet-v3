@@ -131,51 +131,69 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task CommitTransaction_ExhaustsAllRetries_ReturnsLastRetriableResponse()
+        public async Task CommitTransaction_RetriableResponse_RetriesUntilCancelled()
         {
-            int callCount = 0;
-            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
-            this.SetupProcessResourceOperation(
-                mockContext,
-                () =>
-                {
-                    callCount++;
-                    return Task.FromResult(CreateRetriableErrorResponseMessage());
-                });
-
-            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, TimeSpan.Zero);
-
-            using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(CancellationToken.None))
+            using (CancellationTokenSource cts = new CancellationTokenSource())
             {
-                // MaxRetryAttempts = 3, so total attempts = 4 (initial + 3 retries).
-                Assert.AreEqual(4, callCount);
-                Assert.AreEqual(HttpStatusCode.ServiceUnavailable, response.StatusCode);
-                Assert.IsFalse(response.IsSuccessStatusCode);
-                Assert.IsTrue(response.IsRetriable);
+                int callCount = 0;
+                Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+                this.SetupProcessResourceOperation(
+                    mockContext,
+                    () =>
+                    {
+                        callCount++;
+                        if (callCount == 3)
+                        {
+                            cts.Cancel();
+                        }
+
+                        return Task.FromResult(CreateRetriableErrorResponseMessage());
+                    });
+
+                // Non-zero delay so Task.Delay honours the already-cancelled token.
+                DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                    CreateTestOperations(),
+                    mockContext.Object,
+                    TimeSpan.FromMilliseconds(1));
+
+                await Assert.ThrowsExceptionAsync<OperationCanceledException>(
+                    () => committer.CommitTransactionAsync(cts.Token));
+
+                // Retries continue until the cancellation token fires; no fixed upper bound.
+                Assert.AreEqual(3, callCount);
             }
         }
 
         [TestMethod]
-        public async Task CommitTransaction_ExhaustsAllRetries_RethrowsCosmosException()
+        public async Task CommitTransaction_CosmosTimeoutException_CancelledDuringRequest_PropagatesCosmosException()
         {
-            int callCount = 0;
-            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
-            this.SetupProcessResourceOperation(
-                mockContext,
-                () =>
-                {
-                    callCount++;
-                    return Task.FromException<ResponseMessage>(CreateCosmosTimeoutException());
-                });
+            using (CancellationTokenSource cts = new CancellationTokenSource())
+            {
+                int callCount = 0;
+                Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+                this.SetupProcessResourceOperation(
+                    mockContext,
+                    () =>
+                    {
+                        callCount++;
+                        cts.Cancel(); // Cancel while the request is in-flight.
+                        return Task.FromException<ResponseMessage>(CreateCosmosTimeoutException());
+                    });
 
-            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, TimeSpan.Zero);
+                DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                    CreateTestOperations(),
+                    mockContext.Object,
+                    TimeSpan.FromMilliseconds(1));
 
-            CosmosException ex = await Assert.ThrowsExceptionAsync<CosmosException>(
-                () => committer.CommitTransactionAsync(CancellationToken.None));
+                // When the token is cancelled during the request the retry guard
+                // "when (!cancellationToken.IsCancellationRequested && ...)" is false,
+                // so the CosmosException propagates immediately rather than being retried.
+                CosmosException ex = await Assert.ThrowsExceptionAsync<CosmosException>(
+                    () => committer.CommitTransactionAsync(cts.Token));
 
-            Assert.AreEqual(HttpStatusCode.RequestTimeout, ex.StatusCode);
-            // 4 total attempts: initial + 3 retries; the last one propagates.
-            Assert.AreEqual(4, callCount);
+                Assert.AreEqual(HttpStatusCode.RequestTimeout, ex.StatusCode);
+                Assert.AreEqual(1, callCount);
+            }
         }
 
         [TestMethod]
@@ -331,7 +349,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(CancellationToken.None))
             {
-                // 3 retriable failures + 1 success = 4 total (all attempts used).
+                // 3 retriable failures + 1 success = 4 total calls.
                 Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
                 Assert.IsTrue(response.IsSuccessStatusCode);
                 Assert.AreEqual(4, callCount);
