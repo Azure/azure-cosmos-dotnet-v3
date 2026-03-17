@@ -1,0 +1,73 @@
+schema: spec-driven
+
+context: |
+  Tech stack: C# / .NET (LangVersion 10.0), Azure Cosmos DB SDK v3
+  Repository: azure-cosmos-dotnet-v3
+
+  Major components:
+  - Microsoft.Azure.Cosmos/ — core SDK client (production code)
+  - Microsoft.Azure.Cosmos.Encryption/ — client-side encryption extension
+  - Microsoft.Azure.Cosmos.Encryption.Custom/ — custom encryption extension
+  - Microsoft.Azure.Cosmos.Samples/ — runnable examples and usage patterns
+  - docs/ — general reference documentation (SdkDesign.md, etc.)
+
+  Build & test:
+  - Build: dotnet build Microsoft.Azure.Cosmos.sln
+  - Unit tests: dotnet test in test project folders under **/tests/
+  - Integration tests: require Windows Cosmos DB Emulator (see templates/emulator-setup.yml)
+  - CI pipelines: azure-pipelines-*.yml files at repo root
+
+  Versioning & feature flags:
+  - Versions managed in Directory.Build.props (do NOT change without explicit instruction)
+  - Preview features gated by PREVIEW define constant (IsPreview=true)
+  - Strong-name signed assemblies (35MSSharedLib1024.snk)
+
+  Architecture reference: docs/SdkDesign.md
+  Design guidelines: SdkDesignGuidelines.md
+  Central SDK guidelines: https://azure.github.io/azure-sdk/dotnet_introduction.html
+
+  Conventions:
+  - Public contract changes require API review (see SdkDesignGuidelines.md)
+  - Request options should not be sealed
+  - All public APIs must support unit testing and mocking
+  - Consistency with existing V3 public API takes priority over central SDK guidelines
+  - Never push directly to master — always use feature branches and PRs
+  - PR title format: [Internal] Category: (Adds|Fixes|Refactors|Removes) Description
+  - Use [Internal] prefix only for changes with NO customer-facing impact
+
+  SDK areas: routing, retry, query, changefeed, bulk, serialization,
+             encryption, telemetry, transport, diagnostics, client-config
+
+rules:
+  proposal:
+    - Include which SDK area this change affects (routing, retry, query, changefeed, bulk, serialization, encryption, telemetry, transport, diagnostics, client-config)
+    - State whether this is a preview or GA feature
+    - Link related GitHub issues with issue numbers
+    - Include a Non-goals section to clarify scope boundaries
+    - Note any service-side dependencies or minimum service version requirements
+
+  specs:
+    - Use EARS notation for behavioral requirements (WHEN <condition>, THEN the SDK SHALL <behavior>)
+    - Include full C# public API surface with XML doc comments
+    - Show a complete usage example a customer would write
+    - Make every acceptance criterion testable — each must map to at least one test case
+    - Specify error handling behavior using CosmosException (status codes, sub-status codes)
+    - Note backward compatibility impact and any breaking changes with migration guidance
+    - Include configuration precedence (per-request RequestOptions > client-wide CosmosClientOptions > environment variable > default)
+
+  design:
+    - Reference docs/SdkDesign.md for component architecture context
+    - Link to specific source files using relative paths (e.g., ../../Microsoft.Azure.Cosmos/src/Path/File.cs)
+    - Include Mermaid diagrams for request flow through SDK layers
+    - List all new and modified files with their responsibilities in a table
+    - Document alternatives considered with pros, cons, and rejection rationale
+    - Note thread safety and performance considerations
+
+  tasks:
+    - Separate tasks into implementation, contract updates, and documentation
+    - Include unit test tasks with specific test scenarios listed
+    - Include integration test tasks that specify emulator requirements
+    - Include baseline/golden-file test tasks for serialization stability (follow EndToEndTraceWriterBaselineTests pattern)
+    - Include a task to update ContractEnforcementTests baseline for any public API changes
+    - Include a task to update changelog.md
+    - Include a task to update .github/copilot-instructions.md if the feature affects AI assistant behavior
