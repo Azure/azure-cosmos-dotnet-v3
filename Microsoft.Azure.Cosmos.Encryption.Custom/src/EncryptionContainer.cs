@@ -1059,7 +1059,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Stream decryptedContent = await EncryptionProcessor.DeserializeAndDecryptResponseAsync(
                 responseMessage.Content,
                 this.Encryptor,
-                readManyRequestOptions.GetJsonProcessor(this.DefaultJsonProcessor),
+                readManyRequestOptions?.GetJsonProcessor(this.DefaultJsonProcessor) ?? this.DefaultJsonProcessor,
                 cancellationToken);
 
             return new DecryptedResponseMessage(responseMessage, decryptedContent);
