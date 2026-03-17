@@ -86,6 +86,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(clientOptions.EnableTcpConnectionEndpointRediscovery);
             Assert.IsNull(clientOptions.HttpClientFactory);
             Assert.AreNotEqual(consistencyLevel, clientOptions.ConsistencyLevel);
+            Assert.IsNull(clientOptions.ReadConsistencyStrategy);
             Assert.AreNotEqual(priorityLevel, clientOptions.PriorityLevel);
             Assert.IsFalse(clientOptions.EnablePartitionLevelCircuitBreaker);
             Assert.IsFalse(clientOptions.EnableAdvancedReplicaSelectionForTcp.HasValue);
@@ -148,6 +149,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(object.ReferenceEquals(webProxy, clientOptions.WebProxy));
             Assert.IsTrue(clientOptions.AllowBulkExecution);
             Assert.AreEqual(consistencyLevel, clientOptions.ConsistencyLevel);
+            Assert.IsNull(clientOptions.ReadConsistencyStrategy);
             Assert.AreEqual(priorityLevel, clientOptions.PriorityLevel);
             Assert.IsFalse(clientOptions.EnablePartitionLevelCircuitBreaker);
             Assert.IsTrue(clientOptions.EnableAdvancedReplicaSelectionForTcp.HasValue && clientOptions.EnableAdvancedReplicaSelectionForTcp.Value);
@@ -223,6 +225,57 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(policy.EnableTcpConnectionEndpointRediscovery);
             CollectionAssert.AreEqual(preferredLocations.ToArray(), policy.PreferredLocations.ToArray());
             CollectionAssert.AreEqual(regionalEndpoints.ToArray(), policy.AccountInitializationCustomEndpoints.ToArray());
+        }
+
+        [TestMethod]
+        public void VerifyReadConsistencyStrategyBuilderProperties()
+        {
+            string endpoint = AccountEndpoint;
+            string key = MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey;
+
+            // Verify default is null
+            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
+                accountEndpoint: endpoint,
+                authKeyOrResourceToken: key);
+
+            CosmosClient cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
+            CosmosClientOptions clientOptions = cosmosClient.ClientOptions;
+
+            Assert.IsNull(clientOptions.ReadConsistencyStrategy);
+            Assert.IsNull(clientOptions.ConsistencyLevel);
+
+            // Verify WithReadConsistencyStrategy sets the property and does not affect ConsistencyLevel
+            cosmosClientBuilder = new CosmosClientBuilder(
+                accountEndpoint: endpoint,
+                authKeyOrResourceToken: key);
+
+            cosmosClientBuilder
+                .WithReadConsistencyStrategy(Cosmos.ReadConsistencyStrategy.LatestCommitted);
+
+            cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
+            clientOptions = cosmosClient.ClientOptions;
+
+            Assert.AreEqual(Cosmos.ReadConsistencyStrategy.LatestCommitted, clientOptions.ReadConsistencyStrategy);
+            Assert.IsNull(clientOptions.ConsistencyLevel);
+            Assert.IsNull(clientOptions.GetDocumentsConsistencyLevel());
+
+            // Verify each enum value round-trips through the builder
+            foreach (Cosmos.ReadConsistencyStrategy strategy in Enum.GetValues(typeof(Cosmos.ReadConsistencyStrategy)))
+            {
+                cosmosClientBuilder = new CosmosClientBuilder(
+                    accountEndpoint: endpoint,
+                    authKeyOrResourceToken: key);
+
+                cosmosClientBuilder.WithReadConsistencyStrategy(strategy);
+
+                cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
+                clientOptions = cosmosClient.ClientOptions;
+
+                Assert.AreEqual(strategy, clientOptions.ReadConsistencyStrategy,
+                    $"ReadConsistencyStrategy {strategy} did not round-trip through builder");
+                Assert.IsNull(clientOptions.ConsistencyLevel,
+                    $"ConsistencyLevel should remain null when ReadConsistencyStrategy is set to {strategy}");
+            }
         }
 
         /// <summary>
@@ -545,7 +598,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     EnablePartitionLevelFailover = ppaf
                 };
 
-                CosmosClient cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient(policy));
+                CosmosClient cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient(policy, thinClient));
 
                 CosmosClientOptions cosmosClientOptions = cosmosClient.ClientOptions;
 

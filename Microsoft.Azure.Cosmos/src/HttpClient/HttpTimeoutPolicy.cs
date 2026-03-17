@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos
         public abstract string TimeoutPolicyName { get; }
         public abstract int TotalRetryCount { get; }
         public abstract IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> GetTimeoutEnumerator();
-        public abstract bool IsSafeToRetry(HttpMethod httpMethod);
 
         public abstract bool ShouldRetryBasedOnResponse(HttpMethod requestHttpMethod, HttpResponseMessage responseMessage);
 
@@ -49,16 +48,30 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (isThinClientEnabled)
                 {
-                    return documentServiceRequest.IsReadOnlyRequest
-                        ? HttpTimeoutPolicyForThinClient.InstanceShouldRetryAndThrow503OnTimeout
-                        : HttpTimeoutPolicyForThinClient.InstanceShouldNotRetryAndThrow503OnTimeout;
+                    if (documentServiceRequest.IsReadOnlyRequest)
+                    {
+                        return documentServiceRequest.OperationType == OperationType.Read
+                            ? HttpTimeoutPolicyForThinClient.InstanceShouldRetryAndThrow503OnTimeoutForPointReads
+                            : HttpTimeoutPolicyForThinClient.InstanceShouldRetryAndThrow503OnTimeoutForNonPointReads;
+                    }
+                    else
+                    {
+                        return HttpTimeoutPolicyForThinClient.InstanceShouldNotRetryAndThrow503OnTimeoutForWrites;
+                    }
                 }
                 // Data Plane Reads.
                 else if (documentServiceRequest.IsReadOnlyRequest)
                 {
-                    return isPartitionLevelFailoverEnabled
-                        ? HttpTimeoutPolicyForPartitionFailover.InstanceShouldThrow503OnTimeout
-                        : HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout;
+                    if (isPartitionLevelFailoverEnabled)
+                    {
+                        return documentServiceRequest.OperationType == OperationType.Read 
+                            ? HttpTimeoutPolicyForPartitionFailover.InstanceShouldThrow503OnTimeoutForPointReads
+                            : HttpTimeoutPolicyForPartitionFailover.InstanceShouldThrow503OnTimeoutForNonPointReads;
+                    }
+                    else
+                    {
+                         return HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout;
+                    }
                 }
             }
 

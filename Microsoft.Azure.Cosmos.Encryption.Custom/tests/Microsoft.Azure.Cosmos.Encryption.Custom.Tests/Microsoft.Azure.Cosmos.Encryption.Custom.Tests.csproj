@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <Compile Include="..\..\..\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\Contracts\ContractEnforcement.cs" Link="Contracts\ContractEnforcement.cs" />
+    <Compile Include="..\..\..\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\Contracts\ContractType.cs" Link="Contracts\ContractType.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -11,7 +11,28 @@
     [RPlotExporter]
     public partial class EncryptionBenchmark
     {
-        private static readonly byte[] DekData = Enumerable.Repeat((byte)0, 32).ToArray();
+        private static class RequestOptionsOverrideHelper
+        {
+            public static RequestOptions? Create(JsonProcessor processor)
+            {
+#if NET8_0_OR_GREATER
+                if (processor == JsonProcessor.Newtonsoft)
+                {
+                    return null;
+                }
+                return new ItemRequestOptions
+                {
+                    Properties = new System.Collections.Generic.Dictionary<string, object>
+                    {
+                        { "encryption-json-processor", processor.ToString() }
+                    }
+                };
+#else
+                return null;
+#endif
+            }
+        }
+    private static readonly byte[] DekData = Enumerable.Repeat((byte)0, 32).ToArray();
         private static readonly DataEncryptionKeyProperties DekProperties = new(
                 "id",
                 CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
@@ -37,7 +58,7 @@
 #else
         [Params(JsonProcessor.Newtonsoft)]
 #endif
-        public JsonProcessor JsonProcessor { get; set; }
+        internal JsonProcessor JsonProcessor { get; set; }
 
         [GlobalSetup]
         public async Task Setup()
@@ -59,6 +80,7 @@
                  new MemoryStream(this.plaintext),
                  this.encryptor,
                  this.encryptionOptions,
+                 this.JsonProcessor,
                  new CosmosDiagnosticsContext(),
                  CancellationToken.None);
 
@@ -75,6 +97,7 @@
                  new MemoryStream(this.plaintext!),
                  this.encryptor,
                  this.encryptionOptions,
+                 this.JsonProcessor,
                  new CosmosDiagnosticsContext(),
                  CancellationToken.None);
         }
@@ -89,6 +112,7 @@
                 rms,
                 this.encryptor,
                 this.encryptionOptions,
+                 this.JsonProcessor,
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
         }
@@ -101,7 +125,7 @@
                 new MemoryStream(this.encryptedData!),
                 this.encryptor,
                 new CosmosDiagnosticsContext(),
-                this.JsonProcessor,
+                RequestOptionsOverrideHelper.Create(this.JsonProcessor),
                 CancellationToken.None);
         }
 
@@ -115,7 +139,7 @@
                 rms,
                 this.encryptor,
                 new CosmosDiagnosticsContext(),
-                this.JsonProcessor,
+                RequestOptionsOverrideHelper.Create(this.JsonProcessor),
                 CancellationToken.None);
         }
 #endif
@@ -127,7 +151,6 @@
                 DataEncryptionKeyId = "dekId",
                 EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
                 PathsToEncrypt = TestDoc.PathsToEncrypt,
-                JsonProcessor = this.JsonProcessor,
             };
 
             return options;

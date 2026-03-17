@@ -24,7 +24,7 @@
           "Attributes": [
             "JsonConstructorAttribute"
           ],
-          "MethodInfo": "[Void .ctor(System.String, System.String, System.String, System.String, System.String, System.String, System.String, System.String, System.Nullable`1[System.Boolean], System.Collections.Generic.IReadOnlyList`1[System.String], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.SystemInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.CacheRefreshInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.OperationInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.RequestInfo], System.String)[Newtonsoft.Json.JsonConstructorAttribute()], Void .ctor(System.String, System.String, System.String, System.String, System.String, System.String, System.String, System.String, System.Nullable`1[System.Boolean], System.Collections.Generic.IReadOnlyList`1[System.String], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.SystemInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.CacheRefreshInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.OperationInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.RequestInfo], System.String)]"
+          "MethodInfo": "Void .ctor(System.String, System.String, System.String, System.String, System.String, System.String, System.String, System.String, System.Nullable`1[System.Boolean], System.Collections.Generic.IReadOnlyList`1[System.String], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.SystemInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.CacheRefreshInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.OperationInfo], System.Collections.Generic.List`1[Microsoft.Azure.Cosmos.Telemetry.Models.RequestInfo], System.String)"
         },
         "Void Write(Newtonsoft.Json.JsonWriter)": {
           "Type": "Method",
@@ -40,7 +40,7 @@
         "Void .ctor(System.String, System.String, Double, Int64, Int64, Int64, System.Collections.Generic.IReadOnlyDictionary`2[System.Double,System.Double])": {
           "Type": "Constructor",
           "Attributes": [],
-          "MethodInfo": "[Void .ctor(System.String, System.String, Double, Int64, Int64, Int64, System.Collections.Generic.IReadOnlyDictionary`2[System.Double,System.Double]), Void .ctor(System.String, System.String, Double, Int64, Int64, Int64, System.Collections.Generic.IReadOnlyDictionary`2[System.Double,System.Double])]"
+          "MethodInfo": "Void .ctor(System.String, System.String, Double, Int64, Int64, Int64, System.Collections.Generic.IReadOnlyDictionary`2[System.Double,System.Double])"
         }
       },
       "NestedTypes": {}
@@ -111,7 +111,7 @@
         "Void .ctor(System.String, System.Nullable`1[System.Boolean], System.String, System.String, System.String, System.String, System.String, System.Nullable`1[System.Int32], Int32, Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo)": {
           "Type": "Constructor",
           "Attributes": [],
-          "MethodInfo": "[Void .ctor(System.String, System.Nullable`1[System.Boolean], System.String, System.String, System.String, System.String, System.String, System.Nullable`1[System.Int32], Int32, Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo), Void .ctor(System.String, System.Nullable`1[System.Boolean], System.String, System.String, System.String, System.String, System.String, System.Nullable`1[System.Int32], Int32, Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo)]"
+          "MethodInfo": "Void .ctor(System.String, System.Nullable`1[System.Boolean], System.String, System.String, System.String, System.String, System.String, System.Nullable`1[System.Int32], Int32, Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo)"
         }
       },
       "NestedTypes": {}
@@ -264,7 +264,7 @@
         "Void .ctor()": {
           "Type": "Constructor",
           "Attributes": [],
-          "MethodInfo": "[Void .ctor(), Void .ctor()]"
+          "MethodInfo": "Void .ctor()"
         },
         "Void set_ContainerName(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -331,7 +331,7 @@
         "Void .ctor(Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo)": {
           "Type": "Constructor",
           "Attributes": [],
-          "MethodInfo": "[Void .ctor(Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo), Void .ctor(Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo)]"
+          "MethodInfo": "Void .ctor(Microsoft.Azure.Cosmos.Telemetry.Models.MetricInfo)"
         }
       },
       "NestedTypes": {}

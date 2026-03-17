@@ -37,20 +37,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             bool withRawKey,
             CancellationToken cancellationToken)
         {
-#if NET8_0_OR_GREATER
-            ArgumentNullException.ThrowIfNull(dekProperties);
-            ArgumentNullException.ThrowIfNull(encryptionKeyStoreProvider);
-#else
-            if (dekProperties == null)
-            {
-                throw new ArgumentNullException(nameof(dekProperties));
-            }
-
-            if (encryptionKeyStoreProvider == null)
-            {
-                throw new ArgumentNullException(nameof(encryptionKeyStoreProvider));
-            }
-#endif
+            ArgumentValidation.ThrowIfNull(dekProperties);
+            ArgumentValidation.ThrowIfNull(encryptionKeyStoreProvider);
 
             KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
                 dekProperties.EncryptionKeyWrapMetadata.Name,

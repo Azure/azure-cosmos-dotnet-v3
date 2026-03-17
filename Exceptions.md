@@ -33,3 +33,60 @@ Cosmos DB SDK on any IO failure will attempt to retry the failed operation if re
 ## Common error status codes and troubleshooting guide <a id="error-codes"></a>
 
 To see a list of common error code and issues please see [.NET SDK troubleshooting guide](https://docs.microsoft.com/azure/cosmos-db/troubleshoot-dot-net-sdk)
+
+### Disambiguating 404 (Not Found) errors using SubStatusCode <a id="substatus-codes"></a>
+
+When you receive a 404 (Not Found) status code from Cosmos DB, it can indicate two different scenarios:
+1. **Item not found**: The requested item doesn't exist in the container
+2. **Owner resource not found**: The parent resource (container or database) doesn't exist
+
+To distinguish between these cases, check the `SubStatusCode` property:
+
+- **SubStatusCode 0**: Regular item not found (the item doesn't exist in an existing container)
+- **SubStatusCode 1003**: Owner resource not found (the container or database doesn't exist)
+
+#### Example with Typed APIs (throws CosmosException):
+
+```csharp
+try
+{
+    ItemResponse<MyItem> response = await container.ReadItemAsync<MyItem>("itemId", new PartitionKey("partitionKey"));
+}
+catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+{
+    if (ex.SubStatusCode == 1003)
+    {
+        // The container or database doesn't exist
+        Console.WriteLine("Owner resource (container/database) not found");
+    }
+    else
+    {
+        // The item doesn't exist in an existing container
+        Console.WriteLine("Item not found");
+    }
+}
+```
+
+#### Example with Stream APIs (returns ResponseMessage):
+
+```csharp
+ResponseMessage response = await container.ReadItemStreamAsync("itemId", new PartitionKey("partitionKey"));
+
+if (response.StatusCode == HttpStatusCode.NotFound)
+{
+    int subStatusCode = (int)response.Headers.SubStatusCode;
+    
+    if (subStatusCode == 1003)
+    {
+        // The container or database doesn't exist
+        Console.WriteLine("Owner resource (container/database) not found");
+    }
+    else
+    {
+        // The item doesn't exist in an existing container
+        Console.WriteLine("Item not found");
+    }
+}
+```
+
+This distinction is particularly useful when implementing retry logic or error handling strategies, as you may want to handle these scenarios differently (e.g., creating the container if it doesn't exist vs. handling a missing item).
