@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
         private long hitCount;
         private long evaluationCount;
-        private bool enabled;
+        private volatile bool enabled;
 
         public FaultInjectionCustomServerErrorRule(
             string id,
