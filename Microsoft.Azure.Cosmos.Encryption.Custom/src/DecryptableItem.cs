@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
+    using System;
     using System.Threading.Tasks;
 
     /// <summary>
@@ -71,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// ]]>
     /// </code>
     /// </example>
-    public abstract class DecryptableItem
+    public abstract class DecryptableItem : IAsyncDisposable
     {
         /// <summary>
         /// Decrypts and deserializes the content.
@@ -79,5 +80,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <typeparam name="T">The type of item to be returned.</typeparam>
         /// <returns>The requested item and the decryption related context.</returns>
         public abstract Task<(T, DecryptionContext)> GetItemAsync<T>();
+
+        /// <summary>
+        /// Disposes any resources held by the decryptable item.
+        /// Default implementation does nothing. Override in derived classes that hold disposable resources.
+        /// </summary>
+        /// <returns>A ValueTask representing the asynchronous dispose operation.</returns>
+        public virtual ValueTask DisposeAsync()
+        {
+            return default;
+        }
     }
 }

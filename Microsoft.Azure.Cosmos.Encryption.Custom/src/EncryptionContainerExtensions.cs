@@ -28,6 +28,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 encryptor);
         }
 
+#if NET8_0_OR_GREATER
+        /// <summary>
+        /// Configures the specified <see cref="Container"/> to use streaming JSON processing by default.
+        /// </summary>
+        /// <param name="container">The <see cref="Container"/> instance to configure. Must be an <see cref="EncryptionContainer"/>.</param>
+        /// <returns>The configured <see cref="EncryptionContainer"/> instance.</returns>
+        /// <exception cref="NotSupportedException">Thrown if <paramref name="container"/> is not an <see cref="EncryptionContainer"/>.</exception>
+        public static Container UseStreamingJsonProcessingByDefault(this Container container)
+        {
+            if (container is not EncryptionContainer encryptionContainer)
+            {
+                throw new NotSupportedException($"{nameof(UseStreamingJsonProcessingByDefault)} is only supported with {nameof(EncryptionContainer)}.");
+            }
+
+            encryptionContainer.UseStreamingJsonProcessingByDefault();
+
+            return encryptionContainer;
+        }
+#endif
+
         /// <summary>
         /// This method gets the FeedIterator from LINQ IQueryable to execute query asynchronously.
         /// This will create the fresh new FeedIterator when called which will support decryption.
@@ -57,7 +77,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             return new EncryptionFeedIterator<T>(
                 (EncryptionFeedIterator)encryptionContainer.ToEncryptionStreamIterator(query),
-                encryptionContainer.ResponseFactory);
+                encryptionContainer.ResponseFactory,
+                encryptionContainer.Encryptor,
+                encryptionContainer.CosmosSerializer,
+                encryptionContainer.DefaultJsonProcessor);
         }
 
         /// <summary>
@@ -90,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return new EncryptionFeedIterator(
                 query.ToStreamIterator(),
                 encryptionContainer.Encryptor,
-                encryptionContainer.CosmosSerializer);
+                encryptionContainer.DefaultJsonProcessor);
         }
     }
 }
