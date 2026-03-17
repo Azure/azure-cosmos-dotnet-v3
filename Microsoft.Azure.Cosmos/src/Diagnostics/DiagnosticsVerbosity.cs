@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos
         /// Compacted diagnostic output optimized for log size constraints.
         /// Groups requests by region. Keeps first and last request in full detail.
         /// Deduplicates middle requests by (StatusCode, SubStatusCode) with
-        /// aggregate statistics (count, total RU, min/max/P50 latency).
+        /// aggregate statistics (count, total RU, min/max/P50/avg latency).
         /// </summary>
         Summary = 1,
     }

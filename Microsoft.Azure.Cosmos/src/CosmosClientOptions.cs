@@ -393,16 +393,18 @@ namespace Microsoft.Azure.Cosmos
         public PriorityLevel? PriorityLevel { get; set; }
 
         /// <summary>
-        /// Gets or sets the default verbosity for <see cref="CosmosDiagnostics"/> serialization.
+        /// Gets or sets the preferred verbosity for <see cref="CosmosDiagnostics"/> serialization.
         /// Default: <see cref="Microsoft.Azure.Cosmos.DiagnosticsVerbosity.Detailed"/>.
         /// </summary>
         /// <remarks>
         /// <para>
-        /// This setting controls the level of detail when calling
-        /// <see cref="CosmosDiagnostics.ToString(DiagnosticsVerbosity)"/>.
+        /// This property stores the preferred verbosity level. To obtain diagnostics at
+        /// the configured verbosity, pass it to
+        /// <see cref="CosmosDiagnostics.ToString(DiagnosticsVerbosity)"/>:
+        /// <c>response.Diagnostics.ToString(client.ClientOptions.DiagnosticsVerbosity)</c>.
         /// </para>
         /// <para>
-        /// When set to <see cref="Microsoft.Azure.Cosmos.DiagnosticsVerbosity.Summary"/>,
+        /// When <see cref="Microsoft.Azure.Cosmos.DiagnosticsVerbosity.Summary"/> is used,
         /// the diagnostics output is compacted by grouping requests by region and deduplicating
         /// retries with aggregate statistics (count, total RU, min/max/P50/avg latency).
         /// </para>

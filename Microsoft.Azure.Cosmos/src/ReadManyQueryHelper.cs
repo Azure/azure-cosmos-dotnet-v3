@@ -239,7 +239,7 @@ namespace Microsoft.Azure.Cosmos
                                         enumerable,
                                         count,
                                         headers,
-                                        new CosmosTraceDiagnostics(trace),
+                                        new CosmosTraceDiagnostics(trace, this.clientContext.ClientOptions.MaxDiagnosticsSummarySizeBytes),
                                         null);
         }
 

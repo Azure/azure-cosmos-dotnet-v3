@@ -524,5 +524,55 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
         }
 
         #endregion
+
+        #region Edge Case Tests
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public void WriteSummary_NullTrace_ThrowsArgumentNullException()
+        {
+            DiagnosticsSummaryWriter.WriteSummary(null, 8192);
+        }
+
+        [TestMethod]
+        public void ToString_InvalidEnumValue_FallsBackToDetailed()
+        {
+            using ITrace trace = Trace.GetRootTrace("ReadItemAsync");
+            AddStoreResponseStatistic(trace, "West US 2", StatusCodes.Ok, SubStatusCodes.Unknown, 5.0, 10, DateTime.UtcNow);
+
+            CosmosTraceDiagnostics diagnostics = new CosmosTraceDiagnostics(trace);
+
+            // Invalid enum value should fall back to detailed output (same as parameterless ToString)
+            string result = diagnostics.ToString((DiagnosticsVerbosity)99);
+            JObject parsed = JObject.Parse(result);
+
+            Assert.IsNotNull(parsed["name"], "Invalid verbosity should produce detailed output with trace name");
+            Assert.IsNull(parsed["Summary"]?["DiagnosticsVerbosity"],
+                "Should not contain Summary.DiagnosticsVerbosity since it is detailed output");
+        }
+
+        [TestMethod]
+        public void CosmosClientOptions_MaxSummarySizeBytes_CustomValuePropagated()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                MaxDiagnosticsSummarySizeBytes = 16384
+            };
+
+            Assert.AreEqual(16384, options.MaxDiagnosticsSummarySizeBytes);
+        }
+
+        [TestMethod]
+        public void CosmosClientOptions_DiagnosticsVerbosity_CanBeSetToSummary()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                DiagnosticsVerbosity = DiagnosticsVerbosity.Summary
+            };
+
+            Assert.AreEqual(DiagnosticsVerbosity.Summary, options.DiagnosticsVerbosity);
+        }
+
+        #endregion
     }
 }

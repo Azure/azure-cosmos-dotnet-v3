@@ -1295,5 +1295,62 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return 1;
             }
         }
+
+        [TestMethod]
+        public void CosmosClientOptions_DiagnosticsVerbosity_DefaultIsDetailed()
+        {
+            CosmosClientOptions options = new CosmosClientOptions();
+            Assert.AreEqual(DiagnosticsVerbosity.Detailed, options.DiagnosticsVerbosity);
+        }
+
+        [TestMethod]
+        public void CosmosClientOptions_DiagnosticsVerbosity_CanSetToSummary()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                DiagnosticsVerbosity = DiagnosticsVerbosity.Summary
+            };
+
+            Assert.AreEqual(DiagnosticsVerbosity.Summary, options.DiagnosticsVerbosity);
+        }
+
+        [TestMethod]
+        public void CosmosClientOptions_MaxDiagnosticsSummarySizeBytes_DefaultIs8192()
+        {
+            CosmosClientOptions options = new CosmosClientOptions();
+            Assert.AreEqual(8192, options.MaxDiagnosticsSummarySizeBytes);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentOutOfRangeException))]
+        public void CosmosClientOptions_MaxDiagnosticsSummarySizeBytes_ThrowsBelowMinimum()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                MaxDiagnosticsSummarySizeBytes = 2048
+            };
+        }
+
+        [TestMethod]
+        public void CosmosClientOptions_MaxDiagnosticsSummarySizeBytes_AcceptsMinimum()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                MaxDiagnosticsSummarySizeBytes = 4096
+            };
+
+            Assert.AreEqual(4096, options.MaxDiagnosticsSummarySizeBytes);
+        }
+
+        [TestMethod]
+        public void CosmosClientOptions_MaxDiagnosticsSummarySizeBytes_AcceptsLargeValue()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                MaxDiagnosticsSummarySizeBytes = 65536
+            };
+
+            Assert.AreEqual(65536, options.MaxDiagnosticsSummarySizeBytes);
+        }
     }
 }
