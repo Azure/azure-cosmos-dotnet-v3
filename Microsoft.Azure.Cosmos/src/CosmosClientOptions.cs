@@ -57,6 +57,11 @@ namespace Microsoft.Azure.Cosmos
         private const ApiType DefaultApiType = ApiType.None;
 
         /// <summary>
+        /// Default maximum size in bytes for Summary mode diagnostic output.
+        /// </summary>
+        internal const int DefaultMaxDiagnosticsSummarySizeBytes = 8192;
+
+        /// <summary>
         /// Default request timeout
         /// </summary>
         private int gatewayModeMaxConnectionLimit;
@@ -76,6 +81,7 @@ namespace Microsoft.Azure.Cosmos
         private string applicationName;
         private IFaultInjector faultInjector;
         private bool isCustomSerializerProvided;
+        private int maxDiagnosticsSummarySizeBytes = DefaultMaxDiagnosticsSummarySizeBytes;
 
         /// <summary>
         /// Creates a new CosmosClientOptions
@@ -385,6 +391,54 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         /// <seealso href="https://aka.ms/CosmosDB/PriorityBasedExecution"/>
         public PriorityLevel? PriorityLevel { get; set; }
+
+        /// <summary>
+        /// Gets or sets the default verbosity for <see cref="CosmosDiagnostics"/> serialization.
+        /// Default: <see cref="Microsoft.Azure.Cosmos.DiagnosticsVerbosity.Detailed"/>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// This setting controls the level of detail when calling
+        /// <see cref="CosmosDiagnostics.ToString(DiagnosticsVerbosity)"/>.
+        /// </para>
+        /// <para>
+        /// When set to <see cref="Microsoft.Azure.Cosmos.DiagnosticsVerbosity.Summary"/>,
+        /// the diagnostics output is compacted by grouping requests by region and deduplicating
+        /// retries with aggregate statistics (count, total RU, min/max/P50/avg latency).
+        /// </para>
+        /// <para>
+        /// The parameterless <see cref="CosmosDiagnostics.ToString()"/> always returns
+        /// <see cref="Microsoft.Azure.Cosmos.DiagnosticsVerbosity.Detailed"/> output for
+        /// backward compatibility.
+        /// </para>
+        /// </remarks>
+        public DiagnosticsVerbosity DiagnosticsVerbosity { get; set; } = DiagnosticsVerbosity.Detailed;
+
+        /// <summary>
+        /// Gets or sets the maximum size in bytes for Summary mode diagnostic output.
+        /// If the summary output exceeds this limit, a truncated indicator is returned.
+        /// Default: 8192 (8 KB). Minimum: 4096 (4 KB).
+        /// </summary>
+        /// <remarks>
+        /// This property is only relevant when <see cref="DiagnosticsVerbosity"/> is set to
+        /// <see cref="Microsoft.Azure.Cosmos.DiagnosticsVerbosity.Summary"/>.
+        /// </remarks>
+        public int MaxDiagnosticsSummarySizeBytes
+        {
+            get => this.maxDiagnosticsSummarySizeBytes;
+            set
+            {
+                if (value < 4096)
+                {
+                    throw new ArgumentOutOfRangeException(
+                        nameof(this.MaxDiagnosticsSummarySizeBytes),
+                        value,
+                        $"{nameof(this.MaxDiagnosticsSummarySizeBytes)} must be at least 4096 bytes.");
+                }
+
+                this.maxDiagnosticsSummarySizeBytes = value;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the maximum number of retries in the case where the request fails

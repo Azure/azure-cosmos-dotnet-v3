@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <returns>The string field <see cref="CosmosDiagnostics"/> instance in the Azure Cosmos DB database service.</returns>
         /// <remarks>
-        /// <see cref="CosmosDiagnostics"/> implements lazy materialization and is only materialized when <see cref="CosmosDiagnostics.ToString"/> is called.
+        /// <see cref="CosmosDiagnostics"/> implements lazy materialization and is only materialized when <see cref="CosmosDiagnostics.ToString()"/> is called.
         /// </remarks>
         /// <example>
         /// Do not eagerly materialize the diagnostics until the moment of consumption to avoid unnecessary allocations, let the ToString be called only when needed.
@@ -88,6 +88,16 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public abstract override string ToString();
+
+        /// <summary>
+        /// Returns the string representation of diagnostics using the specified verbosity.
+        /// When <paramref name="verbosity"/> is <see cref="DiagnosticsVerbosity.Summary"/>,
+        /// produces a compacted region-grouped summary. When <see cref="DiagnosticsVerbosity.Detailed"/>,
+        /// produces the full trace output (same as parameterless <see cref="ToString()"/>).
+        /// </summary>
+        /// <param name="verbosity">The verbosity level to use for serialization.</param>
+        /// <returns>A JSON string with diagnostics at the requested verbosity level.</returns>
+        public abstract string ToString(DiagnosticsVerbosity verbosity);
 
         /// <summary>
         /// Gets the list of all regions that were contacted for a request

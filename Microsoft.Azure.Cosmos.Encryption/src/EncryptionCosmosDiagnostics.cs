@@ -88,6 +88,43 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
 #if SDKPROJECTREF
+        public override string ToString(DiagnosticsVerbosity verbosity)
+        {
+            if (verbosity == DiagnosticsVerbosity.Summary)
+            {
+                StringBuilder stringBuilder = new StringBuilder();
+                StringWriter stringWriter = new StringWriter(stringBuilder);
+
+                using (JsonWriter writer = new JsonTextWriter(stringWriter))
+                {
+                    writer.WriteStartObject();
+                    writer.WritePropertyName(Constants.DiagnosticsCoreDiagnostics);
+                    writer.WriteRawValue(this.coreDiagnostics.ToString(verbosity));
+                    writer.WritePropertyName(Constants.DiagnosticsEncryptionDiagnostics);
+                    writer.WriteStartObject();
+
+                    if (this.encryptContent != null)
+                    {
+                        writer.WritePropertyName(Constants.DiagnosticsEncryptOperation);
+                        writer.WriteRawValue(this.encryptContent.ToString());
+                    }
+
+                    if (this.decryptContent != null)
+                    {
+                        writer.WritePropertyName(Constants.DiagnosticsDecryptOperation);
+                        writer.WriteRawValue(this.decryptContent.ToString());
+                    }
+
+                    writer.WriteEndObject();
+                    writer.WriteEndObject();
+                }
+
+                return stringWriter.ToString();
+            }
+
+            return this.ToString();
+        }
+
         public override DateTime? GetStartTimeUtc()
         {
             return this.coreDiagnostics.GetStartTimeUtc();
