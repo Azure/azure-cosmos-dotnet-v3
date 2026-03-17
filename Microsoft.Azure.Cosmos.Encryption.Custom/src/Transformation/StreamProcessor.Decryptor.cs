@@ -25,8 +25,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
         private static readonly JsonReaderOptions JsonReaderOptions = new () { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip };
 
-        internal static int InitialBufferSize { get; set; } = 16384;
-
         internal MdeEncryptor Encryptor { get; set; } = new MdeEncryptor();
 
         internal async Task<DecryptionContext> DecryptStreamAsync(
@@ -52,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             using Utf8JsonWriter writer = new (outputStream);
 
-            byte[] buffer = arrayPoolManager.Rent(InitialBufferSize);
+            byte[] buffer = arrayPoolManager.Rent(PooledStreamConfiguration.Current.StreamProcessorBufferSize);
 
             JsonReaderState state = new (StreamProcessor.JsonReaderOptions);
 
@@ -69,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             {
                 int dataLength = await inputStream.ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), cancellationToken);
                 int dataSize = dataLength + leftOver;
-                isFinalBlock = dataSize == 0;
+                isFinalBlock = dataLength == 0;
                 long bytesConsumed = 0;
 
                 // processing itself here
