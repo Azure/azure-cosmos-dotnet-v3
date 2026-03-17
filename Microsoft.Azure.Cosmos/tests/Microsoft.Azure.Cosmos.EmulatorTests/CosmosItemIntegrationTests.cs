@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
+namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
@@ -498,7 +498,6 @@
                         .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
-                        .WithDelay(TimeSpan.FromMilliseconds(10))
                         .Build())
                 .Build();
 
@@ -627,7 +626,6 @@
                         .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
-                        .WithDelay(TimeSpan.FromMilliseconds(10))
                         .Build())
                 .Build();
 
@@ -750,7 +748,6 @@
                         .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
-                        .WithDelay(TimeSpan.FromMilliseconds(10))
                         .Build())
                 .Build();
 
@@ -764,7 +761,6 @@
                         .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
-                        .WithDelay(TimeSpan.FromMilliseconds(10))
                         .Build())
                 .Build();
 
@@ -914,7 +910,6 @@
                         .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
-                        .WithDelay(TimeSpan.FromMilliseconds(10))
                         .Build())
                 .Build();
 
@@ -1030,7 +1025,6 @@
                         .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
-                        .WithDelay(TimeSpan.FromMilliseconds(10))
                         .Build())
                 .Build();
 
@@ -1122,7 +1116,6 @@
                         .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
-                        .WithDelay(TimeSpan.FromMilliseconds(10))
                         .Build())
                 .Build();
 
@@ -1209,7 +1202,6 @@
                         .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
-                        .WithDelay(TimeSpan.FromMilliseconds(10))
                         .Build())
                 .Build();
 
@@ -1333,7 +1325,6 @@
                        .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
-                        .WithDelay(TimeSpan.FromMilliseconds(2))
                         .Build())
                 .Build();
 
@@ -1347,7 +1338,6 @@
                        .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
-                        .WithDelay(TimeSpan.FromMilliseconds(2))
                         .Build())
                 .Build();
 
@@ -1596,7 +1586,6 @@
                         .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
-                        .WithDelay(TimeSpan.FromMilliseconds(10))
                         .Build())
                 .Build();
 
@@ -1961,7 +1950,6 @@
                         .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
-                        .WithDelay(TimeSpan.FromMilliseconds(10))
                         .Build())
                 .Build();
 
@@ -2089,7 +2077,6 @@
                         .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
-                        .WithDelay(TimeSpan.FromMilliseconds(10))
                         .Build())
                 .Build();
 
