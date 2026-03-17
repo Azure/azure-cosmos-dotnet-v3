@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
     /// This class is used to get access to different client level operations without directly referencing the client object.
     /// This makes it easy to pass a reference to the client, and it makes it easy to mock for unit tests.
     /// </summary>
-    internal abstract class CosmosClientContext : IDisposable
+    internal abstract class CosmosClientContext : IDisposable, IAsyncDisposable
     {
         /// <summary>
         /// The Cosmos client that is used for the request
@@ -161,5 +161,7 @@ namespace Microsoft.Azure.Cosmos
         internal abstract InferenceService GetOrCreateInferenceService();
 
         public abstract void Dispose();
+
+        public abstract ValueTask DisposeAsync();
     }
 }

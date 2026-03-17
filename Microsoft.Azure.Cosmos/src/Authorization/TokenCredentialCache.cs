@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos
     /// This way refreshing the token does not cause additional latency and also
     /// allows for transient issue to resolve before the token expires.
     /// </summary>
-    internal sealed class TokenCredentialCache : IDisposable
+    internal sealed class TokenCredentialCache : IDisposable, IAsyncDisposable
     {
         // Default token expiration time is 1hr.
         // Making the default 50% of the token life span. This gives 50% of the tokens life for transient error
@@ -49,6 +49,7 @@ namespace Microsoft.Azure.Cosmos
         private TimeSpan? systemBackgroundTokenCredentialRefreshInterval;
         private Task<AccessToken>? currentRefreshOperation = null;
         private AccessToken? cachedAccessToken = null;
+        private Task? backgroundRefreshTask = null;
         private bool isBackgroundTaskRunning = false;
         private bool isDisposed = false;
 
@@ -107,7 +108,7 @@ namespace Microsoft.Azure.Cosmos
             if (!this.isBackgroundTaskRunning)
             {
                 // This is a background thread so no need to await
-                Task backgroundThread = Task.Run(this.StartBackgroundTokenRefreshLoop);
+                this.backgroundRefreshTask = Task.Run(this.StartBackgroundTokenRefreshLoop);
             }
 
             return accessToken.Token;
@@ -121,6 +122,60 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.cancellationTokenSource.Cancel();
+            this.cancellationTokenSource.Dispose();
+            this.isDisposed = true;
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            if (this.isDisposed)
+            {
+                return;
+            }
+
+            this.cancellationTokenSource.Cancel();
+
+            try
+            {
+                if (this.backgroundRefreshTask != null)
+                {
+                    await this.backgroundRefreshTask;
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected when cancellation is requested
+            }
+            catch (ObjectDisposedException)
+            {
+                // Expected if resources are already disposed
+            }
+            catch (Exception)
+            {
+                // Swallow exceptions during disposal of background task
+            }
+
+            try
+            {
+                Task<AccessToken>? refreshOperation = this.currentRefreshOperation;
+                if (refreshOperation != null)
+                {
+                    await refreshOperation;
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected when cancellation is requested
+            }
+            catch (ObjectDisposedException)
+            {
+                // Expected if resources are already disposed
+            }
+            catch (Exception)
+            {
+                // Swallow exceptions during disposal of in-flight token refresh
+            }
+
             this.cancellationTokenSource.Dispose();
             this.isDisposed = true;
         }
@@ -283,9 +338,9 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-#pragma warning disable VSTHRD100 // Avoid async void methods
-        private async void StartBackgroundTokenRefreshLoop()
-#pragma warning restore VSTHRD100 // Avoid async void methods
+#pragma warning disable VSTHRD100, VSTHRD200 // Avoid async void methods; Use "Async" suffix
+        private async Task StartBackgroundTokenRefreshLoop()
+#pragma warning restore VSTHRD100, VSTHRD200
         {
             if (this.isBackgroundTaskRunning)
             {

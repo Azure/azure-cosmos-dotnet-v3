@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos
     /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/distribute-data-globally">Global data distribution</seealso>
     /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/partitioning-overview">Partitioning and horizontal scaling</seealso>
     /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
-    public class CosmosClient : IDisposable
+    public class CosmosClient : IDisposable, IAsyncDisposable
     {
         internal readonly string Id = Guid.NewGuid().ToString();
         private readonly object disposedLock = new object();
@@ -1490,6 +1490,39 @@ namespace Microsoft.Azure.Cosmos
                 this.ClientContext.Dispose();
                 this.DecrementNumberOfActiveClients();
             }   
+        }
+
+        /// <summary>
+        /// Asynchronously dispose of cosmos client. This allows proper async cleanup of resources
+        /// such as in-flight token credential operations.
+        /// </summary>
+        /// <returns>A <see cref="ValueTask"/> representing the asynchronous dispose operation.</returns>
+        public async ValueTask DisposeAsync()
+        {
+            await this.DisposeAsyncCore();
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Core async dispose logic. Override this method to customize async disposal in derived classes.
+        /// </summary>
+        /// <returns>A <see cref="ValueTask"/> representing the asynchronous dispose operation.</returns>
+#pragma warning disable VSTHRD200 // Use "Async" suffix in names of methods that return an awaitable type
+        protected virtual async ValueTask DisposeAsyncCore()
+#pragma warning restore VSTHRD200
+        {
+            lock (this.disposedLock)
+            {
+                if (this.isDisposed == true)
+                {
+                    return;
+                }
+                this.isDisposed = true;
+            }
+
+            this.DisposedDateTimeUtc = DateTime.UtcNow;
+            await this.ClientContext.DisposeAsync();
+            this.DecrementNumberOfActiveClients();
         }
     }
 }

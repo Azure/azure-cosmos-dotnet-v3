@@ -521,6 +521,17 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        public override async ValueTask DisposeAsync()
+        {
+            if (!this.isDisposed)
+            {
+                this.batchExecutorCache.Dispose();
+                await this.DocumentClient.DisposeAsync();
+                this.inferenceService?.Dispose();
+                this.isDisposed = true;
+            }
+        }
+
         private async Task<TResult> RunWithDiagnosticsHelperAsync<TResult>(
             string containerName,
             string databaseName,

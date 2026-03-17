@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
-    internal abstract class AuthorizationTokenProvider : ICosmosAuthorizationTokenProvider, IAuthorizationTokenProvider, IDisposable
+    internal abstract class AuthorizationTokenProvider : ICosmosAuthorizationTokenProvider, IAuthorizationTokenProvider, IDisposable, IAsyncDisposable
     {
         private readonly DateTime creationTime = DateTime.UtcNow;
 
@@ -86,5 +86,11 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public abstract void Dispose();
+
+        public virtual ValueTask DisposeAsync()
+        {
+            this.Dispose();
+            return default;
+        }
     }
 }

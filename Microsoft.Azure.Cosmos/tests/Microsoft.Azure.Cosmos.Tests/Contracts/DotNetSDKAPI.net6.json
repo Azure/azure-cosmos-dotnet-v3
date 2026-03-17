@@ -2777,6 +2777,13 @@
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] CreateDatabaseStreamAsync(Microsoft.Azure.Cosmos.DatabaseProperties, System.Nullable`1[System.Int32], Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "System.Threading.Tasks.ValueTask DisposeAsync()[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.CosmosClient+<DisposeAsync>))]": {
+          "Type": "Method",
+          "Attributes": [
+            "AsyncStateMachineAttribute"
+          ],
+          "MethodInfo": "System.Threading.Tasks.ValueTask DisposeAsync();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:True;"
+        },
         "System.Uri Endpoint": {
           "Type": "Property",
           "Attributes": [],

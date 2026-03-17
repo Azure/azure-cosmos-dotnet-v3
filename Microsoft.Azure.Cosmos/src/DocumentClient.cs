@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos
     /// </para>
     ///
     /// </remarks>
-    internal partial class DocumentClient : IDisposable, IAuthorizationTokenProvider, ICosmosAuthorizationTokenProvider, IDocumentClient, IDocumentClientInternal
+    internal partial class DocumentClient : IDisposable, IAsyncDisposable, IAuthorizationTokenProvider, ICosmosAuthorizationTokenProvider, IDocumentClient, IDocumentClientInternal
     {
         private const string AllowOverrideStrongerConsistency = "AllowOverrideStrongerConsistency";
         private const string MaxConcurrentConnectionOpenConfig = "MaxConcurrentConnectionOpenRequests";
@@ -1427,6 +1427,94 @@ namespace Microsoft.Azure.Cosmos
             DefaultTrace.Flush();
 
             // Mark disposal complete
+            this.isDisposed = true;
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            if (this.isDisposed)
+            {
+                return;
+            }
+
+            this.isDisposing = true;
+
+            if (this.telemetryToServiceHelper != null)
+            {
+                this.telemetryToServiceHelper.Dispose();
+                this.telemetryToServiceHelper = null;
+            }
+
+            if (!this.cancellationTokenSource.IsCancellationRequested)
+            {
+                this.cancellationTokenSource.Cancel();
+            }
+
+            this.cancellationTokenSource.Dispose();
+
+            if (this.StoreModel != null)
+            {
+                this.StoreModel.Dispose();
+                this.StoreModel = null;
+            }
+
+            if (this.storeClientFactory != null)
+            {
+                if (this.isStoreClientFactoryCreatedInternally)
+                {
+                    this.storeClientFactory.Dispose();
+                }
+
+                this.storeClientFactory = null;
+            }
+
+            if (this.AddressResolver != null)
+            {
+                this.AddressResolver.Dispose();
+                this.AddressResolver = null;
+            }
+
+            if (this.httpClient != null)
+            {
+                try
+                {
+                    this.httpClient.Dispose();
+                }
+                catch (Exception exception)
+                {
+                    DefaultTrace.TraceWarning("Exception {0} thrown during dispose of HttpClient, this could happen if there are inflight request during the dispose of client",
+                        exception.Message);
+                }
+
+                this.httpClient = null;
+            }
+
+            if (this.cosmosAuthorization != null)
+            {
+                await this.cosmosAuthorization.DisposeAsync();
+            }
+
+            if (this.GlobalEndpointManager != null)
+            {
+                this.GlobalEndpointManager.OnEnablePartitionLevelFailoverConfigChanged -= this.UpdatePartitionLevelFailoverConfigWithAccountRefresh;
+                this.GlobalEndpointManager.Dispose();
+                this.GlobalEndpointManager = null;
+            }
+
+            if (this.queryPartitionProvider != null && this.queryPartitionProvider.IsValueCreated)
+            {
+                this.queryPartitionProvider.Value.Dispose();
+            }
+
+            if (this.initTaskCache != null)
+            {
+                this.initTaskCache.Dispose();
+                this.initTaskCache = null;
+            }
+
+            DefaultTrace.TraceInformation("DocumentClient with id {0} disposed.", this.traceId);
+            DefaultTrace.Flush();
+
             this.isDisposed = true;
         }
 

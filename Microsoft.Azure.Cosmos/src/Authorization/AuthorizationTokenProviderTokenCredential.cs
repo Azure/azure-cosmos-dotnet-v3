@@ -116,5 +116,14 @@ namespace Microsoft.Azure.Cosmos
                 this.tokenCredentialCache.Dispose();
             }
         }
+
+        public override async ValueTask DisposeAsync()
+        {
+            if (!this.isDisposed)
+            {
+                this.isDisposed = true;
+                await this.tokenCredentialCache.DisposeAsync();
+            }
+        }
     }
 }

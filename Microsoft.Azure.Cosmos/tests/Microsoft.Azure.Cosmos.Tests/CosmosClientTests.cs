@@ -87,8 +87,63 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
+        [TestMethod]
+        public async Task TestDisposeAsync()
+        {
+            CosmosClient cosmosClient = new CosmosClient(ConnectionString);
+            Database database = cosmosClient.GetDatabase("asdf");
+            Container container = cosmosClient.GetContainer("asdf", "asdf");
+            TransactionalBatch batch = container.CreateTransactionalBatch(new PartitionKey("asdf"));
+            batch.ReadItem("Test");
+
+            FeedIterator<dynamic> feedIterator1 = container.GetItemQueryIterator<dynamic>();
+            FeedIterator<dynamic> feedIterator2 = container.GetItemQueryIterator<dynamic>(queryText: "select * from T");
+            FeedIterator<dynamic> feedIterator3 = database.GetContainerQueryIterator<dynamic>(queryText: "select * from T");
+
+            string userAgent = cosmosClient.ClientContext.UserAgent;
+            // DisposeAsync should be idempotent
+            await cosmosClient.DisposeAsync();
+            await cosmosClient.DisposeAsync();
+
+            List<Func<Task>> validateAsync = new List<Func<Task>>()
+            {
+                () => cosmosClient.ReadAccountAsync(),
+                () => cosmosClient.CreateDatabaseAsync("asdf"),
+                () => database.CreateContainerAsync("asdf", "/pkpathasdf", 200),
+                () => container.ReadItemAsync<dynamic>("asdf", new PartitionKey("test")),
+                () => container.Scripts.ReadStoredProcedureAsync("asdf"),
+                () => container.Scripts.ReadTriggerAsync("asdf"),
+                () => container.Scripts.ReadUserDefinedFunctionAsync("asdf"),
+                () => batch.ExecuteAsync(),
+                () => feedIterator1.ReadNextAsync(),
+                () => feedIterator2.ReadNextAsync(),
+                () => feedIterator3.ReadNextAsync(),
+            };
+
+            foreach (Func<Task> asyncFunc in validateAsync)
+            {
+                try
+                {
+                    await asyncFunc();
+                    Assert.Fail("Should throw ObjectDisposedException");
+                }
+                catch (CosmosObjectDisposedException e)
+                {
+                    string expectedMessage = $"Cannot access a disposed 'CosmosClient'. Follow best practices and use the CosmosClient as a singleton." +
+                        $" CosmosClient was disposed at: {cosmosClient.DisposedDateTimeUtc.Value.ToString("o", CultureInfo.InvariantCulture)}; CosmosClient Endpoint: https://example.documents.azure.com/; Created at: {cosmosClient.ClientConfigurationTraceDatum.ClientCreatedDateTimeUtc.ToString("o", CultureInfo.InvariantCulture)}; UserAgent: {userAgent};";
+                    Assert.IsTrue(e.Message.Contains(expectedMessage));
+                    string diagnostics = e.Diagnostics.ToString();
+                    Assert.IsNotNull(diagnostics);
+                    Assert.IsFalse(diagnostics.Contains("NoOp"));
+                    Assert.IsTrue(diagnostics.Contains("Client Configuration"));
+                    string exceptionString = e.ToString();
+                    Assert.IsTrue(exceptionString.Contains(diagnostics));
+                    Assert.IsTrue(exceptionString.Contains(e.Message));
+                }
+            }
+        }
+
         [DataTestMethod]
-        [DataRow(null, "425Mcv8CXQqzRNCgFNjIhT424GK99CKJvASowTnq15Vt8LeahXTcN5wt3342vQ==")]
         [DataRow(AccountEndpoint, null)]
         [DataRow("", "425Mcv8CXQqzRNCgFNjIhT424GK99CKJvASowTnq15Vt8LeahXTcN5wt3342vQ==")]
         [DataRow(AccountEndpoint, "")]
