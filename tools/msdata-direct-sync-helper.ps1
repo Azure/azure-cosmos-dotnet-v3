@@ -280,6 +280,117 @@ function Invoke-BranchPhase {
 # Phase: Sync — Run msdata_sync.ps1
 # ============================================================================
 
+# Known msdata source directories (must match $sourceDir in msdata_sync.ps1)
+$script:MsdataSourceDirs = @(
+    "\Product\SDK\.net\Microsoft.Azure.Cosmos.Direct\src\",
+    "\Product\Microsoft.Azure.Documents\Common\SharedFiles\",
+    "\Product\Microsoft.Azure.Documents\SharedFiles\Routing\",
+    "\Product\Microsoft.Azure.Documents\SharedFiles\Rntbd2\",
+    "\Product\Microsoft.Azure.Documents\SharedFiles\Rntbd\",
+    "\Product\Microsoft.Azure.Documents\SharedFiles\Rntbd\rntbdtokens\",
+    "\Product\SDK\.net\Microsoft.Azure.Documents.Client\LegacyXPlatform\",
+    "\Product\Cosmos\Core\Core.Trace\",
+    "\Product\Cosmos\Core\Core\Utilities\",
+    "\Product\Microsoft.Azure.Documents\SharedFiles\",
+    "\Product\Microsoft.Azure.Documents\SharedFiles\Collections\",
+    "\Product\Microsoft.Azure.Documents\SharedFiles\Query\",
+    "\Product\Microsoft.Azure.Documents\SharedFiles\Management\"
+)
+
+# Files excluded from sync (must match $exclueList in msdata_sync.ps1)
+$script:SyncExcludeList = @(
+    "AssemblyKeys.cs",
+    "BaseTransportClient.cs",
+    "CpuReaderBase.cs",
+    "LinuxCpuReader.cs",
+    "MemoryLoad.cs",
+    "MemoryLoadHistory.cs",
+    "UnsupportedCpuReader.cs",
+    "WindowsCpuReader.cs",
+    "msdata_sync.ps1"
+)
+
+# Files handled separately by msdata_sync.ps1 (special-case copies)
+$script:SpecialCaseFiles = @(
+    "TransportClient.cs",
+    "RMResources.Designer.cs",
+    "RMResources.resx"
+)
+
+function Invoke-PostSyncVerification {
+    param(
+        [Parameter(Mandatory)]
+        [string]$MsdataPath,
+        [Parameter(Mandatory)]
+        [string]$DirectDir
+    )
+
+    Write-Step 4 "Verifying sync completeness — scanning msdata source directories for missing files..."
+
+    $missingFiles = @()
+    $copiedFiles = @()
+    $rntbd2Dir = Join-Path $DirectDir "rntbd2"
+
+    foreach ($sourceDir in $script:MsdataSourceDirs) {
+        $fullSourceDir = Join-Path $MsdataPath $sourceDir
+        if (-not (Test-Path $fullSourceDir)) {
+            Write-Info "Source directory not found (skipping): $sourceDir"
+            continue
+        }
+
+        $isRntbd2 = $sourceDir -match "\\Rntbd2\\"
+        $targetDir = if ($isRntbd2) { $rntbd2Dir } else { $DirectDir }
+
+        $sourceFiles = Get-ChildItem $fullSourceDir -Filter "*.cs" -File -ErrorAction SilentlyContinue
+        foreach ($file in $sourceFiles) {
+            $fileName = $file.Name
+
+            # Skip excluded and special-case files
+            if ($script:SyncExcludeList -contains $fileName) { continue }
+            if ($script:SpecialCaseFiles -contains $fileName) { continue }
+
+            $targetPath = Join-Path $targetDir $fileName
+            if (-not (Test-Path $targetPath)) {
+                $missingFiles += @{ Name = $fileName; Source = $file.FullName; Target = $targetDir; SourceDir = $sourceDir }
+            }
+        }
+    }
+
+    if ($missingFiles.Count -eq 0) {
+        Write-Success "Post-sync verification passed — no missing files detected"
+        return $true
+    }
+
+    Write-Info "Found $($missingFiles.Count) file(s) in msdata that are missing from v3 direct/:"
+    foreach ($missing in $missingFiles) {
+        Write-Host "    MISSING: $($missing.Name) (from $($missing.SourceDir))" -ForegroundColor Yellow
+    }
+
+    Write-Info "Auto-copying missing files..."
+    foreach ($missing in $missingFiles) {
+        try {
+            if (-not (Test-Path $missing.Target)) {
+                New-Item -ItemType Directory -Path $missing.Target -Force | Out-Null
+            }
+            Copy-Item $missing.Source -Destination $missing.Target -Force
+            $copiedFiles += $missing.Name
+            Write-Success "Copied: $($missing.Name) -> $($missing.Target)"
+        } catch {
+            Write-Failure "Failed to copy $($missing.Name): $_"
+        }
+    }
+
+    if ($copiedFiles.Count -gt 0) {
+        Write-Host ""
+        Write-Success "Auto-copied $($copiedFiles.Count) missing file(s):"
+        foreach ($f in $copiedFiles) {
+            Write-Host "    + $f" -ForegroundColor Green
+        }
+    }
+
+    return $true
+}
+
 function Invoke-SyncPhase {
     Write-Phase "Sync" "Syncing Microsoft.Azure.Cosmos.Direct files from msdata repo"
     
@@ -339,8 +450,17 @@ function Invoke-SyncPhase {
         Pop-Location
     }
     
-    # Step 4: Revert script path change (don't commit the local path)
-    Write-Step 4 "Reverting msdata_sync.ps1 path change..."
+    # Step 4: Verify sync completeness and auto-copy missing files
+    $verifyResult = Invoke-PostSyncVerification -MsdataPath $normalizedPath -DirectDir $directDir
+    if (-not $verifyResult) {
+        Write-Failure "Post-sync verification failed"
+        # Still revert the script before returning
+        Set-Content $syncScript -Value $originalContent
+        return $false
+    }
+    
+    # Step 5: Revert script path change (don't commit the local path)
+    Write-Step 5 "Reverting msdata_sync.ps1 path change..."
     Set-Content $syncScript -Value $originalContent
     Write-Success "Reverted msdata_sync.ps1 to original state"
     

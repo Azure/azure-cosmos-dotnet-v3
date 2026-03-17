@@ -19,9 +19,10 @@ Sync the msdata/direct branch with the latest v3 master and msdata direct codeba
 3. Create feature branch from `msdata/direct`
 4. Merge latest `master` into feature branch
 5. Run `msdata_sync.ps1` to sync direct package files
-6. Build and validate
-7. Create PR to `msdata/direct` with proper formatting
-8. Monitor CI pipeline
+6. **Verify sync completeness** — scan msdata source dirs for files missed by the script and auto-copy them
+7. Build and validate
+8. Create PR to `msdata/direct` with proper formatting
+9. Monitor CI pipeline
 
 ---
 
@@ -210,14 +211,51 @@ phase_3_steps:
     expect: "Console output showing files being copied"
     success_indicator: "Script completes without Write-Error lines"
     
-  step_4_handle_missing_files:
-    description: "Handle files that fail to copy"
-    error_pattern: 'Write-Error: <filename> False'
-    resolution:
-      - "Manually locate the file in the msdata CosmosDB repo"
-      - "Copy it to the correct location in Microsoft.Azure.Cosmos/src/direct/"
-      - "Re-run msdata_sync.ps1 to verify"
-    ask_user: "If file cannot be found, ask user for guidance"
+  step_4_verify_and_copy_missing_files:
+    description: >
+      IMPORTANT: msdata_sync.ps1 only copies files that already exist locally.
+      New files added in the msdata repo will be silently missed. This step
+      performs a reverse scan of all msdata source directories and auto-copies
+      any .cs files that are not yet present in the v3 direct/ folder.
+    msdata_source_directories:
+      - "\\Product\\SDK\\.net\\Microsoft.Azure.Cosmos.Direct\\src\\"
+      - "\\Product\\Microsoft.Azure.Documents\\Common\\SharedFiles\\"
+      - "\\Product\\Microsoft.Azure.Documents\\SharedFiles\\Routing\\"
+      - "\\Product\\Microsoft.Azure.Documents\\SharedFiles\\Rntbd2\\"
+      - "\\Product\\Microsoft.Azure.Documents\\SharedFiles\\Rntbd\\"
+      - "\\Product\\Microsoft.Azure.Documents\\SharedFiles\\Rntbd\\rntbdtokens\\"
+      - "\\Product\\SDK\\.net\\Microsoft.Azure.Documents.Client\\LegacyXPlatform\\"
+      - "\\Product\\Cosmos\\Core\\Core.Trace\\"
+      - "\\Product\\Cosmos\\Core\\Core\\Utilities\\"
+      - "\\Product\\Microsoft.Azure.Documents\\SharedFiles\\"
+      - "\\Product\\Microsoft.Azure.Documents\\SharedFiles\\Collections\\"
+      - "\\Product\\Microsoft.Azure.Documents\\SharedFiles\\Query\\"
+      - "\\Product\\Microsoft.Azure.Documents\\SharedFiles\\Management\\"
+    exclude_files:
+      - "AssemblyKeys.cs"
+      - "BaseTransportClient.cs"
+      - "CpuReaderBase.cs"
+      - "LinuxCpuReader.cs"
+      - "MemoryLoad.cs"
+      - "MemoryLoadHistory.cs"
+      - "UnsupportedCpuReader.cs"
+      - "WindowsCpuReader.cs"
+      - "msdata_sync.ps1"
+    procedure:
+      - step: "For each msdata source directory, list all .cs files"
+        command: 'Get-ChildItem "<msdata_path>\\<source_dir>" -Filter "*.cs" -File -ErrorAction SilentlyContinue'
+      - step: "For each .cs file found, check if it already exists in Microsoft.Azure.Cosmos/src/direct/"
+        note: "Files from the Rntbd2 source dir go into the direct/rntbd2/ subdirectory"
+      - step: "If the file does NOT exist locally and is NOT in the exclude list, copy it"
+        command: 'Copy-Item "<msdata_path>\\<source_dir>\\<file>" -Destination "Microsoft.Azure.Cosmos/src/direct/" -Force'
+      - step: "Log every file that was auto-copied so it can be included in the PR description"
+      - step: "After all directories are scanned, report a summary"
+    success_criteria: "No new files remain uncopied from any msdata source directory"
+    notes:
+      - "The Rntbd2 directory is special — its files go to direct/rntbd2/, not direct/"
+      - "TransportClient.cs, RMResources.Designer.cs, and RMResources.resx are handled separately by the sync script and should be skipped in this check"
+      - "If any files are copied, re-run msdata_sync.ps1 afterward to ensure consistency"
+      - "If using the helper script, this verification runs automatically as part of the Sync phase"
     
   step_5_revert_script_path:
     description: "Revert the $baseDir change in msdata_sync.ps1"
