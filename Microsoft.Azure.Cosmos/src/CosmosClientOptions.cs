@@ -97,6 +97,21 @@ namespace Microsoft.Azure.Cosmos
             this.CustomHandlers = new Collection<RequestHandler>();
             this.CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions();
             this.SessionRetryOptions = new SessionRetryOptions();
+
+            string envVerbosity = Environment.GetEnvironmentVariable(ConfigurationManager.DiagnosticsVerbosityVariable);
+            if (!string.IsNullOrEmpty(envVerbosity)
+                && Enum.TryParse(envVerbosity, ignoreCase: true, out DiagnosticsVerbosity parsedVerbosity))
+            {
+                this.DiagnosticsVerbosity = parsedVerbosity;
+            }
+
+            string envMaxSize = Environment.GetEnvironmentVariable(ConfigurationManager.DiagnosticsMaxSummarySizeVariable);
+            if (!string.IsNullOrEmpty(envMaxSize)
+                && int.TryParse(envMaxSize, out int parsedMaxSize)
+                && parsedMaxSize >= 4096)
+            {
+                this.maxDiagnosticsSummarySizeBytes = parsedMaxSize;
+            }
         }
 
         /// <summary>

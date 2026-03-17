@@ -5170,6 +5170,11 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithContentResponseOnWrite(Boolean);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithDiagnosticsVerbosity(Microsoft.Azure.Cosmos.DiagnosticsVerbosity)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithDiagnosticsVerbosity(Microsoft.Azure.Cosmos.DiagnosticsVerbosity);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithCustomAccountEndpoints(System.Collections.Generic.IEnumerable`1[System.Uri])": {
           "Type": "Method",
           "Attributes": [],
@@ -5194,6 +5199,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithLimitToEndpoint(Boolean);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithMaxDiagnosticsSummarySizeBytes(Int32)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithMaxDiagnosticsSummarySizeBytes(Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithPriorityLevel(Microsoft.Azure.Cosmos.PriorityLevel)": {
           "Type": "Method",
