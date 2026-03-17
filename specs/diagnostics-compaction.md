@@ -64,8 +64,8 @@ public class CosmosClientOptions
     /// <summary>
     /// Gets or sets the default verbosity for CosmosDiagnostics serialization.
     /// Default: <see cref="DiagnosticsVerbosity.Detailed"/>.
-    /// This value flows to <see cref="CosmosDiagnostics.Verbosity"/> on each response.
-    /// Can be overridden per-call via <see cref="CosmosDiagnostics.ToString(DiagnosticsVerbosity)"/>.
+    /// This is a client-level configuration value. Pass it to
+    /// <see cref="CosmosDiagnostics.ToString(DiagnosticsVerbosity)"/> when serializing diagnostics.
     /// Can also be set via the AZURE_COSMOS_DIAGNOSTICS_VERBOSITY environment variable.
     /// </summary>
     public DiagnosticsVerbosity DiagnosticsVerbosity { get; set; } = DiagnosticsVerbosity.Detailed;
@@ -80,24 +80,21 @@ public class CosmosClientOptions
 }
 ```
 
-### 3.3 CosmosDiagnostics — Verbosity Property & Serialization Overloads
+### 3.3 CosmosDiagnostics — Serialization Overloads
+
+The parameterless `ToString()` continues to return full detailed output (backward compatible). New overloads accept an explicit `DiagnosticsVerbosity` parameter — no mutable state is stored on the diagnostics object, avoiding thread-safety concerns.
 
 ```csharp
 // File: Microsoft.Azure.Cosmos/src/Diagnostics/CosmosDiagnostics.cs
 public abstract class CosmosDiagnostics
 {
-    // ... existing members ...
-
-    /// <summary>
-    /// Gets or sets the verbosity level used when serializing these diagnostics via ToString().
-    /// This is set automatically from CosmosClientOptions but can be
-    /// overridden by the caller before calling ToString(), or by using the
-    /// ToString(DiagnosticsVerbosity) overload.
-    /// </summary>
-    public DiagnosticsVerbosity Verbosity { get; set; } = DiagnosticsVerbosity.Detailed;
+    // ... existing members (ToString(), GetContactedRegions(), etc. unchanged) ...
 
     /// <summary>
     /// Returns the string representation of diagnostics using the specified verbosity.
+    /// When <paramref name="verbosity"/> is <see cref="DiagnosticsVerbosity.Summary"/>,
+    /// produces a compacted region-grouped summary. When <see cref="DiagnosticsVerbosity.Detailed"/>,
+    /// produces the full trace output (same as parameterless <see cref="ToString()"/>).
     /// </summary>
     /// <param name="verbosity">The verbosity level to use for serialization.</param>
     /// <returns>A JSON string with diagnostics at the requested verbosity level.</returns>
@@ -121,9 +118,10 @@ public abstract class CosmosDiagnostics
 
 **Precedence order** (highest to lowest):
 1. Explicit `ToString(DiagnosticsVerbosity)` / `ToJsonString(DiagnosticsVerbosity)` parameter
-2. `CosmosDiagnostics.Verbosity` property (set from `CosmosClientOptions.DiagnosticsVerbosity` during response creation, or manually by caller)
-3. Environment variable `AZURE_COSMOS_DIAGNOSTICS_VERBOSITY`
-4. Default: `DiagnosticsVerbosity.Detailed`
+2. `CosmosClientOptions.DiagnosticsVerbosity` (set in code, or populated from `AZURE_COSMOS_DIAGNOSTICS_VERBOSITY` environment variable)
+3. Default: `DiagnosticsVerbosity.Detailed`
+
+> **Note:** The parameterless `ToString()` always returns `Detailed` output for backward compatibility. To use `Summary` mode, callers must explicitly pass `DiagnosticsVerbosity.Summary` to the overload.
 
 ## 4. Summary Mode JSON Format
 
@@ -273,12 +271,11 @@ Both `StoreResponseStatistics` (direct mode) and `HttpResponseStatistics` (gatew
 | File | Change |
 |------|--------|
 | `CosmosClientOptions.cs` | Add `DiagnosticsVerbosity` and `MaxDiagnosticsSummarySizeBytes` properties with validation |
-| `CosmosDiagnostics.cs` | Add `Verbosity` property, `ToString(DiagnosticsVerbosity)` and `ToJsonString(DiagnosticsVerbosity)` overloads |
-| `CosmosTraceDiagnostics.cs` | Wire `Verbosity` into `ToString()` / `ToJsonString()` to branch between detailed and summary serialization; implement new overloads |
+| `CosmosDiagnostics.cs` | Add `ToString(DiagnosticsVerbosity)` and `ToJsonString(DiagnosticsVerbosity)` abstract overloads |
+| `CosmosTraceDiagnostics.cs` | Implement `ToString(DiagnosticsVerbosity)` and `ToJsonString(DiagnosticsVerbosity)` overloads; delegate to `DiagnosticsSummaryWriter` when verbosity is `Summary` |
 | `TraceWriter.TraceJsonWriter.cs` | Add summary serialization path that delegates to `DiagnosticsSummaryWriter` when verbosity is `Summary` |
 | `SummaryDiagnostics.cs` | Extend `CollectSummaryFromTraceTree()` to support region-grouped collection with ordering |
 | `ClientSideRequestStatisticsTraceDatum.cs` | Ensure `StoreResponseStatistics` and `HttpResponseStatistics` lists are accessible for summary computation |
-| `ResponseMessage.cs` (or wherever diagnostics are attached to response) | Propagate effective verbosity from `CosmosClientOptions` to `CosmosDiagnostics.Verbosity` |
 
 ### 6.3 Contract/Baseline Updates
 
@@ -289,16 +286,16 @@ Both `StoreResponseStatistics` (direct mode) and `HttpResponseStatistics` (gatew
 ## 7. Work Items
 
 ### WI-1: DiagnosticsVerbosity Enum & Options Plumbing
-**Scope:** Create the enum, add properties to `CosmosClientOptions`, add `ToString(DiagnosticsVerbosity)` / `ToJsonString(DiagnosticsVerbosity)` overloads to `CosmosDiagnostics`, add environment variable support, wire verbosity from `CosmosClientOptions` through to `CosmosDiagnostics.Verbosity`.
-**Acceptance:** Verbosity flows from client options → diagnostics object. `ToString(verbosity)` overloads compile and delegate correctly. No behavioral change yet.
+**Scope:** Create the enum, add `DiagnosticsVerbosity` and `MaxDiagnosticsSummarySizeBytes` properties to `CosmosClientOptions`, add `ToString(DiagnosticsVerbosity)` / `ToJsonString(DiagnosticsVerbosity)` abstract overloads to `CosmosDiagnostics`, add environment variable support.
+**Acceptance:** `ToString(verbosity)` overloads compile and delegate correctly. Parameterless `ToString()` is unchanged (always `Detailed`). No behavioral change yet.
 
 ### WI-2: Summary Computation Engine
 **Scope:** Implement `DiagnosticsSummaryWriter` — the core logic that walks the trace tree, collects stats, groups by region, computes first/last/aggregated groups, and produces the summary JSON structure.
 **Acceptance:** Given an `ITrace` tree, produces the correct summary JSON. Unit-testable in isolation.
 
 ### WI-3: Summary Serialization Integration
-**Scope:** Modify `CosmosTraceDiagnostics.ToString()` and `TraceWriter.TraceJsonWriter` to branch on verbosity. When `Summary`, delegate to `DiagnosticsSummaryWriter`. Implement size enforcement and truncated output fallback.
-**Acceptance:** `ToString()` returns compact summary JSON when verbosity is `Summary`, full trace when `Detailed`.
+**Scope:** Implement `CosmosTraceDiagnostics.ToString(DiagnosticsVerbosity)` and `ToJsonString(DiagnosticsVerbosity)`. When `Summary`, delegate to `DiagnosticsSummaryWriter`. Implement size enforcement and truncated output fallback. Parameterless `ToString()` remains unchanged.
+**Acceptance:** `ToString(DiagnosticsVerbosity.Summary)` returns compact summary JSON. `ToString()` (parameterless) continues to return full `Detailed` trace.
 
 ### WI-4: Contract Updates & Public API Validation
 **Scope:** Update `ContractEnforcementTests` baselines for new public API surface. Ensure the new enum and properties appear in contracts.
@@ -335,9 +332,9 @@ Both `StoreResponseStatistics` (direct mode) and `HttpResponseStatistics` (gatew
 | `DiagnosticsVerbosity_DefaultIsDetailed` | Verify enum default |
 | `CosmosClientOptions_DiagnosticsVerbosity_DefaultValue` | Verify options default |
 | `CosmosClientOptions_MaxSummarySizeBytes_Validation` | Min 4096 enforced |
-| `Verbosity_Precedence_ClientOptionsOverridesEnvVar` | Client options overrides env var default |
-| `Verbosity_Precedence_EnvVarOverridesCodeDefault` | Environment variable fallback |
-| `ToString_Overload_UsesSummary_WhenExplicit` | `ToString(Summary)` produces summary output regardless of `Verbosity` property |
+| `CosmosClientOptions_DiagnosticsVerbosity_EnvVarFallback` | Env var populates `CosmosClientOptions.DiagnosticsVerbosity` when not set in code |
+| `CosmosClientOptions_DiagnosticsVerbosity_CodeOverridesEnvVar` | Code-set value takes precedence over env var |
+| `ToString_Overload_UsesSummary_WhenExplicit` | `ToString(Summary)` produces summary output |
 | `ToJsonString_Overload_UsesSummary_WhenExplicit` | `ToJsonString(Summary)` produces summary JSON |
 | `Summary_SingleRegion_SingleRequest` | No deduplication, first only |
 | `Summary_SingleRegion_TwoRequests` | First + last, no middle |
@@ -353,7 +350,7 @@ Both `StoreResponseStatistics` (direct mode) and `HttpResponseStatistics` (gatew
 | `Summary_EmptyTrace` | No requests produces minimal output |
 | `Summary_RegionOrdering_Deterministic` | Regions sorted alphabetically |
 | `Detailed_Mode_Unchanged` | Existing detailed output is byte-for-byte identical |
-| `ToString_UsesSummary_WhenVerbosityPropertySet` | Parameterless `ToString()` branches on `Verbosity` property |
+| `ToString_Parameterless_AlwaysDetailed` | Parameterless `ToString()` always returns `Detailed` output regardless of `CosmosClientOptions` setting |
 
 ### 8.2 Integration Tests (Emulator)
 
