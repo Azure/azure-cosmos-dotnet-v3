@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Added
 - [5685](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5685) Read Consistency Strategy: Adds Read Consistency Strategy option for read requests
 - [5634](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5634) Semantic Reranking: Adds response body in semantic reranking error responses
+- [5502](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5502) VectorIndex Policy: Adds support for QuantizerType in IndexingPolicy
 
 ### <a name="3.58.0"/> [3.58.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.58.0) - 2026-3-17
 
