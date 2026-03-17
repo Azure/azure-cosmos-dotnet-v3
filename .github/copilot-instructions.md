@@ -50,4 +50,9 @@ Purpose: quick, actionable context so an AI coding assistant can be immediately 
   - Use `FeedIterator<T>` patterns as in `Microsoft.Azure.Cosmos` when generating query examples.
   - For emulator-driven tests, mirror the startup sequence from `templates/emulator-setup.yml`.
 
+- **Named Copilot Agents**:
+  - **IssueFixAgent** (`.github/agents/issue-fix-agent.agent.md`) — Comprehensive workflow for triaging and fixing GitHub issues. Use `@IssueFixAgent` in VS Code Copilot Chat or follow the plan manually.
+  - Includes: environment setup, issue investigation, fix implementation, testing requirements, PR workflow, and learnings capture.
+  - Start with: `@IssueFixAgent investigate issue #XXXX` or see Quick Start in the agent file.
+
 If anything here is unclear or you want the file to include additional examples (specific files, common refactor targets, or typical PR reviewers), tell me what to add and I will iterate.
