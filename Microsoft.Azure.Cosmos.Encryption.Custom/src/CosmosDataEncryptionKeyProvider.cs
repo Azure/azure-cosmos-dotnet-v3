@@ -37,9 +37,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             get
             {
-                if (this.container != null)
+                Container container = Volatile.Read(ref this.container);
+                if (container != null)
                 {
-                    return this.container;
+                    return container;
                 }
 
                 throw new InvalidOperationException($"The {nameof(CosmosDataEncryptionKeyProvider)} was not initialized.");
