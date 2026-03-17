@@ -462,6 +462,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(TimeSpan.FromMinutes(5) <= socketsHandler.PooledConnectionLifetime);
             Assert.AreEqual(webProxy, socketsHandler.Proxy);
             Assert.AreEqual(gatewayLimit, socketsHandler.MaxConnectionsPerServer);
+            Assert.IsTrue(socketsHandler.EnableMultipleHttp2Connections, "EnableMultipleHttp2Connections should be true for HTTP/2 thin client support");
 
             //Create cert for test
             X509Certificate2 x509Certificate2 = new CertificateRequest("cn=www.test", ECDsa.Create(), HashAlgorithmName.SHA256).CreateSelfSigned(DateTime.Now, DateTime.Now.AddYears(1));
