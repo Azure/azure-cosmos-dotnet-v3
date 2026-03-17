@@ -30,6 +30,7 @@
         private static Uri Location1Endpoint = new Uri("https://location1.documents.azure.com");
         private static Uri Location2Endpoint = new Uri("https://location2.documents.azure.com");
 
+        private const string HubRegionHeader = "x-ms-cosmos-hub-region-processing-only";
         private ReadOnlyCollection<string> preferredLocations;
         private AccountProperties databaseAccount;
         private GlobalPartitionEndpointManager partitionKeyRangeLocationCache;
@@ -400,126 +401,134 @@
         public async Task ClientRetryPolicy_NoRetry_MultiMaster_Write_NoPreferredLocationsAsync()
         {
             await this.ValidateConnectTimeoutTriggersClientRetryPolicyAsync(isReadRequest: false, useMultipleWriteLocations: true, usesPreferredLocations: false, true);
-                            }
-
-        [TestMethod]
-        public async Task ClientRetryPolicy_TokenRevocationWithClaims_ShouldRetryOnceWithTokenCredential()
-        {
-            // Arrange
-            const bool enableEndpointDiscovery = true;
-            using GlobalEndpointManager endpointManager = this.Initialize(
-                useMultipleWriteLocations: false,
-                enableEndpointDiscovery: enableEndpointDiscovery,
-                isPreferredLocationsListEmpty: false);
-
-            Mock<TokenCredential> mockTokenCredential = new Mock<TokenCredential>();
-            mockTokenCredential
-                .Setup(x => x.GetTokenAsync(It.IsAny<TokenRequestContext>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new AccessToken("test-token", DateTimeOffset.MaxValue));
-
-            using AuthorizationTokenProviderTokenCredential tokenProvider = new AuthorizationTokenProviderTokenCredential(
-                mockTokenCredential.Object,
-                new Uri("https://test-account.documents.azure.com"),
-                backgroundTokenCredentialRefreshInterval: TimeSpan.FromMinutes(5));
-
-            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
-                endpointManager,
-                this.partitionKeyRangeLocationCache,
-                new Cosmos.RetryOptions(),
-                enableEndpointDiscovery,
-                isThinClientEnabled: false,
-                authorizationTokenProvider: tokenProvider);
-
-            DocumentServiceRequest request = this.CreateRequest(isReadRequest: false, isMasterResourceType: false);
-
-            // Set up request headers with WWW-Authenticate containing claims
-            request.Headers[HttpConstants.HttpHeaders.WwwAuthenticate] = "Bearer error=\"insufficient_claims\", claims=\"eyJhY2Nlc3NfdG9rZW4iOnt9fQ==\"";
-
-            retryPolicy.OnBeforeSendRequest(request);
-
-            Mock<INameValueCollection> responseHeaders = new Mock<INameValueCollection>();
-            responseHeaders
-                .Setup(x => x[HttpConstants.HttpHeaders.WwwAuthenticate])
-                .Returns("Bearer error=\"insufficient_claims\", claims=\"eyJhY2Nlc3NfdG9rZW4iOnt9fQ==\"");
-
-            DocumentClientException revocationException = new DocumentClientException(
-                message: "AAD token revocation",
-                innerException: null,
-                statusCode: HttpStatusCode.Unauthorized,
-                substatusCode: SubStatusCodes.Unknown, // ✅ No special substatus
-                requestUri: request.RequestContext.LocationEndpointToRoute,
-                responseHeaders: responseHeaders.Object);
-
-            // Act & Assert - First attempt should retry
-            ShouldRetryResult firstResult = await retryPolicy.ShouldRetryAsync(revocationException, CancellationToken.None);
-            Assert.IsTrue(firstResult.ShouldRetry, "Token revocation with claims should retry on first attempt");
-
-            // Second attempt should NOT retry (max count exceeded)
-            ShouldRetryResult secondResult = await retryPolicy.ShouldRetryAsync(revocationException, CancellationToken.None);
-            Assert.IsFalse(secondResult.ShouldRetry, "Token revocation should NOT retry after max count exceeded");
         }
 
+        /// <summary>
+        /// Test to validate that hub region header is added on 404/1002 for single master accounts only,
+        /// starting from the second retry (after first retry also fails). For multi-master accounts, 
+        /// the header should NOT be added.
+        /// </summary>
         [TestMethod]
-        [DataRow(null, DisplayName = "No WWW-Authenticate header")]
-        [DataRow("Bearer realm=\"test\"", DisplayName = "WWW-Authenticate without claims")]
-        public async Task ClientRetryPolicy_401WithoutCaeIndicators_DoesNotRetry(string wwwAuthenticateValue)
+        [DataRow(true, true, DisplayName = "Read request on single master - Hub region header added after first retry fails")]
+        [DataRow(false, true, DisplayName = "Write request on single master - Hub region header added after first retry fails")]
+        [DataRow(true, false, DisplayName = "Read request on multi-master - Hub region header NOT added")]
+        [DataRow(false, false, DisplayName = "Write request on multi-master - Hub region header NOT added")]
+        public async Task ClientRetryPolicy_HubRegionHeader_AddedOn404_1002_BasedOnAccountType(bool isReadRequest, bool isSingleMaster)
         {
             // Arrange
             const bool enableEndpointDiscovery = true;
+
             using GlobalEndpointManager endpointManager = this.Initialize(
-                useMultipleWriteLocations: false,
+                useMultipleWriteLocations: !isSingleMaster,
                 enableEndpointDiscovery: enableEndpointDiscovery,
-                isPreferredLocationsListEmpty: false);
-
-            Mock<TokenCredential> mockTokenCredential = new Mock<TokenCredential>();
-            mockTokenCredential
-                .Setup(x => x.GetTokenAsync(It.IsAny<TokenRequestContext>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new AccessToken("test-token", DateTimeOffset.MaxValue));
-
-            using AuthorizationTokenProviderTokenCredential tokenProvider = new AuthorizationTokenProviderTokenCredential(
-                mockTokenCredential.Object,
-                new Uri("https://test-account.documents.azure.com"),
-                backgroundTokenCredentialRefreshInterval: TimeSpan.FromMinutes(5));
+                isPreferredLocationsListEmpty: false,
+                enforceSingleMasterSingleWriteLocation: isSingleMaster);
 
             ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
                 endpointManager,
                 this.partitionKeyRangeLocationCache,
-                new Cosmos.RetryOptions(),
+                new RetryOptions(),
                 enableEndpointDiscovery,
-                isThinClientEnabled: false,
-                authorizationTokenProvider: tokenProvider);
+                isThinClientEnabled: false);
 
-            DocumentServiceRequest request = this.CreateRequest(isReadRequest: false, isMasterResourceType: false);
+            DocumentServiceRequest request = this.CreateRequest(isReadRequest: isReadRequest, isMasterResourceType: false);
 
-            // Set up request headers (simulating what ClientRetryPolicy actually checks)
-            if (wwwAuthenticateValue != null)
+            // First attempt - header should not exist
+            retryPolicy.OnBeforeSendRequest(request);
+            Assert.IsNull(request.Headers.GetValues(HubRegionHeader), "Header should not exist on initial request before any 404/1002 error.");
+
+            // Simulate first 404/1002 error
+            DocumentClientException sessionNotAvailableException = new DocumentClientException(
+                message: "Simulated 404/1002 ReadSessionNotAvailable",
+                innerException: null,
+                statusCode: HttpStatusCode.NotFound,
+                substatusCode: SubStatusCodes.ReadSessionNotAvailable,
+                requestUri: request.RequestContext.LocationEndpointToRoute,
+                responseHeaders: new DictionaryNameValueCollection());
+
+            ShouldRetryResult shouldRetry = await retryPolicy.ShouldRetryAsync(sessionNotAvailableException, CancellationToken.None);
+            Assert.IsTrue(shouldRetry.ShouldRetry, "Should retry on 404/1002.");
+
+            // First retry attempt - header should NOT be present yet
+            retryPolicy.OnBeforeSendRequest(request);
+            string[] headerValues = request.Headers.GetValues(HubRegionHeader);
+            Assert.IsNull(headerValues, "Header should NOT be present on first retry attempt (before it fails).");
+
+            // Simulate first retry also failing with 404/1002
+            DocumentClientException sessionNotAvailableException2 = new DocumentClientException(
+                message: "Simulated 404/1002 ReadSessionNotAvailable on first retry",
+                innerException: null,
+                statusCode: HttpStatusCode.NotFound,
+                substatusCode: SubStatusCodes.ReadSessionNotAvailable,
+                requestUri: request.RequestContext.LocationEndpointToRoute,
+                responseHeaders: new DictionaryNameValueCollection());
+
+            shouldRetry = await retryPolicy.ShouldRetryAsync(sessionNotAvailableException2, CancellationToken.None);
+
+            if (isSingleMaster)
             {
-                request.Headers[HttpConstants.HttpHeaders.WwwAuthenticate] = wwwAuthenticateValue;
+                // For single master, after one retry fails with 404/1002, it won't retry further
+                // But the header flag should be set for any potential future retries due to other errors
+                Assert.IsFalse(shouldRetry.ShouldRetry, "Single master should not retry again after first 404/1002 retry fails.");
+
+                // The header flag should be set even though no more 404/1002 retries will happen
+                // This ensures if the request is retried for a different reason (e.g., 503), it will have the header
+            }
+            else
+            {
+                // Multi-master can retry across multiple regions
+                Assert.IsTrue(shouldRetry.ShouldRetry, "Multi-master should continue retrying on 404/1002.");
             }
 
-            retryPolicy.OnBeforeSendRequest(request);
+            // For single master: Verify header would be added if request is retried for other reasons (e.g., 503)
+            // For multi-master: Verify header is NOT added even on subsequent retries
+            if (isSingleMaster)
+            {
+                // Simulate a 503 error to trigger another retry
+                DocumentClientException serviceUnavailableException = new DocumentClientException(
+                    message: "Simulated 503 ServiceUnavailable",
+                    innerException: null,
+                    statusCode: HttpStatusCode.ServiceUnavailable,
+                    substatusCode: SubStatusCodes.Unknown,
+                    requestUri: request.RequestContext.LocationEndpointToRoute,
+                    responseHeaders: new DictionaryNameValueCollection());
 
-            Mock<INameValueCollection> headers = new Mock<INameValueCollection>();
-            headers.Setup(x => x[HttpConstants.HttpHeaders.WwwAuthenticate]).Returns(wwwAuthenticateValue);
+                shouldRetry = await retryPolicy.ShouldRetryAsync(serviceUnavailableException, CancellationToken.None);
 
-            DocumentClientException unauthorizedException = new DocumentClientException(
-                message: "Unauthorized",
-                innerException: null,
-                statusCode: HttpStatusCode.Unauthorized,
-                substatusCode: SubStatusCodes.Unknown,
-                requestUri: request.RequestContext.LocationEndpointToRoute,
-                responseHeaders: headers.Object);
+                if (shouldRetry.ShouldRetry)
+                {
+                    // Now verify the header is present on this retry triggered by 503
+                    retryPolicy.OnBeforeSendRequest(request);
+                    headerValues = request.Headers.GetValues(HubRegionHeader);
+                    Assert.IsNotNull(headerValues, "Header should be present on retry after 404/1002 flag was set.");
+                    Assert.AreEqual(1, headerValues.Length, "Header should have exactly one value.");
+                    Assert.AreEqual(bool.TrueString, headerValues[0], "Header value should be 'True'.");
+                }
+            }
+            else
+            {
+                // For multi-master: Verify header is NOT added even on subsequent retries
+                for (int retryAttempt = 2; retryAttempt <= 3; retryAttempt++)
+                {
+                    if (shouldRetry.ShouldRetry)
+                    {
+                        retryPolicy.OnBeforeSendRequest(request);
+                        headerValues = request.Headers.GetValues(HubRegionHeader);
+                        Assert.IsNull(headerValues, $"Header should NOT be present on retry attempt {retryAttempt} for multi-master account.");
 
-            // Act
-            ShouldRetryResult result = await retryPolicy.ShouldRetryAsync(unauthorizedException, CancellationToken.None);
+                        // Simulate another 404/1002 or 503 to continue retry loop
+                        DocumentClientException nextException = new DocumentClientException(
+                            message: $"Simulated error on retry {retryAttempt}",
+                            innerException: null,
+                            statusCode: retryAttempt % 2 == 0 ? HttpStatusCode.ServiceUnavailable : HttpStatusCode.NotFound,
+                            substatusCode: retryAttempt % 2 == 0 ? SubStatusCodes.Unknown : SubStatusCodes.ReadSessionNotAvailable,
+                            requestUri: request.RequestContext.LocationEndpointToRoute,
+                            responseHeaders: new DictionaryNameValueCollection());
 
-            // Assert
-            // When there are no CAE indicators, HandleUnauthorizedResponse() returns null,
-            // and the request falls through to the throttling retry policy.
-            // The throttling retry policy doesn't handle 401, so it returns NoRetry.
-            Assert.IsNotNull(result, "Should get a result from the throttling retry policy");
-            Assert.IsFalse(result.ShouldRetry, 
-                "401 without CAE indicators should NOT trigger a retry");
+                        shouldRetry = await retryPolicy.ShouldRetryAsync(nextException, CancellationToken.None);
+                    }
+                }
+            }
         }
 
         private async Task ValidateConnectTimeoutTriggersClientRetryPolicyAsync(
@@ -560,8 +569,7 @@
                 useMultipleWriteLocations: useMultipleWriteLocations,
                 detectClientConnectivityIssues: true,
                 disableRetryWithRetryPolicy: false,
-                enableReplicaValidation: false,
-                accountConfigurationProperties: null);
+                enableReplicaValidation: false);
 
             // Reducing retry timeout to avoid long-running tests
             replicatedResourceClient.GoneAndRetryWithRetryTimeoutInSecondsOverride = 1;

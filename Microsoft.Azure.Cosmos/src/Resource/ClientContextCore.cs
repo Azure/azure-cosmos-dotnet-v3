@@ -88,7 +88,8 @@ namespace Microsoft.Azure.Cosmos
                remoteCertificateValidationCallback: ClientContextCore.SslCustomValidationCallBack(clientOptions.GetServerCertificateCustomValidationCallback()),
                cosmosClientTelemetryOptions: clientOptions.CosmosClientTelemetryOptions,
                chaosInterceptorFactory: clientOptions.ChaosInterceptorFactory,
-               enableAsyncCacheExceptionNoSharing: clientOptions.EnableAsyncCacheExceptionNoSharing);
+               enableAsyncCacheExceptionNoSharing: clientOptions.EnableAsyncCacheExceptionNoSharing,
+               useLengthAwareRangeComparer: clientOptions.UseLengthAwareRangeComparer);
 
             return ClientContextCore.Create(
                 cosmosClient,
@@ -125,6 +126,7 @@ namespace Microsoft.Azure.Cosmos
                 ClientPipelineBuilder clientPipelineBuilder = new ClientPipelineBuilder(
                     cosmosClient,
                     clientOptions.ConsistencyLevel,
+                    clientOptions.ReadConsistencyStrategy,
                     clientOptions.PriorityLevel,
                     clientOptions.CustomHandlers,
                     telemetryToServiceHelper: documentClient.telemetryToServiceHelper,

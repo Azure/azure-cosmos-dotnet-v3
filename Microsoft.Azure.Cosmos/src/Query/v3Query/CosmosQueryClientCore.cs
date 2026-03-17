@@ -85,7 +85,8 @@ namespace Microsoft.Azure.Cosmos
                 effectivePartitionKeyRange,
                 containerProperties.PartitionKey,
                 containerProperties.VectorEmbeddingPolicy,
-                containerProperties.GeospatialConfig.GeospatialType);
+                containerProperties.GeospatialConfig.GeospatialType,
+                this.documentClient.UseLengthAwareRangeComparer);
         }
 
         public override async Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetPartitionedQueryExecutionInfoAsync(
@@ -240,7 +241,7 @@ namespace Microsoft.Azure.Cosmos
                     forceRefresh,
                     childTrace);
 
-                return QueryRangeUtils.LimitPartitionKeyRangesToProvidedRanges(ranges, providedRanges);
+                return QueryRangeUtils.LimitPartitionKeyRangesToProvidedRanges(ranges, providedRanges, this.clientContext.ClientOptions.UseLengthAwareRangeComparer);
             }
         }
 
