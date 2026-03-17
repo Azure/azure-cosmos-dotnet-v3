@@ -427,7 +427,7 @@
             ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
                 endpointManager,
                 this.partitionKeyRangeLocationCache,
-                new RetryOptions(),
+                new Cosmos.RetryOptions(),
                 enableEndpointDiscovery,
                 isThinClientEnabled: false);
 
@@ -529,6 +529,126 @@
                     }
                 }
             }
+        }
+
+        [TestMethod]
+        public async Task ClientRetryPolicy_TokenRevocationWithClaims_ShouldRetryOnceWithTokenCredential()
+        {
+            // Arrange
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false);
+
+            Mock<TokenCredential> mockTokenCredential = new Mock<TokenCredential>();
+            mockTokenCredential
+                .Setup(x => x.GetTokenAsync(It.IsAny<TokenRequestContext>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new AccessToken("test-token", DateTimeOffset.MaxValue));
+
+            using AuthorizationTokenProviderTokenCredential tokenProvider = new AuthorizationTokenProviderTokenCredential(
+                mockTokenCredential.Object,
+                new Uri("https://test-account.documents.azure.com"),
+                backgroundTokenCredentialRefreshInterval: TimeSpan.FromMinutes(5));
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                endpointManager,
+                this.partitionKeyRangeLocationCache,
+                new Cosmos.RetryOptions(),
+                enableEndpointDiscovery,
+                isThinClientEnabled: false,
+                authorizationTokenProvider: tokenProvider);
+
+            DocumentServiceRequest request = this.CreateRequest(isReadRequest: false, isMasterResourceType: false);
+
+            // Set up request headers with WWW-Authenticate containing claims
+            request.Headers[HttpConstants.HttpHeaders.WwwAuthenticate] = "Bearer error=\"insufficient_claims\", claims=\"eyJhY2Nlc3NfdG9rZW4iOnt9fQ==\"";
+
+            retryPolicy.OnBeforeSendRequest(request);
+
+            Mock<INameValueCollection> responseHeaders = new Mock<INameValueCollection>();
+            responseHeaders
+                .Setup(x => x[HttpConstants.HttpHeaders.WwwAuthenticate])
+                .Returns("Bearer error=\"insufficient_claims\", claims=\"eyJhY2Nlc3NfdG9rZW4iOnt9fQ==\"");
+
+            DocumentClientException revocationException = new DocumentClientException(
+                message: "AAD token revocation",
+                innerException: null,
+                statusCode: HttpStatusCode.Unauthorized,
+                substatusCode: SubStatusCodes.Unknown, // ✅ No special substatus
+                requestUri: request.RequestContext.LocationEndpointToRoute,
+                responseHeaders: responseHeaders.Object);
+
+            // Act & Assert - First attempt should retry
+            ShouldRetryResult firstResult = await retryPolicy.ShouldRetryAsync(revocationException, CancellationToken.None);
+            Assert.IsTrue(firstResult.ShouldRetry, "Token revocation with claims should retry on first attempt");
+
+            // Second attempt should NOT retry (max count exceeded)
+            ShouldRetryResult secondResult = await retryPolicy.ShouldRetryAsync(revocationException, CancellationToken.None);
+            Assert.IsFalse(secondResult.ShouldRetry, "Token revocation should NOT retry after max count exceeded");
+        }
+
+        [TestMethod]
+        [DataRow(null, DisplayName = "No WWW-Authenticate header")]
+        [DataRow("Bearer realm=\"test\"", DisplayName = "WWW-Authenticate without claims")]
+        public async Task ClientRetryPolicy_401WithoutCaeIndicators_DoesNotRetry(string wwwAuthenticateValue)
+        {
+            // Arrange
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false);
+
+            Mock<TokenCredential> mockTokenCredential = new Mock<TokenCredential>();
+            mockTokenCredential
+                .Setup(x => x.GetTokenAsync(It.IsAny<TokenRequestContext>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new AccessToken("test-token", DateTimeOffset.MaxValue));
+
+            using AuthorizationTokenProviderTokenCredential tokenProvider = new AuthorizationTokenProviderTokenCredential(
+                mockTokenCredential.Object,
+                new Uri("https://test-account.documents.azure.com"),
+                backgroundTokenCredentialRefreshInterval: TimeSpan.FromMinutes(5));
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                endpointManager,
+                this.partitionKeyRangeLocationCache,
+                new Cosmos.RetryOptions(),
+                enableEndpointDiscovery,
+                isThinClientEnabled: false,
+                authorizationTokenProvider: tokenProvider);
+
+            DocumentServiceRequest request = this.CreateRequest(isReadRequest: false, isMasterResourceType: false);
+
+            // Set up request headers (simulating what ClientRetryPolicy actually checks)
+            if (wwwAuthenticateValue != null)
+            {
+                request.Headers[HttpConstants.HttpHeaders.WwwAuthenticate] = wwwAuthenticateValue;
+            }
+
+            retryPolicy.OnBeforeSendRequest(request);
+
+            Mock<INameValueCollection> headers = new Mock<INameValueCollection>();
+            headers.Setup(x => x[HttpConstants.HttpHeaders.WwwAuthenticate]).Returns(wwwAuthenticateValue);
+
+            DocumentClientException unauthorizedException = new DocumentClientException(
+                message: "Unauthorized",
+                innerException: null,
+                statusCode: HttpStatusCode.Unauthorized,
+                substatusCode: SubStatusCodes.Unknown,
+                requestUri: request.RequestContext.LocationEndpointToRoute,
+                responseHeaders: headers.Object);
+
+            // Act
+            ShouldRetryResult result = await retryPolicy.ShouldRetryAsync(unauthorizedException, CancellationToken.None);
+
+            // Assert
+            // When there are no CAE indicators, HandleUnauthorizedResponse() returns null,
+            // and the request falls through to the throttling retry policy.
+            // The throttling retry policy doesn't handle 401, so it returns NoRetry.
+            Assert.IsNotNull(result, "Should get a result from the throttling retry policy");
+            Assert.IsFalse(result.ShouldRetry,
+                "401 without CAE indicators should NOT trigger a retry");
         }
 
         private async Task ValidateConnectTimeoutTriggersClientRetryPolicyAsync(
