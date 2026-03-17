@@ -151,7 +151,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private async Task<AccessToken> GetNewTokenAsync(
-           ITrace trace)
+            ITrace trace)
         {
             // Use a local variable to avoid the possibility the task gets changed
             // between the null check and the await operation.
@@ -279,6 +279,7 @@ namespace Microsoft.Azure.Cosmos
                     {
                         DefaultTrace.TraceInformation(
                             "Stop RefreshTokenWithIndefiniteRetries because cancellation is requested");
+
                         break;
                     }
 
@@ -322,9 +323,7 @@ namespace Microsoft.Azure.Cosmos
 
                             if (this.cachedAccessToken.Value.ExpiresOn < DateTimeOffset.UtcNow)
                             {
-                                throw new ArgumentOutOfRangeException(
-                                    $"TokenCredential.GetTokenAsync returned a token that is already expired. " +
-                                    $"Current Time:{DateTime.UtcNow:O}; Token expire time:{this.cachedAccessToken.Value.ExpiresOn:O}");
+                                throw new ArgumentOutOfRangeException($"TokenCredential.GetTokenAsync returned a token that is already expired. Current Time:{DateTime.UtcNow:O}; Token expire time:{this.cachedAccessToken.Value.ExpiresOn:O}");
                             }
 
                             // Clear claims challenge after successful token acquisition
@@ -374,7 +373,6 @@ namespace Microsoft.Azure.Cosmos
                                 $"hasClaimsChallenge = {this.cachedClaimsChallenge != null}, " +
                                 $"retry = {retry}, " +
                                 $"Exception = {lastException.Message}");
-
                             // Don't retry on auth failures
                             if (exception is RequestFailedException requestFailedException &&
                                    (requestFailedException.Status == (int)HttpStatusCode.Unauthorized ||
@@ -384,7 +382,6 @@ namespace Microsoft.Azure.Cosmos
                                 this.cachedClaimsChallenge = null;
                                 throw;
                             }
-
                             bool didFallback = this.scopeProvider.TryFallback(exception);
 
                             if (didFallback)
@@ -399,9 +396,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     throw new ArgumentException("Last exception is null.");
                 }
-
                 this.cachedClaimsChallenge = null;
-
                 // The retries have been exhausted. Throw the last exception.
                 throw lastException;
             }

@@ -11,15 +11,14 @@
     using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
+    using global::Azure.Core;
+    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
-
-    using Microsoft.Azure.Cosmos.Common;
-    using global::Azure.Core;
 
     /// <summary>
     /// Tests for <see cref="ClientRetryPolicy"/>
@@ -89,6 +88,7 @@
             retryPolicy.OnBeforeSendRequest(request);
             Assert.AreEqual(request.RequestContext.LocationEndpointToRoute, ClientRetryPolicyTests.Location1Endpoint);
         }
+
         /// <summary>
         /// Test to validate that when 429.3092 is thrown from the service, write requests on
         /// a multi master account should be converted to 503 and retried to the next region.

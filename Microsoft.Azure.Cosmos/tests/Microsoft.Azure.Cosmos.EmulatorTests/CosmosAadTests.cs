@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Documents.Client;
     using global::Azure;
     using global::Azure.Core;
+    using Microsoft.IdentityModel.Tokens;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
 
@@ -32,9 +33,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string containerId = Guid.NewGuid().ToString();
             using CosmosClient cosmosClient = TestCommon.CreateCosmosClient();
             Database database = await cosmosClient.CreateDatabaseAsync(databaseId);
-            Container container = await database.CreateContainerAsync(
-                containerId,
-                "/id");
+        Container container = await database.CreateContainerAsync(
+            containerId,
+            "/id");
 
             try
             {
