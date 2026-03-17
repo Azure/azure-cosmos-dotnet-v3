@@ -35,9 +35,9 @@
                     return default;
                 }
 
-                if (typeof(Stream).IsAssignableFrom(typeof(T)))
+                if (typeof(Stream).IsAssignableFrom(typeof(T)) && stream is T typedStream)
                 {
-                    return (T)(object)stream;
+                    return typedStream;
                 }
 
                 return (T)this.systemTextJsonSerializer.Deserialize(stream, typeof(T), default);
