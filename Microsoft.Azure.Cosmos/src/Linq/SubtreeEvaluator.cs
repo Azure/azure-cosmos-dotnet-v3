@@ -13,6 +13,14 @@ namespace Microsoft.Azure.Cosmos.Linq
     /// </summary> 
     internal sealed class SubtreeEvaluator : ExpressionVisitor
     {
+        /// <summary>
+        /// Cached delegate for LambdaExpression.Compile(preferInterpretation: true) when available at runtime.
+        /// Using interpretation mode avoids generating JIT-compiled DynamicMethods whose IL persists in
+        /// native memory, causing unbounded memory growth in long-running services.
+        /// See: https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5487
+        /// </summary>
+        private static readonly Func<LambdaExpression, Delegate> CompileLambda = SubtreeEvaluator.CreateCompileLambda();
+
         private readonly HashSet<Expression> candidates;
 
         public SubtreeEvaluator(HashSet<Expression> candidates)
@@ -117,17 +125,22 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
 
             LambdaExpression lambda = Expression.Lambda(expression);
-#if NET6_0_OR_GREATER
-            // Use interpretation mode to avoid generating JIT-compiled DynamicMethods.
-            // Each Compile() call without preferInterpretation emits IL that persists in native memory,
-            // causing unbounded memory growth in long-running services.
-            // See: https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5487
-            Delegate function = lambda.Compile(preferInterpretation: true);
-#else
-            Delegate function = lambda.Compile();
-#endif
+            Delegate function = SubtreeEvaluator.CompileLambda(lambda);
 
             return Expression.Constant(function.DynamicInvoke(null), expression.Type);
+        }
+
+        private static Func<LambdaExpression, Delegate> CreateCompileLambda()
+        {
+            MethodInfo compileWithPreference = typeof(LambdaExpression)
+                .GetMethod(nameof(LambdaExpression.Compile), new Type[] { typeof(bool) });
+
+            if (compileWithPreference != null)
+            {
+                return lambda => (Delegate)compileWithPreference.Invoke(lambda, new object[] { true });
+            }
+
+            return lambda => lambda.Compile();
         }
     }
 }
