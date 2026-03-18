@@ -1373,20 +1373,19 @@ namespace Microsoft.Azure.Cosmos
                     return;
                 }
 
-                if (value is System.Text.Json.JsonSerializerOptions stjOptions)
+                if (value is System.Text.Json.JsonSerializerOptions)
                 {
-                    writer.WriteValue(stjOptions.GetType().ToString());
+                    writer.WriteValue(value.GetType().ToString());
                     return;
                 }
 
-                CosmosJsonSerializerWrapper cosmosJsonSerializerWrapper = value as CosmosJsonSerializerWrapper;
-                if (value is CosmosJsonSerializerWrapper)
+                if (value is CosmosJsonSerializerWrapper cosmosJsonSerializerWrapper)
                 {
                     writer.WriteValue(cosmosJsonSerializerWrapper.InternalJsonSerializer.GetType().ToString());
+                    return;
                 }
 
-                CosmosSerializer cosmosSerializer = value as CosmosSerializer;
-                if (cosmosSerializer is CosmosSerializer)
+                if (value is CosmosSerializer cosmosSerializer)
                 {
                     writer.WriteValue(cosmosSerializer.GetType().ToString());
                 }
