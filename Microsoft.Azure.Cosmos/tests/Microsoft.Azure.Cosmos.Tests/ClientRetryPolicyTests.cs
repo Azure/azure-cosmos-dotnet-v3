@@ -568,8 +568,7 @@
                 useMultipleWriteLocations: useMultipleWriteLocations,
                 detectClientConnectivityIssues: true,
                 disableRetryWithRetryPolicy: false,
-                enableReplicaValidation: false,
-                accountConfigurationProperties: null);
+                enableReplicaValidation: false);
 
             // Reducing retry timeout to avoid long-running tests
             replicatedResourceClient.GoneAndRetryWithRetryTimeoutInSecondsOverride = 1;

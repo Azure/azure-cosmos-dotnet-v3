@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>.NET Core Framework Internal Tools Documentation</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=9" />
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <link rel="stylesheet" href="markdown.css" type="text/css" media="screen">
+    <link rel="stylesheet" href="style.css" type="text/css" media="screen">
+</head>
+<body>
+    <div class="header">
+        <h1>.NET Core Framework Internal Tools Documentation</h1>
+    </div>
+    <div class="navigation">
+        <ul>
+            <li>
+                <a href="index.html">Tools</a>
+                <ul>
+                    <li><a href="ApiCatalog.html">API Catalog</a></li>
+                    <li><a href="ApiReviewer.html">API Reviewer</a></li>
+                    <li><a href="ApiUsageAnalyzer.html">API Usage Analyzer</a></li>
+                    <li><a href="ApiCompat.html">ApiCompat</a></li>
+                    <li><a href="AsmDiff.html">AsmDiff</a></li>
+                    <li><a href="FxAvailability.html">FxAvailability</a></li>
+                    <li><a href="FxDepends.html">FxDepends</a></li>
+                    <li><a href="FxDependencyCompare.html">FxDependencyCompare</a></li>
+                    <li><a href="ApiUsageAnalyzerCmd.html">ApiUsageAnalyzerCmd</a></li>
+                    <li><a href="GenApi.html">GenApi</a></li>
+                    <li><a href="ApiPort.html">ApiPort</a></li>
+                </ul>
+            </li>
+            <li>
+                Processes
+                <ul>
+                    <li><a href="ApiReviews.html">API Reviews</a></li>
+                    <li><a href="ApiReviewsSystemNamespace.html">Using the System Namespace</a></li>
+                    <li><a href="ApiDesign.html">API Design</a></li>
+                    <li><a href="Contracts.html">Contracts &amp; Reference Assemblies</a></li>
+                    <li><a href="Telemetry.html">Telemetry</a></li>
+                </ul>
+            </li>
+        <ul>
+    </div>
+    <div class="content">
+        <h1>GenApi</h1>
+<p>A command line tool that lists out the APIs from a set of assemblies in
+multiple different formats (C# declarations, DocIds, TypeForwards, or type
+lists).</p>
+<h2>Usage</h2>
+<pre><code>\\FxCore\Tools\bin\GenApi.exe /?
+
+Usage: GenApi
+
+  Parameters:
+                                      Path for an specific assembly or a directory to get all assemblies.
+
+  Qualifiers:
+    [-?]                              Print this help guide.
+    [-libPath:STRING]                 Delimited (',' or ';') set of paths to use for resolving assembly references
+    [-apiList:STRING]                 (-al) Specify a api list in the DocId format of which APIs to include.
+    [-writer:WRITERTYPE(CSDecl)]      (-w) Specify the writer type to use.  Legal values: CSDecl, DocIds, TypeForwards, TypeList.
+    [-syntax:SYNTAXWRITERTYPE(Text)]  (-s) Specific the syntax writer type.  Only used if the writer is CSDecl Legal values: Text, Html, Xml.
+    [-out:STRING]                     Output path.  Default is the console.
+    [-apiOnly]                        (-api) [CSDecl] Include only API's not CS code that compiles.
+    [-all]                            Include all API's not just public APIs.  Default is public only.
+    [-memberHeadings]                 (-mh) [CSDecl] Include member headings for each type of member.
+    [-hightlightBaseMembers]          (-hbm) [CSDecl] Highlight overridden base members.
+    [-hightlightInterfaceMembers]     (-him) [CSDecl] Highlight interface implementation members.
+</code></pre>
+
+<h2>Examples</h2>
+<p>Output a C# API list in <strong>Word</strong> format (-s:xml is for OpenXml which works in Word).</p>
+<pre><code>\\FxCore\Tools\bin\GenApi.exe [Assembly or Directory of Assemblies] -s:xml -apiOnly -out:APIList.xml
+</code></pre>
+
+<p>Output a C# API list in html:</p>
+<pre><code>\\FxCore\Tools\bin\GenApi.exe [Assembly or Directory of Assemblies] -s:html -apiOnly -out:APIList.html
+</code></pre>
+
+<p>Output a flat list of all APIs:</p>
+<pre><code>\\FxCore\Tools\bin\GenApi.exe [Assembly or Directory of Assemblies] -w:TypeList -out:APIList.txt
+</code></pre>
+
+
+    </div>
+    <div class="footer">
+        <p>
+            Copyright © Microsoft | <strong>Questions or Feeback?</strong> Contact <a href="mailto:corefxtools@microsoft.com">.NET Core Framework Internal Tools</a>
+        </p> 
+    </div>
+ </body>
+ </html> 

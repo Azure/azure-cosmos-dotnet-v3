@@ -1030,6 +1030,7 @@
                 enableOptimisticDirectExecution: queryRequestOptions.EnableOptimisticDirectExecution,
                 isHybridSearchQueryPlanOptimizationDisabled: queryRequestOptions.IsHybridSearchQueryPlanOptimizationDisabled,
                 enableDistributedQueryGatewayMode: queryRequestOptions.EnableDistributedQueryGatewayMode,
+                fullTextScoreScope: queryRequestOptions.FullTextScoreScope,
                 testInjections: queryRequestOptions.TestSettings);
 
             List<PartitionKeyRange> targetPkRanges = new();

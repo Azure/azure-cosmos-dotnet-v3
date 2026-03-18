@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.FaultInjection
@@ -321,7 +321,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                             ? new Version(2, 0)
                             : new Version(1, 1),
                         StatusCode = HttpStatusCode.Gone,
-                        Content = new FauntInjectionHttpContent(
+                        Content = new FaultInjectionHttpContent(
                         new MemoryStream(
                             isProxyCall
                                 ? FaultInjectionResponseEncoding.GetBytes(
@@ -345,7 +345,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                             ? new Version(2, 0)
                             : new Version(1, 1),
                         StatusCode = HttpStatusCode.TooManyRequests,
-                        Content = new FauntInjectionHttpContent(
+                        Content = new FaultInjectionHttpContent(
                             new MemoryStream(
                                 isProxyCall
                                     ? FaultInjectionResponseEncoding.GetBytes(
@@ -371,7 +371,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                             ? new Version(2, 0)
                             : new Version(1, 1),
                         StatusCode = HttpStatusCode.RequestTimeout,
-                        Content = new FauntInjectionHttpContent(
+                        Content = new FaultInjectionHttpContent(
                             new MemoryStream(
                                 isProxyCall
                                     ? FaultInjectionResponseEncoding.GetBytes(
@@ -396,7 +396,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                             ? new Version(2, 0)
                             : new Version(1, 1),
                         StatusCode = HttpStatusCode.InternalServerError,
-                        Content = new FauntInjectionHttpContent(
+                        Content = new FaultInjectionHttpContent(
                             new MemoryStream(
                                 isProxyCall
                                     ? FaultInjectionResponseEncoding.GetBytes(
@@ -422,7 +422,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                             ? new Version(2, 0)
                             : new Version(1, 1),
                         StatusCode = HttpStatusCode.NotFound,
-                        Content = new FauntInjectionHttpContent(
+                        Content = new FaultInjectionHttpContent(
                             new MemoryStream(
                                 isProxyCall
                                     ? FaultInjectionResponseEncoding.GetBytes(
@@ -448,7 +448,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                             ? new Version(2, 0)
                             : new Version(1, 1),
                         StatusCode = HttpStatusCode.Gone,
-                        Content = new FauntInjectionHttpContent(
+                        Content = new FaultInjectionHttpContent(
                             new MemoryStream(
                                 isProxyCall
                                     ? FaultInjectionResponseEncoding.GetBytes(
@@ -473,7 +473,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                             ? new Version(2, 0)
                             : new Version(1, 1),
                         StatusCode = HttpStatusCode.Gone,
-                        Content = new FauntInjectionHttpContent(
+                        Content = new FaultInjectionHttpContent(
                             new MemoryStream(
                                 isProxyCall
                                     ? FaultInjectionResponseEncoding.GetBytes(
@@ -498,7 +498,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                             ? new Version(2, 0)
                             : new Version(1, 1),
                         StatusCode = HttpStatusCode.ServiceUnavailable,
-                        Content = new FauntInjectionHttpContent(
+                        Content = new FaultInjectionHttpContent(
                             new MemoryStream(
                                 isProxyCall
                                     ? FaultInjectionResponseEncoding.GetBytes(
@@ -523,7 +523,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                             ? new Version(2, 0)
                             : new Version(1, 1),
                         StatusCode = HttpStatusCode.Forbidden,
-                        Content = new FauntInjectionHttpContent(
+                        Content = new FaultInjectionHttpContent(
                             new MemoryStream(
                                 isProxyCall
                                     ? FaultInjectionResponseEncoding.GetBytes(
@@ -548,7 +548,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                             ? new Version(2, 0)
                             : new Version(1, 1),
                         StatusCode = HttpStatusCode.Gone,
-                        Content = new FauntInjectionHttpContent(
+                        Content = new FaultInjectionHttpContent(
                             new MemoryStream(
                                 isProxyCall
                                     ? FaultInjectionResponseEncoding.GetBytes(
@@ -571,7 +571,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                             ? new Version(2, 0)
                             : new Version(1, 1),
                         StatusCode = HttpStatusCode.Unauthorized,
-                        Content = new FauntInjectionHttpContent(
+                        Content = new FaultInjectionHttpContent(
                             new MemoryStream(
                                 isProxyCall
                                     ? FaultInjectionResponseEncoding.GetBytes(
@@ -588,7 +588,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                             ? new Version(2, 0)
                             : new Version(1, 1),
                         StatusCode = HttpStatusCode.Unauthorized,
-                        Content = new FauntInjectionHttpContent(
+                        Content = new FaultInjectionHttpContent(
                             new MemoryStream(
                                 isProxyCall
                                     ? FaultInjectionResponseEncoding.GetBytes(
@@ -641,11 +641,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             return $"{{\"code\": \"{statusCode}:{subStatusCode}\",\"message\":\"Fault Injection Server Error: {message}, rule: {faultInjectionRuleId}\"}}";
         }
 
-        internal class FauntInjectionHttpContent : HttpContent
+        internal class FaultInjectionHttpContent : HttpContent
         {
             private readonly Stream content;
 
-            public FauntInjectionHttpContent(Stream content)
+            public FaultInjectionHttpContent(Stream content)
             {
                 this.content = content;
             }

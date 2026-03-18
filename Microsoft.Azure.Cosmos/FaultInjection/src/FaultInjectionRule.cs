@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.FaultInjection
@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private readonly TimeSpan duration;
         private readonly TimeSpan startDelay;
         private readonly int hitLimit;
-        private bool enabled;
+        private volatile bool enabled;
         private IFaultInjectionRuleInternal? effectiveRule;
 
         /// <summary>
