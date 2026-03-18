@@ -1295,5 +1295,189 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return 1;
             }
         }
+
+        [TestMethod]
+        public void CosmosClientOptions_DiagnosticsVerbosity_DefaultIsDetailed()
+        {
+            CosmosClientOptions options = new CosmosClientOptions();
+            Assert.AreEqual(DiagnosticsVerbosity.Detailed, options.DiagnosticsVerbosity);
+        }
+
+        [TestMethod]
+        public void CosmosClientOptions_DiagnosticsVerbosity_CanSetToSummary()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                DiagnosticsVerbosity = DiagnosticsVerbosity.Summary
+            };
+
+            Assert.AreEqual(DiagnosticsVerbosity.Summary, options.DiagnosticsVerbosity);
+        }
+
+        [TestMethod]
+        public void CosmosClientOptions_MaxDiagnosticsSummarySizeBytes_DefaultIs8192()
+        {
+            CosmosClientOptions options = new CosmosClientOptions();
+            Assert.AreEqual(8192, options.MaxDiagnosticsSummarySizeBytes);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentOutOfRangeException))]
+        public void CosmosClientOptions_MaxDiagnosticsSummarySizeBytes_ThrowsBelowMinimum()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                MaxDiagnosticsSummarySizeBytes = 2048
+            };
+        }
+
+        [TestMethod]
+        public void CosmosClientOptions_MaxDiagnosticsSummarySizeBytes_AcceptsMinimum()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                MaxDiagnosticsSummarySizeBytes = 4096
+            };
+
+            Assert.AreEqual(4096, options.MaxDiagnosticsSummarySizeBytes);
+        }
+
+        [TestMethod]
+        public void CosmosClientOptions_MaxDiagnosticsSummarySizeBytes_AcceptsLargeValue()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                MaxDiagnosticsSummarySizeBytes = 65536
+            };
+
+            Assert.AreEqual(65536, options.MaxDiagnosticsSummarySizeBytes);
+        }
+
+        [TestMethod]
+        public void CosmosClientOptions_EnvVar_DiagnosticsVerbosity_Summary()
+        {
+            string original = Environment.GetEnvironmentVariable("AZURE_COSMOS_DIAGNOSTICS_VERBOSITY");
+            try
+            {
+                Environment.SetEnvironmentVariable("AZURE_COSMOS_DIAGNOSTICS_VERBOSITY", "Summary");
+                CosmosClientOptions options = new CosmosClientOptions();
+                Assert.AreEqual(DiagnosticsVerbosity.Summary, options.DiagnosticsVerbosity);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AZURE_COSMOS_DIAGNOSTICS_VERBOSITY", original);
+            }
+        }
+
+        [TestMethod]
+        public void CosmosClientOptions_EnvVar_DiagnosticsVerbosity_CaseInsensitive()
+        {
+            string original = Environment.GetEnvironmentVariable("AZURE_COSMOS_DIAGNOSTICS_VERBOSITY");
+            try
+            {
+                Environment.SetEnvironmentVariable("AZURE_COSMOS_DIAGNOSTICS_VERBOSITY", "summary");
+                CosmosClientOptions options = new CosmosClientOptions();
+                Assert.AreEqual(DiagnosticsVerbosity.Summary, options.DiagnosticsVerbosity);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AZURE_COSMOS_DIAGNOSTICS_VERBOSITY", original);
+            }
+        }
+
+        [TestMethod]
+        public void CosmosClientOptions_EnvVar_DiagnosticsVerbosity_InvalidIgnored()
+        {
+            string original = Environment.GetEnvironmentVariable("AZURE_COSMOS_DIAGNOSTICS_VERBOSITY");
+            try
+            {
+                Environment.SetEnvironmentVariable("AZURE_COSMOS_DIAGNOSTICS_VERBOSITY", "InvalidValue");
+                CosmosClientOptions options = new CosmosClientOptions();
+                Assert.AreEqual(DiagnosticsVerbosity.Detailed, options.DiagnosticsVerbosity);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AZURE_COSMOS_DIAGNOSTICS_VERBOSITY", original);
+            }
+        }
+
+        [TestMethod]
+        public void CosmosClientOptions_EnvVar_MaxSummarySize()
+        {
+            string original = Environment.GetEnvironmentVariable("AZURE_COSMOS_DIAGNOSTICS_MAX_SUMMARY_SIZE");
+            try
+            {
+                Environment.SetEnvironmentVariable("AZURE_COSMOS_DIAGNOSTICS_MAX_SUMMARY_SIZE", "16384");
+                CosmosClientOptions options = new CosmosClientOptions();
+                Assert.AreEqual(16384, options.MaxDiagnosticsSummarySizeBytes);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AZURE_COSMOS_DIAGNOSTICS_MAX_SUMMARY_SIZE", original);
+            }
+        }
+
+        [TestMethod]
+        public void CosmosClientOptions_EnvVar_MaxSummarySize_BelowMinimumIgnored()
+        {
+            string original = Environment.GetEnvironmentVariable("AZURE_COSMOS_DIAGNOSTICS_MAX_SUMMARY_SIZE");
+            try
+            {
+                Environment.SetEnvironmentVariable("AZURE_COSMOS_DIAGNOSTICS_MAX_SUMMARY_SIZE", "1024");
+                CosmosClientOptions options = new CosmosClientOptions();
+                Assert.AreEqual(8192, options.MaxDiagnosticsSummarySizeBytes, "Below-minimum env var should be ignored");
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AZURE_COSMOS_DIAGNOSTICS_MAX_SUMMARY_SIZE", original);
+            }
+        }
+
+        [TestMethod]
+        public void CosmosClientOptions_EnvVar_ExplicitPropertyOverridesEnvVar()
+        {
+            string original = Environment.GetEnvironmentVariable("AZURE_COSMOS_DIAGNOSTICS_VERBOSITY");
+            try
+            {
+                Environment.SetEnvironmentVariable("AZURE_COSMOS_DIAGNOSTICS_VERBOSITY", "Summary");
+                CosmosClientOptions options = new CosmosClientOptions
+                {
+                    DiagnosticsVerbosity = DiagnosticsVerbosity.Detailed
+                };
+                Assert.AreEqual(DiagnosticsVerbosity.Detailed, options.DiagnosticsVerbosity);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AZURE_COSMOS_DIAGNOSTICS_VERBOSITY", original);
+            }
+        }
+
+        [TestMethod]
+        public void CosmosClientBuilder_WithDiagnosticsVerbosity()
+        {
+            CosmosClientBuilder builder = new CosmosClientBuilder(CosmosClientOptionsUnitTests.AccountEndpoint, MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
+            builder.WithDiagnosticsVerbosity(DiagnosticsVerbosity.Summary);
+
+            CosmosClient client = builder.Build(new MockDocumentClient());
+            Assert.AreEqual(DiagnosticsVerbosity.Summary, client.ClientOptions.DiagnosticsVerbosity);
+        }
+
+        [TestMethod]
+        public void CosmosClientBuilder_WithMaxDiagnosticsSummarySizeBytes()
+        {
+            CosmosClientBuilder builder = new CosmosClientBuilder(CosmosClientOptionsUnitTests.AccountEndpoint, MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
+            builder.WithMaxDiagnosticsSummarySizeBytes(16384);
+
+            CosmosClient client = builder.Build(new MockDocumentClient());
+            Assert.AreEqual(16384, client.ClientOptions.MaxDiagnosticsSummarySizeBytes);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentOutOfRangeException))]
+        public void CosmosClientBuilder_WithMaxDiagnosticsSummarySizeBytes_TooSmallThrows()
+        {
+            CosmosClientBuilder builder = new CosmosClientBuilder(CosmosClientOptionsUnitTests.AccountEndpoint, MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
+            builder.WithMaxDiagnosticsSummarySizeBytes(2048);
+        }
     }
 }

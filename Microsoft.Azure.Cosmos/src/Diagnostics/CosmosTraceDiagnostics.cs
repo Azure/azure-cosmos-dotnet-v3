@@ -17,8 +17,14 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
     internal sealed class CosmosTraceDiagnostics : CosmosDiagnostics
     {
         private readonly Lazy<ServerSideCumulativeMetrics> accumulatedMetrics;
+        private readonly Lazy<string> cachedSummaryJson;
 
         public CosmosTraceDiagnostics(ITrace trace)
+            : this(trace, CosmosClientOptions.DefaultMaxDiagnosticsSummarySizeBytes)
+        {
+        }
+
+        internal CosmosTraceDiagnostics(ITrace trace, int maxDiagnosticsSummarySizeBytes)
         {
             if (trace == null)
             {
@@ -34,6 +40,15 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
             this.Value = rootTrace;
             this.accumulatedMetrics = new Lazy<ServerSideCumulativeMetrics>(() => PopulateServerSideCumulativeMetrics(this.Value));
+            this.cachedSummaryJson = new Lazy<string>(() =>
+            {
+                if (this.Value is Tracing.Trace rootConcreteTrace2)
+                {
+                    rootConcreteTrace2.SetWalkingStateRecursively();
+                }
+
+                return DiagnosticsSummaryWriter.WriteSummary(this.Value, maxDiagnosticsSummarySizeBytes);
+            });
         }
 
         public ITrace Value { get; }
@@ -46,6 +61,16 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             }
             
             return this.ToJsonString();
+        }
+
+        public override string ToString(DiagnosticsVerbosity verbosity)
+        {
+            if (verbosity == DiagnosticsVerbosity.Summary)
+            {
+                return this.cachedSummaryJson.Value;
+            }
+
+            return this.ToString();
         }
 
         public override TimeSpan GetClientElapsedTime()

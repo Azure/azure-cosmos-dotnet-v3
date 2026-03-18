@@ -235,7 +235,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 System.Net.HttpStatusCode.OK,
                 headers,
                 result.FirstOrDefault(),
-                new CosmosTraceDiagnostics(rootTrace),
+                new CosmosTraceDiagnostics(rootTrace, this.container.ClientContext.ClientOptions.MaxDiagnosticsSummarySizeBytes),
                 null);
         }
 

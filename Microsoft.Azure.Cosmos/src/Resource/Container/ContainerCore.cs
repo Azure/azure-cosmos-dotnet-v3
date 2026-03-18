@@ -567,7 +567,7 @@ namespace Microsoft.Azure.Cosmos
                     responseMessage.StatusCode,
                     responseMessage.Headers,
                     null,
-                    new CosmosTraceDiagnostics(trace),
+                    new CosmosTraceDiagnostics(trace, this.ClientContext.ClientOptions.MaxDiagnosticsSummarySizeBytes),
                     responseMessage.RequestMessage);
             }
 

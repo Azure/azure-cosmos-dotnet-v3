@@ -57,6 +57,11 @@ namespace Microsoft.Azure.Cosmos
         private const ApiType DefaultApiType = ApiType.None;
 
         /// <summary>
+        /// Default maximum size in bytes for Summary mode diagnostic output.
+        /// </summary>
+        internal const int DefaultMaxDiagnosticsSummarySizeBytes = 8192;
+
+        /// <summary>
         /// Default request timeout
         /// </summary>
         private int gatewayModeMaxConnectionLimit;
@@ -76,6 +81,7 @@ namespace Microsoft.Azure.Cosmos
         private string applicationName;
         private IFaultInjector faultInjector;
         private bool isCustomSerializerProvided;
+        private int maxDiagnosticsSummarySizeBytes = DefaultMaxDiagnosticsSummarySizeBytes;
 
         /// <summary>
         /// Creates a new CosmosClientOptions
@@ -91,6 +97,21 @@ namespace Microsoft.Azure.Cosmos
             this.CustomHandlers = new Collection<RequestHandler>();
             this.CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions();
             this.SessionRetryOptions = new SessionRetryOptions();
+
+            string envVerbosity = Environment.GetEnvironmentVariable(ConfigurationManager.DiagnosticsVerbosityVariable);
+            if (!string.IsNullOrEmpty(envVerbosity)
+                && Enum.TryParse(envVerbosity, ignoreCase: true, out DiagnosticsVerbosity parsedVerbosity))
+            {
+                this.DiagnosticsVerbosity = parsedVerbosity;
+            }
+
+            string envMaxSize = Environment.GetEnvironmentVariable(ConfigurationManager.DiagnosticsMaxSummarySizeVariable);
+            if (!string.IsNullOrEmpty(envMaxSize)
+                && int.TryParse(envMaxSize, out int parsedMaxSize)
+                && parsedMaxSize >= 4096)
+            {
+                this.maxDiagnosticsSummarySizeBytes = parsedMaxSize;
+            }
         }
 
         /// <summary>
@@ -385,6 +406,56 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         /// <seealso href="https://aka.ms/CosmosDB/PriorityBasedExecution"/>
         public PriorityLevel? PriorityLevel { get; set; }
+
+        /// <summary>
+        /// Gets or sets the preferred verbosity for <see cref="CosmosDiagnostics"/> serialization.
+        /// Default: <see cref="Microsoft.Azure.Cosmos.DiagnosticsVerbosity.Detailed"/>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// This property stores the preferred verbosity level. To obtain diagnostics at
+        /// the configured verbosity, pass it to
+        /// <see cref="CosmosDiagnostics.ToString(DiagnosticsVerbosity)"/>:
+        /// <c>response.Diagnostics.ToString(client.ClientOptions.DiagnosticsVerbosity)</c>.
+        /// </para>
+        /// <para>
+        /// When <see cref="Microsoft.Azure.Cosmos.DiagnosticsVerbosity.Summary"/> is used,
+        /// the diagnostics output is compacted by grouping requests by region and deduplicating
+        /// retries with aggregate statistics (count, total RU, min/max/P50/avg latency).
+        /// </para>
+        /// <para>
+        /// The parameterless <see cref="CosmosDiagnostics.ToString()"/> always returns
+        /// <see cref="Microsoft.Azure.Cosmos.DiagnosticsVerbosity.Detailed"/> output for
+        /// backward compatibility.
+        /// </para>
+        /// </remarks>
+        public DiagnosticsVerbosity DiagnosticsVerbosity { get; set; } = DiagnosticsVerbosity.Detailed;
+
+        /// <summary>
+        /// Gets or sets the maximum size in bytes for Summary mode diagnostic output.
+        /// If the summary output exceeds this limit, a truncated indicator is returned.
+        /// Default: 8192 (8 KB). Minimum: 4096 (4 KB).
+        /// </summary>
+        /// <remarks>
+        /// This property is only relevant when <see cref="DiagnosticsVerbosity"/> is set to
+        /// <see cref="Microsoft.Azure.Cosmos.DiagnosticsVerbosity.Summary"/>.
+        /// </remarks>
+        public int MaxDiagnosticsSummarySizeBytes
+        {
+            get => this.maxDiagnosticsSummarySizeBytes;
+            set
+            {
+                if (value < 4096)
+                {
+                    throw new ArgumentOutOfRangeException(
+                        nameof(this.MaxDiagnosticsSummarySizeBytes),
+                        value,
+                        $"{nameof(this.MaxDiagnosticsSummarySizeBytes)} must be at least 4096 bytes.");
+                }
+
+                this.maxDiagnosticsSummarySizeBytes = value;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the maximum number of retries in the case where the request fails

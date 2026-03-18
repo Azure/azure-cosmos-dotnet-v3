@@ -125,6 +125,18 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal static readonly string UseLengthAwareRangeComparator = "AZURE_COSMOS_USE_LENGTH_AWARE_RANGE_COMPARATOR";
 
+        /// <summary>
+        /// Environment variable name for overriding the default diagnostics verbosity.
+        /// Accepts "Summary" or "Detailed" (case-insensitive).
+        /// </summary>
+        internal static readonly string DiagnosticsVerbosityVariable = "AZURE_COSMOS_DIAGNOSTICS_VERBOSITY";
+
+        /// <summary>
+        /// Environment variable name for overriding the maximum summary diagnostics size in bytes.
+        /// Must be an integer >= 4096.
+        /// </summary>
+        internal static readonly string DiagnosticsMaxSummarySizeVariable = "AZURE_COSMOS_DIAGNOSTICS_MAX_SUMMARY_SIZE";
+
         public static T GetEnvironmentVariable<T>(string variable, T defaultValue)
         {
             string value = Environment.GetEnvironmentVariable(variable);

@@ -384,6 +384,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Mock<CosmosClientContext> mockedContext = new Mock<CosmosClientContext>(MockBehavior.Strict);
             mockedContext.Setup(c => c.Client).Returns(MockCosmosUtil.CreateMockCosmosClient());
+            mockedContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
             mockedContext.Setup(x => x.OperationHelperAsync<FeedResponse<ChangeFeedProcessorState>>(
                 It.Is<string>(str => str.Contains("Change Feed Estimator")),
                 It.IsAny<string>(),
@@ -492,6 +493,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<ContainerInternal> containerMock = new Mock<ContainerInternal>(MockBehavior.Strict);
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>(MockBehavior.Strict);
             mockContext.Setup(x => x.Client).Returns(mockClient.Object);
+            mockContext.Setup(x => x.ClientOptions).Returns(new CosmosClientOptions());
             containerMock.Setup(c => c.ClientContext).Returns(mockContext.Object);
             containerMock.Setup(c => c.Id).Returns("containerId");
             containerMock.Setup(c => c.Database.Id).Returns("databaseId");
