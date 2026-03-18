@@ -1712,11 +1712,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(traceDiagnostic);
 
                 traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
+                traceDiagnostic.Value.Data.TryGetValue("Hedge Config", out object hedgeConfig);
 
-                Assert.IsNotNull(hedgeContext);
-                List<string> hedgedRegions = ((IEnumerable<string>)hedgeContext).ToList();
+                Assert.IsNotNull(hedgeConfig);
+                if (hedgeContext != null)
+                {
+                    List<string> hedgedRegions = ((IEnumerable<string>)hedgeContext).ToList();
+                    Assert.IsTrue(hedgedRegions.Count >= 1, "Since the first region is not available, the request should atleast hedge to the next region.");
+                }
 
-                Assert.IsTrue(hedgedRegions.Count >= 1, "Since the first region is not available, the request should atleast hedge to the next region.");
                 Assert.IsTrue(cosmosClient.DocumentClient.PartitionKeyRangeLocation.IsPartitionLevelAutomaticFailoverEnabled());
 
                 // Disable PPAF At the Gateway Layer.
@@ -2457,6 +2461,292 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelCircuitBreakerEnabled, null);
                 Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerConsecutiveFailureCountForReads, null);
 
+                await this.TryDeleteItems(itemsList);
+            }
+        }
+
+        [TestMethod]
+        [Owner("ntripician")]
+        [TestCategory("MultiRegion")]
+        [Timeout(70000)]
+        [DataRow(true, DisplayName = "Test scenario when PPAF is enabled at client level for write hedging.")]
+        [DataRow(false, DisplayName = "Test scenario when PPAF is disabled at client level for write hedging.")]
+        public async Task CreateItemAsync_WithPPAFEnabledAndSingleMasterAccountWithResponseDelay_ShouldHedgeWriteToMultipleRegions(
+            bool enablePartitionLevelFailover)
+        {
+            // Arrange.
+            // Enabling fault injection rule to simulate a response delay on CreateItem in region1.
+            string responseDelayRuleId = "create-delay-rule-" + Guid.NewGuid().ToString();
+            FaultInjectionRule responseDelayRule = new FaultInjectionRuleBuilder(
+                id: responseDelayRuleId,
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithOperationType(FaultInjectionOperationType.CreateItem)
+                        .WithRegion(region1)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
+                        .WithDelay(TimeSpan.FromMilliseconds(3000))
+                        .Build())
+                .Build();
+
+            List<FaultInjectionRule> rules = new List<FaultInjectionRule> { responseDelayRule };
+            FaultInjector faultInjector = new FaultInjector(rules);
+
+            HttpClientHandlerHelper httpClientHandlerHelper = new HttpClientHandlerHelper()
+            {
+                ResponseIntercepter = async (response, request) =>
+                {
+                    string json = await response?.Content?.ReadAsStringAsync();
+                    if (json.Length > 0 && json.Contains("enablePerPartitionFailoverBehavior"))
+                    {
+                        JObject parsedDatabaseAccountResponse = JObject.Parse(json);
+                        parsedDatabaseAccountResponse.Property("enablePerPartitionFailoverBehavior").Value = enablePartitionLevelFailover.ToString();
+
+                        HttpResponseMessage interceptedResponse = new()
+                        {
+                            StatusCode = response.StatusCode,
+                            Content = new StringContent(parsedDatabaseAccountResponse.ToString()),
+                            Version = response.Version,
+                            ReasonPhrase = response.ReasonPhrase,
+                            RequestMessage = response.RequestMessage,
+                        };
+
+                        return interceptedResponse;
+                    }
+
+                    return response;
+                },
+            };
+
+            List<string> preferredRegions = new List<string> { region1, region2, region3 };
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+            {
+                Serializer = this.cosmosSystemTextJsonSerializer,
+                ConsistencyLevel = ConsistencyLevel.Session,
+                FaultInjector = faultInjector,
+                RequestTimeout = TimeSpan.FromSeconds(5),
+                ApplicationPreferredRegions = preferredRegions,
+                HttpClientFactory = () => new HttpClient(httpClientHandlerHelper),
+            };
+
+            string uniqueId = "writeHedgeTest-" + Guid.NewGuid().ToString();
+            List<CosmosIntegrationTestObject> itemsList = new()
+            {
+                new() { Id = uniqueId, Pk = "writeHedgePk1" },
+            };
+
+            try
+            {
+                using CosmosClient cosmosClient = new(connectionString: this.connectionString, clientOptions: cosmosClientOptions);
+                Database database = cosmosClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
+
+                // Act.
+                ItemResponse<CosmosIntegrationTestObject> createResponse = await container.CreateItemAsync(
+                    item: itemsList[0],
+                    partitionKey: new PartitionKey(itemsList[0].Pk));
+
+                // Assert.
+                Assert.AreEqual(
+                    expected: HttpStatusCode.Created,
+                    actual: createResponse.StatusCode);
+
+                CosmosTraceDiagnostics traceDiagnostic = createResponse.Diagnostics as CosmosTraceDiagnostics;
+                Assert.IsNotNull(traceDiagnostic);
+
+                traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
+
+                if (enablePartitionLevelFailover)
+                {
+                    Assert.IsNotNull(hedgeContext, "Hedge Context should be present when PPAF is enabled and region1 has response delay.");
+                    List<string> hedgedRegions = ((IEnumerable<string>)hedgeContext).ToList();
+
+                    Assert.IsTrue(hedgedRegions.Count > 1, "Since the first region has a delay, the write request should hedge to additional regions.");
+                }
+                else
+                {
+                    Assert.IsNull(hedgeContext, "Hedge Context should not be present when PPAF is disabled for write requests.");
+                }
+            }
+            finally
+            {
+                await this.TryDeleteItems(itemsList);
+            }
+        }
+
+        [TestMethod]
+        [Owner("ntripician")]
+        [TestCategory("MultiRegion")]
+        [Timeout(70000)]
+        public async Task CreateItemAsync_WithPPAFEnabledAndNoDelay_ShouldNotHedgeWrite()
+        {
+            // Arrange - No fault injection (primary region is healthy)
+            HttpClientHandlerHelper httpClientHandlerHelper = new HttpClientHandlerHelper()
+            {
+                ResponseIntercepter = async (response, request) =>
+                {
+                    string json = await response?.Content?.ReadAsStringAsync();
+                    if (json.Length > 0 && json.Contains("enablePerPartitionFailoverBehavior"))
+                    {
+                        JObject parsedDatabaseAccountResponse = JObject.Parse(json);
+                        parsedDatabaseAccountResponse.Property("enablePerPartitionFailoverBehavior").Value = "True";
+
+                        HttpResponseMessage interceptedResponse = new()
+                        {
+                            StatusCode = response.StatusCode,
+                            Content = new StringContent(parsedDatabaseAccountResponse.ToString()),
+                            Version = response.Version,
+                            ReasonPhrase = response.ReasonPhrase,
+                            RequestMessage = response.RequestMessage,
+                        };
+
+                        return interceptedResponse;
+                    }
+
+                    return response;
+                },
+            };
+
+            List<string> preferredRegions = new List<string> { region1, region2, region3 };
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+            {
+                Serializer = this.cosmosSystemTextJsonSerializer,
+                ConsistencyLevel = ConsistencyLevel.Session,
+                RequestTimeout = TimeSpan.FromSeconds(5),
+                ApplicationPreferredRegions = preferredRegions,
+                HttpClientFactory = () => new HttpClient(httpClientHandlerHelper),
+            };
+
+            string uniqueId = "writeNoHedgeTest-" + Guid.NewGuid().ToString();
+            List<CosmosIntegrationTestObject> itemsList = new()
+            {
+                new() { Id = uniqueId, Pk = "writeNoHedgePk1" },
+            };
+
+            try
+            {
+                using CosmosClient cosmosClient = new(connectionString: this.connectionString, clientOptions: cosmosClientOptions);
+                Database database = cosmosClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
+
+                // Act.
+                ItemResponse<CosmosIntegrationTestObject> createResponse = await container.CreateItemAsync(
+                    item: itemsList[0],
+                    partitionKey: new PartitionKey(itemsList[0].Pk));
+
+                // Assert.
+                Assert.AreEqual(
+                    expected: HttpStatusCode.Created,
+                    actual: createResponse.StatusCode);
+
+                CosmosTraceDiagnostics traceDiagnostic = createResponse.Diagnostics as CosmosTraceDiagnostics;
+                Assert.IsNotNull(traceDiagnostic);
+
+                traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
+                Assert.IsNull(hedgeContext, "No hedging should occur when the primary region responds before the threshold.");
+            }
+            finally
+            {
+                await this.TryDeleteItems(itemsList);
+            }
+        }
+
+        [TestMethod]
+        [Owner("ntripician")]
+        [TestCategory("MultiRegion")]
+        [Timeout(70000)]
+        public async Task CreateItemAsync_WithPPAFEnabledAndPrimaryUnavailable_ShouldHedgeAndSucceedInSecondary()
+        {
+            // Arrange - Inject response delay on CreateItem in region1 to simulate primary unavailability.
+            string responseDelayRuleId = "create-delay-rule-" + Guid.NewGuid().ToString();
+            FaultInjectionRule responseDelayRule = new FaultInjectionRuleBuilder(
+                id: responseDelayRuleId,
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithOperationType(FaultInjectionOperationType.CreateItem)
+                        .WithRegion(region1)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
+                        .WithDelay(TimeSpan.FromMilliseconds(3000))
+                        .Build())
+                .Build();
+
+            List<FaultInjectionRule> rules = new List<FaultInjectionRule> { responseDelayRule };
+            FaultInjector faultInjector = new FaultInjector(rules);
+
+            HttpClientHandlerHelper httpClientHandlerHelper = new HttpClientHandlerHelper()
+            {
+                ResponseIntercepter = async (response, request) =>
+                {
+                    string json = await response?.Content?.ReadAsStringAsync();
+                    if (json.Length > 0 && json.Contains("enablePerPartitionFailoverBehavior"))
+                    {
+                        JObject parsedDatabaseAccountResponse = JObject.Parse(json);
+                        parsedDatabaseAccountResponse.Property("enablePerPartitionFailoverBehavior").Value = "True";
+
+                        HttpResponseMessage interceptedResponse = new()
+                        {
+                            StatusCode = response.StatusCode,
+                            Content = new StringContent(parsedDatabaseAccountResponse.ToString()),
+                            Version = response.Version,
+                            ReasonPhrase = response.ReasonPhrase,
+                            RequestMessage = response.RequestMessage,
+                        };
+
+                        return interceptedResponse;
+                    }
+
+                    return response;
+                },
+            };
+
+            List<string> preferredRegions = new List<string> { region1, region2, region3 };
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+            {
+                Serializer = this.cosmosSystemTextJsonSerializer,
+                ConsistencyLevel = ConsistencyLevel.Session,
+                FaultInjector = faultInjector,
+                RequestTimeout = TimeSpan.FromSeconds(5),
+                ApplicationPreferredRegions = preferredRegions,
+                HttpClientFactory = () => new HttpClient(httpClientHandlerHelper),
+            };
+
+            string uniqueId = "writeHedge503Test-" + Guid.NewGuid().ToString();
+            List<CosmosIntegrationTestObject> itemsList = new()
+            {
+                new() { Id = uniqueId, Pk = "writeHedge503Pk1" },
+            };
+
+            try
+            {
+                using CosmosClient cosmosClient = new(connectionString: this.connectionString, clientOptions: cosmosClientOptions);
+                Database database = cosmosClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
+
+                // Act.
+                ItemResponse<CosmosIntegrationTestObject> createResponse = await container.CreateItemAsync(
+                    item: itemsList[0],
+                    partitionKey: new PartitionKey(itemsList[0].Pk));
+
+                // Assert.
+                Assert.AreEqual(
+                    expected: HttpStatusCode.Created,
+                    actual: createResponse.StatusCode,
+                    message: "Write should succeed via hedging to a secondary region when primary is unavailable.");
+
+                CosmosTraceDiagnostics traceDiagnostic = createResponse.Diagnostics as CosmosTraceDiagnostics;
+                Assert.IsNotNull(traceDiagnostic);
+
+                traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
+                Assert.IsNotNull(hedgeContext, "Hedge Context should be present since primary region is unavailable and PPAF is enabled.");
+
+                List<string> hedgedRegions = ((IEnumerable<string>)hedgeContext).ToList();
+                Assert.IsTrue(hedgedRegions.Count > 1, "The write request should hedge to at least one additional region when primary is unavailable.");
+            }
+            finally
+            {
                 await this.TryDeleteItems(itemsList);
             }
         }

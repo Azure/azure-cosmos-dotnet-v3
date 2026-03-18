@@ -52,6 +52,7 @@ namespace Microsoft.Azure.Cosmos
         public bool IsSDKDefaultStrategyForPPAF { get; private set; }
 
         private readonly string HedgeConfigText;
+        private bool ppafEnabled = false;
 
         /// <summary>
         /// Constructor for hedging availability strategy
@@ -113,6 +114,13 @@ namespace Microsoft.Azure.Cosmos
                 {
                     return true;
                 }
+
+                // PPAF single-master: hedge writes using read regions as failover targets
+                if (this.ppafEnabled)
+                {
+                    return true;
+                }
+
                 return false;
             }
 
@@ -133,6 +141,7 @@ namespace Microsoft.Azure.Cosmos
             RequestMessage request,
             CancellationToken applicationProvidedCancellationToken)
         {
+            this.ppafEnabled = client.DocumentClient.ConnectionPolicy.EnablePartitionLevelFailover;
             if (!this.ShouldHedge(request, client)
                 || client.DocumentClient.GlobalEndpointManager.ReadEndpoints.Count == 1)
             {
@@ -148,10 +157,17 @@ namespace Microsoft.Azure.Cosmos
                     ? null
                     : await StreamExtension.AsClonableStreamAsync(request.Content)))
                 {
-                    IReadOnlyCollection<string> hedgeRegions = client.DocumentClient.GlobalEndpointManager
-                        .GetApplicableRegions(
-                            request.RequestOptions?.ExcludeRegions,
-                            OperationTypeExtensions.IsReadOperation(request.OperationType));
+                    bool isReadRequest = OperationTypeExtensions.IsReadOperation(request.OperationType);
+
+                    // For PPAF write hedging, use all account-level read regions (consistent with
+                    // GlobalPartitionEndpointManagerCore's use of AccountReadEndpoints for PPAF failover).
+                    // GetApplicableRegions filters through EffectivePreferredLocations, which could
+                    // drop valid hedge targets not in the user's PreferredLocations.
+                    IReadOnlyCollection<string> hedgeRegions = this.ppafEnabled && !isReadRequest
+                        ? client.DocumentClient.GlobalEndpointManager
+                            .GetApplicableAccountLevelReadRegions(request.RequestOptions?.ExcludeRegions)
+                        : client.DocumentClient.GlobalEndpointManager
+                            .GetApplicableRegions(request.RequestOptions?.ExcludeRegions, isReadRequest);
 
                     List<Task> requestTasks = new List<Task>(hedgeRegions.Count + 1);
 
@@ -222,10 +238,17 @@ namespace Microsoft.Azure.Cosmos
                                     ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
                                         HedgeConfig,
                                         this.HedgeConfigText);
-                                    //Take is not inclusive, so we need to add 1 to the request number which starts at 0
-                                    ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
-                                        HedgeContext,
-                                        hedgeRegions.Take(requestNumber + 1));
+
+                                    // Only set Hedge Context when actual hedging occurred (requestNumber > 0).
+                                    // When requestNumber == 0, the primary responded before the threshold.
+                                    if (requestNumber > 0)
+                                    {
+                                        //Take is not inclusive, so we need to add 1 to the request number which starts at 0
+                                        ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
+                                            HedgeContext,
+                                            hedgeRegions.Take(requestNumber + 1));
+                                    }
+
                                     // Note that the target region can be seperate than the actual region that serviced the request depending on the scenario
                                     ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
                                         ResponseRegion,
