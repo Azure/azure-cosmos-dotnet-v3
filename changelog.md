@@ -28,8 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [5447](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5447) Per Partition Automatic Failover: Adds Hub Region Processing Only While Routing Requests Failed with 404/1002 for single master accounts
 - [5582](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5582) Query: Adds ability to choose global vs local/focused statistics for FullTextScore
 - [5693](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5693) ThinClient Integration: Adds Enable Multiple Http2 connection on SocketsHttpHandler
-- [5610](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5610) Direct package update: Adds direct package version 3.42.0 and fixes EnableNRegionSynchronousCommit flag
-- [5646](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5646) Direct package update: Adds direct package version 3.42.2 and ingest DTS related changes
+- [5610](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5610) Fixes EnableNRegionSynchronousCommit flag
 
 #### Fixed
 - [5597](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5597) CosmosClient: Fixes ObjectDisposedException message when client is disposed during request
