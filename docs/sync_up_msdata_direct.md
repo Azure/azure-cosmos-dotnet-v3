@@ -89,5 +89,38 @@ Once the feature branch builds successfully, it's time to submit the PR to `msda
 
 ## Sample Pull Requests to Sync-up msdata direct
 
+- [[Internal] Direct package: Adds msdata/direct update from master](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5612)
 - [[Internal] Msdata/Direct: Refactors msdata branch with latest v3 and direct release](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3726)
 - [[Internal] Msdata/Direct: Refactors msdata/direct branch with latest v3 master and Cosmos.Direct v3.30.4](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3776)
+
+## Automated Workflow (Recommended)
+
+For a faster and more reliable sync process, use the Copilot agent and helper script:
+
+### Option 1: Copilot Agent (AI-Assisted)
+
+Use the Copilot agent at [`.github/agents/msdata-direct-sync-agent.agent.md`](../.github/agents/msdata-direct-sync-agent.agent.md) for a guided, AI-assisted workflow. Start with this prompt:
+
+```
+Follow the msdata/direct sync agent plan in .github/agents/msdata-direct-sync-agent.agent.md
+
+Sync the msdata/direct branch with the latest v3 master and msdata direct codebase.
+```
+
+The agent handles: environment validation, branch creation, master merge, conflict resolution, msdata file sync, build validation, and PR creation.
+
+### Option 2: PowerShell Helper Script
+
+Run the helper script at [`tools/msdata-direct-sync-helper.ps1`](../tools/msdata-direct-sync-helper.ps1) for full automation:
+
+```powershell
+# Full workflow (all phases)
+.\tools\msdata-direct-sync-helper.ps1 -MsdataRepoPath "Q:\CosmosDB"
+
+# Run individual phases
+.\tools\msdata-direct-sync-helper.ps1 -MsdataRepoPath "Q:\CosmosDB" -Phase Setup
+.\tools\msdata-direct-sync-helper.ps1 -MsdataRepoPath "Q:\CosmosDB" -Phase Branch
+.\tools\msdata-direct-sync-helper.ps1 -MsdataRepoPath "Q:\CosmosDB" -Phase Sync
+.\tools\msdata-direct-sync-helper.ps1 -MsdataRepoPath "Q:\CosmosDB" -Phase Build
+.\tools\msdata-direct-sync-helper.ps1 -MsdataRepoPath "Q:\CosmosDB" -Phase PR
+```
