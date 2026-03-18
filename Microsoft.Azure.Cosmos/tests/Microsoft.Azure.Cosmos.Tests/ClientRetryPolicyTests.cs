@@ -488,54 +488,79 @@
         }
 
         /// <summary>
-        /// Verifies cache stores and retrieves hub regions per partition, handles null inputs, and returns null for uncached partitions
+        /// Verifies hub routing uses existing cache via TryMarkEndpointUnavailableForPartitionKeyRange
+        /// and TryAddPartitionLevelLocationOverride when hub header is present on the request.
         /// </summary>
         [TestMethod]
         [Owner("aavasthy")]
-        [Description("Validates hub region cache stores/retrieves values per partition and handles null/uncached cases.")]
-        public void GlobalPartitionEndpointManager_CacheHubRegion_RetrievesCorrectValuePerPartitionAndHandlesNullInputs()
+        [Description("Validates hub routing builds cache via 403/3 handling and TryAddPartitionLevelLocationOverride routes to cached location.")]
+        public void GlobalPartitionEndpointManager_HubRouting_UsesExistingCache_ViaMarkAndOverrideMethods()
         {
-            // Arrange
+            // Arrange: 2 read regions
+            Uri eastUS = new Uri("https://eastus.documents.azure.com/");
+            Uri westUS = new Uri("https://westus.documents.azure.com/");
+
             Mock<IGlobalEndpointManager> mockEndpointManager = new Mock<IGlobalEndpointManager>();
+            mockEndpointManager.Setup(m => m.ReadEndpoints).Returns(
+                new ReadOnlyCollection<Uri>(new List<Uri> { eastUS, westUS }));
+            mockEndpointManager.Setup(m => m.AccountReadEndpoints).Returns(
+                new ReadOnlyCollection<Uri>(new List<Uri> { eastUS, westUS }));
+
             GlobalPartitionEndpointManagerCore cache = new GlobalPartitionEndpointManagerCore(
                 mockEndpointManager.Object,
                 isPartitionLevelFailoverEnabled: false);
 
-            PartitionKeyRange pkRange1 = new PartitionKeyRange { Id = "0", MinInclusive = "", MaxExclusive = "BB" };
-            PartitionKeyRange pkRange2 = new PartitionKeyRange { Id = "1", MinInclusive = "BB", MaxExclusive = "FF" };
-            PartitionKeyRange uncachedPkRange = new PartitionKeyRange { Id = "999", MinInclusive = "", MaxExclusive = "FF" };
+            PartitionKeyRange pkRange = new PartitionKeyRange { Id = "0", MinInclusive = "", MaxExclusive = "FF" };
 
-            Uri hub1 = new Uri("https://westus.documents.azure.com/");
-            Uri hub2 = new Uri("https://eastus.documents.azure.com/");
+            // Without hub header: TryAddPartitionLevelLocationOverride returns false
+            DocumentServiceRequest reqNoHub = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+            reqNoHub.RequestContext.ResolvedPartitionKeyRange = pkRange;
+            Assert.IsFalse(cache.TryAddPartitionLevelLocationOverride(reqNoHub),
+                "Without hub header, override should not apply.");
 
-            // Act - Store hub regions for two partitions
-            cache.CacheDiscoveredHubRegionForPartition(pkRange1, hub1, "testCollectionRid");
-            cache.CacheDiscoveredHubRegionForPartition(pkRange2, hub2, "testCollectionRid");
+            // Step 1: Simulate 403/3 on East US with hub header
+            // (This is what happens when ClientRetryPolicy handles 403/3 during hub discovery)
+            DocumentServiceRequest req403 = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+            req403.RequestContext.ResolvedPartitionKeyRange = pkRange;
+            req403.RequestContext.RouteToLocation(eastUS);
+            req403.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion] = bool.TrueString;
 
-            // Retrieve
-            Uri retrieved1 = cache.GetCachedHubRegionForPartition(pkRange1);
-            Uri retrieved2 = cache.GetCachedHubRegionForPartition(pkRange2);
-            Uri retrievedUncached = cache.GetCachedHubRegionForPartition(uncachedPkRange);
+            bool marked = cache.TryMarkEndpointUnavailableForPartitionKeyRange(req403);
+            Assert.IsTrue(marked, "Should mark East US as unavailable and advance to West US.");
 
-            // Assert
-            Assert.AreEqual(hub1, retrieved1, "Retrieved hub for partition 0 should match cached value.");
-            Assert.AreEqual(hub2, retrieved2, "Retrieved hub for partition 1 should match cached value.");
-            Assert.IsNull(retrievedUncached, "Uncached partition should return null.");
+            // Step 2: TryAddPartitionLevelLocationOverride should now route to West US (cached)
+            DocumentServiceRequest reqCached = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+            reqCached.RequestContext.ResolvedPartitionKeyRange = pkRange;
+            reqCached.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion] = bool.TrueString;
 
-            // Test null/invalid inputs are handled gracefully
-            cache.CacheDiscoveredHubRegionForPartition(null, hub1, "testCollectionRid"); // Should not throw
-            cache.CacheDiscoveredHubRegionForPartition(pkRange1, null, "testCollectionRid"); // Should not throw
-            Uri nullResult = cache.GetCachedHubRegionForPartition(null);
-            Assert.IsNull(nullResult, "Null PKRange should return null.");
+            bool overrideApplied = cache.TryAddPartitionLevelLocationOverride(reqCached);
+            Assert.IsTrue(overrideApplied, "Should route to cached next location (West US).");
+            Assert.AreEqual(westUS, reqCached.RequestContext.LocationEndpointToRoute,
+                "Should route to West US after East US was marked unavailable.");
+
+            // Step 3: Without hub header, the cached entry should NOT be used
+            DocumentServiceRequest reqNormal = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+            reqNormal.RequestContext.ResolvedPartitionKeyRange = pkRange;
+            bool normalOverride = cache.TryAddPartitionLevelLocationOverride(reqNormal);
+            Assert.IsFalse(normalOverride,
+                "Without hub header, cached hub entry should not be used (prevents bombarding hub).");
+
+            // Step 4: Null/invalid inputs handled gracefully
+            DocumentServiceRequest reqNullPk = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+            reqNullPk.RequestContext.ResolvedPartitionKeyRange = null;
+            reqNullPk.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion] = bool.TrueString;
+            Assert.IsFalse(cache.TryAddPartitionLevelLocationOverride(reqNullPk),
+                "Should return false for null PKRange.");
         }
 
         /// <summary>
-        /// Verifies complete flow - 404/1002 triggers hub header, success caches hub, subsequent request uses cache
+        /// Verifies complete flow: 404/1002 triggers hub header, 403/3 builds cache via existing methods,
+        /// subsequent request reuses cache to skip 403/3 chain.
         /// </summary>
         [TestMethod]
         [Owner("aavasthy")]
-        [Description("Validates full hub caching flow: 404/1002 triggers discovery, success caches hub, next request reuses cached hub.")]
-        public async Task ClientRetryPolicy_After404With1002Twice_ThenCachesHubOnSuccess_AndReusesOnNextRequest()
+        [Description("Validates full hub caching flow: 2× 404/1002 → hub header → 403/3 builds cache → next request skips 403/3 via cache.")]
+        public async Task ClientRetryPolicy_After404With1002Twice_Then403_3BuildsCache_AndSubsequentRequestReusesCache()
         {
             // Arrange
             const bool enableEndpointDiscovery = true;
@@ -547,9 +572,9 @@
 
             GlobalPartitionEndpointManagerCore cacheManager = new GlobalPartitionEndpointManagerCore(endpointManager);
             PartitionKeyRange pkRange = new PartitionKeyRange { Id = "0", MinInclusive = "", MaxExclusive = "FF" };
-            Uri discoveredHub = new Uri("https://southcentralus.documents.azure.com/");
 
-            // ===== STEP 1: First request - triggers 404/1002, sets hub header, succeeds, caches hub =====
+            // ===== STEP 1: First request (cold cache) =====
+            // Flow: 404/1002 → 404/1002 → hub header → 403/3 (builds cache) → retries to next region
             ClientRetryPolicy retryPolicy1 = new ClientRetryPolicy(
                 endpointManager,
                 cacheManager,
@@ -558,12 +583,13 @@
                 isThinClientEnabled: false);
 
             DocumentServiceRequest request1 = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+            request1.RequestContext.ResolvedPartitionKeyRange = pkRange;
 
-            // Initial attempt - no hub header
+            // Attempt 1: no hub header
             retryPolicy1.OnBeforeSendRequest(request1);
             Assert.IsNull(request1.Headers.GetValues(HubRegionHeader), "No hub header initially.");
 
-            // Simulate 404/1002 error
+            // Simulate first 404/1002
             DocumentClientException error1 = new DocumentClientException(
                 message: "404/1002 #1",
                 innerException: null,
@@ -575,11 +601,11 @@
             ShouldRetryResult shouldRetry1 = await retryPolicy1.ShouldRetryAsync(error1, CancellationToken.None);
             Assert.IsTrue(shouldRetry1.ShouldRetry, "Should retry after first 404/1002.");
 
-            // First retry - no hub header yet
+            // Attempt 2: routes to write region, no hub header yet
             retryPolicy1.OnBeforeSendRequest(request1);
             Assert.IsNull(request1.Headers.GetValues(HubRegionHeader), "No hub header on first retry.");
 
-            // Second 404/1002 error
+            // Simulate second 404/1002 → triggers addHubRegionProcessingOnlyHeader
             DocumentClientException error2 = new DocumentClientException(
                 message: "404/1002 #2",
                 innerException: null,
@@ -589,24 +615,66 @@
                 responseHeaders: new DictionaryNameValueCollection());
 
             ShouldRetryResult shouldRetry2 = await retryPolicy1.ShouldRetryAsync(error2, CancellationToken.None);
-            Assert.IsTrue(shouldRetry2.ShouldRetry, "Should retry after second 404/1002 with hub header.");
+            Assert.IsTrue(shouldRetry2.ShouldRetry, "Should retry after second 404/1002.");
 
-            // Third attempt - hub header should be present
+            // Attempt 3: hub header active, routed to a region
             retryPolicy1.OnBeforeSendRequest(request1);
             string[] headerValues = request1.Headers.GetValues(HubRegionHeader);
             Assert.IsNotNull(headerValues, "Hub header MUST be present after 2x 404/1002.");
-            Assert.AreEqual(bool.TrueString, headerValues[0], "Hub header value should be 'True'.");
+            Assert.AreEqual(bool.TrueString, headerValues[0]);
+            Uri regionThatGot403 = request1.RequestContext.LocationEndpointToRoute;
 
-            // Simulate PKRange resolution and successful request with hub routing
-            request1.RequestContext.ResolvedPartitionKeyRange = pkRange;
-            request1.RequestContext.RouteToLocation(discoveredHub);
-            retryPolicy1.OnHubRoutedRequestSuccess(request1);
+            // Simulate 403/3 (WriteForbidden) — non-hub region rejects the hub-header request.
+            // ShouldRetryAsync calls TryMarkEndpointUnavailableForPartitionKeyRange which builds
+            // the cache entry and advances to the next region.
+            DocumentClientException error403 = new DocumentClientException(
+                message: "403/3 WriteForbidden",
+                innerException: null,
+                statusCode: HttpStatusCode.Forbidden,
+                substatusCode: SubStatusCodes.WriteForbidden,
+                requestUri: regionThatGot403,
+                responseHeaders: new DictionaryNameValueCollection());
 
-            // Verify hub was cached
-            Uri cachedHub = cacheManager.GetCachedHubRegionForPartition(pkRange);
-            Assert.AreEqual(discoveredHub, cachedHub, "Hub region should be cached after successful hub-routed request.");
+            ShouldRetryResult shouldRetry3 = await retryPolicy1.ShouldRetryAsync(error403, CancellationToken.None);
+            Assert.IsTrue(shouldRetry3.ShouldRetry, "Should retry after 403/3 to find hub.");
 
-            // ===== STEP 2: Second request - uses cached hub immediately =====
+            // Attempt 4: ClientRetryPolicy sets the hub header; the partition-level cache
+            // in Gateway/Direct (TryAddPartitionLevelLocationOverride) overrides routing to the hub.
+            retryPolicy1.OnBeforeSendRequest(request1);
+            headerValues = request1.Headers.GetValues(HubRegionHeader);
+            Assert.IsNotNull(headerValues, "Hub header should persist through 403/3 retry.");
+
+            // Simulate what GatewayStoreModel / GlobalAddressResolver does:
+            // TryAddPartitionLevelLocationOverride detects the hub header and routes to the cached next region.
+            bool overrideApplied = cacheManager.TryAddPartitionLevelLocationOverride(request1);
+            Assert.IsTrue(overrideApplied, "Partition-level cache should route to cached hub.");
+            Uri hubRegion = request1.RequestContext.LocationEndpointToRoute;
+            Assert.AreNotEqual(regionThatGot403, hubRegion,
+                "After 403/3, should route to a different region (the hub).");
+
+            // ===== STEP 2: Normal request (no errors) — should NOT use hub cache =====
+            ClientRetryPolicy retryPolicyNormal = new ClientRetryPolicy(
+                endpointManager,
+                cacheManager,
+                new RetryOptions(),
+                enableEndpointDiscovery,
+                isThinClientEnabled: false);
+
+            DocumentServiceRequest requestNormal = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+            requestNormal.RequestContext.ResolvedPartitionKeyRange = pkRange;
+
+            retryPolicyNormal.OnBeforeSendRequest(requestNormal);
+            Assert.IsNull(requestNormal.Headers.GetValues(HubRegionHeader),
+                "Normal request should NOT have hub header.");
+
+            // Simulate GatewayStoreModel / GlobalAddressResolver calling TryAddPartitionLevelLocationOverride
+            bool normalOverride = cacheManager.TryAddPartitionLevelLocationOverride(requestNormal);
+            Assert.IsFalse(normalOverride,
+                "Without hub header, partition-level cache should NOT override routing (prevents bombarding hub).");
+
+            // ===== STEP 3: Second request with errors (warm cache) =====
+            // After 2× 404/1002 triggers hub header, TryAddPartitionLevelLocationOverride
+            // finds the cache entry and routes directly to hub (skipping 403/3).
             ClientRetryPolicy retryPolicy2 = new ClientRetryPolicy(
                 endpointManager,
                 cacheManager,
@@ -615,18 +683,50 @@
                 isThinClientEnabled: false);
 
             DocumentServiceRequest request2 = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
-            request2.RequestContext.ResolvedPartitionKeyRange = pkRange; // Same partition, PKRange resolved
+            request2.RequestContext.ResolvedPartitionKeyRange = pkRange;
 
-            // Act - Fresh request should use cached hub immediately
+            // Fresh attempt — normal routing, no hub header
+            retryPolicy2.OnBeforeSendRequest(request2);
+            Assert.IsNull(request2.Headers.GetValues(HubRegionHeader),
+                "Fresh request should NOT have hub header.");
+
+            // Simulate 404/1002 #1 on request 2
+            DocumentClientException error5 = new DocumentClientException(
+                message: "404/1002 #1 on request 2",
+                innerException: null,
+                statusCode: HttpStatusCode.NotFound,
+                substatusCode: SubStatusCodes.ReadSessionNotAvailable,
+                requestUri: ClientRetryPolicyTests.Location1Endpoint,
+                responseHeaders: new DictionaryNameValueCollection());
+            ShouldRetryResult shouldRetry5 = await retryPolicy2.ShouldRetryAsync(error5, CancellationToken.None);
+            Assert.IsTrue(shouldRetry5.ShouldRetry);
+
+            retryPolicy2.OnBeforeSendRequest(request2);
+            Assert.IsNull(request2.Headers.GetValues(HubRegionHeader), "No hub header on first retry of request 2.");
+
+            // Simulate 404/1002 #2 → triggers hub header
+            DocumentClientException error6 = new DocumentClientException(
+                message: "404/1002 #2 on request 2",
+                innerException: null,
+                statusCode: HttpStatusCode.NotFound,
+                substatusCode: SubStatusCodes.ReadSessionNotAvailable,
+                requestUri: ClientRetryPolicyTests.Location1Endpoint,
+                responseHeaders: new DictionaryNameValueCollection());
+            ShouldRetryResult shouldRetry6 = await retryPolicy2.ShouldRetryAsync(error6, CancellationToken.None);
+            Assert.IsTrue(shouldRetry6.ShouldRetry);
+
+            // Hub header active — hub header set by OnBeforeSendRequest
             retryPolicy2.OnBeforeSendRequest(request2);
 
-            // Assert
-            Assert.AreEqual(discoveredHub, request2.RequestContext.LocationEndpointToRoute,
-                "Second request should route to cached hub region immediately (no 404/1002 needed).");
-
             string[] headerValues2 = request2.Headers.GetValues(HubRegionHeader);
-            Assert.IsNotNull(headerValues2, "Hub header should be set when using cached hub.");
-            Assert.AreEqual(bool.TrueString, headerValues2[0], "Hub header value should be 'True'.");
+            Assert.IsNotNull(headerValues2, "Hub header should be set.");
+            Assert.AreEqual(bool.TrueString, headerValues2[0]);
+
+            // Simulate GatewayStoreModel / GlobalAddressResolver calling TryAddPartitionLevelLocationOverride
+            bool cachedOverride = cacheManager.TryAddPartitionLevelLocationOverride(request2);
+            Assert.IsTrue(cachedOverride, "With hub header, cache should route to cached hub.");
+            Assert.AreEqual(hubRegion, request2.RequestContext.LocationEndpointToRoute,
+                "After 2× 404/1002, should route to cached hub directly (skipping 403/3 discovery).");
         }
 
         /// <summary>

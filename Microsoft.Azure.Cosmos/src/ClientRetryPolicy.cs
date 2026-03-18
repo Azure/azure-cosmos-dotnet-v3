@@ -218,8 +218,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (this.retryContext.RouteToHub)
                 {
-                    request.RequestContext.RouteToLocation(
-                        this.TryGetCachedHubRegion(request) ?? this.globalEndpointManager.GetHubUri());
+                    request.RequestContext.RouteToLocation(this.globalEndpointManager.GetHubUri());
 
                     this.locationEndpoint = request.RequestContext.LocationEndpointToRoute;
                     return;
@@ -230,21 +229,22 @@ namespace Microsoft.Azure.Cosmos
             }
 
 #if !INTERNAL
-            // Cache lookup should work for all account types
-            Uri cachedHub = this.TryGetCachedHubRegion(request);
-            if (cachedHub != null)
-            {
-                this.addHubRegionProcessingOnlyHeader = true;
-                request.RequestContext.RouteToLocation(cachedHub);
-                request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion] = bool.TrueString;
-                this.locationEndpoint = request.RequestContext.LocationEndpointToRoute;
-                return;
-            }
-
-            // Only add header on retry for single-master
+            // After 2× 404/1002 on single-master, set the hub-region header and check if
+            // a previous request already discovered the hub region for this partition.
+            // If cached, route directly there (skipping the 403/3 discovery chain).
+            // Normal first-attempt requests never enter this block (addHubRegionProcessingOnlyHeader = false).
             if (!this.canUseMultipleWriteLocations && this.addHubRegionProcessingOnlyHeader)
             {
                 request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion] = bool.TrueString;
+
+                // Check the partition-level cache for a previously discovered hub region.
+                // TryAddPartitionLevelLocationOverride only enters the hub branch when the
+                // hub header is present, so normal requests never reach this path.
+                if (this.partitionKeyRangeLocationCache.TryAddPartitionLevelLocationOverride(request))
+                {
+                    this.locationEndpoint = request.RequestContext.LocationEndpointToRoute;
+                    return;
+                }
             }
 #endif
 
@@ -255,35 +255,6 @@ namespace Microsoft.Azure.Cosmos
                 : this.globalEndpointManager.ResolveServiceEndpoint(request);
 
             request.RequestContext.RouteToLocation(this.locationEndpoint);
-        }
-
-        /// <summary>
-        /// Returns a previously cached hub region URI for the partition of the given request, or null if none is cached.
-        /// </summary>
-        private Uri TryGetCachedHubRegion(DocumentServiceRequest request)
-        {
-            PartitionKeyRange pkRange = request.RequestContext?.ResolvedPartitionKeyRange;
-            return pkRange != null
-                ? this.partitionKeyRangeLocationCache.GetCachedHubRegionForPartition(pkRange)
-                : null;
-        }
-
-        public void OnHubRoutedRequestSuccess(DocumentServiceRequest request)
-        {
-            bool wasHubRouted = this.retryContext?.RouteToHub == true;
-#if !INTERNAL
-            wasHubRouted = wasHubRouted || this.addHubRegionProcessingOnlyHeader;
-#endif
-
-            if (wasHubRouted
-                && request?.RequestContext?.ResolvedPartitionKeyRange != null
-                && request.RequestContext.LocationEndpointToRoute != null)
-            {
-                this.partitionKeyRangeLocationCache.CacheDiscoveredHubRegionForPartition(
-                    request.RequestContext.ResolvedPartitionKeyRange,
-                    request.RequestContext.LocationEndpointToRoute,
-                    request.RequestContext.ResolvedCollectionRid);
-            }
         }
 
         private async Task<ShouldRetryResult> ShouldRetryInternalAsync(

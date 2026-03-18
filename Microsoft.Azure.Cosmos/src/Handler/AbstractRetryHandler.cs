@@ -82,12 +82,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     ResponseMessage cosmosResponseMessage = await callbackMethod();
                     if (cosmosResponseMessage.IsSuccessStatusCode)
                     {
-                        // Cache hub region for successful hub-routed requests
-                        if (retryPolicyInstance is ClientRetryPolicy clientRetryPolicy)
-                        {
-                            clientRetryPolicy.OnHubRoutedRequestSuccess(documentServiceRequest);
-                        }
-
                         return cosmosResponseMessage;
                     }
 
