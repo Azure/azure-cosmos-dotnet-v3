@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Globalization;
+    using System.Threading;
     using System.Threading.Tasks;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Core.Trace;
@@ -20,6 +21,14 @@ namespace Microsoft.Azure.Cosmos
         private bool isDisposed = false;
 
         internal readonly TokenCredential tokenCredential;
+
+        // Cache the URL-encoded AAD authorization signature to avoid redundant
+        // HttpUtility.UrlEncode calls for the same token. The AAD token is refreshed
+        // in the background every ~30 minutes, but GenerateAadAuthorizationSignature
+        // is called on every Cosmos DB request. Caching eliminates per-request
+        // URL-encoding overhead (~8.9μs and 6KB allocation per call).
+        private string cachedAadToken;
+        private string cachedAadAuthorizationSignature;
 
         public AuthorizationTokenProviderTokenCredential(
             TokenCredential tokenCredential,
@@ -42,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
         {
             using (Trace trace = Trace.GetRootTrace(nameof(GetUserAuthorizationTokenAsync), TraceComponent.Authorization, TraceLevel.Info))
             {
-                string token = AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(
+                string token = this.GetOrCreateAadAuthorizationSignature(
                     await this.tokenCredentialCache.GetTokenAsync(trace));
                 return (token, default);
             }
@@ -56,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
             AuthorizationTokenType tokenType,
             ITrace trace)
         {
-            return AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(
+            return this.GetOrCreateAadAuthorizationSignature(
                     await this.tokenCredentialCache.GetTokenAsync(trace));
         }
 
@@ -68,7 +77,7 @@ namespace Microsoft.Azure.Cosmos
         {
             using (Trace trace = Trace.GetRootTrace(nameof(GetUserAuthorizationTokenAsync), TraceComponent.Authorization, TraceLevel.Info))
             {
-                string token = AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(
+                string token = this.GetOrCreateAadAuthorizationSignature(
                     await this.tokenCredentialCache.GetTokenAsync(trace));
 
                 headersCollection.Add(HttpConstants.HttpHeaders.Authorization, token);
@@ -106,6 +115,20 @@ namespace Microsoft.Azure.Cosmos
                 Constants.Properties.AadToken,
                 Constants.Properties.TokenVersion,
                 aadToken));
+        }
+
+        internal string GetOrCreateAadAuthorizationSignature(string aadToken)
+        {
+            string currentCachedToken = Volatile.Read(ref this.cachedAadToken);
+            if (ReferenceEquals(aadToken, currentCachedToken))
+            {
+                return Volatile.Read(ref this.cachedAadAuthorizationSignature);
+            }
+
+            string signature = AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(aadToken);
+            Volatile.Write(ref this.cachedAadAuthorizationSignature, signature);
+            Volatile.Write(ref this.cachedAadToken, aadToken);
+            return signature;
         }
 
         public override void Dispose()

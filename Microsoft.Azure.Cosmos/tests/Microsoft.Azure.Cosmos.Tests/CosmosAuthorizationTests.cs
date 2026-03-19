@@ -138,6 +138,49 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
+        [TestMethod]
+        public void AadAuthorizationSignatureCaching_ReturnsCachedResultForSameToken()
+        {
+            using AuthorizationTokenProviderTokenCredential provider = new AuthorizationTokenProviderTokenCredential(
+                new Mock<TokenCredential>().Object,
+                CosmosAuthorizationTests.AccountEndpoint,
+                backgroundTokenCredentialRefreshInterval: TimeSpan.FromSeconds(1));
+
+            string token = "test-aad-token-value";
+
+            string result1 = provider.GetOrCreateAadAuthorizationSignature(token);
+            string result2 = provider.GetOrCreateAadAuthorizationSignature(token);
+
+            // Same reference means the cached value was returned (not recomputed)
+            Assert.AreSame(result1, result2, "Expected cached signature to be returned for the same token reference.");
+
+            // Verify the result matches the uncached static method
+            string expected = AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(token);
+            Assert.AreEqual(expected, result1);
+        }
+
+        [TestMethod]
+        public void AadAuthorizationSignatureCaching_RecomputesForNewToken()
+        {
+            using AuthorizationTokenProviderTokenCredential provider = new AuthorizationTokenProviderTokenCredential(
+                new Mock<TokenCredential>().Object,
+                CosmosAuthorizationTests.AccountEndpoint,
+                backgroundTokenCredentialRefreshInterval: TimeSpan.FromSeconds(1));
+
+            string token1 = "first-aad-token";
+            string token2 = "second-aad-token";
+
+            string result1 = provider.GetOrCreateAadAuthorizationSignature(token1);
+            string result2 = provider.GetOrCreateAadAuthorizationSignature(token2);
+
+            Assert.AreNotEqual(result1, result2, "Different tokens should produce different signatures.");
+
+            string expected1 = AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(token1);
+            string expected2 = AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(token2);
+            Assert.AreEqual(expected1, result1);
+            Assert.AreEqual(expected2, result2);
+        }
+
         [DataTestMethod]
         [DataRow("https://env-override/.default", "https://env-override/.default", DisplayName = "EnvVarOverride")]
         [DataRow("https://cosmos.azure.com/.default", "https://cosmos.azure.com/.default", DisplayName = "EnvVarOverride_Fabric")]
