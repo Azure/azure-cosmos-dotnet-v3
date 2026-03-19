@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
     using System.Collections.ObjectModel;
     using System.Text.Json;
     using System.Text.Json.Serialization;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// A factory converter for all Geometry types including Point, LineString, Polygon, 
@@ -32,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
         {
             writer.WriteStartObject();
 
-            writer.WriteString("type", value.Type.ToString());
+            writer.WriteString(STJMetaDataFields.Type, value.Type.ToString());
             this.WriteCoordinates(writer, value, options);
             this.WriteOptionalProperties(writer, value, options);
 
@@ -48,31 +49,31 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
             switch (value.Type)
             {
                 case GeometryType.Point:
-                    writer.WritePropertyName("coordinates");
+                    writer.WritePropertyName(STJMetaDataFields.Coordinates);
                     JsonSerializer.Serialize(writer, ((Point)value).Position, options);
                     break;
                 case GeometryType.LineString:
-                    writer.WritePropertyName("coordinates");
+                    writer.WritePropertyName(STJMetaDataFields.Coordinates);
                     JsonSerializer.Serialize(writer, ((LineString)value).Positions, options);
                     break;
                 case GeometryType.Polygon:
-                    writer.WritePropertyName("coordinates");
+                    writer.WritePropertyName(STJMetaDataFields.Coordinates);
                     JsonSerializer.Serialize(writer, ((Polygon)value).Rings, options);
                     break;
                 case GeometryType.MultiPoint:
-                    writer.WritePropertyName("coordinates");
+                    writer.WritePropertyName(STJMetaDataFields.Coordinates);
                     JsonSerializer.Serialize(writer, ((MultiPoint)value).Points, options);
                     break;
                 case GeometryType.MultiLineString:
-                    writer.WritePropertyName("coordinates");
+                    writer.WritePropertyName(STJMetaDataFields.Coordinates);
                     JsonSerializer.Serialize(writer, ((MultiLineString)value).LineStrings, options);
                     break;
                 case GeometryType.MultiPolygon:
-                    writer.WritePropertyName("coordinates");
+                    writer.WritePropertyName(STJMetaDataFields.Coordinates);
                     JsonSerializer.Serialize(writer, ((MultiPolygon)value).Polygons, options);
                     break;
                 case GeometryType.GeometryCollection:
-                    writer.WritePropertyName("geometries");
+                    writer.WritePropertyName(STJMetaDataFields.Geometries);
                     JsonSerializer.Serialize(writer, ((GeometryCollection)value).Geometries, options);
                     break;
                 default:
@@ -85,13 +86,13 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
             // Match Newtonsoft Order property: Crs (2) then BoundingBox (3)
             if (value.Crs != null && !value.Crs.Equals(Crs.Default))
             {
-                writer.WritePropertyName("crs");
+                writer.WritePropertyName(STJMetaDataFields.Crs);
                 JsonSerializer.Serialize(writer, value.Crs, options);
             }
 
             if (value.BoundingBox != null)
             {
-                writer.WritePropertyName("bbox");
+                writer.WritePropertyName(STJMetaDataFields.Bbox);
                 JsonSerializer.Serialize(writer, value.BoundingBox, options);
             }
 
@@ -107,21 +108,21 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
 
         private (string typeName, GeometryParams geometryParams) ReadGeometryProperties(JsonElement rootElement, JsonSerializerOptions options)
         {
-            if (!rootElement.TryGetProperty("type", out JsonElement typeElement) || typeElement.ValueKind != JsonValueKind.String)
+            if (!rootElement.TryGetProperty(STJMetaDataFields.Type, out JsonElement typeElement) || typeElement.ValueKind != JsonValueKind.String)
             {
-                throw new JsonException("Geometry object must have a 'type' property of type string.");
+                throw new JsonException(RMResources.SpatialInvalidGeometryType);
             }
 
             string typeName = typeElement.GetString();
 
             BoundingBox boundingBox = null;
-            if (rootElement.TryGetProperty("bbox", out JsonElement bboxElement))
+            if (rootElement.TryGetProperty(STJMetaDataFields.Bbox, out JsonElement bboxElement))
             {
                 boundingBox = bboxElement.Deserialize<BoundingBox>(options);
             }
 
             Crs crs = null;
-            if (rootElement.TryGetProperty("crs", out JsonElement crsElement))
+            if (rootElement.TryGetProperty(STJMetaDataFields.Crs, out JsonElement crsElement))
             {
                 crs = crsElement.Deserialize<Crs>(options);
             }
@@ -134,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
             IDictionary<string, object> additionalProperties = null;
             foreach (JsonProperty property in rootElement.EnumerateObject())
             {
-                if (property.Name != "type" && property.Name != "coordinates" && property.Name != "bbox" && property.Name != "crs" && property.Name != "geometries")
+                if (property.Name != STJMetaDataFields.Type && property.Name != STJMetaDataFields.Coordinates && property.Name != STJMetaDataFields.Bbox && property.Name != STJMetaDataFields.Crs && property.Name != STJMetaDataFields.Geometries)
                 {
                     additionalProperties ??= new Dictionary<string, object>();
                     additionalProperties[property.Name] = this.ReadValue(property.Value);
@@ -153,28 +154,28 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
             switch (typeName)
             {
                 case "Point":
-                    Position pointCoordinates = rootElement.GetProperty("coordinates").Deserialize<Position>(options);
+                    Position pointCoordinates = rootElement.GetProperty(STJMetaDataFields.Coordinates).Deserialize<Position>(options);
                     return new Point(pointCoordinates, geometryParams);
                 case "MultiPoint":
-                    List<Position> multiPointCoordinates = rootElement.GetProperty("coordinates").Deserialize<List<Position>>(options);
+                    List<Position> multiPointCoordinates = rootElement.GetProperty(STJMetaDataFields.Coordinates).Deserialize<List<Position>>(options);
                     return new MultiPoint(multiPointCoordinates, geometryParams);
                 case "LineString":
-                    List<Position> lineStringCoordinates = rootElement.GetProperty("coordinates").Deserialize<List<Position>>(options);
+                    List<Position> lineStringCoordinates = rootElement.GetProperty(STJMetaDataFields.Coordinates).Deserialize<List<Position>>(options);
                     return new LineString(lineStringCoordinates, geometryParams);
                 case "MultiLineString":
-                    List<LineStringCoordinates> multiLineStringCoordinates = rootElement.GetProperty("coordinates").Deserialize<List<LineStringCoordinates>>(options);
+                    List<LineStringCoordinates> multiLineStringCoordinates = rootElement.GetProperty(STJMetaDataFields.Coordinates).Deserialize<List<LineStringCoordinates>>(options);
                     return new MultiLineString(multiLineStringCoordinates, geometryParams);
                 case "Polygon":
-                    List<LinearRing> polygonCoordinates = rootElement.GetProperty("coordinates").Deserialize<List<LinearRing>>(options);
+                    List<LinearRing> polygonCoordinates = rootElement.GetProperty(STJMetaDataFields.Coordinates).Deserialize<List<LinearRing>>(options);
                     return new Polygon(polygonCoordinates, geometryParams);
                 case "MultiPolygon":
-                    List<PolygonCoordinates> multiPolygonCoordinates = rootElement.GetProperty("coordinates").Deserialize<List<PolygonCoordinates>>(options);
+                    List<PolygonCoordinates> multiPolygonCoordinates = rootElement.GetProperty(STJMetaDataFields.Coordinates).Deserialize<List<PolygonCoordinates>>(options);
                     return new MultiPolygon(multiPolygonCoordinates, geometryParams);
                 case "GeometryCollection":
-                    List<Geometry> geometries = rootElement.GetProperty("geometries").Deserialize<List<Geometry>>(options);
+                    List<Geometry> geometries = rootElement.GetProperty(STJMetaDataFields.Geometries).Deserialize<List<Geometry>>(options);
                     return new GeometryCollection(geometries, geometryParams);
                 default:
-                    throw new JsonException($"Unknown geometry type: {typeName}");
+                    throw new JsonException(RMResources.SpatialInvalidGeometryType);
             }
         }
 

@@ -119,5 +119,10 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
         /// </summary>
         public const string Coordinates = "coordinates";
 
+        /// <summary>
+        /// Bounding box property name in GeoJSON format.
+        /// </summary>
+        public const string Bbox = "bbox";
+
     }
 }
