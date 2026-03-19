@@ -1762,6 +1762,30 @@ namespace Microsoft.Azure.Cosmos
             IEnumerable<string> documents,
             IDictionary<string, object> options = null,
             CancellationToken cancellationToken = default);
+#else
+        /// <summary>
+        /// Rerank a list of documents using semantic reranking.
+        /// This method uses a semantic reranker to score and reorder the provided documents
+        /// based on their relevance to the given reranking context.
+        /// 
+        /// The sematic reranking requests will not use the regular request flow and have it's own client. This will not use the default SDK retry policies.
+        /// 
+        /// To use this feature, you must set up a Semantic Reranker resource in Azure and provide the endpoint and key via the environment variable: "AZURE_COSMOS_SEMANTIC_RERANKER_INFERENCE_ENDPOINT"
+        /// By default the Semantic Reranking will have a default max connection limit of 50, to change this set the enviroment variable "AZURE_COSMOS_SEMANTIC_RERANKER_INFERENCE_SERVICE_MAX_CONNECTION_LIMIT" to the desired value before creating the CosmosClient.
+        /// </summary>
+        /// <param name="rerankContext"> The context (ex: query string) to use for reranking the documents.</param>
+        /// <param name="documents"> A list of documents to be reranked</param>
+        /// <param name="options"> (Optional) The options for the semantic reranking request.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns> The reranking results, typically including the reranked documents and their scores. </returns>
+        internal virtual Task<SemanticRerankResult> SemanticRerankAsync(
+            string rerankContext,
+            IEnumerable<string> documents,
+            IDictionary<string, object> options = null,
+            CancellationToken cancellationToken = default)
+        {
+            throw new NotSupportedException("This method is only available in preview builds.");
+        }
 #endif
 
         /// <summary>

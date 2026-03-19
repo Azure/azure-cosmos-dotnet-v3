@@ -11,10 +11,12 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Net.Http;
     using System.Net.Http.Headers;
+    using System.Runtime.ExceptionServices;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using global::Azure.Core;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
@@ -34,6 +36,8 @@ namespace Microsoft.Azure.Cosmos
         private readonly int inferenceServiceMaxConnectionLimit;
         private readonly string inferenceServiceBaseUrl;
         private readonly Uri inferenceEndpoint;
+        private readonly TimeSpan inferenceRequestTimeout;
+        private readonly HttpTimeoutPolicy inferenceTimeoutPolicy;
 
         private HttpClient httpClient;
         private AuthorizationTokenProvider cosmosAuthorization;
@@ -57,6 +61,13 @@ namespace Microsoft.Azure.Cosmos
             this.inferenceServiceMaxConnectionLimit = ConfigurationManager.GetEnvironmentVariable<int?>(
                 "AZURE_COSMOS_SEMANTIC_RERANKER_INFERENCE_SERVICE_MAX_CONNECTION_LIMIT",
                 inferenceServiceDefaultMaxConnectionLimit) ?? inferenceServiceDefaultMaxConnectionLimit;
+
+            // Get the inference timeout from client options, or use default
+            Debug.Assert(client.ClientOptions != null, "ClientOptions should not be null");
+            this.inferenceRequestTimeout = client.ClientOptions.InferenceRequestTimeout;
+
+            // Create timeout policy for inference requests
+            this.inferenceTimeoutPolicy = HttpTimeoutInferencePolicy.Create(this.inferenceRequestTimeout);
 
             // Create and configure HttpClient for inference requests.
             HttpMessageHandler httpMessageHandler = CosmosHttpClientCore.CreateHttpClientHandler(
@@ -93,6 +104,8 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal InferenceService(HttpMessageHandler messageHandler, Uri inferenceEndpoint, AuthorizationTokenProvider cosmosAuthorization)
         {
+            this.inferenceRequestTimeout = TimeSpan.FromSeconds(5);
+            this.inferenceTimeoutPolicy = HttpTimeoutInferencePolicy.Create(this.inferenceRequestTimeout);
             this.httpClient = new HttpClient(messageHandler);
             this.CreateClientHelper(this.httpClient);
             this.inferenceEndpoint = inferenceEndpoint;
@@ -113,46 +126,96 @@ namespace Microsoft.Azure.Cosmos
             IDictionary<string, object> options = null,
             CancellationToken cancellationToken = default)
         {
-            // Prepare HTTP request for semantic reranking.
-            HttpRequestMessage message = new HttpRequestMessage(HttpMethod.Post, this.inferenceEndpoint);
-            INameValueCollection additionalHeaders = new RequestNameValueCollection();
-            await this.cosmosAuthorization.AddInferenceAuthorizationHeaderAsync(
-                headersCollection: additionalHeaders,
-                this.inferenceEndpoint,
-                HttpConstants.HttpMethods.Post,
-                AuthorizationTokenType.AadToken);
-            additionalHeaders.Add(HttpConstants.HttpHeaders.UserAgent, inferenceUserAgent);
+            DateTime startDateTimeUtc = DateTime.UtcNow;
 
-            // Add all headers to the HTTP request.
-            foreach (string key in additionalHeaders.AllKeys())
-            {
-                message.Headers.Add(key, additionalHeaders[key]);
-            }
+            return await HttpTimeoutPolicyHelper.ExecuteWithTimeoutAsync(
+                this.inferenceTimeoutPolicy,
+                cancellationToken,
+                executeAsync: async (CancellationToken ct) =>
+                {
+                    using HttpRequestMessage message = new HttpRequestMessage(HttpMethod.Post, this.inferenceEndpoint);
 
-            // Build the request payload.
-            Dictionary<string, object> body = this.AddSemanticRerankPayload(rerankContext, documents, options);
+                    // Prepare HTTP request for semantic reranking.
+                    INameValueCollection additionalHeaders = new RequestNameValueCollection();
+                    await this.cosmosAuthorization.AddInferenceAuthorizationHeaderAsync(
+                        headersCollection: additionalHeaders,
+                        this.inferenceEndpoint,
+                        HttpConstants.HttpMethods.Post,
+                        AuthorizationTokenType.AadToken);
+                    additionalHeaders.Add(HttpConstants.HttpHeaders.UserAgent, inferenceUserAgent);
 
-            message.Content = new StringContent(
-                Newtonsoft.Json.JsonConvert.SerializeObject(body),
-                Encoding.UTF8,
-                RuntimeConstants.MediaTypes.Json);
+                    // Add all headers to the HTTP request.
+                    foreach (string key in additionalHeaders.AllKeys())
+                    {
+                        message.Headers.Add(key, additionalHeaders[key]);
+                    }
 
-            // Send the request and check for success.
-            HttpResponseMessage responseMessage = await this.httpClient.SendAsync(message, cancellationToken);
+                    // Build the request payload.
+                    Dictionary<string, object> body = this.AddSemanticRerankPayload(rerankContext, documents, options);
 
-            if (!responseMessage.IsSuccessStatusCode)
-            {
-                string responseBody = await responseMessage.Content.ReadAsStringAsync();
-                throw new CosmosException(
-                    message: responseBody,
-                    statusCode: responseMessage.StatusCode,
-                    subStatusCode: 0,
-                    activityId: string.Empty,
-                    requestCharge: 0);
-            }
+                    message.Content = new StringContent(
+                        Newtonsoft.Json.JsonConvert.SerializeObject(body),
+                        Encoding.UTF8,
+                        RuntimeConstants.MediaTypes.Json);
 
-            // Deserialize and return the response content as a dictionary.
-            return await SemanticRerankResult.DeserializeSemanticRerankResultAsync(responseMessage);
+                    // Send the request and check for success.
+                    HttpResponseMessage responseMessage = await this.httpClient.SendAsync(message, ct);
+
+                    if (!responseMessage.IsSuccessStatusCode)
+                    {
+                        string responseBody = await responseMessage.Content.ReadAsStringAsync();
+                        throw new CosmosException(
+                            message: responseBody,
+                            statusCode: responseMessage.StatusCode,
+                            subStatusCode: 0,
+                            activityId: string.Empty,
+                            requestCharge: 0);
+                    }
+
+                    responseMessage.EnsureSuccessStatusCode();
+
+                    // Deserialize and return the response content.
+                    return await SemanticRerankResult.DeserializeSemanticRerankResultAsync(responseMessage);
+                },
+                shouldRetryOnResult: null,
+                onException: (Exception exception, bool isOutOfRetries, TimeSpan requestTimeout) =>
+                {
+                    switch (exception)
+                    {
+                        case OperationCanceledException operationCanceledException:
+                            if (isOutOfRetries)
+                            {
+                                string errorMessage = $"Inference Service Request Timeout. Start Time UTC:{startDateTimeUtc}; Total Duration:{(DateTime.UtcNow - startDateTimeUtc).TotalMilliseconds} Ms; Request Timeout {requestTimeout.TotalMilliseconds} Ms; Http Client Timeout:{this.httpClient.Timeout.TotalMilliseconds} Ms; Activity id: {System.Diagnostics.Trace.CorrelationManager.ActivityId};";
+                                throw CosmosExceptionFactory.CreateRequestTimeoutException(
+                                    message: errorMessage,
+                                    headers: new Headers()
+                                    {
+                                        ActivityId = System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString()
+                                    },
+                                    innerException: operationCanceledException);
+                            }
+
+                            break;
+                        case HttpRequestException httpRequestException:
+                            if (isOutOfRetries)
+                            {
+                                string errorMessage = $"Inference Service Request Failed. Start Time UTC:{startDateTimeUtc}; Total Duration:{(DateTime.UtcNow - startDateTimeUtc).TotalMilliseconds} Ms; Activity id: {System.Diagnostics.Trace.CorrelationManager.ActivityId};";
+                                throw CosmosExceptionFactory.CreateServiceUnavailableException(
+                                    message: errorMessage,
+                                    headers: new Headers()
+                                    {
+                                        ActivityId = System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString(),
+                                        SubStatusCode = SubStatusCodes.TransportGenerated503
+                                    },
+                                    innerException: httpRequestException);
+                            }
+
+                            break;
+                        default:
+                            ExceptionDispatchInfo.Capture(exception).Throw();
+                            break;
+                    }
+                });
         }
 
         /// <summary>
@@ -161,7 +224,11 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="httpClient">The HttpClient to configure.</param>
         private void CreateClientHelper(HttpClient httpClient)
         {
-            httpClient.Timeout = TimeSpan.FromSeconds(120);
+            // Set the timeout to be higher than the configured request timeout to allow the
+            // CancellationTokenSource to handle the timeout and retry logic properly
+            httpClient.Timeout = this.inferenceRequestTimeout > TimeSpan.FromSeconds(5)
+                ? this.inferenceRequestTimeout.Add(TimeSpan.FromSeconds(30))
+                : TimeSpan.FromSeconds(35);
             httpClient.DefaultRequestHeaders.CacheControl = new CacheControlHeaderValue { NoCache = true };
 
             // Set requested API version header for version enforcement.
