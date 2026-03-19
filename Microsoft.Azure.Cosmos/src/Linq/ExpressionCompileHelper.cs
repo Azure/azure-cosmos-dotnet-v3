@@ -35,12 +35,19 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         private static Func<LambdaExpression, Delegate> CreateCompileLambda()
         {
-            MethodInfo compileWithPreference = typeof(LambdaExpression)
-                .GetMethod(nameof(LambdaExpression.Compile), new Type[] { typeof(bool) });
+            bool useInterpretation = ConfigurationManager.GetEnvironmentVariable(
+                ConfigurationManager.LinqExpressionCompileInterpretationEnabled,
+                defaultValue: true);
 
-            if (compileWithPreference != null)
+            if (useInterpretation)
             {
-                return lambda => (Delegate)compileWithPreference.Invoke(lambda, ExpressionCompileHelper.PreferInterpretationArgs);
+                MethodInfo compileWithPreference = typeof(LambdaExpression)
+                    .GetMethod(nameof(LambdaExpression.Compile), new Type[] { typeof(bool) });
+
+                if (compileWithPreference != null)
+                {
+                    return lambda => (Delegate)compileWithPreference.Invoke(lambda, ExpressionCompileHelper.PreferInterpretationArgs);
+                }
             }
 
             return lambda => lambda.Compile();
