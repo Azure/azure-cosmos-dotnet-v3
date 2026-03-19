@@ -1,3 +1,13 @@
+---
+name: 'MsdataDirectSyncAgent'
+description: 'Orchestrates syncing the msdata/direct branch with the latest v3 master and msdata direct codebase.'
+tools:
+  - read
+  - search
+  - edit
+  - terminal
+---
+
 # Copilot Agent: msdata/direct Branch Sync
 ## Azure Cosmos DB .NET SDK (azure-cosmos-dotnet-v3)
 
