@@ -18,12 +18,15 @@ namespace Microsoft.Azure.Cosmos.Linq
     {
         private static readonly object[] PreferInterpretationArgs = new object[] { true };
         private static readonly Func<LambdaExpression, Delegate> InterpretedCompile = ExpressionCompileHelper.CreateInterpretedCompile();
+        private static readonly bool IsInterpretationEnabled = ConfigurationManager.GetEnvironmentVariable(
+            ConfigurationManager.LinqExpressionCompileInterpretationEnabled,
+            defaultValue: true);
 
         /// <summary>
         /// Compiles a LambdaExpression using interpretation mode when available
         /// to avoid native memory growth from DynamicMethod IL emission.
-        /// The behavior can be toggled at runtime via the
-        /// AZURE_COSMOS_LINQ_EXPRESSION_INTERPRETATION_ENABLED environment variable.
+        /// The behavior is controlled by the AZURE_COSMOS_LINQ_EXPRESSION_INTERPRETATION_ENABLED
+        /// environment variable (read once at process startup, defaults to true).
         /// </summary>
         public static Delegate CompileLambda(LambdaExpression lambda)
         {
@@ -33,9 +36,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
 
             if (ExpressionCompileHelper.InterpretedCompile != null
-                && ConfigurationManager.GetEnvironmentVariable(
-                    ConfigurationManager.LinqExpressionCompileInterpretationEnabled,
-                    defaultValue: true))
+                && ExpressionCompileHelper.IsInterpretationEnabled)
             {
                 return ExpressionCompileHelper.InterpretedCompile(lambda);
             }
