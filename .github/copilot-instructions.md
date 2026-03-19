@@ -55,8 +55,11 @@ Purpose: quick, actionable context so an AI coding assistant can be immediately 
   - Includes: environment setup, issue investigation, fix implementation, testing requirements, PR workflow, and learnings capture.
   - Start with: `@IssueFixAgent investigate issue #XXXX` or see Quick Start in the agent file.
   - **ReleaseCopilotAgent** (`.github/agents/release-copilot-agent.agent.md`) — Guides the team through full releases and hotfix releases of the Cosmos DB .NET SDK. Automates changelog generation, version bumping, API contract file generation (GenAPI), and PR creation.
-  - Two modes: **Minor Mode** (full GA + Preview release) and **Hotfix Mode** (cherry-pick patch release on any previous version).
-  - In VS Code Copilot Chat: `@ReleaseCopilotAgent start minor` or `@ReleaseCopilotAgent start hotfix`.
-  - In the Copilot CLI: describe the task naturally (e.g., "I want to start a minor release" or "start hotfix"). The agent instructions are loaded automatically via this file.
+  - Three modes: **Minor Mode** (full GA + Preview release), **Hotfix Mode** (cherry-pick patch release on any previous version), and **Add Missed PRs** (add PRs that were missed in a previous changelog).
+  - In VS Code Copilot Chat: `@ReleaseCopilotAgent start minor`, `@ReleaseCopilotAgent start hotfix`, or `@ReleaseCopilotAgent add missed PRs`.
+  - In the Copilot CLI: describe the task naturally (e.g., "I want to start a minor release", "start hotfix", or "I need to add missed PRs to a release"). The agent instructions are loaded automatically via this file.
+  - **MsdataDirectSyncAgent** (`.github/agents/msdata-direct-sync-agent.agent.md`) — Orchestrates syncing the msdata/direct branch with the latest v3 master and msdata direct codebase.
+  - In VS Code Copilot Chat: `@MsdataDirectSyncAgent sync msdata/direct`.
+  - In the Copilot CLI: describe the task naturally (e.g., "sync the msdata/direct branch with master").
 
 If anything here is unclear or you want the file to include additional examples (specific files, common refactor targets, or typical PR reviewers), tell me what to add and I will iterate.
