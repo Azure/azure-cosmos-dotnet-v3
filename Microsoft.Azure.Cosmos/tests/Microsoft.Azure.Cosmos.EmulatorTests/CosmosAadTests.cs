@@ -383,7 +383,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 TokenCredentialCache tokenCredentialCache =
                     ((AuthorizationTokenProviderTokenCredential)aadClient.AuthorizationTokenProvider).tokenCredentialCache;
 
-                string token = await tokenCredentialCache.GetTokenAsync(Tracing.Trace.GetRootTrace("account-fallback-to-cosmos-test"));
+                string token = await tokenCredentialCache.GetTokenAuthorizationHeaderAsync(Tracing.Trace.GetRootTrace("account-fallback-to-cosmos-test"));
                 Assert.IsFalse(string.IsNullOrEmpty(token), "Fallback should succeed and produce a token.");
 
                 Assert.IsTrue(accountScopeCount >= 1, "Account scope must be attempted first.");
@@ -437,7 +437,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             TokenCredentialCache tokenCredentialCache =
                 ((AuthorizationTokenProviderTokenCredential)aadClient.AuthorizationTokenProvider).tokenCredentialCache;
 
-            string token = await tokenCredentialCache.GetTokenAsync(Tracing.Trace.GetRootTrace("account-scope-success-no-fallback"));
+            string token = await tokenCredentialCache.GetTokenAuthorizationHeaderAsync(Tracing.Trace.GetRootTrace("account-scope-success-no-fallback"));
             Assert.IsFalse(string.IsNullOrEmpty(token), "Token should be acquired successfully with account scope.");
 
             Assert.AreEqual(1, accountScopeCount, "Account scope must be used exactly once.");
