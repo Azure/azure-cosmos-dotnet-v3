@@ -42,10 +42,10 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DistributedTransactionOperationResult"/> class.
-        /// This protected constructor is intended for use by derived classes.
+        /// This constructor is used by System.Text.Json for reflection-based deserialization.
         /// </summary>
         [JsonConstructor]
-        protected DistributedTransactionOperationResult()
+        public DistributedTransactionOperationResult()
         {
         }
 
@@ -93,10 +93,11 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Used for JSON deserialization of the base64-encoded resource body.
+        /// System.Text.Json requires [JsonInclude] members to be public in reflection mode.
         /// </summary>
         [JsonInclude]
         [JsonPropertyName("resourcebody")]
-        internal string ResourceBodyBase64
+        public string ResourceBodyBase64
         {
             get => null; // Write-only for deserialization
             set
