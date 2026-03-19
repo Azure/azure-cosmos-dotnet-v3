@@ -138,6 +138,70 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
+        [TestMethod]
+        public async Task AadAuthorizationSignatureCaching_ReturnsCachedResultForSameToken()
+        {
+            Mock<TokenCredential> mockCredential = new Mock<TokenCredential>();
+            mockCredential.Setup(c => c.GetTokenAsync(It.IsAny<TokenRequestContext>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new AccessToken("test-aad-token-value", DateTimeOffset.UtcNow.AddHours(1)));
+
+            using TokenCredentialCache cache = new TokenCredentialCache(
+                mockCredential.Object,
+                CosmosAuthorizationTests.AccountEndpoint,
+                backgroundTokenCredentialRefreshInterval: TimeSpan.MaxValue,
+                tokenToAuthorizationHeader: AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature);
+
+            using ITrace trace = Cosmos.Tracing.Trace.GetRootTrace("test");
+            string result1 = await cache.GetTokenAsync(trace);
+            string result2 = await cache.GetTokenAsync(trace);
+
+            // Same reference means the cached value was returned (not recomputed)
+            Assert.AreSame(result1, result2, "Expected cached authorization header to be returned for the same token.");
+
+            // Verify the result matches the static method
+            string expected = AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature("test-aad-token-value");
+            Assert.AreEqual(expected, result1);
+
+            // Token credential should only be called once (cached after that)
+            mockCredential.Verify(c => c.GetTokenAsync(It.IsAny<TokenRequestContext>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [TestMethod]
+        public async Task AadAuthorizationSignatureCaching_RecomputesForNewToken()
+        {
+            int callCount = 0;
+            Mock<TokenCredential> mockCredential = new Mock<TokenCredential>();
+            mockCredential.Setup(c => c.GetTokenAsync(It.IsAny<TokenRequestContext>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(() =>
+                {
+                    callCount++;
+                    return callCount == 1
+                        ? new AccessToken("first-aad-token", DateTimeOffset.UtcNow.AddMilliseconds(1))
+                        : new AccessToken("second-aad-token", DateTimeOffset.UtcNow.AddHours(1));
+                });
+
+            using TokenCredentialCache cache = new TokenCredentialCache(
+                mockCredential.Object,
+                CosmosAuthorizationTests.AccountEndpoint,
+                backgroundTokenCredentialRefreshInterval: TimeSpan.MaxValue,
+                tokenToAuthorizationHeader: AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature);
+
+            using ITrace trace = Cosmos.Tracing.Trace.GetRootTrace("test");
+            string result1 = await cache.GetTokenAsync(trace);
+
+            // Wait for first token to expire
+            await Task.Delay(50);
+
+            string result2 = await cache.GetTokenAsync(trace);
+
+            Assert.AreNotEqual(result1, result2, "Different tokens should produce different authorization headers.");
+
+            string expected1 = AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature("first-aad-token");
+            string expected2 = AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature("second-aad-token");
+            Assert.AreEqual(expected1, result1);
+            Assert.AreEqual(expected2, result2);
+        }
+
         [DataTestMethod]
         [DataRow("https://env-override/.default", "https://env-override/.default", DisplayName = "EnvVarOverride")]
         [DataRow("https://cosmos.azure.com/.default", "https://cosmos.azure.com/.default", DisplayName = "EnvVarOverride_Fabric")]
@@ -191,7 +255,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new TokenCredentialCache(
                     new Mock<TokenCredential>().Object,
                     CosmosAuthorizationTests.AccountEndpoint,
-                    backgroundTokenCredentialRefreshInterval: toLarge);
+                    backgroundTokenCredentialRefreshInterval: toLarge,
+                    tokenToAuthorizationHeader: AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature);
                 Assert.Fail("Should throw ArgumentException");
             }
             catch (ArgumentException ae)
@@ -204,7 +269,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new TokenCredentialCache(
                     new Mock<TokenCredential>().Object,
                     CosmosAuthorizationTests.AccountEndpoint,
-                    backgroundTokenCredentialRefreshInterval: TimeSpan.MinValue);
+                    backgroundTokenCredentialRefreshInterval: TimeSpan.MinValue,
+                    tokenToAuthorizationHeader: AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature);
                 Assert.Fail("Should throw ArgumentException");
             }
             catch (ArgumentException ae)
@@ -217,7 +283,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new TokenCredentialCache(
                     new Mock<TokenCredential>().Object,
                     CosmosAuthorizationTests.AccountEndpoint,
-                    backgroundTokenCredentialRefreshInterval: TimeSpan.Zero);
+                    backgroundTokenCredentialRefreshInterval: TimeSpan.Zero,
+                    tokenToAuthorizationHeader: AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature);
                 Assert.Fail("Should throw ArgumentException");
             }
             catch (ArgumentException ae)
@@ -230,7 +297,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new TokenCredentialCache(
                     new Mock<TokenCredential>().Object,
                     CosmosAuthorizationTests.AccountEndpoint,
-                    backgroundTokenCredentialRefreshInterval: TimeSpan.FromMilliseconds(-1));
+                    backgroundTokenCredentialRefreshInterval: TimeSpan.FromMilliseconds(-1),
+                    tokenToAuthorizationHeader: AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature);
                 Assert.Fail("Should throw ArgumentException");
             }
             catch (ArgumentException ae)
@@ -242,12 +310,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             using TokenCredentialCache token = new TokenCredentialCache(
                     new Mock<TokenCredential>().Object,
                     CosmosAuthorizationTests.AccountEndpoint,
-                    backgroundTokenCredentialRefreshInterval: TimeSpan.FromMilliseconds(Int32.MaxValue));
+                    backgroundTokenCredentialRefreshInterval: TimeSpan.FromMilliseconds(Int32.MaxValue),
+                    tokenToAuthorizationHeader: AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature);
 
             using TokenCredentialCache disableBackgroundTask = new TokenCredentialCache(
                    new Mock<TokenCredential>().Object,
                    CosmosAuthorizationTests.AccountEndpoint,
-                   backgroundTokenCredentialRefreshInterval: TimeSpan.MaxValue);
+                   backgroundTokenCredentialRefreshInterval: TimeSpan.MaxValue,
+                   tokenToAuthorizationHeader: AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature);
         }
 
         [TestMethod]
@@ -319,14 +389,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             using (TokenCredentialCache tokenCredentialCache = this.CreateTokenCredentialCache(testTokenCredential))
             {
                 string t1 = await tokenCredentialCache.GetTokenAsync(NoOpTrace.Singleton);
-                Assert.AreEqual(token1, t1);
+                Assert.AreEqual(AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(token1), t1);
 
                 // Token is valid for 6 seconds. Client TokenCredentialRefreshBuffer is set to 5 seconds.
                 // After waiting for 2 seconds, the cache token is still valid, but it will be refreshed in the background.
                 await Task.Delay(TimeSpan.FromSeconds(2));
 
                 string t2 = await tokenCredentialCache.GetTokenAsync(NoOpTrace.Singleton);
-                Assert.AreEqual(token1, t2);
+                Assert.AreEqual(AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(token1), t2);
 
                 // Wait until the background refresh occurs.
                 while (testTokenCredential.NumTimesInvoked == 1)
@@ -335,7 +405,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }
 
                 string t3 = await tokenCredentialCache.GetTokenAsync(NoOpTrace.Singleton);
-                Assert.AreEqual(token2, t3);
+                Assert.AreEqual(AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(token2), t3);
 
                 Assert.AreEqual(2, testTokenCredential.NumTimesInvoked);
                 this.ValidateSemaphoreIsReleased(tokenCredentialCache);
@@ -369,7 +439,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             this.ValidateSemaphoreIsReleased(tokenCredentialCache);
 
             tokenCredentialCache.Dispose();
-            Assert.AreEqual(token1, t1);
+            Assert.AreEqual(AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(token1), t1);
 
             await Task.Delay(1000);
         }
@@ -407,14 +477,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             using ITrace trace = Cosmos.Tracing.Trace.GetRootTrace("test");
             using (TokenCredentialCache tokenCredentialCache = this.CreateTokenCredentialCache(testTokenCredential))
             {
-                Assert.AreEqual(token, await tokenCredentialCache.GetTokenAsync(trace));
+                Assert.AreEqual(AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(token), await tokenCredentialCache.GetTokenAsync(trace));
                 Assert.AreEqual(1, testTokenCredential.NumTimesInvoked);
                 throwExceptionOnGetToken = true;
 
                 // Token is valid for 10 seconds. Client TokenCredentialRefreshBuffer is set to 5 seconds.
                 // After waiting for 2 seconds, the cache token is still valid, but it will be refreshed in the background.
                 await Task.Delay(TimeSpan.FromSeconds(2));
-                Assert.AreEqual(token, await tokenCredentialCache.GetTokenAsync(trace));
+                Assert.AreEqual(AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(token), await tokenCredentialCache.GetTokenAsync(trace));
                 Assert.AreEqual(1, testTokenCredential.NumTimesInvoked);
 
                 // Token refreshes fails except for the first time, but the cached token will be served as long as it is valid.
@@ -425,7 +495,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     Assert.IsTrue(stopwatch.Elapsed.TotalSeconds < 10, "The background task did not start in 10 seconds");
                     await Task.Delay(200);
                 }
-                Assert.AreEqual(token, await tokenCredentialCache.GetTokenAsync(trace));
+                Assert.AreEqual(AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(token), await tokenCredentialCache.GetTokenAsync(trace));
                 Assert.AreEqual(3, testTokenCredential.NumTimesInvoked, $"The cached token was not used. Waited time for background refresh: {stopwatch.Elapsed.TotalSeconds} seconds");
 
                 // Cache token has expired, and it fails to refresh.
@@ -539,7 +609,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             return new TokenCredentialCache(
                 tokenCredential,
                 CosmosAuthorizationTests.AccountEndpoint,
-                backgroundTokenCredentialRefreshInterval: refreshInterval);
+                backgroundTokenCredentialRefreshInterval: refreshInterval,
+                tokenToAuthorizationHeader: AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature);
         }
 
         private bool IsTokenRefreshInProgress(TokenCredentialCache tokenCredentialCache)
@@ -567,8 +638,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         private async Task GetAndVerifyTokenAsync(TokenCredentialCache tokenCredentialCache)
         {
             string result = await tokenCredentialCache.GetTokenAsync(NoOpTrace.Singleton);
+            string expectedAuthorizationHeader = AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(this.AccessToken.Token);
             Assert.AreEqual(
-                this.AccessToken.Token,
+                expectedAuthorizationHeader,
                 result);
         }
 

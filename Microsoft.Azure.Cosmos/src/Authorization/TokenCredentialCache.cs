@@ -45,19 +45,23 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly SemaphoreSlim isTokenRefreshingLock = new SemaphoreSlim(1);
         private readonly object backgroundRefreshLock = new object();
+        private readonly Func<string, string> tokenToAuthorizationHeader;
 
         private TimeSpan? systemBackgroundTokenCredentialRefreshInterval;
         private Task<AccessToken>? currentRefreshOperation = null;
         private AccessToken? cachedAccessToken = null;
+        private string? cachedAuthorizationHeader = null;
         private bool isBackgroundTaskRunning = false;
         private bool isDisposed = false;
 
         internal TokenCredentialCache(
             TokenCredential tokenCredential,
             Uri accountEndpoint,
-            TimeSpan? backgroundTokenCredentialRefreshInterval)
+            TimeSpan? backgroundTokenCredentialRefreshInterval,
+            Func<string, string> tokenToAuthorizationHeader)
         {
             this.tokenCredential = tokenCredential ?? throw new ArgumentNullException(nameof(tokenCredential));
+            this.tokenToAuthorizationHeader = tokenToAuthorizationHeader ?? throw new ArgumentNullException(nameof(tokenToAuthorizationHeader));
 
             if (accountEndpoint == null)
             {
@@ -96,6 +100,35 @@ namespace Microsoft.Azure.Cosmos
                 throw new ObjectDisposedException("TokenCredentialCache");
             }
 
+            // Use the cached authorization header if the token is still valid
+            if (this.cachedAccessToken.HasValue &&
+                DateTime.UtcNow < this.cachedAccessToken.Value.ExpiresOn)
+            {
+                return this.cachedAuthorizationHeader!;
+            }
+
+            await this.GetNewTokenAsync(trace);
+
+            if (!this.isBackgroundTaskRunning)
+            {
+                // This is a background thread so no need to await
+                Task backgroundThread = Task.Run(this.StartBackgroundTokenRefreshLoop);
+            }
+
+            return this.cachedAuthorizationHeader!;
+        }
+
+        /// <summary>
+        /// Returns the raw AAD token without authorization header formatting.
+        /// Used by inference path which needs "Bearer {token}" format.
+        /// </summary>
+        internal async ValueTask<string> GetRawTokenAsync(ITrace trace)
+        {
+            if (this.isDisposed)
+            {
+                throw new ObjectDisposedException("TokenCredentialCache");
+            }
+
             // Use the cached token if it is still valid
             if (this.cachedAccessToken.HasValue &&
                 DateTime.UtcNow < this.cachedAccessToken.Value.ExpiresOn)
@@ -104,6 +137,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             AccessToken accessToken = await this.GetNewTokenAsync(trace);
+
             if (!this.isBackgroundTaskRunning)
             {
                 // This is a background thread so no need to await
@@ -212,6 +246,8 @@ namespace Microsoft.Azure.Cosmos
                                 refreshIntervalInSeconds = Math.Min(refreshIntervalInSeconds, TokenCredentialCache.MaxBackgroundRefreshInterval.TotalSeconds);
                                 this.systemBackgroundTokenCredentialRefreshInterval = TimeSpan.FromSeconds(refreshIntervalInSeconds);
                             }
+
+                            this.cachedAuthorizationHeader = this.tokenToAuthorizationHeader(this.cachedAccessToken.Value.Token);
 
                             return this.cachedAccessToken.Value;
                         }
