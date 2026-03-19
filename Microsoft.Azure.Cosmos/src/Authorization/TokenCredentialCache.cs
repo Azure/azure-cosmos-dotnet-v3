@@ -133,7 +133,10 @@ namespace Microsoft.Azure.Cosmos
                 return;
             }
 
-            this.cancellationTokenSource.Cancel();
+            // Run Cancel on a thread pool thread to avoid synchronous continuation
+            // callbacks (e.g., from Azure.Identity's GetTokenAsync) executing on the
+            // current stack frame, which can cause StackOverflowException.
+            await Task.Run(() => this.cancellationTokenSource.Cancel());
 
             try
             {
