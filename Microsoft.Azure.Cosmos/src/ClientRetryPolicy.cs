@@ -219,22 +219,36 @@ namespace Microsoft.Azure.Cosmos
                 if (this.retryContext.RouteToHub)
                 {
                     request.RequestContext.RouteToLocation(this.globalEndpointManager.GetHubUri());
+
+                    this.locationEndpoint = request.RequestContext.LocationEndpointToRoute;
+                    return;
                 }
-                else
-                {
-                    // set location-based routing directive based on request retry context
-                    request.RequestContext.RouteToLocation(this.retryContext.RetryLocationIndex, this.retryContext.RetryRequestOnPreferredLocations);
-                }
+
+                // set location-based routing directive based on request retry context
+                request.RequestContext.RouteToLocation(this.retryContext.RetryLocationIndex, this.retryContext.RetryRequestOnPreferredLocations);
             }
+
 #if !INTERNAL
-            // If previous attempt failed with 404/1002, add the hub-region-processing-only header to all subsequent retry attempts
-            if (this.addHubRegionProcessingOnlyHeader)
+            // After 2× 404/1002 on single-master, set the hub-region header and check if
+            // a previous request already discovered the hub region for this partition.
+            // If cached, route directly there (skipping the 403/3 discovery chain).
+            // Normal first-attempt requests never enter this block (addHubRegionProcessingOnlyHeader = false).
+            if (!this.canUseMultipleWriteLocations && this.addHubRegionProcessingOnlyHeader)
             {
                 request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion] = bool.TrueString;
+
+                // Check the partition-level cache for a previously discovered hub region.
+                // TryAddPartitionLevelLocationOverride only enters the hub branch when the
+                // hub header is present, so normal requests never reach this path.
+                if (this.partitionKeyRangeLocationCache.TryAddPartitionLevelLocationOverride(request))
+                {
+                    this.locationEndpoint = request.RequestContext.LocationEndpointToRoute;
+                    return;
+                }
             }
 #endif
+
             // Resolve the endpoint for the request and pin the resolution to the resolved endpoint
-            // This enables marking the endpoint unavailability on endpoint failover/unreachability
             this.locationEndpoint = this.isThinClientEnabled
                 && GatewayStoreModel.IsOperationSupportedByThinClient(request)
                 ? this.globalEndpointManager.ResolveThinClientEndpoint(request)
@@ -337,6 +351,15 @@ namespace Microsoft.Azure.Cosmos
                 if (!this.canUseMultipleWriteLocations && this.sessionTokenRetryCount >= 1)
                 {
                     this.addHubRegionProcessingOnlyHeader = true;
+
+                    // Bypass ShouldRetryOnSessionNotAvailable — it would return NoRetry here
+                    // because sessionTokenRetryCount is already >= 1. Use the endpoint failure
+                    // path instead so the hub header actually gets sent on the next attempt.
+                    return await this.ShouldRetryOnEndpointFailureAsync(
+                        isReadRequest: this.isReadRequest,
+                        markBothReadAndWriteAsUnavailable: false,
+                        forceRefresh: false,
+                        retryOnPreferredLocations: true);
                 }
 #endif
                 return this.ShouldRetryOnSessionNotAvailable(this.documentServiceRequest);

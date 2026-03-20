@@ -123,6 +123,11 @@ namespace Microsoft.Azure.Cosmos.Routing
         public override bool TryAddPartitionLevelLocationOverride(
             DocumentServiceRequest request)
         {
+            if (request?.RequestContext == null)
+            {
+                return false;
+            }
+
             if (!this.IsRequestEligibleForPartitionFailover(
                 request,
                 shouldValidateFailedLocation: false,
@@ -145,6 +150,13 @@ namespace Microsoft.Azure.Cosmos.Routing
                     this.PartitionKeyRangeToLocationForReadAndWrite);
             }
             else if (this.IsRequestEligibleForPerPartitionAutomaticFailover(request))
+            {
+                return this.TryRouteRequestForPartitionLevelOverride(
+                    partitionKeyRange,
+                    request,
+                    this.PartitionKeyRangeToLocationForWrite);
+            }
+            else if (GlobalPartitionEndpointManagerCore.IsHubRegionRoutingActive(request))
             {
                 return this.TryRouteRequestForPartitionLevelOverride(
                     partitionKeyRange,
@@ -191,6 +203,21 @@ namespace Microsoft.Azure.Cosmos.Routing
             else if (this.IsRequestEligibleForPerPartitionAutomaticFailover(request))
             {
                 // For any single master write accounts, the next locations to fail over will be the read regions configured at the account level.
+                ReadOnlyCollection<Uri> nextLocations = this.isThinClientEnabled && GatewayStoreModel.IsOperationSupportedByThinClient(request)
+                    ? this.globalEndpointManager.ThinClientReadEndpoints
+                    : this.globalEndpointManager.AccountReadEndpoints;
+
+                return this.TryAddOrUpdatePartitionFailoverInfoAndMoveToNextLocation(
+                    partitionKeyRange,
+                    failedLocation,
+                    nextLocations,
+                    request,
+                    this.PartitionKeyRangeToLocationForWrite);
+            }
+            else if (GlobalPartitionEndpointManagerCore.IsHubRegionRoutingActive(request))
+            {
+                // For hub region discovery on single-master, cycle through all read regions
+                // until the hub (write) region is found.
                 ReadOnlyCollection<Uri> nextLocations = this.isThinClientEnabled && GatewayStoreModel.IsOperationSupportedByThinClient(request)
                     ? this.globalEndpointManager.ThinClientReadEndpoints
                     : this.globalEndpointManager.AccountReadEndpoints;
@@ -340,7 +367,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             failedLocation = default;
 
             if (!this.IsPartitionLevelAutomaticFailoverEnabled()
-                && !this.IsPartitionLevelCircuitBreakerEnabled())
+                && !this.IsPartitionLevelCircuitBreakerEnabled()
+                && !GlobalPartitionEndpointManagerCore.IsHubRegionRoutingActive(request))
             {
                 return false;
             }
@@ -625,6 +653,15 @@ namespace Microsoft.Azure.Cosmos.Routing
             partitionKeyRangeToLocationMapping.Value.TryRemove(partitionKeyRange, out PartitionKeyRangeFailoverInfo _);
 
             return false;
+        }
+
+        /// <summary>
+        /// Checks whether the request has the hub region processing header,
+        /// indicating it is in the hub region discovery flow (after 2× 404/1002).
+        /// </summary>
+        private static bool IsHubRegionRoutingActive(DocumentServiceRequest request)
+        {
+            return request?.Headers?[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion] != null;
         }
 
         internal sealed class PartitionKeyRangeFailoverInfo
