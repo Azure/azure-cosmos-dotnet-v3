@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos
     internal class DistributedTransactionServerRequest
     {
         private readonly CosmosSerializerCore serializerCore;
-        private MemoryStream bodyStream;
+        private byte[] serializedBody;
 
         private DistributedTransactionServerRequest(
             IReadOnlyList<DistributedTransactionOperation> operations,
@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
 
         public IReadOnlyList<DistributedTransactionOperation> Operations { get; }
 
-        public Guid IdempotencyToken { get; private set; }
+        public Guid IdempotencyToken { get; }
 
         public static async Task<DistributedTransactionServerRequest> CreateAsync(
             IReadOnlyList<DistributedTransactionOperation> operations,
@@ -38,11 +38,21 @@ namespace Microsoft.Azure.Cosmos
             return request;
         }
 
-        public MemoryStream TransferBodyStream()
+        /// <summary>
+        /// Returns a new <see cref="MemoryStream"/> backed by the pre-serialized request bytes.
+        /// Each call returns an independent, non-writable stream positioned at offset zero so
+        /// that the caller can safely wrap it in a <c>using</c> block and dispose it without
+        /// affecting subsequent retry attempts.
+        /// </summary>
+        /// <returns>Body stream.</returns>
+        public MemoryStream CreateBodyStream()
         {
-            MemoryStream bodyStream = this.bodyStream;
-            this.bodyStream = null;
-            return bodyStream;
+            if (this.serializedBody == null)
+            {
+                throw new InvalidOperationException("Request body has not been initialized. Use CreateAsync to construct a request.");
+            }
+
+            return new MemoryStream(this.serializedBody, writable: false);
         }
 
         private async Task CreateBodyStreamAsync(CancellationToken cancellationToken)
@@ -53,7 +63,10 @@ namespace Microsoft.Azure.Cosmos
                 operation.PartitionKeyJson ??= operation.PartitionKey.ToJsonString();
             }
 
-            this.bodyStream = DistributedTransactionSerializer.SerializeRequest(this.Operations);
+            using (MemoryStream stream = DistributedTransactionSerializer.SerializeRequest(this.Operations))
+            {
+                this.serializedBody = stream.ToArray();
+            }
         }
     }
 }
