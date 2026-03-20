@@ -192,7 +192,8 @@
             SocketsHttpHandler socketsHttpHandler = new SocketsHttpHandler
             {
                 PooledConnectionLifetime = TimeSpan.FromMinutes(10), // Customize this value based on desired DNS refresh timer
-                MaxConnectionsPerServer = 20 // Customize the maximum number of allowed connections
+                MaxConnectionsPerServer = 20, // Customize the maximum number of allowed connections
+                EnableMultipleHttp2Connections = true // Recommended for thin client (HTTP/2) mode to open additional connections when stream limits are reached
             };
 
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
