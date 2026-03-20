@@ -65,12 +65,31 @@
           ],
           "MethodInfo": "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan])"
         },
+        "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan], Microsoft.Extensions.Caching.Distributed.IDistributedCache, System.Nullable`1[System.TimeSpan], System.String)[System.ObsoleteAttribute(\"Please use the constructor with EncryptionKeyStoreProvider only.\")]": {
+          "Type": "Constructor",
+          "Attributes": [
+            "ObsoleteAttribute"
+          ],
+          "MethodInfo": "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan], Microsoft.Extensions.Caching.Distributed.IDistributedCache, System.Nullable`1[System.TimeSpan], System.String)"
+        },
         "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, System.Nullable`1[System.TimeSpan])[System.ObsoleteAttribute(\"Please use the constructor with EncryptionKeyStoreProvider only.\")]": {
           "Type": "Constructor",
           "Attributes": [
             "ObsoleteAttribute"
           ],
           "MethodInfo": "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, System.Nullable`1[System.TimeSpan])"
+        },
+        "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, System.Nullable`1[System.TimeSpan], Microsoft.Extensions.Caching.Distributed.IDistributedCache, System.Nullable`1[System.TimeSpan], System.String)[System.ObsoleteAttribute(\"Please use the constructor with EncryptionKeyStoreProvider only.\")]": {
+          "Type": "Constructor",
+          "Attributes": [
+            "ObsoleteAttribute"
+          ],
+          "MethodInfo": "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, System.Nullable`1[System.TimeSpan], Microsoft.Extensions.Caching.Distributed.IDistributedCache, System.Nullable`1[System.TimeSpan], System.String)"
+        },
+        "Void .ctor(Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan], Microsoft.Extensions.Caching.Distributed.IDistributedCache, System.Nullable`1[System.TimeSpan], System.String)": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "Void .ctor(Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan], Microsoft.Extensions.Caching.Distributed.IDistributedCache, System.Nullable`1[System.TimeSpan], System.String)"
         },
         "Void .ctor(Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan])": {
           "Type": "Constructor",
@@ -446,12 +465,31 @@
               ],
               "MethodInfo": "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan])"
             },
+            "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan], Microsoft.Extensions.Caching.Distributed.IDistributedCache, System.Nullable`1[System.TimeSpan], System.String)[System.ObsoleteAttribute(\"Please use the constructor with EncryptionKeyStoreProvider only.\")]": {
+              "Type": "Constructor",
+              "Attributes": [
+                "ObsoleteAttribute"
+              ],
+              "MethodInfo": "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan], Microsoft.Extensions.Caching.Distributed.IDistributedCache, System.Nullable`1[System.TimeSpan], System.String)"
+            },
             "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, System.Nullable`1[System.TimeSpan])[System.ObsoleteAttribute(\"Please use the constructor with EncryptionKeyStoreProvider only.\")]": {
               "Type": "Constructor",
               "Attributes": [
                 "ObsoleteAttribute"
               ],
               "MethodInfo": "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, System.Nullable`1[System.TimeSpan])"
+            },
+            "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, System.Nullable`1[System.TimeSpan], Microsoft.Extensions.Caching.Distributed.IDistributedCache, System.Nullable`1[System.TimeSpan], System.String)[System.ObsoleteAttribute(\"Please use the constructor with EncryptionKeyStoreProvider only.\")]": {
+              "Type": "Constructor",
+              "Attributes": [
+                "ObsoleteAttribute"
+              ],
+              "MethodInfo": "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, System.Nullable`1[System.TimeSpan], Microsoft.Extensions.Caching.Distributed.IDistributedCache, System.Nullable`1[System.TimeSpan], System.String)"
+            },
+            "Void .ctor(Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan], Microsoft.Extensions.Caching.Distributed.IDistributedCache, System.Nullable`1[System.TimeSpan], System.String)": {
+              "Type": "Constructor",
+              "Attributes": [],
+              "MethodInfo": "Void .ctor(Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan], Microsoft.Extensions.Caching.Distributed.IDistributedCache, System.Nullable`1[System.TimeSpan], System.String)"
             },
             "Void .ctor(Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan])": {
               "Type": "Constructor",
