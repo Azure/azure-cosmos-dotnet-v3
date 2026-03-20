@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         public T Eval(Expression expr)
         {
             Expression<Func<T>> lambda = Expression.Lambda<Func<T>>(expr);
-            Func<T> func = lambda.Compile();
+            Func<T> func = (Func<T>)ExpressionCompileHelper.CompileLambda(lambda);
             return func();
         }
     }
