@@ -474,6 +474,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        [JsonConverter(typeof(ClientOptionJsonConverter))]
         public System.Text.Json.JsonSerializerOptions UseSystemTextJsonSerializerWithOptions
         {
             get => this.stjSerializerOptions;
@@ -1372,14 +1373,19 @@ namespace Microsoft.Azure.Cosmos
                     return;
                 }
 
-                CosmosJsonSerializerWrapper cosmosJsonSerializerWrapper = value as CosmosJsonSerializerWrapper;
-                if (value is CosmosJsonSerializerWrapper)
+                if (value is System.Text.Json.JsonSerializerOptions)
                 {
-                    writer.WriteValue(cosmosJsonSerializerWrapper.InternalJsonSerializer.GetType().ToString());
+                    writer.WriteValue(value.GetType().ToString());
+                    return;
                 }
 
-                CosmosSerializer cosmosSerializer = value as CosmosSerializer;
-                if (cosmosSerializer is CosmosSerializer)
+                if (value is CosmosJsonSerializerWrapper cosmosJsonSerializerWrapper)
+                {
+                    writer.WriteValue(cosmosJsonSerializerWrapper.InternalJsonSerializer.GetType().ToString());
+                    return;
+                }
+
+                if (value is CosmosSerializer cosmosSerializer)
                 {
                     writer.WriteValue(cosmosSerializer.GetType().ToString());
                 }
