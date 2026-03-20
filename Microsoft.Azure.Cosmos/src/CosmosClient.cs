@@ -323,7 +323,8 @@ namespace Microsoft.Azure.Cosmos
                     new AuthorizationTokenProviderTokenCredential(
                         tokenCredential,
                         new Uri(accountEndpoint),
-                        clientOptions?.TokenCredentialBackgroundRefreshInterval),
+                        clientOptions?.TokenCredentialBackgroundRefreshInterval,
+                        AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature),
                     clientOptions)
         {
         }
