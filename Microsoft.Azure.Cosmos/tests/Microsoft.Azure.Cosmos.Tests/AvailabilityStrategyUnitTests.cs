@@ -4,11 +4,14 @@
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.IO;
+    using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -632,6 +635,139 @@
             Assert.IsTrue(senderCallCount >= 2, "Expected a second hedge request to complete successfully.");
         }
 
-       
+        /// <summary>
+        /// Verifies that when a request completes before the hedge threshold, HedgeContext
+        /// contains exactly 1 region (the primary). This confirms no hedging occurred even 
+        /// though HedgeContext is non-empty. A single-element HedgeContext is the expected
+        /// indicator that the primary request completed without triggering any hedge.
+        /// </summary>
+        [TestMethod]
+        public async Task PrimaryCompletesBeforeThreshold_HedgeContextContainsSingleRegion()
+        {
+            // Arrange: high threshold ensures no hedging fires
+            CrossRegionHedgingAvailabilityStrategy availabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
+                threshold: TimeSpan.FromMilliseconds(5000),
+                thresholdStep: TimeSpan.FromMilliseconds(5000));
+
+            // Use a real trace so AddOrUpdateDatum actually persists data (NoOpTrace discards it)
+            using ITrace rootTrace = Trace.GetRootTrace("HedgeContextTest");
+            using RequestMessage request = new RequestMessage(
+                HttpMethod.Get,
+                "/dbs/testdb/colls/testcontainer/docs/testId",
+                rootTrace)
+            {
+                ResourceType = ResourceType.Document,
+                OperationType = OperationType.Read
+            };
+            using CosmosClient mockCosmosClient = CreateMockClientWithRegions(3);
+
+            int senderCallCount = 0;
+
+            Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender = (req, ct) =>
+            {
+                Interlocked.Increment(ref senderCallCount);
+                ResponseMessage response = new ResponseMessage(HttpStatusCode.OK)
+                {
+                    Trace = req.Trace
+                };
+                return Task.FromResult(response);
+            };
+
+            // Act
+            ResponseMessage response = await availabilityStrategy.ExecuteAvailabilityStrategyAsync(
+                sender, mockCosmosClient, request, CancellationToken.None);
+
+            // Assert
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.AreEqual(1, senderCallCount,
+                "Only the primary request should be sent when it returns before the hedge timer fires.");
+
+            CosmosTraceDiagnostics traceDiagnostic = response.Diagnostics as CosmosTraceDiagnostics;
+            Assert.IsNotNull(traceDiagnostic);
+
+            if (traceDiagnostic.Value is Trace concreteTrace)
+            {
+                concreteTrace.SetWalkingStateRecursively();
+            }
+
+            Assert.IsFalse(traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out _),
+                "HedgeContext should be absent when the primary request completes before the threshold (no hedging occurred).");
+
+            Assert.IsTrue(traceDiagnostic.Value.Data.TryGetValue("Hedge Config", out _),
+                "Hedge Config should always be present when the hedging strategy code path is used.");
+        }
+
+        /// <summary>
+        /// Verifies that when hedging IS triggered (primary is slow, hedge returns first),
+        /// HedgeContext contains 2 regions — confirming the semantics that HedgeContext count > 1 
+        /// means hedging occurred.
+        /// </summary>
+        [TestMethod]
+        public async Task HedgeTriggered_HedgeContextContainsMultipleRegions()
+        {
+            // Arrange: low threshold ensures hedging fires quickly
+            CrossRegionHedgingAvailabilityStrategy availabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
+                threshold: TimeSpan.FromMilliseconds(10),
+                thresholdStep: TimeSpan.FromMilliseconds(10));
+
+            // Use a real trace so AddOrUpdateDatum actually persists data
+            using ITrace rootTrace = Trace.GetRootTrace("HedgeContextTest");
+            using RequestMessage request = new RequestMessage(
+                HttpMethod.Get,
+                "/dbs/testdb/colls/testcontainer/docs/testId",
+                rootTrace)
+            {
+                ResourceType = ResourceType.Document,
+                OperationType = OperationType.Read
+            };
+            using CosmosClient mockCosmosClient = CreateMockClientWithRegions(3);
+
+            int senderCallCount = 0;
+
+            Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender = async (req, ct) =>
+            {
+                int callNumber = Interlocked.Increment(ref senderCallCount);
+
+                if (callNumber == 1)
+                {
+                    // Primary: slow enough to trigger hedging
+                    await Task.Delay(TimeSpan.FromSeconds(5), ct).ContinueWith(_ => { });
+                    return new ResponseMessage(HttpStatusCode.ServiceUnavailable);
+                }
+
+                // Hedge request: returns immediately with success, wired to request trace
+                return new ResponseMessage(HttpStatusCode.OK)
+                {
+                    Trace = req.Trace
+                };
+            };
+
+            // Act
+            ResponseMessage response = await availabilityStrategy.ExecuteAvailabilityStrategyAsync(
+                sender, mockCosmosClient, request, CancellationToken.None);
+
+            // Assert
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.IsTrue(senderCallCount >= 2,
+                "At least 2 sender calls expected (primary + hedge).");
+
+            CosmosTraceDiagnostics traceDiagnostic = response.Diagnostics as CosmosTraceDiagnostics;
+            Assert.IsNotNull(traceDiagnostic);
+
+            if (traceDiagnostic.Value is Trace concreteTrace)
+            {
+                concreteTrace.SetWalkingStateRecursively();
+            }
+
+            Assert.IsTrue(traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext),
+                "HedgeContext should be present when hedging occurred.");
+
+            IEnumerable<string> hedgeRegions = (IEnumerable<string>)hedgeContext;
+            List<string> hedgeRegionsList = new List<string>(hedgeRegions);
+
+            Assert.IsTrue(hedgeRegionsList.Count >= 2,
+                $"HedgeContext should contain 2+ regions when hedging occurred, but got {hedgeRegionsList.Count}. " +
+                "Multiple regions in HedgeContext confirms hedging was triggered.");
+        }
     }
 }
