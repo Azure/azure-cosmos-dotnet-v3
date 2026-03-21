@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Collections;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow.IO;
@@ -296,6 +297,15 @@ namespace Microsoft.Azure.Cosmos
                     this.ResourceStream = null;
                 }
             }
+        }
+
+        internal async Task UpdatePartitionKeyIfRequiredAsync(ContainerInternal cosmosContainer, ITrace trace, CancellationToken cancellationToken)
+        {
+            this.PartitionKey = await cosmosContainer.EnsureIdGetAppendedtoPartitionKeyIfneededAsync(
+                    this.PartitionKey,
+                    this.Id,
+                    cancellationToken);
+
         }
     }
 
