@@ -9,11 +9,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     using System.Collections.Generic;
     using System.Linq;
     using System.Text.Json;
+    using System.Text.Json.Serialization;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Documents.Routing;
 
     internal sealed class DocumentServiceLeaseContainerInMemory : DocumentServiceLeaseContainer
     {
+        private static readonly JsonSerializerOptions DeserializeOptions = new JsonSerializerOptions
+        {
+            Converters = { new FeedRangeInternalSystemTextJsonConverter() }
+        };
+
         private readonly ConcurrentDictionary<string, DocumentServiceLease> container;
 
         public DocumentServiceLeaseContainerInMemory(ConcurrentDictionary<string, DocumentServiceLease> container)
@@ -42,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 
-                string payload = JsonSerializer.Serialize(lease, lease.GetType());
+                string payload = JsonSerializer.Serialize(lease, lease.GetType(), DeserializeOptions);
                 using (JsonDocument doc = JsonDocument.Parse(payload))
                 {
                     exportedLeases.Add(doc.RootElement.Clone());
@@ -88,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             return Task.CompletedTask;
         }
 
-        private static DocumentServiceLease DeserializeLease(JsonElement leaseElement)
+        internal static DocumentServiceLease DeserializeLease(JsonElement leaseElement)
         {
             if (leaseElement.ValueKind == JsonValueKind.Undefined || leaseElement.ValueKind == JsonValueKind.Null)
             {
@@ -100,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             // Try EPK lease first, then fall back to Core lease
             try
             {
-                DocumentServiceLeaseCoreEpk epkLease = JsonSerializer.Deserialize<DocumentServiceLeaseCoreEpk>(payloadJson);
+                DocumentServiceLeaseCoreEpk epkLease = JsonSerializer.Deserialize<DocumentServiceLeaseCoreEpk>(payloadJson, DeserializeOptions);
                 if (epkLease?.FeedRange != null)
                 {
                     return epkLease;
@@ -113,11 +120,66 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
             try
             {
-                return JsonSerializer.Deserialize<DocumentServiceLeaseCore>(payloadJson);
+                return JsonSerializer.Deserialize<DocumentServiceLeaseCore>(payloadJson, DeserializeOptions);
             }
             catch (JsonException)
             {
                 return null;
+            }
+        }
+
+        /// <summary>
+        /// System.Text.Json converter for <see cref="FeedRangeInternal"/> that handles
+        /// serialization and deserialization of FeedRange types (FeedRangeEpk, FeedRangePartitionKeyRange).
+        /// </summary>
+        private sealed class FeedRangeInternalSystemTextJsonConverter : JsonConverter<FeedRangeInternal>
+        {
+            public override FeedRangeInternal Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                using JsonDocument doc = JsonDocument.ParseValue(ref reader);
+                JsonElement root = doc.RootElement;
+
+                if (root.TryGetProperty("Range", out JsonElement rangeElement))
+                {
+                    string min = rangeElement.GetProperty("Min").GetString();
+                    string max = rangeElement.GetProperty("Max").GetString();
+
+                    bool isMinInclusive = !rangeElement.TryGetProperty("IsMinInclusive", out JsonElement minIncEl)
+                        || minIncEl.GetBoolean();
+                    bool isMaxInclusive = rangeElement.TryGetProperty("IsMaxInclusive", out JsonElement maxIncEl)
+                        && maxIncEl.GetBoolean();
+
+                    return new FeedRangeEpk(new Range<string>(min, max, isMinInclusive, isMaxInclusive));
+                }
+
+                if (root.TryGetProperty("PartitionKeyRangeId", out JsonElement pkRangeIdElement))
+                {
+                    return new FeedRangePartitionKeyRange(pkRangeIdElement.GetString());
+                }
+
+                return null;
+            }
+
+            public override void Write(Utf8JsonWriter writer, FeedRangeInternal value, JsonSerializerOptions options)
+            {
+                writer.WriteStartObject();
+
+                if (value is FeedRangeEpk epk)
+                {
+                    writer.WritePropertyName("Range");
+                    writer.WriteStartObject();
+                    writer.WriteString("Min", epk.Range.Min);
+                    writer.WriteString("Max", epk.Range.Max);
+                    writer.WriteBoolean("IsMinInclusive", epk.Range.IsMinInclusive);
+                    writer.WriteBoolean("IsMaxInclusive", epk.Range.IsMaxInclusive);
+                    writer.WriteEndObject();
+                }
+                else if (value is FeedRangePartitionKeyRange pkRange)
+                {
+                    writer.WriteString("PartitionKeyRangeId", pkRange.PartitionKeyRangeId);
+                }
+
+                writer.WriteEndObject();
             }
         }
     }
