@@ -494,6 +494,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
 
         [TestMethod]
         [TestCategory("Flaky")]
+        [Timeout(300000)]
         public async Task QueryAsync()
         {
             List<Input> inputs = new List<Input>();
@@ -818,6 +819,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
 
         [TestMethod]
         [TestCategory("Flaky")]
+        [Timeout(300000)]
         public async Task TypedPointOperationsAsync()
         {
             List<Input> inputs = new List<Input>();

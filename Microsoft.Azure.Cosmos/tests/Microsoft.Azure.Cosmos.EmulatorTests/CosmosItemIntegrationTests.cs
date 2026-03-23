@@ -1721,6 +1721,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.IsTrue(hedgedRegions.Count >= 1, "Since the first region is not available, the request should atleast hedge to the next region.");
                 }
 
+
                 Assert.IsTrue(cosmosClient.DocumentClient.PartitionKeyRangeLocation.IsPartitionLevelAutomaticFailoverEnabled());
 
                 // Disable PPAF At the Gateway Layer.
