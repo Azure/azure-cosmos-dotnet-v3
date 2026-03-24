@@ -37,6 +37,11 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
                 throw new ArgumentNullException(nameof(trace));
             }
 
+            if (trace is Tracing.Trace concreteTrace)
+            {
+                concreteTrace.SetWalkingStateRecursively();
+            }
+
             List<RequestEntry> entries = CollectRequestEntries(trace);
 
             string summaryJson = BuildSummaryJson(trace, entries);
