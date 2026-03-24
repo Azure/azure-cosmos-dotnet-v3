@@ -44,7 +44,7 @@ Behavioral specifications for all major features of the Azure Cosmos DB .NET SDK
 | Spec | Description |
 |------|-------------|
 | [Serialization](serialization/spec.md) | CosmosSerializer, JSON.NET, System.Text.Json, LINQ serialization |
-| [Diagnostics and Observability](diagnostics-and-observability/spec.md) | CosmosDiagnostics, trace tree, OpenTelemetry, metrics |
+| [Diagnostics and Observability](diagnostics-and-observability/spec.md) | CosmosDiagnostics, trace tree, OpenTelemetry, metrics, DiagnosticsVerbosity (Summary/Detailed) |
 
 ### Security & Management
 
