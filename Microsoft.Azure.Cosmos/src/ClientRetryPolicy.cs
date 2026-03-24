@@ -233,7 +233,9 @@ namespace Microsoft.Azure.Cosmos
             // a previous request already discovered the hub region for this partition.
             // If cached, route directly there (skipping the 403/3 discovery chain).
             // Normal first-attempt requests never enter this block (addHubRegionProcessingOnlyHeader = false).
-            if (!this.canUseMultipleWriteLocations && this.addHubRegionProcessingOnlyHeader)
+            // addHubRegionProcessingOnlyHeader is only ever set when !canUseMultipleWriteLocations,
+            // so no additional multi-master guard is needed here.
+            if (this.addHubRegionProcessingOnlyHeader)
             {
                 request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion] = bool.TrueString;
 
@@ -255,6 +257,27 @@ namespace Microsoft.Azure.Cosmos
                 : this.globalEndpointManager.ResolveServiceEndpoint(request);
 
             request.RequestContext.RouteToLocation(this.locationEndpoint);
+        }
+
+        /// <summary>
+        /// Method that is called after a successful response is received.
+        /// For hub region discovery, caches the successful endpoint so future
+        /// requests can route directly to the hub without repeating the 403/3 cycle.
+        /// </summary>
+        /// <param name="cosmosResponseMessage">The successful <see cref="ResponseMessage"/>.</param>
+        public void OnAfterSendRequest(ResponseMessage cosmosResponseMessage)
+        {
+#if !INTERNAL
+            if (cosmosResponseMessage != null
+                && cosmosResponseMessage.IsSuccessStatusCode
+                && this.addHubRegionProcessingOnlyHeader
+                && !this.canUseMultipleWriteLocations
+                && this.documentServiceRequest != null)
+            {
+                this.partitionKeyRangeLocationCache.TryAddHubRegionOverrideOnSuccess(
+                    this.documentServiceRequest);
+            }
+#endif
         }
 
         private async Task<ShouldRetryResult> ShouldRetryInternalAsync(
@@ -283,7 +306,10 @@ namespace Microsoft.Azure.Cosmos
             if (statusCode == HttpStatusCode.Forbidden
                 && subStatusCode == SubStatusCodes.WriteForbidden)
             {
-                // It's a write forbidden so it safe to retry
+                // It's a write forbidden so it safe to retry.
+                // For hub region routing, TryMarkEndpointUnavailableForPartitionKeyRange
+                // removes any stale cached hub entry and returns false, so the request
+                // falls through to ShouldRetryOnEndpointFailureAsync for normal region cycling.
                 if (this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
                      this.documentServiceRequest))
                 {
@@ -346,20 +372,25 @@ namespace Microsoft.Azure.Cosmos
             if (statusCode == HttpStatusCode.NotFound && subStatusCode == SubStatusCodes.ReadSessionNotAvailable)
             {
 #if !INTERNAL
-                // Only set the hub region processing header for single master accounts
-                // Set header only after the first retry attempt fails with 404/1002
+                // Only set the hub region processing header for single master accounts.
+                // Set header only after the first retry attempt fails with 404/1002.
                 if (!this.canUseMultipleWriteLocations && this.sessionTokenRetryCount >= 1)
                 {
                     this.addHubRegionProcessingOnlyHeader = true;
+                    this.sessionTokenRetryCount++;
 
                     // Bypass ShouldRetryOnSessionNotAvailable — it would return NoRetry here
                     // because sessionTokenRetryCount is already >= 1. Use the endpoint failure
                     // path instead so the hub header actually gets sent on the next attempt.
+                    // overwriteEndpointDiscovery: true prevents marking the endpoint as
+                    // unavailable for normal reads — this is a hub discovery retry, not a
+                    // region availability issue.
                     return await this.ShouldRetryOnEndpointFailureAsync(
                         isReadRequest: this.isReadRequest,
                         markBothReadAndWriteAsUnavailable: false,
                         forceRefresh: false,
-                        retryOnPreferredLocations: true);
+                        retryOnPreferredLocations: true,
+                        overwriteEndpointDiscovery: true);
                 }
 #endif
                 return this.ShouldRetryOnSessionNotAvailable(this.documentServiceRequest);

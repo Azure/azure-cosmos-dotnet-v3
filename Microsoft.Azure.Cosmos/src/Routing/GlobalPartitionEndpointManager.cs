@@ -80,5 +80,14 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// </summary>
         public abstract bool IsPartitionLevelCircuitBreakerEnabled();
 
+        /// <summary>
+        /// Caches the hub region endpoint for a partition key range after a successful response (200)
+        /// during hub region discovery. This allows future requests with the hub region header to
+        /// route directly to the discovered hub, skipping the 403/3 discovery chain.
+        /// </summary>
+        /// <param name="request">The document service request that succeeded.</param>
+        /// <returns>True if the hub region was successfully cached, otherwise false.</returns>
+        public abstract bool TryAddHubRegionOverrideOnSuccess(
+            DocumentServiceRequest request);
     }
 }

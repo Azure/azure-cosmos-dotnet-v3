@@ -488,13 +488,15 @@
         }
 
         /// <summary>
-        /// Verifies hub routing uses existing cache via TryMarkEndpointUnavailableForPartitionKeyRange
-        /// and TryAddPartitionLevelLocationOverride when hub header is present on the request.
+        /// Verifies hub routing uses TryAddHubRegionOverrideOnSuccess to cache the hub region
+        /// after a successful response, and TryAddPartitionLevelLocationOverride routes to the
+        /// cached location on subsequent requests. Also verifies TryMarkEndpointUnavailableForPartitionKeyRange
+        /// removes stale hub cache entries on 403/3 and returns false (so normal retry handles it).
         /// </summary>
         [TestMethod]
         [Owner("aavasthy")]
-        [Description("Validates hub routing builds cache via 403/3 handling and TryAddPartitionLevelLocationOverride routes to cached location.")]
-        public void GlobalPartitionEndpointManager_HubRouting_UsesExistingCache_ViaMarkAndOverrideMethods()
+        [Description("Validates hub caching: TryAddHubRegionOverrideOnSuccess caches on 200, TryMarkEndpointUnavailable removes stale entry on 403/3.")]
+        public void GlobalPartitionEndpointManager_HubRouting_CachesOnSuccess_RemovesOnFailure()
         {
             // Arrange: 2 read regions
             Uri eastUS = new Uri("https://eastus.documents.azure.com/");
@@ -518,49 +520,85 @@
             Assert.IsFalse(cache.TryAddPartitionLevelLocationOverride(reqNoHub),
                 "Without hub header, override should not apply.");
 
-            // Step 1: Simulate 403/3 on East US with hub header
-            // (This is what happens when ClientRetryPolicy handles 403/3 during hub discovery)
+            // Step 1: TryMarkEndpointUnavailableForPartitionKeyRange with hub header
+            // should REMOVE any stale entry and return false (not build cache)
             DocumentServiceRequest req403 = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
             req403.RequestContext.ResolvedPartitionKeyRange = pkRange;
             req403.RequestContext.RouteToLocation(eastUS);
             req403.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion] = bool.TrueString;
 
             bool marked = cache.TryMarkEndpointUnavailableForPartitionKeyRange(req403);
-            Assert.IsTrue(marked, "Should mark East US as unavailable and advance to West US.");
+            Assert.IsFalse(marked, "Hub region should NOT build cache on 403/3; should return false to fall through to normal retry.");
 
-            // Step 2: TryAddPartitionLevelLocationOverride should now route to West US (cached)
+            // Step 2: No cache entry exists yet — TryAddPartitionLevelLocationOverride returns false
+            DocumentServiceRequest reqBeforeSuccess = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+            reqBeforeSuccess.RequestContext.ResolvedPartitionKeyRange = pkRange;
+            reqBeforeSuccess.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion] = bool.TrueString;
+            Assert.IsFalse(cache.TryAddPartitionLevelLocationOverride(reqBeforeSuccess),
+                "Before success, no cache entry should exist.");
+
+            // Step 3: Simulate success — TryAddHubRegionOverrideOnSuccess caches the hub
+            DocumentServiceRequest reqSuccess = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+            reqSuccess.RequestContext.ResolvedPartitionKeyRange = pkRange;
+            reqSuccess.RequestContext.ResolvedCollectionRid = "testRid";
+            reqSuccess.RequestContext.RouteToLocation(westUS);
+            reqSuccess.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion] = bool.TrueString;
+
+            bool cached = cache.TryAddHubRegionOverrideOnSuccess(reqSuccess);
+            Assert.IsTrue(cached, "Should cache hub region on success.");
+
+            // Step 4: TryAddPartitionLevelLocationOverride should now route to West US (cached)
             DocumentServiceRequest reqCached = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
             reqCached.RequestContext.ResolvedPartitionKeyRange = pkRange;
             reqCached.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion] = bool.TrueString;
 
             bool overrideApplied = cache.TryAddPartitionLevelLocationOverride(reqCached);
-            Assert.IsTrue(overrideApplied, "Should route to cached next location (West US).");
+            Assert.IsTrue(overrideApplied, "Should route to cached hub location (West US).");
             Assert.AreEqual(westUS, reqCached.RequestContext.LocationEndpointToRoute,
-                "Should route to West US after East US was marked unavailable.");
+                "Should route to West US (the hub that returned 200).");
 
-            // Step 3: Without hub header, the cached entry should NOT be used
+            // Step 5: Without hub header, the cached entry should NOT be used
             DocumentServiceRequest reqNormal = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
             reqNormal.RequestContext.ResolvedPartitionKeyRange = pkRange;
             bool normalOverride = cache.TryAddPartitionLevelLocationOverride(reqNormal);
             Assert.IsFalse(normalOverride,
-                "Without hub header, cached hub entry should not be used (prevents bombarding hub).");
+                "Without hub header, cached hub entry should not be used.");
 
-            // Step 4: Null/invalid inputs handled gracefully
+            // Step 6: Stale cache removal — 403/3 on cached hub should remove it
+            DocumentServiceRequest reqStale = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+            reqStale.RequestContext.ResolvedPartitionKeyRange = pkRange;
+            reqStale.RequestContext.RouteToLocation(westUS);
+            reqStale.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion] = bool.TrueString;
+
+            bool removedStale = cache.TryMarkEndpointUnavailableForPartitionKeyRange(reqStale);
+            Assert.IsFalse(removedStale, "Should return false after removing stale hub entry.");
+
+            // Verify cache is now empty
+            DocumentServiceRequest reqAfterRemoval = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+            reqAfterRemoval.RequestContext.ResolvedPartitionKeyRange = pkRange;
+            reqAfterRemoval.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion] = bool.TrueString;
+            Assert.IsFalse(cache.TryAddPartitionLevelLocationOverride(reqAfterRemoval),
+                "After stale removal, cache should be empty.");
+
+            // Step 7: Null/invalid inputs handled gracefully
             DocumentServiceRequest reqNullPk = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
             reqNullPk.RequestContext.ResolvedPartitionKeyRange = null;
             reqNullPk.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion] = bool.TrueString;
             Assert.IsFalse(cache.TryAddPartitionLevelLocationOverride(reqNullPk),
                 "Should return false for null PKRange.");
+            Assert.IsFalse(cache.TryAddHubRegionOverrideOnSuccess(reqNullPk),
+                "Should return false for null PKRange on success caching.");
         }
 
         /// <summary>
-        /// Verifies complete flow: 404/1002 triggers hub header, 403/3 builds cache via existing methods,
-        /// subsequent request reuses cache to skip 403/3 chain.
+        /// Verifies complete flow: 404/1002 triggers hub header, 403/3 does NOT build cache
+        /// (falls through to normal retry), success triggers TryAddHubRegionOverrideOnSuccess
+        /// to cache the hub, and subsequent request reuses cache to skip 403/3 chain.
         /// </summary>
         [TestMethod]
         [Owner("aavasthy")]
-        [Description("Validates full hub caching flow: 2× 404/1002 → hub header → 403/3 builds cache → next request skips 403/3 via cache.")]
-        public async Task ClientRetryPolicy_After404With1002Twice_Then403_3BuildsCache_AndSubsequentRequestReusesCache()
+        [Description("Validates full hub caching flow: 2× 404/1002 → hub header → 403/3 (no cache) → normal retry → 200 caches hub → next request skips 403/3 via cache.")]
+        public async Task ClientRetryPolicy_After404With1002Twice_Then403_3_ThenSuccess_CachesHub_AndSubsequentRequestReusesCache()
         {
             // Arrange
             const bool enableEndpointDiscovery = true;
@@ -574,7 +612,7 @@
             PartitionKeyRange pkRange = new PartitionKeyRange { Id = "0", MinInclusive = "", MaxExclusive = "FF" };
 
             // ===== STEP 1: First request (cold cache) =====
-            // Flow: 404/1002 → 404/1002 → hub header → 403/3 (builds cache) → retries to next region
+            // Flow: 404/1002 → 404/1002 → hub header → 403/3 (no cache, normal retry) → success → cache hub
             ClientRetryPolicy retryPolicy1 = new ClientRetryPolicy(
                 endpointManager,
                 cacheManager,
@@ -625,8 +663,8 @@
             Uri regionThatGot403 = request1.RequestContext.LocationEndpointToRoute;
 
             // Simulate 403/3 (WriteForbidden) — non-hub region rejects the hub-header request.
-            // ShouldRetryAsync calls TryMarkEndpointUnavailableForPartitionKeyRange which builds
-            // the cache entry and advances to the next region.
+            // With the new design, TryMarkEndpointUnavailableForPartitionKeyRange removes stale
+            // cache entries and returns false, so normal retry (ShouldRetryOnEndpointFailureAsync) handles it.
             DocumentClientException error403 = new DocumentClientException(
                 message: "403/3 WriteForbidden",
                 innerException: null,
@@ -638,19 +676,28 @@
             ShouldRetryResult shouldRetry3 = await retryPolicy1.ShouldRetryAsync(error403, CancellationToken.None);
             Assert.IsTrue(shouldRetry3.ShouldRetry, "Should retry after 403/3 to find hub.");
 
-            // Attempt 4: ClientRetryPolicy sets the hub header; the partition-level cache
-            // in Gateway/Direct (TryAddPartitionLevelLocationOverride) overrides routing to the hub.
+            // Attempt 4: hub header persists; cache is EMPTY (403/3 does not build cache).
+            // TryAddPartitionLevelLocationOverride returns false — routing handled by retryContext.
             retryPolicy1.OnBeforeSendRequest(request1);
             headerValues = request1.Headers.GetValues(HubRegionHeader);
             Assert.IsNotNull(headerValues, "Hub header should persist through 403/3 retry.");
 
-            // Simulate what GatewayStoreModel / GlobalAddressResolver does:
-            // TryAddPartitionLevelLocationOverride detects the hub header and routes to the cached next region.
             bool overrideApplied = cacheManager.TryAddPartitionLevelLocationOverride(request1);
-            Assert.IsTrue(overrideApplied, "Partition-level cache should route to cached hub.");
+            Assert.IsFalse(overrideApplied, "Partition-level cache should be EMPTY after 403/3 (no eager caching).");
+
+            // Simulate SUCCESS: the retry reached the hub region and got 200.
+            // OnAfterSendRequest → TryAddHubRegionOverrideOnSuccess caches the hub.
             Uri hubRegion = request1.RequestContext.LocationEndpointToRoute;
-            Assert.AreNotEqual(regionThatGot403, hubRegion,
-                "After 403/3, should route to a different region (the hub).");
+            request1.RequestContext.ResolvedCollectionRid = "testRid";
+            ResponseMessage successResponse = new ResponseMessage(HttpStatusCode.OK);
+            retryPolicy1.OnAfterSendRequest(successResponse);
+
+            // Verify cache was populated by TryAddHubRegionOverrideOnSuccess
+            DocumentServiceRequest reqVerifyCache = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+            reqVerifyCache.RequestContext.ResolvedPartitionKeyRange = pkRange;
+            reqVerifyCache.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion] = bool.TrueString;
+            bool cachePopulated = cacheManager.TryAddPartitionLevelLocationOverride(reqVerifyCache);
+            Assert.IsTrue(cachePopulated, "After success, cache should contain the hub region.");
 
             // ===== STEP 2: Normal request (no errors) — should NOT use hub cache =====
             ClientRetryPolicy retryPolicyNormal = new ClientRetryPolicy(
