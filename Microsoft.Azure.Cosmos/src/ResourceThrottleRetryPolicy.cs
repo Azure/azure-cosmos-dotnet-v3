@@ -164,16 +164,16 @@ namespace Microsoft.Azure.Cosmos
                 retryDelay = TimeSpan.FromTicks(retryDelay.Ticks * this.backoffDelayFactor);
             }
 
+            if (retryDelay == TimeSpan.Zero)
+            {
+                // we should never reach here as BE should turn non-zero of retryDelay
+                DefaultTrace.TraceInformation("Received retryDelay of 0 with Http 429: {0}", retryAfter);
+                retryDelay = TimeSpan.FromSeconds(DefaultRetryInSeconds);
+            }
+
             if (retryDelay < this.maxWaitTimeInMilliseconds &&
                 this.maxWaitTimeInMilliseconds >= (this.cumulativeRetryDelay = retryDelay.Add(this.cumulativeRetryDelay)))
             {
-                if (retryDelay == TimeSpan.Zero)
-                {
-                    // we should never reach here as BE should turn non-zero of retryDelay
-                    DefaultTrace.TraceInformation("Received retryDelay of 0 with Http 429: {0}", retryAfter);
-                    retryDelay = TimeSpan.FromSeconds(DefaultRetryInSeconds);
-                }
-
                 return true;
             }
 
