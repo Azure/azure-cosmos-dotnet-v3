@@ -4,10 +4,12 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
+
     /// <summary>
     /// Telemetry Options for Cosmos Client to enable/disable telemetry and distributed tracing along with corresponding threshold values.
     /// </summary>
-    public class CosmosClientTelemetryOptions
+    public class CosmosClientTelemetryOptions : IEquatable<CosmosClientTelemetryOptions>
     {
         /// <summary>
         /// Disable sending telemetry data to Microsoft, <see cref="Microsoft.Azure.Cosmos.CosmosThresholdOptions"/> is not applicable for this. 
@@ -86,5 +88,42 @@ namespace Microsoft.Azure.Cosmos
         internal
 #endif
         NetworkMetricsOptions NetworkMetricsOptions { get; set; }
+
+        /// <inheritdoc />
+        public bool Equals(CosmosClientTelemetryOptions other)
+        {
+            if (other is null)
+            {
+                return false;
+            }
+
+            if (ReferenceEquals(this, other))
+            {
+                return true;
+            }
+
+            return this.DisableSendingMetricsToService == other.DisableSendingMetricsToService
+                && this.DisableDistributedTracing == other.DisableDistributedTracing
+                && object.Equals(this.CosmosThresholdOptions, other.CosmosThresholdOptions)
+                && this.QueryTextMode == other.QueryTextMode
+                && this.IsClientMetricsEnabled == other.IsClientMetricsEnabled
+                && this.OperationMetricsOptions == other.OperationMetricsOptions
+                && this.NetworkMetricsOptions == other.NetworkMetricsOptions;
+        }
+
+        /// <inheritdoc />
+        public override bool Equals(object obj)
+            => this.Equals(obj as CosmosClientTelemetryOptions);
+
+        /// <inheritdoc />
+        public override int GetHashCode()
+            => HashCode.Combine(
+                this.DisableSendingMetricsToService,
+                this.DisableDistributedTracing,
+                this.CosmosThresholdOptions,
+                this.QueryTextMode,
+                this.IsClientMetricsEnabled,
+                this.OperationMetricsOptions,
+                this.NetworkMetricsOptions);
     }
 }

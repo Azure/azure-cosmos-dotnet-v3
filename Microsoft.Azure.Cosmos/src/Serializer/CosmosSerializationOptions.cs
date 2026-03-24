@@ -4,11 +4,13 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
+
     /// <summary>
     /// This class provides a way to configure basic
     /// serializer settings.
     /// </summary>
-    public sealed class CosmosSerializationOptions
+    public sealed class CosmosSerializationOptions : IEquatable<CosmosSerializationOptions>
     {
         /// <summary>
         /// Create an instance of CosmosSerializationOptions
@@ -45,5 +47,31 @@ namespace Microsoft.Azure.Cosmos
         /// The default value is CosmosPropertyNamingPolicy.Default
         /// </remarks>
         public CosmosPropertyNamingPolicy PropertyNamingPolicy { get; set; }
+
+        /// <inheritdoc />
+        public bool Equals(CosmosSerializationOptions other)
+        {
+            if (other is null)
+            {
+                return false;
+            }
+
+            if (ReferenceEquals(this, other))
+            {
+                return true;
+            }
+
+            return this.IgnoreNullValues == other.IgnoreNullValues
+                && this.Indented == other.Indented
+                && this.PropertyNamingPolicy == other.PropertyNamingPolicy;
+        }
+
+        /// <inheritdoc />
+        public override bool Equals(object obj)
+            => this.Equals(obj as CosmosSerializationOptions);
+
+        /// <inheritdoc />
+        public override int GetHashCode()
+            => HashCode.Combine(this.IgnoreNullValues, this.Indented, this.PropertyNamingPolicy);
     }
 }
