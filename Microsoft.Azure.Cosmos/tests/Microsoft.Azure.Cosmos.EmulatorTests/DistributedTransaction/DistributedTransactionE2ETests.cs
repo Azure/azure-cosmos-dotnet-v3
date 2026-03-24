@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using PartitionKey = Cosmos.PartitionKey;
 
     [TestClass]
+    [DoNotParallelize]
     public class DistributedTransactionE2ETests : BaseCosmosClientHelper
     {   
         private const string IdempotencyTokenHeader = HttpConstants.HttpHeaders.IdempotencyToken;
