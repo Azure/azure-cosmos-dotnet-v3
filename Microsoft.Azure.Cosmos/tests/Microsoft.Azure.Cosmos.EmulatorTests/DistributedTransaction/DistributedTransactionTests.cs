@@ -27,6 +27,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     /// emulator to natively support distributed transactions.
     /// </summary>
     [TestClass]
+    [DoNotParallelize]
     [TestCategory("DistributedTransaction")]
     public class DistributedTransactionTests : BaseCosmosClientHelper
     {
@@ -259,9 +260,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string mockResponseJson = $@"{{
                 ""operationResponses"": [{{
                     ""index"": 0,
-                    ""statuscode"": 201,
+                    ""statusCode"": 201,
                     ""etag"": ""\""test-etag\"""",
-                    ""resourcebody"": {resourceBodyJson}
+                    ""resourceBody"": {resourceBodyJson}
                 }}]
             }}";
 
@@ -296,8 +297,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string mockErrorJson = @"{
                 ""operationResponses"": [{
                     ""index"": 0,
-                    ""statuscode"": 409,
-                    ""substatuscode"": 0
+                    ""statusCode"": 409,
+                    ""subStatusCode"": 0
                 }]
             }";
 
@@ -326,8 +327,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string mockErrorJson = @"{
                 ""operationResponses"": [{
                     ""index"": 0,
-                    ""statuscode"": 404,
-                    ""substatuscode"": 0
+                    ""statusCode"": 404,
+                    ""subStatusCode"": 0
                 }]
             }";
 
@@ -355,8 +356,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // One success (index 0) and one failure (index 1) → MultiStatus 207
             string mockMultiStatusJson = @"{
                 ""operationResponses"": [
-                    { ""index"": 0, ""statuscode"": 201 },
-                    { ""index"": 1, ""statuscode"": 409, ""substatuscode"": 0 }
+                    { ""index"": 0, ""statusCode"": 201 },
+                    { ""index"": 1, ""statusCode"": 409, ""subStatusCode"": 0 }
                 ]
             }";
 
@@ -405,13 +406,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<string> results = new List<string>();
             for (int i = 0; i < operationCount; i++)
             {
-                results.Add($@"{{""index"":{i},""statuscode"":201,""etag"":""\""etag-{i}\""""}}");
+                results.Add($@"{{""index"":{i},""statusCode"":201,""etag"":""\""etag-{i}\""""}}");
             }
 
             return $@"{{""operationResponses"":[{string.Join(",", results)}]}}";
         }
 
-        // Mock handlergit 
+        // Mock handler
 
         /// <summary>
         /// Intercepts DTC commit requests (URLs ending in "/dtc"), captures the serialized
