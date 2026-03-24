@@ -125,11 +125,6 @@ namespace Microsoft.Azure.Cosmos
         public virtual Guid IdempotencyToken { get; }
 
         /// <summary>
-        /// Gets the server-side diagnostic information for the transaction.
-        /// </summary>
-        public virtual string ServerDiagnostics { get; }
-
-        /// <summary>
         /// Gets a value indicating whether the transaction is safe to retry with the same idempotency token.
         /// </summary>
         public virtual bool IsRetriable { get; }
@@ -311,9 +306,6 @@ namespace Microsoft.Azure.Cosmos
             List<DistributedTransactionOperationResult> results = new List<DistributedTransactionOperationResult>();
             bool isRetriable = false;
 
-            // Scope the JsonException catch to document parse only so that isRetriable and
-            // serverDiagnostics already extracted from the root are not silently discarded
-            // when only the operationResponses array fails to deserialize.
             JsonDocument responseJson;
             try
             {

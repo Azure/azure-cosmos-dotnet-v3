@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly IReadOnlyList<DistributedTransactionOperation> operations;
         private readonly CosmosClientContext clientContext;
         private readonly TimeSpan retryBaseDelay;
+        private readonly Random jitter = new Random();
 
         public DistributedTransactionCommitter(
             IReadOnlyList<DistributedTransactionOperation> operations,
@@ -109,9 +110,12 @@ namespace Microsoft.Azure.Cosmos
 
         private TimeSpan GetRetryDelay(int attempt)
         {
-            const int maxExponent = 5; // Cap backoff at 32x base delay
+            const int maxExponent = 5;
             int exponent = Math.Min(attempt, maxExponent);
-            return TimeSpan.FromTicks((long)(this.retryBaseDelay.Ticks * Math.Pow(2, exponent)));
+            double baseDelayMs = this.retryBaseDelay.TotalMilliseconds * Math.Pow(2, exponent);
+            // Jitter: uniform random to decorrelate concurrent clients and avoid synchronized retry storms.
+            double jitterDelay = baseDelayMs * this.jitter.NextDouble();
+            return TimeSpan.FromMilliseconds((baseDelayMs * 0.5 ) + jitterDelay);
         }
 
         private async Task<DistributedTransactionResponse> ExecuteCommitAsync(
