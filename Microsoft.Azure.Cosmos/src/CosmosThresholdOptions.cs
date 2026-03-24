@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
     /// This class describes the thresholds when more details diagnostics events are emitted, if subscribed, for an operation due to high latency,
     /// high RU consumption or high payload sizes.
     /// </summary>
-    public class CosmosThresholdOptions
+    public class CosmosThresholdOptions : IEquatable<CosmosThresholdOptions>
     {
         /// <summary>
         /// Can be used to define custom latency thresholds. When the latency threshold is exceeded more detailed
@@ -50,5 +50,36 @@ namespace Microsoft.Azure.Cosmos
         /// is significantly higher than expected.
         /// </summary>
         public int? PayloadSizeThresholdInBytes { get; set; } = null;
+
+        /// <inheritdoc />
+        public bool Equals(CosmosThresholdOptions other)
+        {
+            if (other is null)
+            {
+                return false;
+            }
+
+            if (ReferenceEquals(this, other))
+            {
+                return true;
+            }
+
+            return this.NonPointOperationLatencyThreshold == other.NonPointOperationLatencyThreshold
+                && this.PointOperationLatencyThreshold == other.PointOperationLatencyThreshold
+                && this.RequestChargeThreshold == other.RequestChargeThreshold
+                && this.PayloadSizeThresholdInBytes == other.PayloadSizeThresholdInBytes;
+        }
+
+        /// <inheritdoc />
+        public override bool Equals(object obj)
+            => this.Equals(obj as CosmosThresholdOptions);
+
+        /// <inheritdoc />
+        public override int GetHashCode()
+            => HashCode.Combine(
+                this.NonPointOperationLatencyThreshold,
+                this.PointOperationLatencyThreshold,
+                this.RequestChargeThreshold,
+                this.PayloadSizeThresholdInBytes);
     }
 }

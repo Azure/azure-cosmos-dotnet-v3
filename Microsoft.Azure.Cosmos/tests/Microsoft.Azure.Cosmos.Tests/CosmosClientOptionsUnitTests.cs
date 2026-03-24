@@ -1295,5 +1295,303 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return 1;
             }
         }
+
+        [TestMethod]
+        public void Equality_DefaultInstances_AreEqual()
+        {
+            CosmosClientOptions options1 = new CosmosClientOptions();
+            CosmosClientOptions options2 = new CosmosClientOptions();
+
+            Assert.AreEqual(options1, options2);
+            Assert.AreEqual(options1.GetHashCode(), options2.GetHashCode());
+        }
+
+        [TestMethod]
+        public void Equality_SameInstance_IsEqual()
+        {
+            CosmosClientOptions options = new CosmosClientOptions();
+
+            Assert.IsTrue(options.Equals(options));
+            Assert.AreEqual(options, options);
+        }
+
+        [TestMethod]
+        public void Equality_NullInstance_IsNotEqual()
+        {
+            CosmosClientOptions options = new CosmosClientOptions();
+
+            Assert.IsFalse(options.Equals((CosmosClientOptions)null));
+            Assert.IsFalse(options.Equals((object)null));
+        }
+
+        [TestMethod]
+        public void Equality_DifferentType_IsNotEqual()
+        {
+            CosmosClientOptions options = new CosmosClientOptions();
+
+            Assert.IsFalse(options.Equals("not an options object"));
+        }
+
+        [TestMethod]
+        public void Equality_ApplicationName_AffectsEquality()
+        {
+            CosmosClientOptions options1 = new CosmosClientOptions { ApplicationName = "App1" };
+            CosmosClientOptions options2 = new CosmosClientOptions { ApplicationName = "App1" };
+            CosmosClientOptions options3 = new CosmosClientOptions { ApplicationName = "App2" };
+
+            Assert.AreEqual(options1, options2);
+            Assert.AreEqual(options1.GetHashCode(), options2.GetHashCode());
+            Assert.AreNotEqual(options1, options3);
+        }
+
+        [TestMethod]
+        public void Equality_ApplicationRegion_AffectsEquality()
+        {
+            CosmosClientOptions options1 = new CosmosClientOptions { ApplicationRegion = Regions.EastUS };
+            CosmosClientOptions options2 = new CosmosClientOptions { ApplicationRegion = Regions.EastUS };
+            CosmosClientOptions options3 = new CosmosClientOptions { ApplicationRegion = Regions.WestUS };
+
+            Assert.AreEqual(options1, options2);
+            Assert.AreEqual(options1.GetHashCode(), options2.GetHashCode());
+            Assert.AreNotEqual(options1, options3);
+        }
+
+        [TestMethod]
+        public void Equality_ApplicationPreferredRegions_SequenceEquality()
+        {
+            CosmosClientOptions options1 = new CosmosClientOptions
+            {
+                ApplicationPreferredRegions = new List<string> { Regions.EastUS, Regions.WestUS }
+            };
+            CosmosClientOptions options2 = new CosmosClientOptions
+            {
+                ApplicationPreferredRegions = new List<string> { Regions.EastUS, Regions.WestUS }
+            };
+            CosmosClientOptions options3 = new CosmosClientOptions
+            {
+                ApplicationPreferredRegions = new List<string> { Regions.WestUS, Regions.EastUS }
+            };
+            CosmosClientOptions options4 = new CosmosClientOptions
+            {
+                ApplicationPreferredRegions = null
+            };
+
+            Assert.AreEqual(options1, options2);
+            Assert.AreEqual(options1.GetHashCode(), options2.GetHashCode());
+            Assert.AreNotEqual(options1, options3, "Different order should not be equal");
+            Assert.AreNotEqual(options1, options4, "Non-null vs null should not be equal");
+        }
+
+        [TestMethod]
+        public void Equality_AccountInitializationCustomEndpoints_SequenceEquality()
+        {
+            Uri uri1 = new Uri("https://endpoint1.documents.azure.com");
+            Uri uri2 = new Uri("https://endpoint2.documents.azure.com");
+
+            CosmosClientOptions options1 = new CosmosClientOptions
+            {
+                AccountInitializationCustomEndpoints = new HashSet<Uri> { uri1, uri2 }
+            };
+            CosmosClientOptions options2 = new CosmosClientOptions
+            {
+                AccountInitializationCustomEndpoints = new HashSet<Uri> { uri1, uri2 }
+            };
+
+            Assert.AreEqual(options1, options2);
+            Assert.AreEqual(options1.GetHashCode(), options2.GetHashCode());
+        }
+
+        [TestMethod]
+        public void Equality_ConnectionMode_AffectsEquality()
+        {
+            CosmosClientOptions options1 = new CosmosClientOptions { ConnectionMode = ConnectionMode.Direct };
+            CosmosClientOptions options2 = new CosmosClientOptions { ConnectionMode = ConnectionMode.Direct };
+            CosmosClientOptions options3 = new CosmosClientOptions { ConnectionMode = ConnectionMode.Gateway };
+
+            Assert.AreEqual(options1, options2);
+            Assert.AreEqual(options1.GetHashCode(), options2.GetHashCode());
+            Assert.AreNotEqual(options1, options3);
+        }
+
+        [TestMethod]
+        public void Equality_ValueTypeProperties_AffectEquality()
+        {
+            CosmosClientOptions options1 = new CosmosClientOptions
+            {
+                RequestTimeout = TimeSpan.FromSeconds(30),
+                MaxRetryAttemptsOnRateLimitedRequests = 5,
+                MaxRetryWaitTimeOnRateLimitedRequests = TimeSpan.FromMinutes(1),
+                EnableContentResponseOnWrite = true,
+                LimitToEndpoint = true,
+                AllowBulkExecution = true,
+                ConsistencyLevel = Cosmos.ConsistencyLevel.Session,
+            };
+            CosmosClientOptions options2 = new CosmosClientOptions
+            {
+                RequestTimeout = TimeSpan.FromSeconds(30),
+                MaxRetryAttemptsOnRateLimitedRequests = 5,
+                MaxRetryWaitTimeOnRateLimitedRequests = TimeSpan.FromMinutes(1),
+                EnableContentResponseOnWrite = true,
+                LimitToEndpoint = true,
+                AllowBulkExecution = true,
+                ConsistencyLevel = Cosmos.ConsistencyLevel.Session,
+            };
+            CosmosClientOptions options3 = new CosmosClientOptions
+            {
+                RequestTimeout = TimeSpan.FromSeconds(60),
+                MaxRetryAttemptsOnRateLimitedRequests = 5,
+                MaxRetryWaitTimeOnRateLimitedRequests = TimeSpan.FromMinutes(1),
+                EnableContentResponseOnWrite = true,
+                LimitToEndpoint = true,
+                AllowBulkExecution = true,
+                ConsistencyLevel = Cosmos.ConsistencyLevel.Session,
+            };
+
+            Assert.AreEqual(options1, options2);
+            Assert.AreEqual(options1.GetHashCode(), options2.GetHashCode());
+            Assert.AreNotEqual(options1, options3, "Different RequestTimeout should not be equal");
+        }
+
+        [TestMethod]
+        public void Equality_SerializerOptions_AffectsEquality()
+        {
+            CosmosClientOptions options1 = new CosmosClientOptions
+            {
+                SerializerOptions = new CosmosSerializationOptions
+                {
+                    IgnoreNullValues = true,
+                    PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase
+                }
+            };
+            CosmosClientOptions options2 = new CosmosClientOptions
+            {
+                SerializerOptions = new CosmosSerializationOptions
+                {
+                    IgnoreNullValues = true,
+                    PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase
+                }
+            };
+            CosmosClientOptions options3 = new CosmosClientOptions
+            {
+                SerializerOptions = new CosmosSerializationOptions
+                {
+                    IgnoreNullValues = false,
+                    PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase
+                }
+            };
+
+            Assert.AreEqual(options1, options2);
+            Assert.AreEqual(options1.GetHashCode(), options2.GetHashCode());
+            Assert.AreNotEqual(options1, options3);
+        }
+
+        [TestMethod]
+        public void Equality_TelemetryOptions_AffectsEquality()
+        {
+            CosmosClientOptions options1 = new CosmosClientOptions();
+            options1.CosmosClientTelemetryOptions.DisableSendingMetricsToService = false;
+
+            CosmosClientOptions options2 = new CosmosClientOptions();
+            options2.CosmosClientTelemetryOptions.DisableSendingMetricsToService = false;
+
+            CosmosClientOptions options3 = new CosmosClientOptions();
+            options3.CosmosClientTelemetryOptions.DisableSendingMetricsToService = true;
+
+            Assert.AreEqual(options1, options2);
+            Assert.AreEqual(options1.GetHashCode(), options2.GetHashCode());
+            Assert.AreNotEqual(options1, options3);
+        }
+
+        [TestMethod]
+        public void Equality_ReferenceTypeProperties_UseReferenceEquality()
+        {
+            Func<HttpClient> factory1 = () => new HttpClient();
+            Func<HttpClient> factory2 = () => new HttpClient();
+
+            CosmosClientOptions options1 = new CosmosClientOptions { HttpClientFactory = factory1 };
+            CosmosClientOptions options2 = new CosmosClientOptions { HttpClientFactory = factory1 };
+            CosmosClientOptions options3 = new CosmosClientOptions { HttpClientFactory = factory2 };
+
+            Assert.AreEqual(options1, options2, "Same delegate reference should be equal");
+            Assert.AreNotEqual(options1, options3, "Different delegate references should not be equal");
+        }
+
+        [TestMethod]
+        public void Equality_CosmosSerializationOptions_ValueSemantics()
+        {
+            CosmosSerializationOptions so1 = new CosmosSerializationOptions
+            {
+                IgnoreNullValues = true,
+                Indented = true,
+                PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase,
+            };
+            CosmosSerializationOptions so2 = new CosmosSerializationOptions
+            {
+                IgnoreNullValues = true,
+                Indented = true,
+                PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase,
+            };
+            CosmosSerializationOptions so3 = new CosmosSerializationOptions
+            {
+                IgnoreNullValues = false,
+                Indented = true,
+                PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase,
+            };
+
+            Assert.AreEqual(so1, so2);
+            Assert.AreEqual(so1.GetHashCode(), so2.GetHashCode());
+            Assert.AreNotEqual(so1, so3);
+        }
+
+        [TestMethod]
+        public void Equality_CosmosThresholdOptions_ValueSemantics()
+        {
+            CosmosThresholdOptions to1 = new CosmosThresholdOptions
+            {
+                PointOperationLatencyThreshold = TimeSpan.FromSeconds(2),
+                NonPointOperationLatencyThreshold = TimeSpan.FromSeconds(5),
+                RequestChargeThreshold = 100.0,
+                PayloadSizeThresholdInBytes = 1024,
+            };
+            CosmosThresholdOptions to2 = new CosmosThresholdOptions
+            {
+                PointOperationLatencyThreshold = TimeSpan.FromSeconds(2),
+                NonPointOperationLatencyThreshold = TimeSpan.FromSeconds(5),
+                RequestChargeThreshold = 100.0,
+                PayloadSizeThresholdInBytes = 1024,
+            };
+            CosmosThresholdOptions to3 = new CosmosThresholdOptions
+            {
+                PointOperationLatencyThreshold = TimeSpan.FromSeconds(3),
+            };
+
+            Assert.AreEqual(to1, to2);
+            Assert.AreEqual(to1.GetHashCode(), to2.GetHashCode());
+            Assert.AreNotEqual(to1, to3);
+        }
+
+        [TestMethod]
+        public void Equality_CosmosClientTelemetryOptions_ValueSemantics()
+        {
+            CosmosClientTelemetryOptions cto1 = new CosmosClientTelemetryOptions
+            {
+                DisableSendingMetricsToService = false,
+                QueryTextMode = QueryTextMode.All,
+            };
+            CosmosClientTelemetryOptions cto2 = new CosmosClientTelemetryOptions
+            {
+                DisableSendingMetricsToService = false,
+                QueryTextMode = QueryTextMode.All,
+            };
+            CosmosClientTelemetryOptions cto3 = new CosmosClientTelemetryOptions
+            {
+                DisableSendingMetricsToService = false,
+                QueryTextMode = QueryTextMode.None,
+            };
+
+            Assert.AreEqual(cto1, cto2);
+            Assert.AreEqual(cto1.GetHashCode(), cto2.GetHashCode());
+            Assert.AreNotEqual(cto1, cto3);
+        }
     }
 }

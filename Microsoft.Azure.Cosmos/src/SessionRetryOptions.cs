@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Implementation of ISessionRetryOptions interface, do not want clients to subclass.
     /// </summary>
-    internal sealed class SessionRetryOptions : ISessionRetryOptions
+    internal sealed class SessionRetryOptions : ISessionRetryOptions, IEquatable<SessionRetryOptions>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="SessionRetryOptions"/> class.
@@ -39,5 +39,30 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public bool RemoteRegionPreferred { get; set; } = false;
 
+        /// <inheritdoc />
+        public bool Equals(SessionRetryOptions other)
+        {
+            if (other is null)
+            {
+                return false;
+            }
+
+            if (ReferenceEquals(this, other))
+            {
+                return true;
+            }
+
+            return this.MinInRegionRetryTime == other.MinInRegionRetryTime
+                && this.MaxInRegionRetryCount == other.MaxInRegionRetryCount
+                && this.RemoteRegionPreferred == other.RemoteRegionPreferred;
+        }
+
+        /// <inheritdoc />
+        public override bool Equals(object obj)
+            => this.Equals(obj as SessionRetryOptions);
+
+        /// <inheritdoc />
+        public override int GetHashCode()
+            => HashCode.Combine(this.MinInRegionRetryTime, this.MaxInRegionRetryCount, this.RemoteRegionPreferred);
     }
 }
