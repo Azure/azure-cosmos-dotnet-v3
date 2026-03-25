@@ -314,7 +314,6 @@ namespace Microsoft.Azure.Cosmos
 
                             DistributedTransactionOperationResult operationResult = DistributedTransactionOperationResult.FromJson(operationElement);
                             operationResult.Trace = trace;
-                            operationResult.SessionToken ??= responseMessage.Headers.Session;
                             operationResult.ActivityId = responseMessage.Headers.ActivityId;
                             results.Add(operationResult);
                         }
@@ -370,7 +369,6 @@ namespace Microsoft.Azure.Cosmos
                 this.results.Add(new DistributedTransactionOperationResult(this.StatusCode)
                 {
                     SubStatusCode = this.SubStatusCode,
-                    SessionToken = this.Headers?.Session,
                     ActivityId = this.ActivityId,
                     Trace = trace
                 });
