@@ -123,11 +123,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         public override bool TryAddPartitionLevelLocationOverride(
             DocumentServiceRequest request)
         {
-            if (request?.RequestContext == null)
-            {
-                return false;
-            }
-
             if (!this.IsRequestEligibleForPartitionFailover(
                 request,
                 shouldValidateFailedLocation: false,
@@ -150,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     this.PartitionKeyRangeToLocationForReadAndWrite);
             }
             else if (this.IsRequestEligibleForPerPartitionAutomaticFailover(request)
-                || GlobalPartitionEndpointManagerCore.IsHubRegionRoutingActive(request))
+               || GlobalPartitionEndpointManagerCore.IsHubRegionRoutingActive(request))
             {
                 return this.TryRouteRequestForPartitionLevelOverride(
                     partitionKeyRange,
@@ -394,8 +389,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             failedLocation = default;
 
             if (!this.IsPartitionLevelAutomaticFailoverEnabled()
-                && !this.IsPartitionLevelCircuitBreakerEnabled()
-                && !GlobalPartitionEndpointManagerCore.IsHubRegionRoutingActive(request))
+               && !this.IsPartitionLevelCircuitBreakerEnabled()
+               && !GlobalPartitionEndpointManagerCore.IsHubRegionRoutingActive(request))
             {
                 return false;
             }

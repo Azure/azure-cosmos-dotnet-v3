@@ -219,13 +219,12 @@ namespace Microsoft.Azure.Cosmos
                 if (this.retryContext.RouteToHub)
                 {
                     request.RequestContext.RouteToLocation(this.globalEndpointManager.GetHubUri());
-
-                    this.locationEndpoint = request.RequestContext.LocationEndpointToRoute;
-                    return;
                 }
-
-                // set location-based routing directive based on request retry context
-                request.RequestContext.RouteToLocation(this.retryContext.RetryLocationIndex, this.retryContext.RetryRequestOnPreferredLocations);
+                else
+                {
+                    // set location-based routing directive based on request retry context
+                    request.RequestContext.RouteToLocation(this.retryContext.RetryLocationIndex, this.retryContext.RetryRequestOnPreferredLocations);
+                }
             }
 
 #if !INTERNAL
