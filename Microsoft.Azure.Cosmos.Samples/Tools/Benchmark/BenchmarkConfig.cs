@@ -236,13 +236,14 @@ namespace CosmosBenchmark
                 ApplicationName = this.GetUserAgentPrefix(),
                 MaxRetryAttemptsOnRateLimitedRequests = 0,
                 MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
-                MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
+                MaxTcpConnectionsPerEndpoint = (this.IsThinClientEnabled || this.IsGatewayModeEnabled)? this.MaxTcpConnectionsPerEndpoint : 200,
                 ConnectionMode = (this.IsThinClientEnabled || this.IsGatewayModeEnabled) ? Microsoft.Azure.Cosmos.ConnectionMode.Gateway: Microsoft.Azure.Cosmos.ConnectionMode.Direct,
                 CosmosClientTelemetryOptions = new Microsoft.Azure.Cosmos.CosmosClientTelemetryOptions()
                 {
                     DisableSendingMetricsToService = !this.EnableTelemetry,
                     DisableDistributedTracing = !this.EnableDistributedTracing
                 },
+                GatewayModeMaxConnectionLimit = 500
             };
 
             if (!string.IsNullOrEmpty(this.ApplicationPreferredRegions))
