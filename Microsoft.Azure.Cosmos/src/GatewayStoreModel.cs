@@ -569,6 +569,16 @@ namespace Microsoft.Azure.Cosmos
                 return true;
             }
 
+            // LatestVersion (Incremental) ChangeFeed on documents.
+            // AllVersionsAndDeletes (FullFidelity) is excluded because it requires
+            // split-handling logic in Compute Gateway (UseGatewayMode is set by ChangeFeedModeFullFidelity).
+            if (request.ResourceType == ResourceType.Document
+                && request.OperationType == OperationType.ReadFeed
+                && GatewayStoreModel.IsLatestVersionChangeFeedRequest(request))
+            {
+                return true;
+            }
+
             // Stored Procedure execution
             if (request.ResourceType == ResourceType.StoredProcedure
                 && request.OperationType == OperationType.ExecuteJavaScript)
@@ -577,6 +587,18 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Determines if the request is a LatestVersion (Incremental) change feed request.
+        /// A change feed request is identified by the presence of the A-IM header.
+        /// LatestVersion uses "Incremental feed" while AllVersionsAndDeletes uses "Full-Fidelity Feed".
+        /// </summary>
+        internal static bool IsLatestVersionChangeFeedRequest(DocumentServiceRequest request)
+        {
+            string aImHeaderValue = request.Headers[HttpConstants.HttpHeaders.A_IM];
+            return !string.IsNullOrEmpty(aImHeaderValue)
+                && !string.Equals(aImHeaderValue, HttpConstants.A_IMHeaderValues.FullFidelityFeed, StringComparison.OrdinalIgnoreCase);
         }
         private async Task<AccountProperties> GetDatabaseAccountPropertiesAsync()
         {
