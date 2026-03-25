@@ -97,8 +97,8 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="itemId">The existing item ID, if already provided.</param>
         /// <param name="streamPayload">The stream containing the JSON payload from which to extract the ID.</param>
         /// <param name="cancellationToken">Cancellation token for the operation.</param>
-        /// <returns>The item ID, either from the parameter or extracted from the stream.</returns>
-        public abstract Task<string> GetItemIdFromStreamIfRequiredAsync(
+        /// <returns>A tuple of the item ID (either from the parameter or extracted from the stream) and the stream payload (which may be replaced with a buffered copy for non-seekable streams).</returns>
+        public abstract Task<(string, Stream)> GetItemIdFromStreamIfRequiredAsync(
             string itemId,
             Stream streamPayload,
             CancellationToken cancellationToken);

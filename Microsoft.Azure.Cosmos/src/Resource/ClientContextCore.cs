@@ -330,7 +330,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.ThrowIfDisposed();
 
-            itemId = await cosmosContainerCore.GetItemIdFromStreamIfRequiredAsync(itemId, streamPayload, cancellationToken);
+            (itemId, streamPayload) = await cosmosContainerCore.GetItemIdFromStreamIfRequiredAsync(itemId, streamPayload, cancellationToken);
             partitionKey = await cosmosContainerCore.EnsureIdGetAppendedtoPartitionKeyIfneededAsync(partitionKey, itemId, cancellationToken);
 
             if (this.IsBulkOperationSupported(resourceType, operationType))

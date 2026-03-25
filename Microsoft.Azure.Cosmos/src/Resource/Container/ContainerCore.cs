@@ -741,6 +741,15 @@ namespace Microsoft.Azure.Cosmos
             }
 
             PartitionKeyBuilder builder = new PartitionKeyBuilder();
+           
+            if (!partitionKey.HasValue)
+            {
+                for (int i = 0; i < cachedContainerPropertiesAsync.PartitionKey.Paths.Count - 1; i++)
+                {
+                    builder.AddNullValue();
+                }
+            }
+
             builder.Add(itemId);
             PartitionKey idPath = builder.Build();
 
