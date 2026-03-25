@@ -43,6 +43,12 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Initializes a new instance of the <see cref="DistributedTransactionOperationResult"/> class.
         /// </summary>
+        /// <remarks>
+        /// Must be <c>public</c> for System.Text.Json reflection-based deserialization.
+        /// System.Text.Json 6.x only scans <c>BindingFlags.Public</c> constructors when resolving
+        /// <see cref="JsonConstructorAttribute"/>; non-public constructors are not found.
+        /// Support for non-public constructors was added in System.Text.Json 7.0.
+        /// </remarks>
         [JsonConstructor]
         public DistributedTransactionOperationResult()
         {
@@ -127,12 +133,25 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The deserialized operation result.</returns>
         internal static DistributedTransactionOperationResult FromJson(JsonElement json)
         {
-            DistributedTransactionOperationResult result = JsonSerializer.Deserialize<DistributedTransactionOperationResult>(json.GetRawText());
+            DistributedTransactionOperationResult result = null;
+            try
+            {
+                result = JsonSerializer.Deserialize<DistributedTransactionOperationResult>(json);
+            }
+            catch (JsonException)
+            {
+            }
+
+            if (result == null)
+            {
+                return new DistributedTransactionOperationResult(HttpStatusCode.InternalServerError);
+            }
 
             if (json.TryGetProperty("resourceBody", out JsonElement resourceBody)
                 && resourceBody.ValueKind != JsonValueKind.Undefined
                 && resourceBody.ValueKind != JsonValueKind.Null)
             {
+                // resourceBody is expected to be a JSON object (Cosmos DB document)
                 if (resourceBody.ValueKind != JsonValueKind.Object)
                 {
                     throw new JsonException($"The 'resourceBody' value must be a JSON object, but was '{resourceBody.ValueKind}'.");

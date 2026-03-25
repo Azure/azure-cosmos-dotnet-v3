@@ -302,7 +302,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             List<string> results = new List<string>();
             for (int i = 0; i < operationCount; i++)
             {
-                results.Add($@"{{""index"":{i},""statuscode"":201}}");
+                results.Add($@"{{""index"":{i},""statusCode"":201}}");
             }
 
             string json = $@"{{""operationResponses"":[{string.Join(",", results)}]}}";

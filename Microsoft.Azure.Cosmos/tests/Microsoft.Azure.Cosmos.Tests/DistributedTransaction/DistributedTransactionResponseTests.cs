@@ -508,6 +508,98 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(4, response.Count);
         }
 
+        // Operation result property deserialization
+
+        [TestMethod]
+        [Description("SubStatusCodeValue deserializes from the 'subStatusCode' JSON property and is accessible as both uint and SubStatusCodes enum.")]
+        public async Task FromResponseMessage_OperationResult_SubStatusCode_DeserializesCorrectly()
+        {
+            const uint expectedSubStatusCode = 449; // RetryWith
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            string json = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":449,""subStatusCode"":{expectedSubStatusCode}}}]}}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                Guid.NewGuid(),
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(expectedSubStatusCode, response[0].SubStatusCodeValue,
+                "SubStatusCodeValue must equal the uint value from the JSON 'subStatusCode' field.");
+            Assert.AreEqual((SubStatusCodes)expectedSubStatusCode, response[0].SubStatusCode,
+                "SubStatusCode enum must be the cast of the uint value.");
+        }
+
+        [TestMethod]
+        [Description("RequestCharge deserializes from the 'requestCharge' JSON property.")]
+        public async Task FromResponseMessage_OperationResult_RequestCharge_DeserializesCorrectly()
+        {
+            const double expectedRequestCharge = 5.43;
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            string json = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":201,""requestCharge"":{expectedRequestCharge}}}]}}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                Guid.NewGuid(),
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(expectedRequestCharge, response[0].RequestCharge,
+                "RequestCharge must equal the value from the JSON 'requestCharge' field.");
+        }
+
+        [TestMethod]
+        [Description("ETag deserializes from the 'etag' JSON property.")]
+        public async Task FromResponseMessage_OperationResult_ETag_DeserializesCorrectly()
+        {
+            const string expectedETag = "etag-value-abc123";
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            string json = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":201,""etag"":""{expectedETag}""}}]}}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                Guid.NewGuid(),
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(expectedETag, response[0].ETag,
+                "ETag must equal the value from the JSON 'etag' field.");
+        }
+
+        [TestMethod]
+        [Description("SessionToken deserializes from the 'sessionToken' JSON property.")]
+        public async Task FromResponseMessage_OperationResult_SessionToken_DeserializesCorrectly()
+        {
+            const string expectedSessionToken = "0:12345";
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            string json = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":201,""sessionToken"":""{expectedSessionToken}""}}]}}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                Guid.NewGuid(),
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(expectedSessionToken, response[0].SessionToken,
+                "SessionToken must equal the value from the JSON 'sessionToken' field.");
+        }
+
         // Helpers
 
         /// <summary>

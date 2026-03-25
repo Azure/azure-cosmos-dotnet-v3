@@ -360,7 +360,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             List<string> results = new List<string>();
             for (int i = 0; i < operationCount; i++)
             {
-                results.Add($@"{{""index"":{i},""statuscode"":201}}");
+                results.Add($@"{{""index"":{i},""statusCode"":201}}");
             }
 
             string json = $@"{{""operationResponses"":[{string.Join(",", results)}]}}";
@@ -372,7 +372,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private static ResponseMessage BuildErrorResponse(HttpStatusCode statusCode)
         {
-            string json = $@"{{""operationResponses"":[{{""index"":0,""statuscode"":{(int)statusCode}}}]}}";
+            string json = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":{(int)statusCode}}}]}}";
             return new ResponseMessage(statusCode)
             {
                 Content = new MemoryStream(Encoding.UTF8.GetBytes(json))
