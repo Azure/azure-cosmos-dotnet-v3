@@ -44,6 +44,22 @@ namespace Microsoft.Azure.Cosmos.Linq
             return lambda.Compile();
         }
 
+        /// <summary>
+        /// Compiles a typed lambda while preserving the delegate type at the call site.
+        /// This allows callers to use the shared interpretation-aware compile path
+        /// without repeating delegate casts in each LINQ helper.
+        /// </summary>
+        public static TDelegate CompileLambda<TDelegate>(Expression<TDelegate> lambda)
+            where TDelegate : Delegate
+        {
+            if (lambda == null)
+            {
+                throw new ArgumentNullException(nameof(lambda));
+            }
+
+            return (TDelegate)(object)ExpressionCompileHelper.CompileLambda((LambdaExpression)lambda);
+        }
+
         private static Func<LambdaExpression, Delegate> CreateInterpretedCompile()
         {
             MethodInfo compileWithPreference = typeof(LambdaExpression)
