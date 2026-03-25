@@ -109,7 +109,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         ActivitySource.AddActivityListener(listener);
         
         CosmosDiagnosticsContext diagEncrypt = CosmosDiagnosticsContext.Create(null);
-        Stream encrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, opts, JsonProcessor.Newtonsoft, diagEncrypt, CancellationToken.None);
+        EncryptionItemRequestOptions encryptRequest = RequestOptionsOverrideHelper.Create(opts, JsonProcessor.Newtonsoft);
+        Stream encrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, encryptRequest, diagEncrypt, CancellationToken.None);
 
         Assert.IsNotNull(encrypted);
         encrypted.Dispose();
@@ -149,7 +150,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 #pragma warning restore CS0618
                 PathsToEncrypt = TestDoc.PathsToEncrypt,
             };
-            Stream legacyEncrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, legacy, JsonProcessor.Newtonsoft, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
+            EncryptionItemRequestOptions legacyRequestOptions = RequestOptionsOverrideHelper.Create(legacy, JsonProcessor.Newtonsoft);
+            Stream legacyEncrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, legacyRequestOptions, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
             legacyEncrypted.Position = 0;
 
             ItemRequestOptions opts = new() { Properties = new Dictionary<string, object> { { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, "Stream" } } };
@@ -177,7 +179,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 #pragma warning restore CS0618
                 PathsToEncrypt = TestDoc.PathsToEncrypt,
             };
-            Stream legacyEncrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, legacy, JsonProcessor.Newtonsoft, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
+            EncryptionItemRequestOptions legacyRequestOptions = RequestOptionsOverrideHelper.Create(legacy, JsonProcessor.Newtonsoft);
+            Stream legacyEncrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, legacyRequestOptions, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
             legacyEncrypted.Position = 0;
 
             ItemRequestOptions opts = new() { Properties = new Dictionary<string, object> { { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, "Stream" } } };
