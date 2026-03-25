@@ -22,9 +22,18 @@ internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
 
     public async Task<Stream> EncryptAsync(Stream input, Encryptor encryptor, EncryptionOptions options, CancellationToken cancellationToken)
     {
-        MemoryStream ms = new ();
-        await this.streamProcessor.EncryptStreamAsync(input, ms, encryptor, options, cancellationToken);
-        return ms;
+        PooledMemoryStream ms = new ();
+        try
+        {
+            await this.streamProcessor.EncryptStreamAsync(input, ms, encryptor, options, cancellationToken);
+            return ms;  // Ownership transfers successfully
+        }
+        catch
+        {
+            // CRITICAL: Dispose PooledMemoryStream on exception to prevent memory leak
+            await ms.DisposeAsync();
+            throw;  // Rethrow to preserve original exception
+        }
     }
 
     public Task EncryptAsync(Stream input, Stream output, Encryptor encryptor, EncryptionOptions options, JsonProcessor jsonProcessor, CancellationToken cancellationToken)
@@ -45,14 +54,24 @@ internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
             return (input, null);
         }
 
-        MemoryStream ms = new ();
-        DecryptionContext context = await this.streamProcessor.DecryptStreamAsync(input, ms, encryptor, properties, diagnosticsContext, cancellationToken);
-        if (context == null)
+        PooledMemoryStream ms = new ();
+        try
         {
-            return (input, null);
-        }
+            DecryptionContext context = await this.streamProcessor.DecryptStreamAsync(input, ms, encryptor, properties, diagnosticsContext, cancellationToken);
+            if (context == null)
+            {
+                await ms.DisposeAsync();
+                return (input, null);
+            }
 
-        return (ms, context);
+            return (ms, context);  // Ownership transfers successfully
+        }
+        catch
+        {
+            // CRITICAL: Dispose PooledMemoryStream on exception to prevent memory leak
+            await ms.DisposeAsync();
+            throw;  // Rethrow to preserve original exception
+        }
     }
 
     public async Task<DecryptionContext> DecryptAsync(Stream input, Stream output, Encryptor encryptor, CosmosDiagnosticsContext diagnosticsContext, CancellationToken cancellationToken)
@@ -91,7 +110,7 @@ internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
     private async Task<EncryptionProperties> ReadMdeEncryptionPropertiesStreamingAsync(Stream input, CancellationToken cancellationToken)
     {
         input.Position = 0;
-        EncryptionPropertiesWrapper properties = await JsonSerializer.DeserializeAsync<EncryptionPropertiesWrapper>(input, cancellationToken: cancellationToken);
+        EncryptionPropertiesWrapper properties = await PooledJsonSerializer.DeserializeFromStreamAsync<EncryptionPropertiesWrapper>(input, cancellationToken: cancellationToken);
         input.Position = 0;
         if (properties?.EncryptionProperties == null)
         {
