@@ -16,9 +16,6 @@ namespace Microsoft.Azure.Cosmos.Linq
     /// </summary>
     internal static class ExpressionCompileHelper
     {
-        private static readonly object[] PreferInterpretationArgs = new object[] { true };
-        private static readonly Func<LambdaExpression, Delegate> InterpretedCompile = ExpressionCompileHelper.CreateInterpretedCompile();
-        private static readonly bool IsInterpretedCompileSupported = ExpressionCompileHelper.InterpretedCompile != null;
         private static readonly bool IsInterpretationEnabled = ConfigurationManager.GetEnvironmentVariable(
             ConfigurationManager.LinqExpressionCompileInterpretationEnabled,
             defaultValue: true);
@@ -36,8 +33,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 throw new ArgumentNullException(nameof(expression));
             }
 
-            if (ExpressionCompileHelper.IsInterpretedCompileSupported
-                && ExpressionCompileHelper.IsInterpretationEnabled)
+            if (ExpressionCompileHelper.IsInterpretationEnabled)
             {
                 return expression.Compile(preferInterpretation: true);
             }
@@ -57,26 +53,12 @@ namespace Microsoft.Azure.Cosmos.Linq
                 throw new ArgumentNullException(nameof(lambda));
             }
 
-            if (ExpressionCompileHelper.InterpretedCompile != null
-                && ExpressionCompileHelper.IsInterpretationEnabled)
+            if (ExpressionCompileHelper.IsInterpretationEnabled)
             {
-                return ExpressionCompileHelper.InterpretedCompile(lambda);
+                return lambda.Compile(preferInterpretation: true);
             }
 
             return lambda.Compile();
-        }
-
-        private static Func<LambdaExpression, Delegate> CreateInterpretedCompile()
-        {
-            MethodInfo compileWithPreference = typeof(LambdaExpression)
-                .GetMethod(nameof(LambdaExpression.Compile), new Type[] { typeof(bool) });
-
-            if (compileWithPreference != null)
-            {
-                return lambda => (Delegate)compileWithPreference.Invoke(lambda, ExpressionCompileHelper.PreferInterpretationArgs);
-            }
-
-            return null;
         }
     }
 }

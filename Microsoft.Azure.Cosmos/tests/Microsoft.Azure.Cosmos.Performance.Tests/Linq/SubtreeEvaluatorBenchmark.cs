@@ -10,7 +10,9 @@ namespace Microsoft.Azure.Cosmos.Linq
     using BenchmarkDotNet.Attributes;
 
     /// <summary>
-    /// Benchmark measuring SubtreeEvaluator constant evaluation performance and memory impact.
+    /// Benchmark measuring E2E LINQ-to-SQL query generation performance and memory impact.
+    /// Models realistic CosmosDB LINQ query translation (NOT execution) through the full
+    /// pipeline: ConstantEvaluator.PartialEval → SubtreeEvaluator → ExpressionToSql.
     /// Validates fix for GitHub Issue #5487: Unbounded JIT/IL growth from Expression.Compile()
     /// </summary>
     [MemoryDiagnoser]
@@ -18,39 +20,58 @@ namespace Microsoft.Azure.Cosmos.Linq
     {
         private const int MemoryIterations = 1000;
 
-        private Expression expression;
-        private LambdaExpression lambda;
-        private SubtreeEvaluator evaluator;
-
-        [GlobalSetup]
-        public void Setup()
+        private class BenchmarkDocument
         {
-            int capturedValue = 42;
-            Expression<Func<int>> expr = () => capturedValue + 1;
-            this.expression = expr.Body;
-            this.lambda = Expression.Lambda(this.expression);
-            this.evaluator = new SubtreeEvaluator(new HashSet<Expression> { this.expression });
+            public string Status { get; set; }
+            public int Priority { get; set; }
+            public string Region { get; set; }
         }
 
         [Benchmark(Baseline = true)]
-        public object CompileBaseline()
+        public string SimpleWhereClause()
         {
-            // Baseline: duplicates old code path that emits DynamicMethod with IL per call
-            Delegate function = this.lambda.Compile();
-            return function.DynamicInvoke(null);
+            // Simulates: .Where(doc => doc.Status == status)
+            // The captured variable "status" triggers SubtreeEvaluator → CompileLambda
+            string status = "active";
+            return SqlTranslator.TranslateExpression(
+                CreateWhereBody<BenchmarkDocument>(doc => doc.Status == status));
         }
 
         [Benchmark]
-        public Expression EvaluateWithFix()
+        public string ComputedConstant()
         {
-            // Measures actual SubtreeEvaluator code path with the preferInterpretation fix
-            return this.evaluator.Evaluate(this.expression);
+            // Simulates: .Where(doc => doc.Priority > threshold + offset)
+            // The expression "threshold + offset" is a computed constant requiring compilation
+            int threshold = 5;
+            int offset = 3;
+            return SqlTranslator.TranslateExpression(
+                CreateWhereBody<BenchmarkDocument>(doc => doc.Priority > threshold + offset));
+        }
+
+        [Benchmark]
+        public string NestedPropertyAccess()
+        {
+            // Simulates: .Where(doc => doc.Region == holder.Region)
+            // Nested member access on captured anonymous object triggers compilation
+            var filter = new { Region = "westus" };
+            return SqlTranslator.TranslateExpression(
+                CreateWhereBody<BenchmarkDocument>(doc => doc.Region == filter.Region));
+        }
+
+        [Benchmark]
+        public string MultiplePredicates()
+        {
+            // Simulates: .Where(doc => doc.Status == status && doc.Priority >= minPriority)
+            // Multiple captured variables, each evaluated through SubtreeEvaluator
+            string status = "active";
+            int minPriority = 3;
+            return SqlTranslator.TranslateExpression(
+                CreateWhereBody<BenchmarkDocument>(doc => doc.Status == status && doc.Priority >= minPriority));
         }
 
         /// <summary>
-        /// Demonstrates native memory growth: each Compile() emits a new DynamicMethod
-        /// whose IL is never reclaimed by the GC. Over many iterations, process memory
-        /// grows unboundedly. Compare with CompileLambdaMemory below.
+        /// Demonstrates native memory growth: repeated query generation with the old
+        /// Compile() path emits DynamicMethod IL that is never reclaimed by the GC.
         /// </summary>
         [Benchmark]
         public long NativeCompileMemoryGrowth()
@@ -59,8 +80,22 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             for (int i = 0; i < MemoryIterations; i++)
             {
-                Delegate function = this.lambda.Compile();
-                function.DynamicInvoke(null);
+                string status = "active";
+                Expression body = CreateWhereBody<BenchmarkDocument>(doc => doc.Status == status);
+
+                // Simulate the old code path: PartialEval with direct Compile()
+                HashSet<Expression> candidates = Nominator.Nominate(body, _ => true);
+                foreach (Expression candidate in candidates)
+                {
+                    if (candidate.NodeType != ExpressionType.Constant
+                        && candidate.NodeType != ExpressionType.Parameter
+                        && candidate.NodeType != ExpressionType.Lambda)
+                    {
+                        LambdaExpression lambda = Expression.Lambda(candidate);
+                        Delegate fn = lambda.Compile();
+                        fn.DynamicInvoke(null);
+                    }
+                }
             }
 
             long after = GC.GetTotalMemory(forceFullCollection: true);
@@ -68,8 +103,9 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         /// <summary>
-        /// With the interpretation fix, no new DynamicMethods are emitted so memory
-        /// remains stable across iterations. Compare with NativeCompileMemoryGrowth above.
+        /// With the interpretation fix, the same query generation path uses
+        /// ExpressionCompileHelper.CompileLambda which avoids DynamicMethod emission.
+        /// Memory remains stable across iterations.
         /// </summary>
         [Benchmark]
         public long InterpretedCompileMemoryGrowth()
@@ -78,12 +114,19 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             for (int i = 0; i < MemoryIterations; i++)
             {
-                Delegate function = ExpressionCompileHelper.CompileLambda(this.lambda);
-                function.DynamicInvoke(null);
+                // Full E2E translation pipeline (uses ExpressionCompileHelper internally)
+                string status = "active";
+                SqlTranslator.TranslateExpression(
+                    CreateWhereBody<BenchmarkDocument>(doc => doc.Status == status));
             }
 
             long after = GC.GetTotalMemory(forceFullCollection: true);
             return after - before;
+        }
+
+        private static Expression CreateWhereBody<T>(Expression<Func<T, bool>> predicate)
+        {
+            return predicate.Body;
         }
     }
 }
