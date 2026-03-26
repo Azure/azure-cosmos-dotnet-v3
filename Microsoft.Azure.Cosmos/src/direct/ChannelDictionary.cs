@@ -5,12 +5,14 @@ namespace Microsoft.Azure.Documents.Rntbd
 {
     using System;
     using System.Collections.Concurrent;
+    using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Documents.FaultInjection;
 
     // ChannelDictionary maps server keys to load-balanced channels. There is
     // one load-balanced channel per back-end server.
-    internal sealed class ChannelDictionary : IChannelDictionary, IDisposable
+    internal sealed class ChannelDictionary : IChannelDictionary, IDisposable, IAsyncDisposable
     {
         private readonly ChannelProperties channelProperties;
         private bool disposed = false;
@@ -76,6 +78,20 @@ namespace Microsoft.Azure.Documents.Rntbd
             {
                 channel.Close();
             }
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            this.ThrowIfDisposed();
+            this.disposed = true;
+
+            List<Task> closeTasks = new List<Task>();
+            foreach (IChannel channel in this.channels.Values)
+            {
+                closeTasks.Add(channel.CloseAsync());
+            }
+
+            await Task.WhenAll(closeTasks).ConfigureAwait(false);
         }
 
         private void ThrowIfDisposed()

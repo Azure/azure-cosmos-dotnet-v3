@@ -356,6 +356,37 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
+        public async Task DisposeAsync()
+        {
+            List<Task> disposeTasks;
+            this.capacityLock.EnterWriteLock();
+            try
+            {
+                disposeTasks = new List<Task>(this.openChannels.Count);
+                foreach (LbChannelState channelState in this.openChannels)
+                {
+                    disposeTasks.Add(channelState.DisposeAsync());
+                }
+            }
+            finally
+            {
+                this.capacityLock.ExitWriteLock();
+            }
+
+            await Task.WhenAll(disposeTasks).ConfigureAwait(false);
+
+            try
+            {
+                this.capacityLock.Dispose();
+            }
+            catch(SynchronizationLockException)
+            {
+                // SynchronizationLockException is thrown if there are inflight requests during the disposal of capacityLock
+                // suspend this exception to avoid crashing disposing other partitions/channels in hierarchical calls
+                return;
+            }
+        }
+
         /// <summary>
         /// Open and initializes the <see cref="Channel"/> and adds
         /// the corresponding channel state to the openChannels pool

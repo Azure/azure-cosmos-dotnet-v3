@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 #endif
 
     // The RNTBD RPC channel. Supports multiple parallel requests and timeouts.
-    internal sealed class Channel : IChannel, IDisposable
+    internal sealed class Channel : IChannel, IDisposable, IAsyncDisposable
     {
         private readonly Dispatcher dispatcher;
         private readonly TimerPool timerPool;
@@ -293,6 +293,11 @@ namespace Microsoft.Azure.Documents.Rntbd
             ((IDisposable) this).Dispose();
         }
 
+        public async Task CloseAsync()
+        {
+            await this.DisposeAsync().ConfigureAwait(false);
+        }
+
         void IDisposable.Dispose()
         {
             this.chaosInterceptor?.OnChannelDispose(this.ConnectionCorrelationId);
@@ -336,6 +341,52 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
             Debug.Assert(this.dispatcher != null);
             this.dispatcher.Dispose();
+            this.stateLock.Dispose();
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            this.chaosInterceptor?.OnChannelDispose(this.ConnectionCorrelationId);
+            this.ThrowIfDisposed();
+            this.disposed = true;
+            DefaultTrace.TraceInformation("[RNTBD Channel {0}] Async disposing RNTBD Channel {1}", this.ConnectionCorrelationId, this);
+
+            Task initTask = null;
+            this.stateLock.EnterWriteLock();
+            try
+            {
+                if (this.state != State.Closed)
+                {
+                    initTask = this.initializationTask;
+                }
+                this.state = State.Closed;
+            }
+            finally
+            {
+                this.stateLock.ExitWriteLock();
+            }
+            if (initTask != null)
+            {
+                try
+                {
+                    await initTask.ConfigureAwait(false);
+                }
+                catch (Exception e)
+                {
+                    DefaultTrace.TraceWarning(
+                        "[RNTBD Channel {0}] {1} initialization failed. Consuming the task " +
+                        "exception in {2}. Server URI: {3}. Exception: {4}",
+                        this.ConnectionCorrelationId,
+                        nameof(Channel),
+                        nameof(DisposeAsync),
+                        this.serverUri,
+                        e.Message);
+                    // Intentionally swallowing the exception. The caller can't
+                    // do anything useful with it.
+                }
+            }
+            Debug.Assert(this.dispatcher != null);
+            await this.dispatcher.DisposeAsync().ConfigureAwait(false);
             this.stateLock.Dispose();
         }
 

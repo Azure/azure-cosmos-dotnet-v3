@@ -27,5 +27,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         bool Healthy { get; }
 
         void Close();
+
+        Task CloseAsync();
     }
 }
