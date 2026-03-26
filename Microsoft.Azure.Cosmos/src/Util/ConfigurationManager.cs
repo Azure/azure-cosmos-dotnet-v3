@@ -118,15 +118,6 @@ namespace Microsoft.Azure.Cosmos
         internal static readonly string BypassQueryParsing = "AZURE_COSMOS_BYPASS_QUERY_PARSING";
 
         /// <summary>
-        /// Environment variable to disable LINQ expression interpretation mode.
-        /// When set to "false", falls back to JIT-compiled Expression.Compile().
-        /// Default (unset or "true"): interpretation mode enabled to prevent native memory growth
-        /// from DynamicMethod IL emission in long-running services.
-        /// See: https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5487
-        /// </summary>
-        internal static readonly string LinqExpressionCompileInterpretationEnabled = "AZURE_COSMOS_LINQ_EXPRESSION_INTERPRETATION_ENABLED";
-
-        /// <summary>
         /// A read-only string containing the environment variable name for disabling length aware range comparator.
         /// Length aware range comparators were intorduced in Range class to handle EPK range comparisons correctly in the case of a container's physical partition set consisting of fully and partially specified EPK values.
         /// By default length aware range comparator is enabled. Refer to Range.cs in Msdata project for more details. Range.LengthAwareMinComparer/LengthAwareMaxComparer.
