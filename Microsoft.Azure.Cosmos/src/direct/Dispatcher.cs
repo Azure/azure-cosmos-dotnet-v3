@@ -451,6 +451,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             return this.connection.ToString();
         }
 
+        // Keep in sync with DisposeAsync().
         public void Dispose()
         {
             this.ThrowIfDisposed();
@@ -483,10 +484,16 @@ namespace Microsoft.Azure.Documents.Rntbd
             DefaultTrace.TraceInformation("[RNTBD Dispatcher {0}] RNTBD Dispatcher {1} is disposed", this.ConnectionCorrelationId, this);
         }
 
+        // Keep in sync with Dispose().
         public async ValueTask DisposeAsync()
         {
-            this.ThrowIfDisposed();
+            if (this.disposed)
+            {
+                return;
+            }
+
             this.disposed = true;
+            GC.SuppressFinalize(this);
 
             DefaultTrace.TraceInformation("[RNTBD Dispatcher {0}] Async disposing RNTBD Dispatcher {1}", this.ConnectionCorrelationId, this);
 

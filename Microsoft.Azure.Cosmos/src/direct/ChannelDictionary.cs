@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Documents.Rntbd
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents.FaultInjection;
 
     // ChannelDictionary maps server keys to load-balanced channels. There is
@@ -82,16 +83,30 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         public async ValueTask DisposeAsync()
         {
-            this.ThrowIfDisposed();
-            this.disposed = true;
+            if (this.disposed)
+            {
+                return;
+            }
 
-            List<Task> closeTasks = new List<Task>();
+            this.disposed = true;
+            GC.SuppressFinalize(this);
+
+            List<Task> closeTasks = new List<Task>(this.channels.Count);
             foreach (IChannel channel in this.channels.Values)
             {
                 closeTasks.Add(channel.CloseAsync());
             }
 
-            await Task.WhenAll(closeTasks).ConfigureAwait(false);
+            try
+            {
+                await Task.WhenAll(closeTasks).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                DefaultTrace.TraceWarning(
+                    "[RNTBD ChannelDictionary] Async dispose encountered errors during channel closure: {0}",
+                    e.Message);
+            }
         }
 
         private void ThrowIfDisposed()

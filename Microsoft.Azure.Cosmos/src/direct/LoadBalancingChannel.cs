@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Documents.Rntbd
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents.FaultInjection;
 
     // LoadBalancingChannel encapsulates the management of channels that connect to a single
@@ -194,23 +195,40 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
+        // Keep in sync with Dispose().
+        // TODO: Wire upstream callers (IChannelDictionary) to call DisposeAsync
+        // to fully address Path 2 (mass disposal starvation).
         public async ValueTask DisposeAsync()
         {
-            this.ThrowIfDisposed();
+            if (this.disposed)
+            {
+                return;
+            }
+
             this.disposed = true;
+            GC.SuppressFinalize(this);
             List<Task> disposeTasks = new List<Task>();
             if (this.singlePartition != null)
             {
-                disposeTasks.Add(this.singlePartition.DisposeAsync());
+                disposeTasks.Add(this.singlePartition.DisposeAsync().AsTask());
             }
             if (this.partitions != null)
             {
                 for (int i = 0; i < this.partitions.Length; i++)
                 {
-                    disposeTasks.Add(this.partitions[i].DisposeAsync());
+                    disposeTasks.Add(this.partitions[i].DisposeAsync().AsTask());
                 }
             }
-            await Task.WhenAll(disposeTasks).ConfigureAwait(false);
+            try
+            {
+                await Task.WhenAll(disposeTasks).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                DefaultTrace.TraceWarning(
+                    "[RNTBD LoadBalancingChannel] Async dispose encountered errors during partition disposal: {0}",
+                    e.Message);
+            }
         }
 
         private void ThrowIfDisposed()

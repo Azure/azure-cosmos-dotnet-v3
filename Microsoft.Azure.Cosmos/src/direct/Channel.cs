@@ -298,6 +298,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             await this.DisposeAsync().ConfigureAwait(false);
         }
 
+        // Keep in sync with DisposeAsync().
         void IDisposable.Dispose()
         {
             this.chaosInterceptor?.OnChannelDispose(this.ConnectionCorrelationId);
@@ -344,11 +345,17 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.stateLock.Dispose();
         }
 
+        // Keep in sync with Dispose().
         public async ValueTask DisposeAsync()
         {
-            this.chaosInterceptor?.OnChannelDispose(this.ConnectionCorrelationId);
-            this.ThrowIfDisposed();
+            if (this.disposed)
+            {
+                return;
+            }
+
             this.disposed = true;
+            GC.SuppressFinalize(this);
+            this.chaosInterceptor?.OnChannelDispose(this.ConnectionCorrelationId);
             DefaultTrace.TraceInformation("[RNTBD Channel {0}] Async disposing RNTBD Channel {1}", this.ConnectionCorrelationId, this);
 
             Task initTask = null;
@@ -386,8 +393,14 @@ namespace Microsoft.Azure.Documents.Rntbd
                 }
             }
             Debug.Assert(this.dispatcher != null);
-            await this.dispatcher.DisposeAsync().ConfigureAwait(false);
-            this.stateLock.Dispose();
+            try
+            {
+                await this.dispatcher.DisposeAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                this.stateLock.Dispose();
+            }
         }
 
         #region Test hook.

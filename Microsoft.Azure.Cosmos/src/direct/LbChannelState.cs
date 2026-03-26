@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Documents.Rntbd
     using System.Threading.Tasks;
 
     // This class is thread safe.
-    sealed class LbChannelState : IDisposable
+    sealed class LbChannelState : IDisposable, IAsyncDisposable
     {
         private readonly int maxRequestsPending;
         private readonly IChannel channel;
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
-        public async Task DisposeAsync()
+        public async ValueTask DisposeAsync()
         {
             int disposeInvocationCounter = Interlocked.Increment(ref this.stateDisposeCounter);
             if (disposeInvocationCounter == 1)
