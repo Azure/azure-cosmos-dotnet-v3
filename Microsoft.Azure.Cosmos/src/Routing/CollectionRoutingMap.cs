@@ -38,7 +38,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             Dictionary<string, Tuple<PartitionKeyRange, ServiceIdentity>> rangeById,
             List<PartitionKeyRange> orderedPartitionKeyRanges,
             string collectionUniqueId,
-            string changeFeedNextIfNoneMatch)
+            string changeFeedNextIfNoneMatch,
+            bool useLengthAwareRangeComparer)
         {
             this.rangeById = rangeById;
             this.orderedPartitionKeyRanges = orderedPartitionKeyRanges;
@@ -71,18 +72,13 @@ namespace Microsoft.Azure.Cosmos.Routing
                     }
                     return range.Status == PartitionKeyRangeStatus.Offline ? CollectionRoutingMap.InvalidPkRangeId : pkId;
                 });
-
-            //LengthAwareComparer is the default Range comparer and flag <see cref="ConfigurationManager.UseLengthAwareRangeComparator"/>  is used to ovverride the default comparer to legacy Min/Max comparer.
-            bool useLengthAwareComparer = ConfigurationManager.IsLengthAwareRangeComparatorEnabled();
-
-            this.comparers = useLengthAwareComparer
-                ? (Range<string>.LengthAwareMinComparer.Instance, Range<string>.LengthAwareMaxComparer.Instance)
-                : (Range<string>.MinComparer.Instance, Range<string>.MaxComparer.Instance);
+            this.comparers = RangeComparerProvider.GetComparers(useLengthAwareRangeComparer);
         }
 
         public static CollectionRoutingMap TryCreateCompleteRoutingMap(
             IEnumerable<Tuple<PartitionKeyRange, ServiceIdentity>> ranges,
             string collectionUniqueId,
+            bool useLengthAwareRangeComparer,
             string changeFeedNextIfNoneMatch = null)
         {
             Dictionary<string, Tuple<PartitionKeyRange, ServiceIdentity>> rangeById =
@@ -102,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return null;
             }
 
-            return new CollectionRoutingMap(rangeById, orderedRanges, collectionUniqueId, changeFeedNextIfNoneMatch);
+            return new CollectionRoutingMap(rangeById, orderedRanges, collectionUniqueId, changeFeedNextIfNoneMatch, useLengthAwareRangeComparer);
         }
 
         public string CollectionUniqueId { get; private set; }
@@ -212,7 +208,8 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public CollectionRoutingMap TryCombine(
             IEnumerable<Tuple<PartitionKeyRange, ServiceIdentity>> ranges,
-            string changeFeedNextIfNoneMatch)
+            string changeFeedNextIfNoneMatch,
+            bool useLengthAwareComparer)
         {
             HashSet<string> newGoneRanges = new HashSet<string>(ranges.SelectMany(tuple => tuple.Item1.Parents ?? Enumerable.Empty<string>()));
             newGoneRanges.UnionWith(this.goneRanges);
@@ -239,7 +236,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return null;
             }
 
-            return new CollectionRoutingMap(newRangeById, newOrderedRanges, this.CollectionUniqueId, changeFeedNextIfNoneMatch);
+            return new CollectionRoutingMap(newRangeById, newOrderedRanges, this.CollectionUniqueId, changeFeedNextIfNoneMatch, useLengthAwareComparer);
         }
 
         private class MinPartitionKeyTupleComparer : IComparer<Tuple<PartitionKeyRange, ServiceIdentity>>

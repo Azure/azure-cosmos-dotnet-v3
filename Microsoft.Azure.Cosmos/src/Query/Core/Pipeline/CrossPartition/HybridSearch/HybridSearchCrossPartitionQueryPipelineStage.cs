@@ -92,7 +92,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             IReadOnlyList<FeedRangeEpk> allRanges,
             int maxItemCount,
             bool isContinuationExpected,
-            int maxConcurrency)
+            int maxConcurrency,
+            Cosmos.FullTextScoreScope fullTextScoreScope)
         {
             TryCatch<IQueryPipelineStage> ComponentPipelineFactory(QueryInfo rewrittenQueryInfo)
             {
@@ -124,10 +125,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                     queryInfo.GlobalStatisticsQuery,
                     sqlQuerySpec.Parameters);
 
+                // When FullTextScoreScope is Global, use allRanges (all partitions) for statistics.
+                // When FullTextScoreScope is Local, use targetRanges (only the filtered partitions) for statistics.
+                IReadOnlyList<FeedRangeEpk> statisticsTargetRanges = fullTextScoreScope == Cosmos.FullTextScoreScope.Global
+                    ? allRanges
+                    : targetRanges;
+
                 TryCatch<IQueryPipelineStage> tryCatchGlobalStatisticsPipeline = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
                     documentContainer: documentContainer,
                     sqlQuerySpec: globalStatisticsQuerySpec,
-                    targetRanges: allRanges,
+                    targetRanges: statisticsTargetRanges,
                     queryPaginationOptions: queryExecutionOptions,
                     partitionKey: null,
                     containerQueryProperties: containerQueryProperties,

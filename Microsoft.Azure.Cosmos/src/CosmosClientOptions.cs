@@ -244,7 +244,39 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <remarks>
         /// This setting is only applicable in Gateway mode.
+        /// The SDK sets EnableMultipleHttp2Connections = true on the underlying SocketsHttpHandler,
+        /// allowing additional HTTP/2 TCP connections to be opened when the maximum concurrent streams
+        /// limit on an existing connection is reached. This property controls the upper bound on the
+        /// total number of connections per server endpoint.
+        /// When using a custom <see cref="HttpClientFactory"/>, set EnableMultipleHttp2Connections
+        /// directly on your SocketsHttpHandler for equivalent behavior.
         /// </remarks>
+        /// <example>
+        /// Using the SDK-managed handler with a custom connection limit:
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosClientOptions options = new CosmosClientOptions()
+        /// {
+        ///     ConnectionMode = ConnectionMode.Gateway,
+        ///     GatewayModeMaxConnectionLimit = 100
+        /// };
+        /// ]]>
+        /// </code>
+        /// When providing a custom HttpClientFactory, set the properties on SocketsHttpHandler directly:
+        /// <code language="c#">
+        /// <![CDATA[
+        /// SocketsHttpHandler handler = new SocketsHttpHandler
+        /// {
+        ///     MaxConnectionsPerServer = 100,
+        ///     EnableMultipleHttp2Connections = true
+        /// };
+        /// CosmosClientOptions options = new CosmosClientOptions()
+        /// {
+        ///     HttpClientFactory = () => new HttpClient(handler, disposeHandler: false)
+        /// };
+        /// ]]>
+        /// </code>
+        /// </example>
         /// <value>Default value is 50.</value>
         /// <seealso cref="CosmosClientBuilder.WithConnectionModeGateway(int?, IWebProxy)"/>
         public int GatewayModeMaxConnectionLimit
@@ -325,6 +357,24 @@ namespace Microsoft.Azure.Cosmos
         /// If this is not set the database account consistency level will be used for all requests.
         /// </summary>
         public ConsistencyLevel? ConsistencyLevel { get; set; }
+
+        /// <summary>
+        /// Gets or sets the <see cref="ReadConsistencyStrategy"/> to be used for read operations.
+        /// </summary>
+        /// <remarks>
+        /// When set, this takes precedence over <see cref="ConsistencyLevel"/> for read and query operations.
+        /// If also set at request level (e.g., in <see cref="ItemRequestOptions.ReadConsistencyStrategy"/>),
+        /// the request-level value is used.
+        /// <para>
+        /// <see cref="ReadConsistencyStrategy.GlobalStrong"/> is only valid for accounts configured with Strong consistency.
+        /// </para>
+        /// </remarks>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        ReadConsistencyStrategy? ReadConsistencyStrategy { get; set; }
 
         /// <summary>
         /// Sets the priority level for requests created using cosmos client.
@@ -466,6 +516,25 @@ namespace Microsoft.Azure.Cosmos
         /// The default value for this parameter is 'false'.
         /// </summary>
         internal bool EnableStreamPassThrough { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether to use length-aware range comparators for EPK range comparisons.
+        /// Length-aware range comparators were introduced in Range class to handle EPK range comparisons correctly 
+        /// in the case of a container's physical partition set consisting of fully and partially specified EPK values.
+        /// By default, length-aware range comparator is enabled. Refer to Range.cs in Msdata project for more details. 
+        /// Range.LengthAwareMinComparer/LengthAwareMaxComparer.
+        /// Setting the value to false will disable length-aware range comparator and switch to using the regular 
+        /// Range.MinComparer/MaxComparer.
+        /// </summary>
+        /// <value>
+        /// The default value is true.
+        /// </value>
+        internal bool UseLengthAwareRangeComparer { get; set; } =
+#if !INTERNAL
+            true;
+#else
+            false;
+#endif
 
         /// <summary>
         /// (Direct/TCP) Controls the amount of idle time after which unused connections are closed.

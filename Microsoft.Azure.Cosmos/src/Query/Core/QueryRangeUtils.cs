@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     using System.Collections.Generic;
     using System.Diagnostics;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents.Routing;
 
     internal static class QueryRangeUtils
@@ -55,14 +56,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                                 String overlappingMax;
                                 bool maxInclusive;
 
-                                //LengthAwareComparer is the default Range comparer and flag <see cref="ConfigurationManager.UseLengthAwareRangeComparator"/>  is used to ovverride the default comparer to legacy Min/Max comparer.
-                                IComparer<Range<string>> minComparer = IsLengthAwareComparisonEnabled
-                                    ? Documents.Routing.Range<string>.LengthAwareMinComparer.Instance
-                                    : Documents.Routing.Range<string>.MinComparer.Instance;
-
-                                IComparer<Range<string>> maxComparer = IsLengthAwareComparisonEnabled
-                                    ? Documents.Routing.Range<string>.LengthAwareMaxComparer.Instance
-                                    : Documents.Routing.Range<string>.MaxComparer.Instance;
+                                (IComparer<Range<string>> minComparer, IComparer<Range<string>> maxComparer) = RangeComparerProvider.GetComparers(containerQueryProperties.UseLengthAwareRangeComparer);
 
                                 if (minComparer.Compare(
                                         epkForPartitionKey,
@@ -117,18 +111,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         /// </summary>
         /// <param name="partitionKeyRanges">The list of partition key ranges to trim</param>
         /// <param name="providedRanges">The EPK ranges to use as boundaries</param>
+        /// <param name="useLengthAwareComparer">Whether to use length-aware range comparers</param>
         /// <returns>A list of trimmed partition key ranges that fit within the provided ranges</returns>
         public static List<Documents.PartitionKeyRange> LimitPartitionKeyRangesToProvidedRanges(
             List<Documents.PartitionKeyRange> partitionKeyRanges,
-            IReadOnlyList<Documents.Routing.Range<string>> providedRanges)
+            IReadOnlyList<Documents.Routing.Range<string>> providedRanges,
+            bool useLengthAwareComparer = true)
         {
-            IComparer<Range<string>> minComparer = IsLengthAwareComparisonEnabled
-                ? Documents.Routing.Range<string>.LengthAwareMinComparer.Instance
-                : Documents.Routing.Range<string>.MinComparer.Instance;
-
-            IComparer<Range<string>> maxComparer = IsLengthAwareComparisonEnabled
-                ? Documents.Routing.Range<string>.LengthAwareMaxComparer.Instance
-                : Documents.Routing.Range<string>.MaxComparer.Instance;
+            (IComparer<Range<string>> minComparer, IComparer<Range<string>> maxComparer) = RangeComparerProvider.GetComparers(useLengthAwareComparer);
 
             // Compute the overall min and max from providedRanges
             string overallMin = providedRanges[0].Min;
