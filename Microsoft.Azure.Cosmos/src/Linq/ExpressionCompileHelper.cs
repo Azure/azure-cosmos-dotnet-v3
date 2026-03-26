@@ -18,15 +18,37 @@ namespace Microsoft.Azure.Cosmos.Linq
     {
         private static readonly object[] PreferInterpretationArgs = new object[] { true };
         private static readonly Func<LambdaExpression, Delegate> InterpretedCompile = ExpressionCompileHelper.CreateInterpretedCompile();
+        private static readonly bool IsInterpretedCompileSupported = ExpressionCompileHelper.InterpretedCompile != null;
         private static readonly bool IsInterpretationEnabled = ConfigurationManager.GetEnvironmentVariable(
             ConfigurationManager.LinqExpressionCompileInterpretationEnabled,
             defaultValue: true);
 
         /// <summary>
+        /// Compiles a strongly-typed Expression using interpretation mode when available
+        /// to avoid native memory growth from DynamicMethod IL emission.
+        /// Prefer this overload when the expression type is known at compile time.
+        /// </summary>
+        public static TDelegate CompileLambda<TDelegate>(Expression<TDelegate> expression)
+            where TDelegate : Delegate
+        {
+            if (expression == null)
+            {
+                throw new ArgumentNullException(nameof(expression));
+            }
+
+            if (ExpressionCompileHelper.IsInterpretedCompileSupported
+                && ExpressionCompileHelper.IsInterpretationEnabled)
+            {
+                return expression.Compile(preferInterpretation: true);
+            }
+
+            return expression.Compile();
+        }
+
+        /// <summary>
         /// Compiles a LambdaExpression using interpretation mode when available
         /// to avoid native memory growth from DynamicMethod IL emission.
-        /// The behavior is controlled by the AZURE_COSMOS_LINQ_EXPRESSION_INTERPRETATION_ENABLED
-        /// environment variable (read once at process startup, defaults to true).
+        /// Use this overload when only an untyped LambdaExpression is available.
         /// </summary>
         public static Delegate CompileLambda(LambdaExpression lambda)
         {
