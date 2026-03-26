@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
     // Dispatcher encapsulates the state and logic needed to dispatch multiple requests through
     // a single connection.
-    internal sealed class Dispatcher : IDisposable
+    internal sealed class Dispatcher : IDisposable, IAsyncDisposable
     {
         // Connection is thread-safe for sending.
         // Receiving is done only from the receive loop.
@@ -451,6 +451,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             return this.connection.ToString();
         }
 
+        // Keep in sync with DisposeAsync().
         public void Dispose()
         {
             this.ThrowIfDisposed();
@@ -479,6 +480,44 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
 
             this.WaitTask(receiveTaskCopy, "receive loop");
+
+            DefaultTrace.TraceInformation("[RNTBD Dispatcher {0}] RNTBD Dispatcher {1} is disposed", this.ConnectionCorrelationId, this);
+        }
+
+        // Keep in sync with Dispose().
+        public async ValueTask DisposeAsync()
+        {
+            if (this.disposed)
+            {
+                return;
+            }
+
+            this.disposed = true;
+            GC.SuppressFinalize(this);
+
+            DefaultTrace.TraceInformation("[RNTBD Dispatcher {0}] Async disposing RNTBD Dispatcher {1}", this.ConnectionCorrelationId, this);
+
+            Task idleTimerTaskCopy = null;
+            Debug.Assert(!Monitor.IsEntered(this.connectionLock));
+            lock (this.connectionLock)
+            {
+                this.StartConnectionShutdown();
+                idleTimerTaskCopy = this.StopIdleTimer();
+            }
+
+            await this.WaitTaskAsync(idleTimerTaskCopy, "idle timer").ConfigureAwait(false);
+
+            Task receiveTaskCopy = null;
+            Debug.Assert(!Monitor.IsEntered(this.connectionLock));
+            lock (this.connectionLock)
+            {
+                Debug.Assert(this.idleTimer == null);
+                Debug.Assert(this.idleTimerTask == null);
+
+                receiveTaskCopy = this.CloseConnection();
+            }
+
+            await this.WaitTaskAsync(receiveTaskCopy, "receive loop").ConfigureAwait(false);
 
             DefaultTrace.TraceInformation("[RNTBD Dispatcher {0}] RNTBD Dispatcher {1} is disposed", this.ConnectionCorrelationId, this);
         }
@@ -522,7 +561,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
-        private void OnIdleTimer(Task precedentTask)
+        private async Task OnIdleTimerAsync(Task precedentTask)
         {
             Task receiveTaskCopy = null;
 
@@ -572,7 +611,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 receiveTaskCopy = this.CloseConnection();
             }
 
-            this.WaitTask(receiveTaskCopy, "receive loop");
+            await this.WaitTaskAsync(receiveTaskCopy, "receive loop").ConfigureAwait(false);
         }
 
         // this.connectionLock must be held.
@@ -580,7 +619,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         {
             Debug.Assert(Monitor.IsEntered(this.connectionLock));
             this.idleTimer = this.idleTimerPool.GetPooledTimer((int)timeToIdle.TotalSeconds);
-            this.idleTimerTask = this.idleTimer.StartTimerAsync().ContinueWith(this.OnIdleTimer, TaskContinuationOptions.OnlyOnRanToCompletion);
+            this.idleTimerTask = this.idleTimer.StartTimerAsync().ContinueWith(this.OnIdleTimerAsync, TaskContinuationOptions.OnlyOnRanToCompletion).Unwrap();
             this.idleTimerTask.ContinueWith(
                 failedTask =>
                 {
@@ -670,6 +709,28 @@ namespace Microsoft.Azure.Documents.Rntbd
                 Debug.Assert(!Monitor.IsEntered(this.callLock));
                 Debug.Assert(!Monitor.IsEntered(this.connectionLock));
                 t.Wait();
+            }
+            catch (Exception e)
+            {
+                DefaultTrace.TraceWarning(
+                    "[RNTBD Dispatcher {0}][{1}] Parallel task failed: {2}. Exception: {3}",
+                    this.ConnectionCorrelationId, this, description, e.Message);
+                // Intentionally swallowing the exception. The caller can't
+                // do anything useful with it.
+            }
+        }
+
+        private async Task WaitTaskAsync(Task t, string description)
+        {
+            if (t == null)
+            {
+                return;
+            }
+            try
+            {
+                Debug.Assert(!Monitor.IsEntered(this.callLock));
+                Debug.Assert(!Monitor.IsEntered(this.connectionLock));
+                await t.ConfigureAwait(false);
             }
             catch (Exception e)
             {

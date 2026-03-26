@@ -4,9 +4,11 @@
 namespace Microsoft.Azure.Documents.Rntbd
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Documents.FaultInjection;   
+    using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Documents.FaultInjection;
 
     // LoadBalancingChannel encapsulates the management of channels that connect to a single
     // back-end server. It assigns load to each channel, decides when to open more
@@ -14,7 +16,7 @@ namespace Microsoft.Azure.Documents.Rntbd
     // To assign load, this channel uses a simple round-robin approach. It examines
     // the next channel available internally, and uses it if it's healthy and has
     // request slots available.
-    internal sealed class LoadBalancingChannel : IChannel, IDisposable
+    internal sealed class LoadBalancingChannel : IChannel, IDisposable, IAsyncDisposable
     {
         private readonly Uri serverUri;
 
@@ -169,6 +171,11 @@ namespace Microsoft.Azure.Documents.Rntbd
             ((IDisposable)this).Dispose();
         }
 
+        public async Task CloseAsync()
+        {
+            await this.DisposeAsync().ConfigureAwait(false);
+        }
+
 #region IDisposable
 
         void IDisposable.Dispose()
@@ -185,6 +192,42 @@ namespace Microsoft.Azure.Documents.Rntbd
                 {
                     this.partitions[i].Dispose();
                 }
+            }
+        }
+
+        // Keep in sync with Dispose().
+        // TODO: Wire upstream callers (IChannelDictionary) to call DisposeAsync
+        // to fully address Path 2 (mass disposal starvation).
+        public async ValueTask DisposeAsync()
+        {
+            if (this.disposed)
+            {
+                return;
+            }
+
+            this.disposed = true;
+            GC.SuppressFinalize(this);
+            List<Task> disposeTasks = new List<Task>();
+            if (this.singlePartition != null)
+            {
+                disposeTasks.Add(this.singlePartition.DisposeAsync().AsTask());
+            }
+            if (this.partitions != null)
+            {
+                for (int i = 0; i < this.partitions.Length; i++)
+                {
+                    disposeTasks.Add(this.partitions[i].DisposeAsync().AsTask());
+                }
+            }
+            try
+            {
+                await Task.WhenAll(disposeTasks).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                DefaultTrace.TraceWarning(
+                    "[RNTBD LoadBalancingChannel] Async dispose encountered errors during partition disposal: {0}",
+                    e.Message);
             }
         }
 

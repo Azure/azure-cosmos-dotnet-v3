@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Documents.Rntbd
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents.FaultInjection;
 
-    internal sealed class LoadBalancingPartition : IDisposable
+    internal sealed class LoadBalancingPartition : IDisposable, IAsyncDisposable
     {
         private readonly Uri serverUri;
         private readonly ChannelProperties channelProperties;
@@ -352,6 +352,49 @@ namespace Microsoft.Azure.Documents.Rntbd
             {
                 // SynchronizationLockException is thrown if there are inflight requests during the disposal of capacityLock
                 // suspend this exception to avoid crashing disposing other partitions/channels in hierarchical calls
+                return;
+            }
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            List<Task> disposeTasks;
+            this.capacityLock.EnterWriteLock();
+            try
+            {
+                disposeTasks = new List<Task>(this.openChannels.Count);
+                foreach (LbChannelState channelState in this.openChannels)
+                {
+                    disposeTasks.Add(channelState.DisposeAsync().AsTask());
+                }
+            }
+            finally
+            {
+                this.capacityLock.ExitWriteLock();
+            }
+
+            try
+            {
+                await Task.WhenAll(disposeTasks).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                DefaultTrace.TraceWarning(
+                    "[RNTBD LoadBalancingPartition] Async dispose encountered errors during channel disposal: {0}",
+                    e.Message);
+            }
+
+            try
+            {
+                this.capacityLock.Dispose();
+            }
+            catch(SynchronizationLockException e)
+            {
+                // SynchronizationLockException is thrown if there are inflight requests during the disposal of capacityLock
+                // suspend this exception to avoid crashing disposing other partitions/channels in hierarchical calls
+                DefaultTrace.TraceWarning(
+                    "[RNTBD LoadBalancingPartition] SynchronizationLockException during async dispose: {0}",
+                    e.Message);
                 return;
             }
         }
