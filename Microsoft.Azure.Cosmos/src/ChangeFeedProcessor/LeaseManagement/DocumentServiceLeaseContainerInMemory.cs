@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     {
         private static readonly JsonSerializerOptions DeserializeOptions = new JsonSerializerOptions
         {
+            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
             Converters = { new FeedRangeInternalSystemTextJsonConverter() }
         };
 
