@@ -5,6 +5,10 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Concurrent;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Text.Json;
     using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using static Microsoft.Azure.Cosmos.Container;
@@ -235,6 +239,92 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.LeaseStoreManager = new DocumentServiceLeaseStoreManagerInMemory();
+            return this;
+        }
+
+        /// <summary>
+        /// Uses an in-memory container to maintain state of the leases, pre-populated with the specified lease tokens and continuation tokens.
+        /// 
+        /// Using an in-memory container restricts the scaling capability to just the instance running the current processor.
+        /// </summary>
+        /// <param name="initialLeases">
+        /// A list of (LeaseToken, ContinuationToken) pairs to initialize the in-memory lease container.
+        /// These pairs can be obtained from previously exported leases (see <see cref="ChangeFeedProcessor.ExportLeasesAsync"/>).
+        /// </param>
+        /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="initialLeases"/> is null.</exception>
+        public virtual ChangeFeedProcessorBuilder WithInMemoryLeaseContainer(
+            IReadOnlyList<(string LeaseToken, string ContinuationToken)> initialLeases)
+        {
+            if (initialLeases == null)
+            {
+                throw new ArgumentNullException(nameof(initialLeases));
+            }
+
+            this.WithInMemoryLeaseContainer();
+
+            ConcurrentDictionary<string, DocumentServiceLease> container =
+                new ConcurrentDictionary<string, DocumentServiceLease>();
+
+            foreach ((string leaseToken, string continuationToken) in initialLeases)
+            {
+                DocumentServiceLeaseCore lease = new DocumentServiceLeaseCore
+                {
+                    LeaseId = leaseToken,
+                    LeaseToken = leaseToken,
+                    ContinuationToken = continuationToken,
+                };
+
+                container.TryAdd(lease.Id, lease);
+            }
+
+            this.LeaseStoreManager = new DocumentServiceLeaseStoreManagerInMemory(container);
+            return this;
+        }
+
+        /// <summary>
+        /// Uses an in-memory container to maintain state of the leases, initialized from a lease export file.
+        /// 
+        /// The file should contain a JSON array of lease objects as produced by <see cref="ChangeFeedProcessor.ExportLeasesAsync"/>.
+        /// Using an in-memory container restricts the scaling capability to just the instance running the current processor.
+        /// </summary>
+        /// <param name="leaseExportPath">Path to a JSON file containing exported leases.</param>
+        /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="leaseExportPath"/> is null.</exception>
+        /// <exception cref="FileNotFoundException">Thrown when the specified file does not exist.</exception>
+        public virtual ChangeFeedProcessorBuilder WithInMemoryLeaseContainer(string leaseExportPath)
+        {
+            if (leaseExportPath == null)
+            {
+                throw new ArgumentNullException(nameof(leaseExportPath));
+            }
+
+            if (!File.Exists(leaseExportPath))
+            {
+                throw new FileNotFoundException("The specified lease export file was not found.", leaseExportPath);
+            }
+
+            this.WithInMemoryLeaseContainer();
+
+            string json = File.ReadAllText(leaseExportPath);
+            List<JsonElement> leaseElements = JsonSerializer.Deserialize<List<JsonElement>>(json);
+
+            ConcurrentDictionary<string, DocumentServiceLease> container =
+                new ConcurrentDictionary<string, DocumentServiceLease>();
+
+            if (leaseElements != null)
+            {
+                foreach (JsonElement leaseElement in leaseElements)
+                {
+                    DocumentServiceLease lease = DocumentServiceLeaseContainerInMemory.DeserializeLease(leaseElement);
+                    if (lease != null)
+                    {
+                        container[lease.Id] = lease;
+                    }
+                }
+            }
+
+            this.LeaseStoreManager = new DocumentServiceLeaseStoreManagerInMemory(container);
             return this;
         }
 
