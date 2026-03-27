@@ -1332,8 +1332,10 @@ namespace Microsoft.Azure.Cosmos
                 It.IsAny<DocumentServiceRequest>()))
                 .ReturnsAsync(successResponse);
 
+            // Plain ReadFeed without an A-IM header is a realistic unsupported operation
+            // (document enumeration, not a change feed).
             DocumentServiceRequest request = DocumentServiceRequest.Create(
-                operationType: OperationType.Invalid,
+                operationType: OperationType.ReadFeed,
                 resourceType: ResourceType.Document,
                 resourceId: "NH1uAJ6ANm0=",
                 body: null,
@@ -1589,6 +1591,17 @@ namespace Microsoft.Azure.Cosmos
             nonDocumentRequest.Headers[HttpConstants.HttpHeaders.A_IM] = HttpConstants.A_IMHeaderValues.IncrementalFeed;
             Assert.IsFalse(GatewayStoreModel.IsOperationSupportedByThinClient(nonDocumentRequest),
                 "ReadFeed on non-Document resource should NOT be supported by ThinClient");
+
+            // Unknown A-IM header value should NOT be supported (fail-safe for future feed modes)
+            DocumentServiceRequest unknownAImRequest = DocumentServiceRequest.Create(
+               operationType: OperationType.ReadFeed,
+               resourceType: ResourceType.Document,
+               resourceId: "NH1uAJ6ANm0=",
+               body: null,
+               authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
+            unknownAImRequest.Headers[HttpConstants.HttpHeaders.A_IM] = "Unknown-Feed";
+            Assert.IsFalse(GatewayStoreModel.IsOperationSupportedByThinClient(unknownAImRequest),
+                "Unknown A-IM values should NOT be supported by ThinClient");
         }
 
         [TestMethod]

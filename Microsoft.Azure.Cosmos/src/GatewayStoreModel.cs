@@ -590,15 +590,16 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Determines if the request is a LatestVersion (Incremental) change feed request.
-        /// A change feed request is identified by the presence of the A-IM header.
-        /// LatestVersion uses "Incremental feed" while AllVersionsAndDeletes uses "Full-Fidelity Feed".
+        /// Determines if the request is a LatestVersion (Incremental) change feed request that can
+        /// be routed to the thin client. Returns true only when the A-IM header is exactly
+        /// <c>HttpConstants.A_IMHeaderValues.IncrementalFeed</c>. Any other value — including
+        /// Full-Fidelity Feed (AllVersionsAndDeletes) or an unknown future mode — falls back to
+        /// Compute Gateway so that new modes are not accidentally routed to the thin client.
         /// </summary>
         internal static bool IsLatestVersionChangeFeedRequest(DocumentServiceRequest request)
         {
             string aImHeaderValue = request.Headers[HttpConstants.HttpHeaders.A_IM];
-            return !string.IsNullOrEmpty(aImHeaderValue)
-                && !string.Equals(aImHeaderValue, HttpConstants.A_IMHeaderValues.FullFidelityFeed, StringComparison.OrdinalIgnoreCase);
+            return string.Equals(aImHeaderValue, HttpConstants.A_IMHeaderValues.IncrementalFeed, StringComparison.OrdinalIgnoreCase);
         }
         private async Task<AccountProperties> GetDatabaseAccountPropertiesAsync()
         {
