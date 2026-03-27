@@ -707,5 +707,68 @@ namespace Microsoft.Azure.Cosmos
                 changeFeedIteratorCore,
                 responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
         }
+
+        public override async Task<PartitionKey?> EnsureIdGetAppendedtoPartitionKeyIfneededAsync(
+            PartitionKey? partitionKey,
+            string itemId,
+            CancellationToken cancellationToken)
+        {
+            ContainerProperties cachedContainerPropertiesAsync = await this.GetCachedContainerPropertiesAsync(
+                forceRefresh: false,
+                trace: NoOpTrace.Singleton,
+                cancellationToken: cancellationToken);
+
+            if (!cachedContainerPropertiesAsync.IsLastPartitionKeyPathId)
+            {
+                return partitionKey;
+            }
+
+            if (string.IsNullOrEmpty(itemId))
+            {
+                throw new ArgumentException("itemId needs to be specified if LastPartitionKeyPath is id");
+            }
+
+            IReadOnlyList<Documents.Routing.IPartitionKeyComponent> existingComponents = Array.Empty<Documents.Routing.IPartitionKeyComponent>();
+            if (partitionKey.HasValue)
+            {
+                existingComponents = partitionKey.Value.InternalKey.Components;
+                IReadOnlyList<string> partitionKeyPaths = cachedContainerPropertiesAsync.PartitionKey.Paths;
+
+                if (existingComponents.Count != partitionKeyPaths.Count - 1)
+                {
+                    return partitionKey;
+                }
+            }
+
+            PartitionKeyBuilder builder = new PartitionKeyBuilder();
+           
+            if (!partitionKey.HasValue)
+            {
+                for (int i = 0; i < cachedContainerPropertiesAsync.PartitionKey.Paths.Count - 1; i++)
+                {
+                    builder.AddNullValue();
+                }
+            }
+
+            builder.Add(itemId);
+            PartitionKey idPath = builder.Build();
+
+            List<Documents.Routing.IPartitionKeyComponent> allComponentsList = new List<Documents.Routing.IPartitionKeyComponent>();
+            foreach (Documents.Routing.IPartitionKeyComponent item in existingComponents)
+            {
+                allComponentsList.Add(item); 
+            }
+
+            foreach (Documents.Routing.IPartitionKeyComponent item in idPath.InternalKey.Components)
+            {
+                allComponentsList.Add(item);
+            }
+
+            Documents.Routing.PartitionKeyInternal partitionKeyInternal = new Documents.Routing.PartitionKeyInternal(allComponentsList);
+
+            partitionKey = new PartitionKey(partitionKeyInternal);
+
+            return partitionKey;
+        }
     }
 }

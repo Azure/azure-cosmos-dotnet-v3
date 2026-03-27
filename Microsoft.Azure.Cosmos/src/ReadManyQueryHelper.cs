@@ -131,8 +131,11 @@ namespace Microsoft.Azure.Cosmos
             IDictionary<PartitionKeyRange, List<(string, PartitionKey)>> partitionKeyRangeItemMap = new
                 Dictionary<PartitionKeyRange, List<(string, PartitionKey)>>();
 
-            foreach ((string id, PartitionKey pk) item in items)
+            foreach ((string id, PartitionKey pk) in items)
             {
+                PartitionKey? partitionKey = await this.container.EnsureIdGetAppendedtoPartitionKeyIfneededAsync(pk, id, cancellationToken);
+                (string id, PartitionKey pk) item = (id, partitionKey.Value);
+
                 Documents.Routing.PartitionKeyInternal partitionKeyInternal = 
                             await this.GetPartitionKeyInternalAsync(item.pk, trace, cancellationToken);
                 string effectivePartitionKeyValue = partitionKeyInternal.GetEffectivePartitionKeyString(this.partitionKeyDefinition);

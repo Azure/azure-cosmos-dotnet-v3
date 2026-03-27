@@ -297,6 +297,14 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
         }
+
+        internal async Task UpdatePartitionKeyIfRequiredAsync(ContainerInternal cosmosContainer, ITrace trace, CancellationToken cancellationToken)
+        {
+            this.PartitionKey = await cosmosContainer.EnsureIdGetAppendedtoPartitionKeyIfneededAsync(
+                    this.PartitionKey,
+                    this.Id,
+                    cancellationToken);
+        }
     }
 
 #pragma warning disable SA1402 // File may only contain a single type

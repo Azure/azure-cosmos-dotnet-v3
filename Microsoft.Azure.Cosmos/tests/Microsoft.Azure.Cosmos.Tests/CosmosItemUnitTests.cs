@@ -6,10 +6,13 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.IO;
+    using System.IO.Compression;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -1195,6 +1198,421 @@ namespace Microsoft.Azure.Cosmos.Tests
                 });
 
             return mockedExecutor;
+        }
+
+        private static Mock<ContainerCore> CreateMockContainerCore()
+        {
+            Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
+            mockContext
+                .Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+                .Returns("/dbs/myDb/colls/myContainer");
+
+            Mock<DatabaseInternal> mockDb = new Mock<DatabaseInternal>();
+            mockDb.Setup(x => x.LinkUri).Returns("/dbs/myDb");
+
+            Mock<CosmosQueryClient> mockQueryClient = new Mock<CosmosQueryClient>();
+
+            Mock<ContainerCore> mock = new Mock<ContainerCore>(
+                MockBehavior.Loose,
+                mockContext.Object,
+                mockDb.Object,
+                "myContainer",
+                mockQueryClient.Object)
+            {
+                CallBase = true
+            };
+
+            return mock;
+        }
+
+        private static void SetupGetCachedContainerProperties(
+            Mock<ContainerCore> mockContainerCore,
+            ContainerProperties containerProperties)
+        {
+            mockContainerCore
+                .Setup(x => x.GetCachedContainerPropertiesAsync(
+                    It.IsAny<bool>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(containerProperties);
+        }
+
+        [TestMethod]
+        public async Task EnsureIdGetAppended_NonMultiHashPartitionKey_ReturnsOriginalPartitionKey()
+        {
+            Mock<ContainerCore> mockContainerCore = CreateMockContainerCore();
+            ContainerProperties containerProperties = new ContainerProperties("myContainer", "/pk");
+            SetupGetCachedContainerProperties(mockContainerCore, containerProperties);
+
+            Cosmos.PartitionKey originalPk = new PartitionKeyBuilder().Add("pkValue").Build();
+
+            Cosmos.PartitionKey? result = await mockContainerCore.Object.EnsureIdGetAppendedtoPartitionKeyIfneededAsync(
+                originalPk,
+                "someItemId",
+                CancellationToken.None);
+
+            Assert.IsNotNull(result);
+            Assert.AreEqual(originalPk.ToString(), result.Value.ToString());
+        }
+
+        [TestMethod]
+        public async Task EnsureIdGetAppended_MultiHashWithoutIdAsLastPath_ReturnsOriginalPartitionKey()
+        {
+            Mock<ContainerCore> mockContainerCore = CreateMockContainerCore();
+            ContainerProperties containerProperties = new ContainerProperties()
+            {
+                Id = "myContainer",
+                PartitionKey = new PartitionKeyDefinition()
+                {
+                    Paths = new Collection<string> { "/tenantId", "/userId" },
+                    Kind = PartitionKind.MultiHash
+                }
+            };
+            SetupGetCachedContainerProperties(mockContainerCore, containerProperties);
+
+            Cosmos.PartitionKey originalPk = new PartitionKeyBuilder()
+                .Add("tenant1")
+                .Add("user1")
+                .Build();
+
+            Cosmos.PartitionKey? result = await mockContainerCore.Object.EnsureIdGetAppendedtoPartitionKeyIfneededAsync(
+                originalPk,
+                "someItemId",
+                CancellationToken.None);
+
+            Assert.IsNotNull(result);
+            Assert.AreEqual(originalPk.ToString(), result.Value.ToString());
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public async Task EnsureIdGetAppended_NullItemId_ThrowsArgumentException()
+        {
+            Mock<ContainerCore> mockContainerCore = CreateMockContainerCore();
+            ContainerProperties containerProperties = new ContainerProperties()
+            {
+                Id = "myContainer",
+                PartitionKey = new PartitionKeyDefinition()
+                {
+                    Paths = new Collection<string> { "/tenantId", "/id" },
+                    Kind = PartitionKind.MultiHash
+                }
+            };
+            SetupGetCachedContainerProperties(mockContainerCore, containerProperties);
+
+            await mockContainerCore.Object.EnsureIdGetAppendedtoPartitionKeyIfneededAsync(
+                new PartitionKeyBuilder().Add("tenant1").Build(),
+                null,
+                CancellationToken.None);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public async Task EnsureIdGetAppended_EmptyItemId_ThrowsArgumentException()
+        {
+            Mock<ContainerCore> mockContainerCore = CreateMockContainerCore();
+            ContainerProperties containerProperties = new ContainerProperties()
+            {
+                Id = "myContainer",
+                PartitionKey = new PartitionKeyDefinition()
+                {
+                    Paths = new Collection<string> { "/tenantId", "/id" },
+                    Kind = PartitionKind.MultiHash
+                }
+            };
+            SetupGetCachedContainerProperties(mockContainerCore, containerProperties);
+
+            await mockContainerCore.Object.EnsureIdGetAppendedtoPartitionKeyIfneededAsync(
+                new PartitionKeyBuilder().Add("tenant1").Build(),
+                string.Empty,
+                CancellationToken.None);
+        }
+
+        [TestMethod]
+        public async Task EnsureIdGetAppended_PartitionKeyWithCorrectComponentCount_AppendsId()
+        {
+            Mock<ContainerCore> mockContainerCore = CreateMockContainerCore();
+            ContainerProperties containerProperties = new ContainerProperties()
+            {
+                Id = "myContainer",
+                PartitionKey = new PartitionKeyDefinition()
+                {
+                    Paths = new Collection<string> { "/tenantId", "/id" },
+                    Kind = PartitionKind.MultiHash
+                }
+            };
+            SetupGetCachedContainerProperties(mockContainerCore, containerProperties);
+
+            Cosmos.PartitionKey originalPk = new PartitionKeyBuilder().Add("tenant1").Build();
+
+            Cosmos.PartitionKey? result = await mockContainerCore.Object.EnsureIdGetAppendedtoPartitionKeyIfneededAsync(
+                originalPk,
+                "item123",
+                CancellationToken.None);
+
+            Assert.IsNotNull(result);
+
+            Cosmos.PartitionKey expected = new PartitionKeyBuilder()
+                .Add("tenant1")
+                .Add("item123")
+                .Build();
+            Assert.AreEqual(expected.ToString(), result.Value.ToString());
+        }
+
+        [TestMethod]
+        public async Task EnsureIdGetAppended_PartitionKeyWithWrongComponentCount_ReturnsOriginalPartitionKey()
+        {
+            Mock<ContainerCore> mockContainerCore = CreateMockContainerCore();
+            ContainerProperties containerProperties = new ContainerProperties()
+            {
+                Id = "myContainer",
+                PartitionKey = new PartitionKeyDefinition()
+                {
+                    Paths = new Collection<string> { "/tenantId", "/category", "/id" },
+                    Kind = PartitionKind.MultiHash
+                }
+            };
+            SetupGetCachedContainerProperties(mockContainerCore, containerProperties);
+
+            Cosmos.PartitionKey originalPk = new PartitionKeyBuilder().Add("tenant1").Build();
+
+            Cosmos.PartitionKey? result = await mockContainerCore.Object.EnsureIdGetAppendedtoPartitionKeyIfneededAsync(
+                originalPk,
+                "item123",
+                CancellationToken.None);
+
+            Assert.IsNotNull(result);
+            Assert.AreEqual(originalPk.ToString(), result.Value.ToString());
+        }
+
+        [TestMethod]
+        public async Task EnsureIdGetAppended_NullPartitionKey_CreatesPartitionKeyWithId()
+        {
+            Mock<ContainerCore> mockContainerCore = CreateMockContainerCore();
+            ContainerProperties containerProperties = new ContainerProperties()
+            {
+                Id = "myContainer",
+                PartitionKey = new PartitionKeyDefinition()
+                {
+                    Paths = new Collection<string> { "/tenantId", "/id" },
+                    Kind = PartitionKind.MultiHash
+                }
+            };
+            SetupGetCachedContainerProperties(mockContainerCore, containerProperties);
+
+            Cosmos.PartitionKey? result = await mockContainerCore.Object.EnsureIdGetAppendedtoPartitionKeyIfneededAsync(
+                null,
+                "item123",
+                CancellationToken.None);
+
+            Assert.IsNotNull(result);
+
+            Cosmos.PartitionKey expected = new PartitionKeyBuilder().AddNullValue().Add("item123").Build();
+            Assert.AreEqual(expected.ToString(), result.Value.ToString());
+        }
+
+        [TestMethod]
+        public async Task EnsureIdGetAppended_ThreeLevelHPK_AppendsIdCorrectly()
+        {
+            Mock<ContainerCore> mockContainerCore = CreateMockContainerCore();
+            ContainerProperties containerProperties = new ContainerProperties()
+            {
+                Id = "myContainer",
+                PartitionKey = new PartitionKeyDefinition()
+                {
+                    Paths = new Collection<string> { "/tenantId", "/category", "/id" },
+                    Kind = PartitionKind.MultiHash
+                }
+            };
+            SetupGetCachedContainerProperties(mockContainerCore, containerProperties);
+
+            Cosmos.PartitionKey originalPk = new PartitionKeyBuilder()
+                .Add("tenant1")
+                .Add("catA")
+                .Build();
+
+            Cosmos.PartitionKey? result = await mockContainerCore.Object.EnsureIdGetAppendedtoPartitionKeyIfneededAsync(
+                originalPk,
+                "item456",
+                CancellationToken.None);
+
+            Assert.IsNotNull(result);
+
+            Cosmos.PartitionKey expected = new PartitionKeyBuilder()
+                .Add("tenant1")
+                .Add("catA")
+                .Add("item456")
+                .Build();
+            Assert.AreEqual(expected.ToString(), result.Value.ToString());
+        }
+
+        [TestMethod]
+        public async Task EnsureIdGetAppended_PartitionKeyAlreadyHasAllComponents_ReturnsOriginalPartitionKey()
+        {
+            Mock<ContainerCore> mockContainerCore = CreateMockContainerCore();
+            ContainerProperties containerProperties = new ContainerProperties()
+            {
+                Id = "myContainer",
+                PartitionKey = new PartitionKeyDefinition()
+                {
+                    Paths = new Collection<string> { "/tenantId", "/id" },
+                    Kind = PartitionKind.MultiHash
+                }
+            };
+            SetupGetCachedContainerProperties(mockContainerCore, containerProperties);
+
+            Cosmos.PartitionKey originalPk = new PartitionKeyBuilder()
+                .Add("tenant1")
+                .Add("item123")
+                .Build();
+
+            Cosmos.PartitionKey? result = await mockContainerCore.Object.EnsureIdGetAppendedtoPartitionKeyIfneededAsync(
+                originalPk,
+                "item123",
+                CancellationToken.None);
+
+            Assert.IsNotNull(result);
+            Assert.AreEqual(originalPk.ToString(), result.Value.ToString());
+        }
+
+        [TestMethod]
+        public async Task GetItemIdFromStream_NullItemId_MultiHashWithIdPath_ExtractsIdFromSeekableStream()
+        {
+            Mock<ContainerCore> mockContainerCore = CreateMockContainerCore();
+            ContainerProperties containerProperties = new ContainerProperties()
+            {
+                Id = "myContainer",
+                PartitionKey = new PartitionKeyDefinition()
+                {
+                    Paths = new Collection<string> { "/tenantId", "/id" },
+                    Kind = PartitionKind.MultiHash
+                }
+            };
+            SetupGetCachedContainerProperties(mockContainerCore, containerProperties);
+
+            string json = JsonConvert.SerializeObject(new { id = "myItemId", tenantId = "tenant1" });
+            using Stream stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(json));
+            long originalPosition = stream.Position;
+
+            (string resultId, Stream resultStream) = await mockContainerCore.Object.GetItemIdFromStreamIfRequiredAsync(
+                null,
+                stream,
+                CancellationToken.None);
+
+            Assert.AreEqual("myItemId", resultId);
+            Assert.AreSame(stream, resultStream);
+            Assert.AreEqual(originalPosition, resultStream.Position, "Stream position should be restored after reading");
+        }
+
+        [TestMethod]
+        public async Task GetItemIdFromStream_NullItemId_MultiHashWithIdPath_ExtractsIdFromNonSeekableStream()
+        {
+            Mock<ContainerCore> mockContainerCore = CreateMockContainerCore();
+            ContainerProperties containerProperties = new ContainerProperties()
+            {
+                Id = "myContainer",
+                PartitionKey = new PartitionKeyDefinition()
+                {
+                    Paths = new Collection<string> { "/tenantId", "/id" },
+                    Kind = PartitionKind.MultiHash
+                }
+            };
+            SetupGetCachedContainerProperties(mockContainerCore, containerProperties);
+
+            string json = JsonConvert.SerializeObject(new { id = "myItemId", tenantId = "tenant1" });
+            byte[] jsonBytes = System.Text.Encoding.UTF8.GetBytes(json);
+
+            MemoryStream compressed = new MemoryStream();
+            using (GZipStream gzip = new GZipStream(compressed, CompressionMode.Compress, leaveOpen: true))
+            {
+                gzip.Write(jsonBytes, 0, jsonBytes.Length);
+            }
+            compressed.Position = 0;
+
+            using GZipStream nonSeekableStream = new GZipStream(compressed, CompressionMode.Decompress);
+            Assert.IsFalse(nonSeekableStream.CanSeek);
+
+            (string resultId, Stream resultStream) = await mockContainerCore.Object.GetItemIdFromStreamIfRequiredAsync(
+                null,
+                nonSeekableStream,
+                CancellationToken.None);
+
+            Assert.AreEqual("myItemId", resultId);
+            Assert.IsNotNull(resultStream);
+            Assert.IsTrue(resultStream.CanSeek, "Non-seekable stream should be replaced with a seekable MemoryStream");
+        }
+
+        [TestMethod]
+        public async Task GetItemIdFromStream_NonMultiHashPartitionKey_ReturnsOriginalItemIdAndStream()
+        {
+            Mock<ContainerCore> mockContainerCore = CreateMockContainerCore();
+            ContainerProperties containerProperties = new ContainerProperties("myContainer", "/pk");
+            SetupGetCachedContainerProperties(mockContainerCore, containerProperties);
+
+            string json = JsonConvert.SerializeObject(new { id = "myItemId", pk = "pkValue" });
+            using Stream stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(json));
+
+            (string resultId, Stream resultStream) = await mockContainerCore.Object.GetItemIdFromStreamIfRequiredAsync(
+                null,
+                stream,
+                CancellationToken.None);
+
+            Assert.IsNull(resultId);
+            Assert.AreSame(stream, resultStream);
+        }
+
+        [TestMethod]
+        public async Task GetItemIdFromStream_ItemIdAlreadyProvided_ReturnsProvidedIdWithoutReadingStream()
+        {
+            Mock<ContainerCore> mockContainerCore = CreateMockContainerCore();
+            ContainerProperties containerProperties = new ContainerProperties()
+            {
+                Id = "myContainer",
+                PartitionKey = new PartitionKeyDefinition()
+                {
+                    Paths = new Collection<string> { "/tenantId", "/id" },
+                    Kind = PartitionKind.MultiHash
+                }
+            };
+            SetupGetCachedContainerProperties(mockContainerCore, containerProperties);
+
+            string json = JsonConvert.SerializeObject(new { id = "streamId", tenantId = "tenant1" });
+            using Stream stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(json));
+
+            (string resultId, Stream resultStream) = await mockContainerCore.Object.GetItemIdFromStreamIfRequiredAsync(
+                "existingId",
+                stream,
+                CancellationToken.None);
+
+            Assert.AreEqual("existingId", resultId);
+            Assert.AreSame(stream, resultStream);
+        }
+
+        [TestMethod]
+        public async Task GetItemIdFromStream_StreamWithNoIdField_ReturnsNullId()
+        {
+            Mock<ContainerCore> mockContainerCore = CreateMockContainerCore();
+            ContainerProperties containerProperties = new ContainerProperties()
+            {
+                Id = "myContainer",
+                PartitionKey = new PartitionKeyDefinition()
+                {
+                    Paths = new Collection<string> { "/tenantId", "/id" },
+                    Kind = PartitionKind.MultiHash
+                }
+            };
+            SetupGetCachedContainerProperties(mockContainerCore, containerProperties);
+
+            string json = JsonConvert.SerializeObject(new { tenantId = "tenant1", name = "test" });
+            using Stream stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(json));
+
+            (string resultId, Stream resultStream) = await mockContainerCore.Object.GetItemIdFromStreamIfRequiredAsync(
+                null,
+                stream,
+                CancellationToken.None);
+
+            Assert.IsNull(resultId);
+            Assert.IsNotNull(resultStream);
         }
     }
 }
