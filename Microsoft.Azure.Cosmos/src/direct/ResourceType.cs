@@ -82,6 +82,11 @@ namespace Microsoft.Azure.Documents
 
         EncryptionScope = 156,
 
+        AzureRbac = 167,
+
+        // Distributed transaction resource type
+        DistributedTransactionBatch = 168,
+
         // These names make it unclear what they map to in ResourceType.
         Key = -2,
         Media = -3,
@@ -95,9 +100,7 @@ namespace Microsoft.Azure.Documents
 
     internal static class ResourceTypeExtensions
     {
-#pragma warning disable IDE0044 // Add readonly modifier
         private static Dictionary<int, string> resourceTypeNames = new Dictionary<int, string>();
-#pragma warning restore IDE0044 // Add readonly modifier
 
         static ResourceTypeExtensions()
         {

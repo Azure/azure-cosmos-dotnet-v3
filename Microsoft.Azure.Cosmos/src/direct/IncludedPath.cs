@@ -86,6 +86,37 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+#if !COSMOSCLIENT
+        /// <summary>
+        /// Gets or sets whether this is a full index used for collection types.
+        /// </summary>
+
+        [JsonProperty(
+            PropertyName = Constants.Properties.IsFullIndex, NullValueHandling = NullValueHandling.Ignore)]
+        public bool? IsFullIndex
+        {
+            get
+            {
+                bool? result = null;
+                string strValue = base.GetValue<string>(Constants.Properties.IsFullIndex);
+                if (!string.IsNullOrEmpty(strValue))
+                {
+                    result = Convert.ToBoolean(strValue, CultureInfo.InvariantCulture);
+                }
+                return result;
+            }
+            set
+            {
+                // Only persist when value is specified; remove otherwise
+                if (value.HasValue)
+                {
+                    base.SetValue(Constants.Properties.IsFullIndex, value.Value);
+                }
+            }
+        }
+
+#endif
+
         internal override void Validate()
         {
             base.Validate();
@@ -117,7 +148,10 @@ namespace Microsoft.Azure.Documents
         {
             IncludedPath cloned = new IncludedPath()
             {
-                Path = this.Path
+                Path = this.Path,
+#if !COSMOSCLIENT
+                IsFullIndex = this.IsFullIndex
+#endif
             };
 
             foreach (Index item in this.Indexes)

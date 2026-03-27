@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Documents.Rntbd
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using System.Security.Cryptography.X509Certificates;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents.FaultInjection;
     using Microsoft.Azure.Documents.Telemetry;
@@ -97,6 +98,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                     clientOptions.EnableChannelMultiplexing,
                     clientOptions.MemoryStreamPool,
                     clientOptions.RemoteCertificateValidationCallback,
+                    clientOptions.ClientCertificateFunction,
+                    clientOptions.ClientCertificateFailureHandler,
                     clientOptions.DnsResolutionFunction),
                 chaosInterceptor);
         }
@@ -354,6 +357,17 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         public event Action OnDisableRntbdChannel;
 
+        public Func<bool> IsDisableRntbdChannelActionRegistered
+        {
+            get
+            {
+                return () =>
+                {
+                    return (this.OnDisableRntbdChannel != null);
+                };
+            }
+        }
+
         // Examines storeResponse and raises an event if this is the first time
         // this transport client sees the "disable RNTBD channel" header set to
         // true by the back-end.
@@ -512,6 +526,10 @@ namespace Microsoft.Azure.Documents.Rntbd
             public int MaxConcurrentOpeningConnectionCount { get; set; }
 
             public RemoteCertificateValidationCallback RemoteCertificateValidationCallback { get; internal set; }
+
+            public Func<string, X509Certificate2> ClientCertificateFunction { get; internal set; }
+
+            public Action<string, Exception> ClientCertificateFailureHandler { get; internal set; }
 
             /// <summary>
             /// Override for DNS resolution callbacks for RNTBD connections.

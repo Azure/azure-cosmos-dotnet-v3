@@ -244,7 +244,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
 
         [TestMethod]
         [Timeout(5000)]
-        [Ignore]
         public void TraceData()
         {
             List<Input> inputs = new List<Input>();
@@ -764,6 +763,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 allRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
                 isContinuationExpected: true,
                 maxConcurrency: 10,
+                fullTextScoreScope: FullTextScoreScope.Global,
                 requestContinuationToken: state);
 
             tryCreatePipeline.ThrowIfFailed();
@@ -906,6 +906,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
 
             public IReadOnlyDictionary<string, object> Data => this.data;
 
+            public bool IsBeingWalked => true; // needs to return true to allow materialization
+
             public IReadOnlyList<(string, Uri)> RegionsContacted => new List<(string, Uri)>();
 
             public void AddDatum(string key, TraceDatum traceDatum)
@@ -952,6 +954,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             public void AddOrUpdateDatum(string key, object value)
             {
                 this.data[key] = value;
+            }
+
+            bool ITrace.TryGetDatum(string key, out object datum)
+            {
+                return this.data.TryGetValue(key, out datum);
             }
         }
     }

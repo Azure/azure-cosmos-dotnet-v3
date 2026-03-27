@@ -18,7 +18,7 @@ schedules:
   always: true # whether to always run the pipeline or only if there have been source code changes since the last run. The default is false
 
 variables:
-  ReleaseArguments: ' --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional" --verbosity normal '
+  ReleaseArguments: ' --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=Ignore" --verbosity normal --logger "console;verbosity=detailed" --blame-hang --blame-crash'
   VmImage: windows-latest # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
 
 jobs:

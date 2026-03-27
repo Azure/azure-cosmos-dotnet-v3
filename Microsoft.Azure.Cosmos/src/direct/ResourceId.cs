@@ -550,6 +550,30 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+        public ulong AzureRbac
+        {
+            get;
+            private set;
+        }
+
+        public ResourceId AzureRbacId
+        {
+            get
+            {
+                ResourceId rid = new ResourceId();
+                rid.AzureRbac = this.AzureRbac;
+                return rid;
+            }
+        }
+
+        public bool IsAzureRbacId
+        {
+            get
+            {
+                return this.AzureRbac != 0;
+            }
+        }
+
         public byte[] Value
         {
             get
@@ -568,6 +592,8 @@ namespace Microsoft.Azure.Documents
                 else if (this.AuthPolicyElement > 0)
                     len += ResourceId.RbacResourceIdLength;
                 else if (this.InteropUser > 0)
+                    len += ResourceId.RbacResourceIdLength;
+                else if (this.AzureRbac > 0)
                     len += ResourceId.RbacResourceIdLength;
                 else if (this.Database > 0)
                     len += 4;
@@ -609,6 +635,11 @@ namespace Microsoft.Azure.Documents
                 {
                     ResourceId.BlockCopy(BitConverter.GetBytes(this.InteropUser), 0, val, 0, ResourceId.RbacResourceIdLength);
                     ResourceId.BlockCopy(BitConverter.GetBytes(0x2000), 0, val, 4, 2);
+                }
+                else if (this.AzureRbac > 0)
+                {
+                    ResourceId.BlockCopy(BitConverter.GetBytes(this.AzureRbac), 0, val, 0, ResourceId.RbacResourceIdLength);
+                    ResourceId.BlockCopy(BitConverter.GetBytes(0x4000), 0, val, 4, 2);
                 }
 
                 if (this.DocumentCollection > 0)
@@ -729,6 +760,14 @@ namespace Microsoft.Azure.Documents
             return new ResourceId()
             {
                 InteropUser = interopUserId
+            };
+        }
+
+        public static ResourceId NewAzureRbacId(ulong azureRbacId)
+        {
+            return new ResourceId()
+            {
+                AzureRbac = azureRbacId
             };
         }
 
@@ -974,6 +1013,10 @@ namespace Microsoft.Azure.Documents
 
                         case RbacResourceType.RbacResourceType_InteropUser:
                             rid.InteropUser = rbacResourceId;
+                            break;
+
+                        case RbacResourceType.RbacResourceType_AzureRbac:
+                            rid.AzureRbac = rbacResourceId;
                             break;
 
                         default:
@@ -1287,6 +1330,7 @@ namespace Microsoft.Azure.Documents
             RbacResourceType_RoleAssignment = 0x10,
             RbacResourceType_InteropUser = 0x20,
             RbacResourceType_AuthPolicyElement  = 0x30,
+            RbacResourceType_AzureRbac = 0x40,
         }
     }
 }

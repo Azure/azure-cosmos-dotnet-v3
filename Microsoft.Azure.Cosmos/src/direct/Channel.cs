@@ -54,6 +54,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                 channelProperties.EnableChannelMultiplexing,
                 channelProperties.MemoryStreamPool,
                 channelProperties.RemoteCertificateValidationCallback,
+                channelProperties.ClientCertificateFunction,
+                channelProperties.ClientCertificateFailureHandler,
                 channelProperties.DnsResolutionFunction,
                 chaosInterceptor);
             this.timerPool = channelProperties.RequestTimerPool;
@@ -556,14 +558,22 @@ namespace Microsoft.Azure.Documents.Rntbd
             Task ignored = runawayTask.ContinueWith(task =>
             {
                 Trace.CorrelationManager.ActivityId = activityId;
-                Debug.Assert(task.IsFaulted);
-                Debug.Assert(task.Exception != null);
-                Exception e = task.Exception.InnerException;
-                DefaultTrace.TraceInformation(
-                    "[RNTBD Channel {0}] Timed out task completed. Activity ID = {1}. HRESULT = {2:X}. Exception: {3}",
-                    connectionCorrelationId, activityId, e?.HResult, e?.Message);
+
+                if (task.IsFaulted && task.Exception != null)
+                {
+                    Exception e = task.Exception.InnerException;
+                    DefaultTrace.TraceInformation(
+                        "[RNTBD Channel {0}] Timed out task completed with fault. Activity ID = {1}. HRESULT = {2:X}. Exception: {3}",
+                        connectionCorrelationId, activityId, e?.HResult, e?.Message);
+                }
+                else if (task.IsCanceled)
+                {
+                    DefaultTrace.TraceInformation(
+                        "[RNTBD Channel {0}] Timed out task completed with cancellation. Activity ID = {1}.",
+                        connectionCorrelationId, activityId);
+                }
             },
-            TaskContinuationOptions.OnlyOnFaulted);
+            TaskContinuationOptions.NotOnRanToCompletion); // Captures both faulted and canceled states
         }
 
         private enum State

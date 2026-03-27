@@ -15,9 +15,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         private readonly ChannelProperties channelProperties;
         private bool disposed = false;
 
-#pragma warning disable IDE0044 // Add readonly modifier
         private ConcurrentDictionary<ServerKey, IChannel> channels =
-#pragma warning restore IDE0044 // Add readonly modifier
             new ConcurrentDictionary<ServerKey, IChannel>();
 
         private readonly IChaosInterceptor chaosInterceptor;

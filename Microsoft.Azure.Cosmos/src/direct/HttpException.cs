@@ -27,15 +27,35 @@ namespace Microsoft.Azure.Documents
     public
 #endif
     class DocumentClientException : Exception
+#if COSMOSCLIENT
+                                        , ICloneable
+#endif
     {
         private Error error;
         private SubStatusCodes? substatus = null;
-#pragma warning disable IDE0044 // Add readonly modifier
         private INameValueCollection responseHeaders;
         private string rawErrorMessage;
         private Boolean rawErrorMessageOnly;
         private bool skippingStackTraceCapture = false;
-#pragma warning restore IDE0044 // Add readonly modifier
+
+
+        private readonly static HashSet<string> SensitiveHeaders = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            HttpConstants.HttpHeaders.Authorization,
+            HttpConstants.HttpHeaders.FabricS2SToken,
+            HttpConstants.HttpHeaders.OriginalAadToken,
+            HttpConstants.HttpHeaders.GatewaySignature,
+            HttpConstants.HttpHeaders.SignedOboToken,
+            HttpConstants.HttpHeaders.ProxyAuthenticate,
+            HttpConstants.HttpHeaders.ProxyAuthorization,
+        };
+
+        private readonly static List<string> SensitiveWordsInHeader = new List<string>
+        {
+            "authorization",
+            "token",
+            "signature"
+        };
 
         internal DocumentClientException(Error errorResource,
             HttpResponseHeaders responseHeaders,
@@ -444,37 +464,38 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+        /// <summary>
+        /// Gets a public-facing message that describes the current exception from the Azure Cosmos DB service.
+        /// </summary>
+        /// <remarks>
+        /// This property is intended for external consumption and differs from the Message property in that:
+        /// - It excludes internal diagnostic information like RequestStatistics for security/privacy reasons
+        /// - It maintains the same format with RequestUri and UserAgent information
+        /// - It's used in scenarios where exception details are exposed to external callers
+        /// 
+        /// Historical context: RequestStatistics was removed from this property to prevent leaking internal
+        /// diagnostic information in public-facing error messages while keeping it available in the 
+        /// internal Message property for debugging purposes.
+        /// </remarks>
         internal virtual string PublicMessage
         {
             get
             {
-                string requestStatisticsMessage = this.RequestStatistics == null ? string.Empty : this.RequestStatistics.ToString();
                 if (this.RequestUri != null)
                 {
                     return string.Format(CultureInfo.CurrentUICulture,
                         RMResources.ExceptionMessageAddRequestUri,
                         base.Message,
                         this.RequestUri.PathAndQuery,
-                        requestStatisticsMessage,
+                        string.Empty,
                         CustomTypeExtensions.GenerateBaseUserAgentString());
                 }
                 else
                 {
-                    if (string.IsNullOrEmpty(requestStatisticsMessage))
-                    {
-                        return string.Format(CultureInfo.CurrentCulture,
-                            "{0}, {1}",
-                            base.Message,
-                            CustomTypeExtensions.GenerateBaseUserAgentString());
-                    }
-                    else
-                    {
-                        return string.Format(CultureInfo.CurrentUICulture,
-                            "{0}, {1}, {2}",
-                            base.Message,
-                            requestStatisticsMessage,
-                            CustomTypeExtensions.GenerateBaseUserAgentString());
-                    }
+                    return string.Format(CultureInfo.CurrentCulture,
+                        "{0}, {1}",
+                        base.Message,
+                        CustomTypeExtensions.GenerateBaseUserAgentString());
                 }
             }
         }
@@ -559,7 +580,7 @@ namespace Microsoft.Azure.Documents
 
             // If we're making this exception on the client side using the message from the Gateway,
             // the message may already have activityId stamped in it. If so, just use the message as-is
-            if (message.Contains(activityId))
+            if (message == null || message.Contains(activityId))
             {
                 return message;
             }
@@ -579,6 +600,11 @@ namespace Microsoft.Azure.Documents
 
             foreach (KeyValuePair<string, IEnumerable<string>> pair in responseHeaders)
             {
+                if (IsSensitiveHeader(pair.Key))
+                {
+                    continue;
+                }
+
                 foreach (string value in pair.Value)
                 {
                     result.Append(string.Format(CultureInfo.InvariantCulture,
@@ -655,6 +681,11 @@ namespace Microsoft.Azure.Documents
 
             foreach (Tuple<string, string> item in items)
             {
+                if (IsSensitiveHeader(item.Item1))
+                {
+                    continue;
+                }
+
                 result.Append(string.Format(CultureInfo.InvariantCulture,
                     "\"{0}\": \"{1}\",{2}",
                     item.Item1,
@@ -665,5 +696,27 @@ namespace Microsoft.Azure.Documents
             result.Append("}");
             return result.ToString();
         }
+
+        private static bool IsSensitiveHeader(string headerName)
+        {
+            if (string.IsNullOrEmpty(headerName))
+            {
+                return false;
+            }
+            
+            if (SensitiveHeaders.Contains(headerName))
+            {
+                return true;
+            }
+
+            return SensitiveWordsInHeader.Any(keyword => headerName.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0);
+        }
+
+#if COSMOSCLIENT
+        public object Clone()
+        {
+            return this.MemberwiseClone();
+        }
+#endif
     }
 }

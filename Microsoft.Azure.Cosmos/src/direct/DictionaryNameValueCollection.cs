@@ -11,9 +11,7 @@ namespace Microsoft.Azure.Documents.Collections
 
     internal sealed class DictionaryNameValueCollection: INameValueCollection
     {
-#pragma warning disable IDE0044 // Add readonly modifier
         private static StringComparer defaultStringComparer = StringComparer.OrdinalIgnoreCase;
-#pragma warning restore IDE0044 // Add readonly modifier
         private readonly Dictionary<string, CompositeValue> dictionary;
         private CompositeValue nullValue;
 
@@ -323,9 +321,7 @@ namespace Microsoft.Azure.Documents.Collections
         /// </summary>
         private class CompositeValue
         {
-#pragma warning disable IDE0044 // Add readonly modifier
             private List<string> values;
-#pragma warning restore IDE0044 // Add readonly modifier
 
             internal CompositeValue()
             {

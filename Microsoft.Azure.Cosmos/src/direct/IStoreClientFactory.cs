@@ -19,7 +19,6 @@ namespace Microsoft.Azure.Documents
             bool useMultipleWriteLocations = false,
             bool detectClientConnectivityIssues = false,
             bool enableReplicaValidation = false,
-            AccountConfigurationProperties accountConfigurationProperties = null,
             ISessionRetryOptions sessionRetryOptions = null);
 
         IConnectionStateListener GetConnectionStateListener();

@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Documents
     using System.Diagnostics;
     using System.Net.Security;
     using System.Threading.Tasks;
+    using System.Security.Cryptography.X509Certificates;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.FaultInjection;
@@ -21,9 +22,7 @@ namespace Microsoft.Azure.Documents
         private readonly bool disableRetryWithRetryPolicy;
         private TransportClient transportClient;
         private TransportClient fallbackTransportClient;
-#pragma warning disable IDE0044 // Add readonly modifier
         private IConnectionStateListener connectionStateListener;
-#pragma warning restore IDE0044 // Add readonly modifier
 
         public StoreClientFactory(
             Protocol protocol,
@@ -52,6 +51,8 @@ namespace Microsoft.Azure.Documents
             int rntbdMaxConcurrentOpeningConnectionCount = ushort.MaxValue, // Optional for Rntbd
             MemoryStreamPool memoryStreamPool = null,
             RemoteCertificateValidationCallback remoteCertificateValidationCallback = null,
+            Func<string, X509Certificate2> clientCertificateFunction = null,
+            Action<string, Exception> clientCertificateFailureHandler = null,
             Func<string, Task<System.Net.IPAddress>> dnsResolutionFunction = null,  // optional override
             DistributedTracingOptions distributedTracingOptions = null, // Distributed Tracing Configuration
             IChaosInterceptor chaosInterceptor = null) // Fault Injection
@@ -196,6 +197,11 @@ namespace Microsoft.Azure.Documents
                     sendHangDetectionTimeSeconds = maxSendHangDetectionTimeSeconds;
                 }
 
+                if (clientCertificateFunction is null && clientCertificateFailureHandler is not null)
+                { 
+                    DefaultTrace.TraceWarning("Passed a clientCertificateFailureHandler without a clientCertificateFunction.");
+                }
+
                 StoreClientFactory.ValidateRntbdMaxConcurrentOpeningConnectionCount(ref rntbdMaxConcurrentOpeningConnectionCount);
 
                 this.transportClient = new Rntbd.TransportClient(
@@ -221,6 +227,8 @@ namespace Microsoft.Azure.Documents
                         MaxConcurrentOpeningConnectionCount = rntbdMaxConcurrentOpeningConnectionCount,
                         MemoryStreamPool = memoryStreamPool,
                         RemoteCertificateValidationCallback = remoteCertificateValidationCallback,
+                        ClientCertificateFunction = clientCertificateFunction,
+                        ClientCertificateFailureHandler = clientCertificateFailureHandler,
                         DnsResolutionFunction = dnsResolutionFunction,
                         DistributedTracingOptions = distributedTracingOptions
                     },
@@ -249,6 +257,8 @@ namespace Microsoft.Azure.Documents
                         MaxConcurrentOpeningConnectionCount = rntbdMaxConcurrentOpeningConnectionCount,
                         MemoryStreamPool = memoryStreamPool,
                         RemoteCertificateValidationCallback = remoteCertificateValidationCallback,
+                        ClientCertificateFunction = clientCertificateFunction,
+                        ClientCertificateFailureHandler = clientCertificateFailureHandler,
                         DnsResolutionFunction = dnsResolutionFunction,
                         DistributedTracingOptions = distributedTracingOptions
                     },
@@ -316,7 +326,6 @@ namespace Microsoft.Azure.Documents
             bool useMultipleWriteLocations = false,
             bool detectClientConnectivityIssues = false,
             bool enableReplicaValidation = false,
-            AccountConfigurationProperties accountConfigurationProperties = null,
             ISessionRetryOptions sessionRetryOptions = null)
         {
             this.ThrowIfDisposed();
@@ -337,7 +346,6 @@ namespace Microsoft.Azure.Documents
                 disableRetryWithRetryPolicy: this.disableRetryWithRetryPolicy,
                 retryWithConfiguration: this.retryWithConfiguration,
                 enableReplicaValidation: enableReplicaValidation,
-                accountConfigurationProperties: accountConfigurationProperties,
                 sessionRetryOptions: sessionRetryOptions);
             }
 
@@ -346,7 +354,6 @@ namespace Microsoft.Azure.Documents
                 sessionContainer: sessionContainer,
                 serviceConfigurationReader: serviceConfigurationReader,
                 userTokenProvider: authorizationTokenProvider,
-                accountConfigurationProperties: accountConfigurationProperties,
                 protocol: this.protocol,
                 transportClient: this.transportClient,
                 enableRequestDiagnostics: enableRequestDiagnostics,

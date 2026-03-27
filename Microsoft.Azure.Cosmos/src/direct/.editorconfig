@@ -1,0 +1,23 @@
+# Suppress StyleCop rules for synced msdata/direct files
+[*.cs]
+dotnet_diagnostic.SA1000.severity = none
+dotnet_diagnostic.SA1001.severity = none
+dotnet_diagnostic.SA1002.severity = none
+dotnet_diagnostic.SA1003.severity = none
+dotnet_diagnostic.SA1008.severity = none
+dotnet_diagnostic.SA1025.severity = none
+dotnet_diagnostic.SA1027.severity = none
+dotnet_diagnostic.SA1108.severity = none
+dotnet_diagnostic.SA1122.severity = none
+dotnet_diagnostic.SA1127.severity = none
+dotnet_diagnostic.SA1137.severity = none
+dotnet_diagnostic.SA1203.severity = none
+dotnet_diagnostic.SA1310.severity = none
+dotnet_diagnostic.SA1500.severity = none
+dotnet_diagnostic.SA1505.severity = none
+dotnet_diagnostic.SA1507.severity = none
+dotnet_diagnostic.SA1518.severity = none
+dotnet_diagnostic.SA1616.severity = none
+dotnet_diagnostic.SA1626.severity = none
+dotnet_diagnostic.SA1627.severity = none
+dotnet_diagnostic.SA1649.severity = none

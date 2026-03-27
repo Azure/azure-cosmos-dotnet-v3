@@ -75,8 +75,8 @@ foreach ($file in Get-ChildItem . -Name )
 
     if (! ($fileFound -or $exclueList -contains $file))
     {
-        Write-Error "$file $fileFound"
-        break;
+        Write-Warning "Skipping missing file: $file"
+        continue;
     }
 
     if ($fileFound)

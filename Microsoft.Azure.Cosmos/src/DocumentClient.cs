@@ -116,8 +116,8 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Default thresholds for PPAF request hedging.
         /// </summary>
-        private const int DefaultHedgingThresholdInMilliseconds = 1000;
-        private const int DefaultHedgingThresholdStepInMilliseconds = 500;
+        internal const int DefaultHedgingThresholdInMilliseconds = 1000;
+        internal const int DefaultHedgingThresholdStepInMilliseconds = 500;
 
         private static readonly char[] resourceIdOrFullNameSeparators = new char[] { '/' };
         private static readonly char[] resourceIdSeparators = new char[] { '/', '\\', '?', '#' };
@@ -135,7 +135,8 @@ namespace Microsoft.Azure.Cosmos
         //Auth
         internal readonly AuthorizationTokenProvider cosmosAuthorization;
 
-        private bool isThinClientEnabled = ConfigurationManager.IsThinClientEnabled(defaultValue: false);
+        private readonly bool isThinClientFeatureFlagEnabled = ConfigurationManager.IsThinClientEnabled(defaultValue: false);
+        internal bool isThinClientEnabled;
 
         // Gateway has backoff/retry logic to hide transient errors.
         private RetryPolicy retryPolicy;
@@ -170,6 +171,7 @@ namespace Microsoft.Azure.Cosmos
 
         //Private state.
         private bool isSuccessfullyInitialized;
+        private bool isDisposing;
         private bool isDisposed;
 
         // creator of TransportClient is responsible for disposing it.
@@ -456,6 +458,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cosmosClientTelemetryOptions">This is distributed tracing flag</param>
         /// <param name="chaosInterceptorFactory">This is the chaos interceptor used for fault injection</param>
         /// <param name="enableAsyncCacheExceptionNoSharing">A boolean flag indicating if stack trace optimization is enabled.</param>
+        /// <param name="useLengthAwareRangeComparer">A boolean flag indicating if length-aware range comparators should be used for EPK range comparisons.</param>
         /// <remarks>
         /// The service endpoint can be obtained from the Azure Management Portal.
         /// If you are connecting using one of the Master Keys, these can be obtained along with the endpoint from the Azure Management Portal
@@ -485,7 +488,8 @@ namespace Microsoft.Azure.Cosmos
                               RemoteCertificateValidationCallback remoteCertificateValidationCallback = null,
                               CosmosClientTelemetryOptions cosmosClientTelemetryOptions = null,
                               IChaosInterceptorFactory chaosInterceptorFactory = null,
-                              bool enableAsyncCacheExceptionNoSharing = true)
+                              bool enableAsyncCacheExceptionNoSharing = true,
+                              bool useLengthAwareRangeComparer = false)
         {
             if (sendingRequestEventArgs != null)
             {
@@ -513,6 +517,7 @@ namespace Microsoft.Azure.Cosmos
                 enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
             this.chaosInterceptorFactory = chaosInterceptorFactory;
             this.chaosInterceptor = chaosInterceptorFactory?.CreateInterceptor(this);
+            this.UseLengthAwareRangeComparer = useLengthAwareRangeComparer;
 
             this.Initialize(
                 serviceEndpoint: serviceEndpoint,
@@ -1058,21 +1063,18 @@ namespace Microsoft.Azure.Cosmos
                 this.ConnectionPolicy.EnablePartitionLevelFailover = this.accountServiceConfiguration.AccountProperties.EnablePartitionLevelFailover.Value;
             }
 
-            this.isThinClientEnabled = (this.accountServiceConfiguration.AccountProperties?.ThinClientWritableLocationsInternal?.Count ?? 0) > 0;
-
+            this.isThinClientEnabled = this.isThinClientFeatureFlagEnabled && (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway) &&
+                (this.accountServiceConfiguration.AccountProperties?.ThinClientWritableLocationsInternal?.Count ?? 0) > 0;
             this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker |= this.ConnectionPolicy.EnablePartitionLevelFailover;
             this.ConnectionPolicy.UserAgentContainer.AppendFeatures(this.GetUserAgentFeatures());
             this.InitializePartitionLevelFailoverWithDefaultHedging();
 
-            this.PartitionKeyRangeLocation = 
-                this.ConnectionPolicy.EnablePartitionLevelFailover 
-                || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker
-                    ? new GlobalPartitionEndpointManagerCore(
+            this.PartitionKeyRangeLocation =
+                new GlobalPartitionEndpointManagerCore(
                         this.GlobalEndpointManager,
                         this.ConnectionPolicy.EnablePartitionLevelFailover,
                         this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker,
-                        this.isThinClientEnabled)
-                    : GlobalPartitionEndpointManagerNoOp.Instance;
+                        this.isThinClientEnabled);
 
             this.retryPolicy = new RetryPolicy(
                 globalEndpointManager: this.GlobalEndpointManager,
@@ -1083,14 +1085,16 @@ namespace Microsoft.Azure.Cosmos
             this.ResetSessionTokenRetryPolicy = this.retryPolicy;
 
             GatewayStoreModel gatewayStoreModel = new GatewayStoreModel(
-                    this.GlobalEndpointManager,
-                    this.sessionContainer,
-                    (Cosmos.ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel,
-                    this.eventSource,
-                    this.serializerSettings,
-                    this.httpClient,
-                    this.PartitionKeyRangeLocation,
-                    isPartitionLevelFailoverEnabled: this.ConnectionPolicy.EnablePartitionLevelFailover || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker);
+                endpointManager: this.GlobalEndpointManager,
+                sessionContainer: this.sessionContainer,
+                defaultConsistencyLevel: (Cosmos.ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel,
+                eventSource: this.eventSource,
+                serializerSettings: this.serializerSettings,
+                httpClient: this.httpClient,
+                globalPartitionEndpointManager: this.PartitionKeyRangeLocation,
+                isThinClientEnabled: this.isThinClientEnabled,
+                userAgentContainer: this.ConnectionPolicy.UserAgentContainer,
+                this.chaosInterceptor);
 
             this.GatewayStoreModel = gatewayStoreModel;
 
@@ -1101,34 +1105,14 @@ namespace Microsoft.Azure.Cosmos
                     retryPolicy: this.retryPolicy,
                     telemetryToServiceHelper: this.telemetryToServiceHelper,
                     enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
-            this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache, this.GlobalEndpointManager, this.enableAsyncCacheExceptionNoSharing);
+            this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache, this.GlobalEndpointManager, this.UseLengthAwareRangeComparer, this.enableAsyncCacheExceptionNoSharing);
             this.ResetSessionTokenRetryPolicy = new ResetSessionTokenRetryPolicyFactory(this.sessionContainer, this.collectionCache, this.retryPolicy);
 
             gatewayStoreModel.SetCaches(this.partitionKeyRangeCache, this.collectionCache);
 
             if (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway)
             {
-                if (this.isThinClientEnabled)
-                {
-                    ThinClientStoreModel thinClientStoreModel = new (
-                        endpointManager: this.GlobalEndpointManager,
-                        this.PartitionKeyRangeLocation,
-                        this.sessionContainer,
-                        (Cosmos.ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel,
-                        this.eventSource,
-                        this.serializerSettings,
-                        this.httpClient,
-                        this.ConnectionPolicy.UserAgentContainer,
-                        isPartitionLevelFailoverEnabled: this.ConnectionPolicy.EnablePartitionLevelFailover || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker);
-
-                    thinClientStoreModel.SetCaches(this.partitionKeyRangeCache, this.collectionCache);
-
-                    this.StoreModel = thinClientStoreModel;
-                }
-                else
-                {
-                    this.StoreModel = this.GatewayStoreModel;
-                }
+                this.StoreModel = this.GatewayStoreModel;
             }
             else
             {
@@ -1251,6 +1235,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal bool UseMultipleWriteLocations { get; private set; }
 
+        internal bool UseLengthAwareRangeComparer { get; private set; }
+
         /// <summary>
         /// Gets the endpoint Uri for the service endpoint from the Azure Cosmos DB service.
         /// </summary>
@@ -1358,6 +1344,11 @@ namespace Microsoft.Azure.Cosmos
                 return;
             }
 
+            // Set isDisposing flag FIRST to signal disposal has started
+            // This prevents race conditions where in-flight requests 
+            // could proceed while fields are being nulled
+            this.isDisposing = true;
+
             if (this.telemetryToServiceHelper != null)
             {
                 this.telemetryToServiceHelper.Dispose();
@@ -1416,6 +1407,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.GlobalEndpointManager != null)
             {
+                this.GlobalEndpointManager.OnEnablePartitionLevelFailoverConfigChanged -= this.UpdatePartitionLevelFailoverConfigWithAccountRefresh;
                 this.GlobalEndpointManager.Dispose();
                 this.GlobalEndpointManager = null;
             }
@@ -1434,6 +1426,7 @@ namespace Microsoft.Azure.Cosmos
             DefaultTrace.TraceInformation("DocumentClient with id {0} disposed.", this.traceId);
             DefaultTrace.Flush();
 
+            // Mark disposal complete
             this.isDisposed = true;
         }
 
@@ -6558,6 +6551,14 @@ namespace Microsoft.Azure.Cosmos
                         "GET",
                         AuthorizationTokenType.PrimaryMasterKey);
 
+                    // Added the thinclient endpoint discovery header for account data refresh requests.
+                    // This header signals to the service that the client supports thin client mode
+                    // and needs thinclient-specific endpoint information in the response.
+                    if (this.isThinClientFeatureFlagEnabled)
+                    {
+                        headersCollection[ThinClientConstants.EnableThinClientEndpointDiscoveryHeaderName] = true.ToString();
+                    }
+
                     foreach (string key in headersCollection.AllKeys())
                     {
                         request.Headers.Add(key, headersCollection[key]);
@@ -6591,6 +6592,18 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>Returns <see cref="IStoreModel"/> to which the request must be sent</returns>
         internal IStoreModel GetStoreProxy(DocumentServiceRequest request)
         {
+            // Check if client is being disposed - fail fast with clear error message
+            // This prevents the confusing "StoreProxy cannot be null" error when
+            // requests are in-flight during client disposal
+            // Note: Only check isDisposing since once disposal starts, requests should be rejected
+            if (this.isDisposing)
+            {
+                throw new ObjectDisposedException(
+                    nameof(DocumentClient),
+                    "Cannot process request because the CosmosClient has been disposed. " +
+                    "Ensure all in-flight requests complete before disposing the client.");
+            }
+
             // If a request is configured to always use Gateway mode(in some cases when targeting .NET Core)
             // we return the Gateway store model
             if (request.UseGatewayMode)
@@ -6839,7 +6852,7 @@ namespace Microsoft.Azure.Cosmos
                     connectionPolicy: this.ConnectionPolicy,
                     httpClient: this.httpClient,
                     cancellationToken: this.cancellationTokenSource.Token,
-                    isThinClientEnabled: this.isThinClientEnabled);
+                    isThinClientEnabled: this.isThinClientFeatureFlagEnabled);
 
             this.accountServiceConfiguration = new CosmosAccountServiceConfiguration(accountReader.InitializeReaderAsync);
 
@@ -6847,6 +6860,7 @@ namespace Microsoft.Azure.Cosmos
             AccountProperties accountProperties = this.accountServiceConfiguration.AccountProperties;
             this.UseMultipleWriteLocations = this.ConnectionPolicy.UseMultipleWriteLocations && accountProperties.EnableMultipleWriteLocations;
             this.GlobalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);
+            this.GlobalEndpointManager.OnEnablePartitionLevelFailoverConfigChanged += this.UpdatePartitionLevelFailoverConfigWithAccountRefresh;
         }
 
         internal string GetUserAgentFeatures()
@@ -6882,14 +6896,67 @@ namespace Microsoft.Azure.Cosmos
             {
                 // The default threshold is the minimum value of 1 second and a fraction (currently it's half) of
                 // the request timeout value provided by the end customer.
-                double defaultThresholdInMillis = Math.Min(
-                    DocumentClient.DefaultHedgingThresholdInMilliseconds,
-                    this.ConnectionPolicy.RequestTimeout.TotalMilliseconds / 2);
+                double defaultThresholdInMillis;
+                
+                if (this.ConnectionPolicy.RequestTimeout.TotalMilliseconds == 0)
+                {
+                    // If the request timeout is 0, we will use the default hedging theshold value
+                    defaultThresholdInMillis = DocumentClient.DefaultHedgingThresholdInMilliseconds;
+                    DefaultTrace.TraceWarning("DocumentClient: Request timeout is set to 0, which is not a valid value. Falling back to default hedging threshold of {0} ms", defaultThresholdInMillis);
+                }
+                else
+                {
+                    defaultThresholdInMillis = Math.Min(
+                        DocumentClient.DefaultHedgingThresholdInMilliseconds,
+                        this.ConnectionPolicy.RequestTimeout.TotalMilliseconds / 2);
+                }
 
-                this.ConnectionPolicy.AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
+                this.ConnectionPolicy.AvailabilityStrategy = AvailabilityStrategy.SDKDefaultCrossRegionHedgingStrategyForPPAF(
                     threshold: TimeSpan.FromMilliseconds(defaultThresholdInMillis),
                     thresholdStep: TimeSpan.FromMilliseconds(DocumentClient.DefaultHedgingThresholdStepInMilliseconds));
             }
+        }
+
+        private void UpdatePartitionLevelFailoverConfigWithAccountRefresh(
+            bool isEnabled)
+        {
+            // Only update if client-level override is not disabled
+            if (this.ConnectionPolicy.DisablePartitionLevelFailoverClientLevelOverride)
+            {
+                DefaultTrace.TraceInformation("DocumentClient: PPAF change ignored due to client-level override disabled");
+                return;
+            }
+
+            DefaultTrace.TraceInformation(
+                "DocumentClient: PPAF Account Level Config Updated. Updating EnablePartitionLevelFailover to {0}",
+                isEnabled);
+
+            // Step 1: Enable partition level failover.
+            this.PartitionKeyRangeLocation.SetIsPPAFEnabled(isEnabled);
+            this.ConnectionPolicy.EnablePartitionLevelFailover = isEnabled;
+
+            // Step 2: Enable partition level circuit breaker.
+            this.PartitionKeyRangeLocation.SetIsPPCBEnabled(isEnabled);
+            this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker = isEnabled;
+
+            // Step 3: Enable default hedging strategy if partition level failover is enabled.
+            if (isEnabled && this.ConnectionPolicy.AvailabilityStrategy == null)
+            {
+                this.InitializePartitionLevelFailoverWithDefaultHedging();
+            }
+            else
+            {
+                if (this.ConnectionPolicy.AvailabilityStrategy is CrossRegionHedgingAvailabilityStrategy strategy && strategy.IsSDKDefaultStrategyForPPAF)
+                {
+                    // If the user has not set a custom availability strategy, then we will reset it to null.
+                    this.ConnectionPolicy.AvailabilityStrategy = null;
+                }
+            }
+
+            // Step 4: Update the user agent features.
+            this.ConnectionPolicy.UserAgentContainer.AppendFeatures(this.GetUserAgentFeatures());
+
+            DefaultTrace.TraceInformation("DocumentClient: Successfully updated PPAF configuration dynamically");
         }
 
         internal void CaptureSessionToken(DocumentServiceRequest request, DocumentServiceResponse response)

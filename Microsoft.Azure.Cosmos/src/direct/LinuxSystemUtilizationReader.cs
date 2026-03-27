@@ -233,20 +233,13 @@ namespace Microsoft.Azure.Documents.Rntbd
             public ProcMemInfoFileParser() : this(DefaultProcMemInfoFilePath)
             {
             }
-#pragma warning disable SA1507 // Code should not contain multiple blank lines in a row
 
-
-#pragma warning disable CS1572 // XML comment has a param tag, but there is no parameter by that name
             /// <summary>
             /// Allows customization of the proc stat file path to allow testing this on Non-Linux machines
             /// </summary>
             /// <param name="procStatFilePath">
             /// </param>
-#pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
             internal ProcMemInfoFileParser(string procMemInfoFilePath)
-#pragma warning restore SA1507 // Code should not contain multiple blank lines in a row
-#pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
-#pragma warning restore CS1572 // XML comment has a param tag, but there is no parameter by that name
             {
                 if (String.IsNullOrWhiteSpace(procMemInfoFilePath))
                 {

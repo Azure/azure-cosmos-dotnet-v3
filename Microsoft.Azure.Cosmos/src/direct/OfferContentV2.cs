@@ -4,8 +4,9 @@
 
 namespace Microsoft.Azure.Documents
 {
-    using System.Collections.ObjectModel;
     using Newtonsoft.Json;
+    using System;
+    using System.Collections.ObjectModel;
 
     /// <summary>
     /// Represents content properties tied to the Standard pricing tier for the Azure Cosmos DB service.
@@ -24,6 +25,7 @@ namespace Microsoft.Azure.Documents
         private ThroughputDistributionPolicyType? throughputDistributionPolicy;
         private Collection<ThroughputBucket> throughputBuckets;
         private int? offerTargetThroughput;
+        private int? partitionCount;
 #endif
 
         /// <summary>
@@ -98,6 +100,12 @@ namespace Microsoft.Azure.Documents
                 {
                     this.OfferTargetThroughput = offerTargetThroughput.Value;
                 }
+
+                int? partitionCount = content.PartitionCount;
+                if (partitionCount.HasValue)
+                {
+                    this.PartitionCount = partitionCount.Value;
+                }
             }
 #endif
         }
@@ -141,6 +149,12 @@ namespace Microsoft.Azure.Documents
                 if (offerTargetThroughput.HasValue)
                 {
                     this.OfferTargetThroughput = offerTargetThroughput.Value;
+                }
+
+                int? partitionCount = content.PartitionCount;
+                if (partitionCount.HasValue)
+                {
+                    this.PartitionCount = partitionCount.Value;
                 }
             }
 #endif
@@ -294,11 +308,62 @@ namespace Microsoft.Azure.Documents
             {
                 this.OfferTargetThroughput = offerTargetThroughput.Value;
             }
+
+            int? partitionCount = contentV2.PartitionCount;
+            if (partitionCount.HasValue)
+            {
+                this.PartitionCount = partitionCount.Value;
+            }
+        }
+
+        /// <summary>
+        /// Copy constructor with optional overrides for all properties except OfferThroughput.
+        /// </summary>
+        internal OfferContentV2(
+            OfferContentV2 source,
+            bool? offerIsRUPerMinuteThroughputEnabled = null,
+            bool? offerIsAutoScaleEnabled = null,
+            AutopilotSettings offerAutopilotSettings = null,
+            OfferMinimumThroughputParameters offerMinimumThroughputParameters = null,
+            double? backgroundTaskMaxAllowedThroughputPercent = null,
+            ThroughputDistributionPolicyType? throughputDistributionPolicy = null,
+            Collection<ThroughputBucket> throughputBuckets = null,
+            Collection<PhysicalPartitionThroughputInfo> physicalPartitionThroughputInfo = null,
+            int? offerTargetThroughput = null,
+            int? partitionCount = null)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            // Throughput is always copied from source
+            this.OfferThroughput = source.OfferThroughput;
+
+            this.OfferIsRUPerMinuteThroughputEnabled = offerIsRUPerMinuteThroughputEnabled ?? source.OfferIsRUPerMinuteThroughputEnabled;
+            this.OfferIsAutoScaleEnabled = offerIsAutoScaleEnabled ?? source.OfferIsAutoScaleEnabled;
+
+            if (offerAutopilotSettings != null)
+            {
+                this.OfferAutopilotSettings = new AutopilotSettings(offerAutopilotSettings);
+            }
+            else if (source.OfferAutopilotSettings != null)
+            {
+                this.OfferAutopilotSettings = new AutopilotSettings(source.OfferAutopilotSettings);
+            }
+
+            this.OfferMinimumThroughputParameters = offerMinimumThroughputParameters != null ? new OfferMinimumThroughputParameters(offerMinimumThroughputParameters) : (source.OfferMinimumThroughputParameters != null ? new OfferMinimumThroughputParameters(source.OfferMinimumThroughputParameters) : null);
+            this.BackgroundTaskMaxAllowedThroughputPercent = backgroundTaskMaxAllowedThroughputPercent ?? source.BackgroundTaskMaxAllowedThroughputPercent;
+            this.ThroughputDistributionPolicy = throughputDistributionPolicy ?? source.ThroughputDistributionPolicy;
+            this.ThroughputBuckets = throughputBuckets ?? source.ThroughputBuckets;
+            this.PhysicalPartitionThroughputInfo = physicalPartitionThroughputInfo ?? source.PhysicalPartitionThroughputInfo;
+            this.OfferTargetThroughput = offerTargetThroughput ?? source.OfferTargetThroughput;
+            this.PartitionCount = partitionCount ?? source.PartitionCount;
         }
 
         /// <summary>
         /// Internal constructor accepting offer throughput, autopilot settings, minimum throughput parameters, bg task throughput percent,
-        /// throughput distribution policy, throughput buckets, and target throughput
+        /// throughput distribution policy, throughput buckets, target throughput, and partition count.
         /// </summary>
         internal OfferContentV2(
             int offerThroughput,
@@ -309,7 +374,8 @@ namespace Microsoft.Azure.Documents
             double? bgTaskMaxAllowedThroughputPercent,
             ThroughputDistributionPolicyType? throughputDistributionPolicy,
             Collection<ThroughputBucket> throughputBuckets,
-            int? offerTargetThroughput = null)
+            int? offerTargetThroughput = null,
+            int? partitionCount = null)
         {
             this.OfferThroughput = offerThroughput;
             this.OfferIsRUPerMinuteThroughputEnabled = offerEnableRUPerMinuteThroughput;
@@ -344,6 +410,11 @@ namespace Microsoft.Azure.Documents
             {
                 this.OfferTargetThroughput = offerTargetThroughput.Value;
             }
+
+            if (partitionCount.HasValue)
+            {
+                this.PartitionCount = partitionCount.Value;
+            }
         }
 
         internal OfferContentV2(
@@ -373,6 +444,13 @@ namespace Microsoft.Azure.Documents
                 {
                     this.OfferTargetThroughput = offerTargetThroughput.Value;
                 }
+                
+                int? partitionCount = content.PartitionCount;
+                if (partitionCount.HasValue)
+                {
+                    this.PartitionCount = partitionCount.Value;
+                }
+
             }
         }
 #endif
@@ -560,7 +638,7 @@ namespace Microsoft.Azure.Documents
         /// as it would result in not deserializing autoscale settings correctly.
         /// </remark>
         /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.AutopilotSettings, DefaultValueHandling = DefaultValueHandling.Ignore)]
+        [JsonProperty(PropertyName = Constants.Properties.AutopilotSettings, DefaultValueHandling = DefaultValueHandling.Ignore, NullValueHandling = NullValueHandling.Ignore)]
         internal AutopilotSettings OfferAutopilotSettings
         {
             get
@@ -632,6 +710,29 @@ namespace Microsoft.Azure.Documents
                 base.SetValue(Constants.Properties.OfferTargetThroughput, this.offerTargetThroughput);
             }
         }
+
+        /// <summary>
+        /// Represents partition count.
+        /// </summary>
+        [JsonProperty(PropertyName = Constants.Properties.PartitionCount, DefaultValueHandling = DefaultValueHandling.Ignore)]
+        internal int? PartitionCount
+        {
+            get
+            {
+                if (this.partitionCount == null)
+                {
+                    this.partitionCount = base.GetValue<int?>(Constants.Properties.PartitionCount);
+                }
+
+                return this.partitionCount;
+            }
+            private set
+            {
+                this.partitionCount = value;
+                base.SetValue(Constants.Properties.PartitionCount, this.partitionCount);
+            }
+        }
+
 
         internal override void OnSave()
         {

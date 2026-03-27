@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     MakeQueryFeaturesTest(
                         environmentVariable: null,
                         requestOption: null,
-                        expectHybridSearchOptimizationDisabled: true),
+                        expectHybridSearchOptimizationDisabled: false),
                     MakeQueryFeaturesTest(
                         environmentVariable: true,
                         requestOption: null,

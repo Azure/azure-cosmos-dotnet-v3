@@ -21,10 +21,8 @@ namespace Microsoft.Azure.Documents
     {
         struct ErrorOrResponse
         {
-#pragma warning disable IDE0044 // Add readonly modifier
             private Exception exception;
             private int statusCode;
-#pragma warning restore IDE0044 // Add readonly modifier
 
             public ErrorOrResponse(Exception ex, TResponse response)
             {
@@ -69,9 +67,7 @@ namespace Microsoft.Azure.Documents
 
         private readonly int? randomSaltForRetryWithMilliseconds;
 
-#pragma warning disable IDE0044 // Add readonly modifier
         private Stopwatch durationTimer = new Stopwatch();
-#pragma warning restore IDE0044 // Add readonly modifier
         private TimeSpan minBackoffForRegionReroute;
         private int attemptCount = 1;
         private int attemptCountInvalidPartition = 1;
@@ -396,6 +392,14 @@ namespace Microsoft.Azure.Documents
             }
             else if (GoneAndRetryWithRequestRetryPolicy<TResponse>.IsPartitionKeySplitting(response, exception))
             {
+                DefaultTrace.TraceInformation(
+                    "GoneAndRetryWithRequestRetryPolicy handling PartitionKeyRangeIsSplitting exception. CollectionName: {0}, OperationType: {1}, ResourceType: {2}, ResourceId: {3}, Address: {4}, Exception: {5}",
+                    request.CollectionName,
+                    request.OperationType,
+                    request.ResourceType,
+                    request.ResourceId,
+                    request.ResourceAddress,
+                    new ErrorOrResponse(exception, response));
                 GoneAndRetryWithRequestRetryPolicy<TResponse>.ClearRequestContext(request);
                 request.ForcePartitionKeyRangeRefresh = true;
                 forceRefreshAddressCache = false;

@@ -44,7 +44,6 @@ namespace Microsoft.Azure.Cosmos
                 this.partitionKeyRangeLocationCache,
                 this.retryOptions,
                 this.enableEndpointDiscovery,
-                this.isPartitionLevelFailoverEnabled,
                 this.isThinClientEnabled);
 
             return clientRetryPolicy;

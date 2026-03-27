@@ -32,42 +32,47 @@ namespace Microsoft.Azure.Documents
                 this.SetValue(Constants.SoftDeletionMetadataProperties.IsSoftDeleted, value);
             }
         }
-#pragma warning disable SA1507 // Code should not contain multiple blank lines in a row
 
 
         /// <summary>
-        /// Property to indicate Database Account Soft Deletion Start Timestamp.
+        /// Property to indicate Database Account Soft Deletion Start Timestamp in epoch format.
         /// </summary>
-        [JsonConverter(typeof(IsoDateTimeConverter))]
-#pragma warning restore SA1507 // Code should not contain multiple blank lines in a row
-        [JsonProperty(PropertyName = Constants.SoftDeletionMetadataProperties.SoftDeletionStartTimestampUtc)]
-        public DateTime SoftDeletionStartTimestampUtc
+        [JsonProperty(PropertyName = Constants.SoftDeletionMetadataProperties.SoftDeletionStartTimestamp)]
+        public long SoftDeletionStartTimestamp
         {
             get
             {
-                return base.GetValue<DateTime>(Constants.SoftDeletionMetadataProperties.SoftDeletionStartTimestampUtc).ToUniversalTime();
+                return base.GetValue<long>(Constants.SoftDeletionMetadataProperties.SoftDeletionStartTimestamp);
             }
             set
             {
-                this.SetValue(Constants.SoftDeletionMetadataProperties.SoftDeletionStartTimestampUtc, value.ToUniversalTime());
+                this.SetValue(Constants.SoftDeletionMetadataProperties.SoftDeletionStartTimestamp, value);
             }
         }
 
         /// <summary>
-        /// Property to indicate Database Account Soft Deletion Expiration Timestamp.
+        /// Property to indicate Database Account Soft Deletion Expiration Timestamp in epoch format.
         /// </summary>
-        [JsonConverter(typeof(IsoDateTimeConverter))]
-        [JsonProperty(PropertyName = Constants.SoftDeletionMetadataProperties.SoftDeletionResourceExpirationTimestampUtc)]
-        public DateTime SoftDeletionResourceExpirationTimestampUtc
+        [JsonProperty(PropertyName = Constants.SoftDeletionMetadataProperties.SoftDeletionResourceExpirationTimestamp)]
+        public long SoftDeletionResourceExpirationTimestamp
         {
             get
             {
-                return base.GetValue<DateTime>(Constants.SoftDeletionMetadataProperties.SoftDeletionResourceExpirationTimestampUtc).ToUniversalTime();
+                return base.GetValue<long>(Constants.SoftDeletionMetadataProperties.SoftDeletionResourceExpirationTimestamp);
             }
             set
             {
-                this.SetValue(Constants.SoftDeletionMetadataProperties.SoftDeletionResourceExpirationTimestampUtc, value.ToUniversalTime());
+                this.SetValue(Constants.SoftDeletionMetadataProperties.SoftDeletionResourceExpirationTimestamp, value);
             }
+        }
+
+        public override string ToString()
+        {
+            return string.Format(
+                "IsSoftDeleted: {0}, SoftDeletionStartTimestamp: {1}, SoftDeletionResourceExpirationTimestamp: {2}",
+                this.IsSoftDeleted,
+                this.SoftDeletionStartTimestamp,
+                this.SoftDeletionResourceExpirationTimestamp);
         }
     }
 }

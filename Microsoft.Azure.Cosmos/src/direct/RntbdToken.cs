@@ -84,15 +84,9 @@ namespace Microsoft.Azure.Documents
 
     internal sealed class RntbdToken
     {
-#pragma warning disable IDE0044 // Add readonly modifier
         private ushort identifier;
-#pragma warning restore IDE0044 // Add readonly modifier
-#pragma warning disable IDE0044 // Add readonly modifier
         private RntbdTokenTypes type;
-#pragma warning restore IDE0044 // Add readonly modifier
-#pragma warning disable IDE0044 // Add readonly modifier
         private bool isRequired;
-#pragma warning restore IDE0044 // Add readonly modifier
 
         public bool isPresent;
         public RntbdTokenValue value;

@@ -42,7 +42,6 @@ namespace Microsoft.Azure.Documents
             bool detectClientConnectivityIssues = false,
             bool disableRetryWithRetryPolicy = false,
             bool enableReplicaValidation = false,
-            AccountConfigurationProperties accountConfigurationProperties = null,
             RetryWithConfiguration retryWithConfiguration = null,
             ISessionRetryOptions sessionRetryOptions = null)
         {
@@ -73,7 +72,6 @@ namespace Microsoft.Azure.Documents
                 disableRetryWithRetryPolicy: disableRetryWithRetryPolicy,
                 retryWithConfiguration: retryWithConfiguration,
                 enableReplicaValidation: enableReplicaValidation,
-                accountConfigurationProperties: accountConfigurationProperties,
                 sessionRetryOptions: sessionRetryOptions);
         }
 

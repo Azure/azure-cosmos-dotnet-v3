@@ -179,9 +179,24 @@ namespace Microsoft.Azure.Documents
         /// <typeparam name="T">The type of the returning object.</typeparam>
         /// <param name="stream">The stream to load from.</param>
         /// <returns>The object loaded from the specified stream.</returns>
+        /// <exception cref="ArgumentNullException">If the stream is null.</exception>
+        /// <exception cref="JsonReaderException">If the stream is empty.</exception>
         public static T LoadFrom<T>(Stream stream) where T : JsonSerializable, new()
         {
             return LoadFrom<T>(stream, null);
+        }
+
+        /// <summary>
+        /// Loads the object from the specified string in the Azure Cosmos DB service.
+        /// </summary>
+        /// <typeparam name="T">The type of the returning object</typeparam>
+        /// <param name="serialized">The string to load from.</param>
+        /// <returns>The object loaded from the specified string.</returns>
+        /// <exception cref="ArgumentNullException">If the serialized string is null.</exception>
+        /// <exception cref="JsonReaderException">If the serialized string is empty.</exception>
+        public static T LoadFrom<T>(string serialized) where T : JsonSerializable, new()
+        {
+            return LoadFrom<T>(serialized, null);
         }
 
         /// <summary>

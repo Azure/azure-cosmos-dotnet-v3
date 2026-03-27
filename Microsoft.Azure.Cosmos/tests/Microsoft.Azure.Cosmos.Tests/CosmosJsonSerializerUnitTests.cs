@@ -33,6 +33,18 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
         private readonly string toDoActivityJson = @"{""id"":""c1d433c1-369d-430e-91e5-14e3ce588f71"",""taskNum"":42,""cost"":1.7976931348623157E+308,""description"":""cosmos json serializer"",""status"":""TBD""}";
 
         [TestMethod]
+        public void ValidateFromStreamWithBaseStreamType()
+        {
+            CosmosJsonDotNetSerializer cosmosDefaultJsonSerializer = new CosmosJsonDotNetSerializer();
+            using MemoryStream memoryStream = new MemoryStream(new byte[] { 1, 2, 3 });
+
+            // FromStream<Stream> with a MemoryStream should succeed
+            Stream result = cosmosDefaultJsonSerializer.FromStream<Stream>(memoryStream);
+            Assert.IsNotNull(result);
+            Assert.AreSame(memoryStream, result);
+        }
+
+        [TestMethod]
         public void ValidateSerializer()
         {
             CosmosJsonDotNetSerializer cosmosDefaultJsonSerializer = new CosmosJsonDotNetSerializer();
@@ -55,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             string id = "testId";
             this.TestProperty<AccountProperties>(
                 id,
-                $@"{{""id"":""{id}"",""writableLocations"":[],""readableLocations"":[],""userConsistencyPolicy"":null,""addresses"":null,""userReplicationPolicy"":null,""systemReplicationPolicy"":null,""readPolicy"":null,""queryEngineConfiguration"":null,""enableMultipleWriteLocations"":false,""enablePerPartitionFailoverBehavior"":null}}");
+                $@"{{""id"":""{id}"",""writableLocations"":[],""readableLocations"":[],""userConsistencyPolicy"":null,""addresses"":null,""userReplicationPolicy"":null,""systemReplicationPolicy"":null,""readPolicy"":null,""queryEngineConfiguration"":null,""enableMultipleWriteLocations"":false,""enablePerPartitionFailoverBehavior"":null,""enableNRegionSynchronousCommit"":false}}");
 
             this.TestProperty<DatabaseProperties>(
                 id,

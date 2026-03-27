@@ -19,9 +19,7 @@ namespace Microsoft.Azure.Documents
         public const string ReplicaOperations_ReportThroughputUtilization = "reportthroughpututilization";
         public const string ReplicaOperations_BatchReportThroughputUtilization = "batchreportthroughpututilization";
         public const string Operations_GetFederationConfigurations = "getfederationconfigurations";
-#pragma warning disable SA1310 // Field names should not contain underscore
         public const string Operations_GetRegionalConfigurations = "getregionalconfigurations";
-#pragma warning restore SA1310 // Field names should not contain underscore
         public const string Operations_GetConfiguration = "getconfiguration";
         public const string Operations_GetDatabaseAccountConfigurations = "getdatabaseaccountconfigurations";
         public const string Operations_GetMicrosoftFabricDatabaseAccountArtifactPermissions = "getdatabaseaccountartifactpermissions";
@@ -38,9 +36,10 @@ namespace Microsoft.Azure.Documents
         public const string Operations_GetAadGroups = "getaadgroups";
         public const string Operations_XPDatabaseAccountMetaData = "xpmetadata";
         public const string Operations_MetadataCheckAccess = "metadatacheckaccess";
+        public const string Operations_GetAzureRbacAccessCheck = "getazurerbacaccesscheck";
 
         //databases namespace off of root-------------------
-        
+
         // /subscriptions
         public const string SubscriptionsSegment = "subscriptions";
         public const string SubscriptionsSegment_Root = Root + SubscriptionsSegment;
@@ -231,6 +230,9 @@ namespace Microsoft.Azure.Documents
         public const string DatabaseAccountSegment = "databaseaccount";
         public const string DatabaseAccount_Root = Root + "/" + DatabaseAccountSegment + "/";
 
+        // /distributedtransactionbatch
+        public const string DistributedTransactionBatchSegment = "distributedtransactionbatch";
+
         // /storageauthtoken
         public const string StorageAuthTokenPathSegment = "storageauthtoken";
         public const string StorageAuthToken_Root = Root + "/" + StorageAuthTokenPathSegment + "/";
@@ -269,6 +271,9 @@ namespace Microsoft.Azure.Documents
         public const string FederationEndpoint_Offers_Root = FederationEndpoint_Root + "/" + Offers_Root;
         // FedURL/accounts/{id}/offers/{id}
         public const string FederationEndpoint_Offer_Root = FederationEndpoint_Offers_Root + "{" + OfferId + "}";
+
+        // FedURL/accounts/{accountName}/operations/metadatacheckaccess
+        public const string FederationEndpoint_CheckMetaData_Access = FederationEndpoint_Root + "/" + OperationsPathSegment + "/" + MetadataCheckAccessPathSegment;
 
         // /topology
         public const string TopologyPathSegment = "topology";
@@ -373,6 +378,14 @@ namespace Microsoft.Azure.Documents
         public const string InteropUserId = "interopuserId";
         public const string InteropUser_Root = InteropUsers_Root + "{" + InteropUserId + "}";
 
+        // /azureRbac
+        public const string AzureRbacPathSegment = "azurerbac";
+        public const string AzureRbac_Root = Root + "/" + AzureRbacPathSegment + "/";
+
+        // /azureRbac/{}
+        public const string AzureRbacId = "azurerbacId";
+        public const string AzureRbacResource_Root = AzureRbac_Root + "{" + AzureRbacId + "}";
+
         // /localemulator
         public const string LocalEmulatorPathSegment = "localemulator";
         public const string LocalEmulator_Root = Root + "/" + LocalEmulatorPathSegment + "/";
@@ -402,6 +415,9 @@ namespace Microsoft.Azure.Documents
         public const string ClientConfigPathSegment = "clientconfigs";
         public const string ClientConfig_Root = Root + ClientConfigPathSegment;
         public const string FederationEndpoint_ClientConfig_Root = FederationEndpoint_Root + ClientConfig_Root;
+
+        // /operations/dtc - Distributed Transaction Coordinator
+        public const string Operations_Dtc = "dtc";
 
 
         // /encryptionscopes/{id}

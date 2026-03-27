@@ -41,6 +41,8 @@ namespace Microsoft.Azure.Documents.Routing
 
         private static readonly Int32 HashV2EPKLength = 32; // UInt128.Length * 2 (UInt128 gives 16 bytes as output, each byte takes 2 chars after hex-encoding)
 
+        private static readonly int BytesPerPath = new Int128().Bytes.Length;
+
         private static readonly JsonSerializer FromJsonStringSerializer =
             JsonSerializer.CreateDefault(
                 new JsonSerializerSettings
@@ -229,7 +231,9 @@ namespace Microsoft.Azure.Documents.Routing
             int partitionIndex,
             int partitionCount,
             PartitionKeyDefinition partitionKeyDefinition,
-            bool useHashV2asDefault = false)
+            bool useHashV2asDefault = false,
+            bool enablePadding = false,
+            bool enableLastPathPaddingForMultiHash = false)
         {
             if (partitionKeyDefinition.Paths.Count > 0 && !(partitionKeyDefinition.Kind == PartitionKind.Hash || partitionKeyDefinition.Kind == PartitionKind.MultiHash))
             {
@@ -258,10 +262,7 @@ namespace Microsoft.Azure.Documents.Routing
                     switch (partitionKeyDefinition.Version ?? defaultPartitionKeyDefinitionVersion)
                     {
                         case PartitionKeyDefinitionVersion.V2:
-                            Int128 val = MaxHashV2Value / partitionCount * partitionIndex;
-                            byte[] bytes = val.Bytes;
-                            Array.Reverse(bytes);
-                            return HexConvert.ToHex(bytes, 0, bytes.Length);
+                            return CalculateEffectivePartitionKeyHex(partitionIndex, partitionCount, partitionKeyDefinition, isMaxExclusive: false);
 
                         case PartitionKeyDefinitionVersion.V1:
                             return ToHexEncodedBinaryString(
@@ -272,10 +273,7 @@ namespace Microsoft.Azure.Documents.Routing
                     }
 
                 case PartitionKind.MultiHash:
-                    Int128 max_val = MaxHashV2Value / partitionCount * partitionIndex;
-                    byte[] max_bytes = max_val.Bytes;
-                    Array.Reverse(max_bytes);
-                    return HexConvert.ToHex(max_bytes, 0, max_bytes.Length);
+                    return CalculateEffectivePartitionKeyHex(partitionIndex, partitionCount, partitionKeyDefinition, isMaxExclusive: false, enablePadding, enableLastPathPaddingForMultiHash);
 
                 default:
                     throw new InternalServerErrorException("Unexpected PartitionKeyDefinitionKind");
@@ -286,7 +284,9 @@ namespace Microsoft.Azure.Documents.Routing
             int partitionIndex,
             int partitionCount,
             PartitionKeyDefinition partitionKeyDefinition,
-            bool useHashV2asDefault = false)
+            bool useHashV2asDefault = false,
+            bool enablePadding = false,
+            bool enableLastPathPaddingForMultiHash = false)
         {
             if (partitionKeyDefinition.Paths.Count > 0 && !(partitionKeyDefinition.Kind == PartitionKind.Hash || partitionKeyDefinition.Kind == PartitionKind.MultiHash))
             {
@@ -315,10 +315,7 @@ namespace Microsoft.Azure.Documents.Routing
                     switch (partitionKeyDefinition.Version ?? defaultPartitionKeyDefinitionVersion)
                     {
                         case PartitionKeyDefinitionVersion.V2:
-                            Int128 val = MaxHashV2Value / partitionCount * (partitionIndex + 1);
-                            byte[] bytes = val.Bytes;
-                            Array.Reverse(bytes);
-                            return HexConvert.ToHex(bytes, 0, bytes.Length);
+                            return CalculateEffectivePartitionKeyHex(partitionIndex, partitionCount, partitionKeyDefinition, isMaxExclusive: true);
 
                         case PartitionKeyDefinitionVersion.V1:
                             return ToHexEncodedBinaryString(new IPartitionKeyComponent[] { new NumberPartitionKeyComponent(uint.MaxValue / partitionCount * (partitionIndex + 1)) });
@@ -328,16 +325,70 @@ namespace Microsoft.Azure.Documents.Routing
                     }
 
                 case PartitionKind.MultiHash:
-
-                    Int128 max_val = MaxHashV2Value / partitionCount * (partitionIndex + 1);
-                    byte[] max_bytes = max_val.Bytes;
-                    Array.Reverse(max_bytes);
-                    return HexConvert.ToHex(max_bytes, 0, max_bytes.Length);
+                    return CalculateEffectivePartitionKeyHex(partitionIndex, partitionCount, partitionKeyDefinition, isMaxExclusive: true, enablePadding: enablePadding, enableLastPathPaddingForMultiHash: enableLastPathPaddingForMultiHash);
 
                 default:
                     throw new InternalServerErrorException("Unexpected PartitionKeyDefinitionKind");
             }
         }
+
+        public static void ValidateMultiHashPartitionKey(PartitionKeyDefinition partitionKeyDef)
+        {
+            if (partitionKeyDef.Paths.Count == 0)
+            {
+                throw new BadRequestException("MultiHash partition key must have at least one path");
+            }
+
+            foreach (string path in partitionKeyDef.Paths)
+            {
+                if (string.IsNullOrEmpty(path))
+                {
+                    throw new BadRequestException("MultiHash partition key paths cannot be empty");
+                }
+            }
+        }
+
+        private static string CalculateEffectivePartitionKeyHex(
+            int partitionIndex,
+            int partitionCount,
+            PartitionKeyDefinition partitionKeyDefinition,
+            bool isMaxExclusive,
+            bool enablePadding = false,
+            bool enableLastPathPaddingForMultiHash = false)
+        {
+            if (partitionKeyDefinition.Kind == PartitionKind.MultiHash && enablePadding)
+            {
+                ValidateMultiHashPartitionKey(partitionKeyDefinition);
+            }
+
+            int index = isMaxExclusive ? partitionIndex + 1 : partitionIndex;
+            Int128 val = MaxHashV2Value / partitionCount * index;
+            byte[] bytes = val.Bytes;
+            Array.Reverse(bytes);
+
+            if (partitionKeyDefinition.Kind == PartitionKind.MultiHash && enablePadding)
+            {
+                int pathCount = partitionKeyDefinition.Paths.Count;
+
+                // When enableLastPathPaddingForMultiHash is enabled and the last partition key path
+                // is not "/id", add an extra path with all 0s to extend the EPK by 16 bytes.
+                if (enableLastPathPaddingForMultiHash)
+                {
+                    string lastPath = partitionKeyDefinition.Paths[partitionKeyDefinition.Paths.Count - 1];
+                    if (!string.Equals(lastPath, "/id", StringComparison.Ordinal))
+                    {
+                        pathCount += 1;
+                    }
+                }
+
+                byte[] result = new byte[pathCount * BytesPerPath];
+                Array.Copy(bytes, 0, result, 0, BytesPerPath);
+                bytes = result;
+            }
+
+            return HexConvert.ToHex(bytes, 0, bytes.Length);
+        }
+
         public int CompareTo(PartitionKeyInternal other)
         {
             if (other == null)
@@ -811,9 +862,7 @@ namespace Microsoft.Azure.Documents.Routing
                         hashes.Add(new Int128(maxBytes));
                     }
                 }
-#pragma warning disable SA1108
                 else // The EPK has less values than Paths.Count in the PkDef, this is empty partitionkey.
-#pragma warning restore SA1108
                 {
                     hashes.Add(0);
                 }

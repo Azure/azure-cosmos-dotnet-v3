@@ -7,8 +7,6 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class FeedIteratorInlineCore : FeedIteratorInternal
@@ -28,7 +26,6 @@ namespace Microsoft.Azure.Cosmos
             this.feedIteratorInternal = feedIteratorInternal;
             this.clientContext = clientContext;
 
-            this.querySpec = feedIteratorInternal.querySpec;
             this.container = feedIteratorInternal.container;
 
             this.SetupInfoForTelemetry(feedIteratorInternal);

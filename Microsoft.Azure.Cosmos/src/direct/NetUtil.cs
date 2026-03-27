@@ -8,6 +8,8 @@ namespace Microsoft.Azure.Documents
     using System.Net.NetworkInformation;
     using System.Net.Sockets;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using System.Linq;
+    using System.Collections.Generic;
 #if !(NETSTANDARD15 || NETSTANDARD16)
     using System.Configuration;
 #endif
@@ -128,6 +130,116 @@ namespace Microsoft.Azure.Documents
             DefaultTrace.TraceInformation("Cannot find the IPv6 address of the Loopback NetworkInterface.");
             ipv6LoopbackAddress = null;
             return false;
+        }
+
+        public static bool TryGetLocalIPv6Address(bool isEmulated, out IPAddress address)
+        {
+            address = null;
+            if (isEmulated)
+            {
+                address = IPAddress.IPv6Loopback;
+                return true;
+            }
+
+            NetworkInterface[] niList = NetworkInterface.GetAllNetworkInterfaces();
+            return TryGetEthernetIPv6Address(niList, out address);
+        }
+
+        /// <summary>
+        /// Selects the best IPv6 address from the provided network interfaces based on a scoring algorithm.
+        /// This method is internal to allow testing with controlled network interface data.
+        /// </summary>
+        /// <param name="networkInterfaces">Array of network interfaces to evaluate.</param>
+        /// <returns>A tuple indicating success and the selected IPv6 address.</returns>
+        internal static bool TryGetEthernetIPv6Address(NetworkInterface[] networkInterfaces, out IPAddress address)
+        {
+            List<(IPAddress Ip, NetworkInterface Nic, int Score)> candidates = new();
+
+            address = null;
+
+            foreach (NetworkInterface ni in networkInterfaces)
+            {
+                if (ni.OperationalStatus != OperationalStatus.Up || ni.NetworkInterfaceType != NetworkInterfaceType.Ethernet || ni.IsReceiveOnly)
+                {
+                    continue;
+                }
+
+                IPInterfaceProperties props = ni.GetIPProperties();
+
+                bool hasIpv6Gateway = props.GatewayAddresses
+                    .Any(g => g.Address.AddressFamily == AddressFamily.InterNetworkV6 &&
+                              !g.Address.IsIPv6LinkLocal);
+
+                foreach (UnicastIPAddressInformation uip in props.UnicastAddresses)
+                {
+                    if (uip.Address.AddressFamily != AddressFamily.InterNetworkV6)
+                    {
+                        DefaultTrace.TraceInformation("{0} is skipped because it is not IPv6.", uip.Address.ToString());
+                        continue;
+                    }
+
+                    // Only use addresses that are currently preferred
+                    if (uip.DuplicateAddressDetectionState != DuplicateAddressDetectionState.Preferred)
+                    {
+                        DefaultTrace.TraceInformation("{0} is skipped because it is not preferred.", uip.Address.ToString());
+                        continue;
+                    }
+
+                    // Skip transient (temporary/privacy) addresses
+                    if (uip.IsTransient)
+                    {
+                        DefaultTrace.TraceInformation("{0} is skipped because it is temporary/privacy.", uip.Address.ToString());
+                        continue;
+                    }
+
+                    if (!uip.IsDnsEligible)
+                    {
+                        DefaultTrace.TraceInformation("{0} is skipped because it is not DNS eligible.", uip.Address.ToString());
+                        continue;
+                    }
+
+                    IPAddress ip = uip.Address;
+
+                    if (ip.IsIPv6LinkLocal || ip.IsIPv6Multicast)
+                    {
+                        DefaultTrace.TraceInformation("{0} is skipped because it is link-local or multicast.", uip.Address.ToString());
+                        continue;
+                    }
+
+                    int score = 0;
+
+                    // Prefer NICs that have an IPv6 default gateway
+                    if (hasIpv6Gateway)
+                        score += 100;
+
+                    // Prefer global over ULA (fd00::/8)
+                    if (!IsUniqueLocal(ip))
+                        score += 10;
+
+                    candidates.Add((ip, ni, score));
+                }
+            }
+
+            if (candidates.Count == 0)
+            {
+                DefaultTrace.TraceInformation("No suitable IPv6 address found.");
+                return false;
+            }
+
+            (IPAddress Ip, NetworkInterface Nic, int Score) best = candidates
+                .OrderByDescending(c => c.Score)
+                .FirstOrDefault();
+
+            address = best.Ip;
+
+            return true;
+        }
+
+        private static bool IsUniqueLocal(IPAddress ip)
+        {
+            // ULA: fc00::/7
+            byte[] bytes = ip.GetAddressBytes();
+            return (bytes[0] & 0xfe) == 0xfc;
         }
 
         private static bool IsServiceTunneledIPAddress(IPAddress ipAddress)

@@ -14,7 +14,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq.Expressions;
     using System.Reflection;
     using System.Text;
-    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
@@ -47,7 +46,7 @@ namespace Microsoft.Azure.Cosmos
         public DocumentFeedResponse(IEnumerable<T> result)
             : this()
         {
-            this.inner = result != null ? result : Enumerable.Empty<T>();
+            this.inner = result ?? Enumerable.Empty<T>();
         }
 
         internal DocumentFeedResponse(

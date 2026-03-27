@@ -53,6 +53,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             { Names.Float32, Identifiers.Float32 },
             { Names.Float64, Identifiers.Float64 },
             { Names.Guid, Identifiers.Guid },
+            { Names.Hash, Identifiers.Hash },
             { Names.Int16, Identifiers.Int16 },
             { Names.Int32, Identifiers.Int32 },
             { Names.Int64, Identifiers.Int64 },
@@ -102,6 +103,8 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             { Names.IsObject, Identifiers.IsObject },
             { Names.IsPrimitive, Identifiers.IsPrimitive },
             { Names.IsString, Identifiers.IsString },
+            { Names.LastSubstringAfter, Identifiers.LastSubstringAfter },
+            { Names.LastSubstringBefore, Identifiers.LastSubstringBefore },
             { Names.Left, Identifiers.Left },
             { Names.Length, Identifiers.Length },
             { Names.Like, Identifiers.Like },
@@ -116,6 +119,8 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             { Names.Power, Identifiers.Power },
             { Names.Radians, Identifiers.Radians },
             { Names.Rand, Identifiers.Rand },
+            { Names.RegexExtract, Identifiers.RegexExtract },
+            { Names.RegexExtractAll, Identifiers.RegexExtractAll },
             { Names.RegexMatch, Identifiers.RegexMatch },
             { Names.Replace, Identifiers.Replace },
             { Names.Replicate, Identifiers.Replicate },
@@ -141,6 +146,8 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             { Names.StringToNumber, Identifiers.StringToNumber },
             { Names.StringToObject, Identifiers.StringToObject },
             { Names.Substring, Identifiers.Substring },
+            { Names.SubstringAfter, Identifiers.SubstringAfter },
+            { Names.SubstringBefore, Identifiers.SubstringBefore },
             { Names.Sum, Identifiers.Sum },
             { Names.Tan, Identifiers.Tan },
             { Names.TicksToDateTime, Identifiers.TicksToDateTime },
@@ -322,6 +329,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public const string GetCurrentDateTime = "GetCurrentDateTime";
             public const string GetCurrentTicks = "GetCurrentTicks";
             public const string GetCurrentTimestamp = "GetCurrentTimestamp";
+            public const string Hash = "HASH";
             public const string Iif = "IIF";
             public const string IndexOf = "INDEX_OF";
             public const string IntAdd = "IntAdd";
@@ -347,6 +355,8 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public const string IsPrimitive = "IS_PRIMITIVE";
             public const string IsString = "IS_STRING";
             public const string LastIndexOf = "LastIndexOf";
+            public const string LastSubstringAfter = "LastSubstringAfter";
+            public const string LastSubstringBefore = "LastSubstringBefore";
             public const string Left = "LEFT";
             public const string Length = "LENGTH";
             public const string Like = "LIKE";
@@ -362,6 +372,8 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public const string Power = "POWER";
             public const string Radians = "RADIANS";
             public const string Rand = "RAND";
+            public const string RegexExtract = "RegexExtract";
+            public const string RegexExtractAll = "RegexExtractAll";
             public const string RegexMatch = "RegexMatch";
             public const string Replace = "REPLACE";
             public const string Replicate = "REPLICATE";
@@ -393,6 +405,8 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public const string StringToNumber = "StringToNumber";
             public const string StringToObject = "StringToObject";
             public const string Substring = "SUBSTRING";
+            public const string SubstringAfter = "SubstringAfter";
+            public const string SubstringBefore = "SubstringBefore";
             public const string Sum = "SUM";
             public const string Tan = "TAN";
             public const string TicksToDateTime = "TicksToDateTime";
@@ -497,6 +511,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public static readonly SqlIdentifier GetCurrentDateTime = SqlIdentifier.Create(Names.GetCurrentDateTime);
             public static readonly SqlIdentifier GetCurrentTicks = SqlIdentifier.Create(Names.GetCurrentTicks);
             public static readonly SqlIdentifier GetCurrentTimestamp = SqlIdentifier.Create(Names.GetCurrentTimestamp);
+            public static readonly SqlIdentifier Hash = SqlIdentifier.Create(Names.Hash);
             public static readonly SqlIdentifier Iif = SqlIdentifier.Create(Names.Iif);
             public static readonly SqlIdentifier IndexOf = SqlIdentifier.Create(Names.IndexOf);
             public static readonly SqlIdentifier IntAdd = SqlIdentifier.Create(Names.IntAdd);
@@ -522,6 +537,8 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public static readonly SqlIdentifier IsPrimitive = SqlIdentifier.Create(Names.IsPrimitive);
             public static readonly SqlIdentifier IsString = SqlIdentifier.Create(Names.IsString);
             public static readonly SqlIdentifier LastIndexOf = SqlIdentifier.Create(Names.LastIndexOf);
+            public static readonly SqlIdentifier LastSubstringAfter = SqlIdentifier.Create(Names.LastSubstringAfter);
+            public static readonly SqlIdentifier LastSubstringBefore = SqlIdentifier.Create(Names.LastSubstringBefore);
             public static readonly SqlIdentifier Left = SqlIdentifier.Create(Names.Left);
             public static readonly SqlIdentifier Length = SqlIdentifier.Create(Names.Length);
             public static readonly SqlIdentifier Like = SqlIdentifier.Create(Names.Like);
@@ -536,7 +553,9 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public static readonly SqlIdentifier Pi = SqlIdentifier.Create(Names.Pi);
             public static readonly SqlIdentifier Power = SqlIdentifier.Create(Names.Power);
             public static readonly SqlIdentifier Radians = SqlIdentifier.Create(Names.Radians);
-            public static readonly SqlIdentifier Rand = SqlIdentifier.Create(Names.Rand);
+            public static readonly SqlIdentifier Rand = SqlIdentifier.Create(Names.Rand); 
+            public static readonly SqlIdentifier RegexExtract = SqlIdentifier.Create(Names.RegexExtract);
+            public static readonly SqlIdentifier RegexExtractAll = SqlIdentifier.Create(Names.RegexExtractAll);
             public static readonly SqlIdentifier RegexMatch = SqlIdentifier.Create(Names.RegexMatch);
             public static readonly SqlIdentifier Replace = SqlIdentifier.Create(Names.Replace);
             public static readonly SqlIdentifier Replicate = SqlIdentifier.Create(Names.Replicate);
@@ -568,6 +587,8 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public static readonly SqlIdentifier StringToNumber = SqlIdentifier.Create(Names.StringToNumber);
             public static readonly SqlIdentifier StringToObject = SqlIdentifier.Create(Names.StringToObject);
             public static readonly SqlIdentifier Substring = SqlIdentifier.Create(Names.Substring);
+            public static readonly SqlIdentifier SubstringAfter = SqlIdentifier.Create(Names.SubstringAfter);
+            public static readonly SqlIdentifier SubstringBefore = SqlIdentifier.Create(Names.SubstringBefore);
             public static readonly SqlIdentifier Sum = SqlIdentifier.Create(Names.Sum);
             public static readonly SqlIdentifier Tan = SqlIdentifier.Create(Names.Tan);
             public static readonly SqlIdentifier TicksToDateTime = SqlIdentifier.Create(Names.TicksToDateTime);

@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
 
-    internal class CosmosAccountServiceConfiguration : IServiceConfigurationReader
+    internal class CosmosAccountServiceConfiguration : IServiceConfigurationReaderVnext
     {
         private Func<Task<AccountProperties>> accountPropertiesTaskFunc { get; }
 
@@ -52,6 +52,8 @@ namespace Microsoft.Azure.Cosmos
         public bool EnableAuthorization => true;
 
         public string SubscriptionId => throw new NotImplementedException();
+
+        public bool EnableNRegionSynchronousCommit => this.AccountProperties.EnableNRegionSynchronousCommit;
 
         public async Task InitializeAsync()
         {

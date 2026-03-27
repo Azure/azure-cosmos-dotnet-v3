@@ -28,7 +28,6 @@ namespace Microsoft.Azure.Cosmos
         private readonly GlobalEndpointManager globalEndpointManager;
         private readonly GlobalPartitionEndpointManager partitionKeyRangeLocationCache;
         private readonly bool enableEndpointDiscovery;
-        private readonly bool isPartitionLevelFailoverEnabled;
         private readonly bool isThinClientEnabled;
         private int failoverRetryCount;
 
@@ -40,13 +39,15 @@ namespace Microsoft.Azure.Cosmos
         private Uri locationEndpoint;
         private RetryContext retryContext;
         private DocumentServiceRequest documentServiceRequest;
+#if !INTERNAL
+        private volatile bool addHubRegionProcessingOnlyHeader;
+#endif
 
         public ClientRetryPolicy(
             GlobalEndpointManager globalEndpointManager,
             GlobalPartitionEndpointManager partitionKeyRangeLocationCache,
             RetryOptions retryOptions,
             bool enableEndpointDiscovery,
-            bool isPartitionLevelFailoverEnabled,
             bool isThinClientEnabled)
         {
             this.throttlingRetry = new ResourceThrottleRetryPolicy(
@@ -61,7 +62,6 @@ namespace Microsoft.Azure.Cosmos
             this.serviceUnavailableRetryCount = 0;
             this.canUseMultipleWriteLocations = false;
             this.isMultiMasterWriteRequest = false;
-            this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
             this.isThinClientEnabled = isThinClientEnabled;
         }
 
@@ -226,11 +226,17 @@ namespace Microsoft.Azure.Cosmos
                     request.RequestContext.RouteToLocation(this.retryContext.RetryLocationIndex, this.retryContext.RetryRequestOnPreferredLocations);
                 }
             }
-
+#if !INTERNAL
+            // If previous attempt failed with 404/1002, add the hub-region-processing-only header to all subsequent retry attempts
+            if (this.addHubRegionProcessingOnlyHeader)
+            {
+                request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion] = bool.TrueString;
+            }
+#endif
             // Resolve the endpoint for the request and pin the resolution to the resolved endpoint
             // This enables marking the endpoint unavailability on endpoint failover/unreachability
             this.locationEndpoint = this.isThinClientEnabled
-                && ThinClientStoreModel.IsOperationSupportedByThinClient(request)
+                && GatewayStoreModel.IsOperationSupportedByThinClient(request)
                 ? this.globalEndpointManager.ResolveThinClientEndpoint(request)
                 : this.globalEndpointManager.ResolveServiceEndpoint(request);
 
@@ -323,12 +329,19 @@ namespace Microsoft.Azure.Cosmos
                     retryOnPreferredLocations: true);
             }
 
-            if (statusCode == HttpStatusCode.NotFound
-                && subStatusCode == SubStatusCodes.ReadSessionNotAvailable)
+            if (statusCode == HttpStatusCode.NotFound && subStatusCode == SubStatusCodes.ReadSessionNotAvailable)
             {
+#if !INTERNAL
+                // Only set the hub region processing header for single master accounts
+                // Set header only after the first retry attempt fails with 404/1002
+                if (!this.canUseMultipleWriteLocations && this.sessionTokenRetryCount >= 1)
+                {
+                    this.addHubRegionProcessingOnlyHeader = true;
+                }
+#endif
                 return this.ShouldRetryOnSessionNotAvailable(this.documentServiceRequest);
             }
-            
+
             // Received 503 due to client connect timeout or Gateway
             if (statusCode == HttpStatusCode.ServiceUnavailable)
             {
@@ -500,7 +513,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (!this.canUseMultipleWriteLocations
                     && !this.isReadRequest
-                    && !this.isPartitionLevelFailoverEnabled)
+                    && !this.partitionKeyRangeLocationCache.IsPartitionLevelAutomaticFailoverEnabled())
             {
                 // Write requests on single master cannot be retried if partition level failover is disabled.
                 // This means there are no other regions available to serve the writes.

@@ -1,11 +1,9 @@
-﻿namespace Microsoft.Azure.Documents
+namespace Microsoft.Azure.Documents
 {
     using System;
 
     internal interface ISessionRetryOptions
-#pragma warning disable SA1505 // Opening braces should not be followed by blank line
     {
-#pragma warning restore SA1505 // Opening braces should not be followed by blank line
 
         /// <summary>
         /// Sets the minimum retry time for 404/1002 retries within each region for read and write operations. 
@@ -19,13 +17,11 @@
         /// region is at least the min. in-region retry time.
         /// </summary>
         int MaxInRegionRetryCount { get; }
-#pragma warning disable SA1507 // Code should not contain multiple blank lines in a row
 
 
         /// <summary>
         /// hints which guide SDK-internal retry policies on how early to switch retries to a different region.
         /// </summary>
         Boolean RemoteRegionPreferred { get; }
-#pragma warning restore SA1507 // Code should not contain multiple blank lines in a row
     }
 }

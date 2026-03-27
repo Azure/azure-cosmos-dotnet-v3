@@ -116,8 +116,39 @@ namespace Microsoft.Azure.Documents
 
         RelocateLeakedTentativeWrites = 70,
 
-        Last = 71,
+        // Operation type for checking if the backend is able to serve an external backup request.
+        ExternalPreBackup = 71,
+
+        // Operation type for uploading external backups
+        ExternalBackup = 72,
+
+        // Operation type for checking external backup status
+        CheckExternalBackupStatus = 73,
+
+        // Operation type for restoring external backups
+        ExternalBackupRestore = 74,
+
+        // Operation type for checking external backup restore status
+        CheckExternalBackupRestoreStatus = 75,
+
+        // Distributed transaction operations
+        PrepareDistributedTransaction = 76, //this will not be used by Client SDKs
 #endif
+        CommitDistributedTransaction = 77,
+        AbortDistributedTransaction = 78,
+
+#if !COSMOSCLIENT
+        // Operation type for cancelling external backup
+        CancelExternalBackup = 79,
+#endif
+
+#if !COSMOSCLIENT
+        // Operation type for cancelling external backup restore
+        CancelExternalBackupRestore = 80,
+#endif
+
+        // Add new operation types above this
+        Last = 81,
 
         // These names make it unclear what they map to in RequestOperationType.
         ExecuteJavaScript = -2,
@@ -149,6 +180,8 @@ namespace Microsoft.Azure.Documents
         ControllerBatchGetOutputV2 = -27,
         ControllerBatchWatchdogHealthCheckPing = -28,
         GetDatabaseAccountArtifactPermissions = -29,
+        GetRegionalConfigurations = -30,
+        GetAzureRbacAccessCheck = -31,
 #endif
     }
 
@@ -227,7 +260,9 @@ namespace Microsoft.Azure.Documents
                    type == OperationType.BatchApply ||
                    type == OperationType.Batch ||
                    type == OperationType.Upsert ||
-                   type == OperationType.CompleteUserTransaction
+                   type == OperationType.CompleteUserTransaction ||
+                   type == OperationType.AbortDistributedTransaction ||
+                   type == OperationType.CommitDistributedTransaction
 #if !COSMOSCLIENT
                    ||
                    type == OperationType.MasterInitiatedProgressCoordination ||
@@ -258,7 +293,12 @@ namespace Microsoft.Azure.Documents
                    type == OperationType.Resume ||
                    type == OperationType.UpdatePartitionThroughput ||
                    type == OperationType.Truncate ||
-                   type == OperationType.RelocateLeakedTentativeWrites
+                   type == OperationType.RelocateLeakedTentativeWrites ||
+                   type == OperationType.ExternalBackup ||
+                   type == OperationType.ExternalBackupRestore ||
+                   type == OperationType.PrepareDistributedTransaction ||
+                   type == OperationType.CancelExternalBackup ||
+                   type == OperationType.CancelExternalBackupRestore
 #endif
                    ;
         }
@@ -285,7 +325,10 @@ namespace Microsoft.Azure.Documents
                    type == OperationType.QueryPlan
 #if !COSMOSCLIENT
                    ||
-                   type == OperationType.GetStorageAuthToken
+                   type == OperationType.GetStorageAuthToken ||
+                   type == OperationType.ExternalPreBackup ||
+                   type == OperationType.CheckExternalBackupStatus ||
+                   type == OperationType.CheckExternalBackupRestoreStatus
 #endif
                    ;
         }

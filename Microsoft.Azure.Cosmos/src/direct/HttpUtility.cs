@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Documents
 {
     using System;
+    using System.Buffers;
     using System.Globalization;
     using System.IO;
     using System.Text;
@@ -14,9 +15,7 @@ namespace Microsoft.Azure.Documents
     internal sealed class HttpUtility
     {
         // Fields
-#pragma warning disable IDE0044 // Add readonly modifier
         private static char[] s_entityEndingChars = new char[] { ';', '&' };
-#pragma warning restore IDE0044 // Add readonly modifier
 
         // Methods
         internal static string AspCompatUrlEncode(string s)
@@ -36,7 +35,7 @@ namespace Microsoft.Azure.Documents
         internal static string CollapsePercentUFromStringInternal(string s, Encoding e)
         {
             int length = s.Length;
-            UrlDecoder decoder = new UrlDecoder(length, e);
+            using UrlDecoder decoder = new UrlDecoder(length, e);
             if (s.IndexOf("%u", StringComparison.Ordinal) == -1)
             {
                 return s;
@@ -352,7 +351,7 @@ namespace Microsoft.Azure.Documents
 
         private static string UrlDecodeStringFromBytesInternal(byte[] buf, int offset, int count, Encoding e)
         {
-            UrlDecoder decoder = new UrlDecoder(count, e);
+            using UrlDecoder decoder = new UrlDecoder(count, e);
             for (int i = 0; i < count; i++)
             {
                 int index = offset + i;
@@ -395,7 +394,7 @@ namespace Microsoft.Azure.Documents
         private static string UrlDecodeStringFromStringInternal(string s, Encoding e)
         {
             int length = s.Length;
-            UrlDecoder decoder = new UrlDecoder(length, e);
+            using UrlDecoder decoder = new UrlDecoder(length, e);
             for (int i = 0; i < length; i++)
             {
                 char ch = s[i];
@@ -754,15 +753,13 @@ namespace Microsoft.Azure.Documents
         }
 
         // Nested Types
-        private class UrlDecoder
+        private sealed class UrlDecoder : IDisposable
         {
             // Fields
-#pragma warning disable IDE0044 // Add readonly modifier
             private int _bufferSize;
             private byte[] _byteBuffer;
             private char[] _charBuffer;
             private Encoding _encoding;
-#pragma warning restore IDE0044 // Add readonly modifier
             private int _numBytes;
             private int _numChars;
 
@@ -771,14 +768,28 @@ namespace Microsoft.Azure.Documents
             {
                 this._bufferSize = bufferSize;
                 this._encoding = encoding;
-                this._charBuffer = new char[bufferSize];
+                this._charBuffer = ArrayPool<char>.Shared.Rent(bufferSize);
+            }
+
+            public void Dispose()
+            {
+                if (this._charBuffer != null)
+                {
+                    ArrayPool<char>.Shared.Return(this._charBuffer);
+                    this._charBuffer = null;
+                }
+                if (this._byteBuffer != null)
+                {
+                    ArrayPool<byte>.Shared.Return(this._byteBuffer);
+                    this._byteBuffer = null;
+                }
             }
 
             internal void AddByte(byte b)
             {
                 if (this._byteBuffer == null)
                 {
-                    this._byteBuffer = new byte[this._bufferSize];
+                    this._byteBuffer = ArrayPool<byte>.Shared.Rent(this._bufferSize);
                 }
                 this._byteBuffer[this._numBytes++] = b;
             }

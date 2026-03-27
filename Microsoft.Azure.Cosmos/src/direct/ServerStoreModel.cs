@@ -66,14 +66,25 @@ namespace Microsoft.Azure.Documents
             }
 
             string requestConsistencyLevelHeaderValue = request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel];
+            string requestReadConsistencyStrategyHeaderValue = request.Headers[HttpConstants.HttpHeaders.ReadConsistencyStrategy];
+
+            // Validate that both headers are not set simultaneously
+            if (!string.IsNullOrEmpty(requestConsistencyLevelHeaderValue) &&
+                !string.IsNullOrEmpty(requestReadConsistencyStrategyHeaderValue))
+            {
+                throw new BadRequestException(
+                    string.Format(CultureInfo.CurrentUICulture,
+                    "Cannot specify both '{0}' and '{1}' headers. Use '{1}' for read consistency control.",
+                    HttpConstants.HttpHeaders.ConsistencyLevel,
+                    HttpConstants.HttpHeaders.ReadConsistencyStrategy));
+            }
 
             request.RequestContext.OriginalRequestConsistencyLevel = null;
+            request.RequestContext.ReadConsistencyStrategy = null;
 
             if (!string.IsNullOrEmpty(requestConsistencyLevelHeaderValue))
             {
-                ConsistencyLevel requestConsistencyLevel;
-
-                if (!Enum.TryParse<ConsistencyLevel>(requestConsistencyLevelHeaderValue, out requestConsistencyLevel))
+                if (!Enum.TryParse<ConsistencyLevel>(requestConsistencyLevelHeaderValue, out ConsistencyLevel requestConsistencyLevel))
                 {
                     throw new BadRequestException(
                         string.Format(CultureInfo.CurrentUICulture,
@@ -83,6 +94,20 @@ namespace Microsoft.Azure.Documents
                 }
 
                 request.RequestContext.OriginalRequestConsistencyLevel = requestConsistencyLevel;
+            }
+
+            if (!string.IsNullOrEmpty(requestReadConsistencyStrategyHeaderValue))
+            {
+                if (!Enum.TryParse<ReadConsistencyStrategy>(requestReadConsistencyStrategyHeaderValue, ignoreCase: true, out ReadConsistencyStrategy requestReadConsistencyStrategy))
+                {
+                    throw new BadRequestException(
+                        string.Format(CultureInfo.CurrentUICulture,
+                        RMResources.InvalidHeaderValue,
+                        requestReadConsistencyStrategyHeaderValue,
+                        HttpConstants.HttpHeaders.ReadConsistencyStrategy));
+                }
+
+                request.RequestContext.ReadConsistencyStrategy = requestReadConsistencyStrategy;
             }
 
             if (ReplicatedResourceClient.IsMasterResource(request.ResourceType))
@@ -100,7 +125,6 @@ namespace Microsoft.Azure.Documents
             {
                 return this.storeClient.ProcessMessageAsync(request, cancellationToken);
             }
-
         }
 
         /// <inheritdoc/>>
@@ -119,7 +143,6 @@ namespace Microsoft.Azure.Documents
             DocumentServiceRequest request,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-
             DocumentServiceResponse response = await this.storeClient.ProcessMessageAsync(request, cancellationToken);
             this.receivedResponse?.Invoke(this, new ReceivedResponseEventArgs(request, response));
             return response;
@@ -127,7 +150,7 @@ namespace Microsoft.Azure.Documents
 
         public void Dispose()
         {
-            
+
         }
     }
 }

@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.Specialized;
     using Microsoft.Azure.Documents.Collections;
 
     /// <summary>

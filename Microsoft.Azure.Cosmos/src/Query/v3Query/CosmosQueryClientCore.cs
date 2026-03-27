@@ -85,7 +85,8 @@ namespace Microsoft.Azure.Cosmos
                 effectivePartitionKeyRange,
                 containerProperties.PartitionKey,
                 containerProperties.VectorEmbeddingPolicy,
-                containerProperties.GeospatialConfig.GeospatialType);
+                containerProperties.GeospatialConfig.GeospatialType,
+                this.documentClient.UseLengthAwareRangeComparer);
         }
 
         public override async Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetPartitionedQueryExecutionInfoAsync(
@@ -208,7 +209,20 @@ namespace Microsoft.Azure.Cosmos
             {
                 // Syntax exception are argument exceptions and thrown to the user.
                 message.EnsureSuccessStatusCode();
-                partitionedQueryExecutionInfo = this.clientContext.SerializerCore.FromStream<PartitionedQueryExecutionInfo>(message.Content);
+
+                if (this.documentClient.isThinClientEnabled)
+                {
+                    ContainerProperties containerProperties = await this.clientContext.GetCachedContainerPropertiesAsync(
+                        resourceUri, trace, cancellationToken);
+
+                    partitionedQueryExecutionInfo = ThinClientQueryPlanHelper.DeserializeQueryPlanResponse(
+                        message.Content,
+                        containerProperties.PartitionKey);
+                }
+                else
+                {
+                    partitionedQueryExecutionInfo = this.clientContext.SerializerCore.FromStream<PartitionedQueryExecutionInfo>(message.Content);
+                }
             }
 
             return partitionedQueryExecutionInfo;
@@ -231,14 +245,16 @@ namespace Microsoft.Azure.Cosmos
             using (ITrace childTrace = trace.StartChild("Get Overlapping Feed Ranges", TraceComponent.Routing, Tracing.TraceLevel.Info))
             {
                 IRoutingMapProvider routingMapProvider = await this.GetRoutingMapProviderAsync();
-                List<Range<string>> ranges = await feedRangeInternal.GetEffectiveRangesAsync(routingMapProvider, collectionResourceId, partitionKeyDefinition, trace);
+                List<Range<string>> providedRanges = await feedRangeInternal.GetEffectiveRangesAsync(routingMapProvider, collectionResourceId, partitionKeyDefinition, trace);
 
-                return await this.GetTargetPartitionKeyRangesAsync(
+                List<PartitionKeyRange> ranges = await this.GetTargetPartitionKeyRangesAsync(
                     resourceLink,
                     collectionResourceId,
-                    ranges,
+                    providedRanges,
                     forceRefresh,
                     childTrace);
+
+                return QueryRangeUtils.LimitPartitionKeyRangesToProvidedRanges(ranges, providedRanges, this.clientContext.ClientOptions.UseLengthAwareRangeComparer);
             }
         }
 

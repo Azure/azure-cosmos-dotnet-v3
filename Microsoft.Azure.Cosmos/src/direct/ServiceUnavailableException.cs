@@ -125,6 +125,8 @@ namespace Microsoft.Azure.Documents
                     return RMResources.Server_NoValidStoreResponse;
                 case SubStatusCodes.Channel_Closed:
                     return RMResources.ChannelClosed;
+                case SubStatusCodes.Server_NRegionCommitWriteBarrierNotMet:
+                    return RMResources.Server_NRegionCommitWriteBarrierNotMet;
                 default:
                     return RMResources.ServiceUnavailable;
             }

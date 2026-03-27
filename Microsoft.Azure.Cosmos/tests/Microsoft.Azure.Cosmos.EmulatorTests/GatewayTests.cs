@@ -2275,7 +2275,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 PartitionKey = new Documents.PartitionKey("test")
             };
-            for (int numExec = 0; numExec < 3; numExec++)
+            for (int numExec = 0; numExec < 6; numExec++)
             {
                 client.ExecuteStoredProcedureAsync<string>(retrievedStoredProcedure, requestOptions).Wait();
             }
@@ -2472,7 +2472,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // create one doc and try again
             await client.CreateDocumentAsync(collection, new Document() { Id = "newdoc1" });
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < 6; i++)
             {
                 IDocumentQuery<dynamic> docQuery2 = secondaryClient.CreateDocumentQuery(collection.DocumentsLink,
                     "select udf.badUdf(r.id) from root r", new FeedOptions { EnableCrossPartitionQuery = true }).AsDocumentQuery();

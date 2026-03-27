@@ -29,6 +29,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 RntbdConstants.RequestIdentifiers.StartEpkHash,
                 RntbdConstants.RequestIdentifiers.EndEpkHash,
                 RntbdConstants.RequestIdentifiers.GlobalDatabaseAccountName,
+                RntbdConstants.RequestIdentifiers.RegionalDatabaseAccountName,
                 RntbdConstants.RequestIdentifiers.DatabaseName,
                 RntbdConstants.RequestIdentifiers.CollectionName,
                 RntbdConstants.RequestIdentifiers.CollectionRid,

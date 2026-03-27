@@ -40,13 +40,14 @@ namespace Microsoft.Azure.Cosmos
                   serializerSettings,
                   httpClient,
                   globalPartitionEndpointManager,
-                  isPartitionLevelFailoverEnabled)
+                  isThinClientEnabled: true,
+                  userAgentContainer: userAgentContainer)
         {
             this.thinClientStoreClient = new ThinClientStoreClient(
                 httpClient,
                 userAgentContainer,
                 eventSource,
-                isPartitionLevelFailoverEnabled,
+                globalPartitionEndpointManager,
                 serializerSettings);
 
             this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
@@ -134,7 +135,7 @@ namespace Microsoft.Azure.Cosmos
             return response;
         }
 
-        public static bool IsOperationSupportedByThinClient(
+        public static new bool IsOperationSupportedByThinClient(
             DocumentServiceRequest request)
         {
             // Thin proxy supports the following operations for Document resources.

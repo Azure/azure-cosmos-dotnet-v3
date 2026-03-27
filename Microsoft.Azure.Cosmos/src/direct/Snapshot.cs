@@ -41,11 +41,8 @@ namespace Microsoft.Azure.Documents
 #endif
     class Snapshot : Resource
     {
-#pragma warning disable CS0108
-#pragma warning disable IDE0044
-        private static DateTime UnixStartTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-#pragma warning restore CS0108
-#pragma warning restore IDE0044
+        private static new DateTime UnixStartTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+
         private SnapshotContent snapshotContent;
 
         /// <summary>

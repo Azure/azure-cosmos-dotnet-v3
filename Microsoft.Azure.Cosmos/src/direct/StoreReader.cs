@@ -521,6 +521,9 @@ namespace Microsoft.Azure.Documents
                 case OperationType.ExecuteJavaScript:
 #if !COSMOSCLIENT
                 case OperationType.MetadataCheckAccess:
+                case OperationType.ExternalPreBackup:
+                case OperationType.CheckExternalBackupStatus:
+                case OperationType.CheckExternalBackupRestoreStatus:
                 case OperationType.GetStorageAuthToken:
 #endif
                     {

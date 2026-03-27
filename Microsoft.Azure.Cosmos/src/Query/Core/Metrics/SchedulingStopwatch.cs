@@ -3,7 +3,6 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 {
-    using System.Diagnostics;
     using Microsoft.Azure.Documents;
 
     /// <summary>

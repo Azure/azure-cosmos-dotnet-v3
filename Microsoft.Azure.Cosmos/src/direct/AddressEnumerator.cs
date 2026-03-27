@@ -325,22 +325,15 @@ namespace Microsoft.Azure.Documents
                 }
             }
         }
-#pragma warning disable SA1507 // Code should not contain multiple blank lines in a row
 
-        
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
-/// <summary>
+        /// <summary>
         /// Gets the effective health status of the transport address uri.
         /// </summary>
         /// <param name="addressUri">An instance of the <see cref="TransportAddressUri"/> containing the replica address.</param>
         /// <param name="failedEndpoints">A set containing the failed endpoints.</param>
         /// <returns>An instance of <see cref="TransportAddressUri.HealthStatus"/> indicating the effective health status of the address.</returns>
         private static TransportAddressHealthState.HealthStatus GetEffectiveStatus(
-#pragma warning restore SA1507 // Code should not contain multiple blank lines in a row
-#pragma warning disable SA1114 // Parameter list should follow declaration
             TransportAddressUri addressUri,
-#pragma warning restore SA1114 // Parameter list should follow declaration
-#pragma warning restore SA1114 // Parameter list should follow declaration
             ConcurrentDictionary<TransportAddressUri, bool> failedEndpoints)
         {
             if (failedEndpoints != null && failedEndpoints.ContainsKey(addressUri))

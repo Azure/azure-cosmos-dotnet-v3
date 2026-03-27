@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters
                 }
                 else if (property.NameEquals(ChangeFeedMetadataFields.ConflictResolutionTimestamp))
                 {
-                    metadata.ConflictResolutionTimestamp = ChangeFeedMetadataConverter.ToDateTimeFromUnixTimeInSeconds(property.Value.GetInt64());
+                    metadata.ConflictResolutionTimestampInSeconds = property.Value.GetInt64();
                 }
                 else if (property.NameEquals(ChangeFeedMetadataFields.OperationType))
                 {

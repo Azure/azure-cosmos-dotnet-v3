@@ -16,6 +16,11 @@ namespace Microsoft.Azure.Documents
 
         public TimeoutHelper TimeoutHelper { get; set; }
 
+        /// <summary>
+        /// Read consistency strategy for this request (resolved from headers or request options).
+        /// This setting overrides ConsistencyLevel when set to a value other than Default.
+        /// </summary>
+        public ReadConsistencyStrategy? ReadConsistencyStrategy { get; set; }
         public RequestChargeTracker RequestChargeTracker { get; set; }
 
         public bool ForceRefreshAddressCache { get; set; }
@@ -32,11 +37,6 @@ namespace Microsoft.Azure.Documents
         /// </summary>
         public ReferenceCountedDisposable<StoreResult> QuorumSelectedStoreResponse => this.quorumSelectedStoreResponse;
 
-        /// <summary>
-        /// Read consistency strategy for this request (resolved from headers or request options).
-        /// This setting overrides ConsistencyLevel when set to a value other than Default.
-        /// </summary>
-        public ReadConsistencyStrategy? ReadConsistencyStrategy { get; set; }
         public ConsistencyLevel? OriginalRequestConsistencyLevel { get; set; }
 
         public long QuorumSelectedLSN { get; set; }
@@ -44,10 +44,17 @@ namespace Microsoft.Azure.Documents
         public long GlobalCommittedSelectedLSN { get; set; }
 
         /// <summary>
-        /// Cache the write storeResult in context during global strong
-        /// where we want to lock on a single initial write response and perform barrier calls until globalCommittedLsn is caught up
+        /// For strong consistency writes, this tracks the endpoint of the region the write was sent to.
+        /// This is used to ensure that on retries, the barrier requests are sent to the same region.
+        /// If a failover occurs and the region endpoint changes, the request is failed.
         /// </summary>
-        public ReferenceCountedDisposable<StoreResult> GlobalStrongWriteStoreResult { get; set; }
+        public Uri GlobalStrongWriteEndpoint { get; set; }
+
+        /// Cache the write storeResult in context during global strong or less than strong consistency writes
+        /// where we want to lock on a single initial write response and perform barrier calls until globalCommittedLsn
+        /// or the globalNRegion CommittedLsn is caught up.
+        /// </summary>
+        public ReferenceCountedDisposable<StoreResult> CachedWriteStoreResult { get; set; }
 
         /// <summary>
         /// Unique Identity that represents the target partition where the request should reach.
@@ -113,9 +120,12 @@ namespace Microsoft.Azure.Documents
         public bool IsRetry { get; set; }
 
         /// <summary>
-        /// Indicates if this request is being retried on a different region due to Per partition failover.
+        /// Indicates if this request wants to explictly opt out of Per partition failover retry behavior.
+        /// Ex: Topology upsert with PrepareForEntityDeletionIntent currently needs to skip partition failover retry.
+        ///     Once backup restore is able to fully support collection and database deletes, this can be removed.
+        /// Ex: If a request is being retried on a different region due to Per partition failover, then skip.
         /// </summary>
-        public bool IsPartitionFailoverRetry { get; set; }
+        public bool SkipPartitionFailoverRetry { get; set; }
 
         /// <summary>
         /// A list of regions to exclude routing to, used for per-request level routing exclusion
@@ -167,31 +177,25 @@ namespace Microsoft.Azure.Documents
             }
         }
 
-        
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
-/// <summary>
+        /// <summary>
         /// Sets routing directive for <see cref="GlobalEndpointManager"/> to resolve
         /// the request to endpoint based on location index
         /// </summary>
         /// <param name="locationIndex">Index of the location to which the request should be routed</param>
         /// <param name="usePreferredLocations">Use preferred locations to route request</param>
         public void RouteToLocation(int locationIndex, bool usePreferredLocations)
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
         {
             this.LocationIndexToRoute = locationIndex;
             this.UsePreferredLocations = usePreferredLocations;
             this.LocationEndpointToRoute = null;
         }
 
-        
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
-/// <summary>
+        /// <summary>
         /// Sets location-based routing directive for <see cref="GlobalEndpointManager"/> to resolve
         /// the request to given <paramref name="locationEndpoint"/>
         /// </summary>
         /// <param name="locationEndpoint">Location endpoint to which the request should be routed</param>
         public void RouteToLocation(Uri locationEndpoint)
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
         {
             this.LocationEndpointToRoute = locationEndpoint;
             this.LocationIndexToRoute = null;
@@ -254,6 +258,7 @@ namespace Microsoft.Azure.Documents
             requestContext.FailedEndpoints = this.FailedEndpoints;
             requestContext.LastPartitionAddressInformationHashCode = this.LastPartitionAddressInformationHashCode;
             requestContext.ExcludeRegions = this.ExcludeRegions;
+            requestContext.GlobalStrongWriteEndpoint = this.GlobalStrongWriteEndpoint;
             requestContext.ReadConsistencyStrategy = this.ReadConsistencyStrategy;
 
             return requestContext;

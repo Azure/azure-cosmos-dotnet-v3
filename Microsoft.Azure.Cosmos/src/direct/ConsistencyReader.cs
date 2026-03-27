@@ -185,7 +185,7 @@ namespace Microsoft.Azure.Documents
             {
                 timeout.ThrowGoneIfElapsed();
             }
-            
+
             entity.RequestContext.TimeoutHelper = timeout;
 
             if (entity.RequestContext.RequestChargeTracker == null)
@@ -193,16 +193,16 @@ namespace Microsoft.Azure.Documents
                 entity.RequestContext.RequestChargeTracker = new RequestChargeTracker();
             }
 
-            if(entity.RequestContext.ClientRequestStatistics == null)
+            if (entity.RequestContext.ClientRequestStatistics == null)
             {
                 entity.RequestContext.ClientRequestStatistics = new ClientSideRequestStatistics();
             }
 
             entity.RequestContext.ForceRefreshAddressCache = forceRefresh;
 
-            ConsistencyLevel targetConsistencyLevel;
+            ReadConsistencyStrategy readConsistencyStrategy;
             bool useSessionToken;
-            ReadMode desiredReadMode = this.DeduceReadMode(entity, out targetConsistencyLevel, out useSessionToken);
+            ReadMode desiredReadMode = this.DeduceReadMode(entity, out readConsistencyStrategy, out useSessionToken);
 
             int maxReplicaCount = this.GetMaxReplicaSetSize(entity);
             int readQuorumValue = maxReplicaCount - (maxReplicaCount / 2);
@@ -232,11 +232,10 @@ namespace Microsoft.Azure.Documents
                     return this.quorumReader.ReadStrongAsync(entity, readQuorumValue, desiredReadMode);
 
                 case ReadMode.Any:
-                    if (targetConsistencyLevel == ConsistencyLevel.Session)
+                    if (readConsistencyStrategy == ReadConsistencyStrategy.Session)
                     {
                         // RequestRetryUtility vs BackoffRetryUtility: is purely for safe flighting purpose only
                         // Post flighting can be fully pivoted to RequestRetryUtility and remove BackoffRetryUtility below
-#pragma warning disable SA1008 // Opening parenthesis should be spaced correctly
                         if (entity.UseStatusCodeFor4041002
                             && entity.IsValidRequestFor4041002 ())
                         {
@@ -247,7 +246,6 @@ namespace Microsoft.Azure.Documents
                                     sessionRetryOptions: this.sessionRetryOptions),
                                 cancellationToken: cancellationToken);
                         }
-#pragma warning restore SA1008 // Opening parenthesis should be spaced correctly
 
                         return BackoffRetryUtility<StoreResponse>.ExecuteAsync(
                             callbackMethod: () => this.ReadSessionAsync(entity, desiredReadMode),
@@ -306,7 +304,7 @@ namespace Microsoft.Azure.Documents
 
             IList<ReferenceCountedDisposable<StoreResult>> responses = await this.storeReader.ReadMultipleReplicaAsync(
                     entity:entity,
-                    includePrimary:true, 
+                    includePrimary:true,
                     replicaCountToRead:1,
                     requiresValidLsn:true,
                     useSessionToken:true,
@@ -355,9 +353,9 @@ namespace Microsoft.Azure.Documents
         }
 
         private ReadMode DeduceReadMode(
-             DocumentServiceRequest request,
-             out ReadConsistencyStrategy readConsistencyStrategy,
-             out bool useSessionToken)
+            DocumentServiceRequest request,
+            out ReadConsistencyStrategy readConsistencyStrategy,
+            out bool useSessionToken)
         {
             readConsistencyStrategy = RequestHelper.GetReadConsistencyStrategyToUse(this.serviceConfigReader, request);
             useSessionToken = (readConsistencyStrategy == ReadConsistencyStrategy.Session);

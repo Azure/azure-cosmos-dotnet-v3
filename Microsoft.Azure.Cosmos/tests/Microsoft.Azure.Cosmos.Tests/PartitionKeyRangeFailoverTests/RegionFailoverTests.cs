@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -301,13 +302,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                     containerName: containerName,
                     containerRid: containerRid);
 
-                if (enablePartitionLevelFailover)
+                bool isThinClientEnabled = ConfigurationManager.IsThinClientEnabled(defaultValue: false);
+                if (enablePartitionLevelFailover || isThinClientEnabled)
                 {
                     MockSetupsHelper.SetupPartitionKeyRanges(
-                        mockHttpHandler: mockHttpHandler,
-                        regionEndpoint: primaryRegionEndpoint,
-                        containerResourceId: containerResourceId,
-                        partitionKeyRangeIds: out IReadOnlyList<string> secondaryRegionPartitionKeyRangeIds);
+                         mockHttpHandler: mockHttpHandler,
+                         regionEndpoint: primaryRegionEndpoint,
+                         containerResourceId: containerResourceId,
+                         partitionKeyRangeIds: out IReadOnlyList<string> secondaryRegionPartitionKeyRangeIds);
                 }
 
                 CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
@@ -344,15 +346,20 @@ namespace Microsoft.Azure.Cosmos.Tests
                     CosmosTraceDiagnostics traceDiagnostic = readResponse.Diagnostics as CosmosTraceDiagnostics;
                     Assert.IsNotNull(traceDiagnostic);
 
+                    if (traceDiagnostic.Value is Trace rootLevelTrace)
+                    {
+                        rootLevelTrace.SetWalkingStateRecursively();
+                    }
+
                     traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
 
                     if (enablePartitionLevelFailover)
                     {
-                        Assert.IsNotNull(hedgeContext);
-                        List<string> hedgedRegions = ((IEnumerable<string>)hedgeContext).ToList();
-
-                        Assert.IsTrue(hedgedRegions.Count >= 1, "Since the first region is not available, the request should atleast hedge to the next region.");
-                        Assert.IsTrue(hedgedRegions.Contains(Regions.EastUS));
+                        // When PPAF is enabled, the primary request handles failover internally
+                        // (retrying to another region). No cross-region hedging occurs, so
+                        // HedgeContext should be absent. The failover is visible in the
+                        // diagnostics children (multiple RouterHandler/TransportHandler nodes).
+                        Assert.IsNull(hedgeContext);
                     }
                     else
                     {
@@ -450,6 +457,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                     databaseName: databaseName,
                     containerName: containerName,
                     containerRid: containerRid);
+
+                MockSetupsHelper.SetupPartitionKeyRanges(
+                    mockHttpHandler: mockHttpHandler,
+                    regionEndpoint: primaryRegionEndpoint,
+                    containerResourceId: containerResourceId,
+                    partitionKeyRangeIds: out IReadOnlyList<string> partitionKeyRangeIds);
 
                 CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
                 {
@@ -601,6 +614,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                     containerName: containerName,
                     containerRid: containerRid);
 
+                MockSetupsHelper.SetupPartitionKeyRanges(
+                    mockHttpHandler: mockHttpHandler,
+                    regionEndpoint: primaryRegionEndpoint,
+                    containerResourceId: containerResourceId,
+                    partitionKeyRangeIds: out IReadOnlyList<string> partitionKeyRangeIds);
+
                 CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
                 {
                     ConsistencyLevel = Cosmos.ConsistencyLevel.Strong,
@@ -637,6 +656,11 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                         CosmosTraceDiagnostics traceDiagnostic = createItemResponse.Diagnostics as CosmosTraceDiagnostics;
                         Assert.IsNotNull(traceDiagnostic);
+
+                        if (traceDiagnostic.Value is Trace rootLevelTrace)
+                        {
+                            rootLevelTrace.SetWalkingStateRecursively();
+                        }
 
                         traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
                         Assert.IsNull(hedgeContext);

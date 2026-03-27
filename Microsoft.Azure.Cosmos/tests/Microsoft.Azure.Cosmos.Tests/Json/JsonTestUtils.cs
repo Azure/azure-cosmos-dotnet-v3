@@ -482,6 +482,8 @@
                 Console.WriteLine($"  Output Write Options               : {outputSpec.WriteOptions}");
                 Console.WriteLine($"  Input User String Encoding Enabled : {inputSpec.UserStringEncoded}");
                 Console.WriteLine();
+                Console.WriteLine($"  Strict Comparison                  : {strictComparison}");
+                Console.WriteLine();
                 Console.WriteLine($"Comparison Errors:");
                 Console.WriteLine(verboseOutput.ToString());
 
@@ -890,6 +892,14 @@
             public JsonWriteOptions WriteOptions { get; }
             public bool IsNewtonsoft { get; }
             public bool UserStringEncoded { get; }
+
+            public bool IsBinary => this.SerializationFormat == JsonSerializationFormat.Binary;
+            public bool IsHybridRow => this.SerializationFormat == JsonSerializationFormat.HybridRow;
+            public bool IsText => this.SerializationFormat == JsonSerializationFormat.Text;
+
+            public bool EnablesBase64Strings => this.WriteOptions.HasFlag(JsonWriteOptions.EnableBase64Strings);
+            public bool EnablesNumberArrays => this.WriteOptions.HasFlag(JsonWriteOptions.EnableNumberArrays);
+            public bool EnablesUInt64Values => this.WriteOptions.HasFlag(JsonWriteOptions.EnableUInt64Values);
         }
 
         public class RoundTripBaseline

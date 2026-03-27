@@ -24,14 +24,11 @@ namespace Microsoft.Azure.Documents
         /// </summary>
         Strong,
 
-        
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
-/// <summary>
+        /// <summary>
         /// Bounded Staleness guarantees that reads are not too out-of-date. This can be configured based on number of operations (MaxStalenessPrefix) 
         /// or time (MaxStalenessIntervalInSeconds).  For more information on MaxStalenessPrefix and MaxStalenessIntervalInSeconds, please see <see cref="ConsistencyPolicy"/>.
         /// </summary>
         BoundedStaleness,
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
 
         /// <summary>
         /// Session Consistency guarantees monotonic reads (you never read old data, then new, then old again), monotonic writes (writes are ordered) 
@@ -50,5 +47,18 @@ namespace Microsoft.Azure.Documents
         /// All writes will be eventually be available for reads.
         /// </summary>
         ConsistentPrefix
+    }
+
+    internal static class ConsistencyLevelExtensions
+    {
+        public static string ToConsistencyLevelString(this ConsistencyLevel consistencyLevel) => consistencyLevel switch
+        {
+            ConsistencyLevel.Strong => "Strong",
+            ConsistencyLevel.BoundedStaleness => "BoundedStaleness",
+            ConsistencyLevel.Session => "Session",
+            ConsistencyLevel.Eventual => "Eventual",
+            ConsistencyLevel.ConsistentPrefix => "ConsistentPrefix",
+            _ => "Unknown",
+        };
     }
 }

@@ -73,14 +73,6 @@ namespace Microsoft.Azure.Documents.Client
         public IList<string> PostTriggerInclude { get; set; }
 
         /// <summary>
-        /// Gets or sets the <see cref="ReadConsistencyStrategy"/> for read operations.
-        /// When set, this takes precedence over ConsistencyLevel for determining read behavior.
-        /// </summary>
-        internal ReadConsistencyStrategy? ReadConsistencyStrategy { get; set; }
-
-
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
-        /// <summary>
         /// Gets or sets the condition (ETag) associated with the request in the Azure Cosmos DB service.
         /// </summary>
         /// <value>
@@ -158,9 +150,7 @@ namespace Microsoft.Azure.Documents.Client
         /// </example>
         /// <seealso cref="ConsistencyLevel"/>
         public ConsistencyLevel? ConsistencyLevel { get; set; }
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
 
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
         /// <summary>
         /// Gets or sets the token for use with session consistency in the Azure Cosmos DB service.
         /// </summary>
@@ -217,9 +207,7 @@ namespace Microsoft.Azure.Documents.Client
         /// </example>
         /// <seealso cref="ConsistencyLevel"/>
         public string SessionToken { get; set; }
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
 
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
         /// <summary>
         /// Gets or sets the expiry time for resource token. Used when creating/updating/reading permissions in the Azure Cosmos DB service.
         /// </summary>
@@ -240,7 +228,6 @@ namespace Microsoft.Azure.Documents.Client
         /// <seealso cref="Microsoft.Azure.Documents.Permission"/>
         /// <seealso cref="Microsoft.Azure.Documents.User"/>
         public int? ResourceTokenExpirySeconds { get; set; }
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
 
         /// <summary>
         /// Gets or sets the offer type for the resource in the Azure Cosmos DB service.
@@ -379,9 +366,7 @@ namespace Microsoft.Azure.Documents.Client
         /// <seealso cref="Microsoft.Azure.Documents.PartitionKeyDefinition"/>
         public PartitionKey PartitionKey { get; set; }
 
-        
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
-/// <summary>
+        /// <summary>
         ///  Gets or sets the <see cref="EnableScriptLogging"/> for the current request in the Azure Cosmos DB service.
         /// </summary>
         /// <remarks>
@@ -410,7 +395,6 @@ namespace Microsoft.Azure.Documents.Client
         /// </example>
         /// <seealso cref="StoredProcedureResponse&lt;TValue&gt;.ScriptLog"/>
         public bool EnableScriptLogging { get; set; }
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
 
         /// <summary>
         /// Gets or sets <see cref="IsReadOnlyScript"/> for stored procedure execution requests in Azure Cosmos DB.
@@ -483,9 +467,7 @@ namespace Microsoft.Azure.Documents.Client
         /// </example>
         public bool PopulatePartitionKeyRangeStatistics { get; set; }
 
-        
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
-/// <summary>
+        /// <summary>
         ///  Gets or sets the <see cref="PopulateUniqueIndexReIndexProgress"/> for document collection read unique index reindex progress.
         /// </summary>
         /// <remarks>
@@ -497,11 +479,8 @@ namespace Microsoft.Azure.Documents.Client
         /// For usage, please refer to the example in <see cref="Microsoft.Azure.Documents.DocumentCollection.PopulateUniqueIndexReIndexProgress"/>.
         /// </example>
         internal bool PopulateUniqueIndexReIndexProgress { get; set; }
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
 
-        
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
-/// <summary>
+        /// <summary>
         ///  Gets or sets the <see cref="PopulateAnalyticalMigrationProgress"/> for document collection read requests.
         /// </summary>
         /// <remarks>
@@ -513,7 +492,6 @@ namespace Microsoft.Azure.Documents.Client
         /// For usage, please refer to the example in <see cref="Microsoft.Azure.Documents.DocumentCollection.PopulateAnalyticalMigrationProgress"/>.
         /// </example>
         internal bool PopulateAnalyticalMigrationProgress { get; set; }
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
 
         /// <summary>
         ///  Gets or sets the <see cref="PopulateBinaryEncodingMigratorProgress"/> for document collection read requests.
@@ -531,14 +509,42 @@ namespace Microsoft.Azure.Documents.Client
         internal bool AllowUpdatingIsPhysicalMigrationInProgress { get; set; }
 
         /// <summary>
-        /// Gets or sets the <see cref="AllowUpdatingIsPhysicalMigrationInProgress"/> flag for a topology resource upsert to bypass the use
+        /// Gets or sets the <see cref="AllowTopologyUpsertWithoutIntent"/> flag for a topology resource upsert to bypass the use
         /// of intent on an account with per-partition automatic failover (PPAF) enabled.
         /// </summary>
         internal bool AllowTopologyUpsertWithoutIntent { get; set; }
 
-#pragma warning disable CS1570
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
-#pragma warning disable SA1004 // Documentation lines should begin with single space
+        /// <summary>
+        /// Gets or sets the <see cref="IsSoftDeletionOrRecoveryOperation"/>, Inidicates whether the operation is a soft deletion operation.
+        /// </summary>
+        internal bool IsSoftDeletionOrRecoveryOperation { get; set; }
+
+        /// <summary>
+        /// Gets or sets the <see cref="BypassSoftDeletionBlocking"/>, Inidicates whether softdeletion blocking should be bypassed.
+        /// </summary>
+        internal bool BypassSoftDeletionBlocking { get; set; }
+
+        /// <summary>
+        /// Gets or sets the <see cref="IsSoftDeletePurgeOperation"/>, Indicates whether the operation is a purge (permanent delete) of a soft-deleted resource.
+        /// </summary>
+        internal bool IsSoftDeletePurgeOperation { get; set; }
+
+        /// <summary>
+        /// Gets or sets the <see cref="IsStrongConsistencyStoreClient"/>, Inidicates whether the request is coming from strong consistency store client.
+        /// </summary>
+        internal bool IsStrongConsistencyStoreClient { get; set; }
+
+        /// <summary>
+        /// Gets or sets the <see cref="ShouldProcessOnlyInHubRegion"/>, Indicates whether the request should retry in the current hub region.
+        /// </summary>
+        internal bool ShouldProcessOnlyInHubRegion { get; set; }
+
+        /// <summary>
+        /// Gets or sets the <see cref="ReadConsistencyStrategy"/> for read operations.
+        /// When set, this takes precedence over ConsistencyLevel for determining read behavior.
+        /// </summary>
+        internal ReadConsistencyStrategy? ReadConsistencyStrategy { get; set; }
+
         /// <summary>
         ///  Gets or sets the <see cref="PopulateBYOKEncryptionProgress"/> for document collection read requests.
         /// </summary>
@@ -550,12 +556,12 @@ namespace Microsoft.Azure.Documents.Client
         /// <example>
         /// For usage, please refer to the example in <see cref="Microsoft.Azure.Documents.DocumentCollection.PopulateBYOKEncryptionProgress"/>.
         /// </example>
-#pragma warning disable SA1606 // Element documentation should have summary text
         internal bool PopulateBYOKEncryptionProgress { get; set; }
-#pragma warning restore SA1004 // Documentation lines should begin with single space
-#pragma warning restore SA1606 // Element documentation should have summary text
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
-#pragma warning restore CS1570
+
+        /// <summary>
+        /// Gets or sets the <see cref="IsEmbeddingGeneratorRequest"/> for document requests.
+        /// </summary>
+        internal bool IsEmbeddingGeneratorRequest { get; set; }
 
         /// <summary>
         /// Gets or sets the Remote storage enablement
@@ -809,6 +815,17 @@ namespace Microsoft.Azure.Documents.Client
         /// <seealso cref="Microsoft.Azure.Documents.Database"/>
         /// <seealso cref="Microsoft.Azure.Documents.OfferV2"/>
         internal Collection<ThroughputBucket> ThroughputBucketLimits { get; set; }
+
+
+        /// <summary>
+        ///  Gets or sets the auth token override to use for this request.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <see cref="AuthTokenOverride"/> is used to explicitly set the auth header to use for this request.
+        /// </para>
+        /// </remarks>
+        internal string AuthTokenOverride { get; set; }
 #endif
 
     }

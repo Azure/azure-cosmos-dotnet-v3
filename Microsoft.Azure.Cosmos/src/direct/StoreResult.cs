@@ -18,9 +18,7 @@ namespace Microsoft.Azure.Documents
     {
         private readonly StoreResponse storeResponse;
 
-#pragma warning disable IDE0044 // Add readonly modifier
         private static bool UseSessionTokenHeader = VersionUtility.IsLaterThan(HttpConstants.Versions.CurrentVersion, HttpConstants.VersionDates.v2018_06_18);
-#pragma warning restore IDE0044 // Add readonly modifier
 
         public static ReferenceCountedDisposable<StoreResult> CreateStoreResult(
             StoreResponse storeResponse,
@@ -44,6 +42,7 @@ namespace Microsoft.Azure.Documents
                 long globalCommittedLSN = -1;
                 int numberOfReadRegions = -1;
                 long itemLSN = -1;
+                long globalNRegionCommittedGLSN = -1;
                 if (storeResponse.TryGetHeaderValue(
                     useLocalLSNBasedHeaders ? WFConstants.BackendHeaders.QuorumAckedLocalLSN : WFConstants.BackendHeaders.QuorumAckedLSN,
                     out headerValue))
@@ -97,6 +96,11 @@ namespace Microsoft.Azure.Documents
                     lsn = storeResponse.LSN;
                 }
 
+                if (storeResponse.TryGetHeaderValue(WFConstants.BackendHeaders.GlobalNRegionCommittedGLSN, out headerValue))
+                {
+                    globalNRegionCommittedGLSN = long.Parse(headerValue, CultureInfo.InvariantCulture);
+                }
+
                 ISessionToken sessionToken = null;
                 if (StoreResult.UseSessionTokenHeader)
                 {
@@ -136,7 +140,8 @@ namespace Microsoft.Azure.Documents
                     backendRequestDurationInMs: backendRequestDurationMilliseconds,
                     retryAfterInMs: retryAfterInMs,
                     transportRequestStats: storeResponse.TransportRequestStats,
-                    replicaHealthStatuses: replicaHealthStatuses));
+                    replicaHealthStatuses: replicaHealthStatuses,
+                    globalNRegionCommittedGLSN: globalNRegionCommittedGLSN));
             }
             else
             {
@@ -148,6 +153,7 @@ namespace Microsoft.Azure.Documents
                     int currentWriteQuorum = -1;
                     long globalCommittedLSN = -1;
                     int numberOfReadRegions = -1;
+                    long globalNRegionCommittedGLSN = -1;
                     string headerValue = documentClientException.Headers[useLocalLSNBasedHeaders ? WFConstants.BackendHeaders.QuorumAckedLocalLSN : WFConstants.BackendHeaders.QuorumAckedLSN];
                     if (!string.IsNullOrEmpty(headerValue))
                     {
@@ -199,6 +205,12 @@ namespace Microsoft.Azure.Documents
                         lsn = documentClientException.LSN;
                     }
 
+                    headerValue = documentClientException.Headers[WFConstants.BackendHeaders.GlobalNRegionCommittedGLSN];
+                    if (!string.IsNullOrEmpty(headerValue))
+                    {
+                        globalNRegionCommittedGLSN = long.Parse(headerValue, CultureInfo.InvariantCulture);
+                    }
+
                     ISessionToken sessionToken = null;
                     if (StoreResult.UseSessionTokenHeader)
                     {
@@ -237,7 +249,8 @@ namespace Microsoft.Azure.Documents
                         backendRequestDurationInMs: documentClientException.Headers[HttpConstants.HttpHeaders.BackendRequestDurationMilliseconds],
                         retryAfterInMs: documentClientException.Headers[HttpConstants.HttpHeaders.RetryAfterInMilliseconds],
                         transportRequestStats: documentClientException.TransportRequestStats,
-                        replicaHealthStatuses: replicaHealthStatuses));
+                        replicaHealthStatuses: replicaHealthStatuses,
+                        globalNRegionCommittedGLSN: globalNRegionCommittedGLSN));
                 }
                 else
                 {
@@ -262,17 +275,18 @@ namespace Microsoft.Azure.Documents
                         backendRequestDurationInMs: null,
                         retryAfterInMs: null,
                         transportRequestStats: null,
-                        replicaHealthStatuses: replicaHealthStatuses));
+                        replicaHealthStatuses: replicaHealthStatuses,
+                        globalNRegionCommittedGLSN: -1));
                 }
             }
         }
 
-        public static ReferenceCountedDisposable<StoreResult> CreateForTesting(StoreResponse storeResponse)
+        public static ReferenceCountedDisposable<StoreResult> CreateForTesting(StoreResponse storeResponse, int numberOfReadRegions = 0)
         {
             return new ReferenceCountedDisposable<StoreResult>(
                 new StoreResult(
                     storeResponse, exception: null, null, default, default, default, default, default, default,
-                    default, default, default, default, default, default, default, default, default, default, default));
+                    default, default, numberOfReadRegions, default, default, default, default, default, default, default, default, default));
         }
 
         public static ReferenceCountedDisposable<StoreResult> CreateForTesting(TransportRequestStats transportRequestStats)
@@ -303,7 +317,8 @@ namespace Microsoft.Azure.Documents
                 "http://storephysicaladdress-2s.com:Unknown",
                 "http://storephysicaladdress-3s.com:Unhealthy",
                 "http://storephysicaladdress-4s.com:Unknown"
-            }));
+            },
+            globalNRegionCommittedGLSN: -1));
         }
 
         public static ReferenceCountedDisposable<StoreResult> CreateForTesting(string partitionKeyRangeId)
@@ -328,7 +343,8 @@ namespace Microsoft.Azure.Documents
                 backendRequestDurationInMs: "10",
                 retryAfterInMs: "20",
                 transportRequestStats: new TransportRequestStats(),
-                replicaHealthStatuses: null));
+                replicaHealthStatuses: null,
+                globalNRegionCommittedGLSN: -1));
         }
 
         private StoreResult(
@@ -351,7 +367,8 @@ namespace Microsoft.Azure.Documents
             string backendRequestDurationInMs,
             string retryAfterInMs,
             TransportRequestStats transportRequestStats,
-            IEnumerable<string> replicaHealthStatuses)
+            IEnumerable<string> replicaHealthStatuses,
+	        long globalNRegionCommittedGLSN)
         {
             if (storeResponse == null && exception == null)
             {
@@ -379,6 +396,7 @@ namespace Microsoft.Azure.Documents
             this.RetryAfterInMs = retryAfterInMs;
             this.TransportRequestStats = transportRequestStats;
             this.ReplicaHealthStatuses = replicaHealthStatuses;
+            this.GlobalNRegionCommittedGLSN = globalNRegionCommittedGLSN;
 
             this.StatusCode = (StatusCodes) (this.storeResponse != null ? this.storeResponse.StatusCode :
                 ((this.Exception != null && this.Exception.StatusCode.HasValue) ? this.Exception.StatusCode : 0));
@@ -429,6 +447,8 @@ namespace Microsoft.Azure.Documents
 
         public IEnumerable<string> ReplicaHealthStatuses { get; private set; }
 
+        public long GlobalNRegionCommittedGLSN { get; private set; }
+
         public DocumentClientException GetException()
         {
             if (this.Exception == null)
@@ -469,7 +489,7 @@ namespace Microsoft.Azure.Documents
             if (!string.IsNullOrWhiteSpace(this.StorePhysicalAddress?.AbsoluteUri))
             {
                 (string partitionId, string replicaId) = GetPartitionIdReplicaIdFromAddress(StorePhysicalAddress.AbsoluteUri);
-                //System.Diagnostics.Debug.Assert(string.IsNullOrWhiteSpace(partitionId) || Guid.TryParse(partitionId, out _), $"partitionId is invalid. value:{partitionId}");
+                System.Diagnostics.Debug.Assert(string.IsNullOrWhiteSpace(partitionId) || Guid.TryParse(partitionId, out _), $"partitionId is invalid. value:{partitionId}");
                 if (this.Exception != null)
                 {
                     this.Exception.Headers[HttpConstants.HttpHeaders.PartitionId] = partitionId;
@@ -505,7 +525,7 @@ namespace Microsoft.Azure.Documents
             stringBuilder.AppendFormat(
                 CultureInfo.InvariantCulture,
                 "StorePhysicalAddress: {0}, LSN: {1}, GlobalCommittedLsn: {2}, PartitionKeyRangeId: {3}, IsValid: {4}, StatusCode: {5}, SubStatusCode: {6}, " +
-                "RequestCharge: {7}, ItemLSN: {8}, SessionToken: {9}, UsingLocalLSN: {10}, TransportException: {11}, BELatencyMs: {12}, ActivityId: {13}, RetryAfterInMs: {14}",
+                "RequestCharge: {7}, ItemLSN: {8}, SessionToken: {9}, UsingLocalLSN: {10}, TransportException: {11}, BELatencyMs: {12}, ActivityId: {13}, RetryAfterInMs: {14}, globalNRegionCommittedGLSN: {15}",
                 this.StorePhysicalAddress,
                 this.LSN,
                 this.GlobalCommittedLSN,
@@ -520,7 +540,8 @@ namespace Microsoft.Azure.Documents
                 this.Exception?.InnerException is TransportException ? this.Exception.InnerException.Message : "null",
                 this.BackendRequestDurationInMs,
                 this.ActivityId,
-                this.RetryAfterInMs);
+                this.RetryAfterInMs,
+                this.GlobalNRegionCommittedGLSN);
 
             if (this.ReplicaHealthStatuses != null && this.ReplicaHealthStatuses.Any())
             {

@@ -39,6 +39,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly BatchPartitionMetric oldPartitionMetric;
         private readonly BatchPartitionMetric partitionMetric;
         private readonly CosmosClientContext clientContext;
+        private readonly ItemRequestOptions options;
 
         private volatile BatchAsyncBatcher currentBatcher;
         private TimerWheelTimer currentTimer;
@@ -59,7 +60,8 @@ namespace Microsoft.Azure.Cosmos
             CosmosSerializerCore serializerCore,
             BatchAsyncBatcherExecuteDelegate executor,
             BatchAsyncBatcherRetryDelegate retrier,
-            CosmosClientContext clientContext)
+            CosmosClientContext clientContext,
+            ItemRequestOptions options = null)
         {
             if (maxBatchOperationCount < 1)
             {
@@ -103,6 +105,7 @@ namespace Microsoft.Azure.Cosmos
             this.timerWheel = timerWheel;
             this.serializerCore = serializerCore;
             this.clientContext = clientContext;
+            this.options = options;
             this.currentBatcher = this.CreateBatchAsyncBatcher();
             this.ResetTimer();
 
@@ -210,7 +213,7 @@ namespace Microsoft.Azure.Cosmos
 
         private BatchAsyncBatcher CreateBatchAsyncBatcher()
         {
-            return new BatchAsyncBatcher(this.maxBatchOperationCount, this.maxBatchByteSize, this.serializerCore, this.executor, this.retrier, this.clientContext);
+            return new BatchAsyncBatcher(this.maxBatchOperationCount, this.maxBatchByteSize, this.serializerCore, this.executor, this.retrier, this.clientContext, this.options);
         }
 
         private async Task RunCongestionControlAsync()

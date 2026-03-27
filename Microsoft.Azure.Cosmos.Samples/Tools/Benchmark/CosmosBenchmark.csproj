@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net6.0</TargetFramework>
@@ -43,7 +43,9 @@
 	
   <ItemGroup Condition=" '$(OSSProjectRef)' == 'True' ">
     <ProjectReference Include="..\..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj" />
-    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" />
+    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" >
+<ExcludeAssets>compile</ExcludeAssets>
+</PackageReference>
     <PackageReference Include="Microsoft.HybridRow" Version="[$(HybridRowVersion)]" />
   </ItemGroup>
 </Project>
