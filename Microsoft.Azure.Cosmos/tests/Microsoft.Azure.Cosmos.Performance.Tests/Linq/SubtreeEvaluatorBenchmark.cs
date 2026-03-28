@@ -71,10 +71,5 @@ namespace Microsoft.Azure.Cosmos.Linq
             long after = GC.GetTotalMemory(forceFullCollection: true);
             return after - before;
         }
-
-        private static Expression CreateWhereBody<T>(Expression<Func<T, bool>> predicate)
-        {
-            return predicate.Body;
-        }
     }
 }
