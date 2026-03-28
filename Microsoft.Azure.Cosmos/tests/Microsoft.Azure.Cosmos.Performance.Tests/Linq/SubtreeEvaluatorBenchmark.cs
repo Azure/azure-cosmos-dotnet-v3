@@ -7,17 +7,23 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System;
     using System.Linq.Expressions;
     using BenchmarkDotNet.Attributes;
+    using BenchmarkDotNet.Diagnostics.Windows.Configs;
 
     /// <summary>
     /// Benchmark comparing Expression.Compile() vs Compile(preferInterpretation: true)
     /// in the context of CosmosDB LINQ-to-SQL query generation.
-    /// Validates fix for GitHub Issue #5487: Unbounded JIT/IL growth from Expression.Compile()
+    /// Validates fix for GitHub Issue #5487: Unbounded JIT/IL growth from Expression.Compile().
+    ///
+    /// [MemoryDiagnoser] reports managed GC allocations (Gen0/Gen1/Allocated columns).
+    /// [NativeMemoryProfiler] uses ETW to track native memory allocations and leaks per method,
+    /// adding "Allocated native memory" and "Native memory leak" columns to the results table.
+    /// Note: NativeMemoryProfiler requires Windows and elevated (admin) privileges.
     /// </summary>
+    [ShortRunJob]
     [MemoryDiagnoser]
+    // [NativeMemoryProfiler] // Enable this line to include native memory profiling, requires Windows and admin privileges.
     public class SubtreeEvaluatorBenchmark
     {
-        private const int MemoryIterations = 1000;
-
         private LambdaExpression lambda;
 
         [GlobalSetup]
@@ -40,36 +46,6 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             Delegate fn = this.lambda.Compile(preferInterpretation: true);
             return fn.DynamicInvoke(null);
-        }
-
-        [Benchmark]
-        public long CompileMemoryGrowth()
-        {
-            long before = GC.GetTotalMemory(forceFullCollection: true);
-
-            for (int i = 0; i < MemoryIterations; i++)
-            {
-                Delegate fn = this.lambda.Compile();
-                fn.DynamicInvoke(null);
-            }
-
-            long after = GC.GetTotalMemory(forceFullCollection: true);
-            return after - before;
-        }
-
-        [Benchmark]
-        public long CompileWithInterpretationMemoryGrowth()
-        {
-            long before = GC.GetTotalMemory(forceFullCollection: true);
-
-            for (int i = 0; i < MemoryIterations; i++)
-            {
-                Delegate fn = this.lambda.Compile(preferInterpretation: true);
-                fn.DynamicInvoke(null);
-            }
-
-            long after = GC.GetTotalMemory(forceFullCollection: true);
-            return after - before;
         }
     }
 }
