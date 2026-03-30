@@ -100,6 +100,11 @@ namespace Microsoft.Azure.Cosmos
             this.nextRetryPolicy.OnBeforeSendRequest(request);
         }
 
+        public void OnAfterSendRequest(ResponseMessage cosmosResponseMessage)
+        {
+            this.nextRetryPolicy.OnAfterSendRequest(cosmosResponseMessage);
+        }
+
         private ShouldRetryResult ShouldRetryInternal(
             HttpStatusCode? statusCode,
             SubStatusCodes? subStatusCode,

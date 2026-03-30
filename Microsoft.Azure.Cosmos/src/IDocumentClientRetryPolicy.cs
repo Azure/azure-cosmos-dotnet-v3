@@ -22,6 +22,13 @@ namespace Microsoft.Azure.Cosmos
         void OnBeforeSendRequest(DocumentServiceRequest request);
 
         /// <summary>
+        /// Method that is called after a successful response is received, allowing the retry policy
+        /// to perform post-success actions such as caching the resolved endpoint.
+        /// </summary>
+        /// <param name="cosmosResponseMessage">The successful <see cref="ResponseMessage"/>.</param>
+        void OnAfterSendRequest(ResponseMessage cosmosResponseMessage);
+
+        /// <summary>
         /// Method that is called to determine from the policy that needs to retry on the a particular status code
         /// </summary>
         /// <param name="cosmosResponseMessage"><see cref="ResponseMessage"/> in return of the request</param>

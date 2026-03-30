@@ -99,5 +99,10 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.documentServiceRequest = request;
             this.nextPolicy?.OnBeforeSendRequest(request);
         }
+
+        public void OnAfterSendRequest(ResponseMessage cosmosResponseMessage)
+        {
+            this.nextPolicy?.OnAfterSendRequest(cosmosResponseMessage);
+        }
     }
 }

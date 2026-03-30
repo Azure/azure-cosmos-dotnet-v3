@@ -144,7 +144,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                     request,
                     this.PartitionKeyRangeToLocationForReadAndWrite);
             }
-            else if (this.IsRequestEligibleForPerPartitionAutomaticFailover(request))
+            else if (this.IsRequestEligibleForPerPartitionAutomaticFailover(request)
+               || GlobalPartitionEndpointManagerCore.IsHubRegionRoutingActive(request))
             {
                 return this.TryRouteRequestForPartitionLevelOverride(
                     partitionKeyRange,
@@ -201,6 +202,25 @@ namespace Microsoft.Azure.Cosmos.Routing
                     nextLocations,
                     request,
                     this.PartitionKeyRangeToLocationForWrite);
+            }
+            else if (GlobalPartitionEndpointManagerCore.IsHubRegionRoutingActive(request))
+            {
+                // Hub region discovery does NOT cache intermediate failures. Remove any stale
+                // cached hub entry so retries use normal endpoint failover region cycling.
+                // The hub region is only cached after a successful 200 response
+                // via TryAddHubRegionOverrideOnSuccess.
+                if (this.PartitionKeyRangeToLocationForWrite.IsValueCreated)
+                {
+                    if (this.PartitionKeyRangeToLocationForWrite.Value.TryRemove(partitionKeyRange, out PartitionKeyRangeFailoverInfo? removedInfo))
+                    {
+                        DefaultTrace.TraceInformation(
+                            "Removed stale hub region cache entry on 403/3. PartitionKeyRange: {0}, StaleCachedLocation: {1}",
+                            partitionKeyRange.Id,
+                            removedInfo?.Current);
+                    }
+                }
+
+                return false;
             }
 
             DefaultTrace.TraceInformation("Partition level override was skipped since the request did not met the minimum requirements.");
@@ -308,6 +328,35 @@ namespace Microsoft.Azure.Cosmos.Routing
             return this.isPartitionLevelCircuitBreakerEnabled == 1;
         }
 
+        /// <inheritdoc/>
+        public override bool TryAddHubRegionOverrideOnSuccess(
+            DocumentServiceRequest request)
+        {
+            if (!GlobalPartitionEndpointManagerCore.IsHubRegionRoutingActive(request))
+            {
+                return false;
+            }
+
+            PartitionKeyRange? partitionKeyRange = request?.RequestContext?.ResolvedPartitionKeyRange;
+            Uri? successfulLocation = request?.RequestContext?.LocationEndpointToRoute;
+
+            if (partitionKeyRange == null || successfulLocation == null)
+            {
+                return false;
+            }
+
+            this.PartitionKeyRangeToLocationForWrite.Value[partitionKeyRange] = new PartitionKeyRangeFailoverInfo(
+                request!.RequestContext!.ResolvedCollectionRid,
+                successfulLocation);
+
+            DefaultTrace.TraceInformation(
+                "Cached hub region on successful response. PartitionKeyRange: {0}, HubLocation: {1}",
+                partitionKeyRange.Id,
+                successfulLocation);
+
+            return true;
+        }
+
         /// <summary>
         /// Disposes the <see cref="GlobalPartitionEndpointManagerCore"/> class.
         /// Usage of the disposeCounter was used to make the operation atomic.
@@ -340,7 +389,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             failedLocation = default;
 
             if (!this.IsPartitionLevelAutomaticFailoverEnabled()
-                && !this.IsPartitionLevelCircuitBreakerEnabled())
+               && !this.IsPartitionLevelCircuitBreakerEnabled()
+               && !GlobalPartitionEndpointManagerCore.IsHubRegionRoutingActive(request))
             {
                 return false;
             }
@@ -625,6 +675,18 @@ namespace Microsoft.Azure.Cosmos.Routing
             partitionKeyRangeToLocationMapping.Value.TryRemove(partitionKeyRange, out PartitionKeyRangeFailoverInfo _);
 
             return false;
+        }
+
+        /// <summary>
+        /// Checks whether the request has the hub region processing header,
+        /// indicating it is in the hub region discovery flow (after 2× 404/1002).
+        /// </summary>
+        private static bool IsHubRegionRoutingActive(DocumentServiceRequest request)
+        {
+            return string.Equals(
+                request?.Headers?[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion],
+                bool.TrueString,
+                StringComparison.OrdinalIgnoreCase);
         }
 
         internal sealed class PartitionKeyRangeFailoverInfo
