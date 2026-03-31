@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Diagnostics;
     using System.Linq;
     using System.Net;
@@ -148,10 +149,16 @@ namespace Microsoft.Azure.Cosmos
                     ? null
                     : await StreamExtension.AsClonableStreamAsync(request.Content)))
                 {
+                    bool isReadRequest = OperationTypeExtensions.IsReadOperation(request.OperationType);
+
                     IReadOnlyCollection<string> hedgeRegions = client.DocumentClient.GlobalEndpointManager
                         .GetApplicableRegions(
                             request.RequestOptions?.ExcludeRegions,
-                            OperationTypeExtensions.IsReadOperation(request.OperationType));
+                            isReadRequest);
+
+                    ReadOnlyDictionary<string, Uri> endpointsByRegion = isReadRequest
+                        ? client.DocumentClient.GlobalEndpointManager.GetAvailableReadEndpointsByLocation()
+                        : client.DocumentClient.GlobalEndpointManager.GetAvailableWriteEndpointsByLocation();
 
                     List<Task> requestTasks = new List<Task>(hedgeRegions.Count + 1);
 
@@ -174,6 +181,7 @@ namespace Microsoft.Azure.Cosmos
                                         hedgeRegions: hedgeRegions,
                                         requestNumber: requestNumber,
                                         trace: trace,
+                                        endpointsByRegion: endpointsByRegion,
                                         hedgeRequestsCancellationTokenSource: hedgeRequestsCancellationTokenSource);
 
                                 requestTasks.Add(requestTask);
@@ -304,6 +312,7 @@ namespace Microsoft.Azure.Cosmos
             IReadOnlyCollection<string> hedgeRegions,
             int requestNumber,
             ITrace trace,
+            ReadOnlyDictionary<string, Uri> endpointsByRegion,
             CancellationTokenSource hedgeRequestsCancellationTokenSource)
         {
             RequestMessage clonedRequest;
@@ -313,6 +322,15 @@ namespace Microsoft.Azure.Cosmos
                 clonedBody))
             {
                 clonedRequest.RequestOptions ??= new RequestOptions();
+
+                string targetRegion = hedgeRegions.ElementAt(requestNumber);
+
+                // Record the contacted region at dispatch time so that it is
+                // tracked even if the request is cancelled before a response arrives.
+                if (endpointsByRegion.TryGetValue(targetRegion, out Uri targetEndpoint))
+                {
+                    trace.Summary.AddRegionContacted(targetRegion, targetEndpoint);
+                }
 
                 //we do not want to exclude any regions for the primary request
                 if (requestNumber > 0)
@@ -325,7 +343,7 @@ namespace Microsoft.Azure.Cosmos
                 return await this.RequestSenderAndResultCheckAsync(
                     sender,
                     clonedRequest,
-                    hedgeRegions.ElementAt(requestNumber),
+                    targetRegion,
                     hedgeRequestsCancellationTokenSource, 
                     trace);
             }

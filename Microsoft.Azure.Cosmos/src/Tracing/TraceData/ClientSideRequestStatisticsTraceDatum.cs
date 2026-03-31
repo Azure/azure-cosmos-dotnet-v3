@@ -266,6 +266,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             {
                 if (locationEndpoint != null)
                 {
+                    this.RegionsContacted.Add((regionName, locationEndpoint));
                     this.TraceSummary?.AddRegionContacted(regionName, locationEndpoint);
                 }
 
@@ -356,6 +357,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 if (request.Properties != null && 
                         request.Properties.TryGetValue(HttpRequestRegionNameProperty, out regionName))
                 {
+                    this.RegionsContacted.Add((Convert.ToString(regionName), locationEndpoint));
                     this.TraceSummary.AddRegionContacted(Convert.ToString(regionName), locationEndpoint);
                 }
 
@@ -387,6 +389,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 if (request.Properties != null &&
                         request.Properties.TryGetValue(HttpRequestRegionNameProperty, out regionName))
                 {
+                    this.RegionsContacted.Add((Convert.ToString(regionName), locationEndpoint));
                     this.TraceSummary.AddRegionContacted(Convert.ToString(regionName), locationEndpoint);
                 }
 

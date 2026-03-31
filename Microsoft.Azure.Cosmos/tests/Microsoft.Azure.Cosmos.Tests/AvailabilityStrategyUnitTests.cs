@@ -61,6 +61,25 @@
                 OperationType = OperationType.Read
             };
         }
+
+        /// <summary>
+        /// Helper to create a basic read request with a dedicated trace tree (not NoOpTrace).
+        /// Use this when the test needs to inspect contacted regions, because NoOpTrace
+        /// uses a static shared TraceSummary that accumulates across tests.
+        /// </summary>
+        private static RequestMessage CreateReadRequestWithTrace()
+        {
+            RequestMessage request = new RequestMessage(
+                HttpMethod.Get,
+                "/dbs/testdb/colls/testcontainer/docs/testId",
+                Trace.GetRootTrace("AvailabilityStrategyTest", TraceComponent.Unknown, TraceLevel.Info))
+            {
+                ResourceType = ResourceType.Document,
+                OperationType = OperationType.Read
+            };
+
+            return request;
+        }
         [TestMethod]
         public async Task RequestMessageCloneTests()
         {
@@ -768,6 +787,148 @@
             Assert.IsTrue(hedgeRegionsList.Count >= 2,
                 $"HedgeContext should contain 2+ regions when hedging occurred, but got {hedgeRegionsList.Count}. " +
                 "Multiple regions in HedgeContext confirms hedging was triggered.");
+        }
+
+        /// <summary>
+        /// Verifies that when a hedged request is cancelled (because another region responded first),
+        /// the cancelled request's target region still appears in GetContactedRegions().
+        /// 
+        /// Before the fix, regions were only recorded when RecordResponse was called (on response receipt).
+        /// Cancelled requests never received responses, so their regions were missing.
+        /// </summary>
+        [TestMethod]
+        public async Task CancelledHedgeRequest_RegionStillAppearsInContactedRegions()
+        {
+            // Arrange
+            CrossRegionHedgingAvailabilityStrategy availabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
+                threshold: TimeSpan.FromMilliseconds(10),
+                thresholdStep: TimeSpan.FromMilliseconds(10));
+
+            using RequestMessage request = CreateReadRequestWithTrace();
+            using CosmosClient mockCosmosClient = CreateMockClientWithRegions(3);
+
+            int senderCallCount = 0;
+
+            Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender = async (req, ct) =>
+            {
+                int callNumber = Interlocked.Increment(ref senderCallCount);
+
+                if (callNumber == 1)
+                {
+                    // First request (Region0): simulate a slow request that is eventually cancelled
+                    TaskCompletionSource<bool> cancelledTcs = new TaskCompletionSource<bool>();
+                    using (ct.Register(() => cancelledTcs.TrySetResult(true)))
+                    {
+                        await cancelledTcs.Task;
+                    }
+
+                    return new ResponseMessage(HttpStatusCode.ServiceUnavailable, req);
+                }
+
+                // Second request (Region1): return immediately with success
+                return new ResponseMessage(HttpStatusCode.OK, req);
+            };
+
+            // Act
+            ResponseMessage response = await availabilityStrategy.ExecuteAvailabilityStrategyAsync(
+                sender, mockCosmosClient, request, CancellationToken.None);
+
+            // Assert
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+
+            CosmosTraceDiagnostics traceDiagnostics = (CosmosTraceDiagnostics)response.Diagnostics;
+            IReadOnlyList<(string regionName, Uri uri)> contactedRegions = traceDiagnostics.GetContactedRegions();
+
+            // Both Region0 (cancelled primary) and Region1 (winning hedge) should appear
+            Assert.IsTrue(contactedRegions.Count >= 2,
+                $"Expected at least 2 contacted regions (primary + hedge), but got {contactedRegions.Count}. " +
+                "Cancelled hedge requests should still have their target region recorded.");
+        }
+
+        /// <summary>
+        /// Verifies that when hedging contacts 3 regions and the last region wins,
+        /// all 3 regions appear in GetContactedRegions().
+        /// </summary>
+        [TestMethod]
+        public async Task ThreeRegionHedging_AllRegionsAppearInContactedRegions()
+        {
+            // Arrange
+            CrossRegionHedgingAvailabilityStrategy availabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
+                threshold: TimeSpan.FromMilliseconds(10),
+                thresholdStep: TimeSpan.FromMilliseconds(10));
+
+            using RequestMessage request = CreateReadRequestWithTrace();
+            using CosmosClient mockCosmosClient = CreateMockClientWithRegions(3);
+
+            int senderCallCount = 0;
+
+            Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender = async (req, ct) =>
+            {
+                int callNumber = Interlocked.Increment(ref senderCallCount);
+
+                if (callNumber <= 2)
+                {
+                    // First two requests: simulate slow requests
+                    TaskCompletionSource<bool> cancelledTcs = new TaskCompletionSource<bool>();
+                    using (ct.Register(() => cancelledTcs.TrySetResult(true)))
+                    {
+                        await cancelledTcs.Task;
+                    }
+
+                    return new ResponseMessage(HttpStatusCode.ServiceUnavailable, req);
+                }
+
+                // Third request (Region2): return immediately with success
+                return new ResponseMessage(HttpStatusCode.OK, req);
+            };
+
+            // Act
+            ResponseMessage response = await availabilityStrategy.ExecuteAvailabilityStrategyAsync(
+                sender, mockCosmosClient, request, CancellationToken.None);
+
+            // Assert
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+
+            CosmosTraceDiagnostics traceDiagnostics = (CosmosTraceDiagnostics)response.Diagnostics;
+            IReadOnlyList<(string regionName, Uri uri)> contactedRegions = traceDiagnostics.GetContactedRegions();
+
+            Assert.AreEqual(3, contactedRegions.Count,
+                $"Expected 3 contacted regions when all 3 regions were targeted, but got {contactedRegions.Count}.");
+        }
+
+        /// <summary>
+        /// Verifies that when the primary request wins before any hedge is sent,
+        /// only 1 region appears in GetContactedRegions().
+        /// </summary>
+        [TestMethod]
+        public async Task PrimaryWinsBeforeHedge_OnlyOneRegionInContactedRegions()
+        {
+            // Arrange: use a very long threshold so hedging never triggers
+            CrossRegionHedgingAvailabilityStrategy availabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
+                threshold: TimeSpan.FromSeconds(30),
+                thresholdStep: TimeSpan.FromSeconds(30));
+
+            using RequestMessage request = CreateReadRequestWithTrace();
+            using CosmosClient mockCosmosClient = CreateMockClientWithRegions(3);
+
+            // Sender always returns immediately (primary wins before threshold)
+            Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender = (req, ct) =>
+            {
+                return Task.FromResult(new ResponseMessage(HttpStatusCode.OK, req));
+            };
+
+            // Act
+            ResponseMessage response = await availabilityStrategy.ExecuteAvailabilityStrategyAsync(
+                sender, mockCosmosClient, request, CancellationToken.None);
+
+            // Assert
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+
+            CosmosTraceDiagnostics traceDiagnostics = (CosmosTraceDiagnostics)response.Diagnostics;
+            IReadOnlyList<(string regionName, Uri uri)> contactedRegions = traceDiagnostics.GetContactedRegions();
+
+            Assert.AreEqual(1, contactedRegions.Count,
+                $"Expected exactly 1 contacted region when primary wins before hedge, but got {contactedRegions.Count}.");
         }
     }
 }
