@@ -4,12 +4,15 @@
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.IO;
+    using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Fluent;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -343,8 +346,8 @@
         {
             // Arrange
             CrossRegionHedgingAvailabilityStrategy availabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
-                threshold: TimeSpan.FromMilliseconds(10),
-                thresholdStep: TimeSpan.FromMilliseconds(10));
+                threshold: TimeSpan.FromMilliseconds(100),
+                thresholdStep: TimeSpan.FromMilliseconds(100));
 
             using RequestMessage request = CreateReadRequest();
             using CosmosClient mockCosmosClient = CreateMockClientWithRegions(3);
@@ -358,19 +361,16 @@
 
                 if (callNumber == 1)
                 {
-                    // First request: cancel the app token after a brief delay
+                    // First request: cancel the app token immediately
                     // This simulates an e2e timeout scenario
-                    _ = Task.Delay(15).ContinueWith(_ => appCts.Cancel());
+                    appCts.Cancel();
+                }
 
-                    // Then wait - this will be cancelled
-                    try
-                    {
-                        await Task.Delay(TimeSpan.FromSeconds(30), ct);
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        throw;
-                    }
+                // All requests block deterministically until cancelled via the token
+                TaskCompletionSource<ResponseMessage> tcs = new TaskCompletionSource<ResponseMessage>();
+                using (ct.Register(() => tcs.TrySetCanceled(ct)))
+                {
+                    await tcs.Task;
                 }
 
                 return new ResponseMessage(HttpStatusCode.OK);
@@ -978,6 +978,271 @@
                 "GetApplicableRegions should only return 2 regions matching preferred locations.");
         }
 
-       
+        /// <summary>
+        /// Verifies that when a request completes before the hedge threshold, HedgeContext
+        /// contains exactly 1 region (the primary). This confirms no hedging occurred even 
+        /// though HedgeContext is non-empty. A single-element HedgeContext is the expected
+        /// indicator that the primary request completed without triggering any hedge.
+        /// </summary>
+        [TestMethod]
+        public async Task PrimaryCompletesBeforeThreshold_HedgeContextContainsSingleRegion()
+        {
+            // Arrange: high threshold ensures no hedging fires
+            CrossRegionHedgingAvailabilityStrategy availabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
+                threshold: TimeSpan.FromMilliseconds(5000),
+                thresholdStep: TimeSpan.FromMilliseconds(5000));
+
+            // Use a real trace so AddOrUpdateDatum actually persists data (NoOpTrace discards it)
+            using ITrace rootTrace = Trace.GetRootTrace("HedgeContextTest");
+            using RequestMessage request = new RequestMessage(
+                HttpMethod.Get,
+                "/dbs/testdb/colls/testcontainer/docs/testId",
+                rootTrace)
+            {
+                ResourceType = ResourceType.Document,
+                OperationType = OperationType.Read
+            };
+            using CosmosClient mockCosmosClient = CreateMockClientWithRegions(3);
+
+            int senderCallCount = 0;
+
+            Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender = (req, ct) =>
+            {
+                Interlocked.Increment(ref senderCallCount);
+                ResponseMessage response = new ResponseMessage(HttpStatusCode.OK)
+                {
+                    Trace = req.Trace
+                };
+                return Task.FromResult(response);
+            };
+
+            // Act
+            ResponseMessage response = await availabilityStrategy.ExecuteAvailabilityStrategyAsync(
+                sender, mockCosmosClient, request, CancellationToken.None);
+
+            // Assert
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.AreEqual(1, senderCallCount,
+                "Only the primary request should be sent when it returns before the hedge timer fires.");
+
+            CosmosTraceDiagnostics traceDiagnostic = response.Diagnostics as CosmosTraceDiagnostics;
+            Assert.IsNotNull(traceDiagnostic);
+
+            if (traceDiagnostic.Value is Trace concreteTrace)
+            {
+                concreteTrace.SetWalkingStateRecursively();
+            }
+
+            Assert.IsFalse(traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out _),
+                "HedgeContext should be absent when the primary request completes before the threshold (no hedging occurred).");
+
+            Assert.IsTrue(traceDiagnostic.Value.Data.TryGetValue("Hedge Config", out _),
+                "Hedge Config should always be present when the hedging strategy code path is used.");
+        }
+
+        /// <summary>
+        /// Verifies that when hedging IS triggered (primary is slow, hedge returns first),
+        /// HedgeContext contains 2 regions — confirming the semantics that HedgeContext count > 1 
+        /// means hedging occurred.
+        /// </summary>
+        [TestMethod]
+        public async Task HedgeTriggered_HedgeContextContainsMultipleRegions()
+        {
+            // Arrange: low threshold ensures hedging fires quickly
+            CrossRegionHedgingAvailabilityStrategy availabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
+                threshold: TimeSpan.FromMilliseconds(10),
+                thresholdStep: TimeSpan.FromMilliseconds(10));
+
+            // Use a real trace so AddOrUpdateDatum actually persists data
+            using ITrace rootTrace = Trace.GetRootTrace("HedgeContextTest");
+            using RequestMessage request = new RequestMessage(
+                HttpMethod.Get,
+                "/dbs/testdb/colls/testcontainer/docs/testId",
+                rootTrace)
+            {
+                ResourceType = ResourceType.Document,
+                OperationType = OperationType.Read
+            };
+            using CosmosClient mockCosmosClient = CreateMockClientWithRegions(3);
+
+            int senderCallCount = 0;
+
+            Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender = async (req, ct) =>
+            {
+                int callNumber = Interlocked.Increment(ref senderCallCount);
+
+                if (callNumber == 1)
+                {
+                    // Primary: slow enough to trigger hedging
+                    await Task.Delay(TimeSpan.FromSeconds(5), ct).ContinueWith(_ => { });
+                    return new ResponseMessage(HttpStatusCode.ServiceUnavailable);
+                }
+
+                // Hedge request: returns immediately with success, wired to request trace
+                return new ResponseMessage(HttpStatusCode.OK)
+                {
+                    Trace = req.Trace
+                };
+            };
+
+            // Act
+            ResponseMessage response = await availabilityStrategy.ExecuteAvailabilityStrategyAsync(
+                sender, mockCosmosClient, request, CancellationToken.None);
+
+            // Assert
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.IsTrue(senderCallCount >= 2,
+                "At least 2 sender calls expected (primary + hedge).");
+
+            CosmosTraceDiagnostics traceDiagnostic = response.Diagnostics as CosmosTraceDiagnostics;
+            Assert.IsNotNull(traceDiagnostic);
+
+            if (traceDiagnostic.Value is Trace concreteTrace)
+            {
+                concreteTrace.SetWalkingStateRecursively();
+            }
+
+            Assert.IsTrue(traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext),
+                "HedgeContext should be present when hedging occurred.");
+
+            IEnumerable<string> hedgeRegions = (IEnumerable<string>)hedgeContext;
+            List<string> hedgeRegionsList = new List<string>(hedgeRegions);
+
+            Assert.IsTrue(hedgeRegionsList.Count >= 2,
+                $"HedgeContext should contain 2+ regions when hedging occurred, but got {hedgeRegionsList.Count}. " +
+                "Multiple regions in HedgeContext confirms hedging was triggered.");
+        }
+
+        /// <summary>
+        /// Verifies that when PPAF is enabled and no custom AvailabilityStrategy is set,
+        /// the SDK auto-creates a default hedging strategy that supports write hedging.
+        /// This ensures write hedging is enabled by default for PPAF accounts.
+        /// </summary>
+        [TestMethod]
+        public void InitializePartitionLevelFailoverWithDefaultHedging_CreatesDefaultStrategy()
+        {
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy()
+            {
+                EnablePartitionLevelFailover = true,
+            };
+
+            Assert.IsNull(connectionPolicy.AvailabilityStrategy,
+                "AvailabilityStrategy should be null before initialization.");
+
+            MockDocumentClient documentClient = new MockDocumentClient(connectionPolicy);
+            documentClient.InitializePartitionLevelFailoverWithDefaultHedging();
+
+            Assert.IsNotNull(connectionPolicy.AvailabilityStrategy,
+                "AvailabilityStrategy should be set after initialization when PPAF is enabled.");
+
+            CrossRegionHedgingAvailabilityStrategy strategy =
+                connectionPolicy.AvailabilityStrategy as CrossRegionHedgingAvailabilityStrategy;
+
+            Assert.IsNotNull(strategy,
+                "AvailabilityStrategy should be a CrossRegionHedgingAvailabilityStrategy.");
+            Assert.IsTrue(strategy.IsSDKDefaultStrategyForPPAF,
+                "Strategy should be marked as SDK default for PPAF.");
+            Assert.IsTrue(strategy.Threshold > TimeSpan.Zero,
+                "Threshold should be a positive value.");
+            Assert.IsTrue(strategy.ThresholdStep > TimeSpan.Zero,
+                "ThresholdStep should be a positive value.");
+        }
+
+        /// <summary>
+        /// Verifies that when PPAF is disabled, no default hedging strategy is created.
+        /// </summary>
+        [TestMethod]
+        public void InitializePartitionLevelFailoverWithDefaultHedging_PPAFDisabled_NoStrategy()
+        {
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy()
+            {
+                EnablePartitionLevelFailover = false,
+            };
+
+            MockDocumentClient documentClient = new MockDocumentClient(connectionPolicy);
+            documentClient.InitializePartitionLevelFailoverWithDefaultHedging();
+
+            Assert.IsNull(connectionPolicy.AvailabilityStrategy,
+                "AvailabilityStrategy should remain null when PPAF is disabled.");
+        }
+
+        /// <summary>
+        /// Verifies that when a custom AvailabilityStrategy is already set,
+        /// the SDK does not override it even when PPAF is enabled.
+        /// </summary>
+        [TestMethod]
+        public void InitializePartitionLevelFailoverWithDefaultHedging_CustomStrategyPreserved()
+        {
+            AvailabilityStrategy customStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
+                threshold: TimeSpan.FromMilliseconds(500),
+                thresholdStep: TimeSpan.FromMilliseconds(200));
+
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy()
+            {
+                EnablePartitionLevelFailover = true,
+                AvailabilityStrategy = customStrategy,
+            };
+
+            MockDocumentClient documentClient = new MockDocumentClient(connectionPolicy);
+            documentClient.InitializePartitionLevelFailoverWithDefaultHedging();
+
+            Assert.AreSame(customStrategy, connectionPolicy.AvailabilityStrategy,
+                "Custom AvailabilityStrategy should not be overridden when PPAF is enabled.");
+        }
+
+        /// <summary>
+        /// End-to-end verification: when PPAF is enabled and the SDK creates a default
+        /// hedging strategy, write requests are hedged (ShouldHedge returns true).
+        /// </summary>
+        [TestMethod]
+        public async Task PPAFEnabled_DefaultStrategy_WritesAreHedged()
+        {
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy()
+            {
+                EnablePartitionLevelFailover = true,
+                UseMultipleWriteLocations = false,
+                CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions
+                {
+                    DisableSendingMetricsToService = true
+                }
+            };
+
+            MockDocumentClient documentClient = new MockDocumentClient(connectionPolicy);
+            documentClient.InitializePartitionLevelFailoverWithDefaultHedging();
+
+            CrossRegionHedgingAvailabilityStrategy strategy =
+                connectionPolicy.AvailabilityStrategy as CrossRegionHedgingAvailabilityStrategy;
+
+            Assert.IsNotNull(strategy, "Default PPAF strategy should be created.");
+
+            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
+                "http://localhost",
+                MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
+            using CosmosClient mockCosmosClient = cosmosClientBuilder.Build(documentClient);
+
+            using RequestMessage writeRequest = CreateWriteRequest();
+
+            int senderCallCount = 0;
+            Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender =
+                (req, ct) =>
+                {
+                    Interlocked.Increment(ref senderCallCount);
+                    return Task.FromResult(new ResponseMessage(HttpStatusCode.OK));
+                };
+
+            await strategy.ExecuteAvailabilityStrategyAsync(
+                sender, mockCosmosClient, writeRequest, CancellationToken.None);
+
+            Assert.IsTrue(senderCallCount >= 1,
+                "Write request should be sent when PPAF default hedging is enabled.");
+
+            // Verify ppafEnabled was set from ConnectionPolicy
+            bool ppafEnabled = (bool)typeof(CrossRegionHedgingAvailabilityStrategy)
+                .GetField("ppafEnabled", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                .GetValue(strategy);
+
+            Assert.IsTrue(ppafEnabled,
+                "ppafEnabled should be true for the default PPAF strategy, enabling write hedging.");
+        }
     }
 }

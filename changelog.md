@@ -1,6 +1,6 @@
 ## <a name="recommended-version"></a> Recommended version
 
-The **minimum recommended version is [3.51.0](#3.51.0)**.
+The **minimum recommended version is [3.57.0](#3.57.0)**.
 
 Make sure that your applications, when using the .NET V3 SDK, are using at least the version described here to have all the critical fixes. With the release of [3.47.0](#3.47.0), it is now best practice to include a cross regional hedging availability strategy when using the Azure Cosmos DB .NET SDK. For more information about cross regional hedging, see [here](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/docs/Cross%20Region%20Request%20Hedging.md).
 
@@ -14,6 +14,33 @@ Preview features are treated as a separate branch and will not be included in th
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+### <a name="3.59.0-preview.0"/> [3.59.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.59.0-preview.0) - 2026-3-19
+
+#### Added
+
+- [5502](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5502) VectorIndex Policy: Adds Support for QuantizerType in IndexingPolicy
+- [5634](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5634) Semantic Reranking: Adds response body in semantic reranking error responses
+- [5685](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5685) Read Consistency Strategy: Adds Read Consistency Strategy option for read requests
+
+### <a name="3.58.0"/> [3.58.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.58.0) - 2026-3-19
+
+#### Added
+
+- [5447](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5447) Per Partition Automatic Failover: Adds Hub Region Processing Only While Routing Requests Failed with 404/1002 for single master accounts
+- [5551](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5551) HPK: Adds internal CosmosClientOptions flag UseLengthAwareRangeComparer for length aware range comparer rollout
+- [5582](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5582) Query: Adds ability to choose global vs local/focused statistics for FullTextScore
+- [5610](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5610) Refactors N-Region Synchronous Commit feature to use IServiceConfigurationReaderVNext interface.
+- [5693](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5693) ThinClient Integration: Adds Enable Multiple Http2 connection on SocketsHttpHandler
+- [5614](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5614) ThinClient Integration: Adds support for QueryPlan in thinclient mode
+
+#### Fixed
+
+- [5597](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5597) CosmosClient: Fixes ObjectDisposedException message when client is disposed during request
+- [5613](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5613) CrossRegionHedgingAvailabilityStrategy: Fixes `ArgumentNullException` race condition in hedging cancellation
+- [5650](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5650) Batch: Fixes null ErrorMessage when promoting status from MultiStatus response
+- [5651](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5651) Serializer: Fixes unsafe stream cast in FromStream<T>
+- [5697](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5697) ResourceThrottleRetryPolicy: Fixes cumulativeRetryDelay tracking when x-ms-retry-after-ms header is absent
 
 ### <a name="3.58.0-preview.1"/> [3.58.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.58.0-preview.1) - 2026-2-20
 
@@ -56,6 +83,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Fixed
 
 - [5550](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5550) Owner not found: Fixes substatus code 1003 for item operations when container doesn't exist (Direct mode)
+
+### <a name="3.56.0-preview.1"/> [3.56.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.56.0-preview.1) - 2025-3-10
+
+### <a name="3.55.1"/> [3.55.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.55.1) - 2025-3-10
+#### Fixed
+
+-[5613](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5613) CrossRegionHedgingAvailabilityStrategy: Fixes ArgumentNullException race condition in hedging cancellation
 
 ### <a name="3.56.0-preview.0"/> [3.56.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.56.0-preview.0) - 2025-11-14
 #### Fixed

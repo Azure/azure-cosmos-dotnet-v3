@@ -357,13 +357,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                     if (enablePartitionLevelFailover)
                     {
                         Assert.IsNotNull(hedgeConfig);
-                        if (hedgeContext != null)
-                        {
-                            List<string> hedgedRegions = ((IEnumerable<string>)hedgeContext).ToList();
-
-                            Assert.IsTrue(hedgedRegions.Count >= 1, "Since the first region is not available, the request should atleast hedge to the next region.");
-                            Assert.IsTrue(hedgedRegions.Contains(Regions.EastUS));
-                        }
+                        // When PPAF is enabled, the primary request handles failover internally
+                        // (retrying to another region). No cross-region hedging occurs, so
+                        // HedgeContext should be absent. The failover is visible in the
+                        // diagnostics children (multiple RouterHandler/TransportHandler nodes).
+                        Assert.IsNull(hedgeContext);
                     }
                     else
                     {
