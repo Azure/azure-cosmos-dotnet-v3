@@ -336,6 +336,18 @@ After the PR is approved and merged:
 
 3. **Metadata update — `azure-docs-sdk-dotnet`:**
 
+   > **Prerequisite:** Only perform this step after the release PR has been **approved and merged**, and the SDK package has been **published to NuGet**. Verify both conditions before proceeding:
+   > ```powershell
+   > # Verify the release PR is merged
+   > $prState = gh pr view <PR_NUMBER> --repo Azure/azure-cosmos-dotnet-v3 --json state,mergedAt --jq '.state'
+   > if ($prState -ne 'MERGED') { Write-Error "Release PR is not yet merged. Aborting metadata update."; return }
+   >
+   > # Verify the NuGet package is available
+   > $nugetUrl = "https://api.nuget.org/v3-flatcontainer/microsoft.azure.cosmos/X.Y.Z/microsoft.azure.cosmos.X.Y.Z.nupkg"
+   > $nugetStatus = (Invoke-WebRequest -Uri $nugetUrl -Method Head -UseBasicParsing -ErrorAction SilentlyContinue).StatusCode
+   > if ($nugetStatus -ne 200) { Write-Error "NuGet package X.Y.Z is not yet available. Wait for the publish pipeline to complete."; return }
+   > ```
+
    Update the Cosmos DB metadata file in `MicrosoftDocs/azure-docs-sdk-dotnet` so the documentation site reflects the new release version. This work is done in a **separate worktree** to avoid disrupting the SDK repository.
 
    **3a. Get GitHub username:**
@@ -628,6 +640,18 @@ After the hotfix PR is merged:
    - Body: Copy changelog notes
 
 2. **Metadata update — `azure-docs-sdk-dotnet`:**
+
+   > **Prerequisite:** Only perform this step after the hotfix PR has been **approved and merged**, and the SDK package has been **published to NuGet**. Verify both conditions before proceeding:
+   > ```powershell
+   > # Verify the hotfix PR is merged
+   > $prState = gh pr view <PR_NUMBER> --repo Azure/azure-cosmos-dotnet-v3 --json state,mergedAt --jq '.state'
+   > if ($prState -ne 'MERGED') { Write-Error "Hotfix PR is not yet merged. Aborting metadata update."; return }
+   >
+   > # Verify the NuGet package is available
+   > $nugetUrl = "https://api.nuget.org/v3-flatcontainer/microsoft.azure.cosmos/X.Y.Z+1/microsoft.azure.cosmos.X.Y.Z+1.nupkg"
+   > $nugetStatus = (Invoke-WebRequest -Uri $nugetUrl -Method Head -UseBasicParsing -ErrorAction SilentlyContinue).StatusCode
+   > if ($nugetStatus -ne 200) { Write-Error "NuGet package X.Y.Z+1 is not yet available. Wait for the publish pipeline to complete."; return }
+   > ```
 
    Update the Cosmos DB metadata file so the documentation site reflects the hotfix version. This follows the same workflow as Minor Mode §2.8 step 3.
 
