@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Net;
     using System.Text;
     using System.Threading;
@@ -122,9 +123,14 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             mockContext.Setup(c => c.DocumentClient).Returns(documentClient);
             mockContext.Setup(c => c.SerializerCore).Returns(MockCosmosUtil.Serializer);
             mockContext
-                .SetupSequence(c => c.GetCachedContainerPropertiesAsync(
-                    It.IsAny<string>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(containerProperties1)
+                .Setup(c => c.GetCachedContainerPropertiesAsync(
+                    DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName),
+                    It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(containerProperties1);
+            mockContext
+                .Setup(c => c.GetCachedContainerPropertiesAsync(
+                    DistributedTransactionConstants.GetCollectionFullName(DatabaseName, container2),
+                    It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(containerProperties2);
 
             ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK);
@@ -189,6 +195,40 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         }
 
         [TestMethod]
+        [Description("Verifies that 404/1002 (ReadSessionNotAvailable) operation results are excluded from session token merging")]
+        public async Task CommitTransactionAsync_SkipsMerge_When404ReadSessionNotAvailable()
+        {
+            const string sessionToken = "0:1#9#4=8#5=7";
+            const int readSessionNotAvailableSubStatus = 1002;
+
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
+                sessionContainer,
+                responseContent: BuildDtcResponseJson(new[] { (statusCode: 404, subStatusCode: (int?)readSessionNotAvailableSubStatus, sessionToken: sessionToken) }),
+                statusCode: HttpStatusCode.NotFound);
+
+            List<DistributedTransactionOperation> operations = new List<DistributedTransactionOperation>
+            {
+                new DistributedTransactionOperation(
+                    OperationType.Create,
+                    operationIndex: 0,
+                    DatabaseName,
+                    ContainerName,
+                    new PartitionKey("pk1"))
+            };
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                operations, mockContext.Object);
+
+            await committer.CommitTransactionAsync(CancellationToken.None);
+
+            string storedToken = sessionContainer.GetSessionToken(DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName));
+            Assert.IsTrue(string.IsNullOrEmpty(storedToken),
+                "Session token should NOT be merged for 404/ReadSessionNotAvailable operation results.");
+        }
+
+        [TestMethod]
         [Description("Verifies that session tokens are still merged into the SessionContainer even when the DTC response indicates a failure")]
         public async Task CommitTransactionAsync_MergesSessionTokens_OnFailureResponse()
         {
@@ -228,6 +268,13 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         private static string BuildDtcResponseJson(
             (int statusCode, string sessionToken)[] operations)
         {
+            return BuildDtcResponseJson(
+                operations.Select(o => (o.statusCode, subStatusCode: (int?)null, o.sessionToken)).ToArray());
+        }
+
+        private static string BuildDtcResponseJson(
+            (int statusCode, int? subStatusCode, string sessionToken)[] operations)
+        {
             StringBuilder sb = new StringBuilder();
             sb.Append(@"{""operationResponses"":[");
             for (int i = 0; i < operations.Length; i++)
@@ -238,6 +285,11 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 }
 
                 sb.Append($@"{{""index"":{i},""statuscode"":{operations[i].statusCode}");
+                if (operations[i].subStatusCode.HasValue)
+                {
+                    sb.Append($@",""substatuscode"":{operations[i].subStatusCode.Value}");
+                }
+
                 if (operations[i].sessionToken != null)
                 {
                     sb.Append($@",""sessionToken"":""{operations[i].sessionToken}""");
@@ -292,6 +344,25 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 .ReturnsAsync(responseMessage);
 
             return mockContext;
+        }
+
+        /// <summary>
+        /// Test-only stub that allows crafting a <see cref="DistributedTransactionResponse"/> with
+        /// an explicit list of results, bypassing the private constructor and factory logic.
+        /// Used to exercise <see cref="DistributedTransactionCommitter.MergeSessionTokens"/> directly.
+        /// </summary>
+        private sealed class StubDistributedTransactionResponse : DistributedTransactionResponse
+        {
+            private readonly IReadOnlyList<DistributedTransactionOperationResult> items;
+
+            public StubDistributedTransactionResponse(IReadOnlyList<DistributedTransactionOperationResult> items)
+            {
+                this.items = items;
+            }
+
+            public override int Count => this.items.Count;
+
+            public override DistributedTransactionOperationResult this[int index] => this.items[index];
         }
     }
 }

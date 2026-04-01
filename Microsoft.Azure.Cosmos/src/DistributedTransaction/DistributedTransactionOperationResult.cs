@@ -95,11 +95,11 @@ namespace Microsoft.Azure.Cosmos
         /// Used for JSON deserialization of the base64-encoded resource body.
         /// System.Text.Json requires [JsonInclude] members to be public in reflection mode.
         /// </summary>
-        [JsonInclude]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         [JsonPropertyName("resourcebody")]
         public string ResourceBodyBase64
         {
-            get => null; // Write-only for deserialization
+            get => null;
             set
             {
                 if (!string.IsNullOrEmpty(value))
@@ -116,8 +116,13 @@ namespace Microsoft.Azure.Cosmos
         [JsonPropertyName("requestCharge")]
         internal virtual double RequestCharge { get; set; }
 
+        /// <summary>
+        /// Gets the sub-status code returned by the operation, providing additional context
+        /// beyond the HTTP status code (e.g. <see cref="SubStatusCodes.ReadSessionNotAvailable"/>).
+        /// </summary>
+        [JsonInclude]
         [JsonPropertyName("substatuscode")]
-        internal virtual SubStatusCodes SubStatusCode { get; set; }
+        public virtual SubStatusCodes SubStatusCode { get; internal set; }
 
         /// <summary>
         /// ActivityId related to the operation.

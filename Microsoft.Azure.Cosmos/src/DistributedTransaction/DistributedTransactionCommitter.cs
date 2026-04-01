@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
@@ -83,10 +84,18 @@ namespace Microsoft.Azure.Cosmos
                         serverRequest.IdempotencyToken,
                         trace,
                         cancellationToken);
-                    DistributedTransactionCommitter.MergeSessionTokens(
-                        response,
-                        serverRequest,
-                        this.clientContext.DocumentClient.sessionContainer);
+
+                    try
+                    {
+                        DistributedTransactionCommitter.MergeSessionTokens(
+                            response,
+                            serverRequest,
+                            this.clientContext.DocumentClient.sessionContainer);
+                    }
+                    catch (Exception ex)
+                    {
+                        DefaultTrace.TraceWarning($"DTC session token merge failed (non-fatal): {ex.Message}");
+                    }
 
                     return response;
                 }
@@ -121,23 +130,49 @@ namespace Microsoft.Azure.Cosmos
             // tokens in the JSON body; those are already parsed into DistributedTransactionOperationResult.SessionToken,
             // but we must explicitly push them into the SessionContainer.
 
-            if (response == null || response.Count == 0)
+            if (response == null || response.Count == 0 || serverRequest == null || sessionContainer == null)
             {
                 return;
             }
 
+            if (response.Count != serverRequest.Operations.Count)
+            {
+                DefaultTrace.TraceWarning(
+                    $"DTC session token merge: result count ({response.Count}) differs from " +
+                    $"operation count ({serverRequest.Operations.Count}); some tokens may not be merged.");
+            }
+
             RequestNameValueCollection headers = new RequestNameValueCollection();
 
-            for (int i = 0; i < response.Count && i < serverRequest.Operations.Count; i++)
+            for (int i = 0; i < response.Count; i++)
             {
                 DistributedTransactionOperationResult result = response[i];
-                DistributedTransactionOperation operation = serverRequest.Operations[i];
+
+                int operationIndex = result.Index;
+                if (operationIndex < 0 || operationIndex >= serverRequest.Operations.Count)
+                {
+                    DefaultTrace.TraceWarning(
+                        $"DTC session token merge: result at position {i} has out-of-range Index={operationIndex} " +
+                        $"(operations count: {serverRequest.Operations.Count}); skipping.");
+                    continue;
+                }
+
+                DistributedTransactionOperation operation = serverRequest.Operations[operationIndex];
 
                 if (string.IsNullOrEmpty(result.SessionToken) || string.IsNullOrEmpty(operation.CollectionResourceId))
                 {
                     continue;
                 }
 
+                if (result.StatusCode == HttpStatusCode.NotFound
+                    && result.SubStatusCode == SubStatusCodes.ReadSessionNotAvailable)
+                {
+                    continue;
+                }
+
+                // Note: each SetSessionToken call acquires a write lock on the SessionContainer.
+                // For a future optimization, consider a batch-update API on ISessionContainer to
+                // reduce lock acquisitions when multiple operations target the same collection.
                 headers.Clear();
                 headers[HttpConstants.HttpHeaders.SessionToken] = result.SessionToken;
 
@@ -150,6 +185,7 @@ namespace Microsoft.Azure.Cosmos
 
         private Task AbortTransactionAsync(CancellationToken cancellationToken)
         {
+            // TODO: Implement abort for the two-phase commit path.
             throw new NotImplementedException();
         }
     }
