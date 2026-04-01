@@ -17,6 +17,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private readonly JObject encryptContent;
         private readonly JObject decryptContent;
         private readonly TimeSpan processingDuration;
+#if SDKPROJECTREF
+        private string cachedSummaryDiagnostics;
+#endif
 
         public EncryptionCosmosDiagnostics(
             CosmosDiagnostics coreDiagnostics,
@@ -90,39 +93,48 @@ namespace Microsoft.Azure.Cosmos.Encryption
 #if SDKPROJECTREF
         public override string ToString(DiagnosticsVerbosity verbosity)
         {
-            if (verbosity == DiagnosticsVerbosity.Summary)
+            switch (verbosity)
             {
-                StringBuilder stringBuilder = new StringBuilder();
-                StringWriter stringWriter = new StringWriter(stringBuilder);
-
-                using (JsonWriter writer = new JsonTextWriter(stringWriter))
-                {
-                    writer.WriteStartObject();
-                    writer.WritePropertyName(Constants.DiagnosticsCoreDiagnostics);
-                    writer.WriteRawValue(this.coreDiagnostics.ToString(verbosity));
-                    writer.WritePropertyName(Constants.DiagnosticsEncryptionDiagnostics);
-                    writer.WriteStartObject();
-
-                    if (this.encryptContent != null)
+                case DiagnosticsVerbosity.Summary:
+                    if (this.cachedSummaryDiagnostics != null)
                     {
-                        writer.WritePropertyName(Constants.DiagnosticsEncryptOperation);
-                        writer.WriteRawValue(this.encryptContent.ToString());
+                        return this.cachedSummaryDiagnostics;
                     }
 
-                    if (this.decryptContent != null)
+                    StringBuilder stringBuilder = new StringBuilder();
+                    StringWriter stringWriter = new StringWriter(stringBuilder);
+
+                    using (JsonWriter writer = new JsonTextWriter(stringWriter))
                     {
-                        writer.WritePropertyName(Constants.DiagnosticsDecryptOperation);
-                        writer.WriteRawValue(this.decryptContent.ToString());
+                        writer.WriteStartObject();
+                        writer.WritePropertyName(Constants.DiagnosticsCoreDiagnostics);
+                        writer.WriteRawValue(this.coreDiagnostics.ToString(verbosity));
+                        writer.WritePropertyName(Constants.DiagnosticsEncryptionDiagnostics);
+                        writer.WriteStartObject();
+
+                        if (this.encryptContent != null)
+                        {
+                            writer.WritePropertyName(Constants.DiagnosticsEncryptOperation);
+                            writer.WriteRawValue(this.encryptContent.ToString());
+                        }
+
+                        if (this.decryptContent != null)
+                        {
+                            writer.WritePropertyName(Constants.DiagnosticsDecryptOperation);
+                            writer.WriteRawValue(this.decryptContent.ToString());
+                        }
+
+                        writer.WriteEndObject();
+                        writer.WriteEndObject();
                     }
 
-                    writer.WriteEndObject();
-                    writer.WriteEndObject();
-                }
+                    this.cachedSummaryDiagnostics = stringWriter.ToString();
+                    return this.cachedSummaryDiagnostics;
 
-                return stringWriter.ToString();
+                case DiagnosticsVerbosity.Detailed:
+                default:
+                    return this.ToString();
             }
-
-            return this.ToString();
         }
 
         public override DateTime? GetStartTimeUtc()

@@ -6,6 +6,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
 {
     using System;
     using System.Collections.Generic;
+    using System.Net;
+    using System.Net.Http;
+    using System.Net.Http.Headers;
     using System.Reflection;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Diagnostics;
@@ -357,6 +360,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             Assert.IsTrue(summaryObj["Truncated"].Value<bool>(), "Should be truncated");
             Assert.IsNotNull(summaryObj["Message"]);
             Assert.AreEqual(200, summaryObj["TotalRequestCount"].Value<int>());
+            Assert.IsNotNull(summaryObj["TotalRequestCharge"], "Truncated summary should include TotalRequestCharge");
         }
 
         [TestMethod]
@@ -521,6 +525,113 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 trace);
             trace.AddDatum(datumKey, datum);
             return datum;
+        }
+
+        private static void AddHttpResponseStatistic(
+            ITrace trace,
+            string region,
+            HttpStatusCode statusCode,
+            int subStatusCode,
+            double requestCharge,
+            double durationMs,
+            DateTime requestStartTime)
+        {
+            ClientSideRequestStatisticsTraceDatum datum = GetOrCreateDatum(trace);
+
+            HttpResponseMessage responseMessage = new HttpResponseMessage(statusCode);
+            responseMessage.Headers.Add(WFConstants.BackendHeaders.SubStatus, subStatusCode.ToString());
+            responseMessage.Headers.Add(HttpConstants.HttpHeaders.RequestCharge, requestCharge.ToString());
+            responseMessage.Headers.Add(HttpConstants.HttpHeaders.ActivityId, Guid.NewGuid().ToString());
+
+            DateTime requestEndTime = requestStartTime.AddMilliseconds(durationMs);
+
+            HttpResponseStatistics httpStats = new HttpResponseStatistics(
+                requestStartTime: requestStartTime,
+                requestEndTime: requestEndTime,
+                requestUri: new Uri("https://account-" + (region ?? "unknown").Replace(" ", "").ToLower() + ".documents.azure.com"),
+                httpMethod: HttpMethod.Get,
+                resourceType: ResourceType.Document,
+                responseMessage: responseMessage,
+                exception: null,
+                region: region);
+
+            FieldInfo field = typeof(ClientSideRequestStatisticsTraceDatum)
+                .GetField("httpResponseStatistics", BindingFlags.NonPublic | BindingFlags.Instance);
+            List<HttpResponseStatistics> list = (List<HttpResponseStatistics>)field.GetValue(datum);
+            list.Add(httpStats);
+        }
+
+        #endregion
+
+        #region Gateway Mode (HttpResponseStatistics) Tests
+
+        [TestMethod]
+        public void Summary_GatewayMode_SingleRequest()
+        {
+            using ITrace trace = Trace.GetRootTrace("ReadItemAsync");
+            DateTime baseTime = DateTime.UtcNow;
+
+            AddHttpResponseStatistic(trace, "West US 2", HttpStatusCode.OK, 0, 3.5, 15, baseTime);
+
+            string summary = DiagnosticsSummaryWriter.WriteSummary(trace, 8192);
+            JObject parsed = JObject.Parse(summary);
+            JObject summaryObj = (JObject)parsed["Summary"];
+
+            Assert.AreEqual(1, summaryObj["TotalRequestCount"].Value<int>());
+            Assert.AreEqual(3.5, summaryObj["TotalRequestCharge"].Value<double>());
+
+            JArray regions = (JArray)summaryObj["RegionsSummary"];
+            Assert.AreEqual(1, regions.Count);
+            JObject region = (JObject)regions[0];
+            Assert.AreEqual("West US 2", region["Region"].ToString());
+
+            JObject first = (JObject)region["First"];
+            Assert.AreEqual(200, first["StatusCode"].Value<int>());
+            Assert.AreEqual(0, first["SubStatusCode"].Value<int>());
+            Assert.AreEqual(3.5, first["RequestCharge"].Value<double>());
+        }
+
+        [TestMethod]
+        public void Summary_GatewayMode_SubStatusCodeExtraction()
+        {
+            using ITrace trace = Trace.GetRootTrace("ReadItemAsync");
+            DateTime baseTime = DateTime.UtcNow;
+
+            AddHttpResponseStatistic(trace, "East US", HttpStatusCode.TooManyRequests, 3200, 0, 5, baseTime);
+            AddHttpResponseStatistic(trace, "East US", HttpStatusCode.OK, 0, 5.0, 12, baseTime.AddSeconds(1));
+
+            string summary = DiagnosticsSummaryWriter.WriteSummary(trace, 8192);
+            JObject parsed = JObject.Parse(summary);
+            JObject region = (JObject)parsed["Summary"]["RegionsSummary"][0];
+
+            JObject first = (JObject)region["First"];
+            Assert.AreEqual(429, first["StatusCode"].Value<int>());
+            Assert.AreEqual(3200, first["SubStatusCode"].Value<int>());
+        }
+
+        [TestMethod]
+        public void Summary_MixedDirectAndGateway()
+        {
+            using ITrace trace = Trace.GetRootTrace("ReadItemAsync");
+            DateTime baseTime = DateTime.UtcNow;
+
+            // Direct mode request
+            AddStoreResponseStatistic(trace, "West US 2", StatusCodes.Ok, SubStatusCodes.Unknown, 5.0, 10, baseTime);
+
+            // Gateway mode request
+            AddHttpResponseStatistic(trace, "West US 2", HttpStatusCode.OK, 0, 3.0, 15, baseTime.AddMilliseconds(100));
+
+            string summary = DiagnosticsSummaryWriter.WriteSummary(trace, 8192);
+            JObject parsed = JObject.Parse(summary);
+            JObject summaryObj = (JObject)parsed["Summary"];
+
+            // Both Direct and Gateway entries should be collected
+            Assert.AreEqual(2, summaryObj["TotalRequestCount"].Value<int>());
+            Assert.IsNotNull(summaryObj["TotalRequestCharge"]);
+
+            JArray regions = (JArray)summaryObj["RegionsSummary"];
+            Assert.AreEqual(1, regions.Count, "Both entries are in the same region");
+            Assert.AreEqual(2, regions[0]["RequestCount"].Value<int>());
         }
 
         #endregion

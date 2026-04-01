@@ -49,23 +49,27 @@ flowchart TD
     C --> M["Return full trace JSON"]
 ```
 
-## Files to Create
+## Files Created
 
 | File | Description |
 |------|-------------|
 | `Microsoft.Azure.Cosmos/src/Diagnostics/DiagnosticsVerbosity.cs` | `DiagnosticsVerbosity` enum |
 | `Microsoft.Azure.Cosmos/src/Diagnostics/DiagnosticsSummaryWriter.cs` | Summary computation and JSON serialization logic |
 
-## Files to Modify
+## Files Modified
 
 | File | Change |
 |------|--------|
 | `CosmosClientOptions.cs` | Add `DiagnosticsVerbosity` and `MaxDiagnosticsSummarySizeBytes` properties with validation |
+| `CosmosClientBuilder.cs` | Add `WithDiagnosticsVerbosity()` and `WithMaxDiagnosticsSummarySizeBytes()` builder methods |
+| `ConfigurationManager.cs` | Add environment variable constants for diagnostics verbosity and max summary size |
 | `CosmosDiagnostics.cs` | Add `ToString(DiagnosticsVerbosity)` abstract overload |
-| `CosmosTraceDiagnostics.cs` | Implement `ToString(DiagnosticsVerbosity)` overload; delegate to `DiagnosticsSummaryWriter` when verbosity is `Summary` |
-| `TraceWriter.TraceJsonWriter.cs` | Add summary serialization path that delegates to `DiagnosticsSummaryWriter` when verbosity is `Summary` |
-| `SummaryDiagnostics.cs` | Extend `CollectSummaryFromTraceTree()` to support region-grouped collection with ordering |
-| `ClientSideRequestStatisticsTraceDatum.cs` | Ensure `StoreResponseStatistics` and `HttpResponseStatistics` lists are accessible for summary computation |
+| `CosmosTraceDiagnostics.cs` | Implement `ToString(DiagnosticsVerbosity)` overload with `Lazy<string>` caching; delegate to `DiagnosticsSummaryWriter` when verbosity is `Summary` |
+| `EncryptionCosmosDiagnostics.cs` | Implement `ToString(DiagnosticsVerbosity)` overload (`SDKPROJECTREF`-gated) with caching |
+| `ContainerCore.cs` | Wire `MaxDiagnosticsSummarySizeBytes` from options |
+| `ReadManyQueryHelper.cs` | Wire `MaxDiagnosticsSummarySizeBytes` from options |
+| `CosmosLinqQuery.cs` | Wire `MaxDiagnosticsSummarySizeBytes` from options |
+| `ChangeFeedEstimatorIterator.cs` | Wire `MaxDiagnosticsSummarySizeBytes` from options |
 
 ## Contract/Baseline Updates
 
@@ -99,7 +103,7 @@ Include a `TransportType` field (`"Direct"` / `"Gateway"`) in each aggregated gr
 ## Key References
 
 - `Microsoft.Azure.Cosmos/src/Diagnostics/CosmosTraceDiagnostics.cs` — concrete diagnostics implementation
-- `Microsoft.Azure.Cosmos/src/Tracing/TraceWriter.TraceJsonWriter.cs` — current trace serialization
-- `Microsoft.Azure.Cosmos/src/Diagnostics/SummaryDiagnostics.cs` — existing summary aggregation (foundation)
-- `Microsoft.Azure.Cosmos/src/Tracing/TraceData/ClientSideRequestStatisticsTraceDatum.cs` — stats data
-- `docs/SdkDesign.md` — SDK architecture overview
+- `Microsoft.Azure.Cosmos/src/Diagnostics/DiagnosticsSummaryWriter.cs` — summary computation and JSON serialization
+- `Microsoft.Azure.Cosmos/src/Tracing/TraceWriter.TraceJsonWriter.cs` — current trace serialization (detailed mode)
+- `Microsoft.Azure.Cosmos/src/Tracing/TraceData/ClientSideRequestStatisticsTraceDatum.cs` — stats data (`StoreResponseStatistics`, `HttpResponseStatistics`)
+- `Microsoft.Azure.Cosmos/src/Tracing/TraceData/PointOperationStatisticsTraceDatum.cs` — ActivityId source

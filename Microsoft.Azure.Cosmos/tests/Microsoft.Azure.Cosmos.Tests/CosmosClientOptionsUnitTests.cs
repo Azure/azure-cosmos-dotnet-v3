@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Text;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Fluent;
+    using Microsoft.Azure.Cosmos.Util;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -1356,90 +1357,90 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void CosmosClientOptions_EnvVar_DiagnosticsVerbosity_Summary()
         {
-            string original = Environment.GetEnvironmentVariable("AZURE_COSMOS_DIAGNOSTICS_VERBOSITY");
+            string original = Environment.GetEnvironmentVariable(ConfigurationManager.DiagnosticsVerbosityVariable);
             try
             {
-                Environment.SetEnvironmentVariable("AZURE_COSMOS_DIAGNOSTICS_VERBOSITY", "Summary");
+                Environment.SetEnvironmentVariable(ConfigurationManager.DiagnosticsVerbosityVariable, "Summary");
                 CosmosClientOptions options = new CosmosClientOptions();
                 Assert.AreEqual(DiagnosticsVerbosity.Summary, options.DiagnosticsVerbosity);
             }
             finally
             {
-                Environment.SetEnvironmentVariable("AZURE_COSMOS_DIAGNOSTICS_VERBOSITY", original);
+                Environment.SetEnvironmentVariable(ConfigurationManager.DiagnosticsVerbosityVariable, original);
             }
         }
 
         [TestMethod]
         public void CosmosClientOptions_EnvVar_DiagnosticsVerbosity_CaseInsensitive()
         {
-            string original = Environment.GetEnvironmentVariable("AZURE_COSMOS_DIAGNOSTICS_VERBOSITY");
+            string original = Environment.GetEnvironmentVariable(ConfigurationManager.DiagnosticsVerbosityVariable);
             try
             {
-                Environment.SetEnvironmentVariable("AZURE_COSMOS_DIAGNOSTICS_VERBOSITY", "summary");
+                Environment.SetEnvironmentVariable(ConfigurationManager.DiagnosticsVerbosityVariable, "summary");
                 CosmosClientOptions options = new CosmosClientOptions();
                 Assert.AreEqual(DiagnosticsVerbosity.Summary, options.DiagnosticsVerbosity);
             }
             finally
             {
-                Environment.SetEnvironmentVariable("AZURE_COSMOS_DIAGNOSTICS_VERBOSITY", original);
+                Environment.SetEnvironmentVariable(ConfigurationManager.DiagnosticsVerbosityVariable, original);
             }
         }
 
         [TestMethod]
         public void CosmosClientOptions_EnvVar_DiagnosticsVerbosity_InvalidIgnored()
         {
-            string original = Environment.GetEnvironmentVariable("AZURE_COSMOS_DIAGNOSTICS_VERBOSITY");
+            string original = Environment.GetEnvironmentVariable(ConfigurationManager.DiagnosticsVerbosityVariable);
             try
             {
-                Environment.SetEnvironmentVariable("AZURE_COSMOS_DIAGNOSTICS_VERBOSITY", "InvalidValue");
+                Environment.SetEnvironmentVariable(ConfigurationManager.DiagnosticsVerbosityVariable, "InvalidValue");
                 CosmosClientOptions options = new CosmosClientOptions();
                 Assert.AreEqual(DiagnosticsVerbosity.Detailed, options.DiagnosticsVerbosity);
             }
             finally
             {
-                Environment.SetEnvironmentVariable("AZURE_COSMOS_DIAGNOSTICS_VERBOSITY", original);
+                Environment.SetEnvironmentVariable(ConfigurationManager.DiagnosticsVerbosityVariable, original);
             }
         }
 
         [TestMethod]
         public void CosmosClientOptions_EnvVar_MaxSummarySize()
         {
-            string original = Environment.GetEnvironmentVariable("AZURE_COSMOS_DIAGNOSTICS_MAX_SUMMARY_SIZE");
+            string original = Environment.GetEnvironmentVariable(ConfigurationManager.DiagnosticsMaxSummarySizeVariable);
             try
             {
-                Environment.SetEnvironmentVariable("AZURE_COSMOS_DIAGNOSTICS_MAX_SUMMARY_SIZE", "16384");
+                Environment.SetEnvironmentVariable(ConfigurationManager.DiagnosticsMaxSummarySizeVariable, "16384");
                 CosmosClientOptions options = new CosmosClientOptions();
                 Assert.AreEqual(16384, options.MaxDiagnosticsSummarySizeBytes);
             }
             finally
             {
-                Environment.SetEnvironmentVariable("AZURE_COSMOS_DIAGNOSTICS_MAX_SUMMARY_SIZE", original);
+                Environment.SetEnvironmentVariable(ConfigurationManager.DiagnosticsMaxSummarySizeVariable, original);
             }
         }
 
         [TestMethod]
         public void CosmosClientOptions_EnvVar_MaxSummarySize_BelowMinimumIgnored()
         {
-            string original = Environment.GetEnvironmentVariable("AZURE_COSMOS_DIAGNOSTICS_MAX_SUMMARY_SIZE");
+            string original = Environment.GetEnvironmentVariable(ConfigurationManager.DiagnosticsMaxSummarySizeVariable);
             try
             {
-                Environment.SetEnvironmentVariable("AZURE_COSMOS_DIAGNOSTICS_MAX_SUMMARY_SIZE", "1024");
+                Environment.SetEnvironmentVariable(ConfigurationManager.DiagnosticsMaxSummarySizeVariable, "1024");
                 CosmosClientOptions options = new CosmosClientOptions();
                 Assert.AreEqual(8192, options.MaxDiagnosticsSummarySizeBytes, "Below-minimum env var should be ignored");
             }
             finally
             {
-                Environment.SetEnvironmentVariable("AZURE_COSMOS_DIAGNOSTICS_MAX_SUMMARY_SIZE", original);
+                Environment.SetEnvironmentVariable(ConfigurationManager.DiagnosticsMaxSummarySizeVariable, original);
             }
         }
 
         [TestMethod]
         public void CosmosClientOptions_EnvVar_ExplicitPropertyOverridesEnvVar()
         {
-            string original = Environment.GetEnvironmentVariable("AZURE_COSMOS_DIAGNOSTICS_VERBOSITY");
+            string original = Environment.GetEnvironmentVariable(ConfigurationManager.DiagnosticsVerbosityVariable);
             try
             {
-                Environment.SetEnvironmentVariable("AZURE_COSMOS_DIAGNOSTICS_VERBOSITY", "Summary");
+                Environment.SetEnvironmentVariable(ConfigurationManager.DiagnosticsVerbosityVariable, "Summary");
                 CosmosClientOptions options = new CosmosClientOptions
                 {
                     DiagnosticsVerbosity = DiagnosticsVerbosity.Detailed
@@ -1448,7 +1449,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
             finally
             {
-                Environment.SetEnvironmentVariable("AZURE_COSMOS_DIAGNOSTICS_VERBOSITY", original);
+                Environment.SetEnvironmentVariable(ConfigurationManager.DiagnosticsVerbosityVariable, original);
             }
         }
 

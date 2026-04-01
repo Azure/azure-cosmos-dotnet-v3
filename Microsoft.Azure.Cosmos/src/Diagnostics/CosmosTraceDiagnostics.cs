@@ -41,14 +41,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             this.Value = rootTrace;
             this.accumulatedMetrics = new Lazy<ServerSideCumulativeMetrics>(() => PopulateServerSideCumulativeMetrics(this.Value));
             this.cachedSummaryJson = new Lazy<string>(() =>
-            {
-                if (this.Value is Tracing.Trace rootConcreteTrace2)
-                {
-                    rootConcreteTrace2.SetWalkingStateRecursively();
-                }
-
-                return DiagnosticsSummaryWriter.WriteSummary(this.Value, maxDiagnosticsSummarySizeBytes);
-            });
+                DiagnosticsSummaryWriter.WriteSummary(this.Value, maxDiagnosticsSummarySizeBytes));
         }
 
         public ITrace Value { get; }
@@ -65,12 +58,12 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
         public override string ToString(DiagnosticsVerbosity verbosity)
         {
-            if (verbosity == DiagnosticsVerbosity.Summary)
+            return verbosity switch
             {
-                return this.cachedSummaryJson.Value;
-            }
-
-            return this.ToString();
+                DiagnosticsVerbosity.Summary => this.cachedSummaryJson.Value,
+                DiagnosticsVerbosity.Detailed => this.ToString(),
+                _ => this.ToString(),
+            };
         }
 
         public override TimeSpan GetClientElapsedTime()

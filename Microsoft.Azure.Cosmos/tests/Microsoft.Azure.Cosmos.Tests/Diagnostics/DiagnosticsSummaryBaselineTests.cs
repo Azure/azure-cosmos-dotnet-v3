@@ -179,6 +179,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 "DiagnosticsVerbosity",
                 "TotalDurationMs",
                 "TotalRequestCount",
+                "TotalRequestCharge",
                 "Truncated",
                 "Message"
             };

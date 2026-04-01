@@ -9,6 +9,8 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
     using System.Globalization;
     using System.Linq;
     using System.Net;
+    using System.Net.Http;
+    using System.Runtime.CompilerServices;
     using System.Text;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -44,25 +46,41 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
             List<RequestEntry> entries = CollectRequestEntries(trace);
 
-            string summaryJson = BuildSummaryJson(trace, entries);
+            double totalRequestCharge = 0;
+            foreach (RequestEntry e in entries)
+            {
+                totalRequestCharge += e.RequestCharge;
+            }
 
+            string summaryJson = BuildSummaryJson(trace, entries, totalRequestCharge);
+
+            // v1 tradeoff: the full summary JSON is always computed before checking the size limit.
+            // For pathological scenarios with hundreds of retries, this means allocating and then
+            // potentially discarding the full string. A future optimization could estimate output
+            // size before serialization or use a streaming approach that bails early.
             if (Encoding.UTF8.GetByteCount(summaryJson) <= maxSizeBytes)
             {
                 return summaryJson;
             }
 
-            return BuildTruncatedJson(trace, entries.Count);
+            return BuildTruncatedJson(trace, entries.Count, totalRequestCharge);
         }
 
         private static List<RequestEntry> CollectRequestEntries(ITrace trace)
         {
             List<RequestEntry> entries = new List<RequestEntry>();
-            CollectRequestEntriesRecursive(trace, entries);
+            HashSet<ITrace> visited = new HashSet<ITrace>(TraceReferenceEqualityComparer.Instance);
+            CollectRequestEntriesRecursive(trace, entries, visited);
             return entries;
         }
 
-        private static void CollectRequestEntriesRecursive(ITrace currentTrace, List<RequestEntry> entries)
+        private static void CollectRequestEntriesRecursive(ITrace currentTrace, List<RequestEntry> entries, HashSet<ITrace> visited)
         {
+            if (!visited.Add(currentTrace))
+            {
+                return;
+            }
+
             foreach (object datum in currentTrace.Data.Values)
             {
                 if (datum is ClientSideRequestStatisticsTraceDatum clientSideStats)
@@ -127,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
             foreach (ITrace childTrace in currentTrace.Children)
             {
-                CollectRequestEntriesRecursive(childTrace, entries);
+                CollectRequestEntriesRecursive(childTrace, entries, visited);
             }
         }
 
@@ -150,7 +168,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             return 0;
         }
 
-        private static string BuildSummaryJson(ITrace trace, List<RequestEntry> entries)
+        private static string BuildSummaryJson(ITrace trace, List<RequestEntry> entries, double totalRequestCharge)
         {
             IJsonWriter writer = JsonWriter.Create(JsonSerializationFormat.Text);
             writer.WriteObjectStart();
@@ -160,14 +178,15 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             writer.WriteFieldName("DiagnosticsVerbosity");
             writer.WriteStringValue("Summary");
 
+            string activityId = FindActivityId(trace);
+            if (activityId != null)
+            {
+                writer.WriteFieldName("ActivityId");
+                writer.WriteStringValue(activityId);
+            }
+
             writer.WriteFieldName("TotalDurationMs");
             writer.WriteNumberValue(trace.Duration.TotalMilliseconds);
-
-            double totalRequestCharge = 0;
-            foreach (RequestEntry e in entries)
-            {
-                totalRequestCharge += e.RequestCharge;
-            }
 
             writer.WriteFieldName("TotalRequestCharge");
             writer.WriteNumberValue(totalRequestCharge);
@@ -395,7 +414,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             return sortedValues[midIndex];
         }
 
-        private static string BuildTruncatedJson(ITrace trace, int totalRequestCount)
+        private static string BuildTruncatedJson(ITrace trace, int totalRequestCount, double totalRequestCharge)
         {
             IJsonWriter writer = JsonWriter.Create(JsonSerializationFormat.Text);
             writer.WriteObjectStart();
@@ -407,6 +426,9 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
             writer.WriteFieldName("TotalDurationMs");
             writer.WriteNumberValue(trace.Duration.TotalMilliseconds);
+
+            writer.WriteFieldName("TotalRequestCharge");
+            writer.WriteNumberValue(totalRequestCharge);
 
             writer.WriteFieldName("TotalRequestCount");
             writer.WriteNumberValue(totalRequestCount);
@@ -422,6 +444,32 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             writer.WriteObjectEnd(); // root
 
             return Encoding.UTF8.GetString(writer.GetResult().Span);
+        }
+
+        /// <summary>
+        /// Finds the ActivityId from a PointOperationStatisticsTraceDatum in the trace tree.
+        /// </summary>
+        private static string FindActivityId(ITrace trace)
+        {
+            foreach (object datum in trace.Data.Values)
+            {
+                if (datum is PointOperationStatisticsTraceDatum pointOpStats
+                    && !string.IsNullOrEmpty(pointOpStats.ActivityId))
+                {
+                    return pointOpStats.ActivityId;
+                }
+            }
+
+            foreach (ITrace child in trace.Children)
+            {
+                string activityId = FindActivityId(child);
+                if (activityId != null)
+                {
+                    return activityId;
+                }
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -460,6 +508,15 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             public string Endpoint { get; }
             public string OperationType { get; }
             public string ResourceType { get; }
+        }
+
+        private sealed class TraceReferenceEqualityComparer : IEqualityComparer<ITrace>
+        {
+            public static readonly TraceReferenceEqualityComparer Instance = new TraceReferenceEqualityComparer();
+
+            public bool Equals(ITrace x, ITrace y) => ReferenceEquals(x, y);
+
+            public int GetHashCode(ITrace obj) => RuntimeHelpers.GetHashCode(obj);
         }
     }
 }
