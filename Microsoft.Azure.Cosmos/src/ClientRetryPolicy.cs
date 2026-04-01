@@ -250,27 +250,6 @@ namespace Microsoft.Azure.Cosmos
             request.RequestContext.RouteToLocation(this.locationEndpoint);
         }
 
-        /// <summary>
-        /// Method that is called after a successful response is received.
-        /// For hub region discovery, caches the successful endpoint so future
-        /// requests can route directly to the hub without repeating the 403/3 cycle.
-        /// </summary>
-        /// <param name="cosmosResponseMessage">The successful <see cref="ResponseMessage"/>.</param>
-        public void OnAfterSendRequest(ResponseMessage cosmosResponseMessage)
-        {
-#if !INTERNAL
-            if (cosmosResponseMessage != null
-                && cosmosResponseMessage.IsSuccessStatusCode
-                && this.addHubRegionProcessingOnlyHeader
-                && !this.canUseMultipleWriteLocations
-                && this.documentServiceRequest != null)
-            {
-                this.partitionKeyRangeLocationCache.TryAddHubRegionOverrideOnSuccess(
-                    this.documentServiceRequest);
-            }
-#endif
-        }
-
         private async Task<ShouldRetryResult> ShouldRetryInternalAsync(
             HttpStatusCode? statusCode,
             SubStatusCodes? subStatusCode)
@@ -303,6 +282,7 @@ namespace Microsoft.Azure.Cosmos
                     && this.documentServiceRequest.Headers.AllKeys().Contains(
                         HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion))
                 {
+                    this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(this.documentServiceRequest);
                     TimeSpan retryDelay = TimeSpan.FromMilliseconds(ClientRetryPolicy.RetryIntervalInMS);
                     return ShouldRetryResult.RetryAfter(retryDelay);
                 }
@@ -499,9 +479,11 @@ namespace Microsoft.Azure.Cosmos
                             this.addHubRegionProcessingOnlyHeader = true;
                             this.sessionTokenRetryCount++;
 
+                            int currentRetryLocationIndex = this.retryContext.RetryLocationIndex;
+                            // To generate a round-robin effect for detecting the hub region, retry on the next region.
                             this.retryContext = new RetryContext
                             {
-                                RetryLocationIndex = this.sessionTokenRetryCount - 1,
+                                RetryLocationIndex = currentRetryLocationIndex + 1,
                                 RetryRequestOnPreferredLocations = false
                             };
 

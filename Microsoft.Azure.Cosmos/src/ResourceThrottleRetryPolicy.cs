@@ -137,11 +137,6 @@ namespace Microsoft.Azure.Cosmos
         {
         }
 
-        /// <inheritdoc/>
-        public void OnAfterSendRequest(ResponseMessage cosmosResponseMessage)
-        {
-        }
-
         /// <summary>
         /// Returns True if the given <paramref name="retryAfter"/> is within retriable bounds
         /// </summary>

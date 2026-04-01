@@ -230,11 +230,6 @@ namespace Microsoft.Azure.Cosmos
             request.RequestContext.RouteToLocation(metadataLocationEndpoint);
         }
 
-        /// <inheritdoc/>
-        public void OnAfterSendRequest(ResponseMessage cosmosResponseMessage)
-        {
-        }
-
         /// <summary>
         /// Increments the location index when a unavailable endpoint exception ocurrs, for any future read requests.
         /// </summary>

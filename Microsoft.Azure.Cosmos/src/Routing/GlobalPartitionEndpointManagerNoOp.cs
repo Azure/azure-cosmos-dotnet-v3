@@ -70,11 +70,5 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             return false;
         }
-
-        public override bool TryAddHubRegionOverrideOnSuccess(
-            DocumentServiceRequest request)
-        {
-            return false;
-        }
     }
 }

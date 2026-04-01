@@ -189,7 +189,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                     request,
                     this.PartitionKeyRangeToLocationForReadAndWrite);
             }
-            else if (this.IsRequestEligibleForPerPartitionAutomaticFailover(request))
+            else if (this.IsRequestEligibleForPerPartitionAutomaticFailover(request)
+                || GlobalPartitionEndpointManagerCore.IsHubRegionRoutingActive(request))
             {
                 // For any single master write accounts, the next locations to fail over will be the read regions configured at the account level.
                 ReadOnlyCollection<Uri> nextLocations = this.isThinClientEnabled && GatewayStoreModel.IsOperationSupportedByThinClient(request)
@@ -308,35 +309,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         public override bool IsPartitionLevelCircuitBreakerEnabled()
         {
             return this.isPartitionLevelCircuitBreakerEnabled == 1;
-        }
-
-        /// <inheritdoc/>
-        public override bool TryAddHubRegionOverrideOnSuccess(
-            DocumentServiceRequest request)
-        {
-            if (!GlobalPartitionEndpointManagerCore.IsHubRegionRoutingActive(request))
-            {
-                return false;
-            }
-
-            PartitionKeyRange? partitionKeyRange = request?.RequestContext?.ResolvedPartitionKeyRange;
-            Uri? successfulLocation = request?.RequestContext?.LocationEndpointToRoute;
-
-            if (partitionKeyRange == null || successfulLocation == null)
-            {
-                return false;
-            }
-
-            this.PartitionKeyRangeToLocationForWrite.Value[partitionKeyRange] = new PartitionKeyRangeFailoverInfo(
-                request!.RequestContext!.ResolvedCollectionRid,
-                successfulLocation);
-
-            DefaultTrace.TraceInformation(
-                "Cached hub region on successful response. PartitionKeyRange: {0}, HubLocation: {1}",
-                partitionKeyRange.Id,
-                successfulLocation);
-
-            return true;
         }
 
         /// <summary>

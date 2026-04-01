@@ -29,8 +29,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     callbackMethod: () => base.SendAsync(request, cancellationToken),
                     callShouldRetry: (cosmosResponseMessage, token) => retryPolicyInstance.ShouldRetryAsync(cosmosResponseMessage, cancellationToken),
                     callShouldRetryException: (exception, token) => retryPolicyInstance.ShouldRetryAsync(exception, cancellationToken),
-                    retryPolicyInstance: retryPolicyInstance,
-                    documentServiceRequest: request.DocumentServiceRequest,
                     cancellationToken: cancellationToken);
             }
             catch (DocumentClientException ex)
@@ -69,8 +67,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
            Func<Task<ResponseMessage>> callbackMethod,
            Func<ResponseMessage, CancellationToken, Task<ShouldRetryResult>> callShouldRetry,
            Func<Exception, CancellationToken, Task<ShouldRetryResult>> callShouldRetryException,
-           IDocumentClientRetryPolicy retryPolicyInstance,
-           DocumentServiceRequest documentServiceRequest,
            CancellationToken cancellationToken)
         {
             while (true)
@@ -82,7 +78,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     ResponseMessage cosmosResponseMessage = await callbackMethod();
                     if (cosmosResponseMessage.IsSuccessStatusCode)
                     {
-                        retryPolicyInstance.OnAfterSendRequest(cosmosResponseMessage);
                         return cosmosResponseMessage;
                     }
 
