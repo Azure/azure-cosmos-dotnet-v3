@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             try
             {
-                return await AbstractRetryHandler.ExecuteHttpRequestAsync(
+                return await RetryHandler.ExecuteHttpRequestAsync(
                     callbackMethod: () => base.SendAsync(request, cancellationToken),
                     callShouldRetry: (cosmosResponseMessage, token) => retryPolicyInstance.ShouldRetryAsync(cosmosResponseMessage, cancellationToken),
                     callShouldRetryException: (exception, token) => retryPolicyInstance.ShouldRetryAsync(exception, cancellationToken),

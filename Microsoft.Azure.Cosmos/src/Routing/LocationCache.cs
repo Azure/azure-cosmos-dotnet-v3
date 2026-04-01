@@ -351,7 +351,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 // or when client cannot use multiple write locations, flip-flop between the 
                 // first and the second writable region in DatabaseAccount (for manual failover)
                 DatabaseAccountLocationsInfo currentLocationInfo = this.locationInfo;
-                
+
                 if (this.enableEndpointDiscovery && currentLocationInfo.AvailableWriteLocations.Count > 0)
                 {
                     locationIndex = Math.Min(locationIndex % 2, currentLocationInfo.AvailableWriteLocations.Count - 1);
