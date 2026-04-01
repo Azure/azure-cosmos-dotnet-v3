@@ -137,20 +137,20 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return false;
             }
 
-            if (this.IsRequestEligibleForPartitionLevelCircuitBreaker(request))
-            {
-                return this.TryRouteRequestForPartitionLevelOverride(
-                    partitionKeyRange,
-                    request,
-                    this.PartitionKeyRangeToLocationForReadAndWrite);
-            }
-            else if (this.IsRequestEligibleForPerPartitionAutomaticFailover(request)
+            if (this.IsRequestEligibleForPerPartitionAutomaticFailover(request)
                || GlobalPartitionEndpointManagerCore.IsHubRegionRoutingActive(request))
             {
                 return this.TryRouteRequestForPartitionLevelOverride(
                     partitionKeyRange,
                     request,
                     this.PartitionKeyRangeToLocationForWrite);
+            }
+            else if (this.IsRequestEligibleForPartitionLevelCircuitBreaker(request))
+            {
+                return this.TryRouteRequestForPartitionLevelOverride(
+                    partitionKeyRange,
+                    request,
+                    this.PartitionKeyRangeToLocationForReadAndWrite);
             }
 
             return false;
@@ -202,25 +202,6 @@ namespace Microsoft.Azure.Cosmos.Routing
                     nextLocations,
                     request,
                     this.PartitionKeyRangeToLocationForWrite);
-            }
-            else if (GlobalPartitionEndpointManagerCore.IsHubRegionRoutingActive(request))
-            {
-                // Hub region discovery does NOT cache intermediate failures. Remove any stale
-                // cached hub entry so retries use normal endpoint failover region cycling.
-                // The hub region is only cached after a successful 200 response
-                // via TryAddHubRegionOverrideOnSuccess.
-                if (this.PartitionKeyRangeToLocationForWrite.IsValueCreated)
-                {
-                    if (this.PartitionKeyRangeToLocationForWrite.Value.TryRemove(partitionKeyRange, out PartitionKeyRangeFailoverInfo? removedInfo))
-                    {
-                        DefaultTrace.TraceInformation(
-                            "Removed stale hub region cache entry on 403/3. PartitionKeyRange: {0}, StaleCachedLocation: {1}",
-                            partitionKeyRange.Id,
-                            removedInfo?.Current);
-                    }
-                }
-
-                return false;
             }
 
             DefaultTrace.TraceInformation("Partition level override was skipped since the request did not met the minimum requirements.");
@@ -288,7 +269,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         /// <summary>
         /// Determines if a request is eligible for partition-level circuit breaker.
-        /// This method checks if the request is a read-only request, if partition-level circuit breaker is enabled,
+        /// This method checks if the request is a read-only request, if partition-level circuit breaker is enabled, hub region routing is not active
         /// and if the partition key range location cache indicates that the partition can fail over based on the number of request failures.
         /// </summary>
         /// <returns>
@@ -298,6 +279,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             DocumentServiceRequest request)
         {
             return this.isPartitionLevelCircuitBreakerEnabled == 1
+                && !GlobalPartitionEndpointManagerCore.IsHubRegionRoutingActive(request)
                 && (request.IsReadOnlyRequest
                 || (!request.IsReadOnlyRequest && this.globalEndpointManager.CanSupportMultipleWriteLocations(request.ResourceType, request.OperationType)));
         }

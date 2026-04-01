@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Threading;
@@ -237,15 +238,6 @@ namespace Microsoft.Azure.Cosmos
             if (this.addHubRegionProcessingOnlyHeader)
             {
                 request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion] = bool.TrueString;
-
-                // Check the partition-level cache for a previously discovered hub region.
-                // TryAddPartitionLevelLocationOverride only enters the hub branch when the
-                // hub header is present, so normal requests never reach this path.
-                if (this.partitionKeyRangeLocationCache.TryAddPartitionLevelLocationOverride(request))
-                {
-                    this.locationEndpoint = request.RequestContext.LocationEndpointToRoute;
-                    return;
-                }
             }
 #endif
 
@@ -305,50 +297,62 @@ namespace Microsoft.Azure.Cosmos
             if (statusCode == HttpStatusCode.Forbidden
                 && subStatusCode == SubStatusCodes.WriteForbidden)
             {
-                // It's a write forbidden so it safe to retry.
-                // For hub region routing, TryMarkEndpointUnavailableForPartitionKeyRange
-                // removes any stale cached hub entry and returns false, so the request
-                // falls through to ShouldRetryOnEndpointFailureAsync for normal region cycling.
-                if (this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
-                     this.documentServiceRequest))
+                // We received a 403.3 on the read path. This is possible only when the hub region header is present. Retry
+                // the request to continue discovering the hub region.
+                if (this.documentServiceRequest.IsReadOnlyRequest
+                    && this.documentServiceRequest.Headers.AllKeys().Contains(
+                        HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion))
                 {
-                    return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
+                    TimeSpan retryDelay = TimeSpan.FromMilliseconds(ClientRetryPolicy.RetryIntervalInMS);
+                    return ShouldRetryResult.RetryAfter(retryDelay);
                 }
-
-                DefaultTrace.TraceWarning("ClientRetryPolicy: Endpoint not writable. Refresh cache and retry. Failed Location: {0}; ResourceAddress: {1}",
-                    this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
-                    this.documentServiceRequest?.ResourceAddress ?? string.Empty);
-
-                if (this.globalEndpointManager.IsMultimasterMetadataWriteRequest(this.documentServiceRequest))
+                else
                 {
-                    bool forceRefresh = false;
-
-                    if (this.retryContext != null && this.retryContext.RouteToHub)
+                    // It's a write forbidden so it safe to retry.
+                    // For hub region routing, TryMarkEndpointUnavailableForPartitionKeyRange
+                    // removes any stale cached hub entry and returns false, so the request
+                    // falls through to ShouldRetryOnEndpointFailureAsync for normal region cycling.
+                    if (this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
+                         this.documentServiceRequest))
                     {
-                        forceRefresh = true;
-                        
+                        return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
                     }
 
-                    ShouldRetryResult retryResult = await this.ShouldRetryOnEndpointFailureAsync(
+                    DefaultTrace.TraceWarning("ClientRetryPolicy: Endpoint not writable. Refresh cache and retry. Failed Location: {0}; ResourceAddress: {1}",
+                        this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
+                        this.documentServiceRequest?.ResourceAddress ?? string.Empty);
+
+                    if (this.globalEndpointManager.IsMultimasterMetadataWriteRequest(this.documentServiceRequest))
+                    {
+                        bool forceRefresh = false;
+
+                        if (this.retryContext != null && this.retryContext.RouteToHub)
+                        {
+                            forceRefresh = true;
+
+                        }
+
+                        ShouldRetryResult retryResult = await this.ShouldRetryOnEndpointFailureAsync(
+                            isReadRequest: false,
+                            markBothReadAndWriteAsUnavailable: false,
+                            forceRefresh: forceRefresh,
+                            retryOnPreferredLocations: false,
+                            overwriteEndpointDiscovery: true);
+
+                        if (retryResult.ShouldRetry)
+                        {
+                            this.retryContext.RouteToHub = true;
+                        }
+
+                        return retryResult;
+                    }
+
+                    return await this.ShouldRetryOnEndpointFailureAsync(
                         isReadRequest: false,
                         markBothReadAndWriteAsUnavailable: false,
-                        forceRefresh: forceRefresh,
-                        retryOnPreferredLocations: false,
-                        overwriteEndpointDiscovery: true);
-
-                    if (retryResult.ShouldRetry)
-                    {
-                        this.retryContext.RouteToHub = true;
-                    }
-                    
-                    return retryResult;
+                        forceRefresh: true,
+                        retryOnPreferredLocations: false);
                 }
-
-                return await this.ShouldRetryOnEndpointFailureAsync(
-                    isReadRequest: false,
-                    markBothReadAndWriteAsUnavailable: false,
-                    forceRefresh: true,
-                    retryOnPreferredLocations: false);
             }
 
             // Regional endpoint is not available yet for reads (e.g. add/ online of region is in progress)
@@ -370,28 +374,6 @@ namespace Microsoft.Azure.Cosmos
 
             if (statusCode == HttpStatusCode.NotFound && subStatusCode == SubStatusCodes.ReadSessionNotAvailable)
             {
-#if !INTERNAL
-                // Only set the hub region processing header for single master accounts.
-                // Set header only after the first retry attempt fails with 404/1002.
-                if (!this.canUseMultipleWriteLocations && this.sessionTokenRetryCount >= 1)
-                {
-                    this.addHubRegionProcessingOnlyHeader = true;
-                    this.sessionTokenRetryCount++;
-
-                    // Bypass ShouldRetryOnSessionNotAvailable — it would return NoRetry here
-                    // because sessionTokenRetryCount is already >= 1. Use the endpoint failure
-                    // path instead so the hub header actually gets sent on the next attempt.
-                    // overwriteEndpointDiscovery: true prevents marking the endpoint as
-                    // unavailable for normal reads — this is a hub discovery retry, not a
-                    // region availability issue.
-                    return await this.ShouldRetryOnEndpointFailureAsync(
-                        isReadRequest: this.isReadRequest,
-                        markBothReadAndWriteAsUnavailable: false,
-                        forceRefresh: false,
-                        retryOnPreferredLocations: true,
-                        overwriteEndpointDiscovery: true);
-                }
-#endif
                 return this.ShouldRetryOnSessionNotAvailable(this.documentServiceRequest);
             }
 
@@ -511,6 +493,21 @@ namespace Microsoft.Azure.Cosmos
                 {
                     if (this.sessionTokenRetryCount > 1)
                     {
+#if !INTERNAL
+                        if (!this.canUseMultipleWriteLocations && this.sessionTokenRetryCount >= 1)
+                        {
+                            this.addHubRegionProcessingOnlyHeader = true;
+                            this.sessionTokenRetryCount++;
+
+                            this.retryContext = new RetryContext
+                            {
+                                RetryLocationIndex = this.sessionTokenRetryCount - 1,
+                                RetryRequestOnPreferredLocations = false
+                            };
+
+                            return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
+                        }
+#endif
                         // When cannot use multiple write locations, then don't retry the request if 
                         // we have already tried this request on the write location
                         return ShouldRetryResult.NoRetry();
