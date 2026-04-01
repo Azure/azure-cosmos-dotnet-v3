@@ -126,6 +126,11 @@ namespace Microsoft.Azure.Cosmos
         [JsonIgnore]
         internal ITrace Trace { get; set; }
 
+        private static readonly JsonSerializerOptions CaseInsensitiveOptions = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true,
+        };
+
         /// <summary>
         /// Creates a <see cref="DistributedTransactionOperationResult"/> from a JSON element.
         /// </summary>
@@ -136,7 +141,7 @@ namespace Microsoft.Azure.Cosmos
             DistributedTransactionOperationResult result = null;
             try
             {
-                result = JsonSerializer.Deserialize<DistributedTransactionOperationResult>(json);
+                result = JsonSerializer.Deserialize<DistributedTransactionOperationResult>(json, DistributedTransactionOperationResult.CaseInsensitiveOptions);
             }
             catch (JsonException)
             {
