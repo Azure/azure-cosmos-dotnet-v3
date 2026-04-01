@@ -22,7 +22,12 @@ namespace Microsoft.Azure.Cosmos
             this.operations = new List<DistributedTransactionOperation>();
         }
 
-        public override DistributedWriteTransaction CreateItem<T>(string database, string collection, PartitionKey partitionKey, T resource)
+        public override DistributedWriteTransaction CreateItem<T>(
+            string database,
+            string collection,
+            PartitionKey partitionKey,
+            T resource,
+            DistributedTransactionRequestOptions requestOptions = null)
         {
             DistributedWriteTransactionCore.ValidateContainerReference(database, collection);
             DistributedWriteTransactionCore.ValidateResource(resource);
@@ -34,11 +39,18 @@ namespace Microsoft.Azure.Cosmos
                     database,
                     collection,
                     partitionKey,
-                    resource));
+                    resource,
+                    requestOptions));
             return this;
         }
 
-        public override DistributedWriteTransaction ReplaceItem<T>(string database, string collection, PartitionKey partitionKey, string id, T resource)
+        public override DistributedWriteTransaction ReplaceItem<T>(
+            string database,
+            string collection,
+            PartitionKey partitionKey,
+            string id,
+            T resource,
+            DistributedTransactionRequestOptions requestOptions = null)
         {
             DistributedWriteTransactionCore.ValidateContainerReference(database, collection);
             DistributedWriteTransactionCore.ValidateItemId(id);
@@ -52,11 +64,17 @@ namespace Microsoft.Azure.Cosmos
                     collection,
                     partitionKey,
                     id,
-                    resource));
+                    resource,
+                    requestOptions));
             return this;
         }
 
-        public override DistributedWriteTransaction DeleteItem(string database, string collection, PartitionKey partitionKey, string id)
+        public override DistributedWriteTransaction DeleteItem(
+            string database,
+            string collection,
+            PartitionKey partitionKey,
+            string id,
+            DistributedTransactionRequestOptions requestOptions = null)
         {
             DistributedWriteTransactionCore.ValidateContainerReference(database, collection);
             DistributedWriteTransactionCore.ValidateItemId(id);
@@ -68,7 +86,8 @@ namespace Microsoft.Azure.Cosmos
                     database,
                     collection,
                     partitionKey,
-                    id: id));
+                    id: id,
+                    requestOptions));
             return this;
         }
 
@@ -77,7 +96,8 @@ namespace Microsoft.Azure.Cosmos
             string collection,
             PartitionKey partitionKey,
             string id,
-            IReadOnlyList<PatchOperation> patchOperations)
+            IReadOnlyList<PatchOperation> patchOperations,
+            DistributedTransactionRequestOptions requestOptions = null)
         {
             DistributedWriteTransactionCore.ValidateContainerReference(database, collection);
             DistributedWriteTransactionCore.ValidateItemId(id);
@@ -96,11 +116,18 @@ namespace Microsoft.Azure.Cosmos
                     database,
                     collection,
                     partitionKey,
-                    resource: patchSpec));
+                    id,
+                    resource: patchSpec,
+                    requestOptions));
             return this;
         }
 
-        public override DistributedWriteTransaction UpsertItem<T>(string database, string collection, PartitionKey partitionKey, T resource)
+        public override DistributedWriteTransaction UpsertItem<T>(
+            string database,
+            string collection,
+            PartitionKey partitionKey,
+            T resource,
+            DistributedTransactionRequestOptions requestOptions = null)
         {
             DistributedWriteTransactionCore.ValidateContainerReference(database, collection);
             DistributedWriteTransactionCore.ValidateResource(resource);
@@ -112,7 +139,8 @@ namespace Microsoft.Azure.Cosmos
                     database,
                     collection,
                     partitionKey,
-                    resource));
+                    resource,
+                    requestOptions));
             return this;
         }
 
