@@ -48,13 +48,13 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 // String Values [0x70, 0x78)
                 0, // <empty> 0x70
-                0, // <empty> 0x71
-                0, // <empty> 0x72
-                0, // <empty> 0x73
-                0, // <empty> 0x74
-                0, // StrGL (Lowercase GUID string)
-                0, // StrGU (Uppercase GUID string)
-                0, // StrGQ (Double-quoted lowercase GUID string)
+                0, // Standard Base64-encoded string with 1-byte length and 1-byte padding length
+                0, // Standard Base64-encoded string with 2-byte length and 1-byte padding length
+                0, // URL-safe Base64-encoded string with 1-byte length and 1-byte padding length
+                0, // URL-safe Base64-encoded string with 2-byte length and 1-byte padding length
+                0, // Lowercase GUID string
+                0, // Uppercase GUID string
+                0, // Double-quoted lowercase GUID string
 
                 // Compressed strings [0x78, 0x80)
                 0, // String 1-byte length - Lowercase hexadecimal digits encoded as 4-bit characters

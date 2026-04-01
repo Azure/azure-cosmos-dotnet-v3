@@ -1030,6 +1030,7 @@
                 enableOptimisticDirectExecution: queryRequestOptions.EnableOptimisticDirectExecution,
                 isHybridSearchQueryPlanOptimizationDisabled: queryRequestOptions.IsHybridSearchQueryPlanOptimizationDisabled,
                 enableDistributedQueryGatewayMode: queryRequestOptions.EnableDistributedQueryGatewayMode,
+                fullTextScoreScope: queryRequestOptions.FullTextScoreScope,
                 testInjections: queryRequestOptions.TestSettings);
 
             List<PartitionKeyRange> targetPkRanges = new();
@@ -1325,7 +1326,8 @@
                  },
                  new PartitionKeyDefinition(),
                  vectorEmbeddingPolicy: null,
-                 Cosmos.GeospatialType.Geometry));
+                 Cosmos.GeospatialType.Geometry,
+                 false));
         }
 
         public override Task<bool> GetClientDisableOptimisticDirectExecutionAsync()

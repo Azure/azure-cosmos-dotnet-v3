@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Serializer
     using System.IO;
     using System.Linq;
     using System.Runtime.InteropServices;
-    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Documents;

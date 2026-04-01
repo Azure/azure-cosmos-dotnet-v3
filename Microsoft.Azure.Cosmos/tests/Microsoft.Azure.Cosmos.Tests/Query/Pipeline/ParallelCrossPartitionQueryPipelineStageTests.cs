@@ -148,12 +148,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
                 maxConcurrency: 10,
                 prefetchPolicy: PrefetchPolicy.PrefetchSinglePage,
-                continuationToken: CosmosArray.Create(
-                    new List<CosmosElement>()
-                    {
-                        ParallelContinuationToken.ToCosmosElement(token1),
-                        ParallelContinuationToken.ToCosmosElement(token2)
-                    }));
+                continuationToken: CosmosArray.Create(new List<CosmosElement>() { ParallelContinuationToken.ToCosmosElement(token1), ParallelContinuationToken.ToCosmosElement(token2) }));
+
             Assert.IsTrue(monadicCreate.Succeeded);
         }
 

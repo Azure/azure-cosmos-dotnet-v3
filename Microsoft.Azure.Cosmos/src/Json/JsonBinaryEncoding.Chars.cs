@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Json
     using System;
     using System.Collections;
     using System.Collections.Immutable;
-    using Microsoft.Azure.Documents;
 
     internal static partial class JsonBinaryEncoding
     {
@@ -303,6 +302,139 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
 
                 return new StringCompressionLookupTables(list.ToImmutableArray(), new BitArray(charSet), charToByte.ToImmutableArray(), byteToTwoChars.ToImmutableArray());
+            }
+        }
+
+        public readonly struct Base64StringEncodingLookupTables
+        {
+            public static readonly Base64StringEncodingLookupTables StdBase64 = Base64StringEncodingLookupTables.Create(
+                list: new char[]
+                {
+                    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',
+                    'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
+                    'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X',
+                    'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f',
+                    'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
+                    'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
+                    'w', 'x', 'y', 'z', '0', '1', '2', '3',
+                    '4', '5', '6', '7', '8', '9', '+', '/',
+                },
+                charSet: new byte[]
+                {
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x88, 0xFF, 0x03,
+                    0xFE, 0xFF, 0xFF, 0x07, 0xFE, 0xFF, 0xFF, 0x07
+                },
+                charToByte: new byte[]
+                {
+                    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+                    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+                    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 62, 64, 64, 64, 63,
+                    52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 64, 64, 64,  0, 64, 64,
+                    64,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
+                    15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 64, 64, 64, 64, 64,
+                    64, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+                    41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 64, 64, 64, 64, 64,
+                    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+                    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+                    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+                    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+                    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+                    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+                    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+                    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64
+                });
+
+            public static readonly Base64StringEncodingLookupTables UrlBase64 = Base64StringEncodingLookupTables.Create(
+                list: new char[]
+                {
+                    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',
+                    'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
+                    'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X',
+                    'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f',
+                    'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
+                    'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
+                    'w', 'x', 'y', 'z', '0', '1', '2', '3',
+                    '4', '5', '6', '7', '8', '9', '-', '_',
+                },
+                charSet: new byte[]
+                {
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x20, 0xFF, 0x03,
+                    0xFE, 0xFF, 0xFF, 0x87, 0xFE, 0xFF, 0xFF, 0x07
+                },
+                charToByte: new byte[]
+                {
+                    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+                    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+                    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 62, 64, 64,
+                    52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 64, 64, 64,  0, 64, 64,
+                    64,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
+                    15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 64, 64, 64, 64, 63,
+                    64, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+                    41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 64, 64, 64, 64, 64,
+                    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+                    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+                    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+                    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+                    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+                    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+                    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+                    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64
+                });
+
+            private Base64StringEncodingLookupTables(
+                ImmutableArray<char> list,
+                BitArray bitmap,
+                ImmutableArray<byte> charToByte)
+            {
+                if (list.Length != 64)
+                {
+                    throw new ArgumentException($"{nameof(list)} must be length 64.");
+                }
+
+                if (bitmap == null)
+                {
+                    throw new ArgumentNullException(nameof(bitmap));
+                }
+
+                if (bitmap.Length != 128)
+                {
+                    throw new ArgumentException($"{nameof(bitmap)} must be length 128.");
+                }
+
+                if (charToByte.Length != 256)
+                {
+                    throw new ArgumentException($"{nameof(charToByte)} must be length 256.");
+                }
+
+                this.List = list;
+                this.Bitmap = bitmap;
+                this.CharToByte = charToByte;
+            }
+
+            public ImmutableArray<char> List { get; }
+
+            public BitArray Bitmap { get; }
+
+            public ImmutableArray<byte> CharToByte { get; }
+
+            private static Base64StringEncodingLookupTables Create(char[] list, byte[] charSet, byte[] charToByte)
+            {
+                if (list == null)
+                {
+                    throw new ArgumentNullException(nameof(list));
+                }
+
+                if (charSet == null)
+                {
+                    throw new ArgumentNullException(nameof(charSet));
+                }
+
+                if (charToByte == null)
+                {
+                    throw new ArgumentNullException(nameof(charToByte));
+                }
+
+                return new Base64StringEncodingLookupTables(list.ToImmutableArray(), new BitArray(charSet), charToByte.ToImmutableArray());
             }
         }
     }

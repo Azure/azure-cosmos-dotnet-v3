@@ -46,6 +46,11 @@ namespace Microsoft.Azure.Cosmos
         internal static readonly string ThinClientModeEnabled = "AZURE_COSMOS_THIN_CLIENT_ENABLED";
 
         /// <summary>
+        /// Environment variable to override AAD scope.
+        /// </summary>
+        internal static readonly string AADScopeOverride = "AZURE_COSMOS_AAD_SCOPE_OVERRIDE";
+
+        /// <summary>
         /// A read-only string containing the environment variable name for capturing the consecutive failure count for reads, before triggering per partition
         /// circuit breaker flow. The default value for this interval is 10 consecutive requests within 1 min window.
         /// </summary>
@@ -56,6 +61,12 @@ namespace Microsoft.Azure.Cosmos
         /// circuit breaker flow. The default value for this interval is 10 consecutive requests within 1 min window.
         /// </summary>
         internal static readonly string CircuitBreakerConsecutiveFailureCountForWrites = "AZURE_COSMOS_PPCB_CONSECUTIVE_FAILURE_COUNT_FOR_WRITES";
+
+        /// <summary>
+        /// A read-only string containing the environment variable name for capturing the consecutive failure count for writes, before triggering per partition
+        /// circuit breaker flow. The default value for this interval is 5 consecutive requests within 1 min window.
+        /// </summary>
+        internal static readonly string CircuitBreakerTimeoutCounterResetWindowInMinutes = "AZURE_COSMOS_PPCB_TIMEOUT_COUNTER_RESET_WINDOW_IN_MINUTES";
 
         /// <summary>
         /// Environment variable name for overriding optimistic direct execution of queries.
@@ -99,6 +110,20 @@ namespace Microsoft.Azure.Cosmos
         /// and GA.
         /// </summary>
         internal static readonly string TcpChannelMultiplexingEnabled = "AZURE_COSMOS_TCP_CHANNEL_MULTIPLEX_ENABLED";
+
+        /// <summary>
+        /// A read-only string containing the environment variable name for bypassing query parsing.
+        /// and GA.
+        /// </summary>
+        internal static readonly string BypassQueryParsing = "AZURE_COSMOS_BYPASS_QUERY_PARSING";
+
+        /// <summary>
+        /// A read-only string containing the environment variable name for disabling length aware range comparator.
+        /// Length aware range comparators were intorduced in Range class to handle EPK range comparisons correctly in the case of a container's physical partition set consisting of fully and partially specified EPK values.
+        /// By default length aware range comparator is enabled. Refer to Range.cs in Msdata project for more details. Range.LengthAwareMinComparer/LengthAwareMaxComparer.
+        /// Setting the value to false will disable length aware range comparator and switch to using the regular Range.MinComparer/MaxComparer.
+        /// </summary>
+        internal static readonly string UseLengthAwareRangeComparator = "AZURE_COSMOS_USE_LENGTH_AWARE_RANGE_COMPARATOR";
 
         public static T GetEnvironmentVariable<T>(string variable, T defaultValue)
         {
@@ -155,23 +180,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets the boolean value of the partition level failover environment variable. Note that, partition level failover
-        /// is disabled by default for both preview and GA releases. The user can set the  respective environment variable
-        /// 'AZURE_COSMOS_PARTITION_LEVEL_FAILOVER_ENABLED' to override the value for both preview and GA. The method will
-        /// eventually be removed, once partition level failover is enabled by default for  both preview and GA.
-        /// </summary>
-        /// <param name="defaultValue">A boolean field containing the default value for partition level failover.</param>
-        /// <returns>A boolean flag indicating if partition level failover is enabled.</returns>
-        public static bool IsPartitionLevelFailoverEnabled(
-            bool defaultValue)
-        {
-            return ConfigurationManager
-                    .GetEnvironmentVariable(
-                        variable: ConfigurationManager.PartitionLevelFailoverEnabled,
-                        defaultValue: defaultValue);
-        }
-
-        /// <summary>
         /// Gets the boolean value indicating whether the thin client mode is enabled based on the environment variable override.
         /// </summary>
         /// <param name="defaultValue">A boolean field containing the default value for thin client mode.</param>
@@ -182,6 +190,20 @@ namespace Microsoft.Azure.Cosmos
             return ConfigurationManager
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.ThinClientModeEnabled,
+                        defaultValue: defaultValue);
+        }
+
+        /// <summary>
+        /// Gets the AAD scope value to override.
+        /// </summary>
+        /// <param name="defaultValue">Emoty string for AAD scope if no scope value is provided.</param>
+        /// <returns>AAD scope value.</returns>
+        public static string AADScopeOverrideValue(
+            string defaultValue)
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.AADScopeOverride,
                         defaultValue: defaultValue);
         }
 
@@ -268,6 +290,22 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Gets the consecutive faulure count for writes (applicable for multi master accounts) before triggering
+        /// the per partition circuit breaker flow. The default value for this interval is 5 consecutive requests within a 1-minute window.
+        /// The user can set the respective environment variable 'AZURE_COSMOS_PPCB_TIMEOUT_COUNTER_RESET_WINDOW_IN_MINUTES' to override the value.
+        /// </summary>
+        /// <param name="defaultValue">An integer containing the default value for the consecutive failure count.</param>
+        /// <returns>An double representing the timeout counter reset window in minutes.</returns>
+        public static double GetCircuitBreakerTimeoutCounterResetWindowInMinutes(
+            double defaultValue)
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.CircuitBreakerTimeoutCounterResetWindowInMinutes,
+                        defaultValue: defaultValue);
+        }
+
+        /// <summary>
         /// Gets the boolean value indicating whether optimistic direct execution is enabled based on the environment variable override.
         /// </summary>
         public static bool IsOptimisticDirectExecutionEnabled(
@@ -332,6 +370,36 @@ namespace Microsoft.Azure.Cosmos
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.TcpChannelMultiplexingEnabled,
                         defaultValue: false);
+        }
+
+        /// <summary>
+        /// Gets the boolean value indicating if channel multiplexing enabled on TCP channel.
+        /// Default: false
+        /// </summary>
+        /// <returns>A boolean flag indicating if channel multiplexing is enabled.</returns>
+        public static bool ForceBypassQueryParsing()
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.BypassQueryParsing,
+                        defaultValue: false);
+        }
+
+        /// <summary>
+        /// Gets the boolean value indicating if length-aware range comparator is enabled.
+        /// Default: true for preview , false for GA.
+        /// </summary>
+        /// <returns>A boolean flag indicating if length-aware range comparator is enabled.</returns>
+        public static bool IsLengthAwareRangeComparatorEnabled()
+        {
+            bool defaultValue = false;
+#if PREVIEW && !INTERNAL
+            defaultValue = true;
+#endif
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.UseLengthAwareRangeComparator,
+                        defaultValue: defaultValue);
         }
     }
 }

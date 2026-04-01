@@ -113,7 +113,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         internal override IRetryPolicyFactory ResetSessionTokenRetryPolicy => new RetryPolicy(
             this.globalEndpointManager.Object,
             new ConnectionPolicy(), 
-            new GlobalPartitionEndpointManagerCore(this.globalEndpointManager.Object));
+            new GlobalPartitionEndpointManagerCore(this.globalEndpointManager.Object),
+            false);
 
         internal override Task<ClientCollectionCache> GetCollectionCacheAsync(ITrace trace)
         {
@@ -179,9 +180,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                     {
                         Tuple.Create(new PartitionKeyRange{ Id = "0", MinInclusive = "", MaxExclusive = "FF"}, (ServiceIdentity)null)
                     },
-                string.Empty);
+                string.Empty, false);
 
-            this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null, null, false);
+            this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null, null, false, false);
             this.partitionKeyRangeCache.Setup(
                         m => m.TryLookupAsync(
                             It.IsAny<string>(),

@@ -89,12 +89,7 @@ namespace Microsoft.Azure.Cosmos
         /// reduce latency and increase availability. Currently there is one type of availability strategy, parallel request hedging.
         /// If there is a globally enabled availability strategy, setting one in the request options will override the global one.
         /// </summary>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        AvailabilityStrategy AvailabilityStrategy { get; set; }
+        public AvailabilityStrategy AvailabilityStrategy { get; set; }
 
         /// <summary>
         /// Gets or sets the boolean to use effective partition key routing in the cosmos db request.
@@ -113,6 +108,12 @@ namespace Microsoft.Azure.Cosmos
         /// ConsistencyLevel compatibility will validated and set by RequestInvokeHandler
         /// </remarks>
         internal virtual ConsistencyLevel? BaseConsistencyLevel { get; set; }
+
+        /// <summary>
+        /// Gets or sets the read consistency strategy for the request.
+        /// When set, this takes precedence over <see cref="BaseConsistencyLevel"/>.
+        /// </summary>
+        internal virtual ReadConsistencyStrategy? BaseReadConsistencyStrategy { get; set; }
 
         internal bool DisablePointOperationDiagnostics { get; set; }
 

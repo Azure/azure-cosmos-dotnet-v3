@@ -328,7 +328,20 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         /// <param name="value">The <see cref="DateTime"/> value to write.</param>
         public override void WriteValue(DateTime value)
         {
-            // We use rount trip format for datetime parsing and trim the additional trailing zeros using a custom "O" format
+            // We use round trip format for datetime parsing and trim the additional trailing zeros using a custom "O" format
+            // to maintain milliseconds precision.
+            this.WriteValue(
+                value.ToString(
+                    format: CosmosDBToNewtonsoftWriter.RoundTripFormatWithoutTrailingZeros));
+        }
+
+        /// <summary>
+        /// Writes a <see cref="DateTimeOffset"/> value.
+        /// </summary>
+        /// <param name="value">The <see cref="DateTimeOffset"/> value to write.</param>
+        public override void WriteValue(DateTimeOffset value)
+        {
+            // We use round trip format for datetime parsing and trim the additional trailing zeros using a custom "O" format
             // to maintain milliseconds precision.
             this.WriteValue(
                 value.ToString(

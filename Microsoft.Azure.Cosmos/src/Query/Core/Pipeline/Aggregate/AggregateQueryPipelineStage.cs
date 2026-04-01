@@ -72,6 +72,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
             double requestCharge = 0;
             IReadOnlyDictionary<string, string> cumulativeAdditionalHeaders = default;
 
+            string activityId = default;
             while (await this.inputStage.MoveNextAsync(trace, cancellationToken))
             {
                 TryCatch<QueryPage> tryGetPageFromSource = this.inputStage.Current;
@@ -82,6 +83,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                 }
 
                 QueryPage sourcePage = tryGetPageFromSource.Result;
+
+                if (activityId == default && sourcePage.ActivityId != default)
+                {
+                    // We only take the first activityId.
+                    activityId = sourcePage.ActivityId;
+                }
 
                 requestCharge += sourcePage.RequestCharge;
 
@@ -110,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
             QueryPage queryPage = new QueryPage(
                 documents: finalResult,
                 requestCharge: requestCharge,
-                activityId: default,
+                activityId: activityId,
                 cosmosQueryExecutionInfo: default,
                 distributionPlanSpec: default,
                 disallowContinuationTokenMessage: default,

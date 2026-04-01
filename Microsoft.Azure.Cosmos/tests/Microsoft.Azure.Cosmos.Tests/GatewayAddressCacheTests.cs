@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos
                 }
             };
 
-            this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null, null, false);
+            this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null, null, false, false);
             this.partitionKeyRangeCache
                 .Setup(m => m.TryGetOverlappingRangesAsync(
                     It.IsAny<string>(),
@@ -806,7 +806,7 @@ namespace Microsoft.Azure.Cosmos
                 .Returns(Task.FromResult(containerProperties));
 
             string exceptionMessage = "Failed to lookup partition key ranges.";
-            Mock<PartitionKeyRangeCache> partitionKeyRangeCache = new(null, null, null, null, false);
+            Mock<PartitionKeyRangeCache> partitionKeyRangeCache = new(null, null, null, null, false, false);
             partitionKeyRangeCache
                 .Setup(m => m.TryGetOverlappingRangesAsync(
                     It.IsAny<string>(),
@@ -1097,10 +1097,11 @@ namespace Microsoft.Azure.Cosmos
             Assert.AreEqual(0, addressInfo.AllAddresses.Count(x => x.PhysicalUri == newAddress));
 
             // Because force refresh is requested, an unhealthy replica is added to the failed endpoint so that it's status could be validted.
-            request.RequestContext.FailedEndpoints.Value.Add(
-                new TransportAddressUri(
+            request.RequestContext.FailedEndpoints.Value.TryAdd(
+                key: new TransportAddressUri(
                     addressUri: new Uri(
-                        uriString: addressTobeMarkedUnhealthy)));
+                        uriString: addressTobeMarkedUnhealthy)),
+                value: true);
 
             addressInfo = await cache.TryGetAddressesAsync(
                 request: request,
@@ -1250,10 +1251,11 @@ namespace Microsoft.Azure.Cosmos
             Assert.AreEqual(0, addressInfo.AllAddresses.Count(x => x.PhysicalUri == newAddress));
 
             // Because force refresh is requested, an unhealthy replica is added to the failed endpoint so that it's health status could be validted.
-            request.RequestContext.FailedEndpoints.Value.Add(
-                new TransportAddressUri(
+            request.RequestContext.FailedEndpoints.Value.TryAdd(
+                key: new TransportAddressUri(
                     addressUri: new Uri(
-                        uriString: addressTobeMarkedUnhealthy)));
+                        uriString: addressTobeMarkedUnhealthy)),
+                value: true);
 
             addressInfo = await cache.TryGetAddressesAsync(
                 request: request,
@@ -1554,10 +1556,11 @@ namespace Microsoft.Azure.Cosmos
             Assert.AreEqual(0, addressInfo.AllAddresses.Count(x => x.PhysicalUri == newAddress));
 
             // Because force refresh is requested, an unhealthy replica is added to the failed endpoint so that it's status could be validted.
-            request.RequestContext.FailedEndpoints.Value.Add(
-                new TransportAddressUri(
+            request.RequestContext.FailedEndpoints.Value.TryAdd(
+                key: new TransportAddressUri(
                     addressUri: new Uri(
-                        uriString: addressTobeMarkedUnhealthy)));
+                        uriString: addressTobeMarkedUnhealthy)),
+                value: true);
 
             addressInfo = await cache.TryGetAddressesAsync(
                 request: request,

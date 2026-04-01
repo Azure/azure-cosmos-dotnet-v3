@@ -8,10 +8,10 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System.Collections.Generic;
     using System.Globalization;
     using System.Linq;
-    using System.Net.Http;
     using System.Text;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
+    using Microsoft.Azure.Cosmos.Util;
     using Microsoft.Azure.Documents;
 
     internal static partial class TraceWriter
@@ -128,6 +128,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
             else if (value is string stringValue)
             {
                 writer.WriteStringValue(stringValue);
+            }
+            else if (value is CosmosOperationCanceledException cosmosTimeoutException)
+            {
+                writer.WriteStringValue(
+                    cosmosTimeoutException.EnsureToStringMessage(skipDiagnostics: true));
             }
             else
             {
@@ -394,7 +399,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.jsonWriter.WriteStringValue(storeResult.StatusCode.ToString());
 
                 this.jsonWriter.WriteFieldName(nameof(storeResult.SubStatusCode));
-                this.jsonWriter.WriteStringValue(this.GetSubStatusCodeString(storeResult.StatusCode, storeResult.SubStatusCode));
+                this.jsonWriter.WriteStringValue(SubStatusMappingUtil.GetSubStatusCodeString(storeResult.StatusCode, storeResult.SubStatusCode));
 
                 this.jsonWriter.WriteFieldName(nameof(storeResult.LSN));
                 this.jsonWriter.WriteNumberValue(storeResult.LSN);
@@ -404,6 +409,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                 this.jsonWriter.WriteFieldName(nameof(storeResult.GlobalCommittedLSN));
                 this.jsonWriter.WriteNumberValue(storeResult.GlobalCommittedLSN);
+
+                this.jsonWriter.WriteFieldName(nameof(storeResult.GlobalNRegionCommittedGLSN));
+                this.jsonWriter.WriteNumberValue(storeResult.GlobalNRegionCommittedGLSN);
 
                 this.jsonWriter.WriteFieldName(nameof(storeResult.ItemLSN));
                 this.jsonWriter.WriteNumberValue(storeResult.ItemLSN);
@@ -450,116 +458,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.WriteStringValueOrNull(transportException?.Message);
 
                 this.jsonWriter.WriteObjectEnd();
-            }
-
-            internal string GetSubStatusCodeString(StatusCodes statusCode, SubStatusCodes subStatusCode)
-            {
-                if ((int)subStatusCode == 1002)
-                {
-                    return statusCode == StatusCodes.NotFound
-                         ? "ReadSessionNotAvailable"
-                         : SubStatusCodes.PartitionKeyRangeGone.ToString();
-                }
-
-                if ((int)subStatusCode == 2001)
-                {
-                    return statusCode == StatusCodes.NoContent
-                        ? "MissedTargetLsn"
-                        : SubStatusCodes.SplitIsDisabled.ToString();
-                }
-
-                if ((int)subStatusCode == 2002)
-                {
-                    return statusCode == StatusCodes.NoContent
-                        ? "MissedTargetLsnOver100"
-                        : SubStatusCodes.CollectionsInPartitionGotUpdated.ToString();
-                }
-
-                if ((int)subStatusCode == 2003)
-                {
-                    return statusCode == StatusCodes.NoContent
-                        ? "MissedTargetLsnOver1000"
-                        : SubStatusCodes.CanNotAcquirePKRangesLock.ToString();
-                }
-
-                if ((int)subStatusCode == 2004)
-                {
-                    return statusCode == StatusCodes.NoContent
-                        ? "MissedTargetLsnOver10000"
-                        : SubStatusCodes.ResourceNotFound.ToString();
-                }
-
-                if ((int)subStatusCode == 2011)
-                {
-                    return statusCode == StatusCodes.NoContent
-                        ? "MissedTargetGlobalCommittedLsn"
-                        : SubStatusCodes.StorageSplitConflictingWithNWayThroughputSplit.ToString();
-                }
-
-                if ((int)subStatusCode == 2012)
-                {
-                    return statusCode == StatusCodes.NoContent
-                        ? "MissedTargetGlobalCommittedLsnOver100"
-                        : SubStatusCodes.MergeIsDisabled.ToString();
-                }
-
-                if ((int)subStatusCode == 1004)
-                {
-                    return statusCode == StatusCodes.BadRequest
-                        ? "CrossPartitionQueryNotServable"
-                        : SubStatusCodes.ConfigurationNameNotFound.ToString();
-                }
-
-                if ((int)subStatusCode == 1007)
-                {
-                    return statusCode == StatusCodes.Gone
-                        ? "CompletingSplit"
-                        : SubStatusCodes.InsufficientBindablePartitions.ToString();
-                }
-
-                if ((int)subStatusCode == 1008)
-                {
-                    return statusCode == StatusCodes.Gone
-                        ? "CompletingPartitionMigration"
-                        : SubStatusCodes.DatabaseAccountNotFound.ToString();
-                }
-
-                if ((int)subStatusCode == 1005)
-                {
-                    return statusCode == StatusCodes.NotFound
-                        ? "ConfigurationPropertyNotFound"
-                        : SubStatusCodes.ProvisionLimitReached.ToString();
-                }
-
-                if ((int)subStatusCode == 3207)
-                {
-                    return statusCode == StatusCodes.Conflict
-                        ? "ConfigurationNameAlreadyExists"
-                        : SubStatusCodes.PrepareTimeLimitExceeded.ToString();
-                }
-
-                if ((int)subStatusCode == 6001)
-                {
-                    return statusCode == StatusCodes.ServiceUnavailable
-                        ? "AggregatedHealthStateError"
-                        : SubStatusCodes.PartitionMigrationWaitForFullSyncReceivedInternalServerErrorDuringCompleteMigrationFromBackend.ToString();
-                }
-
-                if ((int)subStatusCode == 6002)
-                {
-                    return statusCode == StatusCodes.ServiceUnavailable
-                        ? "ApplicationHealthStateError"
-                        : SubStatusCodes.PartitionMigrationWaitForFullSyncReceivedInternalServerErrorDuringAbortMigrationFromBackend.ToString();
-                }
-
-                if ((int)subStatusCode == 6003)
-                {
-                    return statusCode == StatusCodes.ServiceUnavailable
-                        ? "HealthStateError"
-                        : SubStatusCodes.PartitionMigrationFinalizeMigrationsDidNotCompleteInTenRetries.ToString();
-                }
-
-                return subStatusCode.ToString();
             }
 
             public void Visit(PartitionKeyRangeCacheTraceDatum partitionKeyRangeCacheTraceDatum)

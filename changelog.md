@@ -1,6 +1,6 @@
 ## <a name="recommended-version"></a> Recommended version
 
-The **minimum recommended version is [3.51.0](#3.51.0)**.
+The **minimum recommended version is [3.57.0](#3.57.0)**.
 
 Make sure that your applications, when using the .NET V3 SDK, are using at least the version described here to have all the critical fixes. With the release of [3.47.0](#3.47.0), it is now best practice to include a cross regional hedging availability strategy when using the Azure Cosmos DB .NET SDK. For more information about cross regional hedging, see [here](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/docs/Cross%20Region%20Request%20Hedging.md).
 
@@ -14,6 +14,188 @@ Preview features are treated as a separate branch and will not be included in th
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+### <a name="3.59.0-preview.0"/> [3.59.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.59.0-preview.0) - 2026-3-19
+
+#### Added
+
+- [5502](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5502) VectorIndex Policy: Adds Support for QuantizerType in IndexingPolicy
+- [5634](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5634) Semantic Reranking: Adds response body in semantic reranking error responses
+- [5685](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5685) Read Consistency Strategy: Adds Read Consistency Strategy option for read requests
+
+### <a name="3.58.0"/> [3.58.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.58.0) - 2026-3-19
+
+#### Added
+
+- [5447](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5447) Per Partition Automatic Failover: Adds Hub Region Processing Only While Routing Requests Failed with 404/1002 for single master accounts
+- [5551](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5551) HPK: Adds internal CosmosClientOptions flag UseLengthAwareRangeComparer for length aware range comparer rollout
+- [5582](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5582) Query: Adds ability to choose global vs local/focused statistics for FullTextScore
+- [5610](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5610) Refactors N-Region Synchronous Commit feature to use IServiceConfigurationReaderVNext interface.
+- [5693](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5693) ThinClient Integration: Adds Enable Multiple Http2 connection on SocketsHttpHandler
+- [5614](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5614) ThinClient Integration: Adds support for QueryPlan in thinclient mode
+
+#### Fixed
+
+- [5597](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5597) CosmosClient: Fixes ObjectDisposedException message when client is disposed during request
+- [5613](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5613) CrossRegionHedgingAvailabilityStrategy: Fixes `ArgumentNullException` race condition in hedging cancellation
+- [5650](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5650) Batch: Fixes null ErrorMessage when promoting status from MultiStatus response
+- [5651](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5651) Serializer: Fixes unsafe stream cast in FromStream<T>
+- [5697](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5697) ResourceThrottleRetryPolicy: Fixes cumulativeRetryDelay tracking when x-ms-retry-after-ms header is absent
+
+### <a name="3.58.0-preview.1"/> [3.58.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.58.0-preview.1) - 2026-2-20
+
+### <a name="3.57.1"/> [3.57.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.57.1) - 2026-2-20
+
+#### Fixed
+
+- [5613](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5613) CrossRegionHedgingAvailabilityStrategy: Fixes `ArgumentNullException` race condition in hedging cancellation
+
+### <a name="3.58.0-preview.0"/> [3.58.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.58.0-preview.0) - 2026-1-15
+
+### <a name="3.57.0"/> [3.57.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.57.0) - 2026-1-15
+
+#### Added
+- [5511](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5511) Tracing: Adds tracing improvements for pkrange refresh calls
+- [5515](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5515) [FullTextPolicy]: Adds tests for full text policy multi-language support.
+- [5529](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5529) [Thin Client Integration]: Adds support for store procedure in thinclient mode.
+- [5535](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5535) [Thin Client Integration]: Adds thinclient header for refresh account data requests.
+
+#### Fixed
+
+- [5512](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5512) ChangeFeed: Fixes crts field being nullable
+- [5517](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5517) SystemTextSerializer: Fixes serialization to preserve polymorphic serialization when base type is marked [JsonPolymorphic]
+- [5498](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5498) Query: Fixes hybrid search query plan optimization to be enabled by default
+- [5543](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5543) Query: Fixes GetItemQueryIterator to honor the supplied (optional) FeedRange
+- [5541](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5541) Upsert/Batch: Fixes bug where RequestOptions are not honored for Upsert requests in Bulk Mode
+- [5544](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5544) Query : Fixes LINQ API to support builtin functions - ARRAY_CONTAINS_ALL and ARRAY_CONTAINS_ANY
+
+
+### <a name="3.57.0-preview.1"/> [3.57.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.57.0-preview.1) - 2025-12-16
+#### Fixed
+- [5528](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5528) Semantic Reranking: Refactors RerankResult.Document to return string type
+
+### <a name="3.57.0-preview.0"/> [3.57.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.57.0-preview.0) - 2025-11-25
+#### Added
+- [5445](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5445) Semantic Rerank: Adds Semantic Rerank API
+
+### <a name="3.56.0"/> [3.56.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.56.0) - 2025-11-25
+
+#### Fixed
+
+- [5550](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5550) Owner not found: Fixes substatus code 1003 for item operations when container doesn't exist (Direct mode)
+
+### <a name="3.56.0-preview.1"/> [3.56.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.56.0-preview.1) - 2025-3-10
+
+### <a name="3.55.1"/> [3.55.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.55.1) - 2025-3-10
+#### Fixed
+
+-[5613](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5613) CrossRegionHedgingAvailabilityStrategy: Fixes ArgumentNullException race condition in hedging cancellation
+
+### <a name="3.56.0-preview.0"/> [3.56.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.56.0-preview.0) - 2025-11-14
+#### Fixed
+- [5260](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5260) HPK: Fixes Lengthaware normalized EPK comparators as default (only in preview)
+
+### <a name="3.55.0"/> [3.55.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.55.0) - 2025-11-14
+#### Added
+- [5462](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5462) [VectorIndexPath]: Adds GA IndexingSearchListSize and VectorIndexShardKey
+- [5470](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5470) Change feed: Adds id and pk to ChangeFeedMetadata for delete operations (Default policy excludes Previous for deletes)
+- [5474](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5474) Binary Encoding: Adds support to DateTimeOffset type
+
+
+#### Fixed
+- [5469](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5469) BarrierRequests: Adds 410/LeaseNotFound(1022) fail-fast to cross-region retries by retrying on primary (checks last replica response)
+- [5475](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5475) Query: Fixes query advisor prefix url links to use aka.ms
+- [5476](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5476) HttpTimeoutPolicy: Fixes QueryPlan retry gaps (Http POST but its Read)
+- [5497](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5497) HttpTimeoutPolicy: Fixes PPAF and ThinProxy timeout polices to (6s, 6s, 10s) for both PointReads and NonPointReads
+
+### <a name="3.55.1-preview.0"/> [3.55.1-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.55.1-preview.0) - 2025-10-27
+
+### <a name="3.54.1"/> [3.54.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.54.1) - 2025-10-27
+#### Fixed
+
+- [5455](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5455) Diagnostics: Fixes possible Thread contention in Traces
+- [5446](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5446) Diagnostics: Removes Unnecessary space added by CosmosException.ToString()
+
+### <a name="3.55.0-preview.0"/> [3.55.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.55.0-preview.0) - 2025-10-2
+
+### <a name="3.54.0"/> [3.54.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.54.0) - 2025-10-2
+
+> Note: FullTextScore query function now expects string value parameters (e.g., FullTextScore(c.text, 'swim','run')); preview array syntax is no longer supported.
+> Updates Direct Package version update to 3.41.3 which includes the following:
+ * Fixes barrier calls to ensure calls don’t reuse stale strong‑write context after AccountRefresh by persisting the initial write endpoint and failing fast on cross‑region retries.
+
+#### Added
+
+- [5368](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5368) VectorDataType: Adds Support for Float16 Data Type
+- [5411](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5411) Hedging: Adds GA for adding hedging via RequestOptions
+- [5412](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5412) Hedging: Adds back diagnostics filed Response Region to hedging request diagnostics
+- [5386](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5386) Build: Removes System.Net.Http and System.Text.RegularExpressions package references
+
+#### Fixed
+
+- [5409](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5409) Query: Fixes to not use passthrough context for collections with HPK
+- [5422](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5422) Diagnostics: Fixes race condition that can cause InvalidOperationException in CosmosOperationCancelledException.ToString()
+- [5427](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5427) PPAF: Fixes issue where setting RequestTimeout to 0 second will cause PPAF dynamic enablement to break
+
+## <a name="3.54.0-preview.2"/> [3.54.0-preview.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.54.0-preview.2) - 2025-10-7
+
+### <a name="3.53.2"/> [3.53.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.53.2) - 2025-10-7
+
+#### Fixed
+
+- [5427](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5427) PPAF: Fixes issue where setting RequestTimeout to 0 second will cause PPAF dynamic enablement to break
+
+
+### <a name="3.54.0-preview.1"/> [3.54.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.54.0-preview.1) - 2025-8-27
+
+### <a name="3.53.1"/> [3.53.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.53.1) - 2025-8-27
+
+#### Added
+- [5364](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5364) TokenCredentialCache: Adds a fallback mechanism to AAD scope override.
+- [5361](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5361) Trace: Fixes thread safety issue in Trace class causing high CPU usage and InvalidOperationException
+
+### <a name="3.54.0-preview.0"/> [3.54.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.54.0-preview.0) - 2025-8-13
+
+### <a name="3.53.0"/> [3.53.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.53.0) - 2025-8-13
+
+#### Added
+
+- [5253](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5253) License: Adds new license expression
+- [5252](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5252) TokenCredentialCache: Adds an options to override AAD audience scope
+- [5308](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5308) Query: Adds Weighted RRF capability to LINQ
+- [5213](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5213) Query: Adds GetIndexMetrics LINQ extension method
+
+#### Fixed
+
+- [5273](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5273) Query: Fixes non streaming order by queries to not be tagged as passthrough queries
+- [5291](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5291) GatewayStoreClient: Fixes stream consumption bug in GatewayStoreClient.CreateDocumentClientExceptionAsync
+- [5317](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5317) Query: Fixes HybridSearchQueryTests to account for backend changes in phrase search
+
+### <a name="3.53.0-preview.1"/> [3.53.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.53.0-preview.1) - 2025-7-10
+
+### <a name="3.52.1"/> [3.52.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.52.1) - 2025-7-10
+
+#### Fixed
+- [5257](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5257) QueryPlan: Fixes 410 Gone exception on query plan calls in Non-X64 windows platforms
+
+### <a name="3.53.0-preview.0"/> [3.53.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.53.0-preview.0) - 2025-6-13
+
+### <a name="3.52.0"/> [3.52.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.52.0) - 2025-6-13
+
+#### Added
+
+- [5180](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5180) Query: Adds public PopulateQueryAdvice capability
+- [5215](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5215) Client Encryption: Adds support for latest Cosmos package and bumps up Encryption package for nuget release
+- [5157](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5157) Query: Adds support for LINQ extension method for VectorDistance
+ > This also includes a Direct Package version update to `3.39.1` in PR [#5241](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5241) which includes the following:
+ - Rntbd Health Check Improvements Part 3: Enables Aggressive Timeout Detection By Default.
+ - Introduce East US 3 region in the SDK.
+
+#### Fixed
+
+- [5221](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5221) Query : Fixes Skip + Order By Bug 
+- [5218](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5218) Binary Encoding: Fixes DateTime Parsing Issue with Trailing Zeros in the Milli-Seconds Precision
+- [5234](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5234) Client Encryption: Fixes Encryption Release Pipeline
 
 ### <a name="3.52.0-preview.0"/> [3.52.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.52.0-preview.0) - 2025-5-16
 
@@ -83,7 +265,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Fixed
 
-- [5108](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5108) Metadata requests: Fixes bug where certain metadata requests are not retried with a client cold start with only query requests 
+- [5108](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5108) Metadata requests: Fixes bug where certain metadata requests are not retried with a client cold start with only query requests.
+
+#### Added
+
+- [5108](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5108) ClientRetryPolicy: Adds Cross Regional Retry on `Gone` (410) with `LeaseNotFound` (1022) sub status code.
+- [5108](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5108) ClientRetryPolicy: Adds Cross Regional Retry for read requests on `InternalServerError` (500) status code.
+- [5108](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5108) ClientRetryPolicy: Adds Retry on the Preferred Regions on endpoint failures.
 
 ### <a name="3.49.0-preview.0"/> [3.49.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.49.0-preview.0) - 2025-3-21
 
@@ -594,6 +782,9 @@ If you have a scenario where tokens generated from the newer SDKs are used by an
 - [#3787](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3787) Connectivity: Fixes ConnectionBroken and adds support for Burst Capacity
 
 ### <a name="3.32.2"/> [3.32.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.32.2) - 2023-03-10
+
+> Note: If users on this version face an `IndexOutOfRangeException` and observe connections getting unexpectedly closed, they should upgrade to version `3.32.3` or higher, where this issue has been resolved.
+
 ### <a name="3.32.2-preview"/> [3.32.2-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.32.2-preview) - 2023-03-10
 
 #### Fixed
@@ -601,12 +792,18 @@ If you have a scenario where tokens generated from the newer SDKs are used by an
 - [#3749](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3749) Query: Fixes regression from LINQ custom serializer fix. Introduced in 3.32.0 PR [3749](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3749)
 
 ### <a name="3.32.1"/> [3.32.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.32.1) - 2023-03-01
+
+> Note: If users on this version face an `IndexOutOfRangeException` and observe connections getting unexpectedly closed, they should upgrade to version `3.32.3` or higher, where this issue has been resolved.
+
 ### <a name="3.32.1-preview"/> [3.32.1-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.32.1-preview) - 2023-03-01
 
 #### Fixed
 - [#3732](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3732) ReadMany: Fixes BadRequest when using Ids with single quotes
 
 ### <a name="3.32.0"/> [3.32.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.32.0) - 2023-02-03
+
+> Note: If users on this version face an `IndexOutOfRangeException` and observe connections getting unexpectedly closed, they should upgrade to version `3.32.3` or higher, where this issue has been resolved.
+
 #### Fixed
 - [#3466](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3466) ClientRetryPolicy: Fixes behavior to Meta-data write operations in multimaster accounts
 - [#3498](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3498) PartitionKey: Fixes NullRef in toString handling for None for PartitionKey.ToString()
@@ -1684,6 +1881,7 @@ Below is a list of any know issues affecting the [recommended minimum version](#
 
 | Issue | Impact | Mitigation | Tracking link |
 | --- | --- | --- | --- |
+| Calling `GetItemQueryIterator<T>` with FeedRange | Scenarios that use FeedRange with min excluded or max included while calling `GetItemQueryIterator<T>`. | `FeedIterator<T>` created by calling `GetItemQueryIterator<T>` while supplying FeedRange ignores the max/min inclusion properties. The returned iterator _always_ includes min and excludes max implicitly. This will be tracked and fixed as a separate issue. As a workaround, only use FeedRange values with min included and max excluded. | TBD |
 | Optimistic Direct Execution in case of Partition Split/Merge. | Scenarios that enable optimistic direct execution. | Optimistic Direct Execution may result in incorrect results when partition split/merge occurs in the backend while query execution is in progress. General recommendation is disable optimistic direct execution while executing queries. | [#4971](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4971)  | 
 | Optimistic Direct execution continuation token. | Scenarios that enable optimistic direct execution. | Optimistic Direct Execution may produce a continuation token that is rejected by SDK after partition split. General recommendation is disable optimistic direct execution while executing queries. | [#4972](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4972) | 
 | `FeedIterator` enters an infinite loop after a physical partition split occurs in a container using hierarchical partition keys. | Queries using prefix partition keys.  | Rather than having the PK included in the query request options, filtering on top level hierarchical Pks should be done through where clauses. **NOTE:** This issue has been fixed in version 3.39.0 | [#4326](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4326) | 
