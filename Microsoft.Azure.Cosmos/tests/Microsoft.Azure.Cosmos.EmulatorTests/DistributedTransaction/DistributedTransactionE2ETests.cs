@@ -524,6 +524,155 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             response.Dispose();
         }
 
+        [TestMethod]
+        public async Task ValidateCreateItemStreamOperation()
+        {
+            // Arrange
+            ToDoActivity doc = ToDoActivity.CreateRandomToDoActivity();
+            byte[] docBytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(doc));
+
+            DistributedTransactionTestHandler handler = CreateMockHandler(
+                HttpStatusCode.OK,
+                CreateMockSuccessResponse(operationCount: 1));
+
+            using CosmosClient client = TestCommon.CreateCosmosClient(
+                clientOptions: new CosmosClientOptions
+                {
+                    CustomHandlers = { handler },
+                    ConnectionMode = ConnectionMode.Gateway
+                });
+
+            // Act
+            using MemoryStream stream = new MemoryStream(docBytes);
+            DistributedTransactionResponse response = await client.CreateDistributedWriteTransaction()
+                .CreateItemStream(this.database.Id, this.container.Id, new PartitionKey(doc.pk), stream)
+                .CommitTransactionAsync(CancellationToken.None);
+
+            // Assert
+            Assert.IsTrue(response.IsSuccessStatusCode);
+            using JsonDocument requestJson = JsonDocument.Parse(handler.CapturedRequestBody);
+            JsonElement operation = requestJson.RootElement.GetProperty("operations")[0];
+            Assert.AreEqual(OperationType.Create.ToString(), operation.GetProperty("operationType").GetString());
+            JsonElement resourceBody = operation.GetProperty("resourceBody");
+            Assert.AreEqual(JsonValueKind.Object, resourceBody.ValueKind);
+            ToDoActivity actualDoc = JsonSerializer.Deserialize<ToDoActivity>(resourceBody.GetRawText());
+            Assert.AreEqual(doc.id, actualDoc.id);
+            Assert.AreEqual(doc.pk, actualDoc.pk);
+
+            response.Dispose();
+        }
+
+        [TestMethod]
+        public async Task ValidateReplaceItemStreamOperation()
+        {
+            // Arrange
+            ToDoActivity doc = ToDoActivity.CreateRandomToDoActivity();
+            byte[] docBytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(doc));
+
+            DistributedTransactionTestHandler handler = CreateMockHandler(
+                HttpStatusCode.OK,
+                CreateMockSuccessResponse(operationCount: 1));
+
+            using CosmosClient client = TestCommon.CreateCosmosClient(
+                clientOptions: new CosmosClientOptions
+                {
+                    CustomHandlers = { handler },
+                    ConnectionMode = ConnectionMode.Gateway
+                });
+
+            // Act
+            using MemoryStream stream = new MemoryStream(docBytes);
+            DistributedTransactionResponse response = await client.CreateDistributedWriteTransaction()
+                .ReplaceItemStream(this.database.Id, this.container.Id, new PartitionKey(doc.pk), doc.id, stream)
+                .CommitTransactionAsync(CancellationToken.None);
+
+            // Assert
+            Assert.IsTrue(response.IsSuccessStatusCode);
+            using JsonDocument requestJson = JsonDocument.Parse(handler.CapturedRequestBody);
+            JsonElement operation = requestJson.RootElement.GetProperty("operations")[0];
+            Assert.AreEqual(OperationType.Replace.ToString(), operation.GetProperty("operationType").GetString());
+            Assert.AreEqual(doc.id, operation.GetProperty("id").GetString());
+            JsonElement resourceBody = operation.GetProperty("resourceBody");
+            Assert.AreEqual(JsonValueKind.Object, resourceBody.ValueKind);
+            ToDoActivity actualDoc = JsonSerializer.Deserialize<ToDoActivity>(resourceBody.GetRawText());
+            Assert.AreEqual(doc.id, actualDoc.id);
+            Assert.AreEqual(doc.pk, actualDoc.pk);
+
+            response.Dispose();
+        }
+
+        [TestMethod]
+        public async Task ValidatePatchItemStreamOperation()
+        {
+            // Arrange
+            string patchJson = @"{""operations"":[{""op"":""add"",""path"":""/description"",""value"":""patched""}]}";
+            byte[] patchBytes = Encoding.UTF8.GetBytes(patchJson);
+
+            DistributedTransactionTestHandler handler = CreateMockHandler(
+                HttpStatusCode.OK,
+                CreateMockSuccessResponse(operationCount: 1));
+
+            using CosmosClient client = TestCommon.CreateCosmosClient(
+                clientOptions: new CosmosClientOptions
+                {
+                    CustomHandlers = { handler },
+                    ConnectionMode = ConnectionMode.Gateway
+                });
+
+            // Act
+            using MemoryStream stream = new MemoryStream(patchBytes);
+            DistributedTransactionResponse response = await client.CreateDistributedWriteTransaction()
+                .PatchItemStream(this.database.Id, this.container.Id, new PartitionKey("patch-pk"), "patch-id", stream)
+                .CommitTransactionAsync(CancellationToken.None);
+
+            // Assert
+            Assert.IsTrue(response.IsSuccessStatusCode);
+            using JsonDocument requestJson = JsonDocument.Parse(handler.CapturedRequestBody);
+            JsonElement operation = requestJson.RootElement.GetProperty("operations")[0];
+            Assert.AreEqual(OperationType.Patch.ToString(), operation.GetProperty("operationType").GetString());
+            Assert.AreEqual("patch-id", operation.GetProperty("id").GetString());
+
+            response.Dispose();
+        }
+
+        [TestMethod]
+        public async Task ValidateUpsertItemStreamOperation()
+        {
+            // Arrange
+            ToDoActivity doc = ToDoActivity.CreateRandomToDoActivity();
+            byte[] docBytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(doc));
+
+            DistributedTransactionTestHandler handler = CreateMockHandler(
+                HttpStatusCode.OK,
+                CreateMockSuccessResponse(operationCount: 1));
+
+            using CosmosClient client = TestCommon.CreateCosmosClient(
+                clientOptions: new CosmosClientOptions
+                {
+                    CustomHandlers = { handler },
+                    ConnectionMode = ConnectionMode.Gateway
+                });
+
+            // Act
+            using MemoryStream stream = new MemoryStream(docBytes);
+            DistributedTransactionResponse response = await client.CreateDistributedWriteTransaction()
+                .UpsertItemStream(this.database.Id, this.container.Id, new PartitionKey(doc.pk), stream)
+                .CommitTransactionAsync(CancellationToken.None);
+
+            // Assert
+            Assert.IsTrue(response.IsSuccessStatusCode);
+            using JsonDocument requestJson = JsonDocument.Parse(handler.CapturedRequestBody);
+            JsonElement operation = requestJson.RootElement.GetProperty("operations")[0];
+            Assert.AreEqual(OperationType.Upsert.ToString(), operation.GetProperty("operationType").GetString());
+            JsonElement resourceBody = operation.GetProperty("resourceBody");
+            Assert.AreEqual(JsonValueKind.Object, resourceBody.ValueKind);
+            ToDoActivity actualDoc = JsonSerializer.Deserialize<ToDoActivity>(resourceBody.GetRawText());
+            Assert.AreEqual(doc.id, actualDoc.id);
+            Assert.AreEqual(doc.pk, actualDoc.pk);
+
+            response.Dispose();
+        }
+
         #region Helper Methods
 
         private static DistributedTransactionTestHandler CreateMockHandler(HttpStatusCode statusCode, string responseBody)
