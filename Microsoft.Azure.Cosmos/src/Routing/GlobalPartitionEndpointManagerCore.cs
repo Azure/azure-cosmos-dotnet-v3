@@ -562,7 +562,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                     partitionKeyRange,
                     out PartitionKeyRangeFailoverInfo partitionKeyRangeFailover))
             {
-                if (this.IsRequestEligibleForPartitionLevelCircuitBreaker(request)
+                if (!isHubRegionDiscoveryActive
+                    && this.IsRequestEligibleForPartitionLevelCircuitBreaker(request)
                     && !partitionKeyRangeFailover.CanCircuitBreakerTriggerPartitionFailOver(request.IsReadOnlyRequest))
                 {
                     return false;

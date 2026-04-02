@@ -115,8 +115,12 @@ namespace Microsoft.Azure.Cosmos
                         refreshCache: false);
 
                     request.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
+                    bool isHubRegionDiscoveryActive = string.Equals(
+                            request?.Headers?[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion],
+                            bool.TrueString,
+                            StringComparison.OrdinalIgnoreCase);
 
-                    this.globalPartitionEndpointManager.TryAddPartitionLevelLocationOverride(request);
+                    this.globalPartitionEndpointManager.TryAddPartitionLevelLocationOverride(request, isHubRegionDiscoveryActive);
                 }
 
                 bool canUseThinClient =

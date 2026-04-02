@@ -472,7 +472,7 @@ namespace Microsoft.Azure.Cosmos
                     if (this.sessionTokenRetryCount > 1)
                     {
 #if !INTERNAL
-                        Console.WriteLine("Retry Count: {0}", this.sessionTokenRetryCount);
+                        DefaultTrace.TraceInformation("Retry Count: {0}", this.sessionTokenRetryCount);
                         if (this.sessionTokenRetryCount > endpoints.Count)
                         {
                             // On a single master account, with the hub region header, When the request has been tried 
@@ -480,7 +480,7 @@ namespace Microsoft.Azure.Cosmos
                             return ShouldRetryResult.NoRetry();
                         }
                         this.addHubRegionProcessingOnlyHeader = true;
-                        Console.WriteLine("Header Present: {0}", this.addHubRegionProcessingOnlyHeader);
+                        DefaultTrace.TraceInformation("Header Present: {0}", this.addHubRegionProcessingOnlyHeader);
 
                         // To generate a round-robin effect for detecting the hub region, retry on the next region.
                         this.retryContext = new RetryContext
@@ -502,7 +502,7 @@ namespace Microsoft.Azure.Cosmos
                         // it means we have already discovered the hub region for this partition and can route directly there.
                         if (this.partitionKeyRangeLocationCache.TryAddPartitionLevelLocationOverride(request, true))
                         {
-                            Console.WriteLine("Checking the cache: Partition level override added for request {0}. Routing to hub region for this request.", request.ResourceAddress);
+                            DefaultTrace.TraceInformation("Checking the cache: Partition level override added for request {0}. Routing to hub region for this request.", request.ResourceAddress);
                             return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
                         }
                         else

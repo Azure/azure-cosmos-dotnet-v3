@@ -2534,6 +2534,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ConsistencyLevel = ConsistencyLevel.Session,
                 RequestTimeout = TimeSpan.FromSeconds(0),
                 ApplicationPreferredRegions = preferredRegions,
+                AvailabilityStrategy = AvailabilityStrategy.DisabledStrategy(),
             };
 
             if (connectionMode == ConnectionMode.Gateway)
@@ -2619,18 +2620,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Console.WriteLine($"✅ SUCCESS! After 2x 404/1002, hub header was added on request 3 and succeeded.");
 
-            return404Count = 0;
+            return404Count = 1;
             ItemResponse<ToDoActivity> response1 = await container.ReadItemAsync<ToDoActivity>(
                 testItem.id,
                 new Cosmos.PartitionKey(testItem.pk));
             Console.WriteLine("Diagnostics for final read request 1: " + response1.Diagnostics.ToString());
 
-            return404Count = 0;
+            return404Count = 1;
             ItemResponse<ToDoActivity> response2 = await container.ReadItemAsync<ToDoActivity>(
                 testItem.id,
                 new Cosmos.PartitionKey(testItem.pk));
             Console.WriteLine("Diagnostics for final read request 2: " + response2.Diagnostics.ToString());
 
+            // Create a test item first
+            ToDoActivity testItem2 = ToDoActivity.CreateRandomToDoActivity();
+            ItemResponse<ToDoActivity> response3 = await container.CreateItemAsync(testItem2, new PartitionKey(testItem2.pk));
+            Console.WriteLine("Diagnostics for final write request 2: " + response3.Diagnostics.ToString());
         }
 
         [TestMethod]
