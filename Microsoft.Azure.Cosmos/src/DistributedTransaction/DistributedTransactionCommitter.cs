@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (response.Count != serverRequest.Operations.Count)
             {
-                DefaultTrace.TraceWarning(
+                DefaultTrace.TraceError(
                     $"DTC session token merge: result count ({response.Count}) differs from " +
                     $"operation count ({serverRequest.Operations.Count}); some tokens may not be merged.");
             }

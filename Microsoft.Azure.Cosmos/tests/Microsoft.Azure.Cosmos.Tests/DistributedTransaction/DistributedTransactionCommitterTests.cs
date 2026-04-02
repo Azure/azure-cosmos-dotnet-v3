@@ -345,24 +345,5 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
             return mockContext;
         }
-
-        /// <summary>
-        /// Test-only stub that allows crafting a <see cref="DistributedTransactionResponse"/> with
-        /// an explicit list of results, bypassing the private constructor and factory logic.
-        /// Used to exercise <see cref="DistributedTransactionCommitter.MergeSessionTokens"/> directly.
-        /// </summary>
-        private sealed class StubDistributedTransactionResponse : DistributedTransactionResponse
-        {
-            private readonly IReadOnlyList<DistributedTransactionOperationResult> items;
-
-            public StubDistributedTransactionResponse(IReadOnlyList<DistributedTransactionOperationResult> items)
-            {
-                this.items = items;
-            }
-
-            public override int Count => this.items.Count;
-
-            public override DistributedTransactionOperationResult this[int index] => this.items[index];
-        }
     }
 }
