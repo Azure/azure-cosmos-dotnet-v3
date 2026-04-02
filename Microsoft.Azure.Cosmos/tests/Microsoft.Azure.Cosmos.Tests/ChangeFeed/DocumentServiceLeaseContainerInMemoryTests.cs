@@ -4,12 +4,12 @@
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 {
-    using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
+    using System.Text;
     using System.Text.Json;
-    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -35,12 +35,24 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             CollectionAssert.AreEqual(allLeases.ToList(), ownedLeases.ToList());
         }
 
-        #region ExportLeasesAsync Tests
+        #region PersistLeaseStateAsync Tests
 
         [TestMethod]
-        [DataRow(0, DisplayName = "Empty container returns empty list")]
-        [DataRow(2, DisplayName = "Container with two leases returns both")]
-        public async Task ExportLeasesAsync_ReturnsExpectedCount(int leaseCount)
+        public async Task PersistLeaseStateAsync_WithNoStream_IsNoOp()
+        {
+            // Arrange — container without a stream
+            ConcurrentDictionary<string, DocumentServiceLease> container = new ConcurrentDictionary<string, DocumentServiceLease>();
+            container.TryAdd("lease0", new DocumentServiceLeaseCore { LeaseId = "lease0", LeaseToken = "0" });
+            DocumentServiceLeaseContainerInMemory inMemoryContainer = new DocumentServiceLeaseContainerInMemory(container);
+
+            // Act — should not throw
+            await inMemoryContainer.PersistLeaseStateAsync();
+        }
+
+        [TestMethod]
+        [DataRow(0, DisplayName = "Empty container persists empty array")]
+        [DataRow(2, DisplayName = "Container with two leases persists both")]
+        public async Task PersistLeaseStateAsync_WritesExpectedCount(int leaseCount)
         {
             // Arrange
             ConcurrentDictionary<string, DocumentServiceLease> container = new ConcurrentDictionary<string, DocumentServiceLease>();
@@ -55,48 +67,37 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 container.TryAdd(lease.Id, lease);
             }
 
+            MemoryStream stream = new MemoryStream();
             DocumentServiceLeaseContainerInMemory inMemoryContainer = new DocumentServiceLeaseContainerInMemory(container);
+            inMemoryContainer.LeaseStateStream = stream;
 
             // Act
-            IReadOnlyList<JsonElement> exportedLeases = await inMemoryContainer.ExportLeasesAsync();
+            await inMemoryContainer.PersistLeaseStateAsync();
 
             // Assert
-            Assert.AreEqual(leaseCount, exportedLeases.Count);
-            foreach (JsonElement leaseElement in exportedLeases)
-            {
-                Assert.AreNotEqual(JsonValueKind.Undefined, leaseElement.ValueKind);
-                Assert.AreNotEqual(JsonValueKind.Null, leaseElement.ValueKind);
-            }
+            Assert.IsTrue(stream.Length > 0 || leaseCount == 0);
+            stream.Position = 0;
+            string json = Encoding.UTF8.GetString(stream.ToArray());
+            List<JsonElement> elements = JsonSerializer.Deserialize<List<JsonElement>>(json);
+            Assert.AreEqual(leaseCount, elements.Count);
         }
 
         [TestMethod]
-        public async Task ExportLeasesAsync_RespectsCancellationToken()
+        public async Task PersistLeaseStateAsync_StreamPositionResetToZero()
         {
             // Arrange
-            ConcurrentDictionary<string, DocumentServiceLease> concurrentDictionary = new ConcurrentDictionary<string, DocumentServiceLease>();
-            DocumentServiceLeaseContainerInMemory inMemoryContainer = new DocumentServiceLeaseContainerInMemory(concurrentDictionary);
-            CancellationTokenSource cts = new CancellationTokenSource();
-            cts.Cancel();
+            ConcurrentDictionary<string, DocumentServiceLease> container = new ConcurrentDictionary<string, DocumentServiceLease>();
+            container.TryAdd("lease0", new DocumentServiceLeaseCore { LeaseId = "lease0", LeaseToken = "0" });
 
-            // Act & Assert
-            await Assert.ThrowsExceptionAsync<OperationCanceledException>(
-                () => inMemoryContainer.ExportLeasesAsync(cts.Token));
-        }
+            MemoryStream stream = new MemoryStream();
+            DocumentServiceLeaseContainerInMemory inMemoryContainer = new DocumentServiceLeaseContainerInMemory(container);
+            inMemoryContainer.LeaseStateStream = stream;
 
-        #endregion
+            // Act
+            await inMemoryContainer.PersistLeaseStateAsync();
 
-        #region ImportLeasesAsync Tests
-
-        [TestMethod]
-        public async Task ImportLeasesAsync_ThrowsArgumentNullException_WhenLeasesIsNull()
-        {
-            // Arrange
-            ConcurrentDictionary<string, DocumentServiceLease> concurrentDictionary = new ConcurrentDictionary<string, DocumentServiceLease>();
-            DocumentServiceLeaseContainerInMemory inMemoryContainer = new DocumentServiceLeaseContainerInMemory(concurrentDictionary);
-
-            // Act & Assert
-            await Assert.ThrowsExceptionAsync<ArgumentNullException>(
-                () => inMemoryContainer.ImportLeasesAsync(null));
+            // Assert — stream position should be 0 for the next reader
+            Assert.AreEqual(0, stream.Position);
         }
 
         #endregion
@@ -104,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         #region RoundTrip Tests
 
         [TestMethod]
-        public async Task ExportThenImport_RoundTrip_PreservesData()
+        public async Task PersistThenDeserialize_RoundTrip_PreservesData()
         {
             // Arrange
             DocumentServiceLeaseCore originalLease = new DocumentServiceLeaseCore
@@ -119,18 +120,22 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             ConcurrentDictionary<string, DocumentServiceLease> sourceContainer = new ConcurrentDictionary<string, DocumentServiceLease>();
             sourceContainer.TryAdd(originalLease.Id, originalLease);
+
+            MemoryStream stream = new MemoryStream();
             DocumentServiceLeaseContainerInMemory source = new DocumentServiceLeaseContainerInMemory(sourceContainer);
+            source.LeaseStateStream = stream;
 
-            ConcurrentDictionary<string, DocumentServiceLease> targetContainer = new ConcurrentDictionary<string, DocumentServiceLease>();
-            DocumentServiceLeaseContainerInMemory target = new DocumentServiceLeaseContainerInMemory(targetContainer);
+            // Act — persist then deserialize
+            await source.PersistLeaseStateAsync();
 
-            // Act
-            IReadOnlyList<JsonElement> exported = await source.ExportLeasesAsync();
-            await target.ImportLeasesAsync(exported);
+            string json = Encoding.UTF8.GetString(stream.ToArray());
+            List<JsonElement> elements = JsonSerializer.Deserialize<List<JsonElement>>(json);
+            Assert.AreEqual(1, elements.Count);
+
+            DocumentServiceLease importedLease = DocumentServiceLeaseContainerInMemory.DeserializeLease(elements[0]);
 
             // Assert
-            Assert.AreEqual(1, targetContainer.Count);
-            DocumentServiceLease importedLease = targetContainer["roundtrip-lease"];
+            Assert.IsNotNull(importedLease);
             Assert.AreEqual("roundtrip-lease", importedLease.Id);
             Assert.AreEqual("0", importedLease.CurrentLeaseToken);
             Assert.AreEqual("original-token", importedLease.ContinuationToken);
@@ -139,45 +144,34 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         }
 
         [TestMethod]
-        [DataRow(false, "original-owner", DisplayName = "Without overwrite preserves existing")]
-        [DataRow(true, "new-owner", DisplayName = "With overwrite replaces existing")]
-        public async Task ImportLeasesAsync_OverwriteBehavior(bool overwriteExisting, string expectedOwner)
+        public async Task PersistOverwritesPreviousStreamContent()
         {
             // Arrange
-            DocumentServiceLeaseCore existingLease = new DocumentServiceLeaseCore
-            {
-                LeaseId = "existing-lease",
-                LeaseToken = "0",
-                Owner = "original-owner",
-                ContinuationToken = "original-token",
-            };
+            ConcurrentDictionary<string, DocumentServiceLease> container = new ConcurrentDictionary<string, DocumentServiceLease>();
+            container.TryAdd("lease0", new DocumentServiceLeaseCore { LeaseId = "lease0", LeaseToken = "0", Owner = "first" });
 
-            ConcurrentDictionary<string, DocumentServiceLease> concurrentDictionary = new ConcurrentDictionary<string, DocumentServiceLease>();
-            concurrentDictionary.TryAdd(existingLease.Id, existingLease);
+            MemoryStream stream = new MemoryStream();
+            DocumentServiceLeaseContainerInMemory inMemoryContainer = new DocumentServiceLeaseContainerInMemory(container);
+            inMemoryContainer.LeaseStateStream = stream;
 
-            DocumentServiceLeaseContainerInMemory inMemoryContainer = new DocumentServiceLeaseContainerInMemory(concurrentDictionary);
+            // First persist
+            await inMemoryContainer.PersistLeaseStateAsync();
 
-            // Create new lease with different owner
-            DocumentServiceLeaseCore newLease = new DocumentServiceLeaseCore
-            {
-                LeaseId = "existing-lease",
-                LeaseToken = "0",
-                Owner = "new-owner",
-                ContinuationToken = "new-token",
-            };
+            // Now change the lease data
+            container.Clear();
+            container.TryAdd("lease1", new DocumentServiceLeaseCore { LeaseId = "lease1", LeaseToken = "1", Owner = "second" });
 
-            // Export and create import data
-            ConcurrentDictionary<string, DocumentServiceLease> tempContainer = new ConcurrentDictionary<string, DocumentServiceLease>();
-            tempContainer.TryAdd(newLease.Id, newLease);
-            DocumentServiceLeaseContainerInMemory tempSource = new DocumentServiceLeaseContainerInMemory(tempContainer);
-            IReadOnlyList<JsonElement> leasesToImport = await tempSource.ExportLeasesAsync();
+            // Second persist
+            await inMemoryContainer.PersistLeaseStateAsync();
 
-            // Act
-            await inMemoryContainer.ImportLeasesAsync(leasesToImport, overwriteExisting: overwriteExisting);
+            // Assert — stream should contain only the new data
+            string json = Encoding.UTF8.GetString(stream.ToArray());
+            List<JsonElement> elements = JsonSerializer.Deserialize<List<JsonElement>>(json);
+            Assert.AreEqual(1, elements.Count);
 
-            // Assert
-            Assert.AreEqual(1, concurrentDictionary.Count);
-            Assert.AreEqual(expectedOwner, concurrentDictionary["existing-lease"].Owner);
+            DocumentServiceLease lease = DocumentServiceLeaseContainerInMemory.DeserializeLease(elements[0]);
+            Assert.AreEqual("lease1", lease.Id);
+            Assert.AreEqual("second", lease.Owner);
         }
 
         #endregion

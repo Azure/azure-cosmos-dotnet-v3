@@ -7,10 +7,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
+    using System.Text;
     using System.Text.Json;
     using System.Text.Json.Serialization;
-    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents.Routing;
 
@@ -23,6 +24,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         };
 
         private readonly ConcurrentDictionary<string, DocumentServiceLease> container;
+
+        internal MemoryStream LeaseStateStream { get; set; }
 
         public DocumentServiceLeaseContainerInMemory(ConcurrentDictionary<string, DocumentServiceLease> container)
         {
@@ -39,17 +42,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             return Task.FromResult<IEnumerable<DocumentServiceLease>>(this.container.Values.AsEnumerable());
         }
 
-        public override Task<IReadOnlyList<JsonElement>> ExportLeasesAsync(
-            CancellationToken cancellationToken = default)
+        public override Task PersistLeaseStateAsync()
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            if (this.LeaseStateStream == null)
+            {
+                return Task.CompletedTask;
+            }
 
             List<JsonElement> exportedLeases = new List<JsonElement>();
-            
+
             foreach (DocumentServiceLease lease in this.container.Values)
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                
                 string payload = JsonSerializer.Serialize(lease, lease.GetType(), DeserializeOptions);
                 using (JsonDocument doc = JsonDocument.Parse(payload))
                 {
@@ -57,41 +60,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 }
             }
 
-            return Task.FromResult<IReadOnlyList<JsonElement>>(exportedLeases.AsReadOnly());
-        }
-
-        public override Task ImportLeasesAsync(
-            IReadOnlyList<JsonElement> leases,
-            bool overwriteExisting = false,
-            CancellationToken cancellationToken = default)
-        {
-            if (leases == null)
-            {
-                throw new ArgumentNullException(nameof(leases));
-            }
-
-            cancellationToken.ThrowIfCancellationRequested();
-
-            foreach (JsonElement leaseElement in leases)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                DocumentServiceLease lease = DeserializeLease(leaseElement);
-                if (lease == null)
-                {
-                    continue;
-                }
-
-                if (overwriteExisting)
-                {
-                    this.container[lease.Id] = lease;
-                }
-                else
-                {
-                    // Only add if not already present
-                    this.container.TryAdd(lease.Id, lease);
-                }
-            }
+            this.LeaseStateStream.SetLength(0);
+            string json = JsonSerializer.Serialize(exportedLeases);
+            byte[] data = Encoding.UTF8.GetBytes(json);
+            this.LeaseStateStream.Write(data, 0, data.Length);
+            this.LeaseStateStream.Position = 0;
 
             return Task.CompletedTask;
         }

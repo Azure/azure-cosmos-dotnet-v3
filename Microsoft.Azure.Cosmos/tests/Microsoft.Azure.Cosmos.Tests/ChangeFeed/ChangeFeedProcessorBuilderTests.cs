@@ -252,16 +252,26 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Assert.IsInstanceOfType(builder.Build(), typeof(ChangeFeedProcessor));
         }
 
-        #region WithInMemoryLeaseContainer(pairs) Tests
+        #region WithInMemoryLeaseContainer(MemoryStream) Tests
 
         [TestMethod]
-        public async Task WithInMemoryLeaseContainerWithPairsInitializesStoreCorrectly()
+        public async Task WithInMemoryLeaseContainerWithStreamInitializesStoreCorrectly()
         {
-            List<(string LeaseToken, string ContinuationToken)> initialLeases = new List<(string, string)>
+            // Build a MemoryStream with lease data
+            DocumentServiceLeaseCore lease = new DocumentServiceLeaseCore
             {
-                ("0", "continuation0"),
-                ("1", "continuation1"),
+                LeaseId = "stream-lease",
+                LeaseToken = "0",
+                ContinuationToken = "stream-continuation",
+                Owner = "stream-owner",
             };
+
+            ConcurrentDictionary<string, DocumentServiceLease> sourceContainer = new ConcurrentDictionary<string, DocumentServiceLease>();
+            sourceContainer.TryAdd(lease.Id, lease);
+            DocumentServiceLeaseContainerInMemory source = new DocumentServiceLeaseContainerInMemory(sourceContainer);
+            source.LeaseStateStream = new MemoryStream();
+            await source.PersistLeaseStateAsync();
+            MemoryStream leaseState = source.LeaseStateStream;
 
             DocumentServiceLeaseStoreManager capturedManager = null;
 
@@ -286,20 +296,20 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 ChangeFeedProcessorBuilderTests.GetMockedProcessor(),
                 verifier);
 
-            builder.WithInMemoryLeaseContainer(initialLeases);
+            builder.WithInMemoryLeaseContainer(leaseState);
             builder.Build();
 
             Assert.IsNotNull(capturedManager);
             IReadOnlyList<DocumentServiceLease> allLeases = await capturedManager.LeaseContainer.GetAllLeasesAsync();
-            Assert.AreEqual(2, allLeases.Count);
-            Assert.IsTrue(allLeases.Any(l => l.CurrentLeaseToken == "0" && l.ContinuationToken == "continuation0"));
-            Assert.IsTrue(allLeases.Any(l => l.CurrentLeaseToken == "1" && l.ContinuationToken == "continuation1"));
+            Assert.AreEqual(1, allLeases.Count);
+            Assert.AreEqual("0", allLeases[0].CurrentLeaseToken);
+            Assert.AreEqual("stream-continuation", allLeases[0].ContinuationToken);
         }
 
         [TestMethod]
-        public async Task WithInMemoryLeaseContainerWithEmptyPairsInitializesEmptyStore()
+        public async Task WithInMemoryLeaseContainerWithEmptyStreamInitializesEmptyStore()
         {
-            List<(string LeaseToken, string ContinuationToken)> initialLeases = new List<(string, string)>();
+            MemoryStream leaseState = new MemoryStream();
 
             DocumentServiceLeaseStoreManager capturedManager = null;
 
@@ -323,7 +333,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 ChangeFeedProcessorBuilderTests.GetMockedProcessor(),
                 verifier);
 
-            builder.WithInMemoryLeaseContainer(initialLeases);
+            builder.WithInMemoryLeaseContainer(leaseState);
             builder.Build();
 
             Assert.IsNotNull(capturedManager);
@@ -333,19 +343,19 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
-        public void WithInMemoryLeaseContainerWithNullPairsThrows()
+        public void WithInMemoryLeaseContainerWithNullStreamThrows()
         {
             ChangeFeedProcessorBuilder builder = new ChangeFeedProcessorBuilder("workflowName",
                 ChangeFeedProcessorBuilderTests.GetMockedContainer(),
                 ChangeFeedProcessorBuilderTests.GetMockedProcessor(),
                 ChangeFeedProcessorBuilderTests.GetEmptyInitialization());
 
-            builder.WithInMemoryLeaseContainer((IReadOnlyList<(string, string)>)null);
+            builder.WithInMemoryLeaseContainer((MemoryStream)null);
         }
 
         [TestMethod]
         [ExpectedException(typeof(InvalidOperationException))]
-        public void WithInMemoryLeaseContainerWithPairsCannotCombineWithLeaseContainer()
+        public void WithInMemoryLeaseContainerWithStreamCannotCombineWithLeaseContainer()
         {
             ChangeFeedProcessorBuilder builder = new ChangeFeedProcessorBuilder("workflowName",
                 ChangeFeedProcessorBuilderTests.GetMockedContainer(),
@@ -353,12 +363,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 ChangeFeedProcessorBuilderTests.GetEmptyInitialization());
 
             builder.WithLeaseContainer(ChangeFeedProcessorBuilderTests.GetMockedContainer());
-            builder.WithInMemoryLeaseContainer(new List<(string, string)> { ("0", "token0") });
+            builder.WithInMemoryLeaseContainer(new MemoryStream());
         }
 
         [TestMethod]
         [ExpectedException(typeof(InvalidOperationException))]
-        public void WithInMemoryLeaseContainerWithPairsCannotCombineWithExistingInMemory()
+        public void WithInMemoryLeaseContainerWithStreamCannotCombineWithExistingInMemory()
         {
             ChangeFeedProcessorBuilder builder = new ChangeFeedProcessorBuilder("workflowName",
                 ChangeFeedProcessorBuilderTests.GetMockedContainer(),
@@ -366,120 +376,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 ChangeFeedProcessorBuilderTests.GetEmptyInitialization());
 
             builder.WithInMemoryLeaseContainer();
-            builder.WithInMemoryLeaseContainer(new List<(string, string)> { ("0", "token0") });
-        }
-
-        #endregion
-
-        #region WithInMemoryLeaseContainer(leaseExportPath) Tests
-
-        [TestMethod]
-        public async Task WithInMemoryLeaseContainerWithFileInitializesStoreCorrectly()
-        {
-            // Create a temp file with exported lease data
-            string tempFile = Path.GetTempFileName();
-            try
-            {
-                DocumentServiceLeaseCore lease = new DocumentServiceLeaseCore
-                {
-                    LeaseId = "file-lease",
-                    LeaseToken = "0",
-                    ContinuationToken = "file-continuation",
-                    Owner = "file-owner",
-                };
-
-                // Use the real export path to create the file, matching what
-                // ExportLeasesAsync produces and what the builder's file import expects.
-                ConcurrentDictionary<string, DocumentServiceLease> sourceContainer = new ConcurrentDictionary<string, DocumentServiceLease>();
-                sourceContainer.TryAdd(lease.Id, lease);
-                DocumentServiceLeaseContainerInMemory source = new DocumentServiceLeaseContainerInMemory(sourceContainer);
-                IReadOnlyList<JsonElement> exported = await source.ExportLeasesAsync();
-                string json = JsonSerializer.Serialize(exported);
-                File.WriteAllText(tempFile, json);
-
-                DocumentServiceLeaseStoreManager capturedManager = null;
-
-                Action<DocumentServiceLeaseStoreManager,
-                    Container,
-                    string,
-                    ChangeFeedLeaseOptions,
-                    ChangeFeedProcessorOptions,
-                    Container> verifier = (DocumentServiceLeaseStoreManager leaseStoreManager,
-                    Container leaseContainer,
-                    string instanceName,
-                    ChangeFeedLeaseOptions changeFeedLeaseOptions,
-                    ChangeFeedProcessorOptions changeFeedProcessorOptions,
-                    Container monitoredContainer) =>
-                    {
-                        capturedManager = leaseStoreManager;
-                        Assert.IsInstanceOfType(leaseStoreManager, typeof(DocumentServiceLeaseStoreManagerInMemory));
-                    };
-
-                ChangeFeedProcessorBuilder builder = new ChangeFeedProcessorBuilder("workflowName",
-                    ChangeFeedProcessorBuilderTests.GetMockedContainer(),
-                    ChangeFeedProcessorBuilderTests.GetMockedProcessor(),
-                    verifier);
-
-                builder.WithInMemoryLeaseContainer(tempFile);
-                builder.Build();
-
-                Assert.IsNotNull(capturedManager);
-                IReadOnlyList<DocumentServiceLease> allLeases = await capturedManager.LeaseContainer.GetAllLeasesAsync();
-                Assert.AreEqual(1, allLeases.Count);
-                Assert.AreEqual("0", allLeases[0].CurrentLeaseToken);
-                Assert.AreEqual("file-continuation", allLeases[0].ContinuationToken);
-            }
-            finally
-            {
-                File.Delete(tempFile);
-            }
-        }
-
-        [TestMethod]
-        [ExpectedException(typeof(ArgumentNullException))]
-        public void WithInMemoryLeaseContainerWithNullPathThrows()
-        {
-            ChangeFeedProcessorBuilder builder = new ChangeFeedProcessorBuilder("workflowName",
-                ChangeFeedProcessorBuilderTests.GetMockedContainer(),
-                ChangeFeedProcessorBuilderTests.GetMockedProcessor(),
-                ChangeFeedProcessorBuilderTests.GetEmptyInitialization());
-
-            builder.WithInMemoryLeaseContainer((string)null);
-        }
-
-        [TestMethod]
-        [ExpectedException(typeof(FileNotFoundException))]
-        public void WithInMemoryLeaseContainerWithNonExistentFileThrows()
-        {
-            ChangeFeedProcessorBuilder builder = new ChangeFeedProcessorBuilder("workflowName",
-                ChangeFeedProcessorBuilderTests.GetMockedContainer(),
-                ChangeFeedProcessorBuilderTests.GetMockedProcessor(),
-                ChangeFeedProcessorBuilderTests.GetEmptyInitialization());
-
-            builder.WithInMemoryLeaseContainer("non_existent_file.json");
-        }
-
-        [TestMethod]
-        [ExpectedException(typeof(InvalidOperationException))]
-        public void WithInMemoryLeaseContainerWithFileCannotCombineWithLeaseContainer()
-        {
-            string tempFile = Path.GetTempFileName();
-            try
-            {
-                File.WriteAllText(tempFile, "[]");
-
-                ChangeFeedProcessorBuilder builder = new ChangeFeedProcessorBuilder("workflowName",
-                    ChangeFeedProcessorBuilderTests.GetMockedContainer(),
-                    ChangeFeedProcessorBuilderTests.GetMockedProcessor(),
-                    ChangeFeedProcessorBuilderTests.GetEmptyInitialization());
-
-                builder.WithLeaseContainer(ChangeFeedProcessorBuilderTests.GetMockedContainer());
-                builder.WithInMemoryLeaseContainer(tempFile);
-            }
-            finally
-            {
-                File.Delete(tempFile);
-            }
+            builder.WithInMemoryLeaseContainer(new MemoryStream());
         }
 
         #endregion
