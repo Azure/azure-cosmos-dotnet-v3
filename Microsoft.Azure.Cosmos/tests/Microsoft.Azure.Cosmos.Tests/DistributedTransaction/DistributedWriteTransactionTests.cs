@@ -88,6 +88,38 @@ namespace Microsoft.Azure.Cosmos.Tests
                 () => tx.PatchItem(Database, Container, new PartitionKey("pk"), "item-id", new List<PatchOperation>()));
         }
 
+        [TestMethod]
+        public void CreateItemStream_NullStream_ThrowsArgumentNullException()
+        {
+            DistributedWriteTransaction tx = this.NewTransaction();
+            Assert.ThrowsException<ArgumentNullException>(
+                () => tx.CreateItemStream(Database, Container, new PartitionKey("pk"), null));
+        }
+
+        [TestMethod]
+        public void ReplaceItemStream_NullStream_ThrowsArgumentNullException()
+        {
+            DistributedWriteTransaction tx = this.NewTransaction();
+            Assert.ThrowsException<ArgumentNullException>(
+                () => tx.ReplaceItemStream(Database, Container, new PartitionKey("pk"), "item-id", null));
+        }
+
+        [TestMethod]
+        public void PatchItemStream_NullStream_ThrowsArgumentNullException()
+        {
+            DistributedWriteTransaction tx = this.NewTransaction();
+            Assert.ThrowsException<ArgumentNullException>(
+                () => tx.PatchItemStream(Database, Container, new PartitionKey("pk"), "item-id", null));
+        }
+
+        [TestMethod]
+        public void UpsertItemStream_NullStream_ThrowsArgumentNullException()
+        {
+            DistributedWriteTransaction tx = this.NewTransaction();
+            Assert.ThrowsException<ArgumentNullException>(
+                () => tx.UpsertItemStream(Database, Container, new PartitionKey("pk"), null));
+        }
+
         // Request structure
 
         [TestMethod]

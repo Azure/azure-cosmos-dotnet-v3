@@ -380,7 +380,367 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             response.Dispose();
         }
 
+        // Serialization
+
+        [TestMethod]
+        [Description("All required fields are present with the correct JSON value kind across Create, Replace, and Delete operations; optional fields that appear also have the correct kind.")]
+        public async Task SerializedRequest_AllOperations_CorrectFieldTypes()
+        {
+            ToDoActivity createDoc = ToDoActivity.CreateRandomToDoActivity();
+            ToDoActivity replaceDoc = ToDoActivity.CreateRandomToDoActivity();
+
+            DistributedTransactionMockHandler handler = new DistributedTransactionMockHandler(
+                request => Task.FromResult(this.BuildMockResponse(HttpStatusCode.OK, BuildSuccessResponseJson(3))));
+
+            using CosmosClient client = this.CreateMockClient(handler);
+
+            DistributedTransactionResponse response = await client.CreateDistributedWriteTransaction()
+                .CreateItem(this.database.Id, this.container.Id, new PartitionKey(createDoc.pk), createDoc)
+                .ReplaceItem(this.database.Id, this.container.Id, new PartitionKey(replaceDoc.pk), replaceDoc.id, replaceDoc)
+                .DeleteItem(this.database.Id, this.container.Id, new PartitionKey("delete-pk"), "delete-id")
+                .CommitTransactionAsync(CancellationToken.None);
+
+            using JsonDocument requestJson = JsonDocument.Parse(handler.CapturedRequestBody);
+
+            Assert.AreEqual(JsonValueKind.Object, requestJson.RootElement.ValueKind, "Root element should be an object");
+            Assert.IsTrue(requestJson.RootElement.TryGetProperty("operations", out JsonElement operations), "operations property should exist");
+            Assert.AreEqual(JsonValueKind.Array, operations.ValueKind, "operations should be an array");
+            Assert.AreEqual(3, operations.GetArrayLength(), "operations should have 3 elements");
+
+            int operationIndex = 0;
+            foreach (JsonElement operation in operations.EnumerateArray())
+            {
+                Assert.AreEqual(JsonValueKind.Object, operation.ValueKind, $"Operation {operationIndex} should be an object");
+
+                (string Property, JsonValueKind Kind)[] requiredFields =
+                {
+                    ("databaseName", JsonValueKind.String),
+                    ("collectionName", JsonValueKind.String),
+                    ("collectionResourceId", JsonValueKind.String),
+                    ("databaseResourceId", JsonValueKind.String),
+                    ("partitionKey", JsonValueKind.Array),
+                    ("index", JsonValueKind.Number),
+                    ("operationType", JsonValueKind.String),
+                    ("resourceType", JsonValueKind.String)
+                };
+
+                foreach ((string property, JsonValueKind expectedKind) in requiredFields)
+                {
+                    this.ValidateValueKind(operation, property, expectedKind, operationIndex, isRequired: true);
+                }
+
+                (string Property, JsonValueKind Kind)[] optionalFields =
+                {
+                    ("id", JsonValueKind.String),
+                    ("resourceBody", JsonValueKind.Object),
+                    ("sessionToken", JsonValueKind.String),
+                    ("etag", JsonValueKind.String),
+                };
+
+                foreach ((string property, JsonValueKind expectedKind) in optionalFields)
+                {
+                    this.ValidateValueKind(operation, property, expectedKind, operationIndex, isRequired: false);
+                }
+
+                operationIndex++;
+            }
+
+            response.Dispose();
+        }
+
+        // ETag conditions
+
+        [TestMethod]
+        [Description("A replace operation with IfMatchEtag set serializes the etag field to the request.")]
+        public async Task ReplaceItem_WithIfMatchEtag_EtagSerializedToRequest()
+        {
+            ToDoActivity doc = ToDoActivity.CreateRandomToDoActivity();
+            string expectedEtag = "\"test-etag-replace\"";
+
+            DistributedTransactionMockHandler handler = new DistributedTransactionMockHandler(
+                request => Task.FromResult(this.BuildMockResponse(HttpStatusCode.OK, BuildSuccessResponseJson(1))));
+
+            using CosmosClient client = this.CreateMockClient(handler);
+
+            DistributedTransactionResponse response = await client.CreateDistributedWriteTransaction()
+                .ReplaceItem(
+                    this.database.Id,
+                    this.container.Id,
+                    new PartitionKey(doc.pk),
+                    doc.id,
+                    doc,
+                    new DistributedTransactionRequestOptions { IfMatchEtag = expectedEtag })
+                .CommitTransactionAsync(CancellationToken.None);
+
+            Assert.IsTrue(response.IsSuccessStatusCode);
+            using JsonDocument requestJson = JsonDocument.Parse(handler.CapturedRequestBody);
+            JsonElement operation = requestJson.RootElement.GetProperty("operations")[0];
+            Assert.IsTrue(operation.TryGetProperty("id", out JsonElement idElement), "id field should be present for replace operation");
+            Assert.AreEqual(doc.id, idElement.GetString());
+            Assert.IsTrue(operation.TryGetProperty("etag", out JsonElement etagElement), "etag field should be present when IfMatchEtag is set");
+            Assert.AreEqual(expectedEtag, etagElement.GetString());
+
+            response.Dispose();
+        }
+
+        [TestMethod]
+        [Description("A delete operation with IfMatchEtag set serializes the etag field to the request.")]
+        public async Task DeleteItem_WithIfMatchEtag_EtagSerializedToRequest()
+        {
+            string expectedEtag = "\"test-etag-delete\"";
+
+            DistributedTransactionMockHandler handler = new DistributedTransactionMockHandler(
+                request => Task.FromResult(this.BuildMockResponse(HttpStatusCode.OK, BuildSuccessResponseJson(1))));
+
+            using CosmosClient client = this.CreateMockClient(handler);
+
+            DistributedTransactionResponse response = await client.CreateDistributedWriteTransaction()
+                .DeleteItem(
+                    this.database.Id,
+                    this.container.Id,
+                    new PartitionKey("delete-pk"),
+                    "delete-id",
+                    new DistributedTransactionRequestOptions { IfMatchEtag = expectedEtag })
+                .CommitTransactionAsync(CancellationToken.None);
+
+            Assert.IsTrue(response.IsSuccessStatusCode);
+            using JsonDocument requestJson = JsonDocument.Parse(handler.CapturedRequestBody);
+            JsonElement operation = requestJson.RootElement.GetProperty("operations")[0];
+            Assert.IsTrue(operation.TryGetProperty("id", out JsonElement idElement), "id field should be present for delete operation");
+            Assert.AreEqual("delete-id", idElement.GetString());
+            Assert.IsTrue(operation.TryGetProperty("etag", out JsonElement etagElement), "etag field should be present when IfMatchEtag is set");
+            Assert.AreEqual(expectedEtag, etagElement.GetString());
+
+            response.Dispose();
+        }
+
+        [TestMethod]
+        [Description("A patch operation with IfMatchEtag set serializes the etag field to the request.")]
+        public async Task PatchItem_WithIfMatchEtag_EtagSerializedToRequest()
+        {
+            string expectedEtag = "\"test-etag-patch\"";
+            IReadOnlyList<PatchOperation> patchOps = new[] { PatchOperation.Add("/description", "patched") };
+
+            DistributedTransactionMockHandler handler = new DistributedTransactionMockHandler(
+                request => Task.FromResult(this.BuildMockResponse(HttpStatusCode.OK, BuildSuccessResponseJson(1))));
+
+            using CosmosClient client = this.CreateMockClient(handler);
+
+            DistributedTransactionResponse response = await client.CreateDistributedWriteTransaction()
+                .PatchItem(
+                    this.database.Id,
+                    this.container.Id,
+                    new PartitionKey("patch-pk"),
+                    "patch-id",
+                    patchOps,
+                    new DistributedTransactionRequestOptions { IfMatchEtag = expectedEtag })
+                .CommitTransactionAsync(CancellationToken.None);
+
+            Assert.IsTrue(response.IsSuccessStatusCode);
+            using JsonDocument requestJson = JsonDocument.Parse(handler.CapturedRequestBody);
+            JsonElement operation = requestJson.RootElement.GetProperty("operations")[0];
+            Assert.IsTrue(operation.TryGetProperty("id", out JsonElement idElement), "id field should be present for patch operation");
+            Assert.AreEqual("patch-id", idElement.GetString());
+            Assert.IsTrue(operation.TryGetProperty("etag", out JsonElement etagElement), "etag field should be present when IfMatchEtag is set");
+            Assert.AreEqual(expectedEtag, etagElement.GetString());
+
+            response.Dispose();
+        }
+
+        [TestMethod]
+        [Description("A 412 Precondition Failed response marks the transaction and the failing operation as not successful.")]
+        public async Task PreconditionFailedResponse_OnReplaceWithStaleEtag_ReturnsFailureStatus()
+        {
+            string mockErrorJson = @"{
+                ""operationResponses"": [{
+                    ""index"": 0,
+                    ""statusCode"": 412,
+                    ""subStatusCode"": 0
+                }]
+            }";
+
+            DistributedTransactionMockHandler handler = new DistributedTransactionMockHandler(
+                request => Task.FromResult(this.BuildMockResponse(HttpStatusCode.PreconditionFailed, mockErrorJson)));
+
+            using CosmosClient client = this.CreateMockClient(handler);
+            ToDoActivity doc = ToDoActivity.CreateRandomToDoActivity();
+
+            DistributedTransactionResponse response = await client.CreateDistributedWriteTransaction()
+                .ReplaceItem(
+                    this.database.Id,
+                    this.container.Id,
+                    new PartitionKey(doc.pk),
+                    doc.id,
+                    doc,
+                    new DistributedTransactionRequestOptions { IfMatchEtag = "\"stale-etag\"" })
+                .CommitTransactionAsync(CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.PreconditionFailed, response.StatusCode);
+            Assert.IsFalse(response.IsSuccessStatusCode);
+            Assert.AreEqual(1, response.Count);
+            Assert.AreEqual(HttpStatusCode.PreconditionFailed, response[0].StatusCode);
+
+            response.Dispose();
+        }
+
+        [TestMethod]
+        [Description("Operations without IfMatchEtag set do not include an etag field in the serialized request.")]
+        public async Task Operations_WithoutIfMatchEtag_NoEtagFieldSerialized()
+        {
+            ToDoActivity createDoc = ToDoActivity.CreateRandomToDoActivity();
+            ToDoActivity replaceDoc = ToDoActivity.CreateRandomToDoActivity();
+
+            DistributedTransactionMockHandler handler = new DistributedTransactionMockHandler(
+                request => Task.FromResult(this.BuildMockResponse(HttpStatusCode.OK, BuildSuccessResponseJson(2))));
+
+            using CosmosClient client = this.CreateMockClient(handler);
+
+            DistributedTransactionResponse response = await client.CreateDistributedWriteTransaction()
+                .CreateItem(this.database.Id, this.container.Id, new PartitionKey(createDoc.pk), createDoc)
+                .ReplaceItem(this.database.Id, this.container.Id, new PartitionKey(replaceDoc.pk), replaceDoc.id, replaceDoc)
+                .CommitTransactionAsync(CancellationToken.None);
+
+            using JsonDocument requestJson = JsonDocument.Parse(handler.CapturedRequestBody);
+            JsonElement ops = requestJson.RootElement.GetProperty("operations");
+            foreach (JsonElement operation in ops.EnumerateArray())
+            {
+                Assert.IsFalse(operation.TryGetProperty("etag", out _), "etag field should not be present when IfMatchEtag is not set");
+            }
+
+            response.Dispose();
+        }
+
+        // Stream operations
+
+        [TestMethod]
+        [Description("CreateItemStream serializes the stream payload as a JSON object resourceBody in the request.")]
+        public async Task CreateItemStream_ValidDocument_SerializedAsCreateOperation()
+        {
+            ToDoActivity doc = ToDoActivity.CreateRandomToDoActivity();
+            byte[] docBytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(doc));
+
+            DistributedTransactionMockHandler handler = new DistributedTransactionMockHandler(
+                request => Task.FromResult(this.BuildMockResponse(HttpStatusCode.OK, BuildSuccessResponseJson(1))));
+
+            using CosmosClient client = this.CreateMockClient(handler);
+
+            using MemoryStream stream = new MemoryStream(docBytes);
+            DistributedTransactionResponse response = await client.CreateDistributedWriteTransaction()
+                .CreateItemStream(this.database.Id, this.container.Id, new PartitionKey(doc.pk), stream)
+                .CommitTransactionAsync(CancellationToken.None);
+
+            Assert.IsTrue(response.IsSuccessStatusCode);
+            using JsonDocument requestJson = JsonDocument.Parse(handler.CapturedRequestBody);
+            JsonElement operation = requestJson.RootElement.GetProperty("operations")[0];
+            Assert.AreEqual(OperationType.Create.ToString(), operation.GetProperty("operationType").GetString());
+            JsonElement resourceBody = operation.GetProperty("resourceBody");
+            Assert.AreEqual(JsonValueKind.Object, resourceBody.ValueKind);
+            ToDoActivity actualDoc = JsonSerializer.Deserialize<ToDoActivity>(resourceBody.GetRawText());
+            Assert.AreEqual(doc.id, actualDoc.id);
+            Assert.AreEqual(doc.pk, actualDoc.pk);
+
+            response.Dispose();
+        }
+
+        [TestMethod]
+        [Description("ReplaceItemStream serializes the stream payload as a JSON object resourceBody and includes the item id in the request.")]
+        public async Task ReplaceItemStream_ValidDocument_SerializedAsReplaceOperation()
+        {
+            ToDoActivity doc = ToDoActivity.CreateRandomToDoActivity();
+            byte[] docBytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(doc));
+
+            DistributedTransactionMockHandler handler = new DistributedTransactionMockHandler(
+                request => Task.FromResult(this.BuildMockResponse(HttpStatusCode.OK, BuildSuccessResponseJson(1))));
+
+            using CosmosClient client = this.CreateMockClient(handler);
+
+            using MemoryStream stream = new MemoryStream(docBytes);
+            DistributedTransactionResponse response = await client.CreateDistributedWriteTransaction()
+                .ReplaceItemStream(this.database.Id, this.container.Id, new PartitionKey(doc.pk), doc.id, stream)
+                .CommitTransactionAsync(CancellationToken.None);
+
+            Assert.IsTrue(response.IsSuccessStatusCode);
+            using JsonDocument requestJson = JsonDocument.Parse(handler.CapturedRequestBody);
+            JsonElement operation = requestJson.RootElement.GetProperty("operations")[0];
+            Assert.AreEqual(OperationType.Replace.ToString(), operation.GetProperty("operationType").GetString());
+            Assert.AreEqual(doc.id, operation.GetProperty("id").GetString());
+            JsonElement resourceBody = operation.GetProperty("resourceBody");
+            Assert.AreEqual(JsonValueKind.Object, resourceBody.ValueKind);
+            ToDoActivity actualDoc = JsonSerializer.Deserialize<ToDoActivity>(resourceBody.GetRawText());
+            Assert.AreEqual(doc.id, actualDoc.id);
+            Assert.AreEqual(doc.pk, actualDoc.pk);
+
+            response.Dispose();
+        }
+
+        [TestMethod]
+        [Description("PatchItemStream serializes the patch payload and includes the item id in the request.")]
+        public async Task PatchItemStream_ValidPatch_SerializedAsPatchOperation()
+        {
+            string patchJson = @"{""operations"":[{""op"":""add"",""path"":""/description"",""value"":""patched""}]}";
+            byte[] patchBytes = Encoding.UTF8.GetBytes(patchJson);
+
+            DistributedTransactionMockHandler handler = new DistributedTransactionMockHandler(
+                request => Task.FromResult(this.BuildMockResponse(HttpStatusCode.OK, BuildSuccessResponseJson(1))));
+
+            using CosmosClient client = this.CreateMockClient(handler);
+
+            using MemoryStream stream = new MemoryStream(patchBytes);
+            DistributedTransactionResponse response = await client.CreateDistributedWriteTransaction()
+                .PatchItemStream(this.database.Id, this.container.Id, new PartitionKey("patch-pk"), "patch-id", stream)
+                .CommitTransactionAsync(CancellationToken.None);
+
+            Assert.IsTrue(response.IsSuccessStatusCode);
+            using JsonDocument requestJson = JsonDocument.Parse(handler.CapturedRequestBody);
+            JsonElement operation = requestJson.RootElement.GetProperty("operations")[0];
+            Assert.AreEqual(OperationType.Patch.ToString(), operation.GetProperty("operationType").GetString());
+            Assert.AreEqual("patch-id", operation.GetProperty("id").GetString());
+
+            response.Dispose();
+        }
+
+        [TestMethod]
+        [Description("UpsertItemStream serializes the stream payload as a JSON object resourceBody in the request.")]
+        public async Task UpsertItemStream_ValidDocument_SerializedAsUpsertOperation()
+        {
+            ToDoActivity doc = ToDoActivity.CreateRandomToDoActivity();
+            byte[] docBytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(doc));
+
+            DistributedTransactionMockHandler handler = new DistributedTransactionMockHandler(
+                request => Task.FromResult(this.BuildMockResponse(HttpStatusCode.OK, BuildSuccessResponseJson(1))));
+
+            using CosmosClient client = this.CreateMockClient(handler);
+
+            using MemoryStream stream = new MemoryStream(docBytes);
+            DistributedTransactionResponse response = await client.CreateDistributedWriteTransaction()
+                .UpsertItemStream(this.database.Id, this.container.Id, new PartitionKey(doc.pk), stream)
+                .CommitTransactionAsync(CancellationToken.None);
+
+            Assert.IsTrue(response.IsSuccessStatusCode);
+            using JsonDocument requestJson = JsonDocument.Parse(handler.CapturedRequestBody);
+            JsonElement operation = requestJson.RootElement.GetProperty("operations")[0];
+            Assert.AreEqual(OperationType.Upsert.ToString(), operation.GetProperty("operationType").GetString());
+            JsonElement resourceBody = operation.GetProperty("resourceBody");
+            Assert.AreEqual(JsonValueKind.Object, resourceBody.ValueKind);
+            ToDoActivity actualDoc = JsonSerializer.Deserialize<ToDoActivity>(resourceBody.GetRawText());
+            Assert.AreEqual(doc.id, actualDoc.id);
+            Assert.AreEqual(doc.pk, actualDoc.pk);
+
+            response.Dispose();
+        }
+
         // Helpers
+
+        private void ValidateValueKind(JsonElement operation, string property, JsonValueKind expectedValueKind, int operationIndex, bool isRequired)
+        {
+            if (!operation.TryGetProperty(property, out JsonElement value))
+            {
+                Assert.IsFalse(isRequired, $"Operation {operationIndex}: required property '{property}' is missing");
+                return;
+            }
+
+            Assert.AreEqual(expectedValueKind, value.ValueKind, $"Operation {operationIndex}: '{property}' should be {expectedValueKind}");
+        }
 
         private CosmosClient CreateMockClient(DistributedTransactionMockHandler handler)
         {

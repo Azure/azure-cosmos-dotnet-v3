@@ -234,6 +234,161 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(JsonValueKind.String, op.GetProperty("resourceType").ValueKind, "'resourceType' must be a JSON string.");
         }
 
+        // Stream operations
+
+        [TestMethod]
+        [Description("CreateItemStream with a JSON stream sets resourceBody on the operation; no explicit 'id' field should appear.")]
+        public async Task CreateItemStream_SerializedBody_HasResourceBody_NoIdField()
+        {
+            byte[] docBytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new TestItem("test-id")));
+            using MemoryStream stream = new MemoryStream(docBytes);
+            string capturedJson = await this.CaptureCommitBodyAsync(
+                tx => tx.CreateItemStream(Database, Container, new PartitionKey("pk"), stream));
+
+            using JsonDocument doc = JsonDocument.Parse(capturedJson);
+            JsonElement op = doc.RootElement.GetProperty("operations")[0];
+
+            Assert.IsFalse(op.TryGetProperty("id", out _),
+                "CreateItemStream operation must NOT include an 'id' field in the serialized body.");
+            Assert.IsTrue(op.TryGetProperty("resourceBody", out _),
+                "CreateItemStream operation must include a 'resourceBody' field.");
+        }
+
+        [TestMethod]
+        [Description("ReplaceItemStream sets both id and resource; 'id' and 'resourceBody' must appear in the serialized JSON.")]
+        public async Task ReplaceItemStream_SerializedBody_HasIdAndResourceBody()
+        {
+            const string itemId = "replace-stream-id";
+            byte[] docBytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new TestItem(itemId)));
+            using MemoryStream stream = new MemoryStream(docBytes);
+            string capturedJson = await this.CaptureCommitBodyAsync(
+                tx => tx.ReplaceItemStream(Database, Container, new PartitionKey("pk"), itemId, stream));
+
+            using JsonDocument doc = JsonDocument.Parse(capturedJson);
+            JsonElement op = doc.RootElement.GetProperty("operations")[0];
+
+            Assert.IsTrue(op.TryGetProperty("id", out _),
+                "ReplaceItemStream operation must include an 'id' field.");
+            Assert.IsTrue(op.TryGetProperty("resourceBody", out _),
+                "ReplaceItemStream operation must include a 'resourceBody' field.");
+        }
+
+        [TestMethod]
+        [Description("PatchItemStream sets id and resource; 'id' and 'resourceBody' must appear in the serialized JSON.")]
+        public async Task PatchItemStream_SerializedBody_HasIdAndResourceBody()
+        {
+            const string itemId = "patch-stream-id";
+            byte[] patchBytes = Encoding.UTF8.GetBytes(@"{""operations"":[{""op"":""add"",""path"":""/description"",""value"":""patched""}]}");
+            using MemoryStream stream = new MemoryStream(patchBytes);
+            string capturedJson = await this.CaptureCommitBodyAsync(
+                tx => tx.PatchItemStream(Database, Container, new PartitionKey("pk"), itemId, stream));
+
+            using JsonDocument doc = JsonDocument.Parse(capturedJson);
+            JsonElement op = doc.RootElement.GetProperty("operations")[0];
+
+            Assert.IsTrue(op.TryGetProperty("id", out _),
+                "PatchItemStream operation must include an 'id' field.");
+            Assert.IsTrue(op.TryGetProperty("resourceBody", out _),
+                "PatchItemStream operation must include a 'resourceBody' field.");
+        }
+
+        [TestMethod]
+        [Description("UpsertItemStream sets resource but no explicit id; 'resourceBody' must be present and 'id' must be absent.")]
+        public async Task UpsertItemStream_SerializedBody_HasResourceBody_NoIdField()
+        {
+            byte[] docBytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new TestItem("upsert-stream-id")));
+            using MemoryStream stream = new MemoryStream(docBytes);
+            string capturedJson = await this.CaptureCommitBodyAsync(
+                tx => tx.UpsertItemStream(Database, Container, new PartitionKey("pk"), stream));
+
+            using JsonDocument doc = JsonDocument.Parse(capturedJson);
+            JsonElement op = doc.RootElement.GetProperty("operations")[0];
+
+            Assert.IsFalse(op.TryGetProperty("id", out _),
+                "UpsertItemStream operation must NOT include an 'id' field in the serialized body.");
+            Assert.IsTrue(op.TryGetProperty("resourceBody", out _),
+                "UpsertItemStream operation must include a 'resourceBody' field.");
+        }
+
+        // IfMatchEtag
+
+        [TestMethod]
+        [Description("ReplaceItem with IfMatchEtag set must serialize an 'etag' field in the operation JSON.")]
+        public async Task ReplaceItem_WithIfMatchEtag_SerializesEtagField()
+        {
+            const string etag = "\"test-etag\"";
+            const string itemId = "etag-replace-id";
+
+            string capturedJson = await this.CaptureCommitBodyAsync(tx =>
+                tx.ReplaceItem(Database, Container, new PartitionKey("pk"), itemId, new TestItem(itemId),
+                    new DistributedTransactionRequestOptions { IfMatchEtag = etag }));
+
+            using JsonDocument doc = JsonDocument.Parse(capturedJson);
+            JsonElement op = doc.RootElement.GetProperty("operations")[0];
+
+            Assert.IsTrue(op.TryGetProperty("etag", out JsonElement etagElement),
+                "Replace operation with IfMatchEtag must include an 'etag' field.");
+            Assert.AreEqual(etag, etagElement.GetString());
+        }
+
+        [TestMethod]
+        [Description("DeleteItem with IfMatchEtag set must serialize an 'etag' field in the operation JSON.")]
+        public async Task DeleteItem_WithIfMatchEtag_SerializesEtagField()
+        {
+            const string etag = "\"test-etag\"";
+            const string itemId = "etag-delete-id";
+
+            string capturedJson = await this.CaptureCommitBodyAsync(tx =>
+                tx.DeleteItem(Database, Container, new PartitionKey("pk"), itemId,
+                    new DistributedTransactionRequestOptions { IfMatchEtag = etag }));
+
+            using JsonDocument doc = JsonDocument.Parse(capturedJson);
+            JsonElement op = doc.RootElement.GetProperty("operations")[0];
+
+            Assert.IsTrue(op.TryGetProperty("etag", out JsonElement etagElement),
+                "Delete operation with IfMatchEtag must include an 'etag' field.");
+            Assert.AreEqual(etag, etagElement.GetString());
+        }
+
+        [TestMethod]
+        [Description("PatchItem with IfMatchEtag set must serialize an 'etag' field in the operation JSON.")]
+        public async Task PatchItem_WithIfMatchEtag_SerializesEtagField()
+        {
+            const string etag = "\"test-etag\"";
+            const string itemId = "etag-patch-id";
+
+            string capturedJson = await this.CaptureCommitBodyAsync(tx =>
+                tx.PatchItem(Database, Container, new PartitionKey("pk"), itemId,
+                    new[] { PatchOperation.Add("/value", "v") },
+                    new DistributedTransactionRequestOptions { IfMatchEtag = etag }));
+
+            using JsonDocument doc = JsonDocument.Parse(capturedJson);
+            JsonElement op = doc.RootElement.GetProperty("operations")[0];
+
+            Assert.IsTrue(op.TryGetProperty("etag", out JsonElement etagElement),
+                "Patch operation with IfMatchEtag must include an 'etag' field.");
+            Assert.AreEqual(etag, etagElement.GetString());
+        }
+
+        [TestMethod]
+        [Description("Operations without IfMatchEtag must not include an 'etag' field in the serialized JSON for any operation.")]
+        public async Task Operations_WithoutIfMatchEtag_DoNotIncludeEtagField()
+        {
+            string capturedJson = await this.CaptureCommitBodyAsync(tx =>
+                tx.CreateItem(Database, Container, new PartitionKey("pk"), new TestItem("create-no-etag"))
+                  .ReplaceItem(Database, Container, new PartitionKey("pk"), "replace-no-etag", new TestItem("replace-no-etag")),
+                expectedResultCount: 2);
+
+            using JsonDocument doc = JsonDocument.Parse(capturedJson);
+            JsonElement ops = doc.RootElement.GetProperty("operations");
+
+            for (int i = 0; i < ops.GetArrayLength(); i++)
+            {
+                Assert.IsFalse(ops[i].TryGetProperty("etag", out _),
+                    $"Operation[{i}] without IfMatchEtag must NOT include an 'etag' field.");
+            }
+        }
+
         // Helpers
 
         /// <summary>

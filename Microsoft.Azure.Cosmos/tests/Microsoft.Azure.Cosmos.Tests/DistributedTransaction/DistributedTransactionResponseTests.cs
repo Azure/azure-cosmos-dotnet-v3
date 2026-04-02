@@ -80,6 +80,29 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        [Description("A 412 PreconditionFailed response with one matching result must return PreconditionFailed status, IsSuccessStatusCode false, Count 1, and result[0].StatusCode PreconditionFailed.")]
+        public async Task FromResponseMessage_PreconditionFailed_ReturnsFailureStatus()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            string json = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":{(int)HttpStatusCode.PreconditionFailed}}}]}}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.PreconditionFailed, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                Guid.NewGuid(),
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.PreconditionFailed, response.StatusCode);
+            Assert.IsFalse(response.IsSuccessStatusCode);
+            Assert.AreEqual(1, response.Count);
+            Assert.AreEqual(HttpStatusCode.PreconditionFailed, response[0].StatusCode);
+        }
+
+        [TestMethod]
         [Description("When the response body contains malformed JSON and the HTTP status is success, the SDK must return 500.")]
         public async Task FromResponseMessage_MalformedJson_SuccessStatus_ReturnsInternalServerError()
         {
