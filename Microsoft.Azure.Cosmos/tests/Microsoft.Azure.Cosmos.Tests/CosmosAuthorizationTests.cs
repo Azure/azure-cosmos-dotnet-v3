@@ -329,9 +329,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.AreEqual(token1, t2);
 
                 // Wait until the background refresh occurs.
+                Stopwatch sw = Stopwatch.StartNew();
                 while (testTokenCredential.NumTimesInvoked == 1)
                 {
-                    await Task.Delay(500);
+                    Assert.IsTrue(sw.Elapsed < TimeSpan.FromSeconds(20), "Background token refresh did not occur within 20 seconds.");
+                    await Task.Delay(200);
                 }
 
                 string t3 = await tokenCredentialCache.GetTokenAsync(NoOpTrace.Singleton);
