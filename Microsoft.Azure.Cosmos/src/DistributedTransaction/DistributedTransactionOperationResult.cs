@@ -138,19 +138,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The deserialized operation result.</returns>
         internal static DistributedTransactionOperationResult FromJson(JsonElement json)
         {
-            DistributedTransactionOperationResult result = null;
-            try
-            {
-                result = JsonSerializer.Deserialize<DistributedTransactionOperationResult>(json, DistributedTransactionOperationResult.CaseInsensitiveOptions);
-            }
-            catch (JsonException)
-            {
-            }
-
-            if (result == null)
-            {
-                return new DistributedTransactionOperationResult(HttpStatusCode.InternalServerError);
-            }
+            DistributedTransactionOperationResult result = JsonSerializer.Deserialize<DistributedTransactionOperationResult>(json, DistributedTransactionOperationResult.CaseInsensitiveOptions);
 
             if (json.TryGetProperty("resourceBody", out JsonElement resourceBody)
                 && resourceBody.ValueKind != JsonValueKind.Undefined
