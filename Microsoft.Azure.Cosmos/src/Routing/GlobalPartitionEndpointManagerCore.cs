@@ -121,7 +121,8 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         /// <inheritdoc/>
         public override bool TryAddPartitionLevelLocationOverride(
-            DocumentServiceRequest request)
+            DocumentServiceRequest request,
+            bool checkHubRegionOverrideInCache = false)
         {
             if (!this.IsRequestEligibleForPartitionFailover(
                 request,
@@ -137,12 +138,12 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return false;
             }
 
-            if (this.IsRequestEligibleForPerPartitionAutomaticFailover(request)
-               || GlobalPartitionEndpointManagerCore.IsHubRegionRoutingActive(request))
+            if (checkHubRegionOverrideInCache || this.IsRequestEligibleForPerPartitionAutomaticFailover(request))
             {
                 return this.TryRouteRequestForPartitionLevelOverride(
                     partitionKeyRange,
                     request,
+                    isHubRegionDiscoveryActive: checkHubRegionOverrideInCache,
                     this.PartitionKeyRangeToLocationForWrite);
             }
             else if (this.IsRequestEligibleForPartitionLevelCircuitBreaker(request))
@@ -150,6 +151,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return this.TryRouteRequestForPartitionLevelOverride(
                     partitionKeyRange,
                     request,
+                    isHubRegionDiscoveryActive: false,
                     this.PartitionKeyRangeToLocationForReadAndWrite);
             }
 
@@ -343,8 +345,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             failedLocation = default;
 
             if (!this.IsPartitionLevelAutomaticFailoverEnabled()
-               && !this.IsPartitionLevelCircuitBreakerEnabled()
-               && !GlobalPartitionEndpointManagerCore.IsHubRegionRoutingActive(request))
+               && !this.IsPartitionLevelCircuitBreakerEnabled())
             {
                 return false;
             }
@@ -547,11 +548,13 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// </summary>
         /// <param name="partitionKeyRange">The partition key range for which the request is being routed.</param>
         /// <param name="request">The document service request to be routed.</param>
+        /// <param name="isHubRegionDiscoveryActive">A boolean flag indicating whether hub region discovery is active.</param>
         /// <param name="partitionKeyRangeToLocationMapping">The mapping of partition key ranges to their failover locations.</param>
         /// <returns>True if the request was successfully routed to a partition level override location, otherwise false.</returns>
         private bool TryRouteRequestForPartitionLevelOverride(
             PartitionKeyRange partitionKeyRange,
             DocumentServiceRequest request,
+            bool isHubRegionDiscoveryActive,
             Lazy<ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>> partitionKeyRangeToLocationMapping)
         {
             if (partitionKeyRangeToLocationMapping.IsValueCreated
@@ -565,7 +568,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     return false;
                 }
 
-                string triggeredBy = this.isPartitionLevelAutomaticFailoverEnabled == 1 ? "Automatic Failover" : "Circuit Breaker";
+                string triggeredBy = isHubRegionDiscoveryActive ? "Hub Region Discovery" : this.isPartitionLevelAutomaticFailoverEnabled == 1 ? "Automatic Failover" : "Circuit Breaker";
                 DefaultTrace.TraceInformation("Attempting to route request for partition level override triggered by {0}, for operation type: {1}. URI: {2}, PartitionKeyRange: {3}",
                     triggeredBy,
                     request.OperationType,
@@ -598,7 +601,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             DocumentServiceRequest request,
             Lazy<ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>> partitionKeyRangeToLocationMapping)
         {
-            string triggeredBy = this.isPartitionLevelAutomaticFailoverEnabled == 1 ? "Automatic Failover" : "Circuit Breaker";
+            string triggeredBy = IsHubRegionRoutingActive(request) ? "Hub Region Discovery" : this.isPartitionLevelAutomaticFailoverEnabled == 1 ? "Automatic Failover" : "Circuit Breaker";
             PartitionKeyRangeFailoverInfo partionFailover = partitionKeyRangeToLocationMapping.Value.GetOrAdd(
                 partitionKeyRange,
                 (_) => new PartitionKeyRangeFailoverInfo(

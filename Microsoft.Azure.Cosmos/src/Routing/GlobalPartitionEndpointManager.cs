@@ -16,7 +16,8 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// new a location based if a partition level failover occurred
         /// </summary>
         public abstract bool TryAddPartitionLevelLocationOverride(
-            DocumentServiceRequest request);
+            DocumentServiceRequest request,
+            bool checkHubRegionOverrideInCache = false);
 
         /// <summary>
         /// Marks the current location unavailable for write. Future 
