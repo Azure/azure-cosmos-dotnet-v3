@@ -270,7 +270,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             sourceContainer.TryAdd(lease.Id, lease);
             DocumentServiceLeaseContainerInMemory source = new DocumentServiceLeaseContainerInMemory(sourceContainer);
             source.LeaseStateStream = new MemoryStream();
-            await source.PersistLeaseStateAsync();
+            await source.ShutdownAsync();
             MemoryStream leaseState = source.LeaseStateStream;
 
             DocumentServiceLeaseStoreManager capturedManager = null;

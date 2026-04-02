@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
-    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping;
     using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
@@ -20,7 +19,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     internal sealed class ChangeFeedProcessorCore : ChangeFeedProcessor
     {
         private readonly ChangeFeedObserverFactory observerFactory;
-        private readonly SemaphoreSlim runningLock = new SemaphoreSlim(1, 1);
         private ContainerInternal leaseContainer;
         private string instanceName;
         private ContainerInternal monitoredContainer;
@@ -29,7 +27,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         private ChangeFeedProcessorOptions changeFeedProcessorOptions;
         private DocumentServiceLeaseStoreManager documentServiceLeaseStoreManager;
         private bool initialized = false;
-        private bool isRunning = false;
 
         public ChangeFeedProcessorCore(ChangeFeedObserverFactory observerFactory)
         {
@@ -76,43 +73,22 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     await this.InitializeAsync().ConfigureAwait(false);
                 }
 
-                DefaultTrace.TraceInformation("Starting processor...");
-                await this.partitionManager.StartAsync().ConfigureAwait(false);
-                this.isRunning = true;
-                DefaultTrace.TraceInformation("Processor started.");
-            }
-            finally
-            {
-                this.runningLock.Release();
-            }
+            DefaultTrace.TraceInformation("Starting processor...");
+            await this.partitionManager.StartAsync().ConfigureAwait(false);
+            DefaultTrace.TraceInformation("Processor started.");
         }
 
         public override async Task StopAsync()
         {
-            await this.runningLock.WaitAsync().ConfigureAwait(false);
-            try
-            {
-                if (!this.isRunning)
-                {
-                    DefaultTrace.TraceInformation("Processor is not running, nothing to stop.");
-                    return;
-                }
+            DefaultTrace.TraceInformation("Stopping processor...");
+            await this.partitionManager.StopAsync().ConfigureAwait(false);
 
-                DefaultTrace.TraceInformation("Stopping processor...");
-                await this.partitionManager.StopAsync().ConfigureAwait(false);
+            await this.documentServiceLeaseStoreManager
+                .LeaseContainer
+                .ShutdownAsync()
+                .ConfigureAwait(false);
 
-                await this.documentServiceLeaseStoreManager
-                    .LeaseContainer
-                    .PersistLeaseStateAsync()
-                    .ConfigureAwait(false);
-
-                this.isRunning = false;
-                DefaultTrace.TraceInformation("Processor stopped.");
-            }
-            finally
-            {
-                this.runningLock.Release();
-            }
+            DefaultTrace.TraceInformation("Processor stopped.");
         }
 
         private async Task InitializeAsync()

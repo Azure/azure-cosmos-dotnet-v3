@@ -25,10 +25,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         public abstract Task<IEnumerable<DocumentServiceLease>> GetOwnedLeasesAsync();
 
         /// <summary>
-        /// Persists current lease state to the configured backing store, if applicable.
-        /// Default implementation is a no-op for stores that manage their own persistence (e.g. Cosmos).
+        /// Called when the processor is stopping. Allows implementations to perform
+        /// cleanup or state persistence. Default is a no-op.
         /// </summary>
-        public virtual Task PersistLeaseStateAsync()
+        public virtual Task ShutdownAsync()
         {
             return Task.CompletedTask;
         }

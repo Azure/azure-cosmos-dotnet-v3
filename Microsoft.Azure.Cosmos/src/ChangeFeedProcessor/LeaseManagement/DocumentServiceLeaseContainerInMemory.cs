@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             return Task.FromResult<IEnumerable<DocumentServiceLease>>(this.container.Values.AsEnumerable());
         }
 
-        public override Task PersistLeaseStateAsync()
+        public override Task ShutdownAsync()
         {
             if (this.LeaseStateStream == null)
             {

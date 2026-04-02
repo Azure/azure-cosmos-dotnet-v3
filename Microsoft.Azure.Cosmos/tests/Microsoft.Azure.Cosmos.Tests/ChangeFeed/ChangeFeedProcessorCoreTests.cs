@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
@@ -353,7 +352,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         }
 
         [TestMethod]
-        public async Task StopAsync_CallsPersistLeaseStateAsync()
+        public async Task StopAsync_CallsShutdownAsync()
         {
             Mock<DocumentServiceLeaseStore> leaseStore = new Mock<DocumentServiceLeaseStore>();
             leaseStore.Setup(l => l.IsInitializedAsync()).ReturnsAsync(true);
@@ -361,7 +360,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<DocumentServiceLeaseContainer> leaseContainer = new Mock<DocumentServiceLeaseContainer>();
             leaseContainer.Setup(l => l.GetOwnedLeasesAsync()).Returns(Task.FromResult(Enumerable.Empty<DocumentServiceLease>()));
             leaseContainer.Setup(l => l.GetAllLeasesAsync()).ReturnsAsync(new List<DocumentServiceLease>());
-            leaseContainer.Setup(l => l.PersistLeaseStateAsync()).Returns(Task.CompletedTask);
+            leaseContainer.Setup(l => l.ShutdownAsync()).Returns(Task.CompletedTask);
 
             Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
             leaseStoreManager.Setup(l => l.LeaseContainer).Returns(leaseContainer.Object);
@@ -381,7 +380,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             await processor.StopAsync();
 
             Mock.Get(leaseContainer.Object)
-                .Verify(store => store.PersistLeaseStateAsync(), Times.Once);
+                .Verify(store => store.ShutdownAsync(), Times.Once);
         }
 
 

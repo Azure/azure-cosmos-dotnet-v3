@@ -35,10 +35,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             CollectionAssert.AreEqual(allLeases.ToList(), ownedLeases.ToList());
         }
 
-        #region PersistLeaseStateAsync Tests
+        #region ShutdownAsync Tests
 
         [TestMethod]
-        public async Task PersistLeaseStateAsync_WithNoStream_IsNoOp()
+        public async Task ShutdownAsync_WithNoStream_IsNoOp()
         {
             // Arrange — container without a stream
             ConcurrentDictionary<string, DocumentServiceLease> container = new ConcurrentDictionary<string, DocumentServiceLease>();
@@ -46,13 +46,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             DocumentServiceLeaseContainerInMemory inMemoryContainer = new DocumentServiceLeaseContainerInMemory(container);
 
             // Act — should not throw
-            await inMemoryContainer.PersistLeaseStateAsync();
+            await inMemoryContainer.ShutdownAsync();
         }
 
         [TestMethod]
         [DataRow(0, DisplayName = "Empty container persists empty array")]
         [DataRow(2, DisplayName = "Container with two leases persists both")]
-        public async Task PersistLeaseStateAsync_WritesExpectedCount(int leaseCount)
+        public async Task ShutdownAsync_WritesExpectedCount(int leaseCount)
         {
             // Arrange
             ConcurrentDictionary<string, DocumentServiceLease> container = new ConcurrentDictionary<string, DocumentServiceLease>();
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             inMemoryContainer.LeaseStateStream = stream;
 
             // Act
-            await inMemoryContainer.PersistLeaseStateAsync();
+            await inMemoryContainer.ShutdownAsync();
 
             // Assert
             Assert.IsTrue(stream.Length > 0 || leaseCount == 0);
@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         }
 
         [TestMethod]
-        public async Task PersistLeaseStateAsync_StreamPositionResetToZero()
+        public async Task ShutdownAsync_StreamPositionResetToZero()
         {
             // Arrange
             ConcurrentDictionary<string, DocumentServiceLease> container = new ConcurrentDictionary<string, DocumentServiceLease>();
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             inMemoryContainer.LeaseStateStream = stream;
 
             // Act
-            await inMemoryContainer.PersistLeaseStateAsync();
+            await inMemoryContainer.ShutdownAsync();
 
             // Assert — stream position should be 0 for the next reader
             Assert.AreEqual(0, stream.Position);
@@ -126,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             source.LeaseStateStream = stream;
 
             // Act — persist then deserialize
-            await source.PersistLeaseStateAsync();
+            await source.ShutdownAsync();
 
             string json = Encoding.UTF8.GetString(stream.ToArray());
             List<JsonElement> elements = JsonSerializer.Deserialize<List<JsonElement>>(json);
@@ -155,14 +155,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             inMemoryContainer.LeaseStateStream = stream;
 
             // First persist
-            await inMemoryContainer.PersistLeaseStateAsync();
+            await inMemoryContainer.ShutdownAsync();
 
             // Now change the lease data
             container.Clear();
             container.TryAdd("lease1", new DocumentServiceLeaseCore { LeaseId = "lease1", LeaseToken = "1", Owner = "second" });
 
             // Second persist
-            await inMemoryContainer.PersistLeaseStateAsync();
+            await inMemoryContainer.ShutdownAsync();
 
             // Assert — stream should contain only the new data
             string json = Encoding.UTF8.GetString(stream.ToArray());
