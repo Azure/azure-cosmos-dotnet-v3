@@ -544,14 +544,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 CosmosAuthorizationTests.AccountEndpoint,
                 backgroundTokenCredentialRefreshInterval: TimeSpan.FromMinutes(5));
 
-            StoreResponseNameValueCollection headers = new StoreResponseNameValueCollection();
-            if (wwwAuthenticateValue != null)
-            {
-                headers.Set(HttpConstants.HttpHeaders.WwwAuthenticate, wwwAuthenticateValue);
-            }
-
             // Act
-            bool result = tokenProvider.TryHandleTokenRevocation(HttpStatusCode.Unauthorized, headers);
+            bool result = tokenProvider.TryHandleTokenRevocation(HttpStatusCode.Unauthorized, wwwAuthenticateValue);
 
             // Assert
             Assert.AreEqual(expectedResult, result);
@@ -574,12 +568,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 CosmosAuthorizationTests.AccountEndpoint,
                 backgroundTokenCredentialRefreshInterval: TimeSpan.FromMinutes(5));
 
-            StoreResponseNameValueCollection headers = new StoreResponseNameValueCollection();
-            headers.Set(HttpConstants.HttpHeaders.WwwAuthenticate,
-                "Bearer error=\"insufficient_claims\", claims=\"eyJhY2Nlc3NfdG9rZW4iOnt9fQ==\"");
+            string wwwAuthenticateValue = "Bearer error=\"insufficient_claims\", claims=\"eyJhY2Nlc3NfdG9rZW4iOnt9fQ==\"";
 
             // Act
-            bool result = tokenProvider.TryHandleTokenRevocation(statusCode, headers);
+            bool result = tokenProvider.TryHandleTokenRevocation(statusCode, wwwAuthenticateValue);
             // Assert
             Assert.IsFalse(result);
         }

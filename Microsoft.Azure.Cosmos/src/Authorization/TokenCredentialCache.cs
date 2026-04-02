@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
         private AccessToken? cachedAccessToken = null;
         private bool isBackgroundTaskRunning = false;
         private bool isDisposed = false;
-        private string? cachedClaimsChallenge = null;
+        private volatile string? cachedClaimsChallenge;
 
         internal TokenCredentialCache(
             TokenCredential tokenCredential,

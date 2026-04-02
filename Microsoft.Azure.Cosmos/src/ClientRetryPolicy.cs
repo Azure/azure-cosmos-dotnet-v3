@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
 
     /// <summary>
     /// Client policy is combination of endpoint change retry + throttling retry.
@@ -123,7 +124,8 @@ namespace Microsoft.Azure.Cosmos
 
                 ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
                     clientException?.StatusCode,
-                    clientException?.GetSubStatus());
+                    clientException?.GetSubStatus(),
+                    clientException?.Headers);
                 if (shouldRetryResult != null)
                 {
                     return shouldRetryResult;
@@ -137,7 +139,8 @@ namespace Microsoft.Azure.Cosmos
             {
                 ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
                     cosmosException.StatusCode,
-                    cosmosException.Headers.SubStatusCode);
+                    cosmosException.Headers.SubStatusCode,
+                    cosmosException.Headers);
                 if (shouldRetryResult != null)
                 {
                     return shouldRetryResult;
@@ -178,7 +181,8 @@ namespace Microsoft.Azure.Cosmos
 
             ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
                     cosmosResponseMessage?.StatusCode,
-                    cosmosResponseMessage?.Headers.SubStatusCode);
+                    cosmosResponseMessage?.Headers.SubStatusCode,
+                    cosmosResponseMessage?.Headers);
             if (shouldRetryResult != null)
             {
                 return shouldRetryResult;
@@ -251,7 +255,30 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ShouldRetryResult> ShouldRetryInternalAsync(
             HttpStatusCode? statusCode,
-            SubStatusCodes? subStatusCode)
+            SubStatusCodes? subStatusCode,
+            INameValueCollection responseHeaders = null)
+        {
+            return await this.ShouldRetryInternalAsync(
+                statusCode,
+                subStatusCode,
+                responseHeaders?[HttpConstants.HttpHeaders.WwwAuthenticate]);
+        }
+
+        private async Task<ShouldRetryResult> ShouldRetryInternalAsync(
+            HttpStatusCode? statusCode,
+            SubStatusCodes? subStatusCode,
+            Headers responseHeaders)
+        {
+            return await this.ShouldRetryInternalAsync(
+                statusCode,
+                subStatusCode,
+                responseHeaders?[HttpConstants.HttpHeaders.WwwAuthenticate]);
+        }
+
+        private async Task<ShouldRetryResult> ShouldRetryInternalAsync(
+            HttpStatusCode? statusCode,
+            SubStatusCodes? subStatusCode,
+            string wwwAuthenticateHeaderValue)
         {
             if (!statusCode.HasValue
                 && (!subStatusCode.HasValue
@@ -363,9 +390,9 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // Handle 401 Unauthorized - Check for AAD token revocation with claims challenge
-            if (statusCode == HttpStatusCode.Unauthorized)
+            if (statusCode == HttpStatusCode.Unauthorized && SubStatusCodes.AadTokenRevoked)
             {
-                return this.HandleUnauthorizedResponse();
+                return this.HandleUnauthorizedResponse(wwwAuthenticateHeaderValue);
             }
 
             return null;
@@ -373,9 +400,10 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Handles 401 Unauthorized responses for AAD token revocation scenarios.
-        /// Checks for claims challenge in WWW-Authenticate header, resets cache, and retries with fresh token.
+        /// Checks for claims challenge in WWW-Authenticate response header, resets cache, and retries with fresh token.
         /// </summary>
-        private ShouldRetryResult HandleUnauthorizedResponse()
+        /// <param name="wwwAuthenticateHeaderValue">The WWW-Authenticate header value from the response</param>
+        private ShouldRetryResult HandleUnauthorizedResponse(string wwwAuthenticateHeaderValue)
         {
             if (this.documentServiceRequest == null ||
                 !(this.authorizationTokenProvider is AuthorizationTokenProviderTokenCredential tokenProvider))
@@ -393,10 +421,10 @@ namespace Microsoft.Azure.Cosmos
                 return ShouldRetryResult.NoRetry();
             }
 
-            // Attempt to handle token revocation (extracts claims and resets cache)
+            // Attempt to handle token revocation using response headers (extracts claims and resets cache)
             if (tokenProvider.TryHandleTokenRevocation(
                 HttpStatusCode.Unauthorized,
-                this.documentServiceRequest.Headers))
+                wwwAuthenticateHeaderValue))
             {
                 this.caeRevocationRetryCount++;
 

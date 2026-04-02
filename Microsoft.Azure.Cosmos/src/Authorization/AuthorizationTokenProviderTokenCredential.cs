@@ -120,36 +120,35 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Attempts to handle AAD token revocation by checking for claims challenge.
-        /// Extracts claims from WWW-Authenticate header and resets cache for retry with fresh token.
+        /// Extracts claims from WWW-Authenticate header value and resets cache for retry with fresh token.
         /// </summary>
         /// <param name="statusCode">HTTP status code from the response</param>
-        /// <param name="headers">Response headers containing WWW-Authenticate</param>
+        /// <param name="wwwAuthenticateHeaderValue">The WWW-Authenticate response header value</param>
         /// <returns>True if claims challenge detected and request should be retried; false otherwise</returns>
         internal bool TryHandleTokenRevocation(
             HttpStatusCode statusCode,
-            INameValueCollection headers)
+            string wwwAuthenticateHeaderValue)
         {
-            if (statusCode != HttpStatusCode.Unauthorized || headers == null)
+            if (statusCode != HttpStatusCode.Unauthorized)
             {
                 return false;
             }
 
-            string wwwAuth = headers[HttpConstants.HttpHeaders.WwwAuthenticate];
-            if (string.IsNullOrEmpty(wwwAuth))
+            if (string.IsNullOrEmpty(wwwAuthenticateHeaderValue))
             {
                 return false;
             }
 
             // Check for claims challenge indicators
-            bool hasClaimsChallenge = wwwAuth.IndexOf("insufficient_claims", StringComparison.OrdinalIgnoreCase) >= 0
-                || wwwAuth.IndexOf("claims=", StringComparison.OrdinalIgnoreCase) >= 0;
+            bool hasClaimsChallenge = wwwAuthenticateHeaderValue.IndexOf("insufficient_claims", StringComparison.OrdinalIgnoreCase) >= 0
+                || wwwAuthenticateHeaderValue.IndexOf("claims=", StringComparison.OrdinalIgnoreCase) >= 0;
 
             if (!hasClaimsChallenge)
             {
                 return false;
             }
 
-            string claimsChallenge = AuthorizationTokenProviderTokenCredential.ExtractClaimsFromWwwAuthenticate(wwwAuth);
+            string claimsChallenge = AuthorizationTokenProviderTokenCredential.ExtractClaimsFromWwwAuthenticate(wwwAuthenticateHeaderValue);
 
             // Reset cache with claims challenge for next token request
             this.tokenCredentialCache.ResetCachedToken(claimsChallenge);

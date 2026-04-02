@@ -446,6 +446,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(0, cosmosScopeCount, "Cosmos scope must not be used (no fallback).");
         }
 
+        /// <summary>
+        /// Generates a WWW-Authenticate header value matching the server's AadTokenRevocationHelper format.
+        /// Format: Bearer realm="", authorization_uri="", error="insufficient_claims", claims="<base64>"
+        /// where claims is base64 of: {"access_token":{"nbf":{"essential":false,"value":"<unix_timestamp>"}}}
+        /// </summary>
+        private static string GenerateWwwAuthenticateHeaderValue()
+        {
+            long currentTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            string claimsChallengeJson = "{\"access_token\":{\"nbf\":{\"essential\":false,\"value\":\"" + currentTimestamp.ToString() + "\"}}}";
+            string base64Claims = Convert.ToBase64String(Encoding.UTF8.GetBytes(claimsChallengeJson));
+            return "Bearer " + string.Join(", ",
+                "realm=\"\"",
+                "authorization_uri=\"\"",
+                "error=\"insufficient_claims\"",
+                "claims=\"" + base64Claims + "\"");
+        }
+
         [TestMethod]
         public async Task AadTokenRevocation_WithMockedServerResponse_ShouldTriggerTokenRefresh()
         {
@@ -484,15 +501,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         {
                             hasReturnedUnauthorized = true;
 
-                            // Return 401 with CAE challenge (though SDK won't read it from response)
+                            // Simulate 401 with WWW-Authenticate matching server's AadTokenRevocationHelper format
                             HttpResponseMessage unauthorizedResponse = new HttpResponseMessage(HttpStatusCode.Unauthorized)
                             {
                                 RequestMessage = request,
-                                Content = new StringContent("{\"message\":\"Unauthorized\"}")
+                                Content = new StringContent("{\"code\":\"Unauthorized\",\"message\":\"Provided AAD token has been revoked.\"}")
                             };
                             unauthorizedResponse.Headers.Add(
                                 "WWW-Authenticate",
-                                @"Bearer error=""insufficient_claims"", claims=""eyJhY2Nlc3NfdG9rZW4iOnsibmJmIjp7ImVzc2VudGlhbCI6dHJ1ZSwgInZhbHVlIjoiMTcwNjgzMjAwMCJ9fX0=""");
+                                CosmosAadTests.GenerateWwwAuthenticateHeaderValue());
 
                             return Task.FromResult(unauthorizedResponse);
                         }
@@ -527,10 +544,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     // Validate that 401 was returned
                     Assert.IsTrue(hasReturnedUnauthorized, "Test should have returned 401 Unauthorized");
 
-                    // NOTE: We cannot validate merged claims in token request because SDK has a limitation:
-                    // ClientRetryPolicy.HandleUnauthorizedResponse() reads request headers instead of 
-                    // response headers for WWW-Authenticate, so CAE claims are never extracted.
-                    // This test validates that 401 triggers the unauthorized flow.
+                    // The SDK now correctly reads WWW-Authenticate from response headers,
+                    // extracts the claims challenge, and passes it to the token credential cache.
+                    // The token credential will be called again with the merged claims.
                 }
             }
             finally
@@ -570,15 +586,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         {
                             caeResponseCount++;
 
-                            // Always return CAE challenge
+                            // Always return CAE challenge matching server's AadTokenRevocationHelper format
                             HttpResponseMessage caeResponse = new HttpResponseMessage(HttpStatusCode.Unauthorized)
                             {
                                 RequestMessage = request,
-                                Content = new StringContent("{\"message\":\"CAE challenge\"}")
+                                Content = new StringContent("{\"code\":\"Unauthorized\",\"message\":\"Provided AAD token has been revoked.\"}")
                             };
                             caeResponse.Headers.Add(
                                 "WWW-Authenticate",
-                                "Bearer error=\"insufficient_claims\", claims=\"eyJhY2Nlc3NfdG9rZW4iOnt9fQ==\"");
+                                CosmosAadTests.GenerateWwwAuthenticateHeaderValue());
 
                             return Task.FromResult(caeResponse);
                         }

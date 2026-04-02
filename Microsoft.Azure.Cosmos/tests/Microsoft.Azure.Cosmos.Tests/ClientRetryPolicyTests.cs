@@ -561,23 +561,19 @@
 
             DocumentServiceRequest request = this.CreateRequest(isReadRequest: false, isMasterResourceType: false);
 
-            // Set up request headers with WWW-Authenticate containing claims
-            request.Headers[HttpConstants.HttpHeaders.WwwAuthenticate] = "Bearer error=\"insufficient_claims\", claims=\"eyJhY2Nlc3NfdG9rZW4iOnt9fQ==\"";
-
             retryPolicy.OnBeforeSendRequest(request);
 
-            Mock<INameValueCollection> responseHeaders = new Mock<INameValueCollection>();
-            responseHeaders
-                .Setup(x => x[HttpConstants.HttpHeaders.WwwAuthenticate])
-                .Returns("Bearer error=\"insufficient_claims\", claims=\"eyJhY2Nlc3NfdG9rZW4iOnt9fQ==\"");
+            StoreResponseNameValueCollection responseHeaders = new StoreResponseNameValueCollection();
+            responseHeaders.Set(HttpConstants.HttpHeaders.WwwAuthenticate,
+                "Bearer error=\"insufficient_claims\", claims=\"eyJhY2Nlc3NfdG9rZW4iOnt9fQ==\"");
 
             DocumentClientException revocationException = new DocumentClientException(
                 message: "AAD token revocation",
                 innerException: null,
                 statusCode: HttpStatusCode.Unauthorized,
-                substatusCode: SubStatusCodes.Unknown, // ✅ No special substatus
+                substatusCode: SubStatusCodes.Unknown,
                 requestUri: request.RequestContext.LocationEndpointToRoute,
-                responseHeaders: responseHeaders.Object);
+                responseHeaders: responseHeaders);
 
             // Act & Assert - First attempt should retry
             ShouldRetryResult firstResult = await retryPolicy.ShouldRetryAsync(revocationException, CancellationToken.None);
@@ -620,16 +616,13 @@
 
             DocumentServiceRequest request = this.CreateRequest(isReadRequest: false, isMasterResourceType: false);
 
-            // Set up request headers (simulating what ClientRetryPolicy actually checks)
-            if (wwwAuthenticateValue != null)
-            {
-                request.Headers[HttpConstants.HttpHeaders.WwwAuthenticate] = wwwAuthenticateValue;
-            }
-
             retryPolicy.OnBeforeSendRequest(request);
 
-            Mock<INameValueCollection> headers = new Mock<INameValueCollection>();
-            headers.Setup(x => x[HttpConstants.HttpHeaders.WwwAuthenticate]).Returns(wwwAuthenticateValue);
+            StoreResponseNameValueCollection headers = new StoreResponseNameValueCollection();
+            if (wwwAuthenticateValue != null)
+            {
+                headers.Set(HttpConstants.HttpHeaders.WwwAuthenticate, wwwAuthenticateValue);
+            }
 
             DocumentClientException unauthorizedException = new DocumentClientException(
                 message: "Unauthorized",
@@ -637,7 +630,7 @@
                 statusCode: HttpStatusCode.Unauthorized,
                 substatusCode: SubStatusCodes.Unknown,
                 requestUri: request.RequestContext.LocationEndpointToRoute,
-                responseHeaders: headers.Object);
+                responseHeaders: headers);
 
             // Act
             ShouldRetryResult result = await retryPolicy.ShouldRetryAsync(unauthorizedException, CancellationToken.None);
