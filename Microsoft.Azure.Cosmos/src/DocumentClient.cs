@@ -6782,7 +6782,7 @@ namespace Microsoft.Azure.Cosmos
                     remoteCertificateValidationCallback: this.remoteCertificateValidationCallback,
                     distributedTracingOptions: distributedTracingOptions,
                     enableChannelMultiplexing: ConfigurationManager.IsTcpChannelMultiplexingEnabled(),
-                    dnsResolutionFunction: ConfigurationManager.IsDnsDotSuffixEnabled()
+                    dnsResolutionFunction: ConfigurationManager.IsTcpDnsDotSuffixEnabled()
                         ? DnsDotSuffixHelper.CreateDnsResolutionFunction()
                         : null,
                     chaosInterceptor: this.chaosInterceptor);

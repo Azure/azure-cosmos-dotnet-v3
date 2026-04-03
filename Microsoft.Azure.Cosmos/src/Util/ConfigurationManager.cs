@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos
         /// before DNS resolution to bypass Kubernetes ndots search-domain expansion.
         /// See: https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5730
         /// </summary>
-        internal static readonly string DnsDotSuffixEnabled = "AZURE_COSMOS_DNS_DOT_SUFFIX_ENABLED";
+        internal static readonly string TcpDnsDotSuffixEnabled = "AZURE_COSMOS_TCP_DNS_DOT_SUFFIX_ENABLED";
 
         public static T GetEnvironmentVariable<T>(string variable, T defaultValue)
         {
@@ -418,12 +418,12 @@ namespace Microsoft.Azure.Cosmos
         /// where ndots:5 causes multiple failed search-domain attempts for Cosmos DB endpoints.
         /// Default: false (opt-in).
         /// </summary>
-        /// <returns>A boolean flag indicating if DNS dot-suffix is enabled.</returns>
-        public static bool IsDnsDotSuffixEnabled()
+        /// <returns>A boolean flag indicating if TCP DNS dot-suffix is enabled.</returns>
+        public static bool IsTcpDnsDotSuffixEnabled()
         {
             return ConfigurationManager
                     .GetEnvironmentVariable(
-                        variable: ConfigurationManager.DnsDotSuffixEnabled,
+                        variable: ConfigurationManager.TcpDnsDotSuffixEnabled,
                         defaultValue: false);
         }
     }
