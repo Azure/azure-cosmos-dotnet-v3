@@ -729,6 +729,61 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             response.Dispose();
         }
 
+        // Session token handling
+
+        [TestMethod]
+        [Description("Session tokens returned in DTC operation responses are merged into the client's session container, preventing ReadSessionNotAvailable errors on subsequent reads.")]
+        public async Task ValidateSessionTokenMergedIntoDtcClient()
+        {
+            ToDoActivity seedDoc = ToDoActivity.CreateRandomToDoActivity();
+            ItemResponse<ToDoActivity> seedResponse = await this.container.CreateItemAsync(seedDoc, new PartitionKey(seedDoc.pk), cancellationToken: this.cancellationToken);
+
+            string validSessionToken = seedResponse.Headers.Session;
+            Assert.IsFalse(string.IsNullOrEmpty(validSessionToken), "A valid session token must be obtained from the emulator for this test to be meaningful.");
+
+            string dtcMockResponse = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":201,""sessionToken"":""{validSessionToken}""}}]}}";
+
+            DistributedTransactionMockHandler handler = new DistributedTransactionMockHandler(
+                request => Task.FromResult(this.BuildMockResponse(HttpStatusCode.OK, dtcMockResponse)));
+
+            using CosmosClient dtcClient = TestCommon.CreateCosmosClient(
+                clientOptions: new CosmosClientOptions
+                {
+                    CustomHandlers = { handler },
+                    ConnectionMode = ConnectionMode.Gateway,
+                    ConsistencyLevel = Cosmos.ConsistencyLevel.Session,
+                });
+
+            ToDoActivity newDoc = ToDoActivity.CreateRandomToDoActivity();
+            DistributedTransactionResponse dtcResponse = await dtcClient
+                .CreateDistributedWriteTransaction()
+                .CreateItem(this.database.Id, this.container.Id, new PartitionKey(newDoc.pk), newDoc)
+                .CommitTransactionAsync(this.cancellationToken);
+
+            Assert.IsTrue(dtcResponse.IsSuccessStatusCode, "The simulated DTC commit should appear successful to the client.");
+
+            Container dtcContainer = dtcClient.GetContainer(this.database.Id, this.container.Id);
+            try
+            {
+                ItemResponse<ToDoActivity> readResponse = await dtcContainer.ReadItemAsync<ToDoActivity>(
+                    seedDoc.id,
+                    new PartitionKey(seedDoc.pk),
+                    new ItemRequestOptions { ConsistencyLevel = Cosmos.ConsistencyLevel.Session },
+                    cancellationToken: this.cancellationToken);
+
+                Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode, "A Session-consistency read after a DTC commit should return 200 OK.");
+            }
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
+                Assert.AreNotEqual(
+                    (int)SubStatusCodes.ReadSessionNotAvailable,
+                    ex.SubStatusCode,
+                    "A Session-consistency read after a DTC commit must not fail with " +
+                    "ReadSessionNotAvailable (404/1002). This indicates that session token " +
+                    "merging in DistributedTransactionCommitter is broken.");
+            }
+        }
+
         // Helpers
 
         private void ValidateValueKind(JsonElement operation, string property, JsonValueKind expectedValueKind, int operationIndex, bool isRequired)

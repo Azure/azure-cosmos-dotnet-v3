@@ -85,17 +85,10 @@ namespace Microsoft.Azure.Cosmos
                         trace,
                         cancellationToken);
 
-                    try
-                    {
-                        DistributedTransactionCommitter.MergeSessionTokens(
-                            response,
-                            serverRequest,
-                            this.clientContext.DocumentClient.sessionContainer);
-                    }
-                    catch (Exception ex)
-                    {
-                        DefaultTrace.TraceWarning($"DTC session token merge failed (non-fatal): {ex.Message}");
-                    }
+                    DistributedTransactionCommitter.MergeSessionTokens(
+                        response,
+                        serverRequest,
+                        this.clientContext.DocumentClient.sessionContainer);
 
                     return response;
                 }
