@@ -135,29 +135,12 @@ namespace Microsoft.Azure.Cosmos
                 return;
             }
 
-            if (response.Count != serverRequest.Operations.Count)
-            {
-                DefaultTrace.TraceError(
-                    $"DTC session token merge: result count ({response.Count}) differs from " +
-                    $"operation count ({serverRequest.Operations.Count}); some tokens may not be merged.");
-            }
-
             RequestNameValueCollection headers = new RequestNameValueCollection();
 
             for (int i = 0; i < response.Count; i++)
             {
                 DistributedTransactionOperationResult result = response[i];
-
-                int operationIndex = result.Index;
-                if (operationIndex < 0 || operationIndex >= serverRequest.Operations.Count)
-                {
-                    DefaultTrace.TraceWarning(
-                        $"DTC session token merge: result at position {i} has out-of-range Index={operationIndex} " +
-                        $"(operations count: {serverRequest.Operations.Count}); skipping.");
-                    continue;
-                }
-
-                DistributedTransactionOperation operation = serverRequest.Operations[operationIndex];
+                DistributedTransactionOperation operation = serverRequest.Operations[result.Index];
 
                 if (string.IsNullOrEmpty(result.SessionToken) || string.IsNullOrEmpty(operation.CollectionResourceId))
                 {
