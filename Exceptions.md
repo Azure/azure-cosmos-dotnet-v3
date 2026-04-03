@@ -38,55 +38,10 @@ To see a list of common error code and issues please see [.NET SDK troubleshooti
 
 When you receive a 404 (Not Found) status code from Cosmos DB, it can indicate two different scenarios:
 1. **Item not found**: The requested item doesn't exist in the container
-2. **Owner resource not found**: The parent resource (container or database) doesn't exist
+2. **Owner resource not found**: The container or database referenced in the request doesn't exist
 
-To distinguish between these cases, check the `SubStatusCode` property:
+### InternalServerError (500) - Partition has more than two children <a id="partition-split-change-feed"></a>
 
-- **SubStatusCode 0**: Regular item not found (the item doesn't exist in an existing container)
-- **SubStatusCode 1003**: Owner resource not found (the container or database doesn't exist)
+When using the `AllVersionsAndDeletes` change feed mode, you may encounter an `InternalServerError` with the message **"Partition has more than two children which is not supported"**. This error occurs when a partition split results in more than two child partitions, which is not supported by the `AllVersionsAndDeletes` change feed mode.
 
-#### Example with Typed APIs (throws CosmosException):
-
-```csharp
-try
-{
-    ItemResponse<MyItem> response = await container.ReadItemAsync<MyItem>("itemId", new PartitionKey("partitionKey"));
-}
-catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
-{
-    if (ex.SubStatusCode == 1003)
-    {
-        // The container or database doesn't exist
-        Console.WriteLine("Owner resource (container/database) not found");
-    }
-    else
-    {
-        // The item doesn't exist in an existing container
-        Console.WriteLine("Item not found");
-    }
-}
-```
-
-#### Example with Stream APIs (returns ResponseMessage):
-
-```csharp
-ResponseMessage response = await container.ReadItemStreamAsync("itemId", new PartitionKey("partitionKey"));
-
-if (response.StatusCode == HttpStatusCode.NotFound)
-{
-    int subStatusCode = (int)response.Headers.SubStatusCode;
-    
-    if (subStatusCode == 1003)
-    {
-        // The container or database doesn't exist
-        Console.WriteLine("Owner resource (container/database) not found");
-    }
-    else
-    {
-        // The item doesn't exist in an existing container
-        Console.WriteLine("Item not found");
-    }
-}
-```
-
-This distinction is particularly useful when implementing retry logic or error handling strategies, as you may want to handle these scenarios differently (e.g., creating the container if it doesn't exist vs. handling a missing item).
+**Workaround:** Switch to `LatestVersion` change feed mode if your scenario does not require all versions and deletes. If you require `AllVersionsAndDeletes`, retry the change feed request with a continuation token from before the partition split occurred, or re-initialize the change feed processor to pick up the new partition ranges.
