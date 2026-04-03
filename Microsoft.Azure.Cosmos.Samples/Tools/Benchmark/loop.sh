@@ -2,7 +2,7 @@
 
 export OSSProjectRef=True
 export RESULTS_PK=test_runs
-export PL=18
+export PL=75
 
 #These must be configured
 export ACCOUNT_ENDPOINT=
