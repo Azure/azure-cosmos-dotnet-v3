@@ -38,55 +38,14 @@ To see a list of common error code and issues please see [.NET SDK troubleshooti
 
 When you receive a 404 (Not Found) status code from Cosmos DB, it can indicate two different scenarios:
 1. **Item not found**: The requested item doesn't exist in the container
-2. **Owner resource not found**: The parent resource (container or database) doesn't exist
+2. **Own
 
-To distinguish between these cases, check the `SubStatusCode` property:
+### 401 (Unauthorized) from PartitionKeyRangeCache using incorrect RID <a id="pkrangecache-401"></a>
 
-- **SubStatusCode 0**: Regular item not found (the item doesn't exist in an existing container)
-- **SubStatusCode 1003**: Owner resource not found (the container or database doesn't exist)
+A known bug in the PartitionKeyRangeCache can cause 401 (Unauthorized) errors when the cache incorrectly uses the database RID in place of the container RID when constructing pkranges request URLs. This results in an authorization token mismatch because the token is generated for the container resource but the request URL references the database resource.
 
-#### Example with Typed APIs (throws CosmosException):
-
-```csharp
-try
-{
-    ItemResponse<MyItem> response = await container.ReadItemAsync<MyItem>("itemId", new PartitionKey("partitionKey"));
-}
-catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
-{
-    if (ex.SubStatusCode == 1003)
-    {
-        // The container or database doesn't exist
-        Console.WriteLine("Owner resource (container/database) not found");
-    }
-    else
-    {
-        // The item doesn't exist in an existing container
-        Console.WriteLine("Item not found");
-    }
-}
-```
-
-#### Example with Stream APIs (returns ResponseMessage):
-
-```csharp
-ResponseMessage response = await container.ReadItemStreamAsync("itemId", new PartitionKey("partitionKey"));
-
-if (response.StatusCode == HttpStatusCode.NotFound)
-{
-    int subStatusCode = (int)response.Headers.SubStatusCode;
-    
-    if (subStatusCode == 1003)
-    {
-        // The container or database doesn't exist
-        Console.WriteLine("Owner resource (container/database) not found");
-    }
-    else
-    {
-        // The item doesn't exist in an existing container
-        Console.WriteLine("Item not found");
-    }
-}
-```
-
-This distinction is particularly useful when implementing retry logic or error handling strategies, as you may want to handle these scenarios differently (e.g., creating the container if it doesn't exist vs. handling a missing item).
+1. The PartitionKeyRangeCache resolves the collection RID to build the `dbs/{dbRid}/colls/{collRid}/pkranges` request URL.
+2. When the bug is triggered, the database RID is substituted for the container RID, producing a URL like `dbs/{dbRid}/colls/{dbRid}/pkranges`.
+3. The authorization header is computed against the correct container RID, so the server rejects the request with a 401 Unauthorized.
+4. This typically surfaces after collection recreate scenarios or cache invalidation race conditions where the cached collection RID is stale or incorrectly resolved.
+5. The 401 will appear in diagnostics with the pkranges request path containing mismatched RID values. Compare the RID in the `colls/` segment of the failing request URL against the actual container RID to confirm this issue.
