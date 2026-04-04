@@ -345,7 +345,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             failedLocation = default;
 
             if (!this.IsPartitionLevelAutomaticFailoverEnabled()
-               && !this.IsPartitionLevelCircuitBreakerEnabled())
+               && !this.IsPartitionLevelCircuitBreakerEnabled()
+               && !GlobalPartitionEndpointManagerCore.IsHubRegionRoutingActive(request))
             {
                 return false;
             }
@@ -639,7 +640,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// Checks whether the request has the hub region processing header,
         /// indicating it is in the hub region discovery flow (after 2× 404/1002).
         /// </summary>
-        private static bool IsHubRegionRoutingActive(DocumentServiceRequest request)
+        public static bool IsHubRegionRoutingActive(DocumentServiceRequest request)
         {
             return string.Equals(
                 request?.Headers?[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion],

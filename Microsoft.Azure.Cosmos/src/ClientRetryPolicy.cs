@@ -469,9 +469,16 @@ namespace Microsoft.Azure.Cosmos
                 }
                 else
                 {
-                    if (this.sessionTokenRetryCount > 1)
+                    if (this.sessionTokenRetryCount > 2)
                     {
 #if !INTERNAL
+                        // The Hub region with the new header returned 404/1002 twice.
+                        // This is the source of truth and there won't be any more retries.
+                        if (this.addHubRegionProcessingOnlyHeader)
+                        {
+                            return ShouldRetryResult.NoRetry();
+                        }
+
                         DefaultTrace.TraceInformation("Retry Count: {0}", this.sessionTokenRetryCount);
                         if (this.sessionTokenRetryCount > endpoints.Count)
                         {
@@ -498,6 +505,11 @@ namespace Microsoft.Azure.Cosmos
                     }
                     else
                     {
+                        // We will need to try on the hub region one more time with the new hub region header.
+                        if (this.sessionTokenRetryCount > 1)
+                        {
+                            this.addHubRegionProcessingOnlyHeader = true;
+                        }
                         // Check the cache for hub region overrides first. If the override is present,
                         // it means we have already discovered the hub region for this partition and can route directly there.
                         if (this.partitionKeyRangeLocationCache.TryAddPartitionLevelLocationOverride(request, true))

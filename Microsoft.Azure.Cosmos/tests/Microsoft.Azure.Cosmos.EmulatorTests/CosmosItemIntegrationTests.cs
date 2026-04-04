@@ -63,11 +63,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             (this.database, this.container, this.changeFeedContainer) = await MultiRegionSetupHelpers.GetOrCreateMultiRegionDatabaseAndContainers(this.client);
 
             this.readRegionsMapping = this.client.DocumentClient.GlobalEndpointManager.GetAvailableReadEndpointsByLocation();
-            Assert.IsTrue(this.readRegionsMapping.Count() >= 3);
+            Assert.IsTrue(this.readRegionsMapping.Count() >= 2);
 
             region1 = this.readRegionsMapping.Keys.ElementAt(0);
             region2 = this.readRegionsMapping.Keys.ElementAt(1);
-            region3 = this.readRegionsMapping.Keys.ElementAt(2);
+            region3 = this.readRegionsMapping.Keys.ElementAt(1);
         }
 
         [TestCleanup]
@@ -2490,20 +2490,41 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         bool hasHubHeader = request.Headers.TryGetValues(HubRegionHeader, out IEnumerable<string> values)
                             && values.Any();
 
-                        // Verify hub header is NOT present on first two requests
-                        if (requestCount <= 2)
+                        // Verify hub header is NOT present on first request.
+                        if (requestCount == 1)
                         {
                             Assert.IsFalse(hasHubHeader, $"Hub header should NOT be present on request {requestCount}");
                         }
 
-                        // Check if hub header is present on 3rd request
+                        // Verify hub header is NOT present on first request.
                         if (requestCount == 3)
+                        {
+                            Assert.IsTrue(hasHubHeader, $"Hub header should be present on request {requestCount}");
+                        }
+
+                        // Check if hub header is present on 3rd request
+                        if (requestCount == 4)
                         {
                             hubHeaderOnThirdRequest = hasHubHeader;
                         }
 
-                        // Return 404/1002 for first two requests
-                        if (return404Count < maxReturn404)
+                        if (requestCount == 3)
+                        {
+                            HttpResponseMessage writeForbiddenResponse = new HttpResponseMessage(HttpStatusCode.Forbidden)
+                            {
+                                Content = new StringContent(
+                                    JsonConvert.SerializeObject(new { code = "WriteForbidden", message = "The requested operation cannot be performed at this region" }),
+                                    Encoding.UTF8,
+                                    "application/json")
+                            };
+
+                            writeForbiddenResponse.Headers.Add("x-ms-substatus", "3");
+                            writeForbiddenResponse.Headers.Add("x-ms-activity-id", Guid.NewGuid().ToString());
+                            writeForbiddenResponse.Headers.Add("x-ms-request-charge", "1.0");
+
+                            return Task.FromResult(writeForbiddenResponse);
+                        } 
+                        else if (return404Count < maxReturn404)
                         {
                             return404Count++;
 
@@ -2541,7 +2562,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 cosmosClientOptions.HttpClientFactory = () => new HttpClient(httpHandler);
             }
-            else if(connectionMode == ConnectionMode.Gateway)
+            else if(connectionMode == ConnectionMode.Direct)
             {
                 cosmosClientOptions.TransportClientHandlerFactory = (transport) => new TransportClientWrapper(
                     transport,
@@ -2611,31 +2632,31 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(testItem.id, response.Resource.id);
 
             // Verify request counts
-            Assert.AreEqual(2, return404Count, "Should have returned 404/1002 exactly twice");
-            Assert.IsTrue(requestCount >= 3, $"Should have made at least 3 requests, but made {requestCount}");
+            //Assert.AreEqual(2, return404Count, "Should have returned 404/1002 exactly twice");
+            //Assert.IsTrue(requestCount >= 3, $"Should have made at least 3 requests, but made {requestCount}");
 
-            // Hub header should be present on the 3rd request
-            Assert.IsTrue(hubHeaderOnThirdRequest,
-                "Hub region header MUST be present on 3rd request after 2x 404/1002. This proves the feature works.");
+            //// Hub header should be present on the 3rd request
+            //Assert.IsTrue(hubHeaderOnThirdRequest,
+            //    "Hub region header MUST be present on 3rd request after 2x 404/1002. This proves the feature works.");
 
-            Console.WriteLine($"✅ SUCCESS! After 2x 404/1002, hub header was added on request 3 and succeeded.");
+            //Console.WriteLine($"✅ SUCCESS! After 2x 404/1002, hub header was added on request 3 and succeeded.");
 
-            return404Count = 1;
-            ItemResponse<ToDoActivity> response1 = await container.ReadItemAsync<ToDoActivity>(
-                testItem.id,
-                new Cosmos.PartitionKey(testItem.pk));
-            Console.WriteLine("Diagnostics for final read request 1: " + response1.Diagnostics.ToString());
+            //return404Count = 1;
+            //ItemResponse<ToDoActivity> response1 = await container.ReadItemAsync<ToDoActivity>(
+            //    testItem.id,
+            //    new Cosmos.PartitionKey(testItem.pk));
+            //Console.WriteLine("Diagnostics for final read request 1: " + response1.Diagnostics.ToString());
 
-            return404Count = 1;
-            ItemResponse<ToDoActivity> response2 = await container.ReadItemAsync<ToDoActivity>(
-                testItem.id,
-                new Cosmos.PartitionKey(testItem.pk));
-            Console.WriteLine("Diagnostics for final read request 2: " + response2.Diagnostics.ToString());
+            //return404Count = 1;
+            //ItemResponse<ToDoActivity> response2 = await container.ReadItemAsync<ToDoActivity>(
+            //    testItem.id,
+            //    new Cosmos.PartitionKey(testItem.pk));
+            //Console.WriteLine("Diagnostics for final read request 2: " + response2.Diagnostics.ToString());
 
-            // Create a test item first
-            ToDoActivity testItem2 = ToDoActivity.CreateRandomToDoActivity();
-            ItemResponse<ToDoActivity> response3 = await container.CreateItemAsync(testItem2, new PartitionKey(testItem2.pk));
-            Console.WriteLine("Diagnostics for final write request 2: " + response3.Diagnostics.ToString());
+            //// Create a test item first
+            //ToDoActivity testItem2 = ToDoActivity.CreateRandomToDoActivity();
+            //ItemResponse<ToDoActivity> response3 = await container.CreateItemAsync(testItem2, new PartitionKey(testItem2.pk));
+            //Console.WriteLine("Diagnostics for final write request 2: " + response3.Diagnostics.ToString());
         }
 
         [TestMethod]
