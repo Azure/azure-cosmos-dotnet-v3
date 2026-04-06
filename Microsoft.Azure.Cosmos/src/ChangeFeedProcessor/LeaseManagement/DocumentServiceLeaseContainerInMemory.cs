@@ -42,6 +42,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             return Task.FromResult<IEnumerable<DocumentServiceLease>>(this.container.Values.AsEnumerable());
         }
 
+        /// <summary>
+        /// Initiates shutdown of in-memory lease container. 
+        /// Exports all processor leases from current in-memory lease container.
+        /// </summary>
+        /// <returns>A task that represents the asynchronous shutdown operation.</returns>
         public override Task ShutdownAsync()
         {
             if (this.LeaseStateStream == null)
@@ -53,6 +58,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
             foreach (DocumentServiceLease lease in this.container.Values)
             {
+                if (!(lease.FeedRange is FeedRangeEpk))
+                {
+                    continue;
+                }
+
                 string payload = JsonSerializer.Serialize(lease, lease.GetType(), DeserializeOptions);
                 using (JsonDocument doc = JsonDocument.Parse(payload))
                 {
@@ -73,33 +83,20 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         {
             if (leaseElement.ValueKind == JsonValueKind.Undefined || leaseElement.ValueKind == JsonValueKind.Null)
             {
-                return null;
+                throw new ArgumentException("Lease element cannot be null or undefined.", nameof(leaseElement));
             }
 
             string payloadJson = leaseElement.GetRawText();
 
-            // Try EPK lease first, then fall back to Core lease
-            try
+            // Only EPK leases with FeedRange are supported
+            DocumentServiceLeaseCoreEpk epkLease = JsonSerializer.Deserialize<DocumentServiceLeaseCoreEpk>(payloadJson, DeserializeOptions);
+
+            if (epkLease?.FeedRange == null)
             {
-                DocumentServiceLeaseCoreEpk epkLease = JsonSerializer.Deserialize<DocumentServiceLeaseCoreEpk>(payloadJson, DeserializeOptions);
-                if (epkLease?.FeedRange != null)
-                {
-                    return epkLease;
-                }
-            }
-            catch (JsonException)
-            {
-                // Fall through to try Core lease
+                throw new InvalidOperationException("Only EPK-based leases with a FeedRange are supported for deserialization.");
             }
 
-            try
-            {
-                return JsonSerializer.Deserialize<DocumentServiceLeaseCore>(payloadJson, DeserializeOptions);
-            }
-            catch (JsonException)
-            {
-                return null;
-            }
+            return epkLease;
         }
 
         /// <summary>

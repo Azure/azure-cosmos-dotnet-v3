@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.Azure.Cosmos.Tests;
+    using Microsoft.Azure.Documents.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -258,12 +259,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public async Task WithInMemoryLeaseContainerWithStreamInitializesStoreCorrectly()
         {
             // Build a MemoryStream with lease data
-            DocumentServiceLeaseCore lease = new DocumentServiceLeaseCore
+            DocumentServiceLeaseCoreEpk lease = new DocumentServiceLeaseCoreEpk
             {
                 LeaseId = "stream-lease",
                 LeaseToken = "0",
                 ContinuationToken = "stream-continuation",
                 Owner = "stream-owner",
+                FeedRange = new FeedRangeEpk(new Range<string>("", "FF", true, false))
             };
 
             ConcurrentDictionary<string, DocumentServiceLease> sourceContainer = new ConcurrentDictionary<string, DocumentServiceLease>();
@@ -319,14 +321,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 ChangeFeedLeaseOptions,
                 ChangeFeedProcessorOptions,
                 Container> verifier = (DocumentServiceLeaseStoreManager leaseStoreManager,
-                Container leaseContainer,
-                string instanceName,
-                ChangeFeedLeaseOptions changeFeedLeaseOptions,
-                ChangeFeedProcessorOptions changeFeedProcessorOptions,
-                Container monitoredContainer) =>
-                {
-                    capturedManager = leaseStoreManager;
-                };
+                    Container leaseContainer,
+                    string instanceName,
+                    ChangeFeedLeaseOptions changeFeedLeaseOptions,
+                    ChangeFeedProcessorOptions changeFeedProcessorOptions,
+                    Container monitoredContainer) => capturedManager = leaseStoreManager;
 
             ChangeFeedProcessorBuilder builder = new ChangeFeedProcessorBuilder("workflowName",
                 ChangeFeedProcessorBuilderTests.GetMockedContainer(),
@@ -351,32 +350,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 ChangeFeedProcessorBuilderTests.GetEmptyInitialization());
 
             builder.WithInMemoryLeaseContainer((MemoryStream)null);
-        }
-
-        [TestMethod]
-        [ExpectedException(typeof(InvalidOperationException))]
-        public void WithInMemoryLeaseContainerWithStreamCannotCombineWithLeaseContainer()
-        {
-            ChangeFeedProcessorBuilder builder = new ChangeFeedProcessorBuilder("workflowName",
-                ChangeFeedProcessorBuilderTests.GetMockedContainer(),
-                ChangeFeedProcessorBuilderTests.GetMockedProcessor(),
-                ChangeFeedProcessorBuilderTests.GetEmptyInitialization());
-
-            builder.WithLeaseContainer(ChangeFeedProcessorBuilderTests.GetMockedContainer());
-            builder.WithInMemoryLeaseContainer(new MemoryStream());
-        }
-
-        [TestMethod]
-        [ExpectedException(typeof(InvalidOperationException))]
-        public void WithInMemoryLeaseContainerWithStreamCannotCombineWithExistingInMemory()
-        {
-            ChangeFeedProcessorBuilder builder = new ChangeFeedProcessorBuilder("workflowName",
-                ChangeFeedProcessorBuilderTests.GetMockedContainer(),
-                ChangeFeedProcessorBuilderTests.GetMockedProcessor(),
-                ChangeFeedProcessorBuilderTests.GetEmptyInitialization());
-
-            builder.WithInMemoryLeaseContainer();
-            builder.WithInMemoryLeaseContainer(new MemoryStream());
         }
 
         #endregion

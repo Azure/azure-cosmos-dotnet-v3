@@ -282,10 +282,7 @@ namespace Microsoft.Azure.Cosmos
                     foreach (JsonElement leaseElement in leaseElements)
                     {
                         DocumentServiceLease lease = DocumentServiceLeaseContainerInMemory.DeserializeLease(leaseElement);
-                        if (lease != null)
-                        {
-                            container[lease.Id] = lease;
-                        }
+                        container[lease.Id] = lease;
                     }
                 }
             }

@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using System.Text.Json;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
+    using Microsoft.Azure.Documents.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -58,11 +59,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             ConcurrentDictionary<string, DocumentServiceLease> container = new ConcurrentDictionary<string, DocumentServiceLease>();
             for (int i = 0; i < leaseCount; i++)
             {
-                DocumentServiceLeaseCore lease = new DocumentServiceLeaseCore
+                DocumentServiceLeaseCoreEpk lease = new DocumentServiceLeaseCoreEpk
                 {
                     LeaseId = $"lease{i}",
                     LeaseToken = i.ToString(),
-                    Owner = $"instance{i}"
+                    Owner = $"instance{i}",
+                    FeedRange = new FeedRangeEpk(new Range<string>("", "FF", true, false))
                 };
                 container.TryAdd(lease.Id, lease);
             }
@@ -108,14 +110,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public async Task PersistThenDeserialize_RoundTrip_PreservesData()
         {
             // Arrange
-            DocumentServiceLeaseCore originalLease = new DocumentServiceLeaseCore
+            DocumentServiceLeaseCoreEpk originalLease = new DocumentServiceLeaseCoreEpk
             {
                 LeaseId = "roundtrip-lease",
                 LeaseToken = "0",
                 Owner = "original-owner",
                 ContinuationToken = "original-token",
                 Mode = "IncrementalFeed",
-                Properties = new Dictionary<string, string> { { "custom", "value" } }
+                Properties = new Dictionary<string, string> { { "custom", "value" } },
+                FeedRange = new FeedRangeEpk(new Range<string>("", "FF", true, false))
             };
 
             ConcurrentDictionary<string, DocumentServiceLease> sourceContainer = new ConcurrentDictionary<string, DocumentServiceLease>();
@@ -148,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             // Arrange
             ConcurrentDictionary<string, DocumentServiceLease> container = new ConcurrentDictionary<string, DocumentServiceLease>();
-            container.TryAdd("lease0", new DocumentServiceLeaseCore { LeaseId = "lease0", LeaseToken = "0", Owner = "first" });
+            container.TryAdd("lease0", new DocumentServiceLeaseCoreEpk { LeaseId = "lease0", LeaseToken = "0", Owner = "first", FeedRange = new FeedRangeEpk(new Range<string>("", "FF", true, false)) });
 
             MemoryStream stream = new MemoryStream();
             DocumentServiceLeaseContainerInMemory inMemoryContainer = new DocumentServiceLeaseContainerInMemory(container);
@@ -159,7 +162,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             // Now change the lease data
             container.Clear();
-            container.TryAdd("lease1", new DocumentServiceLeaseCore { LeaseId = "lease1", LeaseToken = "1", Owner = "second" });
+            container.TryAdd("lease1", new DocumentServiceLeaseCoreEpk { LeaseId = "lease1", LeaseToken = "1", Owner = "second", FeedRange = new FeedRangeEpk(new Range<string>("", "FF", true, false)) });
 
             // Second persist
             await inMemoryContainer.ShutdownAsync();
