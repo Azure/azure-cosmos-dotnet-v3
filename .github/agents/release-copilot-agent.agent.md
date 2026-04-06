@@ -1,3 +1,13 @@
+---
+name: 'ReleaseCopilotAgent'
+description: 'Guides the team through full releases and hotfix releases of the Cosmos DB .NET SDK.'
+tools:
+  - read
+  - search
+  - edit
+  - terminal
+---
+
 # Release Copilot Agent
 ## Azure Cosmos DB .NET SDK (azure-cosmos-dotnet-v3)
 
@@ -12,6 +22,9 @@
 ```
 @ReleaseCopilotAgent start hotfix
 ```
+```
+@ReleaseCopilotAgent add missed PRs
+```
 
 **In the Copilot CLI (terminal):**
 ```
@@ -20,19 +33,24 @@ I want to start a minor release
 ```
 I want to start a hotfix release
 ```
+```
+I need to add missed PRs to a release
+```
 
 > **Note:** The Copilot CLI loads these instructions via `.github/copilot-instructions.md`. All GitHub MCP tools, PowerShell, and file editing tools are built-in — no additional extensions needed.
 
 **What the agent will do:**
-1. Ask whether to run in **Minor Mode** or **Hotfix Mode**
+1. Ask whether to run in **Minor Mode**, **Hotfix Mode**, or **Add Missed PRs**
 2. Verify environment setup (.NET SDK, `gh` CLI, GenAPI tool)
 3. Determine current and target versions from `Directory.Build.props`
 4. Generate changelog entries from merged PRs (filtering out `[Internal]`)
-5. Bump version numbers following versioning rules
-6. Build the SDK and generate API contract files via GenAPI
-7. Create a release PR with API diff in the description
-8. Ensure that a full test suite passes, including contract enforcement tests.
-9. Guide through post-merge pipeline queuing and NuGet publish
+5. Prompt for any additional PRs that were missed by automatic discovery
+6. Bump version numbers following versioning rules
+7. Build the SDK and generate API contract files via GenAPI
+8. Create a release PR with API diff in the description
+9. Ensure that a full test suite passes, including contract enforcement tests.
+10. Guide through post-merge pipeline queuing and NuGet publish
+11. Update the `azure-docs-sdk-dotnet` metadata file with the new version (fork/sync, worktree clone, PR)
 
 ---
 
@@ -74,6 +92,7 @@ When the agent is invoked, ask the user:
 > **Which release mode would you like to run?**
 > 1. **Minor Mode** — Minor release (GA + Preview)
 > 2. **Hotfix Mode** — Patch release on an existing release branch (GA + Preview)
+> 3. **Add Missed PRs** — Add PRs that were missed in a previous release changelog
 
 Based on the selection, proceed to the corresponding section below.
 
@@ -130,7 +149,25 @@ Or use the GitHub MCP `list_pull_requests` tool to fetch merged PRs.
   - `Removes` → **Removed** section
   - `Refactors` → **Fixed** section (or a separate section if preferred)
 
-#### 2.3.3 Format Changelog Entries
+#### 2.3.3 Review & Add Missed PRs
+
+After generating the filtered PR list, present it to the user and ask:
+
+> **Here are the PRs that will be included in the changelog. Are there any additional PRs that should be included that weren't automatically discovered?**
+> Provide PR numbers separated by commas, or type 'none'.
+
+For each additional PR number provided:
+
+```powershell
+# Fetch details for each missed PR
+gh pr view <PR_NUMBER> --json number,title,mergedAt
+```
+
+Add the missed PRs to the appropriate changelog category based on their title verb (`Adds`, `Fixes`, `Removes`, `Refactors`). If the PR title doesn't follow the standard format, ask the user which category it belongs to.
+
+Re-display the final combined PR list for confirmation before proceeding.
+
+#### 2.3.4 Format Changelog Entries
 
 Follow the existing format in `changelog.md`:
 
@@ -204,9 +241,20 @@ git diff --no-index "Microsoft.Azure.Cosmos\contracts\API_PREV_PREVIEW.txt" "Mic
 
 #### 2.6.1 Create Feature Branch
 
+First, determine the GitHub username for branch naming:
+
 ```powershell
-git checkout -b release/X.Y.Z
+# Get the GitHub username
+gh api user --jq '.login'
 ```
+
+Then create the feature branch:
+
+```powershell
+git checkout -b users/<username>/release-X.Y.Z
+```
+
+Where `<username>` is the GitHub username obtained above (e.g., `users/nalutripician/release-3.58.0`).
 
 > **🚫 NEVER push directly to `master`.** Always create a feature branch and PR.
 
@@ -286,10 +334,92 @@ After the PR is approved and merged:
    - Body: Copy changelog notes
    - For preview: Check "This is a pre-release"
 
-3. **Metadata XML update:**
-   - Fork `azure-docs-sdk-dotnet` repo
-   - Update version in the metadata file
-   - Submit PR
+3. **Metadata update — `azure-docs-sdk-dotnet`:**
+
+   > **Prerequisite:** Only perform this step after the release PR has been **approved and merged**, and the SDK package has been **published to NuGet**. Verify both conditions before proceeding:
+   > ```powershell
+   > # Verify the release PR is merged
+   > $prState = gh pr view <PR_NUMBER> --repo Azure/azure-cosmos-dotnet-v3 --json state,mergedAt --jq '.state'
+   > if ($prState -ne 'MERGED') { Write-Error "Release PR is not yet merged. Aborting metadata update."; return }
+   >
+   > # Verify the NuGet package is available
+   > $nugetUrl = "https://api.nuget.org/v3-flatcontainer/microsoft.azure.cosmos/X.Y.Z/microsoft.azure.cosmos.X.Y.Z.nupkg"
+   > $nugetStatus = (Invoke-WebRequest -Uri $nugetUrl -Method Head -UseBasicParsing -ErrorAction SilentlyContinue).StatusCode
+   > if ($nugetStatus -ne 200) { Write-Error "NuGet package X.Y.Z is not yet available. Wait for the publish pipeline to complete."; return }
+   > ```
+
+   Update the Cosmos DB metadata file in `MicrosoftDocs/azure-docs-sdk-dotnet` so the documentation site reflects the new release version. This work is done in a **separate worktree** to avoid disrupting the SDK repository.
+
+   **3a. Get GitHub username:**
+   ```powershell
+   $ghUser = gh api user --jq '.login'
+   ```
+
+   **3b. Check for existing fork and fork/sync:**
+   ```powershell
+   # Check if user already has a fork
+   $forkExists = gh repo view "$ghUser/azure-docs-sdk-dotnet" --json name 2>$null
+
+   if ($forkExists) {
+       # Sync existing fork with upstream
+       gh repo sync "$ghUser/azure-docs-sdk-dotnet" --branch main
+   } else {
+       # Fork the repo (no local clone yet)
+       gh repo fork MicrosoftDocs/azure-docs-sdk-dotnet --clone=false
+   }
+   ```
+
+   **3c. Clone fork into a separate worktree and create working branch:**
+   ```powershell
+   # Clone the fork into a sibling directory (worktree)
+   git clone "https://github.com/$ghUser/azure-docs-sdk-dotnet.git" ../azure-docs-sdk-dotnet-worktree
+   cd ../azure-docs-sdk-dotnet-worktree
+
+   # Add upstream remote and fetch
+   git remote add upstream https://github.com/MicrosoftDocs/azure-docs-sdk-dotnet.git
+   git fetch upstream
+
+   # Create working branch from upstream main
+   git checkout -b update-cosmos-version upstream/main
+   ```
+
+   **3d. Update `metadata/latest/Microsoft.Azure.Cosmos.json`:**
+
+   Update **two fields** in the file to reflect the new GA version (`X.Y.Z`):
+
+   | Field | Old Value | New Value |
+   |-------|-----------|-----------|
+   | `Version` | `PREV_VERSION` | `X.Y.Z` |
+   | `ServiceDirectory` | `https://github.com/Azure/azure-cosmos-dotnet-v3/tree/PREV_VERSION/Microsoft.Azure.Cosmos` | `https://github.com/Azure/azure-cosmos-dotnet-v3/tree/X.Y.Z/Microsoft.Azure.Cosmos` |
+
+   Use the edit tool or `sed`/PowerShell string replacement to make these changes.
+
+   **3e. Commit, push, and create PR:**
+   ```powershell
+   git add metadata/latest/Microsoft.Azure.Cosmos.json
+   git commit -m "Update Microsoft.Azure.Cosmos.json"
+   git push origin update-cosmos-version
+   ```
+
+   Create the PR targeting the **upstream** repo:
+   ```powershell
+   gh pr create --repo MicrosoftDocs/azure-docs-sdk-dotnet `
+     --base main `
+     --head "${ghUser}:update-cosmos-version" `
+     --title "Update Microsoft.Azure.Cosmos.json" `
+     --body "-  update ``Microsoft.Azure.Cosmos`` minor version to match with the latest release ``X.Y.Z``."
+   ```
+
+   > **Reference:** See [PR #2526](https://github.com/MicrosoftDocs/azure-docs-sdk-dotnet/pull/2526) for the expected format.
+
+   **3f. Clean up worktree:**
+   ```powershell
+   # Return to the SDK repo
+   cd $sdkRepoRoot   # or cd ../azure-cosmos-dotnet-v3
+
+   # Remove the worktree clone
+   Remove-Item -Recurse -Force ../azure-docs-sdk-dotnet-worktree
+   ```
 
 ---
 
@@ -365,6 +495,12 @@ Where `X.Y.PATCH` is the user-confirmed hotfix version (e.g., `3.55.2`) and `X.Y
 
 ### 3.5 Cherry-Pick PRs
 
+First, determine the GitHub username for branch naming (if not already known):
+
+```powershell
+gh api user --jq '.login'
+```
+
 For each PR selected by the user:
 
 ```powershell
@@ -372,11 +508,13 @@ For each PR selected by the user:
 gh pr view <PR_NUMBER> --json mergeCommit --jq '.mergeCommit.oid'
 
 # Create a working branch for cherry-picks
-git checkout -b hotfix/X.Y.Z+1 releases/X.Y.Z+1
+git checkout -b users/<username>/hotfix-X.Y.Z+1 releases/X.Y.Z+1
 
 # Cherry-pick each commit
 git cherry-pick <MERGE_COMMIT_SHA>
 ```
+
+Where `<username>` is the GitHub username (e.g., `users/nalutripician/hotfix-3.55.2`).
 
 If there are conflicts, notify the user and assist with resolution.
 
@@ -386,7 +524,7 @@ Update `Directory.Build.props` on the hotfix branch with the user-confirmed hotf
 
 ### 3.7 Changelog Update
 
-Add hotfix entries to `changelog.md` on the hotfix branch. Only include the PRs being cherry-picked:
+Add hotfix entries to `changelog.md` on the hotfix branch. Start with the PRs being cherry-picked:
 
 ```markdown
 ### <a name="X.Y.Z+1"/> [X.Y.Z+1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/X.Y.Z+1) - YYYY-M-DD
@@ -394,6 +532,13 @@ Add hotfix entries to `changelog.md` on the hotfix branch. Only include the PRs 
 #### Fixed
 - [PR#](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/PR#) PR Title
 ```
+
+After generating the initial changelog entries, ask the user:
+
+> **Are there any additional PRs that should be included in this hotfix changelog beyond the cherry-picked ones?**
+> Provide PR numbers separated by commas, or type 'none'.
+
+For any additional PR numbers, fetch their details and add them to the changelog. Present the final changelog for confirmation.
 
 ### 3.8 Generate API Contract Files
 
@@ -437,15 +582,24 @@ git diff --no-index "Microsoft.Azure.Cosmos\contracts\API_PREV_PREVIEW.txt" "Mic
 
 **Important:** Contract file changes and changelog updates must also be reflected on `master`.
 
-1. Create a separate PR targeting `master` that includes:
+1. Create a working branch from `master` for the sync PR:
+   ```powershell
+   git checkout master && git pull
+   git checkout -b users/<username>/hotfix-X.Y.Z+1-master-sync
+   ```
+2. Add the following to the branch:
    - The new GA API contract file (`API_X.Y.Z+1.txt`)
    - The new preview API contract file (`API_X.Y+1.0-preview.Z+1.txt`)
    - Changelog entries for the hotfix version
-2. This ensures `master` stays in sync with released versions
+3. Create a PR targeting `master`:
+   ```powershell
+   gh pr create --base master --title "[Internal] Contracts: Adds hotfix X.Y.Z+1 contract files and changelog" --body "Syncs master with hotfix release X.Y.Z+1 contract files and changelog entries."
+   ```
+4. This ensures `master` stays in sync with released versions
 
 ### 3.10 Create Hotfix PR
 
-Create a PR from the working branch targeting the hotfix release branch:
+Create a PR from the working branch (`users/<username>/hotfix-X.Y.Z+1`) targeting the hotfix release branch:
 
 ```powershell
 gh pr create --base releases/X.Y.Z+1 --title "Hotfix: Adds version X.Y.Z+1" --body "## Hotfix X.Y.Z+1
@@ -484,6 +638,75 @@ After the hotfix PR is merged:
 1. **Create GitHub Release:**
    - Tag: `X.Y.Z+1`, Target: `releases/X.Y.Z+1`
    - Body: Copy changelog notes
+
+2. **Metadata update — `azure-docs-sdk-dotnet`:**
+
+   > **Prerequisite:** Only perform this step after the hotfix PR has been **approved and merged**, and the SDK package has been **published to NuGet**. Verify both conditions before proceeding:
+   > ```powershell
+   > # Verify the hotfix PR is merged
+   > $prState = gh pr view <PR_NUMBER> --repo Azure/azure-cosmos-dotnet-v3 --json state,mergedAt --jq '.state'
+   > if ($prState -ne 'MERGED') { Write-Error "Hotfix PR is not yet merged. Aborting metadata update."; return }
+   >
+   > # Verify the NuGet package is available
+   > $nugetUrl = "https://api.nuget.org/v3-flatcontainer/microsoft.azure.cosmos/X.Y.Z+1/microsoft.azure.cosmos.X.Y.Z+1.nupkg"
+   > $nugetStatus = (Invoke-WebRequest -Uri $nugetUrl -Method Head -UseBasicParsing -ErrorAction SilentlyContinue).StatusCode
+   > if ($nugetStatus -ne 200) { Write-Error "NuGet package X.Y.Z+1 is not yet available. Wait for the publish pipeline to complete."; return }
+   > ```
+
+   Update the Cosmos DB metadata file so the documentation site reflects the hotfix version. This follows the same workflow as Minor Mode §2.8 step 3.
+
+   **2a. Get GitHub username:**
+   ```powershell
+   $ghUser = gh api user --jq '.login'
+   ```
+
+   **2b. Check for existing fork and fork/sync:**
+   ```powershell
+   $forkExists = gh repo view "$ghUser/azure-docs-sdk-dotnet" --json name 2>$null
+
+   if ($forkExists) {
+       gh repo sync "$ghUser/azure-docs-sdk-dotnet" --branch main
+   } else {
+       gh repo fork MicrosoftDocs/azure-docs-sdk-dotnet --clone=false
+   }
+   ```
+
+   **2c. Clone fork into a separate worktree and create working branch:**
+   ```powershell
+   git clone "https://github.com/$ghUser/azure-docs-sdk-dotnet.git" ../azure-docs-sdk-dotnet-worktree
+   cd ../azure-docs-sdk-dotnet-worktree
+   git remote add upstream https://github.com/MicrosoftDocs/azure-docs-sdk-dotnet.git
+   git fetch upstream
+   git checkout -b update-cosmos-version upstream/main
+   ```
+
+   **2d. Update `metadata/latest/Microsoft.Azure.Cosmos.json`:**
+
+   Update **two fields** to reflect the hotfix version (`X.Y.Z+1`):
+
+   | Field | Old Value | New Value |
+   |-------|-----------|-----------|
+   | `Version` | `PREV_VERSION` | `X.Y.Z+1` |
+   | `ServiceDirectory` | `https://github.com/Azure/azure-cosmos-dotnet-v3/tree/PREV_VERSION/Microsoft.Azure.Cosmos` | `https://github.com/Azure/azure-cosmos-dotnet-v3/tree/X.Y.Z+1/Microsoft.Azure.Cosmos` |
+
+   **2e. Commit, push, and create PR:**
+   ```powershell
+   git add metadata/latest/Microsoft.Azure.Cosmos.json
+   git commit -m "Update Microsoft.Azure.Cosmos.json"
+   git push origin update-cosmos-version
+
+   gh pr create --repo MicrosoftDocs/azure-docs-sdk-dotnet `
+     --base main `
+     --head "${ghUser}:update-cosmos-version" `
+     --title "Update Microsoft.Azure.Cosmos.json" `
+     --body "-  update ``Microsoft.Azure.Cosmos`` minor version to match with the latest release ``X.Y.Z+1``."
+   ```
+
+   **2f. Clean up worktree:**
+   ```powershell
+   cd $sdkRepoRoot
+   Remove-Item -Recurse -Force ../azure-docs-sdk-dotnet-worktree
+   ```
 
 ---
 
@@ -575,3 +798,105 @@ If `ContractEnforcementTests` fails after version bump, verify:
 dotnet clean Microsoft.Azure.Cosmos\src -c Release
 dotnet build Microsoft.Azure.Cosmos\src -c Release
 ```
+
+---
+
+## 6. Add Missed PRs to Existing Release
+
+This mode allows adding PRs that were missed in a previous release's changelog. It can be invoked standalone via:
+
+**In VS Code Copilot Chat:**
+```
+@ReleaseCopilotAgent add missed PRs
+```
+
+**In the Copilot CLI (terminal):**
+```
+I need to add missed PRs to a release
+```
+
+### 6.1 Identify the Target Release
+
+Ask the user:
+
+> **Which release version needs missed PRs added?**
+> (e.g., `3.58.0`, `3.55.2`)
+
+### 6.2 Locate the Release PR
+
+Search for the existing release PR:
+
+```powershell
+# Search for the release PR by title
+gh pr list --repo Azure/azure-cosmos-dotnet-v3 --state all --limit 50 --json number,title,state --jq '.[] | select(.title | test("Release:.*X.Y.Z|Hotfix:.*X.Y.Z"))'
+```
+
+Or use the GitHub MCP `search_pull_requests` tool.
+
+Determine whether the PR is **open** or **merged**.
+
+### 6.3 Collect Missed PRs
+
+Ask the user:
+
+> **Which PR(s) should be added to the X.Y.Z changelog?**
+> Provide PR numbers separated by commas.
+
+For each PR number, fetch its details:
+
+```powershell
+gh pr view <PR_NUMBER> --json number,title,mergedAt
+```
+
+Categorize each PR by its title verb (`Adds` → Added, `Fixes` → Fixed, `Removes` → Removed, `Refactors` → Fixed). If the title doesn't match the standard format, ask the user which category it belongs to.
+
+### 6.4 Update the Changelog
+
+#### If the release PR is still open:
+
+1. Check out the existing PR branch:
+   ```powershell
+   gh pr checkout <PR_NUMBER>
+   ```
+2. Edit `changelog.md` to add the missed entries under the appropriate version heading and category
+3. Commit and push:
+   ```powershell
+   git add changelog.md
+   git commit -m "Release: Adds missed PRs to X.Y.Z changelog"
+   git push
+   ```
+
+#### If the release PR is already merged:
+
+First, determine the GitHub username:
+
+```powershell
+gh api user --jq '.login'
+```
+
+Then create a new branch and PR:
+
+1. Create a new branch:
+   ```powershell
+   git checkout master && git pull
+   git checkout -b users/<username>/changelog-fix-X.Y.Z
+   ```
+2. Edit `changelog.md` to add the missed entries under the existing X.Y.Z version heading
+3. If the release branch (`releases/X.Y.Z`) also needs the changelog fix, cherry-pick the commit there too
+4. Commit, push, and create a PR:
+   ```powershell
+   git add changelog.md
+   git commit -m "Changelog: Adds missed PRs to X.Y.Z changelog"
+   git push origin users/<username>/changelog-fix-X.Y.Z
+   gh pr create --base master --title "Changelog: Adds missed PRs to X.Y.Z release notes" --body "## Changelog Fix for X.Y.Z
+
+   ### Added PRs
+   - #PR1: Title
+   - #PR2: Title
+
+   These PRs were missed during the original X.Y.Z release changelog generation."
+   ```
+
+### 6.5 Verify
+
+Present the updated changelog section to the user for final review and confirmation.
