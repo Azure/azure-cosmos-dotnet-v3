@@ -229,15 +229,11 @@ namespace Microsoft.Azure.Cosmos
             }
 
 #if !INTERNAL
-            // After 2× 404/1002 on single-master, set the hub-region header and check if
-            // a previous request already discovered the hub region for this partition.
-            // If cached, route directly there (skipping the 403/3 discovery chain).
-            // Normal first-attempt requests never enter this block (addHubRegionProcessingOnlyHeader = false).
+            // If (addHubRegionProcessingOnlyHeader = true) then pin the hub region processing only header with the request.
             // addHubRegionProcessingOnlyHeader is only ever set when !canUseMultipleWriteLocations,
             // so no additional multi-master guard is needed here.
             if (this.addHubRegionProcessingOnlyHeader)
             {
-                Console.WriteLine("Adding header to route to hub region for discovery.");
                 request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion] = bool.TrueString;
             }
 #endif
@@ -469,57 +465,34 @@ namespace Microsoft.Azure.Cosmos
                 }
                 else
                 {
-                    if (this.sessionTokenRetryCount > 2)
-                    {
 #if !INTERNAL
-                        // The Hub region with the new header returned 404/1002 twice.
-                        // This is the source of truth and there won't be any more retries.
-                        if (this.addHubRegionProcessingOnlyHeader)
-                        {
-                            return ShouldRetryResult.NoRetry();
-                        }
-
-                        DefaultTrace.TraceInformation("Retry Count: {0}", this.sessionTokenRetryCount);
-                        if (this.sessionTokenRetryCount > endpoints.Count)
-                        {
-                            // On a single master account, with the hub region header, When the request has been tried 
-                            // on all locations, then don't retry the request
-                            return ShouldRetryResult.NoRetry();
-                        }
-                        this.addHubRegionProcessingOnlyHeader = true;
-                        DefaultTrace.TraceInformation("Header Present: {0}", this.addHubRegionProcessingOnlyHeader);
-
-                        // To generate a round-robin effect for detecting the hub region, retry on the next region.
-                        this.retryContext = new RetryContext
-                        {
-                            RetryLocationIndex = this.sessionTokenRetryCount,
-                            RetryRequestOnPreferredLocations = true
-                        };
-
-                        return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
-#else
-                        // When cannot use multiple write locations, then don't retry the request if 
-                        // we have already tried this request on the write location
+                    // The Hub region with the new header returned 404/1002.
+                    // This is the source of truth and there won't be any more retries.
+                    if (this.addHubRegionProcessingOnlyHeader)
+                    {
                         return ShouldRetryResult.NoRetry();
-#endif
                     }
                     else
                     {
-                        // We will need to try on the hub region one more time with the new hub region header.
+                        // The hub region returned 404/1002. We will need to try on the hub region one more time with the hub region processing only header.
+                        // Note: If that also returns 404/1002, then we know for sure that the hub region for this partition doesn't have the respective document
+                        // and we can stop retrying.
                         if (this.sessionTokenRetryCount > 1)
                         {
                             this.addHubRegionProcessingOnlyHeader = true;
                         }
-                        // Check the cache for hub region overrides first. If the override is present,
-                        // it means we have already discovered the hub region for this partition and can route directly there.
-                        if (this.partitionKeyRangeLocationCache.TryAddPartitionLevelLocationOverride(request, true))
+
+                        // Check the per partition automatic failover cache for hub region overrides first. If the override is present,
+                        // it means we have already discovered the hub region for this partition and can route directly there (skipping the 403/3 discovery chain).
+                        if (this.partitionKeyRangeLocationCache.TryAddPartitionLevelLocationOverride(request, checkHubRegionOverrideInCache: true))
                         {
-                            DefaultTrace.TraceInformation("Checking the cache: Partition level override added for request {0}. Routing to hub region for this request.", request.ResourceAddress);
-                            return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
+                            this.addHubRegionProcessingOnlyHeader = true;
+                            DefaultTrace.TraceInformation("Partition level override added by hub-region override for request {0}. Routing to the cached hub region for this request.", request.ResourceAddress);
                         }
                         else
                         {
-                            // No override is present, this means we have not yet discovered the hub region for this partition. Route to the account hub region first.
+                            // No override is present, this means we have not yet discovered the hub region for this partition.
+                            // Route to the account hub region first.
                             this.retryContext = new RetryContext
                             {
                                 RetryLocationIndex = 0,
@@ -529,6 +502,24 @@ namespace Microsoft.Azure.Cosmos
 
                         return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
                     }
+#else
+                    if (this.sessionTokenRetryCount > 1)
+                    {
+                        // When cannot use multiple write locations, then don't retry the request if 
+                        // we have already tried this request on the write location
+                        return ShouldRetryResult.NoRetry();
+                    }
+                    else
+                    {
+                        this.retryContext = new RetryContext
+                        {
+                            RetryLocationIndex = 0,
+                            RetryRequestOnPreferredLocations = false
+                        };
+
+                        return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
+                    }
+#endif
                 }
             }
         }

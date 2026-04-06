@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Text.Json.Serialization;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.FaultInjection;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -63,11 +64,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             (this.database, this.container, this.changeFeedContainer) = await MultiRegionSetupHelpers.GetOrCreateMultiRegionDatabaseAndContainers(this.client);
 
             this.readRegionsMapping = this.client.DocumentClient.GlobalEndpointManager.GetAvailableReadEndpointsByLocation();
-            Assert.IsTrue(this.readRegionsMapping.Count() >= 2);
+            Assert.IsTrue(this.readRegionsMapping.Count() >= 3);
 
             region1 = this.readRegionsMapping.Keys.ElementAt(0);
             region2 = this.readRegionsMapping.Keys.ElementAt(1);
-            region3 = this.readRegionsMapping.Keys.ElementAt(1);
+            region3 = this.readRegionsMapping.Keys.ElementAt(2);
         }
 
         [TestCleanup]
@@ -2466,16 +2467,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [Owner("aavasthy")]
-        //[DataRow(ConnectionMode.Direct)]
-        [DataRow(ConnectionMode.Gateway)]
+        [DataRow(ConnectionMode.Direct, true, DisplayName = "Scenario when direct mode is selected and partition level failover is enabled.")]
+        [DataRow(ConnectionMode.Gateway, true, DisplayName = "Scenario when gateway mode is selected and partition level failover is enabled.")]
+        [DataRow(ConnectionMode.Direct, false, DisplayName = "Scenario when direct mode is selected and partition level failover is disabled.")]
+        [DataRow(ConnectionMode.Gateway, false, DisplayName = "Scenario when gateway mode is selected and partition level failover is disabled.")]
         [Description("Forces two consecutive 404/1002 responses from the gateway and verifies ClientRetryPolicy sets the hub region header flag after the first retry fails.")]
-        public async Task ReadItemAsync_ShouldAddHubHeader_OnRetryAfter_404_1002(
-            ConnectionMode connectionMode)
+        public async Task ReadItemAsync_WithPPAFEnabledAccountShouldAddHubHeader_On4041002FromHub(
+            ConnectionMode connectionMode,
+            bool enablePartitionLevelFailover)
         {
             int requestCount = 0;
             int return404Count = 0;
             const int maxReturn404 = 2;
-            bool hubHeaderOnThirdRequest = false;
+            bool hubHeaderOnFourthRequest = false;
 
             HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper
             {
@@ -2496,18 +2500,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             Assert.IsFalse(hasHubHeader, $"Hub header should NOT be present on request {requestCount}");
                         }
 
-                        // Verify hub header is NOT present on first request.
+                        // Verify hub header is present on third request.
                         if (requestCount == 3)
                         {
                             Assert.IsTrue(hasHubHeader, $"Hub header should be present on request {requestCount}");
                         }
 
-                        // Check if hub header is present on 3rd request
+                        // Check if hub header is present on 4th request
                         if (requestCount == 4)
                         {
-                            hubHeaderOnThirdRequest = hasHubHeader;
+                            hubHeaderOnFourthRequest = hasHubHeader;
                         }
 
+                        // Flow is: Request sent on preferred read region >> Request gets 404/1002 >> Request retried on account
+                        // hub region without hub header >> Request gets 403/3 >> Request retried again on account hub region with hub header
+                        // >> Request succeeds or gets 404/1002 or 403.3. In this test we are simulating a 403.3 from the account hub region.
+                        // This will trigger a hub region discovery. 
                         if (requestCount == 3)
                         {
                             HttpResponseMessage writeForbiddenResponse = new HttpResponseMessage(HttpStatusCode.Forbidden)
@@ -2545,7 +2553,29 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
 
                     return Task.FromResult<HttpResponseMessage>(null);
-                }
+                },
+                ResponseIntercepter = async (response, request) =>
+                {
+                    string json = await response?.Content?.ReadAsStringAsync();
+                    if (json.Length > 0 && json.Contains("enablePerPartitionFailoverBehavior"))
+                    {
+                        JObject parsedDatabaseAccountResponse = JObject.Parse(json);
+                        parsedDatabaseAccountResponse.Property("enablePerPartitionFailoverBehavior").Value = enablePartitionLevelFailover.ToString();
+
+                        HttpResponseMessage interceptedResponse = new()
+                        {
+                            StatusCode = response.StatusCode,
+                            Content = new StringContent(parsedDatabaseAccountResponse.ToString()),
+                            Version = response.Version,
+                            ReasonPhrase = response.ReasonPhrase,
+                            RequestMessage = response.RequestMessage,
+                        };
+
+                        return interceptedResponse;
+                    }
+
+                    return response;
+                },
             };
 
             List<string> preferredRegions = new List<string> { region2, region1, region3 };
@@ -2575,19 +2605,46 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                             bool.TryParse(request.Headers.Get(HubRegionHeader), out bool hasHubHeader);
 
-                            // Verify hub header is NOT present on first two requests
-                            if (requestCount <= 2)
+                            // Verify hub header is NOT present on first request.
+                            if (requestCount == 1)
                             {
                                 Assert.IsFalse(hasHubHeader, $"Hub header should NOT be present on request {requestCount}");
                             }
 
-                            // Check if hub header is present on 3rd request
+                            // Verify hub header is present on third request.
                             if (requestCount == 3)
                             {
-                                hubHeaderOnThirdRequest = hasHubHeader;
+                                Assert.IsTrue(hasHubHeader, $"Hub header should be present on request {requestCount}");
                             }
 
-                            if (return404Count < maxReturn404)
+                            // Check if hub header is present on 4th request
+                            if (requestCount == 4)
+                            {
+                                hubHeaderOnFourthRequest = hasHubHeader;
+                            }
+
+                            // Flow is: Request sent on preferred read region >> Request gets 404/1002 >> Request retried on account
+                            // hub region without hub header >> Request gets 403/3 >> Request retried again on account hub region with hub header
+                            // >> Request succeeds or gets 404/1002 or 403.3. In this test we are simulating a 403.3 from the account hub region.
+                            // This will trigger a hub region discovery. 
+                            if (requestCount == 3)
+                            {
+                                // Create headers with substatus code
+                                storeResponse.Headers.Set(Documents.WFConstants.BackendHeaders.NumberOfReadRegions, "3");
+                                storeResponse.Headers.Set(Documents.WFConstants.BackendHeaders.SubStatus, ((int)Documents.SubStatusCodes.WriteForbidden).ToString());
+                                storeResponse.Headers.Set(Documents.HttpConstants.HttpHeaders.ActivityId, Guid.NewGuid().ToString());
+                                storeResponse.Headers.Set(Documents.HttpConstants.HttpHeaders.RequestCharge, "1.0");
+
+                                Documents.StoreResponse notFoundResposne = new Documents.StoreResponse()
+                                {
+                                    Status = 403,
+                                    Headers = storeResponse.Headers,
+                                    ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes("The requested operation cannot be performed at this region"))
+                                };
+
+                                storeResponse = notFoundResposne;
+                            }
+                            else if (return404Count < maxReturn404)
                             {
                                 return404Count++;
 
@@ -2631,32 +2688,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response.Resource);
             Assert.AreEqual(testItem.id, response.Resource.id);
 
-            // Verify request counts
-            //Assert.AreEqual(2, return404Count, "Should have returned 404/1002 exactly twice");
-            //Assert.IsTrue(requestCount >= 3, $"Should have made at least 3 requests, but made {requestCount}");
+            //Verify request counts
+            Assert.AreEqual(2, return404Count, "Should have returned 404/1002 exactly twice");
+            Assert.IsTrue(requestCount >= 3, $"Should have made at least 3 requests, but made {requestCount}");
 
-            //// Hub header should be present on the 3rd request
-            //Assert.IsTrue(hubHeaderOnThirdRequest,
-            //    "Hub region header MUST be present on 3rd request after 2x 404/1002. This proves the feature works.");
+            // Hub header should be present on the 3rd request
+            Assert.IsTrue(hubHeaderOnFourthRequest,
+                "Hub region header MUST be present on 3rd request after 2x 404/1002. This proves the feature works.");
 
-            //Console.WriteLine($"✅ SUCCESS! After 2x 404/1002, hub header was added on request 3 and succeeded.");
+            return404Count = 1;
+            DefaultTrace.TraceInformation("Starting Seconds Read Request");
+            ItemResponse<ToDoActivity> response1 = await container.ReadItemAsync<ToDoActivity>(
+                testItem.id,
+                new Cosmos.PartitionKey(testItem.pk));
+            Console.WriteLine("Diagnostics for final read request 1: " + response1.Diagnostics.ToString());
 
-            //return404Count = 1;
-            //ItemResponse<ToDoActivity> response1 = await container.ReadItemAsync<ToDoActivity>(
-            //    testItem.id,
-            //    new Cosmos.PartitionKey(testItem.pk));
-            //Console.WriteLine("Diagnostics for final read request 1: " + response1.Diagnostics.ToString());
-
-            //return404Count = 1;
-            //ItemResponse<ToDoActivity> response2 = await container.ReadItemAsync<ToDoActivity>(
-            //    testItem.id,
-            //    new Cosmos.PartitionKey(testItem.pk));
-            //Console.WriteLine("Diagnostics for final read request 2: " + response2.Diagnostics.ToString());
-
-            //// Create a test item first
-            //ToDoActivity testItem2 = ToDoActivity.CreateRandomToDoActivity();
-            //ItemResponse<ToDoActivity> response3 = await container.CreateItemAsync(testItem2, new PartitionKey(testItem2.pk));
-            //Console.WriteLine("Diagnostics for final write request 2: " + response3.Diagnostics.ToString());
+            DefaultTrace.TraceInformation("Starting Third Read Request");
+            return404Count = 1;
+            ItemResponse<ToDoActivity> response2 = await container.ReadItemAsync<ToDoActivity>(
+                testItem.id,
+                new Cosmos.PartitionKey(testItem.pk));
+            Console.WriteLine("Diagnostics for final read request 2: " + response2.Diagnostics.ToString());
         }
 
         [TestMethod]

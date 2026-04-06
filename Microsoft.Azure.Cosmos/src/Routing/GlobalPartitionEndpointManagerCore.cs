@@ -122,11 +122,12 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <inheritdoc/>
         public override bool TryAddPartitionLevelLocationOverride(
             DocumentServiceRequest request,
-            bool checkHubRegionOverrideInCache = false)
+            bool addHubRegionOverrideFromCache = false)
         {
-            if (!this.IsRequestEligibleForPartitionFailover(
+            if (!this.IsRequestEligibleForPartitionOrHubRegionFailover(
                 request,
                 shouldValidateFailedLocation: false,
+                checkHubRegionOverrideInCache: addHubRegionOverrideFromCache,
                 out PartitionKeyRange? partitionKeyRange,
                 out Uri? _))
             {
@@ -138,12 +139,12 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return false;
             }
 
-            if (checkHubRegionOverrideInCache || this.IsRequestEligibleForPerPartitionAutomaticFailover(request))
+            if (addHubRegionOverrideFromCache || this.IsRequestEligibleForPerPartitionAutomaticFailover(request))
             {
                 return this.TryRouteRequestForPartitionLevelOverride(
                     partitionKeyRange,
                     request,
-                    isHubRegionDiscoveryActive: checkHubRegionOverrideInCache,
+                    isHubRegionDiscoveryActive: addHubRegionOverrideFromCache,
                     this.PartitionKeyRangeToLocationForWrite);
             }
             else if (this.IsRequestEligibleForPartitionLevelCircuitBreaker(request))
@@ -162,9 +163,11 @@ namespace Microsoft.Azure.Cosmos.Routing
         public override bool TryMarkEndpointUnavailableForPartitionKeyRange(
             DocumentServiceRequest request)
         {
-            if (!this.IsRequestEligibleForPartitionFailover(
+            bool isHubRegionDiscoveryActive = GlobalPartitionEndpointManagerCore.IsHubRegionRoutingActive(request);
+            if (!this.IsRequestEligibleForPartitionOrHubRegionFailover(
                 request,
                 shouldValidateFailedLocation: true,
+                checkHubRegionOverrideInCache: isHubRegionDiscoveryActive,
                 out PartitionKeyRange? partitionKeyRange,
                 out Uri? failedLocation))
             {
@@ -189,10 +192,10 @@ namespace Microsoft.Azure.Cosmos.Routing
                     failedLocation,
                     nextLocations,
                     request,
-                    this.PartitionKeyRangeToLocationForReadAndWrite);
+                    this.PartitionKeyRangeToLocationForReadAndWrite,
+                    isHubRegionDiscoveryActive);
             }
-            else if (this.IsRequestEligibleForPerPartitionAutomaticFailover(request)
-                || GlobalPartitionEndpointManagerCore.IsHubRegionRoutingActive(request))
+            else if (isHubRegionDiscoveryActive || this.IsRequestEligibleForPerPartitionAutomaticFailover(request))
             {
                 // For any single master write accounts, the next locations to fail over will be the read regions configured at the account level.
                 ReadOnlyCollection<Uri> nextLocations = this.isThinClientEnabled && GatewayStoreModel.IsOperationSupportedByThinClient(request)
@@ -204,7 +207,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                     failedLocation,
                     nextLocations,
                     request,
-                    this.PartitionKeyRangeToLocationForWrite);
+                    this.PartitionKeyRangeToLocationForWrite,
+                    isHubRegionDiscoveryActive);
             }
 
             DefaultTrace.TraceInformation("Partition level override was skipped since the request did not met the minimum requirements.");
@@ -215,9 +219,10 @@ namespace Microsoft.Azure.Cosmos.Routing
         public override bool IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(
             DocumentServiceRequest request)
         {
-            if (!this.IsRequestEligibleForPartitionFailover(
+            if (!this.IsRequestEligibleForPartitionOrHubRegionFailover(
                 request,
                 shouldValidateFailedLocation: true,
+                checkHubRegionOverrideInCache: false,
                 out PartitionKeyRange? partitionKeyRange,
                 out Uri? failedLocation))
             {
@@ -331,13 +336,15 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// </summary>
         /// <param name="request">An instance of the <see cref="DocumentServiceRequest"/>.</param>
         /// <param name="shouldValidateFailedLocation">A boolean flag indicating whether to validate the failed location.</param>
+        /// <param name="checkHubRegionOverrideInCache">A boolean flag indicating whether to check the hub region override in the cache.</param>
         /// <param name="partitionKeyRange">The resolved <see cref="PartitionKeyRange"/> for the request.</param>
         /// <param name="failedLocation">The failed location <see cref="Uri"/>, if applicable.</param>
         /// <returns>True if the request is valid for partition failover, otherwise false.</returns>
         /// <exception cref="ArgumentNullException">Thrown when the request is null.</exception>
-        private bool IsRequestEligibleForPartitionFailover(
+        private bool IsRequestEligibleForPartitionOrHubRegionFailover(
             DocumentServiceRequest request,
             bool shouldValidateFailedLocation,
+            bool checkHubRegionOverrideInCache,
             out PartitionKeyRange? partitionKeyRange,
             out Uri? failedLocation)
         {
@@ -346,7 +353,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             if (!this.IsPartitionLevelAutomaticFailoverEnabled()
                && !this.IsPartitionLevelCircuitBreakerEnabled()
-               && !GlobalPartitionEndpointManagerCore.IsHubRegionRoutingActive(request))
+               && !checkHubRegionOverrideInCache)
             {
                 return false;
             }
@@ -595,15 +602,17 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <param name="nextLocations">A read-only collection of URIs representing the next available locations.</param>
         /// <param name="request">The document service request being routed.</param>
         /// <param name="partitionKeyRangeToLocationMapping">The mapping of partition key ranges to their failover information.</param>
+        /// <param name="isHubRegionDiscoveryActive">Indicates whether the hub region discovery is active.</param>
         /// <returns>True if the failover information was successfully updated and the request was routed to a new location, otherwise false.</returns>
         private bool TryAddOrUpdatePartitionFailoverInfoAndMoveToNextLocation(
             PartitionKeyRange partitionKeyRange,
             Uri failedLocation,
             ReadOnlyCollection<Uri> nextLocations,
             DocumentServiceRequest request,
-            Lazy<ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>> partitionKeyRangeToLocationMapping)
+            Lazy<ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>> partitionKeyRangeToLocationMapping,
+            bool isHubRegionDiscoveryActive)
         {
-            string triggeredBy = IsHubRegionRoutingActive(request) ? "Hub Region Discovery" : this.isPartitionLevelAutomaticFailoverEnabled == 1 ? "Automatic Failover" : "Circuit Breaker";
+            string triggeredBy = isHubRegionDiscoveryActive ? "Hub Region Discovery" : this.isPartitionLevelAutomaticFailoverEnabled == 1 ? "Automatic Failover" : "Circuit Breaker";
             PartitionKeyRangeFailoverInfo partionFailover = partitionKeyRangeToLocationMapping.Value.GetOrAdd(
                 partitionKeyRange,
                 (_) => new PartitionKeyRangeFailoverInfo(
@@ -642,7 +651,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// </summary>
         public static bool IsHubRegionRoutingActive(DocumentServiceRequest request)
         {
-            return string.Equals(
+            return request.IsReadOnlyRequest && string.Equals(
                 request?.Headers?[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion],
                 bool.TrueString,
                 StringComparison.OrdinalIgnoreCase);
