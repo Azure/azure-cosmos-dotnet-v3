@@ -195,6 +195,45 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        [Description("The idempotency token echoed back in the server response header is surfaced on the DistributedTransactionResponse.")]
+        public async Task CommitAsync_ResponseContainsIdempotencyToken()
+        {
+            Mock<CosmosClientContext> contextMock = this.BuildContextSetup();
+            contextMock
+                .Setup(c => c.ProcessResourceOperationStreamAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerInternal>(),
+                    It.IsAny<PartitionKey?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns<string, ResourceType, OperationType, RequestOptions, ContainerInternal, PartitionKey?, string, Stream, Action<RequestMessage>, ITrace, CancellationToken>(
+                    (uri, resType, opType, opts, container, pk, itemId, stream, enricher, trace, ct) =>
+                    {
+                        // Capture the outgoing idempotency token and echo it back, simulating server behavior.
+                        RequestMessage req = new RequestMessage();
+                        enricher?.Invoke(req);
+                        string token = req.Headers[HttpConstants.HttpHeaders.IdempotencyToken]
+                            ?? Guid.NewGuid().ToString();
+
+                        ResponseMessage response = BuildSuccessResponse(1);
+                        response.Headers[HttpConstants.HttpHeaders.IdempotencyToken] = token;
+                        return Task.FromResult(response);
+                    });
+
+            DistributedTransactionResponse response = await new DistributedWriteTransactionCore(contextMock.Object)
+                .CreateItem(Database, Container, new PartitionKey("pk"), new TestItem())
+                .CommitTransactionAsync(CancellationToken.None);
+
+            Assert.AreNotEqual(Guid.Empty, response.IdempotencyToken, "Response must carry the idempotency token.");
+        }
+
+        [TestMethod]
         public async Task CommitAsync_OperationIndexIsZeroBasedAndOrdered()
         {
             string capturedJson = null;
@@ -371,7 +410,13 @@ namespace Microsoft.Azure.Cosmos.Tests
             ContainerProperties containerProps = ContainerProperties.CreateWithResourceId("ccZ1ANCszwk=");
             containerProps.PartitionKeyPath = "/pk";
 
+            MockDocumentClient documentClient = new MockDocumentClient();
+
             Mock<CosmosClientContext> contextMock = new Mock<CosmosClientContext>();
+
+            contextMock
+                .Setup(c => c.DocumentClient)
+                .Returns(documentClient);
 
             contextMock
                 .Setup(c => c.SerializerCore)
