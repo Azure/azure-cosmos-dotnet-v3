@@ -24,7 +24,8 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
         public override bool TryAddPartitionLevelLocationOverride(
-            DocumentServiceRequest request)
+            DocumentServiceRequest request,
+            bool checkHubRegionOverrideInCache = false)
         {
             return false;
         }
@@ -67,12 +68,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
         public override bool IsPartitionLevelCircuitBreakerEnabled()
-        {
-            return false;
-        }
-
-        public override bool TryAddHubRegionOverrideOnSuccess(
-            DocumentServiceRequest request)
         {
             return false;
         }

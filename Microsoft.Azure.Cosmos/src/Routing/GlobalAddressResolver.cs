@@ -229,8 +229,8 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             IAddressResolver resolver = this.GetAddressResolver(request);
             PartitionAddressInformation partitionAddressInformation = await resolver.ResolveAsync(request, forceRefresh, cancellationToken);
-
-            if (!this.partitionKeyRangeLocationCache.TryAddPartitionLevelLocationOverride(request))
+            bool isHubRegionRoutingActive = GlobalPartitionEndpointManagerCore.IsHubRegionRoutingActive(request);
+            if (!this.partitionKeyRangeLocationCache.TryAddPartitionLevelLocationOverride(request, isHubRegionRoutingActive))
             {
                 return partitionAddressInformation;
             }

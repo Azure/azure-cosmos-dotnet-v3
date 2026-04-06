@@ -37,11 +37,6 @@ namespace Microsoft.Azure.Cosmos
             this.retryPolicy.OnBeforeSendRequest(request);
         }
 
-        public void OnAfterSendRequest(ResponseMessage cosmosResponseMessage)
-        {
-            this.retryPolicy.OnAfterSendRequest(cosmosResponseMessage);
-        }
-
         public async Task<ShouldRetryResult> ShouldRetryAsync(
             Exception exception,
             CancellationToken cancellationToken)

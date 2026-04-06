@@ -1509,7 +1509,7 @@ namespace Microsoft.Azure.Cosmos
                 .Verifiable();
 
             globalPartitionEndpointManager
-                .Setup(m => m.TryAddPartitionLevelLocationOverride(It.IsAny<DocumentServiceRequest>()))
+                .Setup(m => m.TryAddPartitionLevelLocationOverride(It.IsAny<DocumentServiceRequest>(), It.IsAny<bool>()))
                 .Returns(true)
                 .Verifiable();
 
@@ -1582,7 +1582,7 @@ namespace Microsoft.Azure.Cosmos
             await storeModel.ProcessMessageAsync(request);
 
             // Assert
-            globalPartitionEndpointManager.Verify(m => m.TryAddPartitionLevelLocationOverride(It.IsAny<DocumentServiceRequest>()), Times.Once());
+            globalPartitionEndpointManager.Verify(m => m.TryAddPartitionLevelLocationOverride(It.IsAny<DocumentServiceRequest>(), It.IsAny<bool>()), Times.Once());
         }
 
         [TestMethod]
@@ -1595,7 +1595,7 @@ namespace Microsoft.Azure.Cosmos
             GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, connectionPolicy);
             Mock<GlobalPartitionEndpointManager> globalPartitionEndpointManager = new Mock<GlobalPartitionEndpointManager>();
             globalPartitionEndpointManager
-                .Setup(m => m.TryAddPartitionLevelLocationOverride(It.IsAny<DocumentServiceRequest>()))
+                .Setup(m => m.TryAddPartitionLevelLocationOverride(It.IsAny<DocumentServiceRequest>(), It.IsAny<bool>()))
                 .Returns(true);
 
             globalPartitionEndpointManager

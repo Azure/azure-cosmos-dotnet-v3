@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Threading;
@@ -228,24 +229,12 @@ namespace Microsoft.Azure.Cosmos
             }
 
 #if !INTERNAL
-            // After 2× 404/1002 on single-master, set the hub-region header and check if
-            // a previous request already discovered the hub region for this partition.
-            // If cached, route directly there (skipping the 403/3 discovery chain).
-            // Normal first-attempt requests never enter this block (addHubRegionProcessingOnlyHeader = false).
+            // If (addHubRegionProcessingOnlyHeader = true) then pin the hub region processing only header with the request.
             // addHubRegionProcessingOnlyHeader is only ever set when !canUseMultipleWriteLocations,
             // so no additional multi-master guard is needed here.
             if (this.addHubRegionProcessingOnlyHeader)
             {
                 request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion] = bool.TrueString;
-
-                // Check the partition-level cache for a previously discovered hub region.
-                // TryAddPartitionLevelLocationOverride only enters the hub branch when the
-                // hub header is present, so normal requests never reach this path.
-                if (this.partitionKeyRangeLocationCache.TryAddPartitionLevelLocationOverride(request))
-                {
-                    this.locationEndpoint = request.RequestContext.LocationEndpointToRoute;
-                    return;
-                }
             }
 #endif
 
@@ -256,27 +245,6 @@ namespace Microsoft.Azure.Cosmos
                 : this.globalEndpointManager.ResolveServiceEndpoint(request);
 
             request.RequestContext.RouteToLocation(this.locationEndpoint);
-        }
-
-        /// <summary>
-        /// Method that is called after a successful response is received.
-        /// For hub region discovery, caches the successful endpoint so future
-        /// requests can route directly to the hub without repeating the 403/3 cycle.
-        /// </summary>
-        /// <param name="cosmosResponseMessage">The successful <see cref="ResponseMessage"/>.</param>
-        public void OnAfterSendRequest(ResponseMessage cosmosResponseMessage)
-        {
-#if !INTERNAL
-            if (cosmosResponseMessage != null
-                && cosmosResponseMessage.IsSuccessStatusCode
-                && this.addHubRegionProcessingOnlyHeader
-                && !this.canUseMultipleWriteLocations
-                && this.documentServiceRequest != null)
-            {
-                this.partitionKeyRangeLocationCache.TryAddHubRegionOverrideOnSuccess(
-                    this.documentServiceRequest);
-            }
-#endif
         }
 
         private async Task<ShouldRetryResult> ShouldRetryInternalAsync(
@@ -305,50 +273,61 @@ namespace Microsoft.Azure.Cosmos
             if (statusCode == HttpStatusCode.Forbidden
                 && subStatusCode == SubStatusCodes.WriteForbidden)
             {
-                // It's a write forbidden so it safe to retry.
-                // For hub region routing, TryMarkEndpointUnavailableForPartitionKeyRange
-                // removes any stale cached hub entry and returns false, so the request
-                // falls through to ShouldRetryOnEndpointFailureAsync for normal region cycling.
-                if (this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
-                     this.documentServiceRequest))
+                // We received a 403.3 on the read path. This is possible only when the hub region header is present. Retry
+                // the request to continue discovering the hub region.
+                if (this.documentServiceRequest.IsReadOnlyRequest && this.addHubRegionProcessingOnlyHeader)
                 {
-                    return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
+                    this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(this.documentServiceRequest);
+                    TimeSpan retryDelay = TimeSpan.FromMilliseconds(ClientRetryPolicy.RetryIntervalInMS);
+                    return ShouldRetryResult.RetryAfter(retryDelay);
                 }
-
-                DefaultTrace.TraceWarning("ClientRetryPolicy: Endpoint not writable. Refresh cache and retry. Failed Location: {0}; ResourceAddress: {1}",
-                    this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
-                    this.documentServiceRequest?.ResourceAddress ?? string.Empty);
-
-                if (this.globalEndpointManager.IsMultimasterMetadataWriteRequest(this.documentServiceRequest))
+                else
                 {
-                    bool forceRefresh = false;
-
-                    if (this.retryContext != null && this.retryContext.RouteToHub)
+                    // It's a write forbidden so it safe to retry.
+                    // For hub region routing, TryMarkEndpointUnavailableForPartitionKeyRange
+                    // removes any stale cached hub entry and returns false, so the request
+                    // falls through to ShouldRetryOnEndpointFailureAsync for normal region cycling.
+                    if (this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
+                         this.documentServiceRequest))
                     {
-                        forceRefresh = true;
-                        
+                        return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
                     }
 
-                    ShouldRetryResult retryResult = await this.ShouldRetryOnEndpointFailureAsync(
+                    DefaultTrace.TraceWarning("ClientRetryPolicy: Endpoint not writable. Refresh cache and retry. Failed Location: {0}; ResourceAddress: {1}",
+                        this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
+                        this.documentServiceRequest?.ResourceAddress ?? string.Empty);
+
+                    if (this.globalEndpointManager.IsMultimasterMetadataWriteRequest(this.documentServiceRequest))
+                    {
+                        bool forceRefresh = false;
+
+                        if (this.retryContext != null && this.retryContext.RouteToHub)
+                        {
+                            forceRefresh = true;
+
+                        }
+
+                        ShouldRetryResult retryResult = await this.ShouldRetryOnEndpointFailureAsync(
+                            isReadRequest: false,
+                            markBothReadAndWriteAsUnavailable: false,
+                            forceRefresh: forceRefresh,
+                            retryOnPreferredLocations: false,
+                            overwriteEndpointDiscovery: true);
+
+                        if (retryResult.ShouldRetry)
+                        {
+                            this.retryContext.RouteToHub = true;
+                        }
+
+                        return retryResult;
+                    }
+
+                    return await this.ShouldRetryOnEndpointFailureAsync(
                         isReadRequest: false,
                         markBothReadAndWriteAsUnavailable: false,
-                        forceRefresh: forceRefresh,
-                        retryOnPreferredLocations: false,
-                        overwriteEndpointDiscovery: true);
-
-                    if (retryResult.ShouldRetry)
-                    {
-                        this.retryContext.RouteToHub = true;
-                    }
-                    
-                    return retryResult;
+                        forceRefresh: true,
+                        retryOnPreferredLocations: false);
                 }
-
-                return await this.ShouldRetryOnEndpointFailureAsync(
-                    isReadRequest: false,
-                    markBothReadAndWriteAsUnavailable: false,
-                    forceRefresh: true,
-                    retryOnPreferredLocations: false);
             }
 
             // Regional endpoint is not available yet for reads (e.g. add/ online of region is in progress)
@@ -370,28 +349,6 @@ namespace Microsoft.Azure.Cosmos
 
             if (statusCode == HttpStatusCode.NotFound && subStatusCode == SubStatusCodes.ReadSessionNotAvailable)
             {
-#if !INTERNAL
-                // Only set the hub region processing header for single master accounts.
-                // Set header only after the first retry attempt fails with 404/1002.
-                if (!this.canUseMultipleWriteLocations && this.sessionTokenRetryCount >= 1)
-                {
-                    this.addHubRegionProcessingOnlyHeader = true;
-                    this.sessionTokenRetryCount++;
-
-                    // Bypass ShouldRetryOnSessionNotAvailable — it would return NoRetry here
-                    // because sessionTokenRetryCount is already >= 1. Use the endpoint failure
-                    // path instead so the hub header actually gets sent on the next attempt.
-                    // overwriteEndpointDiscovery: true prevents marking the endpoint as
-                    // unavailable for normal reads — this is a hub discovery retry, not a
-                    // region availability issue.
-                    return await this.ShouldRetryOnEndpointFailureAsync(
-                        isReadRequest: this.isReadRequest,
-                        markBothReadAndWriteAsUnavailable: false,
-                        forceRefresh: false,
-                        retryOnPreferredLocations: true,
-                        overwriteEndpointDiscovery: true);
-                }
-#endif
                 return this.ShouldRetryOnSessionNotAvailable(this.documentServiceRequest);
             }
 
@@ -486,10 +443,9 @@ namespace Microsoft.Azure.Cosmos
             }
             else
             {
+                ReadOnlyCollection<Uri> endpoints = this.globalEndpointManager.GetApplicableEndpoints(request, this.isReadRequest);
                 if (this.canUseMultipleWriteLocations)
                 {
-                    ReadOnlyCollection<Uri> endpoints = this.globalEndpointManager.GetApplicableEndpoints(request, this.isReadRequest);
-
                     if (this.sessionTokenRetryCount > endpoints.Count)
                     {
                         // When use multiple write locations is true and the request has been tried 
@@ -509,6 +465,44 @@ namespace Microsoft.Azure.Cosmos
                 }
                 else
                 {
+#if !INTERNAL
+                    // The Hub region with the new header returned 404/1002.
+                    // This is the source of truth and there won't be any more retries.
+                    if (this.addHubRegionProcessingOnlyHeader)
+                    {
+                        return ShouldRetryResult.NoRetry();
+                    }
+                    else
+                    {
+                        // The hub region returned 404/1002. We will need to try on the hub region one more time with the hub region processing only header.
+                        // Note: If that also returns 404/1002, then we know for sure that the hub region for this partition doesn't have the respective document
+                        // and we can stop retrying.
+                        if (this.sessionTokenRetryCount > 1)
+                        {
+                            this.addHubRegionProcessingOnlyHeader = true;
+                        }
+
+                        // Check the per partition automatic failover cache for hub region overrides first. If the override is present,
+                        // it means we have already discovered the hub region for this partition and can route directly there (skipping the 403/3 discovery chain).
+                        if (this.partitionKeyRangeLocationCache.TryAddPartitionLevelLocationOverride(request, checkHubRegionOverrideInCache: true))
+                        {
+                            this.addHubRegionProcessingOnlyHeader = true;
+                            DefaultTrace.TraceInformation("Partition level override added by hub-region override for request {0}. Routing to the cached hub region for this request.", request.ResourceAddress);
+                        }
+                        else
+                        {
+                            // No override is present, this means we have not yet discovered the hub region for this partition.
+                            // Route to the account hub region first.
+                            this.retryContext = new RetryContext
+                            {
+                                RetryLocationIndex = 0,
+                                RetryRequestOnPreferredLocations = false
+                            };
+                        }
+
+                        return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
+                    }
+#else
                     if (this.sessionTokenRetryCount > 1)
                     {
                         // When cannot use multiple write locations, then don't retry the request if 
@@ -525,6 +519,7 @@ namespace Microsoft.Azure.Cosmos
 
                         return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
                     }
+#endif
                 }
             }
         }
