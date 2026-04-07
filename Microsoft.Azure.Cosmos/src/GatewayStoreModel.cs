@@ -126,18 +126,9 @@ namespace Microsoft.Azure.Cosmos
                     this.thinClientStoreClient != null &&
                     GatewayStoreModel.IsOperationSupportedByThinClient(request);
 
-                Uri physicalAddress;
-
-                if (DistributedTransactionConstants.IsDistributedTransactionRequest(request.OperationType, request.ResourceType))
-                {
-                    physicalAddress = new Uri(this.endpointManager.ResolveServiceEndpoint(request), DistributedTransactionConstants.EndpointPath);
-                }
-                else
-                {
-                    physicalAddress = ThinClientStoreClient.IsFeedRequest(request.OperationType)
+                Uri physicalAddress = ThinClientStoreClient.IsFeedRequest(request.OperationType)
                         ? this.GetFeedUri(request)
                         : this.GetEntityUri(request);
-                }
 
                 if (canUseThinClient)
                 {
@@ -572,7 +563,18 @@ namespace Microsoft.Azure.Cosmos
                 || request.OperationType == OperationType.Upsert
                 || request.OperationType == OperationType.Replace
                 || request.OperationType == OperationType.Delete
-                || request.OperationType == OperationType.Query))
+                || request.OperationType == OperationType.Query
+                || request.OperationType == OperationType.QueryPlan))
+            {
+                return true;
+            }
+
+            // LatestVersion (Incremental) ChangeFeed on documents.
+            // AllVersionsAndDeletes (FullFidelity) is excluded because it requires
+            // split-handling logic in Compute Gateway (UseGatewayMode is set by ChangeFeedModeFullFidelity).
+            if (request.ResourceType == ResourceType.Document
+                && request.OperationType == OperationType.ReadFeed
+                && GatewayStoreModel.IsLatestVersionChangeFeedRequest(request))
             {
                 return true;
             }
@@ -585,6 +587,19 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Determines if the request is a LatestVersion (Incremental) change feed request that can
+        /// be routed to the thin client. Returns true only when the A-IM header is exactly
+        /// <c>HttpConstants.A_IMHeaderValues.IncrementalFeed</c>. Any other value — including
+        /// Full-Fidelity Feed (AllVersionsAndDeletes) or an unknown future mode — falls back to
+        /// Compute Gateway so that new modes are not accidentally routed to the thin client.
+        /// </summary>
+        internal static bool IsLatestVersionChangeFeedRequest(DocumentServiceRequest request)
+        {
+            string aImHeaderValue = request.Headers[HttpConstants.HttpHeaders.A_IM];
+            return string.Equals(aImHeaderValue, HttpConstants.A_IMHeaderValues.IncrementalFeed, StringComparison.OrdinalIgnoreCase);
         }
         private async Task<AccountProperties> GetDatabaseAccountPropertiesAsync()
         {

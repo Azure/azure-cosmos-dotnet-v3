@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// Only used RESPONSE_DELAY and CONNECTION_DELAY.
         /// 
         /// For <see cref="FaultInjectionServerErrorType.SendDelay"/>, it is the delay added before the request is sent.
-        /// For <see cref="FaultInjectionServerErrorType.ResponseDelay"/>, it is the delay added after the response is recieved.
+        /// For <see cref="FaultInjectionServerErrorType.ResponseDelay"/>, it is the delay added after the response is received.
         /// For <see cref="FaultInjectionServerErrorType.ConnectionDelay"/>, it is the delay added before the connection is established.
         /// 
         /// </summary>
@@ -52,22 +52,37 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <returns>The current <see cref="FaultInjectionServerErrorResultBuilder"/>.</returns>
         public FaultInjectionServerErrorResultBuilder WithDelay(TimeSpan delay)
         {
-            if ( this.serverErrorType == FaultInjectionServerErrorType.SendDelay
-                || this.serverErrorType == FaultInjectionServerErrorType.ResponseDelay 
-                || this.serverErrorType == FaultInjectionServerErrorType.ConnectionDelay)
+            if (this.serverErrorType != FaultInjectionServerErrorType.SendDelay
+                && this.serverErrorType != FaultInjectionServerErrorType.ResponseDelay 
+                && this.serverErrorType != FaultInjectionServerErrorType.ConnectionDelay)
             {
-                this.delay = delay;
-                this.isDelaySet = true;
+                throw new InvalidOperationException(
+                    $"Delay is not applicable for server error type '{this.serverErrorType}'. " +
+                    $"Delay can only be set for SendDelay, ResponseDelay, or ConnectionDelay.");
             }
+
+            this.delay = delay;
+            this.isDelaySet = true;
             return this;
         }
 
+        /// <summary>
+        /// Sets whether to suppress the service request when the fault is injected.
+        /// </summary>
+        /// <param name="suppressServiceRequest">If true, the service request will be suppressed.</param>
+        /// <returns>The current <see cref="FaultInjectionServerErrorResultBuilder"/>.</returns>
         public FaultInjectionServerErrorResultBuilder WithSuppressServiceRequest(bool suppressServiceRequest)
         {
             this.suppressServiceRequest = suppressServiceRequest;
             return this;
         }
 
+        /// <summary>
+        /// Sets the injection rate, which determines the probability that the fault will be injected.
+        /// Must be a value in the range (0, 1]. Default is 1 (100%).
+        /// </summary>
+        /// <param name="injectionRate">The injection rate, in the range (0, 1].</param>
+        /// <returns>The current <see cref="FaultInjectionServerErrorResultBuilder"/>.</returns>
         public FaultInjectionServerErrorResultBuilder WithInjectionRate(double injectionRate)
         {
             if (injectionRate <= 0 || injectionRate > 1)
@@ -86,7 +101,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         public FaultInjectionServerErrorResult Build()
         {
             if ((this.serverErrorType == FaultInjectionServerErrorType.ResponseDelay
-                || this.serverErrorType == FaultInjectionServerErrorType.ConnectionDelay)
+                || this.serverErrorType == FaultInjectionServerErrorType.ConnectionDelay
+                || this.serverErrorType == FaultInjectionServerErrorType.SendDelay)
                 && !this.isDelaySet)
             {
                 throw new ArgumentNullException(nameof(this.delay), "Argument 'delay' required for server error type: " + this.serverErrorType);

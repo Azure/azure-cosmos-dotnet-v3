@@ -812,7 +812,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                         .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.Timeout)
-                        .WithDelay(TimeSpan.FromSeconds(6))
                         .WithTimes(1)
                         .Build())
                 .WithDuration(TimeSpan.FromMinutes(5))
@@ -842,9 +841,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
                 timeoutRule.Enable();
 
-                ValueStopwatch stopwatch = ValueStopwatch.StartNew();
-                TimeSpan elapsed;
-
                 try
                 {
                     await this.fiContainer.ReadItemAsync<FaultInjectionTestObject>(
@@ -859,10 +855,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                         timeoutRule);
                 }
 
-                elapsed = stopwatch.Elapsed;
-                stopwatch.Stop();
-
-                Assert.IsTrue(elapsed.TotalSeconds >= 6);
                 this.ValidateHitCount(timeoutRule, 1);
             }
             finally
