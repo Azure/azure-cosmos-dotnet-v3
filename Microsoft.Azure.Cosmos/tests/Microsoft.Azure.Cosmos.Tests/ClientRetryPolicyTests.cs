@@ -754,6 +754,107 @@
             }
         }
 
+        /// <summary>
+        /// Verifies that when the hub region itself returns 404/1002 with the hub header active,
+        /// the SDK surfaces NoRetry — throwing the exception to the user. The hub is the source
+        /// of truth: if even the hub says "session not available", the document genuinely doesn't
+        /// exist in this session and no further retry is possible.
+        ///
+        /// Flow:
+        ///   1. Read → 404/1002 (sessionTokenRetryCount=1, no hub header)
+        ///   2. Retry to write region → 404/1002 (sessionTokenRetryCount=2, sets addHubRegionProcessingOnlyHeader=true)
+        ///   3. Retry with hub header → 404/1002 from hub (sessionTokenRetryCount=3, enters NoRetry path)
+        ///   Result: ShouldRetry == false → CosmosException thrown to caller
+        /// </summary>
+        [TestMethod]
+        [Owner("aavasthy")]
+        [Description("Validates NoRetry when hub region returns 404/1002 with hub header active — hub is source of truth.")]
+        public async Task ClientRetryPolicy_HubRegion_Returns4041002_WithHubHeader_ShouldNotRetry()
+        {
+            // Arrange: single-master account with endpoint discovery
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enforceSingleMasterSingleWriteLocation: true);
+
+            GlobalPartitionEndpointManagerCore cacheManager = new GlobalPartitionEndpointManagerCore(endpointManager);
+            PartitionKeyRange pkRange = new PartitionKeyRange { Id = "0", MinInclusive = "", MaxExclusive = "FF" };
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                endpointManager,
+                cacheManager,
+                new RetryOptions(),
+                enableEndpointDiscovery,
+                isThinClientEnabled: false);
+
+            DocumentServiceRequest request = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+            request.RequestContext.ResolvedPartitionKeyRange = pkRange;
+
+            // ===== Attempt 1: Read on preferred region → 404/1002 (no hub header) =====
+            retryPolicy.OnBeforeSendRequest(request);
+
+            Assert.IsNull(request.Headers.GetValues(HubRegionHeader),
+                "Attempt 1: Hub header must NOT be present on the initial request.");
+
+            DocumentClientException error1 = new DocumentClientException(
+                message: "404/1002 from preferred read region",
+                innerException: null,
+                statusCode: HttpStatusCode.NotFound,
+                substatusCode: SubStatusCodes.ReadSessionNotAvailable,
+                requestUri: request.RequestContext.LocationEndpointToRoute,
+                responseHeaders: new DictionaryNameValueCollection());
+
+            ShouldRetryResult retry1 = await retryPolicy.ShouldRetryAsync(error1, CancellationToken.None);
+            Assert.IsTrue(retry1.ShouldRetry,
+                "Attempt 1: Should retry after first 404/1002 — routes to write region.");
+
+            // ===== Attempt 2: Retry to write region → 404/1002 (still no hub header, but sets flag) =====
+            retryPolicy.OnBeforeSendRequest(request);
+
+            Assert.IsNull(request.Headers.GetValues(HubRegionHeader),
+                "Attempt 2: Hub header must NOT be present on second attempt (flag set AFTER this error).");
+
+            DocumentClientException error2 = new DocumentClientException(
+                message: "404/1002 from write region",
+                innerException: null,
+                statusCode: HttpStatusCode.NotFound,
+                substatusCode: SubStatusCodes.ReadSessionNotAvailable,
+                requestUri: request.RequestContext.LocationEndpointToRoute,
+                responseHeaders: new DictionaryNameValueCollection());
+
+            ShouldRetryResult retry2 = await retryPolicy.ShouldRetryAsync(error2, CancellationToken.None);
+            Assert.IsTrue(retry2.ShouldRetry,
+                "Attempt 2: Should retry after second 404/1002 — addHubRegionProcessingOnlyHeader is now true.");
+
+            // ===== Attempt 3: Hub header is active, sent to hub region → hub returns 404/1002 =====
+            retryPolicy.OnBeforeSendRequest(request);
+
+            string[] hubHeaderValues = request.Headers.GetValues(HubRegionHeader);
+            Assert.IsNotNull(hubHeaderValues,
+                "Attempt 3: Hub header MUST be present — SDK set it after 2x 404/1002.");
+            Assert.AreEqual(1, hubHeaderValues.Length, "Hub header should have exactly one value.");
+            Assert.AreEqual(bool.TrueString, hubHeaderValues[0], "Hub header value should be 'True'.");
+
+            // Simulate 404/1002 from the hub region itself — document genuinely doesn't exist in session
+            DocumentClientException hubError = new DocumentClientException(
+                message: "404/1002 from hub region — source of truth says document not found",
+                innerException: null,
+                statusCode: HttpStatusCode.NotFound,
+                substatusCode: SubStatusCodes.ReadSessionNotAvailable,
+                requestUri: request.RequestContext.LocationEndpointToRoute,
+                responseHeaders: new DictionaryNameValueCollection());
+
+            ShouldRetryResult retryFromHub = await retryPolicy.ShouldRetryAsync(hubError, CancellationToken.None);
+
+            // ===== CRITICAL ASSERTION: NoRetry — hub is the source of truth =====
+            Assert.IsFalse(retryFromHub.ShouldRetry,
+                "Hub region returned 404/1002 with hub header active. " +
+                "The SDK must NOT retry — the hub is the source of truth. " +
+                "This 404/1002 should surface as a CosmosException to the caller.");
+        }
+
         private async Task ValidateConnectTimeoutTriggersClientRetryPolicyAsync(
             bool isReadRequest,
             bool useMultipleWriteLocations,
