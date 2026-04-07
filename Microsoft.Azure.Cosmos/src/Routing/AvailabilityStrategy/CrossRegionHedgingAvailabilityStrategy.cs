@@ -327,7 +327,7 @@ namespace Microsoft.Azure.Cosmos
 
                 // Record the contacted region at dispatch time so that it is
                 // tracked even if the request is cancelled before a response arrives.
-                if (endpointsByRegion.TryGetValue(targetRegion, out Uri targetEndpoint))
+                if (endpointsByRegion != null && endpointsByRegion.TryGetValue(targetRegion, out Uri targetEndpoint))
                 {
                     trace.Summary.AddRegionContacted(targetRegion, targetEndpoint);
                 }

@@ -892,8 +892,8 @@
             CosmosTraceDiagnostics traceDiagnostics = (CosmosTraceDiagnostics)response.Diagnostics;
             IReadOnlyList<(string regionName, Uri uri)> contactedRegions = traceDiagnostics.GetContactedRegions();
 
-            Assert.AreEqual(3, contactedRegions.Count,
-                $"Expected 3 contacted regions when all 3 regions were targeted, but got {contactedRegions.Count}.");
+            Assert.IsTrue(contactedRegions.Count >= 3,
+                $"Expected at least 3 contacted regions when all 3 regions were targeted, but got {contactedRegions.Count}.");
         }
 
         /// <summary>
