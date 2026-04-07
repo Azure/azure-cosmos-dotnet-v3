@@ -28,6 +28,13 @@ namespace Microsoft.Azure.Cosmos
         private const string ResponseRegion = "Response Region";
 
         /// <summary>
+        /// Internal property key set on hedged (non-primary) write requests when PPAF is enabled.
+        /// When present, the ClientRetryPolicy will skip updating the per-partition failover cache
+        /// to prevent speculative hedge responses from poisoning the cache and causing RU amplification.
+        /// </summary>
+        internal const string SuppressPPAFCacheUpdateKey = "x-ms-suppress-ppaf-cache-update";
+
+        /// <summary>
         /// Latency threshold which activates the first region hedging 
         /// </summary>
         public TimeSpan Threshold { get; private set; }
@@ -338,6 +345,16 @@ namespace Microsoft.Azure.Cosmos
                     List<string> excludeRegions = new List<string>(hedgeRegions);
                     excludeRegions.RemoveAt(requestNumber);
                     clonedRequest.RequestOptions.ExcludeRegions = excludeRegions;
+
+                    // For PPAF write hedging: suppress partition-level failover cache updates
+                    // on hedged (non-primary) requests. Without this, hedged request errors
+                    // poison the PPAF cache, causing all subsequent requests for the same
+                    // partition to think the primary region failed over—triggering more hedging
+                    // and amplifying RU consumption.
+                    if (this.ppafEnabled && !OperationTypeExtensions.IsReadOperation(request.OperationType))
+                    {
+                        clonedRequest.Properties[CrossRegionHedgingAvailabilityStrategy.SuppressPPAFCacheUpdateKey] = true;
+                    }
                 }
 
                 return await this.RequestSenderAndResultCheckAsync(
