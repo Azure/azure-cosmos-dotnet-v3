@@ -1354,6 +1354,52 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [TestMethod]
+        [TestCategory("ThinClient")]
+        public async Task TestThinClientChangeFeedLatestVersionAsync()
+        {
+            // Arrange:
+            string pk = "pk_changefeed";
+            List<TestObject> items = this.GenerateItems(pk).Take(10).ToList();
+            List<TestObject> createdItems = await this.CreateItemsSafeAsync(items);
+
+            Assert.IsTrue(createdItems.Count > 0, "At least one item must be created for the change feed test.");
+
+            // Act: Read change feed using LatestVersion mode
+            List<TestObject> changeFeedResults = new List<TestObject>();
+            FeedIterator<TestObject> changeFeedIterator = this.container.GetChangeFeedIterator<TestObject>(
+                ChangeFeedStartFrom.Beginning(),
+                ChangeFeedMode.LatestVersion,
+                new ChangeFeedRequestOptions()
+                {
+                    PageSizeHint = 10
+                });
+
+            while (changeFeedIterator.HasMoreResults)
+            {
+                FeedResponse<TestObject> response = await changeFeedIterator.ReadNextAsync();
+
+                if (response.StatusCode == HttpStatusCode.NotModified)
+                {
+                    break;
+                }
+
+                string diagnostics = response.Diagnostics.ToString();
+                Assert.IsTrue(diagnostics.Contains("|F4"), "Diagnostics User Agent should contain '|F4' for ThinClient change feed");
+
+                changeFeedResults.AddRange(response);
+            }
+
+            // Assert: Verify all created items appear in the change feed
+            Assert.IsTrue(changeFeedResults.Count >= createdItems.Count,
+                $"Change feed should return at least {createdItems.Count} items but got {changeFeedResults.Count}.");
+
+            HashSet<string> createdIds = new HashSet<string>(createdItems.Select(i => i.Id));
+            HashSet<string> changeFeedIds = new HashSet<string>(changeFeedResults.Select(i => i.Id));
+            Assert.IsTrue(createdIds.IsSubsetOf(changeFeedIds),
+                "All created items should appear in the change feed results.");
+        }
+
         /// <summary>
         /// DelegatingHandler that intercepts HTTP requests and can inject faults
         /// </summary>
