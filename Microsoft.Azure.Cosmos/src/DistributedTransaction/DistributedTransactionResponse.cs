@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -218,6 +219,10 @@ namespace Microsoft.Azure.Cosmos
                     // Validate results count matches operations count
                     if (response.results == null || response.results.Count != serverRequest.Operations.Count)
                     {
+                        DefaultTrace.TraceWarning(
+                            $"DTC response: result count ({response.results?.Count ?? 0}) differs from " +
+                            $"operation count ({serverRequest.Operations.Count}).");
+
                         if (responseMessage.IsSuccessStatusCode)
                         {
                             // Server should guarantee results count equals operations count on success
@@ -314,7 +319,6 @@ namespace Microsoft.Azure.Cosmos
 
                             DistributedTransactionOperationResult operationResult = DistributedTransactionOperationResult.FromJson(operationElement);
                             operationResult.Trace = trace;
-                            operationResult.SessionToken ??= responseMessage.Headers.Session;
                             operationResult.ActivityId = responseMessage.Headers.ActivityId;
                             results.Add(operationResult);
                         }
@@ -370,7 +374,6 @@ namespace Microsoft.Azure.Cosmos
                 this.results.Add(new DistributedTransactionOperationResult(this.StatusCode)
                 {
                     SubStatusCode = this.SubStatusCode,
-                    SessionToken = this.Headers?.Session,
                     ActivityId = this.ActivityId,
                     Trace = trace
                 });
