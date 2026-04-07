@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -55,31 +56,8 @@ namespace Microsoft.Azure.Cosmos
 
                 try
                 {
-                    using (DocumentServiceRequest request = DocumentServiceRequest.Create(
-                        operationType: OperationType.Read,
-                        resourceType: ResourceType.DatabaseAccount,
-                        authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey))
-                    {
-                        if (this.isThinClientEnabled)
-                        {
-                            headers.Add(
-                                ThinClientConstants.EnableThinClientEndpointDiscoveryHeaderName,
-                                this.isThinClientEnabled.ToString());
-                        }
-
-                        using (HttpResponseMessage responseMessage = await this.httpClient.GetAsync(
-                            uri: serviceEndpoint,
-                            additionalHeaders: headers,
-                            resourceType: ResourceType.DatabaseAccount,
-                            timeoutPolicy: HttpTimeoutPolicyControlPlaneRead.Instance,
-                            clientSideRequestStatistics: stats,
-                            cancellationToken: default,
-                            documentServiceRequest: request))
-                         using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
-                         {
-                          return CosmosResource.FromStream<AccountProperties>(documentServiceResponse);
-                         }
-                    }
+                    return await this.ExecuteAccountReadWithRevocationRetryAsync(
+                        serviceEndpoint, headers, stats);
                 }
                 catch (ObjectDisposedException) when (this.cancellationToken.IsCancellationRequested)
                 {
@@ -96,6 +74,66 @@ namespace Microsoft.Azure.Cosmos
                                                 },
                                                 innerException: ex,
                                                 trace: trace);
+                }
+            }
+        }
+
+        private async Task<AccountProperties> ExecuteAccountReadWithRevocationRetryAsync(
+            Uri serviceEndpoint,
+            INameValueCollection headers,
+            IClientSideRequestStatistics stats)
+        {
+            try
+            {
+                return await this.ExecuteAccountReadAsync(serviceEndpoint, headers, stats);
+            }
+            catch (DocumentClientException dce)
+                when (AuthorizationTokenProviderTokenCredential.TryHandleRevocationException(
+                    this.cosmosAuthorization, dce))
+            {
+                DefaultTrace.TraceInformation(
+                    "GatewayAccountReader: AAD token revocation detected on account read. Retrying with fresh token.");
+
+                // Re-add authorization header with the fresh token (cache was reset by TryHandleRevocationException)
+                headers.Remove(HttpConstants.HttpHeaders.Authorization);
+                await this.cosmosAuthorization.AddAuthorizationHeaderAsync(
+                    headersCollection: headers,
+                    serviceEndpoint,
+                    HttpConstants.HttpMethods.Get,
+                    AuthorizationTokenType.PrimaryMasterKey);
+
+                return await this.ExecuteAccountReadAsync(serviceEndpoint, headers, stats);
+            }
+        }
+
+        private async Task<AccountProperties> ExecuteAccountReadAsync(
+            Uri serviceEndpoint,
+            INameValueCollection headers,
+            IClientSideRequestStatistics stats)
+        {
+            using (DocumentServiceRequest request = DocumentServiceRequest.Create(
+                operationType: OperationType.Read,
+                resourceType: ResourceType.DatabaseAccount,
+                authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey))
+            {
+                if (this.isThinClientEnabled)
+                {
+                    headers.Add(
+                        ThinClientConstants.EnableThinClientEndpointDiscoveryHeaderName,
+                        this.isThinClientEnabled.ToString());
+                }
+
+                using (HttpResponseMessage responseMessage = await this.httpClient.GetAsync(
+                    uri: serviceEndpoint,
+                    additionalHeaders: headers,
+                    resourceType: ResourceType.DatabaseAccount,
+                    timeoutPolicy: HttpTimeoutPolicyControlPlaneRead.Instance,
+                    clientSideRequestStatistics: stats,
+                    cancellationToken: default,
+                    documentServiceRequest: request))
+                using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
+                {
+                    return CosmosResource.FromStream<AccountProperties>(documentServiceResponse);
                 }
             }
         }

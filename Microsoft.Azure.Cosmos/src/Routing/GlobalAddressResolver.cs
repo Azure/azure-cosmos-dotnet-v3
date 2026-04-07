@@ -41,6 +41,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly bool isReplicaAddressValidationEnabled;
         private readonly bool enableAsyncCacheExceptionNoSharing;
         private readonly IConnectionStateListener connectionStateListener;
+        private readonly AuthorizationTokenProvider authorizationTokenProvider;
         private IOpenConnectionsHandler openConnectionsHandler;
 
         public GlobalAddressResolver(
@@ -54,7 +55,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             ConnectionPolicy connectionPolicy,
             CosmosHttpClient httpClient,
             IConnectionStateListener connectionStateListener,
-            bool enableAsyncCacheExceptionNoSharing = true)
+            bool enableAsyncCacheExceptionNoSharing = true,
+            AuthorizationTokenProvider authorizationTokenProvider = null)
         {
             this.endpointManager = endpointManager;
             this.partitionKeyRangeLocationCache = partitionKeyRangeLocationCache;
@@ -65,6 +67,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.serviceConfigReader = serviceConfigReader;
             this.httpClient = httpClient;
             this.connectionStateListener = connectionStateListener;
+            this.authorizationTokenProvider = authorizationTokenProvider;
 
             int maxBackupReadEndpoints =
                 !connectionPolicy.EnableReadRequestsFallback.HasValue || connectionPolicy.EnableReadRequestsFallback.Value
@@ -349,7 +352,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                         this.connectionStateListener,
                         enableTcpConnectionEndpointRediscovery: this.enableTcpConnectionEndpointRediscovery,
                         replicaAddressValidationEnabled: this.isReplicaAddressValidationEnabled,
-                        enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
+                        enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing,
+                        authorizationTokenProvider: this.authorizationTokenProvider);
 
                     string location = this.endpointManager.GetLocation(endpoint);
                     AddressResolver addressResolver = new AddressResolver(null, new NullRequestSigner(), location);

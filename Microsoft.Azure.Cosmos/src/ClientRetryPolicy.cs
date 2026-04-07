@@ -389,8 +389,11 @@ namespace Microsoft.Azure.Cosmos
                 return this.ShouldRetryOnUnavailableEndpointStatusCodes();
             }
 
-            // Handle 401 Unauthorized - Check for AAD token revocation with claims challenge
-            if (statusCode == HttpStatusCode.Unauthorized && SubStatusCodes.AadTokenRevoked)
+            // Handle 401 Unauthorized - Check for AAD token revocation (CAE or Emergency) with claims challenge.
+            // Emergency revocation sends substatus 5013; CAE sends 401 + WWW-Authenticate without a specific substatus.
+            if (statusCode == HttpStatusCode.Unauthorized
+                && (subStatusCode == (SubStatusCodes)5013
+                    || !string.IsNullOrEmpty(wwwAuthenticateHeaderValue)))
             {
                 return this.HandleUnauthorizedResponse(wwwAuthenticateHeaderValue);
             }

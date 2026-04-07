@@ -189,5 +189,30 @@ namespace Microsoft.Azure.Cosmos
 
             return wwwAuthenticateHeader.Substring(startIndex, endIndex - startIndex);
         }
+        /// <summary>
+        /// Checks if a DocumentClientException is a 401/5013 token revocation that can be handled 
+        /// by extracting claims from WWW-Authenticate and resetting the token cache.
+        /// Used by code paths outside the handler pipeline (GatewayAccountReader, GatewayAddressCache).
+        /// Returns true if the caller should retry the request.
+        /// </summary>
+        internal static bool TryHandleRevocationException(
+            AuthorizationTokenProvider authorizationTokenProvider,
+            DocumentClientException exception)
+        {
+            if (exception.StatusCode != HttpStatusCode.Unauthorized)
+            {
+                return false;
+            }
+
+            if (!(authorizationTokenProvider is AuthorizationTokenProviderTokenCredential tokenProvider))
+            {
+                return false;
+            }
+
+            string wwwAuthenticate = exception.Headers?.Get(HttpConstants.HttpHeaders.WwwAuthenticate);
+            return tokenProvider.TryHandleTokenRevocation(
+                HttpStatusCode.Unauthorized,
+                wwwAuthenticate);
+        }
     }
 }

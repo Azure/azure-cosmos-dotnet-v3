@@ -284,6 +284,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     INameValueCollection aadTokenRevokedHeaders = args.RequestHeaders;
                     aadTokenRevokedHeaders.Set(WFConstants.BackendHeaders.LocalLSN, lsn);
                     aadTokenRevokedHeaders.Set(WFConstants.BackendHeaders.SubStatus, "5013");
+                    aadTokenRevokedHeaders.Set(
+                        HttpConstants.HttpHeaders.WwwAuthenticate,
+                        this.GenerateWwwAuthenticateForRevocation());
                     storeResponse = new StoreResponse()
                     {
                         Status = 401,
@@ -600,6 +603,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                         WFConstants.BackendHeaders.SubStatus,
                         "5013");
                     httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
+                    httpResponse.Headers.TryAddWithoutValidation(
+                        "WWW-Authenticate",
+                        this.GenerateWwwAuthenticateForRevocation());
                     return httpResponse;
                 default:
                     throw new ArgumentException($"Server error type {this.serverErrorType} is not supported");
@@ -639,6 +645,15 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             string faultInjectionRuleId)
         {
             return $"{{\"code\": \"{statusCode}:{subStatusCode}\",\"message\":\"Fault Injection Server Error: {message}, rule: {faultInjectionRuleId}\"}}";
+        }
+
+        private string GenerateWwwAuthenticateForRevocation()
+        {
+            long currentTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            string claimsJson = "{\"access_token\":{\"nbf\":{\"essential\":false,\"value\":\"" + currentTimestamp.ToString() + "\"}}}";
+            string base64Claims = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(claimsJson));
+
+            return "Bearer realm=\"\", authorization_uri=\"\", error=\"insufficient_claims\", claims=\"" + base64Claims + "\"";
         }
 
         internal class FaultInjectionHttpContent : HttpContent

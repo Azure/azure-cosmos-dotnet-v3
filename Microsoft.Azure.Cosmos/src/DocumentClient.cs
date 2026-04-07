@@ -6805,7 +6805,8 @@ namespace Microsoft.Azure.Cosmos
                 this.ConnectionPolicy,
                 this.httpClient,
                 this.storeClientFactory.GetConnectionStateListener(),
-                this.enableAsyncCacheExceptionNoSharing);
+                this.enableAsyncCacheExceptionNoSharing,
+                authorizationTokenProvider: this.cosmosAuthorization);
 
             this.CreateStoreModel(subscribeRntbdStatus: true);
         }
