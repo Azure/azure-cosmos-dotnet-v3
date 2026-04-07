@@ -69,8 +69,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             }
 
             MemoryStream stream = new MemoryStream();
-            DocumentServiceLeaseContainerInMemory inMemoryContainer = new DocumentServiceLeaseContainerInMemory(container);
-            inMemoryContainer.LeaseStateStream = stream;
+            DocumentServiceLeaseContainerInMemory inMemoryContainer = new DocumentServiceLeaseContainerInMemory(container, stream);
 
             // Act
             await inMemoryContainer.ShutdownAsync();
@@ -90,8 +89,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             container.TryAdd("lease0", new DocumentServiceLeaseCoreEpk { LeaseId = "lease0", LeaseToken = "0", FeedRange = new FeedRangeEpk(new Range<string>("", "FF", true, false)) });
 
             MemoryStream stream = new MemoryStream();
-            DocumentServiceLeaseContainerInMemory inMemoryContainer = new DocumentServiceLeaseContainerInMemory(container);
-            inMemoryContainer.LeaseStateStream = stream;
+            DocumentServiceLeaseContainerInMemory inMemoryContainer = new DocumentServiceLeaseContainerInMemory(container, stream);
 
             // Act
             await inMemoryContainer.ShutdownAsync();
@@ -123,8 +121,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             sourceContainer.TryAdd(originalLease.Id, originalLease);
 
             MemoryStream stream = new MemoryStream();
-            DocumentServiceLeaseContainerInMemory source = new DocumentServiceLeaseContainerInMemory(sourceContainer);
-            source.LeaseStateStream = stream;
+            DocumentServiceLeaseContainerInMemory source = new DocumentServiceLeaseContainerInMemory(sourceContainer, stream);
 
             // Act — persist then deserialize
             await source.ShutdownAsync();
@@ -152,8 +149,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             container.TryAdd("lease0", new DocumentServiceLeaseCoreEpk { LeaseId = "lease0", LeaseToken = "0", Owner = "first", FeedRange = new FeedRangeEpk(new Range<string>("", "FF", true, false)) });
 
             MemoryStream stream = new MemoryStream();
-            DocumentServiceLeaseContainerInMemory inMemoryContainer = new DocumentServiceLeaseContainerInMemory(container);
-            inMemoryContainer.LeaseStateStream = stream;
+            DocumentServiceLeaseContainerInMemory inMemoryContainer = new DocumentServiceLeaseContainerInMemory(container, stream);
 
             // First persist
             await inMemoryContainer.ShutdownAsync();

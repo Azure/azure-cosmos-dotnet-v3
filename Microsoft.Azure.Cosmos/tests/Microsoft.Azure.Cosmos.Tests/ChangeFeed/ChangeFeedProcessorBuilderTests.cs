@@ -270,10 +270,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             ConcurrentDictionary<string, DocumentServiceLease> sourceContainer = new ConcurrentDictionary<string, DocumentServiceLease>();
             sourceContainer.TryAdd(lease.Id, lease);
-            DocumentServiceLeaseContainerInMemory source = new DocumentServiceLeaseContainerInMemory(sourceContainer);
-            source.LeaseStateStream = new MemoryStream();
+            MemoryStream leaseState = new MemoryStream();
+            DocumentServiceLeaseContainerInMemory source = new DocumentServiceLeaseContainerInMemory(sourceContainer, leaseState);
             await source.ShutdownAsync();
-            MemoryStream leaseState = source.LeaseStateStream;
 
             DocumentServiceLeaseStoreManager capturedManager = null;
 

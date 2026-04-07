@@ -14,12 +14,19 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     internal sealed class DocumentServiceLeaseContainerInMemory : DocumentServiceLeaseContainer
     {
         private readonly ConcurrentDictionary<string, DocumentServiceLease> container;
-
-        internal MemoryStream LeaseStateStream { get; set; }
+        private readonly MemoryStream leaseStateStream;
 
         public DocumentServiceLeaseContainerInMemory(ConcurrentDictionary<string, DocumentServiceLease> container)
+            : this(container, leaseStateStream: null)
+        {
+        }
+
+        public DocumentServiceLeaseContainerInMemory(
+            ConcurrentDictionary<string, DocumentServiceLease> container,
+            MemoryStream leaseStateStream)
         {
             this.container = container;
+            this.leaseStateStream = leaseStateStream;
         }
 
         public override Task<IReadOnlyList<DocumentServiceLease>> GetAllLeasesAsync()
@@ -39,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         /// <returns>A task that represents the asynchronous shutdown operation.</returns>
         public override Task ShutdownAsync()
         {
-            if (this.LeaseStateStream == null)
+            if (this.leaseStateStream == null)
             {
                 return Task.CompletedTask;
             }
@@ -56,16 +63,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 epkLeases.Add(lease);
             }
 
-            this.LeaseStateStream.SetLength(0);
+            this.leaseStateStream.SetLength(0);
 
-            using (StreamWriter writer = new StreamWriter(this.LeaseStateStream, encoding: System.Text.Encoding.UTF8, bufferSize: 1024, leaveOpen: true))
+            using (StreamWriter writer = new StreamWriter(this.leaseStateStream, encoding: System.Text.Encoding.UTF8, bufferSize: 1024, leaveOpen: true))
             using (JsonTextWriter jsonWriter = new JsonTextWriter(writer))
             {
                 JsonSerializer serializer = JsonSerializer.Create();
                 serializer.Serialize(jsonWriter, epkLeases);
             }
 
-            this.LeaseStateStream.Position = 0;
+            this.leaseStateStream.Position = 0;
 
             return Task.CompletedTask;
         }

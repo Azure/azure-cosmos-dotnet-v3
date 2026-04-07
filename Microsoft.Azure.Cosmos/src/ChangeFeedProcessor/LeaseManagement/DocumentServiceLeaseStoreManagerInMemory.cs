@@ -24,16 +24,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         }
 
         internal DocumentServiceLeaseStoreManagerInMemory(ConcurrentDictionary<string, DocumentServiceLease> container)
-            : this(new DocumentServiceLeaseUpdaterInMemory(container), container)
+            : this(new DocumentServiceLeaseUpdaterInMemory(container), container, leaseStateStream: null)
         {
         }
 
         internal DocumentServiceLeaseStoreManagerInMemory(
             ConcurrentDictionary<string, DocumentServiceLease> container,
             MemoryStream leaseStateStream)
-            : this(container)
+            : this(new DocumentServiceLeaseUpdaterInMemory(container), container, leaseStateStream)
         {
-            ((DocumentServiceLeaseContainerInMemory)this.leaseContainer).LeaseStateStream = leaseStateStream;
         }
 
         /// <summary>
@@ -44,7 +43,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         /// </remarks>
         internal DocumentServiceLeaseStoreManagerInMemory(
             DocumentServiceLeaseUpdater leaseUpdater,
-            ConcurrentDictionary<string, DocumentServiceLease> container) // For testing purposes only.
+            ConcurrentDictionary<string, DocumentServiceLease> container,
+            MemoryStream leaseStateStream = null)
         {
             if (leaseUpdater == null) throw new ArgumentException(nameof(leaseUpdater));
 
@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 leaseUpdater,
                 new PartitionedByIdCollectionRequestOptionsFactory());
 
-            this.leaseContainer = new DocumentServiceLeaseContainerInMemory(container);
+            this.leaseContainer = new DocumentServiceLeaseContainerInMemory(container, leaseStateStream);
         }
 
         public override DocumentServiceLeaseStore LeaseStore => this.leaseStore;
