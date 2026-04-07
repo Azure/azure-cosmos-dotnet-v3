@@ -21,34 +21,27 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         }
 
         [JsonProperty(IdPropertyName)]
-        [System.Text.Json.Serialization.JsonPropertyName("id")]
         public string LeaseId { get; set; }
 
         [JsonProperty(LeasePartitionKeyPropertyName, NullValueHandling = NullValueHandling.Ignore)]
-        [System.Text.Json.Serialization.JsonPropertyName("partitionKey")]
         public string LeasePartitionKey { get; set; }
 
         [JsonIgnore]
-        [System.Text.Json.Serialization.JsonIgnore]
         public override string PartitionKey => this.LeasePartitionKey;
 
         [JsonProperty("version")]
-        [System.Text.Json.Serialization.JsonPropertyName("version")]
         public DocumentServiceLeaseVersion Version => DocumentServiceLeaseVersion.EPKRangeBasedLease;
 
         [JsonIgnore]
-        [System.Text.Json.Serialization.JsonIgnore]
         public override string Id => this.LeaseId;
 
         [JsonProperty("_etag")]
-        [System.Text.Json.Serialization.JsonPropertyName("_etag")]
         public string ETag { get; set; }
 
         [JsonProperty("LeaseToken")]
         public string LeaseToken { get; set; }
 
         [JsonIgnore]
-        [System.Text.Json.Serialization.JsonIgnore]
         public override string CurrentLeaseToken => this.LeaseToken;
 
         [JsonProperty("FeedRange", NullValueHandling = NullValueHandling.Ignore)]
@@ -68,11 +61,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         }
 
         [JsonIgnore]
-        [System.Text.Json.Serialization.JsonIgnore]
         public override string ConcurrencyToken => this.ETag;
 
         [JsonProperty("properties")]
-        [System.Text.Json.Serialization.JsonPropertyName("properties")]
         public override Dictionary<string, string> Properties { get; set; } = new Dictionary<string, string>();
 
         [JsonProperty("Mode", NullValueHandling = NullValueHandling.Ignore)]

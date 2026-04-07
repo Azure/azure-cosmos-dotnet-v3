@@ -8,10 +8,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
-    using System.Text;
-    using System.Text.Json;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
     using Microsoft.Azure.Documents.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -79,9 +78,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             // Assert
             Assert.IsTrue(stream.Length > 0 || leaseCount == 0);
             stream.Position = 0;
-            string json = Encoding.UTF8.GetString(stream.ToArray());
-            List<JsonElement> elements = JsonSerializer.Deserialize<List<JsonElement>>(json);
-            Assert.AreEqual(leaseCount, elements.Count);
+            List<DocumentServiceLease> deserialized = CosmosContainerExtensions.DefaultJsonSerializer.FromStream<List<DocumentServiceLease>>(stream);
+            Assert.AreEqual(leaseCount, deserialized.Count);
         }
 
         [TestMethod]
@@ -89,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             // Arrange
             ConcurrentDictionary<string, DocumentServiceLease> container = new ConcurrentDictionary<string, DocumentServiceLease>();
-            container.TryAdd("lease0", new DocumentServiceLeaseCore { LeaseId = "lease0", LeaseToken = "0" });
+            container.TryAdd("lease0", new DocumentServiceLeaseCoreEpk { LeaseId = "lease0", LeaseToken = "0", FeedRange = new FeedRangeEpk(new Range<string>("", "FF", true, false)) });
 
             MemoryStream stream = new MemoryStream();
             DocumentServiceLeaseContainerInMemory inMemoryContainer = new DocumentServiceLeaseContainerInMemory(container);
@@ -131,11 +129,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             // Act — persist then deserialize
             await source.ShutdownAsync();
 
-            string json = Encoding.UTF8.GetString(stream.ToArray());
-            List<JsonElement> elements = JsonSerializer.Deserialize<List<JsonElement>>(json);
-            Assert.AreEqual(1, elements.Count);
+            stream.Position = 0;
+            List<DocumentServiceLease> deserialized = CosmosContainerExtensions.DefaultJsonSerializer.FromStream<List<DocumentServiceLease>>(stream);
+            Assert.AreEqual(1, deserialized.Count);
 
-            DocumentServiceLease importedLease = DocumentServiceLeaseContainerInMemory.DeserializeLease(elements[0]);
+            DocumentServiceLease importedLease = deserialized[0];
 
             // Assert
             Assert.IsNotNull(importedLease);
@@ -168,13 +166,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             await inMemoryContainer.ShutdownAsync();
 
             // Assert — stream should contain only the new data
-            string json = Encoding.UTF8.GetString(stream.ToArray());
-            List<JsonElement> elements = JsonSerializer.Deserialize<List<JsonElement>>(json);
-            Assert.AreEqual(1, elements.Count);
-
-            DocumentServiceLease lease = DocumentServiceLeaseContainerInMemory.DeserializeLease(elements[0]);
-            Assert.AreEqual("lease1", lease.Id);
-            Assert.AreEqual("second", lease.Owner);
+            stream.Position = 0;
+            List<DocumentServiceLease> deserialized = CosmosContainerExtensions.DefaultJsonSerializer.FromStream<List<DocumentServiceLease>>(stream);
+            Assert.AreEqual(1, deserialized.Count);
+            Assert.AreEqual("lease1", deserialized[0].Id);
+            Assert.AreEqual("second", deserialized[0].Owner);
         }
 
         #endregion

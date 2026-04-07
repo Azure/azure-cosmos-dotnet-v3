@@ -8,9 +8,10 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.IO;
-    using System.Text.Json;
     using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
+    using Newtonsoft.Json;
     using static Microsoft.Azure.Cosmos.Container;
 
     /// <summary>
@@ -274,14 +275,20 @@ namespace Microsoft.Azure.Cosmos
 
             if (leaseState.Length > 0)
             {
-                string json = System.Text.Encoding.UTF8.GetString(leaseState.ToArray());
-                List<JsonElement> leaseElements = JsonSerializer.Deserialize<List<JsonElement>>(json);
+                leaseState.Position = 0;
+                IReadOnlyList<DocumentServiceLease> leases = CosmosContainerExtensions
+                    .DefaultJsonSerializer
+                    .FromStream<List<DocumentServiceLease>>(leaseState);
 
-                if (leaseElements != null)
+                if (leases != null)
                 {
-                    foreach (JsonElement leaseElement in leaseElements)
+                    foreach (DocumentServiceLease lease in leases)
                     {
-                        DocumentServiceLease lease = DocumentServiceLeaseContainerInMemory.DeserializeLease(leaseElement);
+                        if (lease?.FeedRange == null || !(lease.FeedRange is FeedRangeEpk))
+                        {
+                            throw new InvalidOperationException("Only EPK-based leases with a FeedRange are supported for deserialization.");
+                        }
+
                         container[lease.Id] = lease;
                     }
                 }
