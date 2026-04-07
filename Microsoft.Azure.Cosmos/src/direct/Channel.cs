@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         private readonly int requestTimeoutSeconds;
         private readonly Uri serverUri;
         private readonly bool localRegionRequest;
-        private bool disposed = false;
+        private int disposed;
 
         private readonly ReaderWriterLockSlim stateLock =
             new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         public void InjectFaultInjectionConnectionError(TransportException transportException)
         {
-            if (!this.disposed)
+            if (this.disposed == 0)
             {
                 this.dispatcher.InjectFaultInjectionConnectionError(transportException);
             }
@@ -293,17 +293,18 @@ namespace Microsoft.Azure.Documents.Rntbd
             ((IDisposable) this).Dispose();
         }
 
-        public async Task CloseAsync()
-        {
-            await this.DisposeAsync().ConfigureAwait(false);
-        }
+        public Task CloseAsync() => this.DisposeAsync().AsTask();
 
         // Keep in sync with DisposeAsync().
         void IDisposable.Dispose()
         {
+            if (Interlocked.CompareExchange(ref this.disposed, 1, 0) != 0)
+            {
+                return;
+            }
+
+            GC.SuppressFinalize(this);
             this.chaosInterceptor?.OnChannelDispose(this.ConnectionCorrelationId);
-            this.ThrowIfDisposed();
-            this.disposed = true;
             DefaultTrace.TraceInformation("[RNTBD Channel {0}] Disposing RNTBD Channel {1}", this.ConnectionCorrelationId, this);
 
             Task initTask = null;
@@ -341,19 +342,24 @@ namespace Microsoft.Azure.Documents.Rntbd
                 }
             }
             Debug.Assert(this.dispatcher != null);
-            this.dispatcher.Dispose();
-            this.stateLock.Dispose();
+            try
+            {
+                this.dispatcher.Dispose();
+            }
+            finally
+            {
+                this.stateLock.Dispose();
+            }
         }
 
         // Keep in sync with Dispose().
         public async ValueTask DisposeAsync()
         {
-            if (this.disposed)
+            if (Interlocked.CompareExchange(ref this.disposed, 1, 0) != 0)
             {
                 return;
             }
 
-            this.disposed = true;
             GC.SuppressFinalize(this);
             this.chaosInterceptor?.OnChannelDispose(this.ConnectionCorrelationId);
             DefaultTrace.TraceInformation("[RNTBD Channel {0}] Async disposing RNTBD Channel {1}", this.ConnectionCorrelationId, this);
@@ -428,7 +434,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         private void ThrowIfDisposed()
         {
-            if (this.disposed)
+            if (this.disposed != 0)
             {
                 throw new ObjectDisposedException(nameof(Channel));
             }

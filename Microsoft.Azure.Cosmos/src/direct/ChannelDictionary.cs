@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Documents.Rntbd
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents.FaultInjection;
@@ -16,7 +17,7 @@ namespace Microsoft.Azure.Documents.Rntbd
     internal sealed class ChannelDictionary : IChannelDictionary, IDisposable, IAsyncDisposable
     {
         private readonly ChannelProperties channelProperties;
-        private bool disposed = false;
+        private int disposed;
 
         private ConcurrentDictionary<ServerKey, IChannel> channels =
             new ConcurrentDictionary<ServerKey, IChannel>();
@@ -73,8 +74,12 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         public void Dispose()
         {
-            this.ThrowIfDisposed();
-            this.disposed = true;
+            if (Interlocked.CompareExchange(ref this.disposed, 1, 0) != 0)
+            {
+                return;
+            }
+
+            GC.SuppressFinalize(this);
             foreach (IChannel channel in this.channels.Values)
             {
                 channel.Close();
@@ -83,12 +88,11 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         public async ValueTask DisposeAsync()
         {
-            if (this.disposed)
+            if (Interlocked.CompareExchange(ref this.disposed, 1, 0) != 0)
             {
                 return;
             }
 
-            this.disposed = true;
             GC.SuppressFinalize(this);
 
             List<Task> closeTasks = new List<Task>(this.channels.Count);
@@ -101,17 +105,20 @@ namespace Microsoft.Azure.Documents.Rntbd
             {
                 await Task.WhenAll(closeTasks).ConfigureAwait(false);
             }
-            catch (Exception e)
+            catch (AggregateException ae)
             {
-                DefaultTrace.TraceWarning(
-                    "[RNTBD ChannelDictionary] Async dispose encountered errors during channel closure: {0}",
-                    e.Message);
+                foreach (Exception inner in ae.Flatten().InnerExceptions)
+                {
+                    DefaultTrace.TraceWarning(
+                        "[RNTBD ChannelDictionary] Async dispose encountered error during channel closure: {0}",
+                        inner.Message);
+                }
             }
         }
 
         private void ThrowIfDisposed()
         {
-            if (this.disposed)
+            if (this.disposed != 0)
             {
                 throw new ObjectDisposedException(nameof(ChannelDictionary));
             }

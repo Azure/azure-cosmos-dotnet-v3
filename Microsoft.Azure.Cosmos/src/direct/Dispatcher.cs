@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         private readonly bool enableChannelMultiplexing;
         private readonly Action<string, Exception> clientCertificateFailureHandler;
 
-        private bool disposed = false;
+        private int disposed;
 
         private ServerProperties serverProperties = null;
 
@@ -264,7 +264,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         public void InjectFaultInjectionConnectionError(TransportException transportException)
         {
-            if (!this.disposed)
+            if (this.disposed == 0)
             {
                 this.isFaultInjectionedConnectionError = true;
                 this.faultInjectionTransportException = transportException;
@@ -454,8 +454,12 @@ namespace Microsoft.Azure.Documents.Rntbd
         // Keep in sync with DisposeAsync().
         public void Dispose()
         {
-            this.ThrowIfDisposed();
-            this.disposed = true;
+            if (Interlocked.CompareExchange(ref this.disposed, 1, 0) != 0)
+            {
+                return;
+            }
+
+            GC.SuppressFinalize(this);
 
             DefaultTrace.TraceInformation("[RNTBD Dispatcher {0}] Disposing RNTBD Dispatcher {1}", this.ConnectionCorrelationId, this);
 
@@ -487,12 +491,11 @@ namespace Microsoft.Azure.Documents.Rntbd
         // Keep in sync with Dispose().
         public async ValueTask DisposeAsync()
         {
-            if (this.disposed)
+            if (Interlocked.CompareExchange(ref this.disposed, 1, 0) != 0)
             {
                 return;
             }
 
-            this.disposed = true;
             GC.SuppressFinalize(this);
 
             DefaultTrace.TraceInformation("[RNTBD Dispatcher {0}] Async disposing RNTBD Dispatcher {1}", this.ConnectionCorrelationId, this);
@@ -744,7 +747,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         private void ThrowIfDisposed()
         {
-            if (this.disposed)
+            if (this.disposed != 0)
             {
                 Debug.Assert(this.serverUri != null);
                 throw new ObjectDisposedException(

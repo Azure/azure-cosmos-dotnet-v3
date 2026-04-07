@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Documents.Rntbd
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents.FaultInjection;
@@ -23,7 +24,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         private readonly LoadBalancingPartition singlePartition;
         private readonly LoadBalancingPartition[] partitions;
 
-        private bool disposed = false;
+        private int disposed;
 
         public LoadBalancingChannel(
             Uri serverUri,
@@ -171,17 +172,18 @@ namespace Microsoft.Azure.Documents.Rntbd
             ((IDisposable)this).Dispose();
         }
 
-        public async Task CloseAsync()
-        {
-            await this.DisposeAsync().ConfigureAwait(false);
-        }
+        public Task CloseAsync() => this.DisposeAsync().AsTask();
 
 #region IDisposable
 
         void IDisposable.Dispose()
         {
-            this.ThrowIfDisposed();
-            this.disposed = true;
+            if (Interlocked.CompareExchange(ref this.disposed, 1, 0) != 0)
+            {
+                return;
+            }
+
+            GC.SuppressFinalize(this);
             if (this.singlePartition != null)
             {
                 this.singlePartition.Dispose();
@@ -196,18 +198,18 @@ namespace Microsoft.Azure.Documents.Rntbd
         }
 
         // Keep in sync with Dispose().
-        // TODO: Wire upstream callers (IChannelDictionary) to call DisposeAsync
+        // TODO(#4393): Wire upstream callers (IChannelDictionary) to call DisposeAsync
         // to fully address Path 2 (mass disposal starvation).
         public async ValueTask DisposeAsync()
         {
-            if (this.disposed)
+            if (Interlocked.CompareExchange(ref this.disposed, 1, 0) != 0)
             {
                 return;
             }
 
-            this.disposed = true;
             GC.SuppressFinalize(this);
-            List<Task> disposeTasks = new List<Task>();
+            int capacity = (this.singlePartition != null ? 1 : 0) + (this.partitions?.Length ?? 0);
+            List<Task> disposeTasks = new List<Task>(capacity);
             if (this.singlePartition != null)
             {
                 disposeTasks.Add(this.singlePartition.DisposeAsync().AsTask());
@@ -223,17 +225,20 @@ namespace Microsoft.Azure.Documents.Rntbd
             {
                 await Task.WhenAll(disposeTasks).ConfigureAwait(false);
             }
-            catch (Exception e)
+            catch (AggregateException ae)
             {
-                DefaultTrace.TraceWarning(
-                    "[RNTBD LoadBalancingChannel] Async dispose encountered errors during partition disposal: {0}",
-                    e.Message);
+                foreach (Exception inner in ae.Flatten().InnerExceptions)
+                {
+                    DefaultTrace.TraceWarning(
+                        "[RNTBD LoadBalancingChannel] Async dispose encountered error during partition disposal: {0}",
+                        inner.Message);
+                }
             }
         }
 
         private void ThrowIfDisposed()
         {
-            if (this.disposed)
+            if (this.disposed != 0)
             {
                 Debug.Assert(this.serverUri != null);
                 throw new ObjectDisposedException(string.Format("{0}:{1}",

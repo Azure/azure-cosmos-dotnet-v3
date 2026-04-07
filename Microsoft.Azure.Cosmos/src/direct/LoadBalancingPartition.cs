@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         private readonly int maxCapacity;  // maxChannels * maxRequestsPerChannel
 
         private int requestsPending = 0;  // Atomic.
+        private int disposed;  // Atomic.
         // Clock hand.
         private readonly SequenceGenerator sequenceGenerator =
             new SequenceGenerator();
@@ -358,6 +359,11 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         public async ValueTask DisposeAsync()
         {
+            if (Interlocked.CompareExchange(ref this.disposed, 1, 0) != 0)
+            {
+                return;
+            }
+
             List<Task> disposeTasks;
             this.capacityLock.EnterWriteLock();
             try
@@ -377,11 +383,14 @@ namespace Microsoft.Azure.Documents.Rntbd
             {
                 await Task.WhenAll(disposeTasks).ConfigureAwait(false);
             }
-            catch (Exception e)
+            catch (AggregateException ae)
             {
-                DefaultTrace.TraceWarning(
-                    "[RNTBD LoadBalancingPartition] Async dispose encountered errors during channel disposal: {0}",
-                    e.Message);
+                foreach (Exception inner in ae.Flatten().InnerExceptions)
+                {
+                    DefaultTrace.TraceWarning(
+                        "[RNTBD LoadBalancingPartition] Async dispose encountered error during channel disposal: {0}",
+                        inner.Message);
+                }
             }
 
             try
