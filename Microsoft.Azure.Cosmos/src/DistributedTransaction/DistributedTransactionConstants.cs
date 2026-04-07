@@ -31,5 +31,10 @@ namespace Microsoft.Azure.Cosmos
             return operationType == OperationType.CommitDistributedTransaction 
                 && resourceType == ResourceType.DistributedTransactionBatch;
         }
+
+        internal static string GetCollectionFullName(string database, string container)
+        {
+            return $"dbs/{database}/colls/{container}";
+        }
     }
 }
