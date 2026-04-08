@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -436,7 +437,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             ContainerProperties containerProps = ContainerProperties.CreateWithResourceId("ccZ1ANCszwk=");
             containerProps.PartitionKeyPath = "/pk";
 
+            MockDocumentClient documentClient = new MockDocumentClient();
+            documentClient.sessionContainer = new SessionContainer("testhost");
+
             Mock<CosmosClientContext> contextMock = new Mock<CosmosClientContext>();
+
+            contextMock
+                .Setup(c => c.DocumentClient)
+                .Returns(documentClient);
 
             contextMock
                 .Setup(c => c.SerializerCore)
