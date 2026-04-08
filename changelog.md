@@ -41,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [5650](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5650) Batch: Fixes null ErrorMessage when promoting status from MultiStatus response
 - [5651](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5651) Serializer: Fixes unsafe stream cast in FromStream<T>
 - [5697](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5697) ResourceThrottleRetryPolicy: Fixes cumulativeRetryDelay tracking when x-ms-retry-after-ms header is absent
+- [5035](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5035) Throttling: Fixes aggressive retries for throttled (429) requests in QuorumReader and ConsistencyWriter by yielding early when all replicas return 429
 
 ### <a name="3.58.0-preview.1"/> [3.58.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.58.0-preview.1) - 2026-2-20
 
