@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>Microsoft.Azure.Cosmos.Mcp</AssemblyName>
+    <RootNamespace>Microsoft.Azure.Cosmos.Mcp</RootNamespace>
+    <LangVersion>12.0</LangVersion>
+    <Version>0.1.0-preview</Version>
+    <Company>Microsoft Corporation</Company>
+    <Authors>Microsoft</Authors>
+    <Description>MCP (Model Context Protocol) server extension for Azure Cosmos DB .NET SDK. Enables AI agents to query, explore, and operate on Cosmos DB data with zero infrastructure.</Description>
+    <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
+    <Title>Microsoft Azure Cosmos DB MCP Server</Title>
+    <PackageId>Microsoft.Azure.Cosmos.Mcp</PackageId>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/Azure/azure-cosmos-dotnet-v3</PackageProjectUrl>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <NoWarn>CS1591</NoWarn>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <PackageTags>microsoft;azure;cosmos;cosmosdb;mcp;model-context-protocol;ai;agent</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.58.0" />
+    <PackageReference Include="ModelContextProtocol" Version="1.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.5" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\Icon.png" Pack="true" PackagePath="" />
+  </ItemGroup>
+
+</Project>
