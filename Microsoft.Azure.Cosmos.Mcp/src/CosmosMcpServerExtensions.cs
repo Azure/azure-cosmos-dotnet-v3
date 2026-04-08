@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Mcp
 {
     using System;
+    using Microsoft.Azure.Cosmos.Mcp.Prompts;
     using Microsoft.Azure.Cosmos.Mcp.Resources;
     using Microsoft.Azure.Cosmos.Mcp.Schema;
     using Microsoft.Azure.Cosmos.Mcp.Security;
@@ -63,6 +64,37 @@ namespace Microsoft.Azure.Cosmos.Mcp
                 builder.WithTools<SchemaTool>();
                 builder.WithResources<ContainerMetadataResources>();
             }
+
+            if (options.IsOperationAllowed(McpOperations.Write))
+            {
+                if (!options.DisabledTools.Contains("cosmos_upsert_item"))
+                {
+                    builder.WithTools<UpsertTool>();
+                }
+
+                if (!options.DisabledTools.Contains("cosmos_delete_item"))
+                {
+                    builder.WithTools<DeleteTool>();
+                }
+
+                if (!options.DisabledTools.Contains("cosmos_patch_item"))
+                {
+                    builder.WithTools<PatchTool>();
+                }
+            }
+
+            if (options.IsOperationAllowed(McpOperations.VectorSearch) && options.VectorSearch.Enabled)
+            {
+                builder.WithTools<VectorSearchTool>();
+            }
+
+            if (options.IsOperationAllowed(McpOperations.Diagnostics) || options.IncludeDiagnosticsTools)
+            {
+                builder.WithTools<DiagnosticsTool>();
+            }
+
+            // Always register prompts
+            builder.WithPrompts<CosmosPrompts>();
 
             return builder;
         }
