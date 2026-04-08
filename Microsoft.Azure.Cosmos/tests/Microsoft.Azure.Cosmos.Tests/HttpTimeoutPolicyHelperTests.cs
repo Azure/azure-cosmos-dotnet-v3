@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 CancellationToken.None,
                 executeAsync: (ct) => Task.FromResult("success"),
                 shouldRetryOnResult: null,
-                onException: (ex, isOutOfRetries, timeout) => throw ex);
+                onException: (ex, isOutOfRetries, timeout) => ex);
 
             Assert.AreEqual("success", result);
         }
@@ -51,11 +51,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 shouldRetryOnResult: null,
                 onException: (ex, isOutOfRetries, timeout) =>
                 {
-                    if (isOutOfRetries)
-                    {
-                        throw ex;
-                    }
-                    // Return normally to retry
+                    // Return exception to stop, null to retry
+                    return isOutOfRetries ? ex : null;
                 });
 
             Assert.AreEqual("success after retries", result);
@@ -82,10 +79,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                     shouldRetryOnResult: null,
                     onException: (ex, isOutOfRetries, timeout) =>
                     {
-                        if (isOutOfRetries)
-                        {
-                            throw new InvalidOperationException("out of retries: " + ex.Message);
-                        }
+                        return isOutOfRetries
+                            ? new InvalidOperationException("out of retries: " + ex.Message)
+                            : null;
                     });
             });
 
@@ -106,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     cts.Token,
                     executeAsync: (ct) => Task.FromResult("should not reach"),
                     shouldRetryOnResult: null,
-                    onException: (ex, isOutOfRetries, timeout) => { });
+                    onException: (ex, isOutOfRetries, timeout) => null);
             });
         }
 
@@ -131,6 +127,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     onException: (ex, isOutOfRetries, timeout) =>
                     {
                         Assert.Fail("onException should not be called for user cancellation");
+                        return ex;
                     });
             });
         }
@@ -150,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     return Task.FromResult(attemptCount);
                 },
                 shouldRetryOnResult: (r) => r < 3, // retry while result < 3
-                onException: (ex, isOutOfRetries, timeout) => throw ex);
+                onException: (ex, isOutOfRetries, timeout) => ex);
 
             Assert.AreEqual(3, result);
             Assert.AreEqual(3, attemptCount);
@@ -171,7 +168,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     return Task.FromResult(-1);
                 },
                 shouldRetryOnResult: (r) => true, // always wants retry
-                onException: (ex, isOutOfRetries, timeout) => throw ex);
+                onException: (ex, isOutOfRetries, timeout) => ex);
 
             // Should return the result when out of retries, not loop forever
             Assert.AreEqual(-1, result);
@@ -193,7 +190,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     return Task.FromResult("first attempt");
                 },
                 shouldRetryOnResult: null, // null means never retry on result
-                onException: (ex, isOutOfRetries, timeout) => throw ex);
+                onException: (ex, isOutOfRetries, timeout) => ex);
 
             Assert.AreEqual("first attempt", result);
             Assert.AreEqual(1, attemptCount);
@@ -218,10 +215,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     onException: (ex, isOutOfRetries, timeout) =>
                     {
                         isOutOfRetriesValues.Add(isOutOfRetries);
-                        if (isOutOfRetries)
-                        {
-                            throw ex;
-                        }
+                        return isOutOfRetries ? ex : null;
                     });
             });
 
@@ -252,7 +246,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     onException: (ex, isOutOfRetries, timeout) =>
                     {
                         capturedTimeout = timeout;
-                        throw ex;
+                        return ex;
                     });
             });
 
@@ -277,7 +271,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     onException: (ex, isOutOfRetries, timeout) =>
                     {
                         // Transform exception type (like InferenceService does)
-                        throw new CosmosException(
+                        return new CosmosException(
                             message: "Transformed: " + ex.Message,
                             statusCode: System.Net.HttpStatusCode.RequestTimeout,
                             subStatusCode: 0,
@@ -317,7 +311,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                             receivedCancelledException = true;
                         }
 
-                        throw new InvalidOperationException("timed out");
+                        return new InvalidOperationException("timed out");
                     });
             });
 
@@ -357,10 +351,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 shouldRetryOnResult: null,
                 onException: (ex, isOutOfRetries, timeout) =>
                 {
-                    if (isOutOfRetries)
-                    {
-                        throw ex;
-                    }
+                    return isOutOfRetries ? ex : null;
                 });
 
             Assert.AreEqual("second attempt success", result);
@@ -390,10 +381,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 shouldRetryOnResult: null,
                 onException: (ex, isOutOfRetries, timeout) =>
                 {
-                    if (isOutOfRetries)
-                    {
-                        throw ex;
-                    }
+                    return isOutOfRetries ? ex : null;
                 });
 
             Assert.AreEqual("recovered", result);

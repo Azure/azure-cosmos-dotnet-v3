@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Net.Http;
     using System.Net.Http.Headers;
-    using System.Runtime.ExceptionServices;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -139,98 +138,90 @@ namespace Microsoft.Azure.Cosmos
         {
             DateTime startDateTimeUtc = DateTime.UtcNow;
 
-            return await HttpTimeoutPolicyHelper.ExecuteWithTimeoutAsync(
-                this.inferenceTimeoutPolicy,
-                cancellationToken,
-                executeAsync: async (CancellationToken ct) =>
-                {
-                    using HttpRequestMessage message = new HttpRequestMessage(HttpMethod.Post, this.inferenceEndpoint);
-
-                    // Prepare HTTP request for semantic reranking.
-                    INameValueCollection additionalHeaders = new RequestNameValueCollection();
-                    await this.cosmosAuthorization.AddInferenceAuthorizationHeaderAsync(
-                        headersCollection: additionalHeaders,
-                        this.inferenceEndpoint,
-                        HttpConstants.HttpMethods.Post,
-                        AuthorizationTokenType.AadToken);
-                    additionalHeaders.Add(HttpConstants.HttpHeaders.UserAgent, inferenceUserAgent);
-
-                    // Add all headers to the HTTP request.
-                    foreach (string key in additionalHeaders.AllKeys())
+            try
+            {
+                return await HttpTimeoutPolicyHelper.ExecuteWithTimeoutAsync(
+                    this.inferenceTimeoutPolicy,
+                    cancellationToken,
+                    executeAsync: async (CancellationToken ct) =>
                     {
-                        message.Headers.Add(key, additionalHeaders[key]);
-                    }
+                        using HttpRequestMessage message = new HttpRequestMessage(HttpMethod.Post, this.inferenceEndpoint);
 
-                    // Build the request payload.
-                    Dictionary<string, object> body = this.AddSemanticRerankPayload(rerankContext, documents, options);
+                        // Prepare HTTP request for semantic reranking.
+                        INameValueCollection additionalHeaders = new RequestNameValueCollection();
+                        await this.cosmosAuthorization.AddInferenceAuthorizationHeaderAsync(
+                            headersCollection: additionalHeaders,
+                            this.inferenceEndpoint,
+                            HttpConstants.HttpMethods.Post,
+                            AuthorizationTokenType.AadToken);
+                        additionalHeaders.Add(HttpConstants.HttpHeaders.UserAgent, inferenceUserAgent);
 
-                    message.Content = new StringContent(
-                        Newtonsoft.Json.JsonConvert.SerializeObject(body),
-                        Encoding.UTF8,
-                        RuntimeConstants.MediaTypes.Json);
+                        // Add all headers to the HTTP request.
+                        foreach (string key in additionalHeaders.AllKeys())
+                        {
+                            message.Headers.Add(key, additionalHeaders[key]);
+                        }
 
-                    // Send the request and check for success.
-                    HttpResponseMessage responseMessage = await this.httpClient.SendAsync(message, ct);
+                        // Build the request payload.
+                        Dictionary<string, object> body = this.AddSemanticRerankPayload(rerankContext, documents, options);
 
-                    if (!responseMessage.IsSuccessStatusCode)
+                        message.Content = new StringContent(
+                            Newtonsoft.Json.JsonConvert.SerializeObject(body),
+                            Encoding.UTF8,
+                            RuntimeConstants.MediaTypes.Json);
+
+                        // Send the request and check for success.
+                        HttpResponseMessage responseMessage = await this.httpClient.SendAsync(message, ct);
+
+                        if (!responseMessage.IsSuccessStatusCode)
+                        {
+                            string responseBody = await responseMessage.Content.ReadAsStringAsync();
+                            throw new CosmosException(
+                                message: responseBody,
+                                statusCode: responseMessage.StatusCode,
+                                subStatusCode: 0,
+                                activityId: string.Empty,
+                                requestCharge: 0);
+                        }
+
+                        responseMessage.EnsureSuccessStatusCode();
+
+                        // Deserialize and return the response content.
+                        return await SemanticRerankResult.DeserializeSemanticRerankResultAsync(responseMessage);
+                    },
+                    shouldRetryOnResult: null,
+                    // Use the same re-throw-on-exhaustion pattern as CosmosHttpClientCore so
+                    // future reliability improvements to either path stay in sync.
+                    onException: (Exception exception, bool isOutOfRetries, TimeSpan requestTimeout) =>
                     {
-                        string responseBody = await responseMessage.Content.ReadAsStringAsync();
-                        throw new CosmosException(
-                            message: responseBody,
-                            statusCode: responseMessage.StatusCode,
-                            subStatusCode: 0,
-                            activityId: string.Empty,
-                            requestCharge: 0);
-                    }
-
-                    responseMessage.EnsureSuccessStatusCode();
-
-                    // Deserialize and return the response content.
-                    return await SemanticRerankResult.DeserializeSemanticRerankResultAsync(responseMessage);
-                },
-                shouldRetryOnResult: null,
-                // Inference exception handling intentionally differs from CosmosHttpClientCore:
-                // CosmosHttpClientCore re-throws raw exceptions because TransportHandler catches and wraps them.
-                // InferenceService has no such upstream handler, so it must wrap exceptions in CosmosException
-                // types (RequestTimeout / ServiceUnavailable) directly for the caller.
-                onException: (Exception exception, bool isOutOfRetries, TimeSpan requestTimeout) =>
-                {
-                    switch (exception)
+                        return isOutOfRetries ? exception : null;
+                    });
+            }
+            catch (OperationCanceledException operationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                // Timeout (not user cancellation) — wrap as RequestTimeoutException.
+                string errorMessage = $"Inference Service Request Timeout. Start Time UTC:{startDateTimeUtc}; Total Duration:{(DateTime.UtcNow - startDateTimeUtc).TotalMilliseconds} Ms; Http Client Timeout:{this.httpClient.Timeout.TotalMilliseconds} Ms; Activity id: {System.Diagnostics.Trace.CorrelationManager.ActivityId};";
+                throw CosmosExceptionFactory.CreateRequestTimeoutException(
+                    message: errorMessage,
+                    headers: new Headers()
                     {
-                        case OperationCanceledException operationCanceledException:
-                            if (isOutOfRetries)
-                            {
-                                string errorMessage = $"Inference Service Request Timeout. Start Time UTC:{startDateTimeUtc}; Total Duration:{(DateTime.UtcNow - startDateTimeUtc).TotalMilliseconds} Ms; Request Timeout {requestTimeout.TotalMilliseconds} Ms; Http Client Timeout:{this.httpClient.Timeout.TotalMilliseconds} Ms; Activity id: {System.Diagnostics.Trace.CorrelationManager.ActivityId};";
-                                throw CosmosExceptionFactory.CreateRequestTimeoutException(
-                                    message: errorMessage,
-                                    headers: new Headers()
-                                    {
-                                        ActivityId = System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString()
-                                    },
-                                    innerException: operationCanceledException);
-                            }
-
-                            break;
-                        case HttpRequestException httpRequestException:
-                            if (isOutOfRetries)
-                            {
-                                string errorMessage = $"Inference Service Request Failed. Start Time UTC:{startDateTimeUtc}; Total Duration:{(DateTime.UtcNow - startDateTimeUtc).TotalMilliseconds} Ms; Activity id: {System.Diagnostics.Trace.CorrelationManager.ActivityId};";
-                                throw CosmosExceptionFactory.CreateServiceUnavailableException(
-                                    message: errorMessage,
-                                    headers: new Headers()
-                                    {
-                                        ActivityId = System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString(),
-                                        SubStatusCode = SubStatusCodes.TransportGenerated503
-                                    },
-                                    innerException: httpRequestException);
-                            }
-
-                            break;
-                        default:
-                            ExceptionDispatchInfo.Capture(exception).Throw();
-                            break;
-                    }
-                });
+                        ActivityId = System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString()
+                    },
+                    innerException: operationCanceledException);
+            }
+            catch (HttpRequestException httpRequestException)
+            {
+                // Transport failure — wrap as ServiceUnavailableException.
+                string errorMessage = $"Inference Service Request Failed. Start Time UTC:{startDateTimeUtc}; Total Duration:{(DateTime.UtcNow - startDateTimeUtc).TotalMilliseconds} Ms; Activity id: {System.Diagnostics.Trace.CorrelationManager.ActivityId};";
+                throw CosmosExceptionFactory.CreateServiceUnavailableException(
+                    message: errorMessage,
+                    headers: new Headers()
+                    {
+                        ActivityId = System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString(),
+                        SubStatusCode = SubStatusCodes.TransportGenerated503
+                    },
+                    innerException: httpRequestException);
+            }
         }
 
         /// <summary>

@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Http.Headers;
     using System.Net.Security;
     using System.Reflection;
-    using System.Runtime.ExceptionServices;
     using System.Security.Cryptography.X509Certificates;
     using System.Threading;
     using System.Threading.Tasks;
@@ -413,6 +412,9 @@ namespace Microsoft.Azure.Cosmos
                 {
                     return timeoutPolicy.ShouldRetryBasedOnResponse(currentMethod, response);
                 },
+                // User-initiated cancellation is already handled by HttpTimeoutPolicyHelper
+                // via catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested),
+                // so onException only sees timeout-caused or transient exceptions.
                 onException: (Exception e, bool isOutOfRetries, TimeSpan requestTimeout) =>
                 {
                     switch (e)
@@ -429,7 +431,7 @@ namespace Microsoft.Azure.Cosmos
                                     
                                 if (timeoutPolicy.ShouldThrow503OnTimeout)
                                 {
-                                    throw CosmosExceptionFactory.CreateServiceUnavailableException(
+                                    return CosmosExceptionFactory.CreateServiceUnavailableException(
                                         message: message,
                                         headers: new Headers()
                                         {
@@ -440,27 +442,26 @@ namespace Microsoft.Azure.Cosmos
                                         innerException: e);
                                 }
 
-                                ExceptionDispatchInfo.Capture(e).Throw();
+                                return e;
                             }
 
-                            break;
+                            return null;
                         case WebException webException:
                             if (isOutOfRetries || (!CosmosHttpClientCore.IsSafeToRetry(documentServiceRequest) && !WebExceptionUtility.IsWebExceptionRetriable(webException)))
                             {
-                                ExceptionDispatchInfo.Capture(e).Throw();
+                                return e;
                             }
 
-                            break;
+                            return null;
                         case HttpRequestException httpRequestException:
                             if (isOutOfRetries || !CosmosHttpClientCore.IsSafeToRetry(documentServiceRequest))
                             {
-                                ExceptionDispatchInfo.Capture(e).Throw();
+                                return e;
                             }
 
-                            break;
+                            return null;
                         default:
-                            ExceptionDispatchInfo.Capture(e).Throw();
-                            break;
+                            return e;
                     }
                 });
         }

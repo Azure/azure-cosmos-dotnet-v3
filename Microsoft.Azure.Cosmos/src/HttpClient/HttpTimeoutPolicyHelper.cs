@@ -33,16 +33,17 @@ namespace Microsoft.Azure.Cosmos
         /// Pass null to never retry on a successful result.
         /// </param>
         /// <param name="onException">
-        /// Action called when an exception occurs (after user cancellation is already handled).
+        /// Function called when an exception occurs (after user cancellation is already handled).
         /// Receives the exception, whether retries are exhausted, and the per-attempt request timeout.
-        /// To retry, return normally. To abort, throw an appropriate exception from within the action.
+        /// Return null to retry. Return the original exception to re-throw it with preserved stack trace.
+        /// Return a different exception to throw that instead.
         /// </param>
         internal static async Task<TResult> ExecuteWithTimeoutAsync<TResult>(
             HttpTimeoutPolicy timeoutPolicy,
             CancellationToken cancellationToken,
             Func<CancellationToken, Task<TResult>> executeAsync,
             Func<TResult, bool> shouldRetryOnResult,
-            Action<Exception, bool, TimeSpan> onException)
+            Func<Exception, bool, TimeSpan, Exception> onException)
         {
             IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> timeoutEnumerator =
                 timeoutPolicy.GetTimeoutEnumerator();
@@ -82,8 +83,20 @@ namespace Microsoft.Azure.Cosmos
                 catch (Exception e)
                 {
                     bool isOutOfRetries = !timeoutEnumerator.MoveNext();
-                    onException(e, isOutOfRetries, requestTimeout);
-                    // If onException returns normally, retry the request
+                    Exception exceptionToThrow = onException(e, isOutOfRetries, requestTimeout);
+
+                    if (exceptionToThrow != null)
+                    {
+                        // Cast to object avoids CDX1000 (boxing Exception).
+                        // Same reference → throw; (preserves original stack trace).
+                        // Different reference → throw new exception from callback.
+                        if ((object)exceptionToThrow == (object)e)
+                        {
+                            throw;
+                        }
+
+                        throw exceptionToThrow;
+                    }
                 }
 
                 if (delayForNextRequest != TimeSpan.Zero)
