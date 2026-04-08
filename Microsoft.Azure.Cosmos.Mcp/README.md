@@ -12,6 +12,7 @@ dotnet add package Microsoft.Azure.Cosmos.Mcp
 
 ### 2. Add to your app (stdio transport)
 
+**Connection string auth:**
 ```csharp
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -22,9 +23,20 @@ builder.Services.AddCosmosMcpServer()
 await builder.Build().RunAsync();
 ```
 
+**AAD / Entra ID auth (DefaultAzureCredential):**
+```csharp
+var builder = Host.CreateApplicationBuilder(args);
+
+builder.Services.AddSingleton(new CosmosClient(accountEndpoint, new DefaultAzureCredential()));
+builder.Services.AddCosmosMcpServer()
+    .WithStdioTransport();
+
+await builder.Build().RunAsync();
+```
+
 ### 3. Configure your MCP client
 
-**VS Code / Claude Code (`mcp.json`)**:
+**VS Code / Claude Code (`mcp.json`) — connection string:**
 ```json
 {
   "servers": {
@@ -39,6 +51,23 @@ await builder.Build().RunAsync();
   }
 }
 ```
+
+**VS Code / Claude Code (`mcp.json`) — AAD / Entra ID:**
+```json
+{
+  "servers": {
+    "cosmos-db": {
+      "type": "stdio",
+      "command": "dotnet",
+      "args": ["run", "--project", "./path/to/your/host/"],
+      "env": {
+        "COSMOS_ACCOUNT_ENDPOINT": "https://your-account.documents.azure.com:443/"
+      }
+    }
+  }
+}
+```
+Uses `DefaultAzureCredential` which automatically picks up `az login`, managed identity, Visual Studio credentials, etc.
 
 ## Features
 
