@@ -20,7 +20,8 @@
 
 ## 5. Diagnostics & Tracing
 
-- [ ] 5.1 Include `PreferWritesInHub` in `ClientConfigurationTraceDatum` so the setting is visible in diagnostics
+- [ ] 5.1 Add `PreferWritesInHub` to `ConsistencyConfig` in `ClientConfigurationTraceDatum` so the setting is visible in diagnostics
+- [ ] 5.2 Update serialization in `GetSerializedDatum()` / `TraceDatumJsonWriter` to include the new field in diagnostics output
 
 ## 6. Tests
 
@@ -29,3 +30,6 @@
 - [ ] 6.3 Add unit tests for `LocationCache.ResolveServiceEndpoint` with `preferWritesInHub = true`: writes go to hub, reads follow preferred regions
 - [ ] 6.4 Add unit tests for hub-unavailable fallback: when hub endpoint is marked unavailable, writes fall back to preferred-region ordering
 - [ ] 6.5 Add unit tests confirming no behavior change when `preferWritesInHub = false`
+- [ ] 6.6 Add unit tests for ExcludeRegions interaction: when hub region is in `ExcludeRegions`, writes fall back to preferred-region ordering
+- [ ] 6.7 Add unit tests for ApplicationRegion compatibility: when `ApplicationRegion` is set with `PreferWritesInHub`, writes go to hub and proximity-generated list is used as fallback
+- [ ] 6.8 Add unit tests for diagnostics: verify `PreferWritesInHub` appears in `ClientConfigurationTraceDatum` output for both `true` and `false` values

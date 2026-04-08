@@ -53,8 +53,34 @@ Key classes:
 
 **Rationale**: Prevents silent misconfiguration. Follows the same pattern as the `ApplicationPreferredRegions` + `LimitToEndpoint` validation.
 
+### 5. Interaction with ExcludeRegions
+
+**Decision**: Per-request `RequestOptions.ExcludeRegions` takes precedence over `PreferWritesInHub`. If the hub region is excluded on a specific request, the SDK skips the hub and falls back to the preferred-region-ordered write endpoint resolution (identical to the hub-unavailable fallback path).
+
+**Rationale**: `ExcludeRegions` is a per-request escape hatch that filters applicable endpoints via `LocationCache.GetApplicableEndpoints()`. It already handles the edge case where all regions are excluded by falling back to the hub. Letting exclusion win at the request level is consistent with existing behavior and gives users fine-grained control without conflicting with the client-level `PreferWritesInHub` setting.
+
+### 6. Interaction with Partition-level Circuit Breaker (PPCB)
+
+**Decision**: `PreferWritesInHub` and PPCB are orthogonal. No special interaction logic is needed.
+
+**Rationale**: PPCB operates at the partition-key-range level, tracking health per (partition, region) tuple via `GlobalPartitionEndpointManagerCore`. `PreferWritesInHub` operates at the account level, selecting which region to target for writes. When both are enabled, `PreferWritesInHub` selects the hub as the target region, and PPCB independently monitors partition health within that region. If PPCB detects a failing partition in the hub, it triggers partition-level failover to the next available region — this is unaffected by `PreferWritesInHub`.
+
+### 7. Compatibility with ApplicationRegion
+
+**Decision**: `PreferWritesInHub` works identically regardless of whether `ApplicationRegion` (singular) or `ApplicationPreferredRegions` (list) is used. No additional validation is needed.
+
+**Rationale**: `ApplicationRegion` generates a proximity-ordered preferred regions list via `ConnectionPolicy.SetCurrentLocation()` using `RegionProximityUtil`. The result is stored in the same `PreferredLocations` collection that `ApplicationPreferredRegions` populates directly. Since `PreferWritesInHub` bypasses the preferred list for writes and only consults it as a fallback, the source of the list (explicit vs. proximity-generated) is irrelevant. Reads continue to use the preferred list as normal.
+
+### 8. Diagnostics visibility
+
+**Decision**: Include `PreferWritesInHub` in `ClientConfigurationTraceDatum` so the setting appears in diagnostics output.
+
+**Rationale**: Following the existing pattern where `ApplicationRegion` is tracked in `ConsistencyConfig`, the new flag should be visible for troubleshooting. This ensures that when diagnosing routing behavior, engineers can confirm whether `PreferWritesInHub` was enabled. The flag will be added to `ConsistencyConfig` alongside the existing region configuration properties and serialized via the `GetSerializedDatum()` / `TraceDatumJsonWriter` path.
+
 ## Risks / Trade-offs
 
 - **[Risk] Hub endpoint is down** → Mitigation: Automatic fallback to preferred-region list. The unavailability tracking already exists in `LocationCache`; we just need to check it before committing to the hub endpoint.
 - **[Risk] Subtle interaction with `UseMultipleWriteLocations`** → Mitigation: `PreferWritesInHub` takes precedence for routing, but multi-write semantics for retry and failover remain unchanged. Document this clearly.
 - **[Trade-off] Client-level only** → This cannot be toggled per-request. Accepted because per-request routing adds significant complexity and the primary use case is a global policy decision.
+- **[Risk] ExcludeRegions excludes the hub** → Mitigation: The exclusion filter runs before hub selection. If the hub is excluded, the SDK falls through to preferred-region ordering. This is consistent with the existing behavior where excluding all regions falls back to the hub.
+- **[Risk] PPCB marks hub partitions unhealthy** → Mitigation: PPCB operates independently at partition granularity. Partition-level failover within the hub region is handled by PPCB's existing logic and does not conflict with the account-level hub preference.

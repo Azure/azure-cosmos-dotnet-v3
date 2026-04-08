@@ -24,3 +24,14 @@ The SDK SHALL throw an `ArgumentException` if both `PreferWritesInHub` is `true`
 #### Scenario: Validation rejects conflicting options
 - **WHEN** `PreferWritesInHub` is `true` and `LimitToEndpoint` is `true`
 - **THEN** the SDK SHALL throw an `ArgumentException` during client initialization with a message indicating the conflict
+
+### Requirement: PreferWritesInHub is visible in diagnostics
+The SDK SHALL include the `PreferWritesInHub` setting in `ClientConfigurationTraceDatum` so the configuration is visible in diagnostics output.
+
+#### Scenario: Diagnostics reflect PreferWritesInHub when enabled
+- **WHEN** `PreferWritesInHub` is `true` and the client emits diagnostics
+- **THEN** the diagnostics output SHALL include `PreferWritesInHub` with a value of `true`
+
+#### Scenario: Diagnostics reflect PreferWritesInHub when disabled
+- **WHEN** `PreferWritesInHub` is `false` (default) and the client emits diagnostics
+- **THEN** the diagnostics output SHALL include `PreferWritesInHub` with a value of `false`
