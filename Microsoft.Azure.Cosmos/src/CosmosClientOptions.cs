@@ -320,7 +320,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        TimeSpan InferenceRequestTimeout { get; set; } = TimeSpan.FromSeconds(5);
+        TimeSpan InferenceRequestTimeout { get; set; } = InferenceService.DefaultInferenceRequestTimeout;
 
         /// <summary>
         /// The SDK does a background refresh based on the time interval set to refresh the token credentials.

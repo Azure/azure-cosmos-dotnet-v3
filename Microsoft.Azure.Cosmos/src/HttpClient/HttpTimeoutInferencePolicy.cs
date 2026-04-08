@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Creates an instance with default timeout of 5 seconds and no retries.
         /// </summary>
-        public static readonly HttpTimeoutInferencePolicy InstanceDefault = new HttpTimeoutInferencePolicy(TimeSpan.FromSeconds(5));
+        public static readonly HttpTimeoutInferencePolicy InstanceDefault = new HttpTimeoutInferencePolicy(InferenceService.DefaultInferenceRequestTimeout);
 
         private HttpTimeoutInferencePolicy(TimeSpan requestTimeout)
         {

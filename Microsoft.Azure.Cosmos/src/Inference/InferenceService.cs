@@ -33,6 +33,17 @@ namespace Microsoft.Azure.Cosmos
         private const string inferenceServiceDefaultScope = "https://dbinference.azure.com/.default";
         private const int inferenceServiceDefaultMaxConnectionLimit = 50;
 
+        /// <summary>
+        /// Default timeout for inference requests. Referenced by <see cref="CosmosClientOptions.InferenceRequestTimeout"/>.
+        /// </summary>
+        internal static readonly TimeSpan DefaultInferenceRequestTimeout = TimeSpan.FromSeconds(5);
+
+        /// <summary>
+        /// Minimum HttpClient.Timeout to ensure the per-request CancellationTokenSource controls
+        /// timeout/retry logic rather than the HttpClient itself timing out prematurely.
+        /// </summary>
+        private static readonly TimeSpan MinimumHttpClientTimeout = TimeSpan.FromSeconds(35);
+
         private readonly int inferenceServiceMaxConnectionLimit;
         private readonly string inferenceServiceBaseUrl;
         private readonly Uri inferenceEndpoint;
@@ -104,7 +115,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal InferenceService(HttpMessageHandler messageHandler, Uri inferenceEndpoint, AuthorizationTokenProvider cosmosAuthorization)
         {
-            this.inferenceRequestTimeout = TimeSpan.FromSeconds(5);
+            this.inferenceRequestTimeout = InferenceService.DefaultInferenceRequestTimeout;
             this.inferenceTimeoutPolicy = HttpTimeoutInferencePolicy.Create(this.inferenceRequestTimeout);
             this.httpClient = new HttpClient(messageHandler);
             this.CreateClientHelper(this.httpClient);
@@ -178,6 +189,10 @@ namespace Microsoft.Azure.Cosmos
                     return await SemanticRerankResult.DeserializeSemanticRerankResultAsync(responseMessage);
                 },
                 shouldRetryOnResult: null,
+                // Inference exception handling intentionally differs from CosmosHttpClientCore:
+                // CosmosHttpClientCore re-throws raw exceptions because TransportHandler catches and wraps them.
+                // InferenceService has no such upstream handler, so it must wrap exceptions in CosmosException
+                // types (RequestTimeout / ServiceUnavailable) directly for the caller.
                 onException: (Exception exception, bool isOutOfRetries, TimeSpan requestTimeout) =>
                 {
                     switch (exception)
@@ -224,11 +239,11 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="httpClient">The HttpClient to configure.</param>
         private void CreateClientHelper(HttpClient httpClient)
         {
-            // Set the timeout to be higher than the configured request timeout to allow the
-            // CancellationTokenSource to handle the timeout and retry logic properly
-            httpClient.Timeout = this.inferenceRequestTimeout > TimeSpan.FromSeconds(5)
-                ? this.inferenceRequestTimeout.Add(TimeSpan.FromSeconds(30))
-                : TimeSpan.FromSeconds(35);
+            // Set the timeout to be at least MinimumHttpClientTimeout so the per-request
+            // CancellationTokenSource controls timeout/retry logic instead of HttpClient.Timeout.
+            httpClient.Timeout = this.inferenceRequestTimeout >= InferenceService.MinimumHttpClientTimeout
+                ? this.inferenceRequestTimeout
+                : InferenceService.MinimumHttpClientTimeout;
             httpClient.DefaultRequestHeaders.CacheControl = new CacheControlHeaderValue { NoCache = true };
 
             // Set requested API version header for version enforcement.
