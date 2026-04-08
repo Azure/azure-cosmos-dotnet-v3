@@ -622,6 +622,12 @@ namespace Microsoft.Azure.Documents.Rntbd
         {
             Debug.Assert(Monitor.IsEntered(this.connectionLock));
             this.idleTimer = this.idleTimerPool.GetPooledTimer((int)timeToIdle.TotalSeconds);
+
+            // IMPORTANT: .Unwrap() is essential here. Without it, idleTimerTask would be Task<Task>
+            // and would complete when OnIdleTimerAsync STARTS (returns its inner Task), not when it
+            // FINISHES. StopIdleTimer() and Dispose/DisposeAsync wait on idleTimerTask — if it
+            // completes early, disposal proceeds while OnIdleTimerAsync is still running, causing
+            // use-after-dispose on the connection. Do not remove .Unwrap().
             this.idleTimerTask = this.idleTimer.StartTimerAsync().ContinueWith(this.OnIdleTimerAsync, TaskContinuationOptions.OnlyOnRanToCompletion).Unwrap();
             this.idleTimerTask.ContinueWith(
                 failedTask =>
@@ -738,8 +744,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             catch (Exception e)
             {
                 DefaultTrace.TraceWarning(
-                    "[RNTBD Dispatcher {0}][{1}] Parallel task failed: {2}. Exception: {3}",
-                    this.ConnectionCorrelationId, this, description, e.Message);
+                    "[RNTBD Dispatcher {0}][{1}] Parallel task failed: {2}. Exception: {3}: {4}",
+                    this.ConnectionCorrelationId, this, description, e.GetType().Name, e.Message);
                 // Intentionally swallowing the exception. The caller can't
                 // do anything useful with it.
             }
