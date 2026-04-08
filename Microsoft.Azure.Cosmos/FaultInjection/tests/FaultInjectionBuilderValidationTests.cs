@@ -379,7 +379,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             Assert.IsNotNull(endpoint);
             Assert.AreEqual(3, endpoint.GetReplicaCount());
             Assert.IsFalse(endpoint.IsIncludePrimary());
-            //Assert.AreEqual("dbs/db/colls/col", endpoint.GetResoureName());
+            Assert.AreEqual("dbs/db/colls/col", endpoint.GetResourceName());
         }
 
         #endregion
