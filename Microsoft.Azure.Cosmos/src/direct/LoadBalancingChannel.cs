@@ -221,13 +221,14 @@ namespace Microsoft.Azure.Documents.Rntbd
                     disposeTasks.Add(this.partitions[i].DisposeAsync().AsTask());
                 }
             }
+            Task whenAllTask = Task.WhenAll(disposeTasks);
             try
             {
-                await Task.WhenAll(disposeTasks).ConfigureAwait(false);
+                await whenAllTask.ConfigureAwait(false);
             }
-            catch (AggregateException ae)
+            catch (Exception)
             {
-                foreach (Exception inner in ae.Flatten().InnerExceptions)
+                foreach (Exception inner in whenAllTask.Exception.Flatten().InnerExceptions)
                 {
                     DefaultTrace.TraceWarning(
                         "[RNTBD LoadBalancingChannel] Async dispose encountered error during partition disposal: {0}",

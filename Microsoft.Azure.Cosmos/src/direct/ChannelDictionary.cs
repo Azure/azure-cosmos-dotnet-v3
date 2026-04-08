@@ -101,13 +101,14 @@ namespace Microsoft.Azure.Documents.Rntbd
                 closeTasks.Add(channel.CloseAsync());
             }
 
+            Task whenAllTask = Task.WhenAll(closeTasks);
             try
             {
-                await Task.WhenAll(closeTasks).ConfigureAwait(false);
+                await whenAllTask.ConfigureAwait(false);
             }
-            catch (AggregateException ae)
+            catch (Exception)
             {
-                foreach (Exception inner in ae.Flatten().InnerExceptions)
+                foreach (Exception inner in whenAllTask.Exception.Flatten().InnerExceptions)
                 {
                     DefaultTrace.TraceWarning(
                         "[RNTBD ChannelDictionary] Async dispose encountered error during channel closure: {0}",

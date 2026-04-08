@@ -332,6 +332,12 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         public void Dispose()
         {
+            if (Interlocked.CompareExchange(ref this.disposed, 1, 0) != 0)
+            {
+                return;
+            }
+
+            GC.SuppressFinalize(this);
             this.capacityLock.EnterWriteLock();
             try
             {
@@ -364,6 +370,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                 return;
             }
 
+            GC.SuppressFinalize(this);
+
             List<Task> disposeTasks;
             this.capacityLock.EnterWriteLock();
             try
@@ -379,13 +387,14 @@ namespace Microsoft.Azure.Documents.Rntbd
                 this.capacityLock.ExitWriteLock();
             }
 
+            Task whenAllTask = Task.WhenAll(disposeTasks);
             try
             {
-                await Task.WhenAll(disposeTasks).ConfigureAwait(false);
+                await whenAllTask.ConfigureAwait(false);
             }
-            catch (AggregateException ae)
+            catch (Exception)
             {
-                foreach (Exception inner in ae.Flatten().InnerExceptions)
+                foreach (Exception inner in whenAllTask.Exception.Flatten().InnerExceptions)
                 {
                     DefaultTrace.TraceWarning(
                         "[RNTBD LoadBalancingPartition] Async dispose encountered error during channel disposal: {0}",

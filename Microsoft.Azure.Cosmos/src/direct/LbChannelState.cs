@@ -94,6 +94,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             int disposeInvocationCounter = Interlocked.Increment(ref this.stateDisposeCounter);
             if (disposeInvocationCounter == 1)
             {
+                GC.SuppressFinalize(this);
                 this.channel.Close();
             }
         }
@@ -103,6 +104,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             int disposeInvocationCounter = Interlocked.Increment(ref this.stateDisposeCounter);
             if (disposeInvocationCounter == 1)
             {
+                GC.SuppressFinalize(this);
                 await this.channel.CloseAsync().ConfigureAwait(false);
             }
         }
