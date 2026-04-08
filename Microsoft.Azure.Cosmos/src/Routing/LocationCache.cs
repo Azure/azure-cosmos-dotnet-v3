@@ -174,9 +174,9 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             if (location == null && endpoint == this.defaultEndpoint)
             {
-                if (this.locationInfo.AvailableWriteEndpointByLocation.Any())
+                if (this.locationInfo.AvailableWriteLocations.Count > 0)
                 {
-                    return this.locationInfo.AvailableWriteEndpointByLocation.First().Key;
+                    return this.locationInfo.AvailableWriteLocations[0];
                 }
             }
 
@@ -200,7 +200,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     UriFormat.SafeUnescaped, 
                     StringComparison.OrdinalIgnoreCase) == 0)
             {
-                if (this.CanUseMultipleWriteLocations())
+                if (this.enableMultipleWriteLocations)
                 {
                     regionName = this.GetLocation(this.defaultEndpoint);
                     return regionName != null;

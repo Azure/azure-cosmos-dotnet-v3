@@ -142,6 +142,34 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         }
 
         [TestMethod]
+        [Owner("ntripician")]
+        public void ValidateTryGetLocationForGatewayDiagnosticsOnDefaultEndpointForMultiMasterWithClientOptOut()
+        {
+            // Account is multi-master but client has UseMultipleWriteLocations = false.
+            // Diagnostics should still resolve the default endpoint to the hub region.
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: true,
+                isPreferredLocationsListEmpty: false);
+
+            // Override account setting to multi-master (server-side) while client did not opt in
+            this.databaseAccount = LocationCacheTests.CreateDatabaseAccount(
+                useMultipleWriteLocations: true,
+                enforceSingleMasterSingleWriteLocation: false);
+            this.cache.OnDatabaseAccountRead(this.databaseAccount);
+
+            string expectedHubRegionName = this.databaseAccount.WriteLocationsInternal.First().Name;
+
+            Assert.AreEqual(expectedHubRegionName, this.cache.GetLocation(LocationCacheTests.DefaultEndpoint));
+
+            Assert.AreEqual(true, this.cache.TryGetLocationForGatewayDiagnostics(LocationCacheTests.DefaultEndpoint, out string regionName));
+            Assert.AreEqual(expectedHubRegionName, regionName);
+
+            Assert.AreEqual(true, this.cache.TryGetLocationForGatewayDiagnostics(new Uri(LocationCacheTests.DefaultEndpoint, "random/path"), out regionName));
+            Assert.AreEqual(expectedHubRegionName, regionName);
+        }
+
+        [TestMethod]
         [Owner("atulk")]
         public async Task ValidateRetryOnSessionNotAvailableWithDisableMultipleWriteLocationsAndEndpointDiscoveryDisabled()
         {
