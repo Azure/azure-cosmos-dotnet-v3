@@ -6784,6 +6784,9 @@ namespace Microsoft.Azure.Cosmos
                     remoteCertificateValidationCallback: this.remoteCertificateValidationCallback,
                     distributedTracingOptions: distributedTracingOptions,
                     enableChannelMultiplexing: ConfigurationManager.IsTcpChannelMultiplexingEnabled(),
+                    dnsResolutionFunction: ConfigurationManager.IsTcpDnsDotSuffixEnabled()
+                        ? DnsDotSuffixHelper.ResolveHostAsync
+                        : null,
                     chaosInterceptor: this.chaosInterceptor);
 
                 if (this.transportClientHandlerFactory != null)
