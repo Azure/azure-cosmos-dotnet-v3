@@ -497,6 +497,12 @@
         [Description("Validates full hub caching flow: 2× 404/1002 → hub header → 403/3 (populates cache via PPAF) → retry → subsequent request reuses cache to skip 403/3.")]
         public async Task ClientRetryPolicy_After404With1002Twice_Then403_3_ThenSuccess_CachesHub_AndSubsequentRequestReusesCache()
         {
+            // Ensure hub region processing is enabled for this test
+            string originalHubRegionFlag = Environment.GetEnvironmentVariable(ConfigurationManager.HubRegionProcessingEnabled);
+            Environment.SetEnvironmentVariable(ConfigurationManager.HubRegionProcessingEnabled, "True");
+
+            try
+            {
             // Arrange
             const bool enableEndpointDiscovery = true;
             using GlobalEndpointManager endpointManager = this.Initialize(
@@ -662,6 +668,11 @@
             Assert.IsTrue(cachedOverride, "With addHubRegionOverrideFromCache, cache should route to cached hub from STEP 1's 403/3.");
             Assert.AreEqual(hubRegion, request2.RequestContext.LocationEndpointToRoute,
                 "After 1× 404/1002 with warm cache, should route to cached hub directly (skipping 403/3 discovery).");
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.HubRegionProcessingEnabled, originalHubRegionFlag);
+            }
         }
 
         /// <summary>
@@ -674,6 +685,12 @@
         [DataRow(false, DisplayName = "Multi-master account - Hub header NOT added")]
         public async Task ClientRetryPolicy_After404With1002_AddsHubHeaderOnlySingleMaster_NotMultiMaster(bool isSingleMaster)
         {
+            // Ensure hub region processing is enabled for this test
+            string originalHubRegionFlag = Environment.GetEnvironmentVariable(ConfigurationManager.HubRegionProcessingEnabled);
+            Environment.SetEnvironmentVariable(ConfigurationManager.HubRegionProcessingEnabled, "True");
+
+            try
+            {
             // Arrange
             const bool enableEndpointDiscovery = true;
             using GlobalEndpointManager endpointManager = this.Initialize(
@@ -743,6 +760,11 @@
                     }
                 }
             }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.HubRegionProcessingEnabled, originalHubRegionFlag);
+            }
         }
 
         /// <summary>
@@ -762,6 +784,12 @@
         [Description("Validates NoRetry when hub region returns 404/1002 with hub header active — hub is source of truth.")]
         public async Task ClientRetryPolicy_HubRegion_Returns4041002_WithHubHeader_ShouldNotRetry()
         {
+            // Ensure hub region processing is enabled for this test
+            string originalHubRegionFlag = Environment.GetEnvironmentVariable(ConfigurationManager.HubRegionProcessingEnabled);
+            Environment.SetEnvironmentVariable(ConfigurationManager.HubRegionProcessingEnabled, "True");
+
+            try
+            {
             // Arrange: single-master account with endpoint discovery
             const bool enableEndpointDiscovery = true;
             using GlobalEndpointManager endpointManager = this.Initialize(
@@ -844,6 +872,128 @@
                 "Hub region returned 404/1002 with hub header active. " +
                 "The SDK must NOT retry — the hub is the source of truth. " +
                 "This 404/1002 should surface as a CosmosException to the caller.");
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.HubRegionProcessingEnabled, originalHubRegionFlag);
+            }
+        }
+
+        /// <summary>
+        /// Verifies that when AZURE_COSMOS_HUB_REGION_PROCESSING_ENABLED is set to "False",
+        /// the SDK reverts to the original retry behavior for read requests encountering 404/1002:
+        ///   1. First 404/1002 → retry to write region (RetryLocationIndex=0, PreferredLocations=false)
+        ///   2. Second 404/1002 → NoRetry (give up — original behavior before hub region caching)
+        /// The entire hub region flow is skipped:
+        ///   - No hub header is ever attached to any request
+        ///   - The PPAF/hub cache is never populated or consulted
+        ///   - The 403/3 read-path handler (hub discovery chain) is never triggered
+        /// </summary>
+        [TestMethod]
+        [Owner("aavasthy")]
+        [Description("Validates that disabling hub region processing via env var restores original 404/1002 retry behavior — no hub header, no cache, no hub discovery.")]
+        public async Task ClientRetryPolicy_HubRegionDisabled_FallsBackToOriginalBehavior()
+        {
+            // Arrange: set env var to disable hub region processing
+            string originalValue = Environment.GetEnvironmentVariable(ConfigurationManager.HubRegionProcessingEnabled);
+            try
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.HubRegionProcessingEnabled, "False");
+
+                const bool enableEndpointDiscovery = true;
+                using GlobalEndpointManager endpointManager = this.Initialize(
+                    useMultipleWriteLocations: false,
+                    enableEndpointDiscovery: enableEndpointDiscovery,
+                    isPreferredLocationsListEmpty: false,
+                    enforceSingleMasterSingleWriteLocation: true);
+
+                GlobalPartitionEndpointManagerCore cacheManager = new GlobalPartitionEndpointManagerCore(endpointManager);
+                PartitionKeyRange pkRange = new PartitionKeyRange { Id = "0", MinInclusive = "", MaxExclusive = "FF" };
+
+                ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                    endpointManager,
+                    cacheManager,
+                    new RetryOptions(),
+                    enableEndpointDiscovery,
+                    isThinClientEnabled: false);
+
+                DocumentServiceRequest request = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+                request.RequestContext.ResolvedPartitionKeyRange = pkRange;
+
+                DocumentClientException sessionError = new DocumentClientException(
+                    message: "404/1002",
+                    innerException: null,
+                    statusCode: HttpStatusCode.NotFound,
+                    substatusCode: SubStatusCodes.ReadSessionNotAvailable,
+                    requestUri: ClientRetryPolicyTests.Location1Endpoint,
+                    responseHeaders: new DictionaryNameValueCollection());
+
+                // ===== Attempt 1: 404/1002 → should retry to write region (original behavior) =====
+                retryPolicy.OnBeforeSendRequest(request);
+                Assert.IsNull(request.Headers.GetValues(HubRegionHeader),
+                    "Hub header must NOT be present when hub region processing is disabled.");
+
+                ShouldRetryResult retry1 = await retryPolicy.ShouldRetryAsync(sessionError, CancellationToken.None);
+                Assert.IsTrue(retry1.ShouldRetry, "First 404/1002 should retry to write region (original behavior).");
+
+                // ===== Attempt 2: 404/1002 from write region → NoRetry (original 2-attempt limit) =====
+                retryPolicy.OnBeforeSendRequest(request);
+                Assert.IsNull(request.Headers.GetValues(HubRegionHeader),
+                    "Hub header must NEVER appear when hub region processing is disabled — even after 2x 404/1002.");
+
+                ShouldRetryResult retry2 = await retryPolicy.ShouldRetryAsync(sessionError, CancellationToken.None);
+                Assert.IsFalse(retry2.ShouldRetry,
+                    "Second 404/1002 must return NoRetry — original behavior without hub region processing. " +
+                    "No hub header, no hub discovery, just the classic 2-attempt limit.");
+
+                // ===== Verify cache was never populated =====
+                // With flag disabled, TryAddPartitionLevelLocationOverride was never called with the hub path,
+                // so the PPAF cache should have no hub region entry for this partition.
+                bool cacheHit = cacheManager.TryAddPartitionLevelLocationOverride(request, addHubRegionOverrideFromCache: true);
+                Assert.IsFalse(cacheHit,
+                    "PPAF/hub cache must NOT be populated when hub region processing is disabled. " +
+                    "No hub discovery occurred, so no cache entry should exist.");
+
+                // ===== Verify 403/3 on a separate read follows write-path, not hub read-path =====
+                // Create a fresh policy to simulate an independent request that gets 403/3
+                ClientRetryPolicy retryPolicy2 = new ClientRetryPolicy(
+                    endpointManager,
+                    cacheManager,
+                    new RetryOptions(),
+                    enableEndpointDiscovery,
+                    isThinClientEnabled: false);
+
+                DocumentServiceRequest request2 = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+                request2.RequestContext.ResolvedPartitionKeyRange = pkRange;
+                retryPolicy2.OnBeforeSendRequest(request2);
+
+                // Simulate a 403/3 (WriteForbidden) on a read request
+                // With hub enabled, this would enter the hub read-path handler.
+                // With hub disabled, addHubRegionProcessingOnlyHeader is false, so it falls through
+                // to the normal write-path handler which calls ShouldRetryOnEndpointFailureAsync.
+                DocumentClientException writeForbidden = new DocumentClientException(
+                    message: "403/3 WriteForbidden",
+                    innerException: null,
+                    statusCode: HttpStatusCode.Forbidden,
+                    substatusCode: SubStatusCodes.WriteForbidden,
+                    requestUri: ClientRetryPolicyTests.Location1Endpoint,
+                    responseHeaders: new DictionaryNameValueCollection());
+
+                ShouldRetryResult retry403 = await retryPolicy2.ShouldRetryAsync(writeForbidden, CancellationToken.None);
+                // The write-path handler triggers endpoint rediscovery — it should retry
+                Assert.IsTrue(retry403.ShouldRetry,
+                    "403/3 on read with hub disabled should follow write-path handler (endpoint rediscovery), not hub read-path.");
+
+                // And hub header must still NOT be present
+                retryPolicy2.OnBeforeSendRequest(request2);
+                Assert.IsNull(request2.Headers.GetValues(HubRegionHeader),
+                    "Hub header must NOT appear even after 403/3 when hub region processing is disabled.");
+            }
+            finally
+            {
+                // Restore original env var value
+                Environment.SetEnvironmentVariable(ConfigurationManager.HubRegionProcessingEnabled, originalValue);
+            }
         }
 
         private async Task ValidateConnectTimeoutTriggersClientRetryPolicyAsync(

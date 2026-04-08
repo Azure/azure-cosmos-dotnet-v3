@@ -2508,6 +2508,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ConnectionMode connectionMode,
             bool enablePartitionLevelFailover)
         {
+            // Ensure hub region processing is enabled for this test
+            string originalHubRegionFlag = Environment.GetEnvironmentVariable(ConfigurationManager.HubRegionProcessingEnabled);
+            Environment.SetEnvironmentVariable(ConfigurationManager.HubRegionProcessingEnabled, "True");
+
+            try
+            {
             int requestCount = 0;
             int return404Count = 0;
             const int maxReturn404 = 2;
@@ -2741,6 +2747,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 testItem.id,
                 new Cosmos.PartitionKey(testItem.pk));
             Console.WriteLine("Diagnostics for final read request 2: " + response2.Diagnostics.ToString());
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.HubRegionProcessingEnabled, originalHubRegionFlag);
+            }
         }
 
         [TestMethod]
@@ -2749,6 +2760,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                      "Verifies hub header persists through 403/3 retries and request eventually succeeds.")]
         public async Task ReadItemAsync_HubRegionDiscovery_FullFlow_With403_3_Retry()
         {
+            // Ensure hub region processing is enabled for this test
+            string originalHubRegionFlag = Environment.GetEnvironmentVariable(ConfigurationManager.HubRegionProcessingEnabled);
+            Environment.SetEnvironmentVariable(ConfigurationManager.HubRegionProcessingEnabled, "True");
+
+            try
+            {
             int docReadRequestCount = 0;
             int return404Count = 0;
             int return403Count = 0;
@@ -2867,6 +2884,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Verify hub header persisted through 403/3 retry to the final successful request
             Assert.IsTrue(hubHeaderOnFinalRequest,
                 "Hub region header MUST persist on the successful request after 403/3 retry.");
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.HubRegionProcessingEnabled, originalHubRegionFlag);
+            }
         }
 
         [TestMethod]
@@ -2884,6 +2906,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ConnectionMode connectionMode,
             bool enablePartitionLevelFailover)
         {
+            // Ensure hub region processing is enabled for this test
+            string originalHubRegionFlag = Environment.GetEnvironmentVariable(ConfigurationManager.HubRegionProcessingEnabled);
+            Environment.SetEnvironmentVariable(ConfigurationManager.HubRegionProcessingEnabled, "True");
+
+            try
+            {
             // Track all document read requests and their hub header state
             int requestCount = 0;
             int return404Count = 0;
@@ -3091,6 +3119,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Clean up the test item
             await container.DeleteItemAsync<ToDoActivity>(testItem.id, new PartitionKey(testItem.pk));
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.HubRegionProcessingEnabled, originalHubRegionFlag);
+            }
         }
 
         private async Task TryCreateItems(List<CosmosIntegrationTestObject> testItems)
