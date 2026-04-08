@@ -141,6 +141,53 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             Assert.AreEqual(expectedHubRegionName, regionName);
         }
 
+        /// <summary>
+        /// Validates that for multi-master accounts (server-side EnableMultipleWriteLocations = true),
+        /// TryGetLocationForGatewayDiagnostics correctly resolves the hub region name for the default endpoint
+        /// even when the client has UseMultipleWriteLocations disabled.
+        /// </summary>
+        [TestMethod]
+        [Owner("ntripician")]
+        public void ValidateTryGetLocationForGatewayDiagnosticsOnDefaultEndpointForMultiMasterWithClientOptOut()
+        {
+            // Account is multi-master (EnableMultipleWriteLocations = true) but client has UseMultipleWriteLocations = false
+            AccountProperties accountWithMultiMaster = new AccountProperties()
+            {
+                EnableMultipleWriteLocations = true,
+                ReadLocationsInternal = new Collection<AccountRegion>()
+                {
+                    { new AccountRegion() { Name = "location1", Endpoint = LocationCacheTests.Location1Endpoint.ToString() } },
+                    { new AccountRegion() { Name = "location2", Endpoint = LocationCacheTests.Location2Endpoint.ToString() } },
+                    { new AccountRegion() { Name = "location3", Endpoint = LocationCacheTests.Location3Endpoint.ToString() } },
+                    { new AccountRegion() { Name = "location4", Endpoint = LocationCacheTests.Location4Endpoint.ToString() } },
+                },
+                WriteLocationsInternal = new Collection<AccountRegion>()
+                {
+                    { new AccountRegion() { Name = "location1", Endpoint = LocationCacheTests.Location1Endpoint.ToString() } },
+                    { new AccountRegion() { Name = "location2", Endpoint = LocationCacheTests.Location2Endpoint.ToString() } },
+                    { new AccountRegion() { Name = "location3", Endpoint = LocationCacheTests.Location3Endpoint.ToString() } },
+                }
+            };
+
+            LocationCache localCache = new LocationCache(
+                preferredLocations: new List<string>() { "location1", "location2", "location3" }.AsReadOnly(),
+                defaultEndpoint: LocationCacheTests.DefaultEndpoint,
+                enableEndpointDiscovery: true,
+                connectionLimit: 10,
+                useMultipleWriteLocations: false); // client opt-out
+
+            localCache.OnDatabaseAccountRead(accountWithMultiMaster);
+
+            string expectedHubRegionName = accountWithMultiMaster.WriteLocationsInternal.First().Name;
+
+            // Default endpoint should resolve to the hub write region even with client opt-out
+            Assert.AreEqual(true, localCache.TryGetLocationForGatewayDiagnostics(LocationCacheTests.DefaultEndpoint, out string regionName));
+            Assert.AreEqual(expectedHubRegionName, regionName);
+
+            Assert.AreEqual(true, localCache.TryGetLocationForGatewayDiagnostics(new Uri(LocationCacheTests.DefaultEndpoint, "random/path"), out regionName));
+            Assert.AreEqual(expectedHubRegionName, regionName);
+        }
+
         [TestMethod]
         [Owner("atulk")]
         public async Task ValidateRetryOnSessionNotAvailableWithDisableMultipleWriteLocationsAndEndpointDiscoveryDisabled()
