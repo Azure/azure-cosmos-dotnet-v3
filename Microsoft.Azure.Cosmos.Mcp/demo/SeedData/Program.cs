@@ -45,28 +45,11 @@ Console.WriteLine("\n✅ All demo data seeded successfully!");
 // ═══════════════════════════════════════════════════════════════
 static async Task SeedEcommerceAsync(CosmosClient client)
 {
-    Console.WriteLine("\n📦 Creating ecommerce-demo database...");
-    Database db = await client.CreateDatabaseIfNotExistsAsync("ecommerce-demo", throughput: 400);
+    Console.WriteLine("\n📦 Seeding ecommerce-demo...");
+    Database db = client.GetDatabase("ecommerce-demo");
 
-    // Products container
-    Console.WriteLine("  Creating products container...");
-    Container products = await db.CreateContainerIfNotExistsAsync(
-        new ContainerProperties("products", "/category")
-        {
-            IndexingPolicy = new IndexingPolicy
-            {
-                IncludedPaths = { new IncludedPath { Path = "/*" } },
-                ExcludedPaths = { new ExcludedPath { Path = "/description/?" } },
-                CompositeIndexes =
-                {
-                    new System.Collections.ObjectModel.Collection<CompositePath>
-                    {
-                        new CompositePath { Path = "/category", Order = CompositePathSortOrder.Ascending },
-                        new CompositePath { Path = "/price", Order = CompositePathSortOrder.Descending }
-                    }
-                }
-            }
-        });
+    Console.WriteLine("  Inserting products...");
+    Container products = db.GetContainer("products");
 
     var productData = new Dictionary<string, object>[]
     {
@@ -89,9 +72,8 @@ static async Task SeedEcommerceAsync(CosmosClient client)
     Console.WriteLine($"    ✓ {productData.Length} products upserted");
 
     // Orders container
-    Console.WriteLine("  Creating orders container...");
-    Container orders = await db.CreateContainerIfNotExistsAsync(
-        new ContainerProperties("orders", "/customerId"));
+    Console.WriteLine("  Inserting orders...");
+    Container orders = db.GetContainer("orders");
 
     var orderData = new[]
     {
@@ -117,15 +99,11 @@ static async Task SeedEcommerceAsync(CosmosClient client)
 // ═══════════════════════════════════════════════════════════════
 static async Task SeedIotTelemetryAsync(CosmosClient client)
 {
-    Console.WriteLine("\n🌡️  Creating iot-telemetry-demo database...");
-    Database db = await client.CreateDatabaseIfNotExistsAsync("iot-telemetry-demo", throughput: 400);
+    Console.WriteLine("\n🌡️  Seeding iot-telemetry-demo...");
+    Database db = client.GetDatabase("iot-telemetry-demo");
 
-    Console.WriteLine("  Creating sensor-readings container...");
-    Container readings = await db.CreateContainerIfNotExistsAsync(
-        new ContainerProperties("sensor-readings", "/deviceId")
-        {
-            DefaultTimeToLive = 86400 * 30 // 30 day TTL
-        });
+    Console.WriteLine("  Inserting sensor readings...");
+    Container readings = db.GetContainer("sensor-readings");
 
     var devices = new[] { "device-temp-001", "device-temp-002", "device-humidity-001", "device-pressure-001" };
     var locations = new[] { "Building-A Floor-1", "Building-A Floor-2", "Building-B Floor-1", "Building-B Floor-2" };
@@ -171,9 +149,8 @@ static async Task SeedIotTelemetryAsync(CosmosClient client)
     Console.WriteLine($"    ✓ {count} sensor readings upserted");
 
     // Device registry
-    Console.WriteLine("  Creating device-registry container...");
-    Container registry = await db.CreateContainerIfNotExistsAsync(
-        new ContainerProperties("device-registry", "/location"));
+    Console.WriteLine("  Inserting device registry...");
+    Container registry = db.GetContainer("device-registry");
 
     var deviceEntries = new[]
     {
@@ -195,12 +172,11 @@ static async Task SeedIotTelemetryAsync(CosmosClient client)
 // ═══════════════════════════════════════════════════════════════
 static async Task SeedSupportTicketsAsync(CosmosClient client)
 {
-    Console.WriteLine("\n🎫 Creating support-tickets-demo database...");
-    Database db = await client.CreateDatabaseIfNotExistsAsync("support-tickets-demo", throughput: 400);
+    Console.WriteLine("\n🎫 Seeding support-tickets-demo...");
+    Database db = client.GetDatabase("support-tickets-demo");
 
-    Console.WriteLine("  Creating tickets container...");
-    Container tickets = await db.CreateContainerIfNotExistsAsync(
-        new ContainerProperties("tickets", "/priority"));
+    Console.WriteLine("  Inserting tickets...");
+    Container tickets = db.GetContainer("tickets");
 
     var ticketData = new[]
     {
