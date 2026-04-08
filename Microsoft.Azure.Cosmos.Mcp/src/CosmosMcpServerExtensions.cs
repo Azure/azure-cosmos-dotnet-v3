@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Mcp
 {
     using System;
     using Microsoft.Azure.Cosmos.Mcp.Resources;
+    using Microsoft.Azure.Cosmos.Mcp.Schema;
     using Microsoft.Azure.Cosmos.Mcp.Security;
     using Microsoft.Azure.Cosmos.Mcp.Tools;
     using Microsoft.Extensions.DependencyInjection;
@@ -28,6 +29,10 @@ namespace Microsoft.Azure.Cosmos.Mcp
 
             services.AddSingleton(options);
             services.AddSingleton<OperationFilter>();
+            services.AddSingleton<SchemaInferrer>();
+            services.AddSingleton(sp => new SchemaCache(
+                sp.GetRequiredService<SchemaInferrer>(),
+                options.SchemaDiscovery.CacheDuration));
 
             IMcpServerBuilder builder = services.AddMcpServer(serverOptions =>
             {
@@ -51,6 +56,12 @@ namespace Microsoft.Azure.Cosmos.Mcp
             if (options.IsOperationAllowed(McpOperations.Read))
             {
                 builder.WithTools<PointReadTool>();
+            }
+
+            if (options.IsOperationAllowed(McpOperations.SchemaDiscovery))
+            {
+                builder.WithTools<SchemaTool>();
+                builder.WithResources<ContainerMetadataResources>();
             }
 
             return builder;
