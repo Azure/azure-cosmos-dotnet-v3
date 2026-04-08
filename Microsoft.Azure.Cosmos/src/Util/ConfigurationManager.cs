@@ -137,6 +137,14 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal static readonly string DiagnosticsMaxSummarySizeVariable = "AZURE_COSMOS_DIAGNOSTICS_MAX_SUMMARY_SIZE";
 
+        /// <summary>
+        /// Environment variable name to enable DNS dot-suffix (FQDN trailing dot) for
+        /// Direct mode TCP connections. When enabled, appends a trailing '.' to hostnames
+        /// before DNS resolution to bypass Kubernetes ndots search-domain expansion.
+        /// See: https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5730
+        /// </summary>
+        internal static readonly string TcpDnsDotSuffixEnabled = "AZURE_COSMOS_TCP_DNS_DOT_SUFFIX_ENABLED";
+
         public static T GetEnvironmentVariable<T>(string variable, T defaultValue)
         {
             string value = Environment.GetEnvironmentVariable(variable);
@@ -412,6 +420,23 @@ namespace Microsoft.Azure.Cosmos
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.UseLengthAwareRangeComparator,
                         defaultValue: defaultValue);
+        }
+
+        /// <summary>
+        /// Gets the boolean value indicating if DNS dot-suffix (FQDN trailing dot) is enabled
+        /// for Direct mode TCP connections. When enabled, appends a trailing '.' to hostnames
+        /// before DNS resolution, causing the resolver to treat them as absolute (fully qualified)
+        /// names and skip search-domain expansion. This avoids unnecessary DNS lookups on Kubernetes
+        /// where ndots:5 causes multiple failed search-domain attempts for Cosmos DB endpoints.
+        /// Default: false (opt-in).
+        /// </summary>
+        /// <returns>A boolean flag indicating if TCP DNS dot-suffix is enabled.</returns>
+        public static bool IsTcpDnsDotSuffixEnabled()
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.TcpDnsDotSuffixEnabled,
+                        defaultValue: false);
         }
     }
 }
