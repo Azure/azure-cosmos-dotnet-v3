@@ -74,12 +74,5 @@ namespace Microsoft.Azure.Cosmos.Tests
             string result = DnsDotSuffixHelper.ToFqdnHostName("cosmosdb");
             Assert.AreEqual("cosmosdb.", result);
         }
-
-        [TestMethod]
-        public void CreateDnsResolutionFunction_ReturnsNonNullFunction()
-        {
-            Func<string, Task<IPAddress>> resolver = DnsDotSuffixHelper.CreateDnsResolutionFunction();
-            Assert.IsNotNull(resolver);
-        }
     }
 }

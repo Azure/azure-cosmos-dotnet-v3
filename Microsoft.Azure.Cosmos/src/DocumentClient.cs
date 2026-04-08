@@ -6783,7 +6783,7 @@ namespace Microsoft.Azure.Cosmos
                     distributedTracingOptions: distributedTracingOptions,
                     enableChannelMultiplexing: ConfigurationManager.IsTcpChannelMultiplexingEnabled(),
                     dnsResolutionFunction: ConfigurationManager.IsTcpDnsDotSuffixEnabled()
-                        ? DnsDotSuffixHelper.CreateDnsResolutionFunction()
+                        ? DnsDotSuffixHelper.ResolveHostAsync
                         : null,
                     chaosInterceptor: this.chaosInterceptor);
 

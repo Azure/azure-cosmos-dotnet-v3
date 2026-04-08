@@ -4,9 +4,9 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
     using System.Net;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Documents.Rntbd;
 
     /// <summary>
     /// Helper for DNS dot-suffix (FQDN trailing dot) resolution.
@@ -42,14 +42,10 @@ namespace Microsoft.Azure.Cosmos
         /// Intended for use with <c>StoreClientFactory.dnsResolutionFunction</c>.
         /// </summary>
         /// <returns>A function that resolves a dot-suffixed hostname to an <see cref="IPAddress"/>.</returns>
-        internal static Func<string, Task<IPAddress>> CreateDnsResolutionFunction()
+        internal static Task<IPAddress> ResolveHostAsync(string hostName)
         {
-            return async (string hostName) =>
-            {
-                string fqdnHost = DnsDotSuffixHelper.ToFqdnHostName(hostName);
-                IPAddress[] addresses = await Dns.GetHostAddressesAsync(fqdnHost);
-                return addresses[0];
-            };
+            string fqdnHost = DnsDotSuffixHelper.ToFqdnHostName(hostName);
+            return Connection.ResolveHostAsync(fqdnHost, includeIPv6Addresses: true);
         }
     }
 }
