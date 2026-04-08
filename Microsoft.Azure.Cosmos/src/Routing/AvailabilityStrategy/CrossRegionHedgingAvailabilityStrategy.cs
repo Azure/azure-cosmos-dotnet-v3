@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -156,10 +157,6 @@ namespace Microsoft.Azure.Cosmos
                             request.RequestOptions?.ExcludeRegions,
                             isReadRequest);
 
-                    ReadOnlyDictionary<string, Uri> endpointsByRegion = isReadRequest
-                        ? client.DocumentClient.GlobalEndpointManager.GetAvailableReadEndpointsByLocation()
-                        : client.DocumentClient.GlobalEndpointManager.GetAvailableWriteEndpointsByLocation();
-
                     List<Task> requestTasks = new List<Task>(hedgeRegions.Count + 1);
 
                     HedgingResponse hedgeResponse = null;
@@ -181,7 +178,8 @@ namespace Microsoft.Azure.Cosmos
                                         hedgeRegions: hedgeRegions,
                                         requestNumber: requestNumber,
                                         trace: trace,
-                                        endpointsByRegion: endpointsByRegion,
+                                        globalEndpointManager: client.DocumentClient.GlobalEndpointManager,
+                                        isReadRequest: isReadRequest,
                                         hedgeRequestsCancellationTokenSource: hedgeRequestsCancellationTokenSource);
 
                                 requestTasks.Add(requestTask);
@@ -312,7 +310,8 @@ namespace Microsoft.Azure.Cosmos
             IReadOnlyCollection<string> hedgeRegions,
             int requestNumber,
             ITrace trace,
-            ReadOnlyDictionary<string, Uri> endpointsByRegion,
+            GlobalEndpointManager globalEndpointManager,
+            bool isReadRequest,
             CancellationTokenSource hedgeRequestsCancellationTokenSource)
         {
             RequestMessage clonedRequest;
@@ -325,13 +324,6 @@ namespace Microsoft.Azure.Cosmos
 
                 string targetRegion = hedgeRegions.ElementAt(requestNumber);
 
-                // Record the contacted region at dispatch time so that it is
-                // tracked even if the request is cancelled before a response arrives.
-                if (endpointsByRegion != null && endpointsByRegion.TryGetValue(targetRegion, out Uri targetEndpoint))
-                {
-                    trace.Summary.AddRegionContacted(targetRegion, targetEndpoint);
-                }
-
                 //we do not want to exclude any regions for the primary request
                 if (requestNumber > 0)
                 {
@@ -340,12 +332,30 @@ namespace Microsoft.Azure.Cosmos
                     clonedRequest.RequestOptions.ExcludeRegions = excludeRegions;
                 }
 
-                return await this.RequestSenderAndResultCheckAsync(
-                    sender,
-                    clonedRequest,
-                    targetRegion,
-                    hedgeRequestsCancellationTokenSource, 
-                    trace);
+                try
+                {
+                    return await this.RequestSenderAndResultCheckAsync(
+                        sender,
+                        clonedRequest,
+                        targetRegion,
+                        hedgeRequestsCancellationTokenSource, 
+                        trace);
+                }
+                finally
+                {
+                    // Record the contacted region after the request has been dispatched to the sender.
+                    // This ensures the region is tracked even if the request is cancelled before
+                    // RecordResponse() is called, while avoiding recording regions that were never
+                    // actually sent to the network layer.
+                    ReadOnlyDictionary<string, Uri> endpoints = isReadRequest
+                        ? globalEndpointManager.GetAvailableReadEndpointsByLocation()
+                        : globalEndpointManager.GetAvailableWriteEndpointsByLocation();
+
+                    if (endpoints.TryGetValue(targetRegion, out Uri targetEndpoint))
+                    {
+                        trace.Summary.AddRegionContacted(targetRegion, targetEndpoint);
+                    }
+                }
             }
         }
 
