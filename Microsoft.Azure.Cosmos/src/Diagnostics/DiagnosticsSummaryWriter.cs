@@ -178,6 +178,9 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             writer.WriteFieldName("DiagnosticsVerbosity");
             writer.WriteStringValue("Summary");
 
+            writer.WriteFieldName("SummaryFormatVersion");
+            writer.WriteNumberValue(1);
+
             string activityId = FindActivityId(trace);
             if (activityId != null)
             {
@@ -423,6 +426,9 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
             writer.WriteFieldName("DiagnosticsVerbosity");
             writer.WriteStringValue("Summary");
+
+            writer.WriteFieldName("SummaryFormatVersion");
+            writer.WriteNumberValue(1);
 
             writer.WriteFieldName("TotalDurationMs");
             writer.WriteNumberValue(trace.Duration.TotalMilliseconds);

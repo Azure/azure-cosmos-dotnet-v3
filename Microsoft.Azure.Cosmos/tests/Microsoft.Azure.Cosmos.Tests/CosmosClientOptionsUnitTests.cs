@@ -1480,5 +1480,43 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosClientBuilder builder = new CosmosClientBuilder(CosmosClientOptionsUnitTests.AccountEndpoint, MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
             builder.WithMaxDiagnosticsSummarySizeBytes(2048);
         }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentOutOfRangeException))]
+        public void CosmosClientOptions_MaxDiagnosticsSummarySizeBytes_ThrowsAboveMaximum()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                MaxDiagnosticsSummarySizeBytes = CosmosClientOptions.MaxAllowedDiagnosticsSummarySizeBytes + 1
+            };
+        }
+
+        [TestMethod]
+        public void CosmosClientOptions_MaxDiagnosticsSummarySizeBytes_AcceptsMaximum()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                MaxDiagnosticsSummarySizeBytes = CosmosClientOptions.MaxAllowedDiagnosticsSummarySizeBytes
+            };
+            Assert.AreEqual(CosmosClientOptions.MaxAllowedDiagnosticsSummarySizeBytes, options.MaxDiagnosticsSummarySizeBytes);
+        }
+
+        [TestMethod]
+        public void CosmosClientOptions_EnvVar_MaxSummarySize_AboveMaximumIgnored()
+        {
+            string original = Environment.GetEnvironmentVariable(ConfigurationManager.DiagnosticsMaxSummarySizeVariable);
+            try
+            {
+                Environment.SetEnvironmentVariable(
+                    ConfigurationManager.DiagnosticsMaxSummarySizeVariable,
+                    (CosmosClientOptions.MaxAllowedDiagnosticsSummarySizeBytes + 1).ToString());
+                CosmosClientOptions options = new CosmosClientOptions();
+                Assert.AreEqual(8192, options.MaxDiagnosticsSummarySizeBytes, "Above-maximum env var should be ignored");
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.DiagnosticsMaxSummarySizeVariable, original);
+            }
+        }
     }
 }

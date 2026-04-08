@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Http;
     using System.Net.Security;
     using System.Security.Cryptography.X509Certificates;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.FaultInjection;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
@@ -62,6 +63,11 @@ namespace Microsoft.Azure.Cosmos
         internal const int DefaultMaxDiagnosticsSummarySizeBytes = 8192;
 
         /// <summary>
+        /// Maximum allowed value for <see cref="MaxDiagnosticsSummarySizeBytes"/> (10 MB).
+        /// </summary>
+        internal const int MaxAllowedDiagnosticsSummarySizeBytes = 10_485_760;
+
+        /// <summary>
         /// Default request timeout
         /// </summary>
         private int gatewayModeMaxConnectionLimit;
@@ -104,13 +110,30 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.DiagnosticsVerbosity = parsedVerbosity;
             }
+            else if (!string.IsNullOrEmpty(envVerbosity))
+            {
+                DefaultTrace.TraceWarning(
+                    "Invalid {0} value: '{1}'. Expected 'Detailed' or 'Summary'. Using default (Detailed).",
+                    ConfigurationManager.DiagnosticsVerbosityVariable,
+                    envVerbosity);
+            }
 
             string envMaxSize = Environment.GetEnvironmentVariable(ConfigurationManager.DiagnosticsMaxSummarySizeVariable);
             if (!string.IsNullOrEmpty(envMaxSize)
                 && int.TryParse(envMaxSize, out int parsedMaxSize)
-                && parsedMaxSize >= 4096)
+                && parsedMaxSize >= 4096
+                && parsedMaxSize <= MaxAllowedDiagnosticsSummarySizeBytes)
             {
                 this.maxDiagnosticsSummarySizeBytes = parsedMaxSize;
+            }
+            else if (!string.IsNullOrEmpty(envMaxSize))
+            {
+                DefaultTrace.TraceWarning(
+                    "Invalid {0} value: '{1}'. Must be an integer between 4096 and {2}. Using default ({3}).",
+                    ConfigurationManager.DiagnosticsMaxSummarySizeVariable,
+                    envMaxSize,
+                    MaxAllowedDiagnosticsSummarySizeBytes,
+                    DefaultMaxDiagnosticsSummarySizeBytes);
             }
         }
 
@@ -434,23 +457,29 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets or sets the maximum size in bytes for Summary mode diagnostic output.
         /// If the summary output exceeds this limit, a truncated indicator is returned.
-        /// Default: 8192 (8 KB). Minimum: 4096 (4 KB).
+        /// Default: 8192 (8 KB). Minimum: 4096 (4 KB). Maximum: 10 MB.
         /// </summary>
         /// <remarks>
         /// This property is only relevant when <see cref="DiagnosticsVerbosity"/> is set to
         /// <see cref="Microsoft.Azure.Cosmos.DiagnosticsVerbosity.Summary"/>.
+        /// <para>
+        /// Note: In v1, this custom value is respected by ChangeFeed estimator, LINQ,
+        /// ReadMany, and throughput operations. Standard CRUD operations (ReadItem,
+        /// CreateItem, etc.) use the default value. This is a known limitation that
+        /// may be addressed in a future release.
+        /// </para>
         /// </remarks>
         public int MaxDiagnosticsSummarySizeBytes
         {
             get => this.maxDiagnosticsSummarySizeBytes;
             set
             {
-                if (value < 4096)
+                if (value < 4096 || value > MaxAllowedDiagnosticsSummarySizeBytes)
                 {
                     throw new ArgumentOutOfRangeException(
                         nameof(this.MaxDiagnosticsSummarySizeBytes),
                         value,
-                        $"{nameof(this.MaxDiagnosticsSummarySizeBytes)} must be at least 4096 bytes.");
+                        $"{nameof(this.MaxDiagnosticsSummarySizeBytes)} must be between 4096 and {MaxAllowedDiagnosticsSummarySizeBytes} bytes.");
                 }
 
                 this.maxDiagnosticsSummarySizeBytes = value;

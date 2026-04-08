@@ -43,6 +43,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             HashSet<string> expectedTopLevelFields = new HashSet<string>
             {
                 "DiagnosticsVerbosity",
+                "SummaryFormatVersion",
                 "TotalDurationMs",
                 "TotalRequestCharge",
                 "TotalRequestCount",
@@ -177,6 +178,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             HashSet<string> expectedFields = new HashSet<string>
             {
                 "DiagnosticsVerbosity",
+                "SummaryFormatVersion",
                 "TotalDurationMs",
                 "TotalRequestCount",
                 "TotalRequestCharge",
@@ -243,6 +245,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
 
             // Top-level types
             Assert.AreEqual(JTokenType.String, summaryObj["DiagnosticsVerbosity"].Type);
+            Assert.AreEqual(JTokenType.Integer, summaryObj["SummaryFormatVersion"].Type);
+            Assert.AreEqual(1, summaryObj["SummaryFormatVersion"].Value<int>());
             Assert.IsTrue(summaryObj["TotalDurationMs"].Type == JTokenType.Float
                 || summaryObj["TotalDurationMs"].Type == JTokenType.Integer,
                 "TotalDurationMs should be numeric");
