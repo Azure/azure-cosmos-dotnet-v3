@@ -204,6 +204,11 @@ namespace Microsoft.Azure.Cosmos
                 return false;
             }
 
+            if (exception.GetSubStatus() != (SubStatusCodes)5013)
+            {
+                return false;
+            }
+
             if (!(authorizationTokenProvider is AuthorizationTokenProviderTokenCredential tokenProvider))
             {
                 return false;

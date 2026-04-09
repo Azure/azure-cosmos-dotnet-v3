@@ -470,11 +470,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string containerId = Guid.NewGuid().ToString();
 
             using CosmosClient setupClient = TestCommon.CreateCosmosClient();
-            Database database = await setupClient.CreateDatabaseAsync(databaseId);
-            await database.CreateContainerAsync(containerId, "/id");
+            Database database = null;
 
             try
             {
+                database = await setupClient.CreateDatabaseIfNotExistsAsync(databaseId);
+                await database.CreateContainerIfNotExistsAsync(containerId, "/id");
+
                 (string endpoint, string authKey) = TestCommon.GetAccountInfo();
 
                 List<TokenRequestContext> tokenRequests = new List<TokenRequestContext>();
@@ -551,7 +553,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             finally
             {
-                await database?.DeleteStreamAsync();
+                if (database != null)
+                {
+                    await database.DeleteStreamAsync();
+                }
             }
         }
 
