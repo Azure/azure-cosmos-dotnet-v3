@@ -108,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             try
             {
-                this.container.DeleteItemAsync<CosmosIntegrationTestObject>("deleteMe", new PartitionKey("MMWrite"));
+                this.container?.DeleteItemAsync<CosmosIntegrationTestObject>("deleteMe", new PartitionKey("MMWrite"));
             }
             catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
             {
@@ -2499,6 +2499,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [Owner("aavasthy")]
+        [TestCategory("MultiRegion")]
         [DataRow(ConnectionMode.Direct, true, DisplayName = "Scenario when direct mode is selected and partition level failover is enabled.")]
         [DataRow(ConnectionMode.Gateway, true, DisplayName = "Scenario when gateway mode is selected and partition level failover is enabled.")]
         [DataRow(ConnectionMode.Direct, false, DisplayName = "Scenario when direct mode is selected and partition level failover is disabled.")]
@@ -2756,6 +2757,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [Owner("aavasthy")]
+        [TestCategory("MultiRegion")]
         [Description("Simulates full hub region discovery flow: 2x 404/1002 → hub header → 403/3 from non-hub → retry → success. " +
                      "Verifies hub header persists through 403/3 retries and request eventually succeeds.")]
         public async Task ReadItemAsync_HubRegionDiscovery_FullFlow_With403_3_Retry()
@@ -2893,6 +2895,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [Owner("aavasthy")]
+        [TestCategory("MultiRegion")]
         [DataRow(ConnectionMode.Direct, true, DisplayName = "Direct mode with PPAF enabled: 404/1002 from hub with hub header returns NoRetry.")]
         [DataRow(ConnectionMode.Gateway, true, DisplayName = "Gateway mode with PPAF enabled: 404/1002 from hub with hub header returns NoRetry.")]
         [DataRow(ConnectionMode.Direct, false, DisplayName = "Direct mode with PPAF disabled: 404/1002 from hub with hub header returns NoRetry.")]
