@@ -200,6 +200,9 @@ namespace Microsoft.Azure.Cosmos.Routing
                     UriFormat.SafeUnescaped, 
                     StringComparison.OrdinalIgnoreCase) == 0)
             {
+                // Use account-level enableMultipleWriteLocations (not CanUseMultipleWriteLocations which also
+                // requires client opt-in) because diagnostics should resolve the hub region regardless of whether
+                // the client uses multi-write. The default endpoint routes to the hub/write region server-side.
                 if (this.enableMultipleWriteLocations)
                 {
                     regionName = this.GetLocation(this.defaultEndpoint);
