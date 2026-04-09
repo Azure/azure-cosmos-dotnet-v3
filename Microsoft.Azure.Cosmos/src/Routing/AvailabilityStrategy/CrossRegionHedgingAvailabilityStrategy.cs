@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -214,7 +215,8 @@ namespace Microsoft.Azure.Cosmos
                                         requestNumber: requestNumber,
                                         trace: trace,
                                         hedgeRequestsCancellationTokenSource: hedgeRequestsCancellationTokenSource,
-                                        ppafPrimaryWriteEndpoint: ppafPrimaryWriteEndpoint);
+                                        ppafPrimaryWriteEndpoint: ppafPrimaryWriteEndpoint,
+                                        partitionKeyRangeLocationCache: client.DocumentClient.PartitionKeyRangeLocation);
 
                                 requestTasks.Add(requestTask);
                                 requestTasks.Add(hedgeTimer);
@@ -347,7 +349,8 @@ namespace Microsoft.Azure.Cosmos
             int requestNumber,
             ITrace trace,
             CancellationTokenSource hedgeRequestsCancellationTokenSource,
-            Uri ppafPrimaryWriteEndpoint)
+            Uri ppafPrimaryWriteEndpoint,
+            GlobalPartitionEndpointManager partitionKeyRangeLocationCache)
         {
             RequestMessage clonedRequest;
 
@@ -384,7 +387,8 @@ namespace Microsoft.Azure.Cosmos
                     clonedRequest,
                     hedgeRegions.ElementAt(requestNumber),
                     hedgeRequestsCancellationTokenSource, 
-                    trace);
+                    trace,
+                    partitionKeyRangeLocationCache);
             }
         }
 
@@ -393,11 +397,23 @@ namespace Microsoft.Azure.Cosmos
             RequestMessage request,
             string targetRegionName,
             CancellationTokenSource hedgeRequestsCancellationTokenSource,
-            ITrace trace)
+            ITrace trace,
+            GlobalPartitionEndpointManager partitionKeyRangeLocationCache)
         {
             try
             {
                 ResponseMessage response = await sender.Invoke(request, hedgeRequestsCancellationTokenSource.Token);
+
+                // ShouldRetryAsync is only called on error responses (AbstractRetryHandler
+                // short-circuits on success), so the PPAF cache update for successful hedged
+                // writes must happen here, outside the retry policy pipeline.
+                if (response.IsSuccessStatusCode)
+                {
+                    CrossRegionHedgingAvailabilityStrategy.TryUpdatePPAFCacheOnSuccessfulHedge(
+                        request,
+                        partitionKeyRangeLocationCache);
+                }
+
                 if (IsFinalResult((int)response.StatusCode, (int)response.Headers.SubStatusCode))
                 {
                     if (!hedgeRequestsCancellationTokenSource.IsCancellationRequested)
@@ -448,6 +464,48 @@ namespace Microsoft.Azure.Cosmos
             //after enforcing the consistency model
             //All other errors should be treated as possibly transient errors
             return statusCode == (int)HttpStatusCode.NotFound && subStatusCode == (int)SubStatusCodes.Unknown;
+        }
+
+        /// <summary>
+        /// When a hedged PPAF write request receives a successful response, updates the
+        /// partition-level failover cache to mark the primary write endpoint as unavailable.
+        /// This causes future requests for the same partition to route directly to the region
+        /// where the hedge succeeded, avoiding unnecessary hedging round-trips.
+        /// This must be called from the hedging strategy (not from ClientRetryPolicy.ShouldRetryAsync)
+        /// because AbstractRetryHandler short-circuits on success and never invokes ShouldRetryAsync
+        /// for successful responses.
+        /// </summary>
+        private static void TryUpdatePPAFCacheOnSuccessfulHedge(
+            RequestMessage request,
+            GlobalPartitionEndpointManager partitionKeyRangeLocationCache)
+        {
+            if (request?.DocumentServiceRequest?.Properties == null
+                || partitionKeyRangeLocationCache == null)
+            {
+                return;
+            }
+
+            if (!request.DocumentServiceRequest.Properties.TryGetValue(
+                    CrossRegionHedgingAvailabilityStrategy.PPAFHedgePrimaryEndpointKey, out object primaryEndpointObj)
+                || primaryEndpointObj is not Uri primaryEndpoint)
+            {
+                return;
+            }
+
+            // Temporarily set the request's routed endpoint to the primary so that
+            // TryMarkEndpointUnavailableForPartitionKeyRange records the primary as
+            // the failed location, routing future requests to the successful hedge region.
+            Uri originalEndpoint = request.DocumentServiceRequest.RequestContext?.LocationEndpointToRoute;
+            request.DocumentServiceRequest.RequestContext.RouteToLocation(primaryEndpoint);
+
+            partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
+                request.DocumentServiceRequest);
+
+            // Restore the original endpoint for clean request state
+            if (originalEndpoint != null)
+            {
+                request.DocumentServiceRequest.RequestContext.RouteToLocation(originalEndpoint);
+            }
         }
 
         private sealed class HedgingResponse

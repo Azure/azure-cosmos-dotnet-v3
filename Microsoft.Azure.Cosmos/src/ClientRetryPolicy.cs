@@ -179,12 +179,6 @@ namespace Microsoft.Azure.Cosmos
                 return shouldRetryResult;
             }
 
-            // When a hedged PPAF write request succeeds (2xx), update the partition-level
-            // failover cache to mark the primary endpoint as unavailable. This ensures
-            // future requests for this partition route directly to the successful region
-            // instead of going through the primary and hedging again.
-            this.TryUpdatePPAFCacheOnSuccessfulHedge(cosmosResponseMessage);
-
             // Today, the only scenario where we would treat a throttling (429) exception as service unavailable is when we
             // get 429 (TooManyRequests) with sub status code 3092 (System Resource Not Available). Note that this is applicable
             // for write requests targeted to a multiple master account. In such case, the 429/3092 will be treated as 503. The
@@ -633,45 +627,6 @@ namespace Microsoft.Azure.Cosmos
                 && this.documentServiceRequest.Properties.TryGetValue(
                     CrossRegionHedgingAvailabilityStrategy.SuppressPPAFCacheUpdateKey, out object value)
                 && value is true;
-        }
-
-        /// <summary>
-        /// When a hedged PPAF write request receives a successful response (status &lt; 400),
-        /// updates the partition-level failover cache to mark the primary write endpoint as
-        /// unavailable. This causes future requests for the same partition to route directly
-        /// to the region where the hedge succeeded, avoiding unnecessary hedging round-trips.
-        /// </summary>
-        /// <param name="response">The response message from the hedged request.</param>
-        private void TryUpdatePPAFCacheOnSuccessfulHedge(ResponseMessage response)
-        {
-            if (response == null
-                || (int)response.StatusCode >= (int)HttpStatusCode.BadRequest
-                || this.documentServiceRequest?.Properties == null)
-            {
-                return;
-            }
-
-            if (!this.documentServiceRequest.Properties.TryGetValue(
-                    CrossRegionHedgingAvailabilityStrategy.PPAFHedgePrimaryEndpointKey, out object primaryEndpointObj)
-                || primaryEndpointObj is not Uri primaryEndpoint)
-            {
-                return;
-            }
-
-            // Temporarily set the request's routed endpoint to the primary so that
-            // TryMarkEndpointUnavailableForPartitionKeyRange records the primary as
-            // the failed location, routing future requests to the successful hedge region.
-            Uri originalEndpoint = this.documentServiceRequest.RequestContext?.LocationEndpointToRoute;
-            this.documentServiceRequest.RequestContext.RouteToLocation(primaryEndpoint);
-
-            this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
-                this.documentServiceRequest);
-
-            // Restore the original endpoint for clean request state
-            if (originalEndpoint != null)
-            {
-                this.documentServiceRequest.RequestContext.RouteToLocation(originalEndpoint);
-            }
         }
 
         private sealed class RetryContext
