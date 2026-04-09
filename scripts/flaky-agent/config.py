@@ -58,14 +58,21 @@ class FlakyAgentConfig:
     # Retention
     data_retention_days: int = 90
 
-    # Database
-    db_path: str = "flaky-test-data.db"
+    # Cosmos DB
+    cosmos_endpoint: str = ""  # Set via COSMOS_ENDPOINT env var
+    cosmos_key: str = ""       # Set via COSMOS_KEY env var (or use DefaultAzureCredential)
+    cosmos_database: str = "flaky-test-agent"
+    cosmos_container_executions: str = "test-executions"
+    cosmos_container_registry: str = "flaky-registry"
+    cosmos_container_issues: str = "filed-issues"
+    cosmos_execution_ttl: int = 7776000  # 90 days in seconds
 
     @classmethod
     def from_env(cls) -> "FlakyAgentConfig":
         """Create config with environment variable overrides."""
         config = cls()
-        config.db_path = os.environ.get("FLAKY_DB_PATH", config.db_path)
+        config.cosmos_endpoint = os.environ.get("COSMOS_ENDPOINT", config.cosmos_endpoint)
+        config.cosmos_key = os.environ.get("COSMOS_KEY", config.cosmos_key)
         config.default_lookback_hours = int(
             os.environ.get("FLAKY_LOOKBACK_HOURS", config.default_lookback_hours)
         )

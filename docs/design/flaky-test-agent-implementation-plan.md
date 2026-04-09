@@ -41,7 +41,8 @@ data_retention_days = 90
 
 **Environment variables:**
 - `ADO_PAT` — Azure DevOps Personal Access Token
-- `FLAKY_DB_PATH` — SQLite database path (default: `flaky-test-data.db`)
+- `COSMOS_ENDPOINT` — Cosmos DB account endpoint (e.g., `https://flaky-test-agent.documents.azure.com:443/`)
+- `COSMOS_KEY` — Cosmos DB account key (or omit to use `DefaultAzureCredential`)
 - `FLAKY_DRY_RUN` — Skip issue filing when `true`
 - `FLAKY_LOOKBACK_HOURS` — Override default lookback window
 
@@ -83,58 +84,154 @@ HTTP client for the ADO REST API with retry, pagination, and rate limiting.
 
 ---
 
-### 1.3 `scripts/flaky-agent/database.py` — SQLite Data Store
+### 1.3 `scripts/flaky-agent/database.py` — Cosmos DB Data Store
 
-Database schema, connection management, and query helpers.
+Cosmos DB client, container management, and query helpers. Uses the Azure Cosmos DB Python SDK (NoSQL API) with the serverless tier to dogfood our own product.
 
-**Tables:**
+**Why Cosmos DB over SQLite:**
+- We are the Cosmos DB team — we should dogfood our own product
+- Built-in TTL for automatic data retention (no manual cleanup)
+- No GitHub Actions cache juggling — data is always available
+- Serverless tier keeps cost near-zero for this workload (~$2–5/month)
+- Point reads by `id` + partition key are ideal for the access patterns here
+- Cross-query with SQL-like syntax already familiar to the team
 
-1. **`test_executions`** — Every individual test outcome
-   - PK: `id` (auto-increment)
-   - Key fields: `test_name`, `outcome`, `build_id`, `pipeline_name`, `run_timestamp`, `retry_attempt`
-   - Enrichment: `error_message`, `stack_trace`, `os`, `emulator_used`, `emulator_healthy`, `pr_number`
-   - Indexes on: `test_name`, `run_timestamp`, `pipeline_name`, `outcome`, `build_id`, `pr_number`
+**Cosmos DB Account Setup:**
+- **Account:** Create a serverless NoSQL account (e.g., `flaky-test-agent`)
+- **Database:** `flaky-test-agent`
+- **Throughput:** Serverless (pay per RU consumed, no provisioned throughput)
 
-2. **`flaky_registry`** — Aggregated per-test flakiness scores
-   - PK: `test_name`
-   - Scores: `fliprate`, `ewma_fliprate`, `failure_rate`
-   - Counts: `total_runs`, `total_failures`, `consecutive_failures`
-   - State: `status` enum, `github_issue_number`
-   - Metadata: `primary_error_pattern`, `correlated_conditions` (JSON), `affected_pipelines` (JSON)
+**Containers:**
 
-3. **`filed_issues`** — Test-to-issue mapping for dedup
-   - Composite PK: `(test_name, issue_number)`
-   - Fields: `filed_at`, `issue_status`
+1. **`test-executions`** — Every individual test outcome
+   - Partition key: `/test_name`
+   - TTL: 90 days (`"ttl": 7776000` — automatic retention, no cleanup needed)
+   - Unique key: `/build_id, /test_name, /retry_attempt`
+   - Document schema:
+     ```json
+     {
+       "id": "{build_id}_{test_name}_{retry_attempt}",
+       "test_name": "Microsoft.Azure.Cosmos.Tests.CosmosHttpClientCoreTests.RetryTransientIssuesTestAsync",
+       "test_class": "CosmosHttpClientCoreTests",
+       "test_assembly": "Microsoft.Azure.Cosmos.Tests",
+       "outcome": "Failed",
+       "duration_ms": 31250,
+       "error_message": "TaskCanceledException: ...",
+       "stack_trace": "...",
+       "build_id": 59172,
+       "pipeline_name": "Rolling",
+       "source_branch": "refs/heads/master",
+       "pr_number": null,
+       "run_timestamp": "2026-04-09T07:30:00Z",
+       "retry_attempt": 0,
+       "os": "Windows",
+       "job_name": "EmulatorTests Release - Others",
+       "emulator_used": true,
+       "emulator_healthy": true,
+       "test_run_title": "Microsoft.Azure.Cosmos.EmulatorTests",
+       "ttl": 7776000
+     }
+     ```
 
-4. **`schema_version`** — Migration tracking
+2. **`flaky-registry`** — Aggregated per-test flakiness scores
+   - Partition key: `/test_name`
+   - TTL: disabled (permanent tracking)
+   - Document schema:
+     ```json
+     {
+       "id": "{test_name}",
+       "test_name": "...",
+       "test_class": "...",
+       "test_assembly": "...",
+       "fliprate": 0.45,
+       "ewma_fliprate": 0.33,
+       "total_runs": 48,
+       "total_failures": 11,
+       "failure_rate": 0.229,
+       "consecutive_failures": 0,
+       "first_seen_flaky": "2026-03-15T00:00:00Z",
+       "last_failure": "2026-04-08T07:30:00Z",
+       "last_success": "2026-04-09T07:30:00Z",
+       "status": "issue_filed",
+       "github_issue_number": 5761,
+       "primary_error_pattern": "TaskCanceledException",
+       "correlated_conditions": { "emulator_specific": true },
+       "affected_pipelines": ["Rolling", "PR"]
+     }
+     ```
+
+3. **`filed-issues`** — Test-to-issue mapping for dedup
+   - Partition key: `/test_name`
+   - TTL: disabled (permanent)
+   - Document schema:
+     ```json
+     {
+       "id": "{test_name}_{issue_number}",
+       "test_name": "...",
+       "issue_number": 5761,
+       "filed_at": "2026-04-09T13:00:00Z",
+       "issue_status": "open"
+     }
+     ```
 
 **Key methods:**
 
 ```python
 class Database:
-    def __init__(self, path: str): ...
-    def initialize(self): ...                           # Create tables if not exist
-    def insert_executions(self, rows: list[dict]): ...  # Bulk insert with executemany
-    def get_outcome_sequence(self, test_name, branch_filter, days): ... # Chronological outcomes
-    def get_tests_with_min_runs(self, min_runs, days): ...
-    def update_registry(self, entries: list): ...       # Upsert flaky_registry
-    def get_unfiled_flaky_tests(self): ...              # confirmed_flaky with no issue
+    def __init__(self, endpoint: str, key: str): ...
+    def initialize(self): ...                           # Create database + containers if not exist
+    def insert_executions(self, items: list[dict]): ... # Bulk upsert with batch operations
+    def get_outcome_sequence(self, test_name, days): ...# Cross-partition query, ordered by timestamp
+    def get_tests_with_min_runs(self, min_runs, days): ... # Aggregate query
+    def update_registry(self, entries: list): ...       # Upsert to flaky-registry
+    def get_unfiled_flaky_tests(self): ...              # Query confirmed_flaky with no issue
     def record_filed_issue(self, test_name, issue_number): ...
-    def check_issue_exists(self, test_name): ...        # Local dedup check
-    def cleanup(self, retention_days): ...              # Delete old data + VACUUM
-    def close(self): ...
+    def check_issue_exists(self, test_name): ...        # Point read by test_name
+    def close(self): ...                                # Close client
 ```
 
 **Dedup strategy for `insert_executions`:**
-- Use `INSERT OR IGNORE` with a unique constraint on `(build_id, test_name, retry_attempt)`
-- This makes re-runs of the collector idempotent
+- Use deterministic `id` = `{build_id}_{test_name_hash}_{retry_attempt}`
+- Cosmos DB `upsert` makes re-runs idempotent — same document ID overwrites with identical data
+
+**Query patterns:**
+
+```sql
+-- Get outcome sequence for a test (partition-scoped, efficient)
+SELECT c.outcome, c.run_timestamp FROM c
+WHERE c.test_name = @test_name
+  AND c.source_branch LIKE '%master%'
+  AND c.run_timestamp > @cutoff
+ORDER BY c.run_timestamp ASC
+
+-- Get tests with min runs (cross-partition aggregate)
+SELECT c.test_name, c.test_class, c.test_assembly,
+       COUNT(1) as total_runs,
+       SUM(c.outcome = 'Failed' ? 1 : 0) as failures
+FROM c
+WHERE c.run_timestamp > @cutoff
+  AND CONTAINS(c.source_branch, 'master')
+  AND c.outcome IN ('Passed', 'Failed')
+GROUP BY c.test_name, c.test_class, c.test_assembly
+HAVING COUNT(1) >= @min_runs
+
+-- Retry-pass detection
+SELECT DISTINCT c.test_name FROM c
+WHERE c.outcome = 'Failed' AND c.retry_attempt = 0
+  AND EXISTS (
+    SELECT VALUE 1 FROM c2 IN c
+    WHERE c2.test_name = c.test_name AND c2.build_id = c.build_id
+      AND c2.outcome = 'Passed' AND c2.retry_attempt > 0
+  )
+```
 
 **Acceptance criteria:**
-- [ ] Schema creates cleanly on empty database
-- [ ] Bulk insert handles 10K+ rows efficiently
-- [ ] Idempotent: re-inserting same build data is a no-op
-- [ ] Cleanup respects retention and runs VACUUM
-- [ ] Migration system supports future schema changes
+- [ ] Creates database and containers on first run (idempotent)
+- [ ] Bulk upsert handles 10K+ items efficiently (batched by partition key)
+- [ ] Idempotent: re-inserting same build data is a no-op (deterministic IDs)
+- [ ] TTL automatically cleans up old test executions (no manual cleanup)
+- [ ] Point reads for registry/issue lookups (single-digit ms latency)
+- [ ] Cross-partition queries for aggregate analysis complete in <5s
 
 ---
 
@@ -153,9 +250,8 @@ Orchestrates data collection: fetches builds, enriches results, stores in databa
       ii.  Fetch test runs
       iii. For each test run: fetch all test results (paginated)
       iv.  Enrich each result with build context
-   c. Bulk insert into database
-3. Run cleanup (delete data older than retention period)
-4. Log summary: N builds processed, M test results collected
+   c. Bulk upsert into Cosmos DB
+3. Log summary: N builds processed, M test results collected
 ```
 
 **Enrichment fields derived from build/timeline:**
@@ -404,21 +500,19 @@ Dedicated issue template for manually reporting flaky tests (complements automat
 1. Checkout repo
 2. Setup Python 3.12
 3. Install dependencies (`pip install -r scripts/flaky-agent/requirements.txt`)
-4. Restore SQLite database from GitHub Actions cache
-5. Run `main.py collect --lookback {hours}`
-6. Run `main.py analyze`
-7. Run `main.py file-issues` (skip if dry_run)
-8. Run `main.py report >> $GITHUB_STEP_SUMMARY`
-9. Save database to cache + upload as artifact
+4. Run `main.py collect --lookback {hours}` (writes to Cosmos DB)
+5. Run `main.py analyze` (reads/writes Cosmos DB)
+6. Run `main.py file-issues` (skip if dry_run)
+7. Run `main.py report >> $GITHUB_STEP_SUMMARY`
 
-**Secrets:** `ADO_PAT` (repo secret), `GITHUB_TOKEN` (auto-provided)
+**Secrets:** `ADO_PAT`, `COSMOS_ENDPOINT`, `COSMOS_KEY` (repo secrets), `GITHUB_TOKEN` (auto-provided)
 
 **Acceptance criteria:**
 - [ ] Runs successfully on schedule
-- [ ] Database persists across runs via Actions cache
+- [ ] Connects to Cosmos DB and reads/writes data
 - [ ] Dry-run mode skips issue filing
 - [ ] Report visible in GitHub Actions step summary
-- [ ] Handles first run (no existing DB) gracefully
+- [ ] Handles first run (empty Cosmos DB) gracefully
 - [ ] Completes within 30-minute timeout
 
 ---

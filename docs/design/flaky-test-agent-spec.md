@@ -58,8 +58,8 @@ An automated agent that:
 │                                          └───────────┬────────────┘  │
 │                                                      │               │
 │  ┌───────────────────────────────────────────────────▼────────────┐  │
-│  │                  SQLite Data Store (database.py)                │  │
-│  │  test_executions │ flaky_registry │ filed_issues │ schema_ver  │  │
+│  │           Azure Cosmos DB Data Store (database.py)              │  │
+│  │  test_executions │ flaky_registry │ filed_issues (containers)  │  │
 │  └───────────────────────────────────────────────────┬────────────┘  │
 │                                                      │               │
 │  ┌─────────────────────┐   ┌─────────────────────────▼────────────┐ │
@@ -84,7 +84,7 @@ Azure DevOps Pipelines (PR, Rolling, Cron, Functional)
 └────────┬────────┘
          ▼
 ┌─────────────────┐
-│  SQLite store    │  test_executions table (90-day retention)
+│  Cosmos DB store │  test_executions container (90-day TTL)
 └────────┬────────┘
          ▼
 ┌─────────────────┐
@@ -109,7 +109,7 @@ GitHub Issues (labeled `flaky-test`, assigned to CODEOWNERS)
 | Component | Technology | Rationale |
 |-----------|-----------|-----------|
 | Language | Python 3.12 | Rich HTTP/data libraries, easy scripting, team familiarity |
-| Data store | SQLite | Single file, no infra needed, GitHub Actions cache-friendly |
+| Data store | Azure Cosmos DB (NoSQL) | Dogfoods our own product; serverless tier keeps cost near-zero; built-in TTL for retention; no cache/persistence workarounds needed |
 | Scheduler | GitHub Actions cron | Native to the repo, free, `GITHUB_TOKEN` auto-provided |
 | Issue filing | `gh` CLI | Bypasses SAML SSO issues with Azure org |
 | ADO access | REST API + PAT | Already documented in issue-fix-agent, minimal scope |
@@ -285,9 +285,14 @@ When a filed test passes 50 consecutive runs on master, the agent comments:
 
 ### Data Persistence
 
-- **Primary:** GitHub Actions cache (`actions/cache`) for SQLite database
-- **Backup:** `actions/upload-artifact` with 30-day retention
-- **Retention:** 90 days of raw test executions; registry and issue tracking are permanent
+- **Store:** Azure Cosmos DB (NoSQL API, serverless tier) — dogfoods our own product
+- **Database:** `flaky-test-agent`
+- **Containers:**
+  - `test-executions` — partitioned by `test_name`, TTL 90 days for automatic retention
+  - `flaky-registry` — partitioned by `test_name`, no TTL (permanent tracking)
+  - `filed-issues` — partitioned by `test_name`, no TTL (permanent tracking)
+- **Cost:** Serverless tier — pay only for RU consumption; expected <$5/month at this scale
+- **Retention:** 90-day TTL on `test-executions`; registry and issue data are permanent
 
 ### Secrets Required
 
@@ -295,6 +300,8 @@ When a filed test passes 50 consecutive runs on master, the agent comments:
 |--------|-------|---------|
 | `ADO_PAT` | Repository secret | Azure DevOps Build (Read) access |
 | `GITHUB_TOKEN` | Auto-provided | Issue creation (bypasses SAML in Actions context) |
+| `COSMOS_ENDPOINT` | Repository secret | Cosmos DB account endpoint |
+| `COSMOS_KEY` | Repository secret | Cosmos DB account key (or use managed identity) |
 
 ---
 
@@ -321,7 +328,7 @@ scripts/flaky-agent/
 ├── requirements.txt          # requests, urllib3
 ├── config.py                 # Thresholds, pipeline names, constants
 ├── ado_client.py             # Azure DevOps REST API client
-├── database.py               # SQLite schema, migrations, queries
+├── database.py               # Cosmos DB client, containers, queries
 ├── collector.py              # Test result data collection & enrichment
 ├── analyzer.py               # Fliprate/EWMA flakiness scoring
 ├── correlator.py             # Environmental correlation engine
@@ -371,6 +378,6 @@ scripts/flaky-agent/
 |------|-----------|
 | ADO API rate limiting | Batch requests, 0.3s delays, cache pipeline IDs |
 | False positive detection | Conservative thresholds, dry-run mode, max 5 issues/run |
-| Database size in GH cache | 90-day retention, `VACUUM`, artifact backup |
+| Database size in GH cache | Cosmos DB serverless has no storage worries; TTL auto-cleans old data |
 | Pipeline definition ID changes | Resolve by name at runtime, never hard-code |
 | Team notification fatigue | Weekly digest, severity tiers, max issue rate |
