@@ -468,9 +468,7 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// When a hedged PPAF write request receives a successful response, updates the
-        /// partition-level failover cache to mark the primary write endpoint as unavailable.
-        /// This causes future requests for the same partition to route directly to the region
-        /// where the hedge succeeded, avoiding unnecessary hedging round-trips.
+        /// partition-level failover cache to route directly to the successful region.
         /// This must be called from the hedging strategy (not from ClientRetryPolicy.ShouldRetryAsync)
         /// because AbstractRetryHandler short-circuits on success and never invokes ShouldRetryAsync
         /// for successful responses.
@@ -485,6 +483,12 @@ namespace Microsoft.Azure.Cosmos
                 return;
             }
 
+            // Only update the PPAF write cache for write requests
+            if (OperationTypeExtensions.IsReadOperation(request.OperationType))
+            {
+                return;
+            }
+
             if (!request.DocumentServiceRequest.Properties.TryGetValue(
                     CrossRegionHedgingAvailabilityStrategy.PPAFHedgePrimaryEndpointKey, out object primaryEndpointObj)
                 || primaryEndpointObj is not Uri primaryEndpoint)
@@ -492,20 +496,21 @@ namespace Microsoft.Azure.Cosmos
                 return;
             }
 
-            // Temporarily set the request's routed endpoint to the primary so that
-            // TryMarkEndpointUnavailableForPartitionKeyRange records the primary as
-            // the failed location, routing future requests to the successful hedge region.
-            Uri originalEndpoint = request.DocumentServiceRequest.RequestContext?.LocationEndpointToRoute;
-            request.DocumentServiceRequest.RequestContext.RouteToLocation(primaryEndpoint);
-
-            partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
-                request.DocumentServiceRequest);
-
-            // Restore the original endpoint for clean request state
-            if (originalEndpoint != null)
+            // The successful endpoint is the one the hedged request was routed to
+            Uri successfulEndpoint = request.DocumentServiceRequest.RequestContext?.LocationEndpointToRoute;
+            if (successfulEndpoint == null)
             {
-                request.DocumentServiceRequest.RequestContext.RouteToLocation(originalEndpoint);
+                return;
             }
+
+            // Directly set the cache to point to the successful endpoint rather than
+            // marking the primary as failed and iterating sequentially. This ensures
+            // that in multi-region scenarios (e.g., Primary=A, Read=B, Read=C where C
+            // succeeds), the cache points to C, not B.
+            partitionKeyRangeLocationCache.TrySetPartitionLevelLocationOverrideForSuccessfulHedge(
+                request.DocumentServiceRequest,
+                primaryEndpoint,
+                successfulEndpoint);
         }
 
         private sealed class HedgingResponse
