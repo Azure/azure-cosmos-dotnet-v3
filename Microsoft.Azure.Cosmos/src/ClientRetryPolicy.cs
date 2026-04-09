@@ -30,9 +30,6 @@ namespace Microsoft.Azure.Cosmos
         private readonly GlobalPartitionEndpointManager partitionKeyRangeLocationCache;
         private readonly bool enableEndpointDiscovery;
         private readonly bool isThinClientEnabled;
-#if !INTERNAL
-        private readonly bool hubRegionProcessingEnabled;
-#endif
         private int failoverRetryCount;
 
         private int sessionTokenRetryCount;
@@ -67,9 +64,6 @@ namespace Microsoft.Azure.Cosmos
             this.canUseMultipleWriteLocations = false;
             this.isMultiMasterWriteRequest = false;
             this.isThinClientEnabled = isThinClientEnabled;
-#if !INTERNAL
-            this.hubRegionProcessingEnabled = ConfigurationManager.IsHubRegionProcessingEnabled();
-#endif
         }
 
         /// <summary> 
@@ -472,30 +466,16 @@ namespace Microsoft.Azure.Cosmos
                 else
                 {
 #if !INTERNAL
-                    // When hub region processing is disabled, fall back to original retry behavior:
-                    // route to write region on first 404/1002, give up after second 404/1002.
-                    if (!this.hubRegionProcessingEnabled)
+                    if (!this.partitionKeyRangeLocationCache.IsHubRegionProcessingEnabled())
                     {
-                        if (this.sessionTokenRetryCount > 1)
-                        {
-                            return ShouldRetryResult.NoRetry();
-                        }
-                        else
-                        {
-                            this.retryContext = new RetryContext
-                            {
-                                RetryLocationIndex = 0,
-                                RetryRequestOnPreferredLocations = false
-                            };
-
-                            return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
-                        }
+                        // When hub region processing is disabled, fall back to original retry behavior:
+                        // route to write region on first 404/1002, give up after second 404/1002.
+                        return this.RetryOnSessionNotAvailableRouteToWriteRegion();
                     }
-
-                    // The Hub region with the new header returned 404/1002.
-                    // This is the source of truth and there won't be any more retries.
-                    if (this.addHubRegionProcessingOnlyHeader)
+                    else if (this.addHubRegionProcessingOnlyHeader)
                     {
+                        // The Hub region with the new header returned 404/1002.
+                        // This is the source of truth and there won't be any more retries.
                         return ShouldRetryResult.NoRetry();
                     }
                     else
@@ -529,25 +509,26 @@ namespace Microsoft.Azure.Cosmos
                         return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
                     }
 #else
-                    if (this.sessionTokenRetryCount > 1)
-                    {
-                        // When cannot use multiple write locations, then don't retry the request if 
-                        // we have already tried this request on the write location
-                        return ShouldRetryResult.NoRetry();
-                    }
-                    else
-                    {
-                        this.retryContext = new RetryContext
-                        {
-                            RetryLocationIndex = 0,
-                            RetryRequestOnPreferredLocations = false
-                        };
-
-                        return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
-                    }
+                    return this.RetryOnSessionNotAvailableRouteToWriteRegion();
 #endif
                 }
             }
+        }
+
+        private ShouldRetryResult RetryOnSessionNotAvailableRouteToWriteRegion()
+        {
+            if (this.sessionTokenRetryCount > 1)
+            {
+                return ShouldRetryResult.NoRetry();
+            }
+
+            this.retryContext = new RetryContext
+            {
+                RetryLocationIndex = 0,
+                RetryRequestOnPreferredLocations = false
+            };
+
+            return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
         }
 
         /// <summary>

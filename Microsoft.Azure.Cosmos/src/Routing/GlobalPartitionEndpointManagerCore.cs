@@ -67,6 +67,14 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly Lazy<ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>> PartitionKeyRangeToLocationForReadAndWrite = new (
             () => new ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>());
 
+#if !INTERNAL
+        /// <summary>
+        /// A boolean flag indicating whether hub region processing is enabled. Read once from the
+        /// environment variable at initialization time to avoid repeated env var lookups per request.
+        /// </summary>
+        private readonly bool isHubRegionProcessingEnabled;
+#endif
+
         /// <summary>
         /// An integer indicating how many times the dispose was invoked.
         /// </summary>
@@ -109,6 +117,9 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.isPartitionLevelCircuitBreakerEnabled = isPartitionLevelCircuitBreakerEnabled ? 1 : 0;
             this.isThinClientEnabled = isThinClientEnabled;
             this.globalEndpointManager = globalEndpointManager ?? throw new ArgumentNullException(nameof(globalEndpointManager));
+#if !INTERNAL
+            this.isHubRegionProcessingEnabled = ConfigurationManager.IsHubRegionProcessingEnabled();
+#endif
             this.InitializeAndStartCircuitBreakerFailbackBackgroundRefresh();
         }
 
@@ -317,6 +328,14 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             return this.isPartitionLevelCircuitBreakerEnabled == 1;
         }
+
+#if !INTERNAL
+        /// <inheritdoc/>
+        public override bool IsHubRegionProcessingEnabled()
+        {
+            return this.isHubRegionProcessingEnabled;
+        }
+#endif
 
         /// <summary>
         /// Disposes the <see cref="GlobalPartitionEndpointManagerCore"/> class.

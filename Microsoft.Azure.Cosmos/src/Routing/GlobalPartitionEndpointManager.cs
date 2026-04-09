@@ -80,5 +80,14 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// Returns true if circuit breaker logic for partition key ranges is active, otherwise false.
         /// </summary>
         public abstract bool IsPartitionLevelCircuitBreakerEnabled();
+
+#if !INTERNAL
+        /// <summary>
+        /// Gets a value indicating whether hub region processing is enabled for read requests
+        /// encountering repeated 404/1002 (ReadSessionNotAvailable) errors on single-master accounts.
+        /// Returns true if hub region header attachment and hub region discovery are active, otherwise false.
+        /// </summary>
+        public abstract bool IsHubRegionProcessingEnabled();
+#endif
     }
 }
