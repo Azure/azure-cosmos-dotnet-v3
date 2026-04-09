@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System.Collections.Generic;
+    using System.IO;
 
     /// <summary>
     /// Represents a distributed transaction that supports write operations across multiple partitions and containers.
@@ -34,6 +35,22 @@ namespace Microsoft.Azure.Cosmos
             DistributedTransactionRequestOptions requestOptions = null);
 
         /// <summary>
+        /// Adds a create operation to the distributed transaction using a pre-serialized JSON stream.
+        /// </summary>
+        /// <param name="database">The name of the database containing the container.</param>
+        /// <param name="collection">The name of the container where the item will be created.</param>
+        /// <param name="partitionKey">The partition key for the item.</param>
+        /// <param name="streamPayload">A <see cref="Stream"/> containing the JSON serialization of the item.</param>
+        /// <param name="requestOptions">Options for the create operation.</param>
+        /// <returns>The current <see cref="DistributedWriteTransaction"/> instance for method chaining.</returns>
+        public abstract DistributedWriteTransaction CreateItemStream(
+            string database,
+            string collection,
+            PartitionKey partitionKey,
+            Stream streamPayload,
+            DistributedTransactionRequestOptions requestOptions = null);
+
+        /// <summary>
         /// Adds a replace operation to the distributed transaction.
         /// </summary>
         /// <typeparam name="T">The type of the resource to replace.</typeparam>
@@ -50,6 +67,24 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey partitionKey,
             string id,
             T resource,
+            DistributedTransactionRequestOptions requestOptions = null);
+
+        /// <summary>
+        /// Adds a replace operation to the distributed transaction using a pre-serialized JSON stream.
+        /// </summary>
+        /// <param name="database">The name of the database containing the container.</param>
+        /// <param name="collection">The name of the container where the item exists.</param>
+        /// <param name="partitionKey">The partition key for the item.</param>
+        /// <param name="id">The unique identifier of the item to replace.</param>
+        /// <param name="streamPayload">A <see cref="Stream"/> containing the JSON serialization of the replacement item.</param>
+        /// <param name="requestOptions">Options for the replace operation.</param>
+        /// <returns>The current <see cref="DistributedWriteTransaction"/> instance for method chaining.</returns>
+        public abstract DistributedWriteTransaction ReplaceItemStream(
+            string database,
+            string collection,
+            PartitionKey partitionKey,
+            string id,
+            Stream streamPayload,
             DistributedTransactionRequestOptions requestOptions = null);
 
         /// <summary>
@@ -87,6 +122,24 @@ namespace Microsoft.Azure.Cosmos
             DistributedTransactionRequestOptions requestOptions = null);
 
         /// <summary>
+        /// Adds a patch operation to the distributed transaction using a pre-serialized JSON patch stream.
+        /// </summary>
+        /// <param name="database">The name of the database containing the container.</param>
+        /// <param name="collection">The name of the container where the item exists.</param>
+        /// <param name="partitionKey">The partition key for the item.</param>
+        /// <param name="id">The unique identifier of the item to patch.</param>
+        /// <param name="streamPayload">A <see cref="Stream"/> containing the JSON serialization of the patch operations.</param>
+        /// <param name="requestOptions">Options for the patch operation.</param>
+        /// <returns>The current <see cref="DistributedWriteTransaction"/> instance for method chaining.</returns>
+        public abstract DistributedWriteTransaction PatchItemStream(
+            string database,
+            string collection,
+            PartitionKey partitionKey,
+            string id,
+            Stream streamPayload,
+            DistributedTransactionRequestOptions requestOptions = null);
+
+        /// <summary>
         /// Adds an upsert operation to the distributed transaction.
         /// If the item exists, it will be replaced; otherwise, it will be created.
         /// </summary>
@@ -102,6 +155,23 @@ namespace Microsoft.Azure.Cosmos
             string collection,
             PartitionKey partitionKey,
             T resource,
+            DistributedTransactionRequestOptions requestOptions = null);
+
+        /// <summary>
+        /// Adds an upsert operation to the distributed transaction using a pre-serialized JSON stream.
+        /// If the item exists, it will be replaced; otherwise, it will be created.
+        /// </summary>
+        /// <param name="database">The name of the database containing the container.</param>
+        /// <param name="collection">The name of the container where the item will be upserted.</param>
+        /// <param name="partitionKey">The partition key for the item.</param>
+        /// <param name="streamPayload">A <see cref="Stream"/> containing the JSON serialization of the item.</param>
+        /// <param name="requestOptions">Options for the upsert operation.</param>
+        /// <returns>The current <see cref="DistributedWriteTransaction"/> instance for method chaining.</returns>
+        public abstract DistributedWriteTransaction UpsertItemStream(
+            string database,
+            string collection,
+            PartitionKey partitionKey,
+            Stream streamPayload,
             DistributedTransactionRequestOptions requestOptions = null);
     }
 }
