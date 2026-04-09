@@ -51,25 +51,19 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 return Task.CompletedTask;
             }
 
-            List<DocumentServiceLease> epkLeases = new List<DocumentServiceLease>();
-
-            foreach (DocumentServiceLease lease in this.container.Values)
+            // Serialize to a temporary stream first to avoid data loss if serialization fails
+            using (MemoryStream temp = new MemoryStream())
             {
-                if (!(lease.FeedRange is FeedRangeEpk))
+                using (StreamWriter writer = new StreamWriter(temp, encoding: System.Text.Encoding.UTF8, bufferSize: 1024, leaveOpen: true))
+                using (JsonTextWriter jsonWriter = new JsonTextWriter(writer))
                 {
-                    continue;
+                    JsonSerializer serializer = JsonSerializer.Create();
+                    serializer.Serialize(jsonWriter, this.container.Values.ToList());
                 }
 
-                epkLeases.Add(lease);
-            }
-
-            this.leaseStateStream.SetLength(0);
-
-            using (StreamWriter writer = new StreamWriter(this.leaseStateStream, encoding: System.Text.Encoding.UTF8, bufferSize: 1024, leaveOpen: true))
-            using (JsonTextWriter jsonWriter = new JsonTextWriter(writer))
-            {
-                JsonSerializer serializer = JsonSerializer.Create();
-                serializer.Serialize(jsonWriter, epkLeases);
+                this.leaseStateStream.SetLength(0);
+                temp.Position = 0;
+                temp.CopyTo(this.leaseStateStream);
             }
 
             this.leaseStateStream.Position = 0;

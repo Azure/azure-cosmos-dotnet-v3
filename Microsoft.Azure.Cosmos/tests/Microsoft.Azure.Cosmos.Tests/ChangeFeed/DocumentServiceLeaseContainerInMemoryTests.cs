@@ -4,16 +4,17 @@
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 {
+    using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
     using Microsoft.Azure.Documents.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using Newtonsoft.Json;
 
     [TestClass]
     [TestCategory("ChangeFeed")]
@@ -77,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             // Assert
             Assert.IsTrue(stream.Length > 0 || leaseCount == 0);
             stream.Position = 0;
-            List<DocumentServiceLease> deserialized = CosmosContainerExtensions.DefaultJsonSerializer.FromStream<List<DocumentServiceLease>>(stream);
+            List<DocumentServiceLease> deserialized = DeserializeLeasesFromStream(stream);
             Assert.AreEqual(leaseCount, deserialized.Count);
         }
 
@@ -127,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             await source.ShutdownAsync();
 
             stream.Position = 0;
-            List<DocumentServiceLease> deserialized = CosmosContainerExtensions.DefaultJsonSerializer.FromStream<List<DocumentServiceLease>>(stream);
+            List<DocumentServiceLease> deserialized = DeserializeLeasesFromStream(stream);
             Assert.AreEqual(1, deserialized.Count);
 
             DocumentServiceLease importedLease = deserialized[0];
@@ -163,10 +164,59 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             // Assert — stream should contain only the new data
             stream.Position = 0;
-            List<DocumentServiceLease> deserialized = CosmosContainerExtensions.DefaultJsonSerializer.FromStream<List<DocumentServiceLease>>(stream);
+            List<DocumentServiceLease> deserialized = DeserializeLeasesFromStream(stream);
             Assert.AreEqual(1, deserialized.Count);
             Assert.AreEqual("lease1", deserialized[0].Id);
             Assert.AreEqual("second", deserialized[0].Owner);
+        }
+
+        #endregion
+
+        private static List<DocumentServiceLease> DeserializeLeasesFromStream(Stream stream)
+        {
+            using (StreamReader sr = new StreamReader(stream, leaveOpen: true))
+            using (JsonTextReader jsonReader = new JsonTextReader(sr))
+            {
+                return JsonSerializer.Create().Deserialize<List<DocumentServiceLease>>(jsonReader);
+            }
+        }
+
+        #region Edge Case Tests
+
+        [TestMethod]
+        public async Task ShutdownAsync_WithNonEpkLease_StillSerializes()
+        {
+            // Arrange — non-EPK lease (no FeedRange)
+            ConcurrentDictionary<string, DocumentServiceLease> container = new ConcurrentDictionary<string, DocumentServiceLease>();
+            container.TryAdd("core-lease", new DocumentServiceLeaseCore { LeaseId = "core-lease", LeaseToken = "0", Owner = "owner" });
+
+            MemoryStream stream = new MemoryStream();
+            DocumentServiceLeaseContainerInMemory inMemoryContainer = new DocumentServiceLeaseContainerInMemory(container, stream);
+
+            // Act
+            await inMemoryContainer.ShutdownAsync();
+
+            // Assert — lease is serialized
+            Assert.IsTrue(stream.Length > 0);
+            stream.Position = 0;
+            List<DocumentServiceLease> deserialized = DeserializeLeasesFromStream(stream);
+            Assert.AreEqual(1, deserialized.Count);
+            Assert.AreEqual("core-lease", deserialized[0].Id);
+        }
+
+        [TestMethod]
+        public async Task ShutdownAsync_WithDisposedStream_Throws()
+        {
+            ConcurrentDictionary<string, DocumentServiceLease> container = new ConcurrentDictionary<string, DocumentServiceLease>();
+            container.TryAdd("lease0", new DocumentServiceLeaseCoreEpk { LeaseId = "lease0", LeaseToken = "0", FeedRange = new FeedRangeEpk(new Range<string>("", "FF", true, false)) });
+
+            MemoryStream stream = new MemoryStream();
+            DocumentServiceLeaseContainerInMemory inMemoryContainer = new DocumentServiceLeaseContainerInMemory(container, stream);
+
+            stream.Dispose();
+
+            await Assert.ThrowsExceptionAsync<NotSupportedException>(
+                () => inMemoryContainer.ShutdownAsync());
         }
 
         #endregion

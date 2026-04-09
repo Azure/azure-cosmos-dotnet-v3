@@ -83,12 +83,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             DefaultTrace.TraceInformation("Stopping processor...");
             await this.partitionManager.StopAsync().ConfigureAwait(false);
 
+            // Processing is fully stopped at this point. ShutdownAsync persists
+            // in-memory lease state and may still throw if the stream is unavailable.
+            DefaultTrace.TraceInformation("Processor stopped.");
+
             await this.documentServiceLeaseStoreManager
                 .LeaseContainer
                 .ShutdownAsync()
                 .ConfigureAwait(false);
-
-            DefaultTrace.TraceInformation("Processor stopped.");
         }
 
         private async Task InitializeAsync()

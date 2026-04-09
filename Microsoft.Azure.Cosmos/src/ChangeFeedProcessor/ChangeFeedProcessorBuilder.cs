@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
     using Newtonsoft.Json;
     using static Microsoft.Azure.Cosmos.Container;
 
@@ -224,15 +223,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
         public virtual ChangeFeedProcessorBuilder WithInMemoryLeaseContainer()
         {
-            if (this.leaseContainer != null)
-            {
-                throw new InvalidOperationException("The builder already defined a lease container.");
-            }
-
-            if (this.LeaseStoreManager != null)
-            {
-                throw new InvalidOperationException("The builder already defined an in-memory lease container instance.");
-            }
+            this.ValidateNoLeaseContainerConfigured();
 
             if (string.IsNullOrEmpty(this.InstanceName))
             {
@@ -268,7 +259,12 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(leaseState));
             }
 
-            this.WithInMemoryLeaseContainer();
+            this.ValidateNoLeaseContainerConfigured();
+
+            if (string.IsNullOrEmpty(this.InstanceName))
+            {
+                this.InstanceName = ChangeFeedProcessorBuilder.InMemoryDefaultHostName;
+            }
 
             ConcurrentDictionary<string, DocumentServiceLease> container =
                 new ConcurrentDictionary<string, DocumentServiceLease>();
@@ -276,20 +272,24 @@ namespace Microsoft.Azure.Cosmos
             if (leaseState.Length > 0)
             {
                 leaseState.Position = 0;
-                IReadOnlyList<DocumentServiceLease> leases = CosmosContainerExtensions
-                    .DefaultJsonSerializer
-                    .FromStream<List<DocumentServiceLease>>(leaseState);
 
-                if (leases != null)
+                using (StreamReader sr = new StreamReader(leaseState, encoding: System.Text.Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
+                using (JsonTextReader jsonReader = new JsonTextReader(sr))
                 {
-                    foreach (DocumentServiceLease lease in leases)
-                    {
-                        if (lease?.FeedRange == null || !(lease.FeedRange is FeedRangeEpk))
-                        {
-                            throw new InvalidOperationException("Only EPK-based leases with a FeedRange are supported for deserialization.");
-                        }
+                    JsonSerializer serializer = JsonSerializer.Create();
+                    List<DocumentServiceLease> leases = serializer.Deserialize<List<DocumentServiceLease>>(jsonReader);
 
-                        container[lease.Id] = lease;
+                    if (leases != null)
+                    {
+                        foreach (DocumentServiceLease lease in leases)
+                        {
+                            if (lease?.Id == null)
+                            {
+                                throw new InvalidOperationException("Lease state contains a null or invalid lease entry.");
+                            }
+
+                            container[lease.Id] = lease;
+                        }
                     }
                 }
             }
@@ -376,6 +376,19 @@ namespace Microsoft.Azure.Cosmos
 
             this.isBuilt = true;
             return this.changeFeedProcessor;
+        }
+
+        private void ValidateNoLeaseContainerConfigured()
+        {
+            if (this.leaseContainer != null)
+            {
+                throw new InvalidOperationException("The builder already defined a lease container.");
+            }
+
+            if (this.LeaseStoreManager != null)
+            {
+                throw new InvalidOperationException("The builder already defined an in-memory lease container instance.");
+            }
         }
     }
 }

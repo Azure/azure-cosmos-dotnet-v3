@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
-    using System.Text.Json;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
@@ -17,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using Microsoft.Azure.Documents.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using Newtonsoft.Json;
 
     [TestClass]
     [TestCategory("ChangeFeed")]
@@ -349,6 +349,148 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 ChangeFeedProcessorBuilderTests.GetEmptyInitialization());
 
             builder.WithInMemoryLeaseContainer((MemoryStream)null);
+        }
+
+        [TestMethod]
+        public async Task WithInMemoryLeaseContainer_FullLifecycle_RestoreProcessStopPersist()
+        {
+            // Arrange — create initial lease state in a stream
+            DocumentServiceLeaseCoreEpk originalLease = new DocumentServiceLeaseCoreEpk
+            {
+                LeaseId = "lifecycle-lease",
+                LeaseToken = "0",
+                ContinuationToken = "original-continuation",
+                Owner = "original-owner",
+                FeedRange = new FeedRangeEpk(new Range<string>("", "FF", true, false))
+            };
+
+            ConcurrentDictionary<string, DocumentServiceLease> seedContainer = new ConcurrentDictionary<string, DocumentServiceLease>();
+            seedContainer.TryAdd(originalLease.Id, originalLease);
+            MemoryStream leaseState = new MemoryStream();
+            DocumentServiceLeaseContainerInMemory seed = new DocumentServiceLeaseContainerInMemory(seedContainer, leaseState);
+            await seed.ShutdownAsync();
+
+            // Act — build with the populated stream, capturing the store manager
+            DocumentServiceLeaseStoreManager capturedManager = null;
+
+            Action<DocumentServiceLeaseStoreManager,
+                Container,
+                string,
+                ChangeFeedLeaseOptions,
+                ChangeFeedProcessorOptions,
+                Container> verifier = (DocumentServiceLeaseStoreManager leaseStoreManager,
+                Container leaseContainer,
+                string instanceName,
+                ChangeFeedLeaseOptions changeFeedLeaseOptions,
+                ChangeFeedProcessorOptions changeFeedProcessorOptions,
+                Container monitoredContainer) =>
+                {
+                    capturedManager = leaseStoreManager;
+                };
+
+            ChangeFeedProcessorBuilder builder = new ChangeFeedProcessorBuilder("workflowName",
+                ChangeFeedProcessorBuilderTests.GetMockedContainer(),
+                ChangeFeedProcessorBuilderTests.GetMockedProcessor(),
+                verifier);
+
+            builder.WithInMemoryLeaseContainer(leaseState);
+            builder.Build();
+
+            // Verify leases were restored
+            Assert.IsNotNull(capturedManager);
+            IReadOnlyList<DocumentServiceLease> restoredLeases = await capturedManager.LeaseContainer.GetAllLeasesAsync();
+            Assert.AreEqual(1, restoredLeases.Count);
+            Assert.AreEqual("original-continuation", restoredLeases[0].ContinuationToken);
+
+            // Simulate stop — persist state back to the same stream
+            await capturedManager.LeaseContainer.ShutdownAsync();
+
+            // Assert — stream is still usable and contains valid serialized state
+            Assert.IsTrue(leaseState.CanRead, "Stream should still be readable after ShutdownAsync");
+            Assert.IsTrue(leaseState.Length > 0, "Stream should contain serialized lease data");
+
+            // Verify the persisted data round-trips correctly
+            leaseState.Position = 0;
+            using (StreamReader sr = new StreamReader(leaseState, leaveOpen: true))
+            using (JsonTextReader jsonReader = new JsonTextReader(sr))
+            {
+                List<DocumentServiceLease> persisted = JsonSerializer.Create().Deserialize<List<DocumentServiceLease>>(jsonReader);
+
+                Assert.AreEqual(1, persisted.Count);
+                Assert.AreEqual("lifecycle-lease", persisted[0].Id);
+                Assert.AreEqual("original-continuation", persisted[0].ContinuationToken);
+                Assert.IsNotNull(persisted[0].FeedRange);
+            }
+        }
+
+        #endregion
+
+        #region Edge Case Tests
+
+        [TestMethod]
+        [ExpectedException(typeof(JsonReaderException))]
+        public void WithInMemoryLeaseContainerWithCorruptedStreamThrows()
+        {
+            byte[] garbage = System.Text.Encoding.UTF8.GetBytes("not valid json {{{");
+            MemoryStream corruptedStream = new MemoryStream(garbage);
+
+            ChangeFeedProcessorBuilder builder = new ChangeFeedProcessorBuilder("workflowName",
+                ChangeFeedProcessorBuilderTests.GetMockedContainer(),
+                ChangeFeedProcessorBuilderTests.GetMockedProcessor(),
+                ChangeFeedProcessorBuilderTests.GetEmptyInitialization());
+
+            builder.WithInMemoryLeaseContainer(corruptedStream);
+        }
+
+        [TestMethod]
+        public async Task WithInMemoryLeaseContainerWithEmptyArrayStreamInitializesEmptyStore()
+        {
+            byte[] emptyArray = System.Text.Encoding.UTF8.GetBytes("[]");
+            MemoryStream stream = new MemoryStream(emptyArray);
+
+            DocumentServiceLeaseStoreManager capturedManager = null;
+
+            Action<DocumentServiceLeaseStoreManager,
+                Container,
+                string,
+                ChangeFeedLeaseOptions,
+                ChangeFeedProcessorOptions,
+                Container> verifier = (DocumentServiceLeaseStoreManager leaseStoreManager,
+                Container leaseContainer,
+                string instanceName,
+                ChangeFeedLeaseOptions changeFeedLeaseOptions,
+                ChangeFeedProcessorOptions changeFeedProcessorOptions,
+                Container monitoredContainer) =>
+                {
+                    capturedManager = leaseStoreManager;
+                };
+
+            ChangeFeedProcessorBuilder builder = new ChangeFeedProcessorBuilder("workflowName",
+                ChangeFeedProcessorBuilderTests.GetMockedContainer(),
+                ChangeFeedProcessorBuilderTests.GetMockedProcessor(),
+                verifier);
+
+            builder.WithInMemoryLeaseContainer(stream);
+            builder.Build();
+
+            Assert.IsNotNull(capturedManager);
+            IReadOnlyList<DocumentServiceLease> allLeases = await capturedManager.LeaseContainer.GetAllLeasesAsync();
+            Assert.AreEqual(0, allLeases.Count);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(InvalidOperationException))]
+        public void WithInMemoryLeaseContainerWithNullLeaseEntryThrows()
+        {
+            byte[] nullEntry = System.Text.Encoding.UTF8.GetBytes("[null]");
+            MemoryStream stream = new MemoryStream(nullEntry);
+
+            ChangeFeedProcessorBuilder builder = new ChangeFeedProcessorBuilder("workflowName",
+                ChangeFeedProcessorBuilderTests.GetMockedContainer(),
+                ChangeFeedProcessorBuilderTests.GetMockedProcessor(),
+                ChangeFeedProcessorBuilderTests.GetEmptyInitialization());
+
+            builder.WithInMemoryLeaseContainer(stream);
         }
 
         #endregion
