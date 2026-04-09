@@ -273,6 +273,7 @@ namespace Microsoft.Azure.Cosmos
             if (statusCode == HttpStatusCode.Forbidden
                 && subStatusCode == SubStatusCodes.WriteForbidden)
             {
+#if !INTERNAL
                 // We received a 403.3 on the read path. This is possible only when the hub region header is present. Retry
                 // the request to continue discovering the hub region.
                 if (this.documentServiceRequest.IsReadOnlyRequest && this.addHubRegionProcessingOnlyHeader)
@@ -282,6 +283,7 @@ namespace Microsoft.Azure.Cosmos
                     return ShouldRetryResult.RetryAfter(retryDelay);
                 }
                 else
+#endif
                 {
                     // It's a write forbidden so it safe to retry.
                     // For hub region routing, TryMarkEndpointUnavailableForPartitionKeyRange
