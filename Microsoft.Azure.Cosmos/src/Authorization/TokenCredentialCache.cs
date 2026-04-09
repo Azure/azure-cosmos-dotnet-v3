@@ -25,6 +25,18 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal sealed class TokenCredentialCache : IDisposable
     {
+        private sealed class AuthState
+        {
+            public AuthState(AccessToken token, string authorizationHeader)
+            {
+                this.Token = token;
+                this.AuthorizationHeader = authorizationHeader;
+            }
+
+            public AccessToken Token { get; }
+            public string AuthorizationHeader { get; }
+        }
+
         // Default token expiration time is 1hr.
         // Making the default 50% of the token life span. This gives 50% of the tokens life for transient error
         // to get resolved before the token expires.
@@ -48,8 +60,8 @@ namespace Microsoft.Azure.Cosmos
         private readonly Func<string, string> tokenToAuthorizationHeader;
 
         private TimeSpan? systemBackgroundTokenCredentialRefreshInterval;
-        private Task<(AccessToken, string)>? currentRefreshOperation = null;
-        private (AccessToken cachedAccessToken, string cachedAuthorizationHeader)? accessTokenAndAuthHeader = null;
+        private Task<AuthState>? currentRefreshOperation = null;
+        private volatile AuthState? authState = null;
         private bool isBackgroundTaskRunning = false;
         private bool isDisposed = false;
 
@@ -100,13 +112,14 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // Use the cached authorization header if the token is still valid
-            if (this.accessTokenAndAuthHeader.HasValue &&
-                DateTime.UtcNow < this.accessTokenAndAuthHeader.Value.cachedAccessToken.ExpiresOn)
+            AuthState? snapshot = this.authState;
+            if (snapshot != null &&
+                DateTime.UtcNow < snapshot.Token.ExpiresOn)
             {
-                return this.accessTokenAndAuthHeader.Value.cachedAuthorizationHeader;
+                return snapshot.AuthorizationHeader;
             }
 
-            await this.GetNewTokenAsync(trace);
+            AuthState refreshed = await this.GetNewTokenAsync(trace);
 
             if (!this.isBackgroundTaskRunning)
             {
@@ -114,7 +127,7 @@ namespace Microsoft.Azure.Cosmos
                 Task backgroundThread = Task.Run(this.StartBackgroundTokenRefreshLoop);
             }
 
-            return this.accessTokenAndAuthHeader!.Value.cachedAuthorizationHeader;
+            return refreshed.AuthorizationHeader;
         }
 
         public void Dispose()
@@ -129,12 +142,12 @@ namespace Microsoft.Azure.Cosmos
             this.isDisposed = true;
         }
 
-        private async Task<(AccessToken, string)> GetNewTokenAsync(
+        private async Task<AuthState> GetNewTokenAsync(
             ITrace trace)
         {
             // Use a local variable to avoid the possibility the task gets changed
             // between the null check and the await operation.
-            Task<(AccessToken, string)>? currentTask = this.currentRefreshOperation;
+            Task<AuthState>? currentTask = this.currentRefreshOperation;
             if (currentTask != null)
             {
                 // The refresh is already occurring wait on the existing task
@@ -165,7 +178,7 @@ namespace Microsoft.Azure.Cosmos
             return await currentTask;
         }
 
-        private async ValueTask<(AccessToken, string)> RefreshCachedTokenWithRetryHelperAsync(
+        private async ValueTask<AuthState> RefreshCachedTokenWithRetryHelperAsync(
             ITrace trace)
         {
             Exception? lastException = null;
@@ -212,8 +225,11 @@ namespace Microsoft.Azure.Cosmos
                                 this.systemBackgroundTokenCredentialRefreshInterval = TimeSpan.FromSeconds(refreshIntervalInSeconds);
                             }
 
-                            this.accessTokenAndAuthHeader = (accessToken, this.tokenToAuthorizationHeader(accessToken.Token));
-                            return ((AccessToken, string))this.accessTokenAndAuthHeader;
+                            AuthState newState = new AuthState(
+                                accessToken,
+                                this.tokenToAuthorizationHeader(accessToken.Token));
+                            this.authState = newState;
+                            return newState;
                         }
                         catch (OperationCanceledException operationCancelled)
                         {
@@ -248,7 +264,7 @@ namespace Microsoft.Azure.Cosmos
                                    (requestFailedException.Status == (int)HttpStatusCode.Unauthorized ||
                                     requestFailedException.Status == (int)HttpStatusCode.Forbidden))
                             {
-                                this.accessTokenAndAuthHeader = default;
+                                this.authState = null;
                                 throw;
                             }
                             bool didFallback = this.scopeProvider.TryFallback(exception);
@@ -340,9 +356,10 @@ namespace Microsoft.Azure.Cosmos
                         ex.Message);
 
                     // Since it failed retry again in with half the token life span again.
-                    if (!this.userDefinedBackgroundTokenCredentialRefreshInterval.HasValue && this.accessTokenAndAuthHeader.HasValue)
+                    AuthState? currentState = this.authState;
+                    if (!this.userDefinedBackgroundTokenCredentialRefreshInterval.HasValue && currentState != null)
                     {
-                        double totalSecondUntilExpire = (this.accessTokenAndAuthHeader.Value.cachedAccessToken.ExpiresOn - DateTimeOffset.UtcNow).TotalSeconds * DefaultBackgroundTokenCredentialRefreshIntervalPercentage;
+                        double totalSecondUntilExpire = (currentState.Token.ExpiresOn - DateTimeOffset.UtcNow).TotalSeconds * DefaultBackgroundTokenCredentialRefreshIntervalPercentage;
                         this.systemBackgroundTokenCredentialRefreshInterval = TimeSpan.FromSeconds(totalSecondUntilExpire);
 
                         // Refresh interval is less than the minimum. Stop the background refresh.
