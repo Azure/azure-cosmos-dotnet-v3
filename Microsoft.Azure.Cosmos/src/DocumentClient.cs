@@ -165,7 +165,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal TelemetryToServiceHelper telemetryToServiceHelper { get; set; }
 
-        private ClientCollectionCache collectionCache;
+        internal ClientCollectionCache collectionCache;
 
         private PartitionKeyRangeCache partitionKeyRangeCache;
 

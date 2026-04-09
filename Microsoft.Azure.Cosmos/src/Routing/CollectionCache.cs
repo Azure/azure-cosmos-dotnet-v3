@@ -296,14 +296,49 @@ namespace Microsoft.Azure.Cosmos.Common
                 {
                     DateTime currentTime = DateTime.UtcNow;
                     ContainerProperties collection = await this.GetByNameAsync(apiVersion, resourceFullName, trace, clientSideRequestStatistics, cancellationToken);
-                    cache.collectionInfoById.Set(collection.ResourceId, collection);
-                    cache.collectionInfoByNameLastRefreshTime.AddOrUpdate(resourceFullName, currentTime,
-                        (string currentKey, DateTime currentValue) => currentTime);
-                    cache.collectionInfoByIdLastRefreshTime.AddOrUpdate(collection.ResourceId, currentTime,
-                             (string currentKey, DateTime currentValue) => currentTime);
+                    UpdateCacheEntry(resourceFullName, cache, collection);
                     return collection;
                 },
                 cancellationToken);
+        }
+
+        /// <summary>
+        /// Updates the collection cache with the provided container properties.
+        /// This allows proactive cache population when container metadata is
+        /// already available (e.g., from a create or read container response),
+        /// avoiding an extra backend call on the next cache lookup.
+        /// </summary>
+        /// <param name="containerLink">The name-based container link (e.g., dbs/mydb/colls/mycol).</param>
+        /// <param name="collection">The container properties to cache.</param>
+        /// <param name="apiVersion">Optional API version; defaults to the latest cache partition.</param>
+        internal void UpdateCache(
+            string containerLink,
+            ContainerProperties collection,
+            string apiVersion = null)
+        {
+            if (collection == null
+                || string.IsNullOrEmpty(containerLink)
+                || string.IsNullOrEmpty(collection.ResourceId))
+            {
+                return;
+            }
+
+            string resourceFullName = PathsHelper.GetCollectionPath(containerLink);
+            InternalCache cache = this.GetCache(apiVersion);
+
+            cache.collectionInfoByName.Set(resourceFullName, collection);
+            CollectionCache.UpdateCacheEntry(resourceFullName, cache, collection);
+        }
+
+        private static void UpdateCacheEntry(string resourceFullName, InternalCache cache, ContainerProperties collection)
+        {
+            DateTime currentTime = DateTime.UtcNow;
+
+            cache.collectionInfoById.Set(collection.ResourceId, collection);
+            cache.collectionInfoByNameLastRefreshTime.AddOrUpdate(resourceFullName, currentTime,
+                (string currentKey, DateTime currentValue) => currentTime);
+            cache.collectionInfoByIdLastRefreshTime.AddOrUpdate(collection.ResourceId, currentTime,
+                     (string currentKey, DateTime currentValue) => currentTime);
         }
 
         private async Task RefreshAsync(DocumentServiceRequest request,

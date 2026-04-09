@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
@@ -15,10 +16,18 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         private readonly CosmosSerializerCore serializerCore;
 
+        /// <summary>
+        /// Lazy accessor for the collection cache used to proactively
+        /// populate container metadata on create/read/replace responses.
+        /// </summary>
+        private readonly Func<CollectionCache> collectionCacheFunc;
+
         public CosmosResponseFactoryCore(
-            CosmosSerializerCore jsonSerializerCore)
+            CosmosSerializerCore jsonSerializerCore,
+            Func<CollectionCache> collectionCacheFunc = null)
         {
             this.serializerCore = jsonSerializerCore;
+            this.collectionCacheFunc = collectionCacheFunc;
         }
 
         public override FeedResponse<T> CreateItemFeedResponse<T>(ResponseMessage responseMessage)
@@ -104,6 +113,15 @@ namespace Microsoft.Azure.Cosmos
             return this.ProcessMessage(responseMessage, (cosmosResponseMessage) =>
             {
                 ContainerProperties containerProperties = this.ToObjectpublic<ContainerProperties>(cosmosResponseMessage);
+
+                if (containerProperties != null
+                    && container is ContainerInternal containerInternal)
+                {
+                    this.collectionCacheFunc?.Invoke()?.UpdateCache(
+                        containerInternal.LinkUri,
+                        containerProperties);
+                }
+
                 return new ContainerResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,

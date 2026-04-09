@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
     internal class MockDocumentClient : DocumentClient, IAuthorizationTokenProvider, ICosmosAuthorizationTokenProvider
     {
-        Mock<ClientCollectionCache> collectionCache;
+        new Mock<ClientCollectionCache> collectionCache;
         Mock<PartitionKeyRangeCache> partitionKeyRangeCache;
         private readonly Cosmos.ConsistencyLevel accountConsistencyLevel;
 
