@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     ///     Partition key ranges              YES
     /// </summary>
     [TestClass]
-    public class CosmosAadTokenRevocationE2ETests
+    public class CosmosAadTokenRevocationTests
     {
         private CosmosClient cosmosClient;
         private Cosmos.Database database;
