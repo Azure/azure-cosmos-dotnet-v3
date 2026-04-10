@@ -48,6 +48,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly Protocol protocol;
         private readonly string protocolFilter;
         private readonly ICosmosAuthorizationTokenProvider tokenProvider;
+        private readonly AuthorizationTokenProvider authorizationTokenProvider;
         private readonly bool enableTcpConnectionEndpointRediscovery;
 
         private readonly SemaphoreSlim semaphore;
@@ -72,11 +73,13 @@ namespace Microsoft.Azure.Cosmos.Routing
             long suboptimalPartitionForceRefreshIntervalInSeconds = 600,
             bool enableTcpConnectionEndpointRediscovery = false,
             bool replicaAddressValidationEnabled = false,
-            bool enableAsyncCacheExceptionNoSharing = true)
+            bool enableAsyncCacheExceptionNoSharing = true,
+            AuthorizationTokenProvider authorizationTokenProvider = null)
         {
             this.addressEndpoint = new Uri(serviceEndpoint + "/" + Paths.AddressPathSegment);
             this.protocol = protocol;
             this.tokenProvider = tokenProvider;
+            this.authorizationTokenProvider = authorizationTokenProvider;
             this.serviceEndpoint = serviceEndpoint;
             this.serviceConfigReader = serviceConfigReader;
             this.serverPartitionAddressCache = new AsyncCacheNonBlocking<PartitionKeyRangeIdentity, PartitionAddressInformation>(enableAsyncCacheExceptionNoSharing);
@@ -780,17 +783,51 @@ namespace Microsoft.Azure.Cosmos.Routing
                     }
                 }
 
-                using (HttpResponseMessage httpResponseMessage = await this.httpClient.GetAsync(
-                    uri: targetEndpoint,
-                    additionalHeaders: headers,
-                    resourceType: resourceType,
-                    timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout,
-                    clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
-                    cancellationToken: default))
+                try
                 {
-                    DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(httpResponseMessage);
-                    GatewayAddressCache.LogAddressResolutionEnd(request, identifier);
-                    return documentServiceResponse;
+                    using (HttpResponseMessage httpResponseMessage = await this.httpClient.GetAsync(
+                        uri: targetEndpoint,
+                        additionalHeaders: headers,
+                        resourceType: resourceType,
+                        timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout,
+                        clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
+                        cancellationToken: default))
+                    {
+                        DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(httpResponseMessage);
+                        GatewayAddressCache.LogAddressResolutionEnd(request, identifier);
+                        return documentServiceResponse;
+                    }
+                }
+                catch (DocumentClientException dce)
+                    when (AuthorizationTokenProviderTokenCredential.TryHandleRevocationException(
+                        this.authorizationTokenProvider, dce))
+                {
+                    DefaultTrace.TraceInformation(
+                        "GatewayAddressCache: AAD token revocation detected on master address resolution. Retrying.");
+
+                    headers.Set(HttpConstants.HttpHeaders.XDate, Rfc1123DateTimeCache.UtcNow());
+                    string retryToken = await this.tokenProvider.GetUserAuthorizationTokenAsync(
+                        resourceAddress,
+                        resourceTypeToSign,
+                        HttpConstants.HttpMethods.Get,
+                        headers,
+                        AuthorizationTokenType.PrimaryMasterKey,
+                        trace);
+
+                    headers.Set(HttpConstants.HttpHeaders.Authorization, retryToken);
+
+                    using (HttpResponseMessage httpResponseMessage = await this.httpClient.GetAsync(
+                        uri: targetEndpoint,
+                        additionalHeaders: headers,
+                        resourceType: resourceType,
+                        timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout,
+                        clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
+                        cancellationToken: default))
+                    {
+                        DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(httpResponseMessage);
+                        GatewayAddressCache.LogAddressResolutionEnd(request, identifier);
+                        return documentServiceResponse;
+                    }
                 }
             }
         }
@@ -886,17 +923,51 @@ namespace Microsoft.Azure.Cosmos.Routing
                     }
                 }
 
-                using (HttpResponseMessage httpResponseMessage = await this.httpClient.GetAsync(
-                    uri: targetEndpoint,
-                    additionalHeaders: headers,
-                    resourceType: ResourceType.Document,
-                    timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout,
-                    clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
-                    cancellationToken: default))
+                try
                 {
-                    DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(httpResponseMessage);
-                    GatewayAddressCache.LogAddressResolutionEnd(request, identifier);
-                    return documentServiceResponse;
+                    using (HttpResponseMessage httpResponseMessage = await this.httpClient.GetAsync(
+                        uri: targetEndpoint,
+                        additionalHeaders: headers,
+                        resourceType: ResourceType.Document,
+                        timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout,
+                        clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
+                        cancellationToken: default))
+                    {
+                        DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(httpResponseMessage);
+                        GatewayAddressCache.LogAddressResolutionEnd(request, identifier);
+                        return documentServiceResponse;
+                    }
+                }
+                catch (DocumentClientException dce)
+                    when (AuthorizationTokenProviderTokenCredential.TryHandleRevocationException(
+                        this.authorizationTokenProvider, dce))
+                {
+                    DefaultTrace.TraceInformation(
+                        "GatewayAddressCache: AAD token revocation detected on server address resolution. Retrying.");
+
+                    headers.Set(HttpConstants.HttpHeaders.XDate, Rfc1123DateTimeCache.UtcNow());
+                    string retryToken = await this.tokenProvider.GetUserAuthorizationTokenAsync(
+                        collectionRid,
+                        resourceTypeToSign,
+                        HttpConstants.HttpMethods.Get,
+                        headers,
+                        AuthorizationTokenType.PrimaryMasterKey,
+                        trace);
+
+                    headers.Set(HttpConstants.HttpHeaders.Authorization, retryToken);
+
+                    using (HttpResponseMessage httpResponseMessage = await this.httpClient.GetAsync(
+                        uri: targetEndpoint,
+                        additionalHeaders: headers,
+                        resourceType: ResourceType.Document,
+                        timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout,
+                        clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
+                        cancellationToken: default))
+                    {
+                        DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(httpResponseMessage);
+                        GatewayAddressCache.LogAddressResolutionEnd(request, identifier);
+                        return documentServiceResponse;
+                    }
                 }
             }
         }

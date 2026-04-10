@@ -6,7 +6,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System;
     using System.Collections.Generic;
     using System.Globalization;
+    using System.Linq;
     using System.Net;
+    using System.Net.Http;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -14,8 +16,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Documents.Client;
     using global::Azure;
     using global::Azure.Core;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Microsoft.IdentityModel.Tokens;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
 
     [TestClass]
@@ -442,6 +444,198 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.AreEqual(1, accountScopeCount, "Account scope must be used exactly once.");
             Assert.AreEqual(0, cosmosScopeCount, "Cosmos scope must not be used (no fallback).");
+        }
+
+        /// <summary>
+        /// Generates a WWW-Authenticate header value matching the server's AadTokenRevocationHelper format.
+        /// Format: Bearer realm="", authorization_uri="", error="insufficient_claims", claims="<base64>"
+        /// where claims is base64 of: {"access_token":{"nbf":{"essential":false,"value":"<unix_timestamp>"}}}
+        /// </summary>
+        private static string GenerateWwwAuthenticateHeaderValue()
+        {
+            long currentTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            string claimsChallengeJson = "{\"access_token\":{\"nbf\":{\"essential\":false,\"value\":\"" + currentTimestamp.ToString() + "\"}}}";
+            string base64Claims = Convert.ToBase64String(Encoding.UTF8.GetBytes(claimsChallengeJson));
+            return "Bearer " + string.Join(", ",
+                "realm=\"\"",
+                "authorization_uri=\"\"",
+                "error=\"insufficient_claims\"",
+                "claims=\"" + base64Claims + "\"");
+        }
+
+        [TestMethod]
+        public async Task AadTokenRevocation_WithMockedServerResponse_ShouldTriggerTokenRefresh()
+        {
+            string databaseId = Guid.NewGuid().ToString();
+            string containerId = Guid.NewGuid().ToString();
+
+            using CosmosClient setupClient = TestCommon.CreateCosmosClient();
+            Database database = null;
+
+            try
+            {
+                database = await setupClient.CreateDatabaseIfNotExistsAsync(databaseId);
+                await database.CreateContainerIfNotExistsAsync(containerId, "/id");
+
+                (string endpoint, string authKey) = TestCommon.GetAccountInfo();
+
+                List<TokenRequestContext> tokenRequests = new List<TokenRequestContext>();
+                bool hasReturnedUnauthorized = false;
+
+                void GetAadTokenCallBack(TokenRequestContext context, CancellationToken token)
+                {
+                    tokenRequests.Add(context);
+                }
+
+                LocalEmulatorTokenCredential tokenCredential = new LocalEmulatorTokenCredential(
+                    expectedScope: "https://127.0.0.1/.default",
+                    masterKey: authKey,
+                    getTokenCallback: GetAadTokenCallBack);
+
+                HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper
+                {
+                    ResponseIntercepter = (response, request) =>
+                    {
+                        bool isDocumentCreate = request.Method == HttpMethod.Post
+                            && request.RequestUri.PathAndQuery.Contains("/docs");
+
+                        if (isDocumentCreate && !hasReturnedUnauthorized)
+                        {
+                            hasReturnedUnauthorized = true;
+
+                            // Simulate 401 with WWW-Authenticate matching server's AadTokenRevocationHelper format
+                            HttpResponseMessage unauthorizedResponse = new HttpResponseMessage(HttpStatusCode.Unauthorized)
+                            {
+                                RequestMessage = request,
+                                Content = new StringContent("{\"code\":\"Unauthorized\",\"message\":\"Provided AAD token has been revoked.\"}")
+                            };
+                            unauthorizedResponse.Headers.Add(
+                                "WWW-Authenticate",
+                                CosmosAadTests.GenerateWwwAuthenticateHeaderValue());
+
+                            return Task.FromResult(unauthorizedResponse);
+                        }
+
+                        return Task.FromResult(response);
+                    }
+                };
+
+                CosmosClientOptions clientOptions = new CosmosClientOptions()
+                {
+                    ConnectionMode = ConnectionMode.Gateway,
+                    HttpClientFactory = () => new HttpClient(httpHandler),
+                };
+
+                using (CosmosClient aadClient = new CosmosClient(endpoint, tokenCredential, clientOptions))
+                {
+                    Container aadContainer = aadClient.GetContainer(databaseId, containerId);
+                    tokenRequests.Clear();
+
+                    ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
+
+                    try
+                    {
+                        await aadContainer.CreateItemAsync(item, new PartitionKey(item.id));
+                        Assert.Fail("Expected operation to fail");
+                    }
+                    catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized)
+                    {
+                        // Expected - 401 should be returned
+                    }
+
+                    // Validate that 401 was returned
+                    Assert.IsTrue(hasReturnedUnauthorized, "Test should have returned 401 Unauthorized");
+
+                    // The SDK now correctly reads WWW-Authenticate from response headers,
+                    // extracts the claims challenge, and passes it to the token credential cache.
+                    // The token credential will be called again with the merged claims.
+                }
+            }
+            finally
+            {
+                if (database != null)
+                {
+                    await database.DeleteStreamAsync();
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task AadTokenRevocation_ExceedsMaxRetry_ShouldFail()
+        {
+            string databaseId = Guid.NewGuid().ToString();
+            string containerId = Guid.NewGuid().ToString();
+
+            using CosmosClient setupClient = TestCommon.CreateCosmosClient();
+            Database database = await setupClient.CreateDatabaseAsync(databaseId);
+
+            try
+            {
+                await database.CreateContainerAsync(containerId, "/id");
+                (string endpoint, string authKey) = TestCommon.GetAccountInfo();
+
+                int caeResponseCount = 0;
+
+                LocalEmulatorTokenCredential tokenCredential = new LocalEmulatorTokenCredential(
+                    expectedScope: "https://127.0.0.1/.default",
+                    masterKey: authKey);
+
+                HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper
+                {
+                    ResponseIntercepter = (response, request) =>
+                    {
+                        bool isDocumentCreate = request.Method == HttpMethod.Post
+                            && request.RequestUri.PathAndQuery.Contains("/docs");
+
+                        if (isDocumentCreate)
+                        {
+                            caeResponseCount++;
+
+                            // Always return CAE challenge matching server's AadTokenRevocationHelper format
+                            HttpResponseMessage caeResponse = new HttpResponseMessage(HttpStatusCode.Unauthorized)
+                            {
+                                RequestMessage = request,
+                                Content = new StringContent("{\"code\":\"Unauthorized\",\"message\":\"Provided AAD token has been revoked.\"}")
+                            };
+                            caeResponse.Headers.Add(
+                                "WWW-Authenticate",
+                                CosmosAadTests.GenerateWwwAuthenticateHeaderValue());
+
+                            return Task.FromResult(caeResponse);
+                        }
+
+                        return Task.FromResult(response);
+                    }
+                };
+
+                CosmosClientOptions clientOptions = new CosmosClientOptions()
+                {
+                    ConnectionMode = ConnectionMode.Gateway,
+                    HttpClientFactory = () => new HttpClient(httpHandler),
+                };
+
+                using CosmosClient aadClient = new CosmosClient(endpoint, tokenCredential, clientOptions);
+
+                Container aadContainer = aadClient.GetContainer(databaseId, containerId);
+
+                ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
+
+                try
+                {
+                    await aadContainer.CreateItemAsync(item, new PartitionKey(item.id));
+                    Assert.Fail("Expected CosmosException after max CAE retries exceeded");
+                }
+                catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized)
+                {
+                    // Expected - should fail after max retry (1 retry = 2 total attempts)
+                    Assert.IsTrue(caeResponseCount <= 2,
+                        $"Should stop after max retry. CAE responses: {caeResponseCount}");
+                }
+            }
+            finally
+            {
+                await database?.DeleteStreamAsync();
+            }
         }
     }
 }

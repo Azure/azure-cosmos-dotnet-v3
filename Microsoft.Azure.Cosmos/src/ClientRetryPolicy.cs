@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
 
     /// <summary>
     /// Client policy is combination of endpoint change retry + throttling retry.
@@ -23,16 +24,19 @@ namespace Microsoft.Azure.Cosmos
         private const int RetryIntervalInMS = 1000; // Once we detect failover wait for 1 second before retrying request.
         private const int MaxRetryCount = 120;
         private const int MaxServiceUnavailableRetryCount = 1;
+        private const int MaxCaeRevocationRetryCount = 1;
 
         private readonly IDocumentClientRetryPolicy throttlingRetry;
         private readonly GlobalEndpointManager globalEndpointManager;
         private readonly GlobalPartitionEndpointManager partitionKeyRangeLocationCache;
         private readonly bool enableEndpointDiscovery;
         private readonly bool isThinClientEnabled;
-        private int failoverRetryCount;
+        private readonly AuthorizationTokenProvider authorizationTokenProvider;
 
+        private int failoverRetryCount;
         private int sessionTokenRetryCount;
         private int serviceUnavailableRetryCount;
+        private int caeRevocationRetryCount;
         private bool isReadRequest;
         private bool canUseMultipleWriteLocations;
         private bool isMultiMasterWriteRequest;
@@ -48,7 +52,8 @@ namespace Microsoft.Azure.Cosmos
             GlobalPartitionEndpointManager partitionKeyRangeLocationCache,
             RetryOptions retryOptions,
             bool enableEndpointDiscovery,
-            bool isThinClientEnabled)
+            bool isThinClientEnabled,
+            AuthorizationTokenProvider authorizationTokenProvider = null)
         {
             this.throttlingRetry = new ResourceThrottleRetryPolicy(
                 retryOptions.MaxRetryAttemptsOnThrottledRequests,
@@ -60,9 +65,11 @@ namespace Microsoft.Azure.Cosmos
             this.enableEndpointDiscovery = enableEndpointDiscovery;
             this.sessionTokenRetryCount = 0;
             this.serviceUnavailableRetryCount = 0;
+            this.caeRevocationRetryCount = 0;
             this.canUseMultipleWriteLocations = false;
             this.isMultiMasterWriteRequest = false;
             this.isThinClientEnabled = isThinClientEnabled;
+            this.authorizationTokenProvider = authorizationTokenProvider;
         }
 
         /// <summary> 
@@ -117,7 +124,8 @@ namespace Microsoft.Azure.Cosmos
 
                 ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
                     clientException?.StatusCode,
-                    clientException?.GetSubStatus());
+                    clientException?.GetSubStatus(),
+                    clientException?.Headers);
                 if (shouldRetryResult != null)
                 {
                     return shouldRetryResult;
@@ -131,7 +139,8 @@ namespace Microsoft.Azure.Cosmos
             {
                 ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
                     cosmosException.StatusCode,
-                    cosmosException.Headers.SubStatusCode);
+                    cosmosException.Headers.SubStatusCode,
+                    cosmosException.Headers);
                 if (shouldRetryResult != null)
                 {
                     return shouldRetryResult;
@@ -172,7 +181,8 @@ namespace Microsoft.Azure.Cosmos
 
             ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
                     cosmosResponseMessage?.StatusCode,
-                    cosmosResponseMessage?.Headers.SubStatusCode);
+                    cosmosResponseMessage?.Headers.SubStatusCode,
+                    cosmosResponseMessage?.Headers);
             if (shouldRetryResult != null)
             {
                 return shouldRetryResult;
@@ -245,7 +255,30 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ShouldRetryResult> ShouldRetryInternalAsync(
             HttpStatusCode? statusCode,
-            SubStatusCodes? subStatusCode)
+            SubStatusCodes? subStatusCode,
+            INameValueCollection responseHeaders = null)
+        {
+            return await this.ShouldRetryInternalAsync(
+                statusCode,
+                subStatusCode,
+                responseHeaders?[HttpConstants.HttpHeaders.WwwAuthenticate]);
+        }
+
+        private async Task<ShouldRetryResult> ShouldRetryInternalAsync(
+            HttpStatusCode? statusCode,
+            SubStatusCodes? subStatusCode,
+            Headers responseHeaders)
+        {
+            return await this.ShouldRetryInternalAsync(
+                statusCode,
+                subStatusCode,
+                responseHeaders?[HttpConstants.HttpHeaders.WwwAuthenticate]);
+        }
+
+        private async Task<ShouldRetryResult> ShouldRetryInternalAsync(
+            HttpStatusCode? statusCode,
+            SubStatusCodes? subStatusCode,
+            string wwwAuthenticateHeaderValue)
         {
             if (!statusCode.HasValue
                 && (!subStatusCode.HasValue
@@ -287,7 +320,7 @@ namespace Microsoft.Azure.Cosmos
                     if (this.retryContext != null && this.retryContext.RouteToHub)
                     {
                         forceRefresh = true;
-                        
+
                     }
 
                     ShouldRetryResult retryResult = await this.ShouldRetryOnEndpointFailureAsync(
@@ -350,10 +383,59 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // Recieved 500 status code or lease not found
-            if ((statusCode == HttpStatusCode.InternalServerError && this.isReadRequest)
+            if ((statusCode == HttpStatusCode.InternalServerError && this.isReadRequest)        
                 || (statusCode == HttpStatusCode.Gone && subStatusCode == SubStatusCodes.LeaseNotFound))
             {
                 return this.ShouldRetryOnUnavailableEndpointStatusCodes();
+            }
+
+            // Handle 401 Unauthorized - Check for AAD token revocation (CAE or Emergency) with claims challenge.
+            // Emergency revocation sends substatus 5013; CAE sends 401 + WWW-Authenticate without a specific substatus.
+            if (statusCode == HttpStatusCode.Unauthorized
+                && (subStatusCode == (SubStatusCodes)5013
+                    || !string.IsNullOrEmpty(wwwAuthenticateHeaderValue)))
+            {
+                return this.HandleUnauthorizedResponse(wwwAuthenticateHeaderValue);
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Handles 401 Unauthorized responses for AAD token revocation scenarios.
+        /// Checks for claims challenge in WWW-Authenticate response header, resets cache, and retries with fresh token.
+        /// </summary>
+        /// <param name="wwwAuthenticateHeaderValue">The WWW-Authenticate header value from the response</param>
+        private ShouldRetryResult HandleUnauthorizedResponse(string wwwAuthenticateHeaderValue)
+        {
+            if (this.documentServiceRequest == null ||
+                !(this.authorizationTokenProvider is AuthorizationTokenProviderTokenCredential tokenProvider))
+            {
+                return null;
+            }
+
+            // Check if we've exceeded max CAE retry count
+            if (this.caeRevocationRetryCount >= MaxCaeRevocationRetryCount)
+            {
+                DefaultTrace.TraceWarning(
+                    "ClientRetryPolicy: Token revocation max retry count ({0}) exceeded. Not retrying.",
+                    MaxCaeRevocationRetryCount);
+
+                return ShouldRetryResult.NoRetry();
+            }
+
+            // Attempt to handle token revocation using response headers (extracts claims and resets cache)
+            if (tokenProvider.TryHandleTokenRevocation(
+                HttpStatusCode.Unauthorized,
+                wwwAuthenticateHeaderValue))
+            {
+                this.caeRevocationRetryCount++;
+
+                DefaultTrace.TraceInformation(
+                    "ClientRetryPolicy: AAD token revocation handled. Retrying with fresh token. RetryCount={0}",
+                    this.caeRevocationRetryCount);
+
+                return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
             }
 
             return null;
