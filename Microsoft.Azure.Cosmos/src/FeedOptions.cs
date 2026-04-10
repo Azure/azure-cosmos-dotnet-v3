@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -55,7 +55,6 @@ namespace Microsoft.Azure.Cosmos
 
             this.EmitVerboseTracesInQuery = options.EmitVerboseTracesInQuery;
             this.FilterBySchemaResourceId = options.FilterBySchemaResourceId;
-            this.RequestContinuationToken = options.RequestContinuationToken;
             this.ConsistencyLevel = options.ConsistencyLevel;
             this.JsonSerializerSettings = options.JsonSerializerSettings;
             this.ForceQueryScan = options.ForceQueryScan;
