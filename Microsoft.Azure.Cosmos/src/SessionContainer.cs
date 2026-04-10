@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Common
@@ -158,9 +158,10 @@ namespace Microsoft.Azure.Cosmos.Common
                 else if (request.RequestContext.ResolvedPartitionKeyRange.Parents != null)
                 {
                     ISessionToken parentSessionToken = null;
-                    for (int parentIndex = request.RequestContext.ResolvedPartitionKeyRange.Parents.Count - 1; parentIndex >= 0; parentIndex--)
+                    IReadOnlyList<string> parents = request.RequestContext.ResolvedPartitionKeyRange.Parents;
+                    for (int parentIndex = parents.Count - 1; parentIndex >= 0; parentIndex--)
                     {
-                        if (partitionKeyRangeIdToTokenMap.TryGetValue(request.RequestContext.ResolvedPartitionKeyRange.Parents[parentIndex], 
+                        if (partitionKeyRangeIdToTokenMap.TryGetValue(parents[parentIndex], 
                                                                       out sessionToken))
                         {
                             // A partition can have more than 1 parent (merge). In that case, we apply Merge to generate a token with both parent's max LSNs
