@@ -5,9 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Threading;
@@ -473,8 +471,8 @@ namespace Microsoft.Azure.Cosmos
                     if (!this.partitionKeyRangeLocationCache.IsHubRegionProcessingEnabled())
                     {
                         // When hub region processing is disabled, fall back to original retry behavior:
-                        // route to write region on first 404/1002, give up after second 404/1002.
-                        return this.RetryOnSessionNotAvailableRouteToWriteRegion();
+                        // route to write/ hub region on first 404/1002, give up after second 404/1002.
+                        return this.ShouldRetryOnHubRegion();
                     }
                     else if (this.addHubRegionProcessingOnlyHeader)
                     {
@@ -519,26 +517,10 @@ namespace Microsoft.Azure.Cosmos
                         return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
                     }
 #else
-                    return this.RetryOnSessionNotAvailableRouteToWriteRegion();
+                    return this.ShouldRetryOnHubRegion();
 #endif
                 }
             }
-        }
-
-        private ShouldRetryResult RetryOnSessionNotAvailableRouteToWriteRegion()
-        {
-            if (this.sessionTokenRetryCount > 1)
-            {
-                return ShouldRetryResult.NoRetry();
-            }
-
-            this.retryContext = new RetryContext
-            {
-                RetryLocationIndex = 0,
-                RetryRequestOnPreferredLocations = false
-            };
-
-            return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
         }
 
         /// <summary>
@@ -602,6 +584,26 @@ namespace Microsoft.Azure.Cosmos
             {
                 RetryLocationIndex = this.serviceUnavailableRetryCount,
                 RetryRequestOnPreferredLocations = true
+            };
+
+            return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
+        }
+
+        /// <summary>
+        /// Checks if the request should be retried on the hub region when the preferred read region returns a 404/1002 on a read request.
+        /// </summary>
+        /// <returns>An instance of <see cref="ShouldRetryResult"/> indicating whether the request should be retried.</returns>
+        private ShouldRetryResult ShouldRetryOnHubRegion()
+        {
+            if (this.sessionTokenRetryCount > 1)
+            {
+                return ShouldRetryResult.NoRetry();
+            }
+
+            this.retryContext = new RetryContext
+            {
+                RetryLocationIndex = 0,
+                RetryRequestOnPreferredLocations = false
             };
 
             return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
