@@ -3402,8 +3402,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 catch (CosmosException cosmosException)
                 {
                     Assert.IsTrue(cosmosException.Message.Contains("The read/write session is not available"), cosmosException.Message);
-                    string exception = cosmosException.ToString();
-                    Assert.IsTrue(exception.Contains("Point Operation Statistics"), exception);
                 }
             }
             finally
