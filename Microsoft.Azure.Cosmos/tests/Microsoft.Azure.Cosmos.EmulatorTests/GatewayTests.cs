@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             StoredProcedureResponse deleteResponse = await collection.Scripts.DeleteStoredProcedureAsync(storedProcedure.Id);
             Assert.IsNotNull(deleteResponse);
 
-            return response;
+            return response.Resource;
         }
 
         internal static async Task<TValue> GetStoredProcedureExecutionResultAsync<TValue>(DocumentClient client, StoredProcedure storedProcedure, params dynamic[] paramsList)
