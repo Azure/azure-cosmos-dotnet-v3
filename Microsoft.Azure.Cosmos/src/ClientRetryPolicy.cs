@@ -232,7 +232,8 @@ namespace Microsoft.Azure.Cosmos
             // If (addHubRegionProcessingOnlyHeader = true) then pin the hub region processing only header with the request.
             // addHubRegionProcessingOnlyHeader is only ever set when !canUseMultipleWriteLocations,
             // so no additional multi-master guard is needed here.
-            if (this.addHubRegionProcessingOnlyHeader)
+            if (this.isReadRequest
+                && this.addHubRegionProcessingOnlyHeader)
             {
                 request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion] = bool.TrueString;
             }
@@ -274,13 +275,14 @@ namespace Microsoft.Azure.Cosmos
                 && subStatusCode == SubStatusCodes.WriteForbidden)
             {
 #if !INTERNAL
-                if (this.documentServiceRequest.IsReadOnlyRequest && this.addHubRegionProcessingOnlyHeader)
+                if (this.isReadRequest && this.addHubRegionProcessingOnlyHeader)
                 {
                     // We received a 403.3 on the read path. This is possible only when the hub region header is present and the request
                     // landed on a non-hub region. This triggers the retry process to discover the new hub region for the given partition.
-                    this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(this.documentServiceRequest);
-                    TimeSpan retryDelay = TimeSpan.FromMilliseconds(ClientRetryPolicy.RetryIntervalInMS);
-                    return ShouldRetryResult.RetryAfter(retryDelay);
+                    this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
+                        this.documentServiceRequest);
+
+                    return this.ShouldRetryOnNonHubRegion();
                 }
                 else
 #endif
@@ -602,6 +604,26 @@ namespace Microsoft.Azure.Cosmos
                 RetryRequestOnPreferredLocations = true
             };
 
+            return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
+        }
+
+        /// <summary>
+        /// Checks if the request should be retried on a non-hub region when the region returns a 403.3
+        /// on a read request with the hub region processing request header. The retry will only be attempted
+        /// if the retry count is within limits and endpoint discovery is enabled.
+        /// </summary>
+        /// <returns>An instance of <see cref="ShouldRetryResult"/> indicating whether the request should be retried.</returns>
+        private ShouldRetryResult ShouldRetryOnNonHubRegion()
+        {
+            if (this.failoverRetryCount > MaxRetryCount || !this.enableEndpointDiscovery)
+            {
+                DefaultTrace.TraceInformation("ClientRetryPolicy: ShouldRetryOnNonHubRegion() Not retrying. Retry count = {0}, Endpoint = {1}",
+                    this.failoverRetryCount,
+                    this.locationEndpoint?.ToString() ?? string.Empty);
+                return ShouldRetryResult.NoRetry();
+            }
+
+            this.failoverRetryCount++;
             return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
         }
 

@@ -133,12 +133,12 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <inheritdoc/>
         public override bool TryAddPartitionLevelLocationOverride(
             DocumentServiceRequest request,
-            bool addHubRegionOverrideFromCache = false)
+            bool checkHubRegionOverrideInCache = false)
         {
             if (!this.IsRequestEligibleForPartitionOrHubRegionFailover(
                 request,
                 shouldValidateFailedLocation: false,
-                checkHubRegionOverrideInCache: addHubRegionOverrideFromCache,
+                checkHubRegionOverrideInCache,
                 out PartitionKeyRange? partitionKeyRange,
                 out Uri? _))
             {
@@ -150,12 +150,12 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return false;
             }
 
-            if (addHubRegionOverrideFromCache || this.IsRequestEligibleForPerPartitionAutomaticFailover(request))
+            if (checkHubRegionOverrideInCache || this.IsRequestEligibleForPerPartitionAutomaticFailover(request))
             {
                 return this.TryRouteRequestForPartitionLevelOverride(
                     partitionKeyRange,
                     request,
-                    isHubRegionDiscoveryActive: addHubRegionOverrideFromCache,
+                    isHubRegionDiscoveryActive: checkHubRegionOverrideInCache,
                     this.PartitionKeyRangeToLocationForWrite);
             }
             else if (this.IsRequestEligibleForPartitionLevelCircuitBreaker(request))

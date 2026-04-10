@@ -117,7 +117,10 @@ namespace Microsoft.Azure.Cosmos
 
                     request.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
 
-                    this.globalPartitionEndpointManager.TryAddPartitionLevelLocationOverride(request, isHubRegionRoutingActive);
+                    if (isPPAFEnabled || isHubRegionRoutingActive)
+                    {
+                        this.globalPartitionEndpointManager.TryAddPartitionLevelLocationOverride(request, isHubRegionRoutingActive);
+                    }
                 }
 
                 bool canUseThinClient =

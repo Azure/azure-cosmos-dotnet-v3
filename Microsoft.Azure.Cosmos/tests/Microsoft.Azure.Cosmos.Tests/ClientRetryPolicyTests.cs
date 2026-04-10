@@ -605,7 +605,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
             // WITH checkHubRegionOverrideInCache: true, the 403/3-populated cache IS accessible.
             // This is the path used by ShouldRetryOnSessionNotAvailable for warm-cache requests.
-            bool overrideWithFlag = cacheManager.TryAddPartitionLevelLocationOverride(request1, addHubRegionOverrideFromCache: true);
+            bool overrideWithFlag = cacheManager.TryAddPartitionLevelLocationOverride(request1, checkHubRegionOverrideInCache: true);
             Assert.IsTrue(overrideWithFlag,
                 "With checkHubRegionOverrideInCache: true, cache should contain the hub region discovery entry populated by 403/3.");
             Uri hubRegion = request1.RequestContext.LocationEndpointToRoute;
@@ -675,8 +675,8 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             Assert.AreEqual(bool.TrueString, headerValues2[0]);
 
             // Verify the warm cache routes to the hub region discovered in STEP 1.
-            bool cachedOverride = cacheManager.TryAddPartitionLevelLocationOverride(request2, addHubRegionOverrideFromCache: true);
-            Assert.IsTrue(cachedOverride, "With addHubRegionOverrideFromCache, cache should route to cached hub from STEP 1's 403/3.");
+            bool cachedOverride = cacheManager.TryAddPartitionLevelLocationOverride(request2, checkHubRegionOverrideInCache: true);
+            Assert.IsTrue(cachedOverride, "With checkHubRegionOverrideInCache, cache should route to cached hub from STEP 1's 403/3.");
             Assert.AreEqual(hubRegion, request2.RequestContext.LocationEndpointToRoute,
                 "After 1× 404/1002 with warm cache, should route to cached hub directly (skipping 403/3 discovery).");
             }
@@ -960,7 +960,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 // ===== Verify cache was never populated =====
                 // With flag disabled, TryAddPartitionLevelLocationOverride was never called with the hub path,
                 // so the PPAF cache should have no hub region entry for this partition.
-                bool cacheHit = cacheManager.TryAddPartitionLevelLocationOverride(request, addHubRegionOverrideFromCache: true);
+                bool cacheHit = cacheManager.TryAddPartitionLevelLocationOverride(request, checkHubRegionOverrideInCache: true);
                 Assert.IsFalse(cacheHit,
                     "PPAF/hub cache must NOT be populated when hub region processing is disabled. " +
                     "No hub discovery occurred, so no cache entry should exist.");

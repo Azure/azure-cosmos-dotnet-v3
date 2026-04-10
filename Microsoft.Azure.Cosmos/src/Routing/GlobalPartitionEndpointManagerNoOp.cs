@@ -13,15 +13,8 @@ namespace Microsoft.Azure.Cosmos.Routing
     {
         public static readonly GlobalPartitionEndpointManager Instance = new GlobalPartitionEndpointManagerNoOp();
 
-#if !INTERNAL
-        private readonly bool isHubRegionProcessingEnabled;
-#endif
-
         private GlobalPartitionEndpointManagerNoOp()
         {
-#if !INTERNAL
-            this.isHubRegionProcessingEnabled = ConfigurationManager.IsHubRegionProcessingEnabled();
-#endif
         }
 
         public override void SetBackgroundConnectionPeriodicRefreshTask(
@@ -79,11 +72,9 @@ namespace Microsoft.Azure.Cosmos.Routing
             return false;
         }
 
-#if !INTERNAL
         public override bool IsHubRegionProcessingEnabled()
         {
-            return this.isHubRegionProcessingEnabled;
+            return false;
         }
-#endif
     }
 }
