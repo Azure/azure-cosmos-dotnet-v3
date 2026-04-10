@@ -160,3 +160,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         }
     }
 }
+
+There's a mismatch in this task. The issue describes fixing `targetRanges.Last().MaxExclusive` on line 126 of `IRoutingMapProviderExtensions.cs`, but the fix constraint limits changes to `ThinClientQueryPlanHelper.cs` — which doesn't contain that code pattern at all.
+
+`ThinClientQueryPlanHelper.cs` has no `targetRanges`, no `MaxExclusive`, and no loop where that hoisting optimization would apply. The fix described belongs in `IRoutingMapProviderExtensions.cs` (line 126), where `targetRanges.Last().MaxExclusive` is accessed inside a loop.
+
+Should I apply the fix to `IRoutingMapProviderExtensions.cs` instead?
