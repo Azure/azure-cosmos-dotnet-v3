@@ -165,14 +165,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                     break;
 
                 case SqlBinaryScalarOperatorKind.Coalesce:
-                    if (left is not CosmosUndefined)
-                    {
-                        result = left;
-                    }
-                    else
-                    {
-                        result = right;
-                    }
+                    result = left is not CosmosUndefined ? left : right;
 
                     break;
 
@@ -412,30 +405,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         public override CosmosElement Visit(SqlUnaryScalarExpression scalarExpression, CosmosElement document)
         {
             CosmosElement expression = scalarExpression.Expression.Accept(this, document);
-
-            CosmosElement result;
-            switch (scalarExpression.OperatorKind)
+            CosmosElement result = scalarExpression.OperatorKind switch
             {
-                case SqlUnaryScalarOperatorKind.BitwiseNot:
-                    result = PerformUnaryNumberOperation((number) => ~DoubleToInt32Bitwise(number), expression);
-                    break;
-
-                case SqlUnaryScalarOperatorKind.Not:
-                    result = PerformUnaryBooleanOperation((boolean) => !boolean, expression);
-                    break;
-
-                case SqlUnaryScalarOperatorKind.Minus:
-                    result = PerformUnaryNumberOperation((number) => -number, expression);
-                    break;
-
-                case SqlUnaryScalarOperatorKind.Plus:
-                    result = PerformUnaryNumberOperation((number) => +number, expression);
-                    break;
-
-                default:
-                    throw new ArgumentException($"Unknown {nameof(SqlUnaryScalarOperatorKind)}: {scalarExpression.OperatorKind}");
-            }
-
+                SqlUnaryScalarOperatorKind.BitwiseNot => PerformUnaryNumberOperation((number) => ~DoubleToInt32Bitwise(number), expression),
+                SqlUnaryScalarOperatorKind.Not => PerformUnaryBooleanOperation((boolean) => !boolean, expression),
+                SqlUnaryScalarOperatorKind.Minus => PerformUnaryNumberOperation((number) => -number, expression),
+                SqlUnaryScalarOperatorKind.Plus => PerformUnaryNumberOperation((number) => +number, expression),
+                _ => throw new ArgumentException($"Unknown {nameof(SqlUnaryScalarOperatorKind)}: {scalarExpression.OperatorKind}"),
+            };
             return result;
         }
 
@@ -621,7 +598,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                 return 0;
             }
 
-            uint ToUInt32(double value)
+            static uint ToUInt32(double value)
             {
                 long ToInteger(double valueToConvertToInteger)
                 {
@@ -656,15 +633,30 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         {
             public static readonly SqlLiteralToCosmosElement Singleton = new SqlLiteralToCosmosElement();
 
-            public override CosmosElement Visit(SqlNumberLiteral literal) => CosmosNumber64.Create(literal.Value);
+            public override CosmosElement Visit(SqlNumberLiteral literal)
+            {
+                return CosmosNumber64.Create(literal.Value);
+            }
 
-            public override CosmosElement Visit(SqlStringLiteral literal) => CosmosString.Create(literal.Value);
+            public override CosmosElement Visit(SqlStringLiteral literal)
+            {
+                return CosmosString.Create(literal.Value);
+            }
 
-            public override CosmosElement Visit(SqlUndefinedLiteral literal) => CosmosUndefined.Create();
+            public override CosmosElement Visit(SqlUndefinedLiteral literal)
+            {
+                return CosmosUndefined.Create();
+            }
 
-            public override CosmosElement Visit(SqlNullLiteral literal) => CosmosNull.Create();
+            public override CosmosElement Visit(SqlNullLiteral literal)
+            {
+                return CosmosNull.Create();
+            }
 
-            public override CosmosElement Visit(SqlBooleanLiteral literal) => CosmosBoolean.Create(literal.Value);
+            public override CosmosElement Visit(SqlBooleanLiteral literal)
+            {
+                return CosmosBoolean.Create(literal.Value);
+            }
         }
 
         private sealed class MemberIndexerVisitor : ICosmosElementVisitor<CosmosElement, CosmosElement>
@@ -717,19 +709,40 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                 return propertyValue;
             }
 
-            public CosmosElement Visit(CosmosBinary cosmosBinary, CosmosElement indexer) => CosmosUndefined.Create();
+            public CosmosElement Visit(CosmosBinary cosmosBinary, CosmosElement indexer)
+            {
+                return CosmosUndefined.Create();
+            }
 
-            public CosmosElement Visit(CosmosBoolean cosmosBoolean, CosmosElement indexer) => CosmosUndefined.Create();
+            public CosmosElement Visit(CosmosBoolean cosmosBoolean, CosmosElement indexer)
+            {
+                return CosmosUndefined.Create();
+            }
 
-            public CosmosElement Visit(CosmosGuid cosmosGuid, CosmosElement indexer) => CosmosUndefined.Create();
+            public CosmosElement Visit(CosmosGuid cosmosGuid, CosmosElement indexer)
+            {
+                return CosmosUndefined.Create();
+            }
 
-            public CosmosElement Visit(CosmosNull cosmosNull, CosmosElement indexer) => CosmosUndefined.Create();
+            public CosmosElement Visit(CosmosNull cosmosNull, CosmosElement indexer)
+            {
+                return CosmosUndefined.Create();
+            }
 
-            public CosmosElement Visit(CosmosNumber cosmosNumber, CosmosElement indexer) => CosmosUndefined.Create();
+            public CosmosElement Visit(CosmosNumber cosmosNumber, CosmosElement indexer)
+            {
+                return CosmosUndefined.Create();
+            }
 
-            public CosmosElement Visit(CosmosString cosmosString, CosmosElement indexer) => CosmosUndefined.Create();
+            public CosmosElement Visit(CosmosString cosmosString, CosmosElement indexer)
+            {
+                return CosmosUndefined.Create();
+            }
 
-            public CosmosElement Visit(CosmosUndefined cosmosUndefined, CosmosElement input) => CosmosUndefined.Create();
+            public CosmosElement Visit(CosmosUndefined cosmosUndefined, CosmosElement input)
+            {
+                return CosmosUndefined.Create();
+            }
         }
     }
 }

@@ -136,8 +136,9 @@
                 partitionedQueryExecutionInfo: null,
                 returnResultsInDeterministicOrder: null,
                 enableOptimisticDirectExecution: queryRequestOptions.EnableOptimisticDirectExecution,
-                isNonStreamingOrderByQueryFeatureDisabled: queryRequestOptions.IsNonStreamingOrderByQueryFeatureDisabled,
+                isHybridSearchQueryPlanOptimizationDisabled: queryRequestOptions.IsHybridSearchQueryPlanOptimizationDisabled,
                 enableDistributedQueryGatewayMode: queryRequestOptions.EnableDistributedQueryGatewayMode,
+                fullTextScoreScope: queryRequestOptions.FullTextScoreScope,
                 testInjections: queryRequestOptions.TestSettings);
 
             List<PartitionKeyRange> targetPkRanges = new();
@@ -184,6 +185,7 @@
                 allowNonValueAggregateQuery: true,
                 hasLogicalPartitionKey: false,
                 allowDCount: true,
+                hybridSearchSkipOrderByRewrite: false,
                 useSystemPrefix: false,
                 geospatialType: Cosmos.GeospatialType.Geography);
 
@@ -334,7 +336,8 @@
                     },
                     SubpartitionTests.CreatePartitionKeyDefinition(),
                     vectorEmbeddingPolicy: null,
-                    Cosmos.GeospatialType.Geometry));
+                    Cosmos.GeospatialType.Geometry,
+                    false));
             }
 
             public override Task<bool> GetClientDisableOptimisticDirectExecutionAsync()
@@ -368,6 +371,7 @@
                 bool hasLogicalPartitionKey,
                 bool allowDCount,
                 bool useSystemPrefix,
+                bool isHybridSearchQueryPlanOptimizationDisabled,
                 Cosmos.GeospatialType geospatialType,
                 CancellationToken cancellationToken)
             {

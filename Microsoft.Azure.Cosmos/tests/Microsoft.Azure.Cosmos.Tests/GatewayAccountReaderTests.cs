@@ -5,18 +5,18 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Net.Http;
-    using System.Threading.Tasks;
-    using System.Threading;
+    using System.Collections.Generic;
     using System.Net;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
-    using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Collections;
+    using System.Net.Http;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
-    using System.Collections.Generic;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
 
     /// <summary>
     /// Tests for <see cref="GatewayAccountReader"/>.
@@ -115,9 +115,9 @@ namespace Microsoft.Azure.Cosmos
                 "sqlAllowLike\\\":true,\\\"sqlAllowGroupByClause\\\":true,\\\"maxSpatialQueryCells\\\":12,\\\"spatialMaxGeometryPointCount\\\":256,\\\"sqlDisableOptimizationFlags\\\":0,\\\"sqlAllowTop\\\":true,\\\"enableSpatialIndexing\\\":true}\"\r\n}";
 
             Uri globalEndpoint = new("https://testfed1.documents-test.windows-int.net:443/");
-            Uri privateEndpoint1 = new ("https://testfed2.documents-test.windows-int.net:443/");
-            Uri privateEndpoint2 = new ("https://testfed3.documents-test.windows-int.net:443/");
-            Uri privateEndpoint3 = new ("https://testfed4.documents-test.windows-int.net:443/");
+            Uri privateEndpoint1 = new("https://testfed2.documents-test.windows-int.net:443/");
+            Uri privateEndpoint2 = new("https://testfed3.documents-test.windows-int.net:443/");
+            Uri privateEndpoint3 = new("https://testfed4.documents-test.windows-int.net:443/");
             Uri endpointSucceeded = default;
 
             StringContent content = new(accountPropertiesResponse);
@@ -130,8 +130,8 @@ namespace Microsoft.Azure.Cosmos
             Mock<CosmosHttpClient> mockHttpClient = new();
 
             GatewayAccountReaderTests.SetupMockToThrowException(
-                mockHttpClient: mockHttpClient, 
-                endpoints: new List<Uri>() 
+                mockHttpClient: mockHttpClient,
+                endpoints: new List<Uri>()
                     {
                         globalEndpoint,
                         privateEndpoint1,
@@ -145,14 +145,16 @@ namespace Microsoft.Azure.Cosmos
                     It.IsAny<ResourceType>(),
                     It.IsAny<HttpTimeoutPolicy>(),
                     It.IsAny<IClientSideRequestStatistics>(),
-                    It.IsAny<CancellationToken>()))
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<DocumentServiceRequest>()))
                 .Callback((
                     Uri serviceEndpoint,
                     INameValueCollection _,
                     ResourceType _,
                     HttpTimeoutPolicy _,
                     IClientSideRequestStatistics _,
-                    CancellationToken _) => endpointSucceeded = serviceEndpoint)
+                    CancellationToken _,
+                    DocumentServiceRequest _) => endpointSucceeded = serviceEndpoint)
                 .ReturnsAsync(responseMessage);
 
             ConnectionPolicy connectionPolicy = new()
@@ -207,7 +209,8 @@ namespace Microsoft.Azure.Cosmos
                     It.IsAny<ResourceType>(),
                     It.IsAny<HttpTimeoutPolicy>(),
                     It.IsAny<IClientSideRequestStatistics>(),
-                    It.IsAny<CancellationToken>()))
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<DocumentServiceRequest>()))
                 .ThrowsAsync(new Exception("Service is Unavailable at the Moment."));
 
             ConnectionPolicy connectionPolicy = new()
@@ -238,7 +241,7 @@ namespace Microsoft.Azure.Cosmos
             Mock<CosmosHttpClient> mockHttpClient,
             IList<Uri> endpoints)
         {
-            foreach(Uri endpoint in endpoints)
+            foreach (Uri endpoint in endpoints)
             {
                 mockHttpClient
                     .Setup(x => x.GetAsync(
@@ -247,7 +250,8 @@ namespace Microsoft.Azure.Cosmos
                         It.IsAny<ResourceType>(),
                         It.IsAny<HttpTimeoutPolicy>(),
                         It.IsAny<IClientSideRequestStatistics>(),
-                        It.IsAny<CancellationToken>()))
+                        It.IsAny<CancellationToken>(),
+                        It.IsAny<DocumentServiceRequest>()))
                     .ThrowsAsync(new Exception("Service is Unavailable at the Moment."));
             }
         }

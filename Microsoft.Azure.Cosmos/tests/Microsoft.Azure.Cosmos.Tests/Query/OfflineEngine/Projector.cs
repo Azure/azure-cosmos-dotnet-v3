@@ -47,13 +47,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                     {
                         key = stringLiteral.Value;
                     }
-                    else if (sqlSelectItem.Expression is SqlPropertyRefScalarExpression propertyRef)
-                    {
-                        key = propertyRef.Identifier.Value;
-                    }
                     else
                     {
-                        key = $"${aliasCounter++}";
+                        key = sqlSelectItem.Expression is SqlPropertyRefScalarExpression propertyRef ? propertyRef.Identifier.Value : $"${aliasCounter++}";
                     }
 
                     dictionary[key] = value;

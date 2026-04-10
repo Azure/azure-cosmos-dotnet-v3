@@ -6,20 +6,23 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Rntbd;
     
     internal class FaultInjectionConditionInternal
     {
         private readonly List<IFaultInjectionConditionValidator> validators;
+        private readonly GlobalEndpointManager globalEndpointManager;
 
         private string containerResourceId = string.Empty;
         private OperationType? operationType = null;
         private List<Uri> regionEndpoints = new List<Uri>{ };
         private List<Uri> physicalAddresses = new List<Uri> { };
 
-        public FaultInjectionConditionInternal()
+        public FaultInjectionConditionInternal(GlobalEndpointManager globalEndpointManager)
         {
+            this.globalEndpointManager = globalEndpointManager;
             this.validators = new List<IFaultInjectionConditionValidator>();
         }
 
@@ -53,6 +56,21 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             {
                 this.validators.Add(new RegionEndpointValidator(this.regionEndpoints));
             }
+        }
+
+        public void SetPartitionKeyRangeIds(IEnumerable<string> partitionKeyRangeIds, FaultInjectionRule rule)
+        {
+            if (partitionKeyRangeIds != null && partitionKeyRangeIds.Any())
+            {
+                this.validators.Add(new PartitionKeyRangeIdValidator(
+                    partitionKeyRangeIds,
+                    rule.GetCondition().GetEndpoint().IsIncludePrimary()));
+            }
+        }
+
+        public void SetResourceType(ResourceType resourceType)
+        {
+            this.validators.Add(new ResourceTypeValidator(resourceType));
         }
 
         public string GetContainerResourceId()
@@ -92,8 +110,21 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             return true;
         }
 
+        public bool IsApplicable(string ruleId, DocumentServiceRequest request)
+        {
+            foreach (IFaultInjectionConditionValidator validator in this.validators)
+            {
+                if (!validator.IsApplicable(ruleId, request))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         //Used for connection delay
-        public bool IsApplicable(Uri callUri, DocumentServiceRequest request)
+        public bool IsApplicable(string ruleId, Uri callUri, DocumentServiceRequest request)
         {
             foreach (IFaultInjectionConditionValidator validator in this.validators)
             {
@@ -129,6 +160,14 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                         return false;
                     }
                 }
+                else if (validator.GetType() == typeof(ResourceTypeValidator))
+                {
+                    ResourceTypeValidator resourceTypeValidator = (ResourceTypeValidator)validator;
+                    if (!resourceTypeValidator.IsApplicable(ruleId, request))
+                    {
+                        return false;
+                    }
+                }
                 else
                 {
                     throw new ArgumentException($"Unknown validator type {validator.GetType()}");
@@ -141,6 +180,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private interface IFaultInjectionConditionValidator
         {
             public bool IsApplicable(string ruleId, ChannelCallArguments args);
+
+            public bool IsApplicable(string ruleId, DocumentServiceRequest request);
         }
 
         private class RegionEndpointValidator : IFaultInjectionConditionValidator
@@ -149,12 +190,22 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
             public RegionEndpointValidator(List<Uri> regionEndpoints)
             {
-                this.regionEndpoints = regionEndpoints;
+                this.regionEndpoints = regionEndpoints ?? throw new ArgumentNullException(nameof(regionEndpoints));
             }
 
             public bool IsApplicable(string ruleId, ChannelCallArguments args)
             {
                 bool isApplicable = this.regionEndpoints.Any(uri => args.LocationEndpointToRouteTo.AbsoluteUri.StartsWith(uri.AbsoluteUri));
+
+                return isApplicable;
+            }
+
+            //Used for Gateway Requestrs
+            public bool IsApplicable(string ruleId, DocumentServiceRequest request)
+            {
+                bool isApplicable = this.regionEndpoints.Any(uri => 
+                    request.RequestContext.LocationEndpointToRoute.Host
+                    .StartsWith(uri.Host));
 
                 return isApplicable;
             }
@@ -180,6 +231,12 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 return args.OperationType == this.operationType;
             }
 
+            //Used for Gateway Requests
+            public bool IsApplicable(string ruleId, DocumentServiceRequest request)
+            {
+                return request.OperationType == this.operationType;
+            }
+
             //Used for Connection Delay
             public bool IsApplicable(DocumentServiceRequest request)
             {
@@ -193,12 +250,18 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
             public ContainerValidator(string containerResourceId)
             {
-                this.containerResourceId = containerResourceId;
+                this.containerResourceId = containerResourceId ?? throw new ArgumentNullException(nameof(containerResourceId));
             }
 
             public bool IsApplicable(string ruleId, ChannelCallArguments args)
             {
                 return String.Equals(this.containerResourceId, args.ResolvedCollectionRid);
+            }
+
+            //Used for Gateway Requests
+            public bool IsApplicable(string ruleId, DocumentServiceRequest request)
+            {
+                return String.Equals(this.containerResourceId, request.RequestContext.ResolvedCollectionRid);
             }
 
             //Used for Connection Delay
@@ -214,7 +277,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
             public AddressValidator(List<Uri> addresses)
             {
-                this.addresses = addresses;
+                this.addresses = addresses ?? throw new ArgumentNullException(nameof(addresses));
             }
 
             public bool IsApplicable(string ruleId, ChannelCallArguments args)
@@ -224,12 +287,75 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 return isApplicable;
             }
 
+            //Used for Gateway Requests
+
+            public bool IsApplicable(string ruleId, DocumentServiceRequest request)
+            {
+                //Address validator not relevant for gateway calls as gw routes to specific partitions
+                return true;
+            }
+
             //Used for Connection Delay
             public bool IsApplicable(Uri callUri)
             {
                 bool isApplicable = this.addresses.Exists(uri => callUri.AbsoluteUri.StartsWith(uri.AbsoluteUri));
 
                 return isApplicable;
+            }
+        }
+
+        private class PartitionKeyRangeIdValidator : IFaultInjectionConditionValidator
+        {
+            private readonly IEnumerable<string> pkRangeIds;
+            private readonly bool includePrimaryForMetaData;
+
+            public PartitionKeyRangeIdValidator(IEnumerable<string> pkRangeIds, bool includePrimaryForMetaData)
+            {
+                this.pkRangeIds = pkRangeIds ?? throw new ArgumentNullException(nameof(pkRangeIds));
+                this.includePrimaryForMetaData = includePrimaryForMetaData;
+            }
+
+            public bool IsApplicable(string ruleId, ChannelCallArguments args)
+            {
+                //not needed for direct calls 
+                throw new NotImplementedException();
+            }
+
+            //Used for Gateway Requests
+
+            public bool IsApplicable(string ruleId, DocumentServiceRequest request)
+            {
+                PartitionKeyRange pkRange = request.RequestContext.ResolvedPartitionKeyRange;
+
+                if (pkRange is null && this.includePrimaryForMetaData)
+                {
+                    //For metadata operations, rule will apply to all partition key ranges
+                    return true;
+                }
+
+                return this.pkRangeIds.Contains(pkRange?.Id);
+            }
+        }
+
+        private class ResourceTypeValidator : IFaultInjectionConditionValidator
+        {
+            private readonly ResourceType resourceType;
+
+            public ResourceTypeValidator(ResourceType resourceType)
+            {
+                this.resourceType = resourceType;
+            }
+
+            public bool IsApplicable(string ruleId, ChannelCallArguments args)
+            {
+                return this.resourceType == args.ResourceType;
+            }
+
+            //Used for Gateway Requests
+
+            public bool IsApplicable(string ruleId, DocumentServiceRequest request)
+            {
+                return this.resourceType == request.ResourceType;
             }
         }
     }

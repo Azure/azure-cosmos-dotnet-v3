@@ -86,11 +86,20 @@ namespace Microsoft.Azure.Cosmos.Routing
             return this.Equals(effectivePartitionKey);
         }
 
-        public bool Equals(PartitionKeyHash other) => this.Value.Equals(other.Value);
+        public bool Equals(PartitionKeyHash other)
+        {
+            return this.Value.Equals(other.Value);
+        }
 
-        public override int GetHashCode() => this.Value.GetHashCode();
+        public override int GetHashCode()
+        {
+            return this.Value.GetHashCode();
+        }
 
-        public override string ToString() => this.Value;
+        public override string ToString()
+        {
+            return this.Value;
+        }
 
         public static bool TryParse(string value, out PartitionKeyHash parsedValue)
         {
@@ -133,7 +142,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 Span<byte> bytesForHashing = stackalloc byte[sizeof(byte) + sizeof(double)];
                 bytesForHashing[0] = (byte)PartitionKeyComponentType.Number;
-                MemoryMarshal.Cast<byte, double>(bytesForHashing.Slice(start: 1))[0] = value;
+                MemoryMarshal.Cast<byte, double>(bytesForHashing[1..])[0] = value;
                 return PartitionKeyHash.V1.Hash(bytesForHashing);
             }
 
@@ -155,7 +164,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 Span<byte> bytesForHashing = stackalloc byte[sizeof(byte) + Encoding.UTF8.GetByteCount(trimmedValue)];
                 bytesForHashing[0] = (byte)PartitionKeyComponentType.String;
-                Span<byte> bytesForHashingSuffix = bytesForHashing.Slice(start: 1);
+                Span<byte> bytesForHashingSuffix = bytesForHashing[1..];
                 Encoding.UTF8.GetBytes(
                     trimmedValue,
                     bytesForHashingSuffix);
@@ -197,7 +206,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 Span<byte> bytesForHashing = stackalloc byte[sizeof(byte) + sizeof(double)];
                 bytesForHashing[0] = (byte)PartitionKeyComponentType.Number;
-                MemoryMarshal.Cast<byte, double>(bytesForHashing.Slice(start: 1))[0] = value;
+                MemoryMarshal.Cast<byte, double>(bytesForHashing[1..])[0] = value;
                 return PartitionKeyHash.V2.Hash(bytesForHashing);
             }
 
@@ -220,7 +229,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 Span<byte> bytesForHashing = stackalloc byte[sizeof(byte) + Encoding.UTF8.GetByteCount(value)];
                 bytesForHashing[0] = (byte)PartitionKeyComponentType.String;
-                Span<byte> bytesForHashingSuffix = bytesForHashing.Slice(start: 1);
+                Span<byte> bytesForHashingSuffix = bytesForHashing[1..];
                 Encoding.UTF8.GetBytes(value, bytesForHashingSuffix);
                 return PartitionKeyHash.V2.Hash(bytesForHashing);
             }
@@ -242,16 +251,34 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
-        public static bool operator ==(PartitionKeyHash left, PartitionKeyHash right) => left.Equals(right);
+        public static bool operator ==(PartitionKeyHash left, PartitionKeyHash right)
+        {
+            return left.Equals(right);
+        }
 
-        public static bool operator !=(PartitionKeyHash left, PartitionKeyHash right) => !(left == right);
+        public static bool operator !=(PartitionKeyHash left, PartitionKeyHash right)
+        {
+            return !(left == right);
+        }
 
-        public static bool operator <(PartitionKeyHash left, PartitionKeyHash right) => left.CompareTo(right) < 0;
+        public static bool operator <(PartitionKeyHash left, PartitionKeyHash right)
+        {
+            return left.CompareTo(right) < 0;
+        }
 
-        public static bool operator <=(PartitionKeyHash left, PartitionKeyHash right) => left.CompareTo(right) <= 0;
+        public static bool operator <=(PartitionKeyHash left, PartitionKeyHash right)
+        {
+            return left.CompareTo(right) <= 0;
+        }
 
-        public static bool operator >(PartitionKeyHash left, PartitionKeyHash right) => left.CompareTo(right) > 0;
+        public static bool operator >(PartitionKeyHash left, PartitionKeyHash right)
+        {
+            return left.CompareTo(right) > 0;
+        }
 
-        public static bool operator >=(PartitionKeyHash left, PartitionKeyHash right) => left.CompareTo(right) >= 0;
+        public static bool operator >=(PartitionKeyHash left, PartitionKeyHash right)
+        {
+            return left.CompareTo(right) >= 0;
+        }
     }
 }

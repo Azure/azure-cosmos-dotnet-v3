@@ -182,7 +182,19 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         /// <returns>A <see cref="byte"/>[] or <c>null</c> if the next JSON token is null. This method will return <c>null</c> at the end of an array.</returns>
         public override byte[] ReadAsBytes()
         {
-            throw new NotImplementedException();
+            this.Read();
+            if (this.jsonReader.CurrentTokenType == JsonTokenType.Null)
+            {
+                return null;
+            }
+
+            if (this.jsonReader.CurrentTokenType == JsonTokenType.EndArray)
+            {
+                return new byte[0];
+            }
+
+            string stringValue = this.jsonReader.GetStringValue();
+            return Convert.FromBase64String(stringValue);
         }
 
         /// <summary>
@@ -192,7 +204,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         public override DateTime? ReadAsDateTime()
         {
             this.Read();
-            if (this.jsonReader.CurrentTokenType == JsonTokenType.EndArray)
+            if (this.jsonReader.CurrentTokenType == JsonTokenType.Null || this.jsonReader.CurrentTokenType == JsonTokenType.EndArray)
             {
                 return null;
             }
@@ -211,7 +223,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         public override DateTimeOffset? ReadAsDateTimeOffset()
         {
             this.Read();
-            if (this.jsonReader.CurrentTokenType == JsonTokenType.EndArray)
+            if (this.jsonReader.CurrentTokenType == JsonTokenType.Null || this.jsonReader.CurrentTokenType == JsonTokenType.EndArray)
             {
                 return null;
             }
@@ -260,7 +272,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         public override string ReadAsString()
         {
             this.Read();
-            if (this.jsonReader.CurrentTokenType == JsonTokenType.EndArray)
+            if (this.jsonReader.CurrentTokenType == JsonTokenType.Null || this.jsonReader.CurrentTokenType == JsonTokenType.EndArray)
             {
                 return null;
             }
@@ -278,7 +290,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         private double? ReadNumberValue()
         {
             this.Read();
-            if (this.jsonReader.CurrentTokenType == JsonTokenType.EndArray)
+            if (this.jsonReader.CurrentTokenType == JsonTokenType.Null || this.jsonReader.CurrentTokenType == JsonTokenType.EndArray)
             {
                 return null;
             }

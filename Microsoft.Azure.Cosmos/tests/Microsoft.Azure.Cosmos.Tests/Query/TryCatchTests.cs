@@ -81,14 +81,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             TryCatch<int> tryMonand = await FunctionThatTriesToDoWorkButBubblesUpException2();
 
             tryMonand
-                .Try((result) =>
-                {
-                    Console.WriteLine($"Got a result: {result}");
-                })
-                .Catch((requestRateTooLargeException) =>
-                {
-                    Console.WriteLine($"Got a 429: {requestRateTooLargeException}");
-                });
+                .Try((result) => Console.WriteLine($"Got a result: {result}"))
+                .Catch((requestRateTooLargeException) => Console.WriteLine($"Got a 429: {requestRateTooLargeException}"));
         }
 
         [TestMethod]
@@ -102,31 +96,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 maxDelayInMilliseconds: 1000000);
 
             tryResult.Match(
-                onSuccess: (result) =>
-                {
-                    Console.WriteLine($"Got a result: {result}");
-                },
-                onError: (requestRateTooLargeException) =>
-                {
-                    Console.WriteLine($"Got a 429: {requestRateTooLargeException}");
-                });
+                onSuccess: (result) => Console.WriteLine($"Got a result: {result}"),
+                onError: (requestRateTooLargeException) => Console.WriteLine($"Got a 429: {requestRateTooLargeException}"));
         }
 
         private static async Task<TryCatch<int>> FunctionThatThrows429()
         {
             Random random = new Random();
-            TryCatch<int> tryResult;
-            if (random.Next() % 2 == 0)
-            {
-                tryResult = TryCatch<int>.FromException(
+            TryCatch<int> tryResult = random.Next() % 2 == 0
+                ? TryCatch<int>.FromException(
                     new RequestRateTooLargeException(
-                        new TimeSpan(days: 0, hours: 0, minutes: 0, seconds: 0, milliseconds: 1000)));
-            }
-            else
-            {
-                tryResult = TryCatch<int>.FromResult(random.Next());
-            }
-
+                        new TimeSpan(days: 0, hours: 0, minutes: 0, seconds: 0, milliseconds: 1000)))
+                : TryCatch<int>.FromResult(random.Next());
             return await Task.FromResult(tryResult);
         }
 
@@ -135,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             TryCatch<int> tryResult = await FunctionThatThrows429();
 
             // Just try to do your work. If it fails just bubble it up.
-            return tryResult.Try((result) => { return result + 1; });
+            return tryResult.Try((result) => result + 1);
         }
 
         private static async Task<TryCatch<int>> FunctionThatTriesToDoWorkButBubblesUpException2()
@@ -143,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             TryCatch<int> tryResult = await FunctionThatTriesToDoWorkButBubblesUpException1();
 
             // Just try to do your work. If it fails just bubble it up.
-            return tryResult.Try((result) => { return result + 2; });
+            return tryResult.Try((result) => result + 2);
         }
 
         private static class RetryHandler
@@ -157,7 +138,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 return await tryMonad.CatchAsync(
                     onError: async (exception) =>
                     {
-                        if(!(exception is RequestRateTooLargeException requestRateTooLargeExecption))
+                        if (!(exception is RequestRateTooLargeException requestRateTooLargeExecption))
                         {
                             return TryCatch<T>.FromException(exception);
                         }

@@ -30,10 +30,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                 (input) => toCount++);
 
             CosmosSerializerCore serializerCore = new CosmosSerializerCore(serializerHelper);
-            SqlQuerySpec querySpec = new SqlQuerySpec("select * from T where T.id = @id");
-            querySpec.Parameters = new SqlParameterCollection()
+            SqlQuerySpec querySpec = new SqlQuerySpec("select * from T where T.id = @id")
+            {
+                Parameters = new SqlParameterCollection()
             {
                 new SqlParameter("@id", "testValue")
+            }
             };
 
             try
@@ -141,7 +143,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             this.TestProperty<AccountProperties>(
                 serializerCore,
                 id,
-                $@"{{""id"":""{id}"",""writableLocations"":[],""readableLocations"":[],""userConsistencyPolicy"":null,""addresses"":null,""userReplicationPolicy"":null,""systemReplicationPolicy"":null,""readPolicy"":null,""queryEngineConfiguration"":null,""enableMultipleWriteLocations"":false}}");
+                $@"{{""id"":""{id}"",""writableLocations"":[],""readableLocations"":[],""userConsistencyPolicy"":null,""addresses"":null,""userReplicationPolicy"":null,""systemReplicationPolicy"":null,""readPolicy"":null,""queryEngineConfiguration"":null,""enableMultipleWriteLocations"":false,""enablePerPartitionFailoverBehavior"":null,""enableNRegionSynchronousCommit"":false}}");
 
             this.TestProperty<DatabaseProperties>(
                 serializerCore,

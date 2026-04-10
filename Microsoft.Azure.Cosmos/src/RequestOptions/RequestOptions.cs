@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -18,14 +19,26 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <remarks>
         /// Most commonly used with the Delete* and Replace* methods of <see cref="Container"/> such as <see cref="Container.ReplaceItemAsync{T}(T, string, PartitionKey?, ItemRequestOptions, System.Threading.CancellationToken)"/>.
+        /// <see cref="Container.CreateItemAsync{T}(T, PartitionKey?, ItemRequestOptions, System.Threading.CancellationToken)"/> will ignore <see cref="IfMatchEtag"/> if specificed. 
+        /// <see cref="Container.UpsertItemAsync{T}(T, PartitionKey?, ItemRequestOptions, System.Threading.CancellationToken)"/> will ignore <see cref="IfMatchEtag"/> when materialized as Create, otherwise for Replace Etag constraint will be applied.
+        /// 
+        /// <seealso href="https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/database-transactions-optimistic-concurrency#implementing-optimistic-concurrency-control-using-etag-and-http-headers"/>
         /// </remarks>
         public string IfMatchEtag { get; set; }
 
         /// <summary>
+        /// Most commonly used to detect changes to the resource
         /// Gets or sets the If-None-Match (ETag) associated with the request in the Azure Cosmos DB service.
         /// </summary>
         /// <remarks>
-        /// Most commonly used to detect changes to the resource
+        /// Most commonly used with reads such as <see cref="Container.ReadItemAsync{T}(string, PartitionKey, ItemRequestOptions, System.Threading.CancellationToken)"/>.
+        /// When Item Etag matches the specified <see cref="IfNoneMatchEtag"/> then 304 status code will be returned, otherwise existing Item will be returned with 200.
+        /// <see cref="Container.UpsertItemAsync{T}(T, PartitionKey?, ItemRequestOptions, System.Threading.CancellationToken)"/> will ignore <see cref="IfNoneMatchEtag"/> when materialized as Create, otherwise for Replace Etag constraint will be applied.
+        /// 
+        /// To match any Etag use "*"
+        /// If specified for writes (ex: Create, Replace, Delete) will be ignored.
+        /// 
+        /// <seealso href="https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/database-transactions-optimistic-concurrency#implementing-optimistic-concurrency-control-using-etag-and-http-headers"/>
         /// </remarks>
         public string IfNoneMatchEtag { get; set; }
 
@@ -76,12 +89,7 @@ namespace Microsoft.Azure.Cosmos
         /// reduce latency and increase availability. Currently there is one type of availability strategy, parallel request hedging.
         /// If there is a globally enabled availability strategy, setting one in the request options will override the global one.
         /// </summary>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        AvailabilityStrategy AvailabilityStrategy { get; set; }
+        public AvailabilityStrategy AvailabilityStrategy { get; set; }
 
         /// <summary>
         /// Gets or sets the boolean to use effective partition key routing in the cosmos db request.
@@ -101,7 +109,28 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         internal virtual ConsistencyLevel? BaseConsistencyLevel { get; set; }
 
+        /// <summary>
+        /// Gets or sets the read consistency strategy for the request.
+        /// When set, this takes precedence over <see cref="BaseConsistencyLevel"/>.
+        /// </summary>
+        internal virtual ReadConsistencyStrategy? BaseReadConsistencyStrategy { get; set; }
+
         internal bool DisablePointOperationDiagnostics { get; set; }
+
+        /// <summary>
+        /// Gets or sets the throughput bucket for a request.
+        /// </summary>
+        /// <remarks>
+        /// If <see cref="CosmosClientOptions.AllowBulkExecution"/> is set to true on CosmosClient,
+        /// <see cref="RequestOptions.ThroughputBucket"/> cannot be set in RequestOptions.
+        /// </remarks>
+        /// <seealso href="https://aka.ms/cosmsodb-bucketing"/>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        int? ThroughputBucket { get; set; }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
@@ -130,6 +159,11 @@ namespace Microsoft.Azure.Cosmos
             if (this.PriorityLevel.HasValue)
             {
                 request.Headers.Add(HttpConstants.HttpHeaders.PriorityLevel, this.PriorityLevel.ToString());
+            }
+
+            if (this.ThroughputBucket.HasValue)
+            {
+                request.Headers.Add(HttpConstants.HttpHeaders.ThroughputBucket, this.ThroughputBucket?.ToString(CultureInfo.InvariantCulture));
             }
 
             this.AddRequestHeaders?.Invoke(request.Headers);
@@ -179,5 +213,25 @@ namespace Microsoft.Azure.Cosmos
                 request.Headers.Add(HttpConstants.HttpHeaders.SessionToken, sessionToken);
             }
         }
+
+        /// <summary>
+        /// Gets or sets the configuration for operation-level metrics.
+        /// </summary>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        OperationMetricsOptions OperationMetricsOptions { get; set; } = null;
+
+        /// <summary>
+        /// Gets or sets the configuration for network-level metrics.
+        /// </summary>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        NetworkMetricsOptions NetworkMetricsOptions { get; set; } = null;
     }
 }

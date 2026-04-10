@@ -26,12 +26,12 @@ namespace Microsoft.Azure.Cosmos
         [TestInitialize]
         public void Initialize()
         {
-            var isInitializedField = typeof(VmMetadataApiHandler).GetField("isInitialized",
+            FieldInfo isInitializedField = typeof(VmMetadataApiHandler).GetField("isInitialized",
                BindingFlags.Static |
                BindingFlags.NonPublic);
             isInitializedField.SetValue(null, false);
 
-            var azMetadataField = typeof(VmMetadataApiHandler).GetField("azMetadata",
+            FieldInfo azMetadataField = typeof(VmMetadataApiHandler).GetField("azMetadata",
                BindingFlags.Static |
                BindingFlags.NonPublic);
             azMetadataField.SetValue(null, null);
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos
             if (isVmMetadataAccessDisabled != null)
             {
                 Environment.SetEnvironmentVariable("COSMOS_DISABLE_IMDS_ACCESS", isVmMetadataAccessDisabled);
-            } 
+            }
 
             try
             {

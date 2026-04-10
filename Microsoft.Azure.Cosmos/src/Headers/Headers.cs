@@ -225,6 +225,12 @@ namespace Microsoft.Azure.Cosmos
             set => this.CosmosMessageHeaders.IndexUtilization = value;
         }
 
+        internal virtual string QueryAdvice
+        {
+            get => this.CosmosMessageHeaders.QueryAdvice;
+            set => this.CosmosMessageHeaders.QueryAdvice = value;
+        }
+
         internal virtual string BackendRequestDurationMilliseconds
         {
             get => this.CosmosMessageHeaders.BackendRequestDurationMilliseconds;

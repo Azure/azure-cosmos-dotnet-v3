@@ -16,14 +16,16 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 new MockedItemOfTBulkBenchmark() { BenchmarkHelper = new MockedItemBenchmarkHelper(useBulk: true) },
                 new MockedItemOfTBulkBenchmark() { BenchmarkHelper = new MockedItemBenchmarkHelper(useCustomSerializer: true, useBulk: true) },
                 new MockedItemOfTBulkBenchmark() { BenchmarkHelper = new MockedItemBenchmarkHelper(useCustomSerializer: false, includeDiagnosticsToString: true, useBulk: true) },
-                new MockedItemOfTBulkBenchmark() { BenchmarkHelper = new MockedItemBenchmarkHelper(useCustomSerializer: false, includeDiagnosticsToString: true, isClientTelemetryEnabled:true, useBulk: true) }
+                new MockedItemOfTBulkBenchmark() { BenchmarkHelper = new MockedItemBenchmarkHelper(useCustomSerializer: false, includeDiagnosticsToString: true, isDistributedTracingEnabled:true, useBulk: true) },
+                new MockedItemOfTBulkBenchmark() { BenchmarkHelper = new MockedItemBenchmarkHelper(useCustomSerializer: false, includeDiagnosticsToString: true, isClientMetricsEnabled:true, useBulk: true) }
             };
 
         [Params(ScenarioType.Stream, 
                 ScenarioType.OfT, 
                 ScenarioType.OfTWithDiagnosticsToString, 
                 ScenarioType.OfTCustom,
-                ScenarioType.OfTWithClientTelemetryEnabled)]
+                ScenarioType.OfTWithDistributedTracingEnabled,
+                ScenarioType.OfTWithClientMetricsEnabled)]
         public ScenarioType Type
         {
             get;

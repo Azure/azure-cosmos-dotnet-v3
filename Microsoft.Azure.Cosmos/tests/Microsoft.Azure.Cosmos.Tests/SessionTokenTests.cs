@@ -15,74 +15,65 @@ namespace Microsoft.Azure.Cosmos.Client.Test
         {
             // valid session token
             string sessionToken = "1#100#1=20#2=5#3=30";
-            ISessionToken parsedSessionToken;
-            Assert.IsTrue(VectorSessionToken.TryCreate(sessionToken, out parsedSessionToken));
+            Assert.IsTrue(VectorSessionToken.TryCreate(sessionToken, out _));
 
             sessionToken = "500";
-            Assert.IsTrue(SimpleSessionToken.TryCreate(sessionToken, out parsedSessionToken));
+            Assert.IsTrue(SimpleSessionToken.TryCreate(sessionToken, out _));
         }
 
         [TestMethod]
         public void ValidateSessionTokenParsingWithInvalidVersion()
         {
             string sessionToken = "foo#100#1=20#2=5#3=30";
-            ISessionToken parsedSessionToken;
-            Assert.IsFalse(VectorSessionToken.TryCreate(sessionToken, out parsedSessionToken));
+            Assert.IsFalse(VectorSessionToken.TryCreate(sessionToken, out _));
         }
 
         [TestMethod]
         public void ValidateSessionTokenParsingWithInvalidGlobalLsn()
         {
             string sessionToken = "1#foo#1=20#2=5#3=30";
-            ISessionToken parsedSessionToken;
-            Assert.IsFalse(VectorSessionToken.TryCreate(sessionToken, out parsedSessionToken));
+            Assert.IsFalse(VectorSessionToken.TryCreate(sessionToken, out _));
         }
 
         [TestMethod]
         public void ValidateSessionTokenParsingWithInvalidRegionProgress()
         {
             string sessionToken = "1#100#1=20#2=x#3=30";
-            ISessionToken parsedSessionToken;
-            Assert.IsFalse(VectorSessionToken.TryCreate(sessionToken, out parsedSessionToken));
+            Assert.IsFalse(VectorSessionToken.TryCreate(sessionToken, out _));
         }
 
         [TestMethod]
         public void ValidateSessionTokenParsingWithInvalidFormat()
         {
             string sessionToken = "1;100#1=20#2=40";
-            ISessionToken parsedSessionToken;
-            Assert.IsFalse(VectorSessionToken.TryCreate(sessionToken, out parsedSessionToken));
+            Assert.IsFalse(VectorSessionToken.TryCreate(sessionToken, out _));
 
             sessionToken = "foo";
-            Assert.IsFalse(SimpleSessionToken.TryCreate(sessionToken, out parsedSessionToken));
+            Assert.IsFalse(SimpleSessionToken.TryCreate(sessionToken, out _));
         }
 
         [TestMethod]
         public void ValidateSessionTokenParsingFromEmptyString()
         {
             string sessionToken = "";
-            ISessionToken parsedSessionToken;
-            Assert.IsFalse(VectorSessionToken.TryCreate(sessionToken, out parsedSessionToken));
+            Assert.IsFalse(VectorSessionToken.TryCreate(sessionToken, out _));
         }
 
         [TestMethod]
         public void ValidateSessionTokenComparison()
         {
             // valid session token
-            ISessionToken sessionToken1;
-            ISessionToken sessionToken2;
-            ISessionToken sessionTokenMerged;
 
-            Assert.IsTrue(VectorSessionToken.TryCreate("1#100#1=20#2=5#3=30", out sessionToken1));
-            Assert.IsTrue(VectorSessionToken.TryCreate("2#105#4=10#2=5#3=30", out sessionToken2));
+            Assert.IsTrue(VectorSessionToken.TryCreate("1#100#1=20#2=5#3=30", out ISessionToken sessionToken1));
+            Assert.IsTrue(VectorSessionToken.TryCreate("2#105#4=10#2=5#3=30", out ISessionToken sessionToken2));
             Assert.IsFalse(sessionToken1.Equals(sessionToken2));
             Assert.IsFalse(sessionToken2.Equals(sessionToken1));
             Assert.IsTrue(sessionToken1.IsValid(sessionToken2));
             Assert.IsFalse(sessionToken2.IsValid(sessionToken1));
 
-            Assert.IsTrue(VectorSessionToken.TryCreate("2#105#2=5#3=30#4=10", out sessionTokenMerged));
+            Assert.IsTrue(VectorSessionToken.TryCreate("2#105#2=5#3=30#4=10", out ISessionToken sessionTokenMerged));
             Assert.IsTrue(sessionTokenMerged.Equals(sessionToken1.Merge(sessionToken2)));
-            
+
             Assert.IsTrue(VectorSessionToken.TryCreate("1#100#1=20#2=5#3=30", out sessionToken1));
             Assert.IsTrue(VectorSessionToken.TryCreate("1#100#1=10#2=8#3=30", out sessionToken2));
             Assert.IsFalse(sessionToken1.Equals(sessionToken2));

@@ -38,6 +38,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
     internal class ChaosInterceptor : IChaosInterceptor
     {
+        private const string FaultInjectionId = "FaultInjectionId";
+
         private FaultInjectionRuleStore? ruleStore;
         private RntbdConnectionErrorInjector? connectionErrorInjector;
         private TimeSpan requestTimeout;
@@ -79,6 +81,21 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         public async Task<(bool, StoreResponse?)> OnRequestCallAsync(ChannelCallArguments args)
         {
             StoreResponse faultyResponse;
+            
+            // Check for custom server error rule first
+            FaultInjectionCustomServerErrorRule? customServerErrorRule = this.ruleStore?.FindRntbdCustomServerErrorRule(args);
+            if (customServerErrorRule != null)
+            {
+                this.applicationContext.AddRuleExecution(customServerErrorRule.GetId(), args.CommonArguments.ActivityId);
+
+                faultyResponse = customServerErrorRule.GetInjectedServerError(args);
+
+                DefaultTrace.TraceInformation("FaultInjection: FaultInjection Custom Rule {0} Inserted error for request {1}",
+                                    customServerErrorRule.GetId(), args.CommonArguments.ActivityId);
+
+                return (true, faultyResponse);
+            }
+
             FaultInjectionServerErrorRule? serverResponseErrorRule = this.ruleStore?.FindRntbdServerResponseErrorRule(args);
             if (serverResponseErrorRule != null)
             {
@@ -170,7 +187,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 TimeSpan delay = serverSendDelayRule.GetDelay();
 
                 DefaultTrace.TraceInformation(
-                    "FaultInjection: FaultInjection Rule {0} Inserted {1} duration response delay for request {2}",
+                    "FaultInjection: FaultInjection Rule {0} Inserted {1} duration send delay for request {2}",
                     serverSendDelayRule.GetId(),
                     delay,
                     args.CommonArguments.ActivityId);
@@ -238,19 +255,93 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             return this.channelStore;
         }
 
-        public Task<(bool, HttpResponseMessage)> OnHttpRequestCallAsync(DocumentServiceRequest request)
+        public async Task<(bool, HttpResponseMessage?)> OnHttpRequestCallAsync(DocumentServiceRequest request, CancellationToken token)
         {
-            throw new NotImplementedException();
+            HttpResponseMessage faultyResponse;
+            
+            // Check for custom server error rule first
+            FaultInjectionCustomServerErrorRule? customServerErrorRule = this.ruleStore?.FindHttpCustomServerErrorRule(request);
+            if (customServerErrorRule != null)
+            {
+                this.applicationContext.AddRuleExecution(
+                    customServerErrorRule.GetId(),
+                    new Guid(request.Headers.Get(ChaosInterceptor.FaultInjectionId)));
+
+                faultyResponse = customServerErrorRule.GetInjectedServerError(request);
+
+                DefaultTrace.TraceInformation(
+                    "FaultInjection: FaultInjection Custom Rule {0} Inserted error for request with faultInjection request id{1}",
+                    customServerErrorRule.GetId(),
+                    request.Headers.Get(ChaosInterceptor.FaultInjectionId));
+
+                return (true, faultyResponse);
+            }
+
+            FaultInjectionServerErrorRule? serverResponseErrorRule = this.ruleStore?.FindHttpServerResponseErrorRule(request);
+            if (serverResponseErrorRule != null)
+            {
+                this.applicationContext.AddRuleExecution(
+                    serverResponseErrorRule.GetId(), 
+                    new Guid(request.Headers.Get(ChaosInterceptor.FaultInjectionId)));
+
+                faultyResponse = serverResponseErrorRule.GetInjectedServerError(request);
+
+                DefaultTrace.TraceInformation(
+                    "FaultInjection: FaultInjection Rule {0} Inserted error for request with faultInjection request id{1}",
+                    serverResponseErrorRule.GetId(),
+                    request.Headers.Get(ChaosInterceptor.FaultInjectionId));
+
+                if (serverResponseErrorRule.GetInjectedServerErrorType() == FaultInjectionServerErrorType.Timeout)
+                {
+                    await Task.Delay(this.requestTimeout, token);
+                }
+
+                return (true, faultyResponse);
+            }
+
+            return (false, null);
         }
 
-        public Task OnBeforeHttpSendAsync(DocumentServiceRequest request)
+        public async Task OnBeforeHttpSendAsync(DocumentServiceRequest request, CancellationToken token)
         {
-            throw new NotImplementedException();
+            FaultInjectionServerErrorRule? serverSendDelayRule = this.ruleStore?.FindHttpServerSendDelayRule(request);
+
+            if (serverSendDelayRule != null)
+            {
+                this.applicationContext.AddRuleExecution(
+                    serverSendDelayRule.GetId(),
+                    new Guid(request.Headers.Get(ChaosInterceptor.FaultInjectionId)));
+                TimeSpan delay = serverSendDelayRule.GetDelay();
+
+                DefaultTrace.TraceInformation(
+                    "FaultInjection: FaultInjection Rule {0} Inserted {1} duration send delay for request with fault injection id {2}",
+                    serverSendDelayRule.GetId(),
+                    delay,
+                    request.Headers.Get(ChaosInterceptor.FaultInjectionId));
+
+                await Task.Delay(delay, token);
+            }
         }
 
-        public Task OnAfterHttpSendAsync(DocumentServiceRequest request)
+        public async Task OnAfterHttpSendAsync(DocumentServiceRequest request, CancellationToken token)
         {
-            throw new NotImplementedException();
+            FaultInjectionServerErrorRule? serverResponseDelayRule = this.ruleStore?.FindHttpServerResponseDelayRule(request);
+
+            if (serverResponseDelayRule != null)
+            {
+                this.applicationContext.AddRuleExecution(
+                    serverResponseDelayRule.GetId(),
+                    new Guid(request.Headers.Get(ChaosInterceptor.FaultInjectionId)));
+                TimeSpan delay = serverResponseDelayRule.GetDelay();
+
+                DefaultTrace.TraceInformation(
+                    "FaultInjection: FaultInjection Rule {0} Inserted {1} duration response delay for request with fault injection id {2}",
+                    serverResponseDelayRule.GetId(),
+                    delay,
+                    request.Headers.Get(ChaosInterceptor.FaultInjectionId));
+
+                await Task.Delay(delay, token);
+            }
         }
     }
 }

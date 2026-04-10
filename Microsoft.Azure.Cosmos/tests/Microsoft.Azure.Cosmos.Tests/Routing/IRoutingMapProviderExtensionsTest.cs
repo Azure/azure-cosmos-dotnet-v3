@@ -26,12 +26,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
             public MockRoutingMapProvider(IList<PartitionKeyRange> ranges)
             {
-                this.routingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(ranges.Select(r => Tuple.Create(r, (ServiceIdentity)null)), "");
+                this.routingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(ranges.Select(r => Tuple.Create(r, (ServiceIdentity)null)), "", false);
             }
 
             public Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
-                string collectionIdOrNameBasedLink, 
-                Range<string> range, 
+                string collectionIdOrNameBasedLink,
+                Range<string> range,
                 ITrace trace,
                 bool forceRefresh = false)
             {

@@ -621,9 +621,9 @@
                 CosmosQueryClientCore.ParseRestStream(
                     memoryStream,
                     Documents.ResourceType.Document,
-                    out CosmosArray documents,
+                    out _,
                     out CosmosObject distributionPlan,
-                    out bool? ignored);
+                    out _);
 
                 if (distributionPlan.TryGetValue("backendDistributionPlan", out CosmosElement backendDistributionPlan) &&
                     distributionPlan.TryGetValue("clientDistributionPlan", out CosmosElement clientDistributionPlan))
@@ -652,9 +652,9 @@
             CosmosQueryClientCore.ParseRestStream(
                 memoryStream,
                 Documents.ResourceType.Document,
-                out CosmosArray documents,
+                out _,
                 out CosmosObject distributionPlan,
-                out bool? streaming);
+                out _);
 
             if (distributionPlan.TryGetValue("backendDistributionPlan", out CosmosElement backendDistributionPlan) &&
                 distributionPlan.TryGetValue("clientDistributionPlan", out CosmosElement clientDistributionPlan))
@@ -827,6 +827,7 @@
                 allowNonValueAggregateQuery: true,
                 hasLogicalPartitionKey: false,
                 allowDCount: true,
+                hybridSearchSkipOrderByRewrite: false,
                 useSystemPrefix: false,
                 geospatialType: Cosmos.GeospatialType.Geography);
 
@@ -1027,8 +1028,9 @@
                 partitionedQueryExecutionInfo: null,
                 returnResultsInDeterministicOrder: null,
                 enableOptimisticDirectExecution: queryRequestOptions.EnableOptimisticDirectExecution,
-                isNonStreamingOrderByQueryFeatureDisabled: queryRequestOptions.IsNonStreamingOrderByQueryFeatureDisabled,
+                isHybridSearchQueryPlanOptimizationDisabled: queryRequestOptions.IsHybridSearchQueryPlanOptimizationDisabled,
                 enableDistributedQueryGatewayMode: queryRequestOptions.EnableDistributedQueryGatewayMode,
+                fullTextScoreScope: queryRequestOptions.FullTextScoreScope,
                 testInjections: queryRequestOptions.TestSettings);
 
             List<PartitionKeyRange> targetPkRanges = new();
@@ -1324,7 +1326,8 @@
                  },
                  new PartitionKeyDefinition(),
                  vectorEmbeddingPolicy: null,
-                 Cosmos.GeospatialType.Geometry));
+                 Cosmos.GeospatialType.Geometry,
+                 false));
         }
 
         public override Task<bool> GetClientDisableOptimisticDirectExecutionAsync()
@@ -1357,6 +1360,7 @@
             bool allowNonValueAggregateQuery,
             bool hasLogicalPartitionKey,
             bool allowDCount,
+            bool hybridSearchQuerySkipOrderByRewrite,
             bool useSystemPrefix,
             Cosmos.GeospatialType geospatialType,
             CancellationToken cancellationToken)

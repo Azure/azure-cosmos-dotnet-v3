@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     break;
 
                 case Number64 numberValue:
-                    jsonWriter.WriteNumber64Value(numberValue);
+                    jsonWriter.WriteNumberValue(numberValue);
                     break;
 
                 case sbyte signedByteValue:

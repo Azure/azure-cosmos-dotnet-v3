@@ -9,8 +9,8 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Diagnostics;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Timers;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Microsoft.Azure.Documents;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     public class TimerWheelCoreTests
@@ -23,10 +23,10 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [DataTestMethod]
-        [DataRow(0,1)]
-        [DataRow(-1,1)]
-        [DataRow(50,0)]
-        [DataRow(50,-1)]
+        [DataRow(0, 1)]
+        [DataRow(-1, 1)]
+        [DataRow(50, 0)]
+        [DataRow(50, -1)]
         [ExpectedException(typeof(ArgumentOutOfRangeException))]
         public void InvalidConstructor(int resolutionInMs, int buckets)
         {
@@ -142,11 +142,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 int estimatedTimeout = (i + 1) * timerTimeout;
                 TimerWheelTimer timer = wheel.CreateTimer(TimeSpan.FromMilliseconds(estimatedTimeout));
-                tasks.Add(Task.Run(async () => {
+                tasks.Add(Task.Run(async () =>
+                {
                     ValueStopwatch stopwatch = ValueStopwatch.StartNew();
                     await timer.StartTimerAsync();
                     stopwatch.Stop();
-                    return (estimatedTimeout,stopwatch.ElapsedMilliseconds);
+                    return (estimatedTimeout, stopwatch.ElapsedMilliseconds);
                 }));
             }
 

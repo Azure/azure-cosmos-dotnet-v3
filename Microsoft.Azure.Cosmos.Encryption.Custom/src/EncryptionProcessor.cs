@@ -1,7 +1,6 @@
 //------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-
 namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
     using System;
@@ -10,10 +9,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     using System.IO;
     using System.Linq;
     using System.Text;
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
-    using System.Text.Json;
-    using System.Text.Json.Nodes;
-#endif
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Encryption.Custom.Transformation;
@@ -32,10 +27,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         internal static readonly CosmosJsonDotNetSerializer BaseSerializer = new (JsonSerializerSettings);
 
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
-        private static readonly JsonWriterOptions JsonWriterOptions = new () { SkipValidation = true };
-#endif
-
         private static readonly MdeEncryptionProcessor MdeEncryptionProcessor = new ();
 
         /// <remarks>
@@ -47,48 +38,98 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Stream input,
             Encryptor encryptor,
             EncryptionOptions encryptionOptions,
+            JsonProcessor jsonProcessor,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            _ = diagnosticsContext;
-
             ValidateInputForEncrypt(
                 input,
                 encryptor,
-                encryptionOptions);
+                encryptionOptions,
+                jsonProcessor);
 
             if (!encryptionOptions.PathsToEncrypt.Any())
             {
                 return input;
             }
-
-            if (encryptionOptions.PathsToEncrypt.Distinct().Count() != encryptionOptions.PathsToEncrypt.Count())
-            {
-                throw new InvalidOperationException("Duplicate paths in PathsToEncrypt passed via EncryptionOptions.");
-            }
-
-            foreach (string path in encryptionOptions.PathsToEncrypt)
-            {
-                if (string.IsNullOrWhiteSpace(path) || path[0] != '/' || path.IndexOf('/', 1) != -1)
-                {
-                    throw new InvalidOperationException($"Invalid path {path ?? string.Empty}, {nameof(encryptionOptions.PathsToEncrypt)}");
-                }
-
-                if (path.AsSpan(1).Equals("id".AsSpan(), StringComparison.Ordinal))
-                {
-                    throw new InvalidOperationException($"{nameof(encryptionOptions.PathsToEncrypt)} includes a invalid path: '{path}'.");
-                }
-            }
-
 #pragma warning disable CS0618 // Type or member is obsolete
             return encryptionOptions.EncryptionAlgorithm switch
             {
-                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized => await MdeEncryptionProcessor.EncryptAsync(input, encryptor, encryptionOptions, cancellationToken),
+                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized => await MdeEncryptionProcessor.EncryptAsync(input, encryptor, encryptionOptions, jsonProcessor, diagnosticsContext, cancellationToken),
                 CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized => await AeAesEncryptionProcessor.EncryptAsync(input, encryptor, encryptionOptions, cancellationToken),
                 _ => throw new NotSupportedException($"Encryption Algorithm : {encryptionOptions.EncryptionAlgorithm} is not supported."),
             };
 #pragma warning restore CS0618 // Type or member is obsolete
         }
+
+        public static Task<Stream> EncryptAsync(
+            Stream input,
+            Encryptor encryptor,
+            EncryptionItemRequestOptions requestOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            return EncryptAsync(
+                input,
+                encryptor,
+                requestOptions.EncryptionOptions,
+                requestOptions.GetJsonProcessor(),
+                diagnosticsContext,
+                cancellationToken);
+        }
+
+        public static Task<Stream> EncryptAsync(
+            Stream input,
+            Encryptor encryptor,
+            EncryptionTransactionalBatchItemRequestOptions requestOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            return EncryptAsync(
+                input,
+                encryptor,
+                requestOptions.EncryptionOptions,
+                requestOptions.GetJsonProcessor(),
+                diagnosticsContext,
+                cancellationToken);
+        }
+
+#if NET8_0_OR_GREATER
+        public static async Task EncryptAsync(
+            Stream input,
+            Stream output,
+            Encryptor encryptor,
+            EncryptionOptions encryptionOptions,
+            JsonProcessor jsonProcessor,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            ValidateInputForEncrypt(
+                input,
+                encryptor,
+                encryptionOptions,
+                jsonProcessor);
+
+            if (!encryptionOptions.PathsToEncrypt.Any())
+            {
+                await input.CopyToAsync(output, cancellationToken);
+
+                return;
+            }
+
+            if (encryptionOptions.EncryptionAlgorithm != CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)
+            {
+                throw new NotSupportedException($"Streaming mode is only allowed for {nameof(CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)}");
+            }
+
+            if (jsonProcessor != JsonProcessor.Stream)
+            {
+                throw new NotSupportedException($"Streaming mode is only allowed for {nameof(JsonProcessor.Stream)}");
+            }
+
+            await MdeEncryptionProcessor.EncryptAsync(input, output, encryptor, encryptionOptions, jsonProcessor, diagnosticsContext, cancellationToken);
+        }
+#endif
 
         /// <remarks>
         /// If there isn't any data that needs to be decrypted, input stream will be returned without any modification.
@@ -120,11 +161,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
 
             DecryptionContext decryptionContext = await DecryptInternalAsync(encryptor, diagnosticsContext, itemJObj, encryptionPropertiesJObj, cancellationToken);
-#if NET8_0_OR_GREATER
-            await input.DisposeAsync();
-#else
-            input.Dispose();
-#endif
+            await input.DisposeCompatAsync();
+
             return (BaseSerializer.ToStream(itemJObj), decryptionContext);
         }
 
@@ -132,21 +170,68 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Stream input,
             Encryptor encryptor,
             CosmosDiagnosticsContext diagnosticsContext,
-            JsonProcessor jsonProcessor,
+            RequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
-            return jsonProcessor switch
+            if (input == null)
             {
-                JsonProcessor.Newtonsoft => await DecryptAsync(input, encryptor, diagnosticsContext, cancellationToken),
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
-                JsonProcessor.SystemTextJson => await DecryptJsonNodeAsync(input, encryptor, diagnosticsContext, cancellationToken),
-#endif
-                _ => throw new InvalidOperationException("Unsupported Json Processor")
-            };
+                return (input, null);
+            }
+
+            Debug.Assert(input.CanSeek);
+            Debug.Assert(encryptor != null);
+            Debug.Assert(diagnosticsContext != null);
+
+            // Try to peek at the content to check if it's legacy encryption algorithm
+            // Some streams (e.g., those that only support async reads or contain malformed JSON) may throw exceptions
+            // during synchronous peeking. In such cases, delegate directly to MdeEncryptionProcessor.
+            try
+            {
+                JObject itemJObj = RetrieveItem(input);
+                JObject encryptionPropertiesJObj = RetrieveEncryptionProperties(itemJObj);
+
+                if (encryptionPropertiesJObj != null)
+                {
+                    // Parse encryption properties to check the algorithm
+                    EncryptionProperties encryptionProperties = encryptionPropertiesJObj.ToObject<EncryptionProperties>();
+
+#pragma warning disable CS0618 // Type or member is obsolete
+                    if (string.Equals(encryptionProperties.EncryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized, StringComparison.Ordinal))
+#pragma warning restore CS0618 // Type or member is obsolete
+                    {
+                        // Use legacy decryption for AEAes256CbcHmacSha256Randomized
+                        DecryptionContext decryptionContext = await DecryptInternalAsync(encryptor, diagnosticsContext, itemJObj, encryptionPropertiesJObj, cancellationToken);
+                        await input.DisposeCompatAsync();
+                        return (BaseSerializer.ToStream(itemJObj), decryptionContext);
+                    }
+                }
+
+                // For MDE algorithm or no encryption properties, delegate to MdeEncryptionProcessor
+                input.Position = 0;
+            }
+            catch
+            {
+                // Stream doesn't support synchronous reads, contains malformed JSON, or other parsing error.
+                // Reset position and delegate to MdeEncryptionProcessor which uses async reads and will handle errors appropriately.
+                input.Position = 0;
+            }
+
+            return await MdeEncryptionProcessor.DecryptAsync(input, encryptor, diagnosticsContext, requestOptions, cancellationToken);
         }
 
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
-        public static async Task<(Stream, DecryptionContext)> DecryptJsonNodeAsync(
+        public static async Task<DecryptionContext> DecryptAsync(
+            Stream input,
+            Stream output,
+            Encryptor encryptor,
+            CosmosDiagnosticsContext diagnosticsContext,
+            RequestOptions requestOptions,
+            CancellationToken cancellationToken)
+        {
+            return await MdeEncryptionProcessor.DecryptAsync(input, output, encryptor, diagnosticsContext, requestOptions, cancellationToken);
+        }
+
+#if NET8_0_OR_GREATER
+        public static async Task<(Stream, DecryptionContext)> DecryptStreamAsync(
             Stream input,
             Encryptor encryptor,
             CosmosDiagnosticsContext diagnosticsContext,
@@ -160,10 +245,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Debug.Assert(input.CanSeek);
             Debug.Assert(encryptor != null);
             Debug.Assert(diagnosticsContext != null);
+            input.Position = 0;
 
-            JsonNode document = await JsonNode.ParseAsync(input, cancellationToken: cancellationToken);
+            EncryptionPropertiesWrapper properties = await System.Text.Json.JsonSerializer.DeserializeAsync<EncryptionPropertiesWrapper>(input, cancellationToken: cancellationToken);
+            input.Position = 0;
+            if (properties?.EncryptionProperties == null)
+            {
+                return (input, null);
+            }
 
-            (JsonNode decryptedDocument, DecryptionContext context) = await DecryptAsync(document, encryptor, diagnosticsContext, cancellationToken);
+            MemoryStream ms = new ();
+
+            DecryptionContext context = await MdeEncryptionProcessor.DecryptStreamAsync(input, ms, encryptor, properties.EncryptionProperties, diagnosticsContext, cancellationToken);
             if (context == null)
             {
                 input.Position = 0;
@@ -171,13 +264,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
 
             await input.DisposeAsync();
-
-            MemoryStream ms = new ();
-            Utf8JsonWriter writer = new (ms, EncryptionProcessor.JsonWriterOptions);
-
-            System.Text.Json.JsonSerializer.Serialize(writer, decryptedDocument);
-
-            ms.Position = 0;
             return (ms, context);
         }
 #endif
@@ -203,53 +289,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             return (document, decryptionContext);
         }
-
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
-        public static async Task<(JsonNode, DecryptionContext)> DecryptAsync(
-            JsonNode document,
-            Encryptor encryptor,
-            CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken)
-        {
-            Debug.Assert(document != null);
-
-            Debug.Assert(encryptor != null);
-
-            if (!document.AsObject().TryGetPropertyValue(Constants.EncryptedInfo, out JsonNode encryptionPropertiesNode))
-            {
-                return (document, null);
-            }
-
-            EncryptionProperties encryptionProperties;
-            try
-            {
-                encryptionProperties = System.Text.Json.JsonSerializer.Deserialize<EncryptionProperties>(encryptionPropertiesNode);
-            }
-            catch (Exception)
-            {
-                return (document, null);
-            }
-
-            DecryptionContext decryptionContext = await DecryptInternalAsync(encryptor, diagnosticsContext, document, encryptionProperties, cancellationToken);
-
-            return (document, decryptionContext);
-        }
-
-        private static async Task<DecryptionContext> DecryptInternalAsync(Encryptor encryptor, CosmosDiagnosticsContext diagnosticsContext, JsonNode itemNode, EncryptionProperties encryptionProperties, CancellationToken cancellationToken)
-        {
-            DecryptionContext decryptionContext = encryptionProperties.EncryptionAlgorithm switch
-            {
-                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized => await MdeEncryptionProcessor.DecryptObjectAsync(
-                    itemNode,
-                    encryptor,
-                    encryptionProperties,
-                    diagnosticsContext,
-                    cancellationToken),
-                _ => throw new NotSupportedException($"Encryption Algorithm : {encryptionProperties.EncryptionAlgorithm} is not supported."),
-            };
-            return decryptionContext;
-        }
-#endif
 
         private static async Task<DecryptionContext> DecryptInternalAsync(Encryptor encryptor, CosmosDiagnosticsContext diagnosticsContext, JObject itemJObj, JObject encryptionPropertiesJObj, CancellationToken cancellationToken)
         {
@@ -292,30 +331,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         private static void ValidateInputForEncrypt(
             Stream input,
             Encryptor encryptor,
-            EncryptionOptions encryptionOptions)
+            EncryptionOptions encryptionOptions,
+            JsonProcessor jsonProcessor)
         {
-#if NET8_0_OR_GREATER
-            ArgumentNullException.ThrowIfNull(input);
-            ArgumentNullException.ThrowIfNull(encryptor);
-            ArgumentNullException.ThrowIfNull(encryptionOptions);
-#else
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
+            ArgumentValidation.ThrowIfNull(input);
+            ArgumentValidation.ThrowIfNull(encryptor);
+            ArgumentValidation.ThrowIfNull(encryptionOptions);
 
-            if (encryptor == null)
-            {
-                throw new ArgumentNullException(nameof(encryptor));
-            }
-
-            if (encryptionOptions == null)
-            {
-                throw new ArgumentNullException(nameof(encryptionOptions));
-            }
-#endif
-
-            encryptionOptions.Validate();
+            encryptionOptions.Validate(jsonProcessor);
         }
 
         private static JObject RetrieveItem(
@@ -323,21 +346,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             Debug.Assert(input != null);
 
-            JObject itemJObj;
-            using (StreamReader sr = new (input, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
-            using (JsonTextReader jsonTextReader = new (sr))
+            using StreamReader sr = new (input, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
+            using JsonTextReader jsonTextReader = new (sr);
+            jsonTextReader.ArrayPool = JsonArrayPool.Instance;
+            JsonSerializerSettings jsonSerializerSettings = new ()
             {
-                jsonTextReader.ArrayPool = JsonArrayPool.Instance;
-                JsonSerializerSettings jsonSerializerSettings = new ()
-                {
-                    DateParseHandling = DateParseHandling.None,
-                    MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
-                };
+                DateParseHandling = DateParseHandling.None,
+                MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
+            };
 
-                itemJObj = Newtonsoft.Json.JsonSerializer.Create(jsonSerializerSettings).Deserialize<JObject>(jsonTextReader);
-            }
-
-            return itemJObj;
+            return Newtonsoft.Json.JsonSerializer.Create(jsonSerializerSettings).Deserialize<JObject>(jsonTextReader);
         }
 
         private static JObject RetrieveEncryptionProperties(
@@ -373,14 +391,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 }
 
                 CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(null);
-                using (diagnosticsContext.CreateScope("EncryptionProcessor.DeserializeAndDecryptResponseAsync"))
-                {
-                    await DecryptAsync(
-                        document,
-                        encryptor,
-                        diagnosticsContext,
-                        cancellationToken);
-                }
+                await DecryptAsync(
+                    document,
+                    encryptor,
+                    diagnosticsContext,
+                    cancellationToken);
             }
 
             // the contents of contentJObj get decrypted in place for MDE algorithm model, and for legacy model _ei property is removed

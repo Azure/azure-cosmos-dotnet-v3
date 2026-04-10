@@ -4,26 +4,29 @@
 
 namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Linq;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Pagination;
-    using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Cosmos.Tests.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
-    using Microsoft.Azure.Cosmos;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Threading.Tasks;
-    using System.Threading;
-    using System;
-    using System.Linq;
-    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
 
     [TestClass]
     public class NonStreamingOrderByQueryTests
@@ -40,6 +43,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
         private const int QueryCharge = 42;
 
+        private const int GlobalStatisticsQueryCharge = 3032;
+
         private const string CollectionRid = "1HNeAM-TiQY=";
 
         private const string RId = "_rid";
@@ -48,13 +53,25 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
         private const string Payload = "payload";
 
+        private const string ComponentScores = "componentScores";
+
         private const string Item = "item";
+
+        private const string Text = "text";
 
         private const string Index = "index";
 
         private const string IndexString = "indexString";
 
-        private static readonly int[] PageSizes = new [] { 1, 10, 100, DocumentCount };
+        private const string DocumentCountPropertyName = "documentCount";
+
+        private const string FullTextStatistics = "fullTextStatistics";
+
+        private const string TotalWordCount = "totalWordCount";
+
+        private const string HitCounts = "hitCounts";
+
+        private static readonly int[] PageSizes = new[] { 1, 10, 100, DocumentCount };
 
         [TestMethod]
         public async Task InMemoryContainerParityTests()
@@ -241,6 +258,593 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             await RunParityTests(testCases);
         }
 
+        [TestMethod]
+        public void HybridSearchDefaultScopeIsGlobalTests()
+        {
+            // Verify that default QueryRequestOptions.FullTextScoreScope is Global
+            QueryRequestOptions options = new QueryRequestOptions();
+            Assert.AreEqual(FullTextScoreScope.Global, options.FullTextScoreScope);
+        }
+
+        [TestMethod]
+        public async Task HybridSearchTests()
+        {
+            IReadOnlyList<HybridSearchTest> testCases = new List<HybridSearchTest>
+            {
+                MakeHybridSearchTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: false,
+                    skip: null,
+                    take: 100,
+                    pageSize: 1000),
+                MakeHybridSearchTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: false,
+                    skip: 20,
+                    take: 100,
+                    pageSize: 1000),
+                MakeHybridSearchTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: 20,
+                    take: 100,
+                    pageSize: 1000),
+                MakeHybridSearchTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: 20,
+                    take: 100,
+                    pageSize: 10),
+                MakeHybridSearchTest(
+                    leafPageCount: 10,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: 20,
+                    take: 100,
+                    pageSize: 10),
+                MakeHybridSearchTest(
+                    leafPageCount: 4,
+                    backendPageSize: 100,
+                    requiresGlobalStatistics: true,
+                    skip: 7,
+                    take: 10,
+                    pageSize: 1),
+                MakeHybridSearchTest(
+                    leafPageCount: 0,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: 0,
+                    take: 10,
+                    pageSize: 10,
+                    returnEmptyGlobalStatistics: true),
+
+                // Local scope tests - query subset of ranges, statistics also from subset
+                MakeHybridSearchTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: null,
+                    take: 100,
+                    pageSize: 1000,
+                    fullTextScoreScope: FullTextScoreScope.Local,
+                    targetRangeCount: 2),
+                MakeHybridSearchTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: 10,
+                    take: 50,
+                    pageSize: 100,
+                    fullTextScoreScope: FullTextScoreScope.Local,
+                    targetRangeCount: 3),
+                // Local scope with single target range
+                MakeHybridSearchTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: null,
+                    take: 50,
+                    pageSize: 100,
+                    fullTextScoreScope: FullTextScoreScope.Local,
+                    targetRangeCount: 1),
+                // Local scope with larger page size than document count
+                MakeHybridSearchTest(
+                    leafPageCount: 2,
+                    backendPageSize: 5,
+                    requiresGlobalStatistics: true,
+                    skip: null,
+                    take: 100,
+                    pageSize: 1000,
+                    fullTextScoreScope: FullTextScoreScope.Local,
+                    targetRangeCount: 2),
+                // Local scope with skip and take
+                MakeHybridSearchTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: 5,
+                    take: 20,
+                    pageSize: 10,
+                    fullTextScoreScope: FullTextScoreScope.Local,
+                    targetRangeCount: 2),
+                // Local scope with small page size (multiple pages)
+                MakeHybridSearchTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: null,
+                    take: 50,
+                    pageSize: 5,
+                    fullTextScoreScope: FullTextScoreScope.Local,
+                    targetRangeCount: 3),
+                // Local scope with 4 target ranges (majority of 6)
+                MakeHybridSearchTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: 10,
+                    take: 100,
+                    pageSize: 50,
+                    fullTextScoreScope: FullTextScoreScope.Local,
+                    targetRangeCount: 4),
+
+                // Global scope test - query subset of ranges, statistics from ALL ranges
+                MakeHybridSearchTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: null,
+                    take: 100,
+                    pageSize: 1000,
+                    fullTextScoreScope: FullTextScoreScope.Global,
+                    targetRangeCount: 2),
+            };
+
+            foreach (HybridSearchTest testCase in testCases)
+            {
+                await RunHybridSearchTest(testCase);
+            }
+        }
+
+        [TestMethod]
+        public async Task HybridSearchSkipOrderByRewriteTests()
+        {
+            IReadOnlyList<HybridSearchTest> testCases = new List<HybridSearchTest>
+            {
+                MakeHybridSearchSkipOrderByRewriteTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: false,
+                    skip: null,
+                    take: 100,
+                    pageSize: 1000),
+                MakeHybridSearchSkipOrderByRewriteTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: false,
+                    skip: 20,
+                    take: 100,
+                    pageSize: 1000),
+                MakeHybridSearchSkipOrderByRewriteTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: 20,
+                    take: 100,
+                    pageSize: 1000),
+                MakeHybridSearchSkipOrderByRewriteTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: 20,
+                    take: 100,
+                    pageSize: 10),
+                MakeHybridSearchSkipOrderByRewriteTest(
+                    leafPageCount: 10,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: 20,
+                    take: 100,
+                    pageSize: 10),
+                MakeHybridSearchSkipOrderByRewriteTest(
+                    leafPageCount: 4,
+                    backendPageSize: 100,
+                    requiresGlobalStatistics: true,
+                    skip: 7,
+                    take: 10,
+                    pageSize: 1),
+                MakeHybridSearchSkipOrderByRewriteTest(
+                    leafPageCount: 0,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: 0,
+                    take: 10,
+                    pageSize: 10,
+                    returnEmptyGlobalStatistics: true),
+
+                // Local scope test with skip order by rewrite
+                MakeHybridSearchSkipOrderByRewriteTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: 20,
+                    take: 100,
+                    pageSize: 1000,
+                    fullTextScoreScope: FullTextScoreScope.Local,
+                    targetRangeCount: 2),
+                // Local scope with single target range
+                MakeHybridSearchSkipOrderByRewriteTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: null,
+                    take: 50,
+                    pageSize: 100,
+                    fullTextScoreScope: FullTextScoreScope.Local,
+                    targetRangeCount: 1),
+                // Local scope with small page size
+                MakeHybridSearchSkipOrderByRewriteTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: 5,
+                    take: 30,
+                    pageSize: 5,
+                    fullTextScoreScope: FullTextScoreScope.Local,
+                    targetRangeCount: 3),
+                // Local scope with different skip/take values
+                MakeHybridSearchSkipOrderByRewriteTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: 10,
+                    take: 25,
+                    pageSize: 10,
+                    fullTextScoreScope: FullTextScoreScope.Local,
+                    targetRangeCount: 2),
+                // Local scope with 4 target ranges
+                MakeHybridSearchSkipOrderByRewriteTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: null,
+                    take: 100,
+                    pageSize: 50,
+                    fullTextScoreScope: FullTextScoreScope.Local,
+                    targetRangeCount: 4),
+            };
+
+            foreach (HybridSearchTest testCase in testCases)
+            {
+                await RunHybridSearchTest(testCase);
+            }
+        }
+
+        [TestMethod]
+        public async Task HybridSearchWeightedRRFTests()
+        {
+            IReadOnlyList<HybridSearchTest> testCases = new List<HybridSearchTest>
+            {
+                MakeHybridSearchTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: false,
+                    skip: null,
+                    take: 100,
+                    weights: new double[] { 1.0, 1.0 },
+                    pageSize: 1000),
+                MakeHybridSearchTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: false,
+                    skip: 20,
+                    take: 100,
+                    weights: new double[] { 0.25, 2.1 },
+                    pageSize: 1000),
+                MakeHybridSearchTest(
+                    leafPageCount: 0,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: 0,
+                    take: 10,
+                    weights: new double[] { 1.25, 2.0 },
+                    pageSize: 10,
+                    returnEmptyGlobalStatistics: true),
+                MakeHybridSearchTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: false,
+                    skip: null,
+                    take: 100,
+                    weights: new double[] { -1.0, -1.0 },
+                    pageSize: 1000),
+                MakeHybridSearchTest(
+                    leafPageCount: 4,
+                    backendPageSize: 100,
+                    requiresGlobalStatistics: true,
+                    skip: 7,
+                    take: 10,
+                    weights: new double[] { -1.33, -0.45 },
+                    pageSize: 1),
+                MakeHybridSearchTest(
+                    leafPageCount: 0,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: 0,
+                    take: 10,
+                    weights: new double[] { -1.25, -2.0 },
+                    pageSize: 10,
+                    returnEmptyGlobalStatistics: true),
+
+                // Local scope test with weighted RRF
+                MakeHybridSearchTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: null,
+                    take: 100,
+                    weights: new double[] { 1.0, 1.0 },
+                    pageSize: 1000,
+                    fullTextScoreScope: FullTextScoreScope.Local,
+                    targetRangeCount: 2),
+                // Local scope with different weights
+                MakeHybridSearchTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: 10,
+                    take: 50,
+                    weights: new double[] { 0.5, 1.5 },
+                    pageSize: 100,
+                    fullTextScoreScope: FullTextScoreScope.Local,
+                    targetRangeCount: 3),
+                // Local scope with single target range and weights
+                MakeHybridSearchTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: null,
+                    take: 50,
+                    weights: new double[] { 2.0, 1.0 },
+                    pageSize: 50,
+                    fullTextScoreScope: FullTextScoreScope.Local,
+                    targetRangeCount: 1),
+                // Local scope with small page size and weights
+                MakeHybridSearchTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: 5,
+                    take: 30,
+                    weights: new double[] { 1.0, 2.0 },
+                    pageSize: 5,
+                    fullTextScoreScope: FullTextScoreScope.Local,
+                    targetRangeCount: 2),
+                // Local scope with 4 target ranges and weights
+                MakeHybridSearchTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: null,
+                    take: 100,
+                    weights: new double[] { 0.75, 1.25 },
+                    pageSize: 25,
+                    fullTextScoreScope: FullTextScoreScope.Local,
+                    targetRangeCount: 4),
+            };
+
+            foreach (HybridSearchTest testCase in testCases)
+            {
+                await RunHybridSearchTest(testCase);
+            }
+        }
+
+        [TestMethod]
+        public async Task HybridSearchSkipOrderByRewriteWeightedRRFTests()
+        {
+            IReadOnlyList<HybridSearchTest> testCases = new List<HybridSearchTest>
+            {
+                MakeHybridSearchSkipOrderByRewriteTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: false,
+                    skip: null,
+                    take: 100,
+                    weights: new double[] { 1.0, 1.0 },
+                    pageSize: 1000),
+                MakeHybridSearchSkipOrderByRewriteTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: false,
+                    skip: 20,
+                    take: 100,
+                    weights: new double[] { 0.25, 2.1 },
+                    pageSize: 1000),
+                MakeHybridSearchSkipOrderByRewriteTest(
+                    leafPageCount: 0,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: 0,
+                    take: 10,
+                    weights: new double[] { 1.25, 2.0 },
+                    pageSize: 10,
+                    returnEmptyGlobalStatistics: true),
+                MakeHybridSearchSkipOrderByRewriteTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: false,
+                    skip: null,
+                    take: 100,
+                    weights: new double[] { -1.0, -1.0 },
+                    pageSize: 1000),
+                MakeHybridSearchSkipOrderByRewriteTest(
+                    leafPageCount: 4,
+                    backendPageSize: 100,
+                    requiresGlobalStatistics: true,
+                    skip: 7,
+                    take: 10,
+                    weights: new double[] { -1.33, -0.45 },
+                    pageSize: 1),
+                MakeHybridSearchSkipOrderByRewriteTest(
+                    leafPageCount: 0,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: 0,
+                    take: 10,
+                    weights: new double[] { -1.25, -2.0 },
+                    pageSize: 10,
+                    returnEmptyGlobalStatistics: true),
+            };
+
+            foreach (HybridSearchTest testCase in testCases)
+            {
+                await RunHybridSearchTest(testCase);
+            }
+        }
+
+        private static async Task RunHybridSearchTest(HybridSearchTest testCase)
+        {
+            IReadOnlyList<FeedRangeEpk> allRanges = new List<FeedRangeEpk>
+            {
+                new FeedRangeEpk(new Documents.Routing.Range<string>(string.Empty, "AA", true, false)),
+                new FeedRangeEpk(new Documents.Routing.Range<string>("AA", "BB", true, false)),
+                new FeedRangeEpk(new Documents.Routing.Range<string>("BB", "CC", true, false)),
+                new FeedRangeEpk(new Documents.Routing.Range<string>("CC", "DD", true, false)),
+                new FeedRangeEpk(new Documents.Routing.Range<string>("DD", "EE", true, false)),
+                new FeedRangeEpk(new Documents.Routing.Range<string>("EE", "FF", true, false)),
+            };
+
+            // Determine target ranges based on test case
+            IReadOnlyList<FeedRangeEpk> targetRanges = testCase.TargetRangeCount.HasValue
+                ? allRanges.Take(testCase.TargetRangeCount.Value).ToList()
+                : allRanges;
+
+            int targetRangeCount = targetRanges.Count;
+            int allRangeCount = allRanges.Count;
+
+            // Calculate expected indices based on target ranges
+            // Documents are distributed across ALL ranges with interleaved indices:
+            // Range 0: indices 0, 6, 12, 18, ...
+            // Range 1: indices 1, 7, 13, 19, ...
+            // etc.
+            IEnumerable<int> expectedIndices;
+            if (testCase.TargetRangeCount.HasValue && testCase.TargetRangeCount.Value < allRangeCount)
+            {
+                // Calculate expected indices for subset of ranges
+                int docsPerRange = testCase.LeafPageCount * testCase.BackendPageSize;
+                expectedIndices = Enumerable.Range(0, docsPerRange)
+                    .SelectMany(docInRange =>
+                        Enumerable.Range(0, testCase.TargetRangeCount.Value)
+                            .Select(rangeIndex => rangeIndex + (docInRange * allRangeCount)))
+                    .OrderByDescending(x => x);
+            }
+            else
+            {
+                // Original calculation for all ranges
+                int documentCount = allRangeCount * testCase.LeafPageCount * testCase.BackendPageSize;
+                expectedIndices = Enumerable.Range(0, documentCount).Reverse();
+            }
+
+            PartitionedFeedMode[] feedModes = new PartitionedFeedMode[]
+            {
+                PartitionedFeedMode.NonStreamingReversed,
+                PartitionedFeedMode.NonStreamingReversed,
+            };
+
+            if (testCase.Weights != null)
+            {
+                Assert.IsTrue(testCase.Weights.All(x => x >= 0) || testCase.Weights.All(x => x <= 0));
+
+                if (testCase.Weights[0] <= 0)
+                {
+                    expectedIndices = expectedIndices.Reverse();
+
+                    PartitionedFeedMode feedMode = testCase.SkipOrderByRewrite?
+                        PartitionedFeedMode.NonStreamingReversed | PartitionedFeedMode.NegateScores:
+                        PartitionedFeedMode.NonStreaming;
+
+                    feedModes = new PartitionedFeedMode[] { feedMode, feedMode };
+                }
+            }
+
+            if (testCase.Skip.HasValue)
+            {
+                expectedIndices = expectedIndices.Skip(testCase.Skip.Value);
+            }
+
+            if (testCase.Take.HasValue)
+            {
+                expectedIndices = expectedIndices.Take(testCase.Take.Value);
+            }
+
+            // Create container with ALL ranges (for statistics if Global scope)
+            MockDocumentContainer nonStreamingDocumentContainer = MockDocumentContainer.CreateHybridSearchContainer(
+                allRanges,
+                feedModes,
+                leafPageCount: testCase.LeafPageCount,
+                backendPageSize: testCase.BackendPageSize,
+                returnEmptyGlobalStatistics: testCase.ReturnEmptyGlobalStatistics,
+                skipOrderByRewrite: testCase.SkipOrderByRewrite);
+
+            (IReadOnlyList<CosmosElement> results, double requestCharge) = await CreateAndRunHybridSearchQueryPipelineStage(
+                documentContainer: nonStreamingDocumentContainer,
+                targetRanges: targetRanges,
+                allRanges: allRanges,
+                requiresGlobalStatistics: testCase.RequiresGlobalStatistics,
+                pageSize: testCase.PageSize,
+                skip: (uint?)testCase.Skip,
+                take: (uint?)testCase.Take,
+                weights: testCase.Weights,
+                skipOrderByRewrite: testCase.SkipOrderByRewrite,
+                fullTextScoreScope: testCase.FullTextScoreScope);
+
+            Assert.AreEqual(expectedIndices.Count(), results.Count);
+
+            List<int> actual = new List<int>(results.Count);
+            foreach (CosmosElement result in results)
+            {
+                CosmosObject cosmosObject = result as CosmosObject;
+                CosmosNumber cosmosNumber = cosmosObject[Index] as CosmosNumber;
+                Assert.IsTrue(cosmosNumber != null && cosmosNumber.Value.IsInteger);
+                actual.Add((int)Number64.ToLong(cosmosNumber.Value));
+            }
+
+            if (!expectedIndices.SequenceEqual(actual))
+            {
+                System.Diagnostics.Trace.WriteLine("Mismatch in query results");
+                System.Diagnostics.Trace.WriteLine($"Expected: {string.Join(", ", expectedIndices)}");
+                System.Diagnostics.Trace.WriteLine($"Actual: {string.Join(", ", actual)}");
+                Assert.Fail();
+            }
+
+            Assert.AreEqual(nonStreamingDocumentContainer.TotalRequestCharge, requestCharge);
+
+            // Validate statistics query ranges
+            if (testCase.RequiresGlobalStatistics)
+            {
+                IReadOnlyList<FeedRangeEpk> expectedStatisticsRanges =
+                    testCase.FullTextScoreScope == FullTextScoreScope.Global
+                        ? allRanges
+                        : targetRanges;
+
+                Assert.AreEqual(
+                    expectedStatisticsRanges.Count,
+                    nonStreamingDocumentContainer.StatisticsQueryRanges.Count,
+                    $"Statistics query should have targeted {expectedStatisticsRanges.Count} ranges for {testCase.FullTextScoreScope} scope");
+
+                foreach (FeedRangeEpk expectedRange in expectedStatisticsRanges)
+                {
+                    Assert.IsTrue(
+                        nonStreamingDocumentContainer.StatisticsQueryRanges.Any(r => r.Equals(expectedRange)),
+                        $"Statistics query should have targeted range {expectedRange}");
+                }
+            }
+        }
+
         private static Task RunParityTests(
             IDocumentContainer documentContainer,
             IDocumentContainer nonStreamingDocumentContainer,
@@ -295,6 +899,41 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             }
         }
 
+        private static Task<(IReadOnlyList<CosmosElement>, double)> CreateAndRunHybridSearchQueryPipelineStage(
+            IDocumentContainer documentContainer,
+            IReadOnlyList<FeedRangeEpk> targetRanges,
+            IReadOnlyList<FeedRangeEpk> allRanges,
+            bool requiresGlobalStatistics,
+            int pageSize,
+            uint? skip,
+            uint? take,
+            double[] weights,
+            bool skipOrderByRewrite,
+            FullTextScoreScope fullTextScoreScope)
+        {
+            HybridSearchQueryInfo hybridSearchQueryInfo = skipOrderByRewrite ?
+                Create2ItemHybridSearchSkipOrderByRewriteQueryInfo(requiresGlobalStatistics, skip, take, weights) :
+                Create2ItemHybridSearchQueryInfo(requiresGlobalStatistics, skip, take, weights);
+
+            TryCatch<IQueryPipelineStage> tryCreatePipeline = PipelineFactory.MonadicCreate(
+                documentContainer,
+                Create2ItemSqlQuerySpec(),
+                targetRanges,
+                partitionKey: null,
+                queryInfo: null,
+                hybridSearchQueryInfo: hybridSearchQueryInfo,
+                maxItemCount: pageSize,
+                new ContainerQueryProperties(),
+                allRanges,
+                isContinuationExpected: true,
+                maxConcurrency: MaxConcurrency,
+                fullTextScoreScope: fullTextScoreScope,
+                requestContinuationToken: null);
+
+            Assert.IsTrue(tryCreatePipeline.Succeeded);
+            return RunPipelineStage(tryCreatePipeline.Result, pageSize);
+        }
+
         private static Task<(IReadOnlyList<CosmosElement>, double)> CreateAndRunPipelineStage(
             IDocumentContainer documentContainer,
             IReadOnlyList<FeedRangeEpk> ranges,
@@ -313,7 +952,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 MaxConcurrency);
         }
 
-        private static async Task<(IReadOnlyList<CosmosElement>, double)> CreateAndRunPipelineStage(
+        private static Task<(IReadOnlyList<CosmosElement>, double)> CreateAndRunPipelineStage(
             IDocumentContainer documentContainer,
             IReadOnlyList<FeedRangeEpk> ranges,
             string queryText,
@@ -337,8 +976,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             Assert.IsTrue(pipelineStage.Succeeded);
 
+            return RunPipelineStage(pipelineStage.Result, pageSize);
+        }
+
+        private static async Task<(IReadOnlyList<CosmosElement>, double)> RunPipelineStage(IQueryPipelineStage stage, int pageSize)
+        {
             double totalRequestCharge = 0;
-            IQueryPipelineStage stage = pipelineStage.Result;
             List<CosmosElement> documents = new List<CosmosElement>();
             while (await stage.MoveNextAsync(NoOpTrace.Singleton, default))
             {
@@ -447,6 +1090,163 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 this.OrderByColumns = orderByColumns;
                 this.PageSizes = pageSizes;
                 this.Validate = validate;
+            }
+        }
+
+        private static HybridSearchTest MakeHybridSearchTest(
+            int leafPageCount,
+            int backendPageSize,
+            bool requiresGlobalStatistics,
+            int? skip,
+            int? take,
+            int pageSize,
+            bool returnEmptyGlobalStatistics = false,
+            bool skipOrderByRewrite = false,
+            FullTextScoreScope fullTextScoreScope = FullTextScoreScope.Global,
+            int? targetRangeCount = null)
+        {
+            return new HybridSearchTest(
+                leafPageCount,
+                backendPageSize,
+                requiresGlobalStatistics,
+                skip,
+                take,
+                weights: null,
+                pageSize,
+                returnEmptyGlobalStatistics,
+                skipOrderByRewrite,
+                fullTextScoreScope,
+                targetRangeCount);
+        }
+
+        private static HybridSearchTest MakeHybridSearchSkipOrderByRewriteTest(
+            int leafPageCount,
+            int backendPageSize,
+            bool requiresGlobalStatistics,
+            int? skip,
+            int? take,
+            int pageSize,
+            bool returnEmptyGlobalStatistics = false,
+            FullTextScoreScope fullTextScoreScope = FullTextScoreScope.Global,
+            int? targetRangeCount = null)
+        {
+            return new HybridSearchTest(
+                leafPageCount,
+                backendPageSize,
+                requiresGlobalStatistics,
+                skip,
+                take,
+                weights: null,
+                pageSize,
+                returnEmptyGlobalStatistics,
+                skipOrderByRewrite: true,
+                fullTextScoreScope,
+                targetRangeCount);
+        }
+
+        private static HybridSearchTest MakeHybridSearchTest(
+            int leafPageCount,
+            int backendPageSize,
+            bool requiresGlobalStatistics,
+            int? skip,
+            int? take,
+            double[] weights,
+            int pageSize,
+            bool returnEmptyGlobalStatistics = false,
+            bool skipOrderByRewrite = false,
+            FullTextScoreScope fullTextScoreScope = FullTextScoreScope.Global,
+            int? targetRangeCount = null)
+        {
+            return new HybridSearchTest(
+                leafPageCount,
+                backendPageSize,
+                requiresGlobalStatistics,
+                skip,
+                take,
+                weights,
+                pageSize,
+                returnEmptyGlobalStatistics,
+                skipOrderByRewrite,
+                fullTextScoreScope,
+                targetRangeCount);
+        }
+
+        private static HybridSearchTest MakeHybridSearchSkipOrderByRewriteTest(
+            int leafPageCount,
+            int backendPageSize,
+            bool requiresGlobalStatistics,
+            int? skip,
+            int? take,
+            double[] weights,
+            int pageSize,
+            bool returnEmptyGlobalStatistics = false,
+            FullTextScoreScope fullTextScoreScope = FullTextScoreScope.Global,
+            int? targetRangeCount = null)
+        {
+            return new HybridSearchTest(
+                leafPageCount,
+                backendPageSize,
+                requiresGlobalStatistics,
+                skip,
+                take,
+                weights,
+                pageSize,
+                returnEmptyGlobalStatistics,
+                skipOrderByRewrite: true,
+                fullTextScoreScope,
+                targetRangeCount);
+        }
+
+        private class HybridSearchTest
+        {
+            public int LeafPageCount { get; }
+
+            public int BackendPageSize { get; }
+
+            public bool RequiresGlobalStatistics { get; }
+
+            public int? Skip { get; }
+
+            public int? Take { get; }
+
+            public double[] Weights { get; }
+
+            public int PageSize { get; }
+
+            public bool ReturnEmptyGlobalStatistics { get; }
+
+            public bool SkipOrderByRewrite { get; }
+
+            public FullTextScoreScope FullTextScoreScope { get; }
+
+            // Number of ranges to use as target ranges (subset of all ranges)
+            // null means use all ranges (current behavior)
+            public int? TargetRangeCount { get; }
+
+            public HybridSearchTest(
+                int leafPageCount,
+                int backendPageSize,
+                bool requiresGlobalStatistics,
+                int? skip,
+                int? take,
+                double[] weights,
+                int pageSize,
+                bool returnEmptyGlobalStatistics,
+                bool skipOrderByRewrite,
+                FullTextScoreScope fullTextScoreScope = FullTextScoreScope.Global,
+                int? targetRangeCount = null)
+            {
+                this.LeafPageCount = leafPageCount;
+                this.BackendPageSize = backendPageSize;
+                this.RequiresGlobalStatistics = requiresGlobalStatistics;
+                this.Skip = skip;
+                this.Take = take;
+                this.Weights = weights;
+                this.PageSize = pageSize;
+                this.ReturnEmptyGlobalStatistics = returnEmptyGlobalStatistics;
+                this.SkipOrderByRewrite = skipOrderByRewrite;
+                this.FullTextScoreScope = fullTextScoreScope;
+                this.TargetRangeCount = targetRangeCount;
             }
         }
 
@@ -622,7 +1422,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 }
 
                 QueryPage page = queryPage.Result;
-                DebugTraceHelpers.TraceBackendResponse(page);
+                DebugTraceHelpers.TraceBackendResponse(feedRangeState.FeedRange, page);
 
                 return TryCatch<QueryPage>.FromResult(new QueryPage(
                     page.Documents,
@@ -769,11 +1569,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             }
 
             [Conditional("DEBUG")]
-            public static void TraceBackendResponse(QueryPage page)
+            public static void TraceBackendResponse(FeedRangeInternal feedRange, QueryPage page)
             {
                 if (Enabled)
                 {
-                    System.Diagnostics.Trace.WriteLine("Serving query from backend: ");
+                    System.Diagnostics.Trace.WriteLine($"Serving query from backend: {feedRange}");
                     TracePage(page);
                 }
             }
@@ -784,6 +1584,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 if (Enabled)
                 {
                     System.Diagnostics.Trace.WriteLine("Page:");
+                    System.Diagnostics.Trace.WriteLine($"    State: {page.State?.Value}");
                     System.Diagnostics.Trace.WriteLine($"    ActivityId: {page.ActivityId}");
                     System.Diagnostics.Trace.WriteLine($"    RequestCharge: {page.RequestCharge}");
                     System.Diagnostics.Trace.WriteLine($"    ActivityId: {page.ActivityId}");
@@ -806,32 +1607,103 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
         private class MockDocumentContainer : IDocumentContainer
         {
-            private readonly IReadOnlyDictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>> pages;
+            private readonly IReadOnlyList<IReadOnlyDictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>>> pages;
 
             private readonly bool streaming;
 
-            public double TotalRequestCharge { get; }
+            private readonly Func<SqlQuerySpec, int> componentSelector;
+
+            private readonly Func<SqlQuerySpec, bool> isGlobalStatisticsQuery;
+
+            private readonly double totalRequestCharge;
+
+            private readonly bool returnEmptyGlobalStatistics;
+
+            private readonly List<FeedRange> statisticsQueryRanges = new List<FeedRange>();
+
+            private int statisticsQueryCount;
+
+            private int queryCount;
+
+            public IReadOnlyList<FeedRange> StatisticsQueryRanges => this.statisticsQueryRanges;
+
+            public double TotalRequestCharge
+            {
+                get
+                {
+                    if (this.totalRequestCharge > 0)
+                    {
+                        return this.totalRequestCharge;
+                    }
+                    else
+                    {
+                        int queryCount = Interlocked.CompareExchange(ref this.queryCount, 0, 0);
+                        int statisticsQueryCount = Interlocked.CompareExchange(ref this.statisticsQueryCount, 0, 0);
+                        double requestCharge = (queryCount * QueryCharge) + (statisticsQueryCount * GlobalStatisticsQueryCharge);
+                        return requestCharge;
+                    }
+                }
+            }
+
+            public static MockDocumentContainer CreateHybridSearchContainer(
+                IReadOnlyList<FeedRangeEpk> feedRanges,
+                PartitionedFeedMode[] feedModes,
+                int leafPageCount,
+                int backendPageSize,
+                bool returnEmptyGlobalStatistics,
+                bool skipOrderByRewrite)
+            {
+                Assert.IsTrue(feedModes.All(x => x.HasFlag(PartitionedFeedMode.NonStreaming)) || feedModes.All(x => !x.HasFlag(PartitionedFeedMode.NonStreaming)));
+
+                IReadOnlyList<IReadOnlyDictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>>> pages = CreateHybridSearchPartitionedFeed(
+                    feedRanges,
+                    feedModes,
+                    leafPageCount,
+                    backendPageSize,
+                    skipOrderByRewrite);
+
+                return new MockDocumentContainer(
+                    pages,
+                    streaming: !feedModes[0].HasFlag(PartitionedFeedMode.NonStreaming),
+                    componentSelector: GetOrderByScoreKind,
+                    isGlobalStatisticsQuery: IsGlobalStatisticsQuery,
+                    totalRequestCharge: 0,
+                    returnEmptyGlobalStatistics: returnEmptyGlobalStatistics);
+            }
 
             public static MockDocumentContainer Create(IReadOnlyList<FeedRangeEpk> feedRanges, PartitionedFeedMode feedMode, DocumentCreationMode documentCreationMode)
             {
-                IReadOnlyDictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>> pages = CreatePartitionedFeed(
+                IReadOnlyList<IReadOnlyDictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>>> pages = CreatePartitionedFeed(
                     feedRanges,
                     LeafPageCount,
                     PageSize,
                     feedMode,
                     (index) => CreateDocument(index, documentCreationMode));
                 double totalRequestCharge = feedRanges.Count * LeafPageCount * QueryCharge;
-                return new MockDocumentContainer(pages, !feedMode.HasFlag(PartitionedFeedMode.NonStreaming), totalRequestCharge);
+
+                return new MockDocumentContainer(
+                    pages,
+                    streaming: !feedMode.HasFlag(PartitionedFeedMode.NonStreaming),
+                    componentSelector: _ => 0,
+                    isGlobalStatisticsQuery: _ => false,
+                    totalRequestCharge,
+                    returnEmptyGlobalStatistics: false);
             }
 
             private MockDocumentContainer(
-                IReadOnlyDictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>> pages,
+                IReadOnlyList<IReadOnlyDictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>>> pages,
                 bool streaming,
-                double totalRequestCharge)
+                Func<SqlQuerySpec, int> componentSelector,
+                Func<SqlQuerySpec, bool> isGlobalStatisticsQuery,
+                double totalRequestCharge,
+                bool returnEmptyGlobalStatistics)
             {
                 this.pages = pages ?? throw new ArgumentNullException(nameof(pages));
                 this.streaming = streaming;
-                this.TotalRequestCharge = totalRequestCharge;
+                this.componentSelector = componentSelector;
+                this.isGlobalStatisticsQuery = isGlobalStatisticsQuery;
+                this.totalRequestCharge = totalRequestCharge;
+                this.returnEmptyGlobalStatistics = returnEmptyGlobalStatistics;
             }
 
             public Task<ChangeFeedPage> ChangeFeedAsync(FeedRangeState<ChangeFeedState> feedRangeState, ChangeFeedExecutionOptions changeFeedPaginationOptions, ITrace trace, CancellationToken cancellationToken)
@@ -851,7 +1723,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             public Task<List<FeedRangeEpk>> GetFeedRangesAsync(ITrace trace, CancellationToken cancellationToken)
             {
-                return Task.FromResult(this.pages.Keys.Cast<FeedRangeEpk>().ToList());
+                return Task.FromResult(this.pages[0].Keys.Cast<FeedRangeEpk>().ToList());
             }
 
             public Task<string> GetResourceIdentifierAsync(ITrace trace, CancellationToken cancellationToken)
@@ -881,7 +1753,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             public Task<TryCatch<List<FeedRangeEpk>>> MonadicGetFeedRangesAsync(ITrace trace, CancellationToken cancellationToken)
             {
-                return Task.FromResult(TryCatch<List<FeedRangeEpk>>.FromResult(this.pages.Keys.Cast<FeedRangeEpk>().ToList()));
+                return Task.FromResult(TryCatch<List<FeedRangeEpk>>.FromResult(this.pages[0].Keys.Cast<FeedRangeEpk>().ToList()));
             }
 
             public Task<TryCatch<string>> MonadicGetResourceIdentifierAsync(ITrace trace, CancellationToken cancellationToken)
@@ -896,9 +1768,32 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             public Task<TryCatch<QueryPage>> MonadicQueryAsync(SqlQuerySpec sqlQuerySpec, FeedRangeState<QueryState> feedRangeState, QueryExecutionOptions queryPaginationOptions, ITrace trace, CancellationToken cancellationToken)
             {
-                IReadOnlyList<IReadOnlyList<CosmosElement>> feedRangePages = this.pages[feedRangeState.FeedRange];
+                if (this.isGlobalStatisticsQuery(sqlQuerySpec))
+                {
+                    lock (this.statisticsQueryRanges)
+                    {
+                        this.statisticsQueryRanges.Add(feedRangeState.FeedRange);
+                    }
+
+                    QueryPage globalStatisticsPage = new QueryPage(
+                        documents: new List<CosmosElement> { this.returnEmptyGlobalStatistics ? CreateEmptyHybridSearchGlobalStatistics() : CreateHybridSearchGlobalStatistics() },
+                        requestCharge: GlobalStatisticsQueryCharge,
+                        activityId: ActivityId,
+                        cosmosQueryExecutionInfo: null,
+                        distributionPlanSpec: null,
+                        disallowContinuationTokenMessage: null,
+                        additionalHeaders: null,
+                        state: null,
+                        streaming: false);
+
+                    Interlocked.Increment(ref this.statisticsQueryCount);
+                    return Task.FromResult(TryCatch<QueryPage>.FromResult(globalStatisticsPage));
+                }
+
+                int componentIndex = this.componentSelector(sqlQuerySpec);
+                IReadOnlyList<IReadOnlyList<CosmosElement>> feedRangePages = this.pages[componentIndex][feedRangeState.FeedRange];
                 int index = feedRangeState.State == null ? 0 : int.Parse(((CosmosString)feedRangeState.State.Value).Value);
-                IReadOnlyList<CosmosElement> documents = feedRangePages[index];
+                IReadOnlyList<CosmosElement> documents = index < feedRangePages.Count ? feedRangePages[index] : Enumerable.Empty<CosmosElement>().ToList();
 
                 QueryState state = index < feedRangePages.Count - 1 ? new QueryState(CosmosString.Create((index + 1).ToString())) : null;
                 QueryPage queryPage = new QueryPage(
@@ -911,6 +1806,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     additionalHeaders: null,
                     state: state,
                     streaming: this.streaming);
+
+                DebugTraceHelpers.TraceBackendResponse(feedRangeState.FeedRange, queryPage);
+                Interlocked.Increment(ref this.queryCount);
 
                 return Task.FromResult(TryCatch<QueryPage>.FromResult(queryPage));
             }
@@ -969,8 +1867,87 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             NonStreaming = 1,
             Reversed = 2,
 
+            NegateScores = 4,
+
             StreamingReversed = Streaming | Reversed,
             NonStreamingReversed = NonStreaming | Reversed,
+        }
+
+        private static int GetOrderByScoreKind(SqlQuerySpec sqlQuerySpec)
+        {
+            string queryText = sqlQuerySpec.QueryText;
+            if (queryText.Contains(@"ORDER BY _FullTextScore(c.text"))
+            {
+                return 0;
+            }
+            else if (queryText.Contains(@"ORDER BY _FullTextScore(c.abstract"))
+            {
+                return 1;
+            }
+            else if (queryText.Contains(@"ORDER BY _FullTextScore(c.image"))
+            {
+                return 2;
+            }
+            else
+            {
+                throw new ArgumentException("Unknown query text");
+            }
+        }
+
+        private static bool IsGlobalStatisticsQuery(SqlQuerySpec sqlQuerySpec)
+        {
+            return sqlQuerySpec.QueryText.Contains("COUNT(1) AS documentCount") && sqlQuerySpec.QueryText.Contains("] AS fullTextStatistics");
+        }
+
+        private static IReadOnlyList<IReadOnlyDictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>>> CreatePartitionedFeed(
+            IReadOnlyList<FeedRangeEpk> feedRanges,
+            int leafPageCount,
+            int pageSize,
+            PartitionedFeedMode mode,
+            Func<int, CosmosElement> createDocument)
+        {
+            IReadOnlyDictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>> pages = CreatePartitionedFeed(
+                feedRanges,
+                leafPageCount,
+                pageSize,
+                mode,
+                componentIndex: 0,
+                (_, index) => createDocument(index));
+
+            return new List<IReadOnlyDictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>>>
+            {
+                pages
+            };
+        }
+
+        private static IReadOnlyList<IReadOnlyDictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>>> CreateHybridSearchPartitionedFeed(
+            IReadOnlyList<FeedRangeEpk> feedRanges,
+            PartitionedFeedMode[] feedModes,
+            int leafPageCount,
+            int pageSize,
+            bool skipOrderByRewrite)
+        {
+            int componentCount = feedModes.Length;
+            List<IReadOnlyDictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>>> componentPages = new List<IReadOnlyDictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>>>(componentCount);
+            for (int componentIndex = 0; componentIndex < componentCount; ++componentIndex)
+            {
+                IReadOnlyDictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>> pages = CreatePartitionedFeed(
+                    feedRanges,
+                    leafPageCount,
+                    pageSize,
+                    feedModes[componentIndex],
+                    componentIndex,
+                    (componentIndex, index) => CreateHybridSearchDocument(
+                        componentCount: componentCount,
+                        index: index,
+                        componentIndex: componentIndex,
+                        skipOrderByRewrite: skipOrderByRewrite,
+                        negateScores: feedModes[componentIndex].HasFlag(PartitionedFeedMode.NegateScores)));
+
+                componentPages.Add(pages);
+            }
+
+            return componentPages;
         }
 
         private static IReadOnlyDictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>> CreatePartitionedFeed(
@@ -978,7 +1955,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             int leafPageCount,
             int pageSize,
             PartitionedFeedMode mode,
-            Func<int, CosmosElement> createDocument)
+            int componentIndex,
+            Func<int, int, CosmosElement> createDocument)
         {
             int feedRangeIndex = 0;
             Dictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>> pages = new Dictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>>();
@@ -991,7 +1969,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     List<CosmosElement> documents = new List<CosmosElement>(pageSize);
                     for (int documentCount = 0; documentCount < pageSize; ++documentCount)
                     {
-                        documents.Add(createDocument(index));
+                        documents.Add(createDocument(componentIndex, index));
                         index += feedRanges.Count;
                     }
 
@@ -1028,6 +2006,123 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             Swapped = 2,
 
             MultiItemSwapped = MultiItem | Swapped,
+        }
+
+        private static CosmosElement CreateEmptyHybridSearchGlobalStatistics()
+        {
+            List<CosmosElement> statistics = new List<CosmosElement>
+            {
+                CosmosObject.Create(new Dictionary<string, CosmosElement>
+                {
+                    [TotalWordCount] = CosmosNumber64.Create(0),
+                    [HitCounts] = CosmosArray.Create(new List<CosmosElement>
+                    {
+                        CosmosNumber64.Create(0),
+                        CosmosNumber64.Create(0),
+                    }),
+                }),
+                CosmosObject.Create(new Dictionary<string, CosmosElement>
+                {
+                    [TotalWordCount] = CosmosNumber64.Create(0),
+                    [HitCounts] = CosmosArray.Create(new List<CosmosElement>
+                    {
+                        CosmosNumber64.Create(0),
+                    }),
+                }),
+            };
+
+            CosmosObject globalStatistics = CosmosObject.Create(new Dictionary<string, CosmosElement>
+            {
+                [DocumentCountPropertyName] = CosmosNumber64.Create(0),
+                [FullTextStatistics] = CosmosArray.Create(statistics),
+            });
+
+            return globalStatistics;
+        }
+
+        private static CosmosElement CreateHybridSearchGlobalStatistics()
+        {
+            List<CosmosElement> statistics = new List<CosmosElement>
+            {
+                CosmosObject.Create(new Dictionary<string, CosmosElement>
+                {
+                    [TotalWordCount] = CosmosNumber64.Create(10124),
+                    [HitCounts] = CosmosArray.Create(new List<CosmosElement>
+                    {
+                        CosmosNumber64.Create(100),
+                        CosmosNumber64.Create(200),
+                    }),
+                }),
+                CosmosObject.Create(new Dictionary<string, CosmosElement>
+                {
+                    [TotalWordCount] = CosmosNumber64.Create(1024),
+                    [HitCounts] = CosmosArray.Create(new List<CosmosElement>
+                    {
+                        CosmosNumber64.Create(300),
+                    }),
+                }),
+            };
+
+            CosmosObject globalStatistics = CosmosObject.Create(new Dictionary<string, CosmosElement>
+            {
+                [DocumentCountPropertyName] = CosmosNumber64.Create(DocumentCount),
+                [FullTextStatistics] = CosmosArray.Create(statistics),
+            });
+
+            return globalStatistics;
+        }
+
+        private static CosmosElement CreateHybridSearchDocument(int componentCount, int index, int componentIndex, bool skipOrderByRewrite, bool negateScores)
+        {
+            CosmosElement indexElement = CosmosNumber64.Create(index);
+            CosmosElement indexStringElement = CosmosString.Create(index.ToString("D4"));
+            double[] scores = new double[componentCount];
+            double delta = 0.1;
+            double factor = negateScores ? -1.0 : 1.0;
+            for (int scoreIndex = 0; scoreIndex < componentCount; ++scoreIndex)
+            {
+                scores[scoreIndex] = factor * (index + ((1 + scoreIndex) * delta));
+            }
+
+            List<CosmosElement> orderByItems = new List<CosmosElement>
+            {
+                CosmosObject.Create(new Dictionary<string, CosmosElement>
+                {
+                    [Item] = CosmosNumber64.Create(scores[componentIndex])
+                })
+            };
+
+            Dictionary<string, CosmosElement> payload = new Dictionary<string, CosmosElement>
+            {
+                [Payload] = CosmosObject.Create(new Dictionary<string, CosmosElement>
+                {
+                    [Text] = indexStringElement,
+                    [Index] = indexElement,
+                }),
+                [ComponentScores] = CosmosArray.Create(scores.Select(score => CosmosNumber64.Create(score))),
+            };
+
+            Documents.ResourceId resourceId = Documents.ResourceId.NewCollectionChildResourceId(
+                CollectionRid,
+                (ulong)index,
+                Documents.ResourceType.Document);
+
+            if (skipOrderByRewrite)
+            {
+                payload.Add(RId, CosmosString.Create(resourceId.ToString()));
+            }
+            else
+            {
+                payload = new Dictionary<string, CosmosElement>
+                {
+                    [RId] = CosmosString.Create(resourceId.ToString()),
+                    [OrderByItems] = CosmosArray.Create(orderByItems),
+                    [Payload] = CosmosObject.Create(payload)
+                };
+            }
+
+            CosmosElement document = CosmosObject.Create(payload);
+            return document;
         }
 
         private static CosmosElement CreateDocument(int index, DocumentCreationMode mode)
@@ -1091,6 +2186,230 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 list[index] = list[other];
                 list[other] = temp;
             }
+        }
+
+        private static HybridSearchQueryInfo Create2ItemHybridSearchQueryInfo(bool requiresGlobalStatistics, uint? skip, uint? take, double[] weights)
+        {
+            SortOrder[] sortOrders = new SortOrder[] { SortOrder.Descending, SortOrder.Descending };
+            string[] sortOrderText = new string[] { "DESC", "DESC" };
+            if (weights != null)
+            {
+                Assert.AreEqual(2, weights.Length);
+
+                for (int i = 0; i < weights.Length; ++i)
+                {
+                    sortOrders[i] = weights[i] < 0 ? SortOrder.Ascending : SortOrder.Descending;
+                    sortOrderText[i] = weights[i] < 0 ? "ASC" : "DESC";
+                    weights[i] = Math.Abs(weights[i]);
+                }
+            }
+
+            return new HybridSearchQueryInfo
+            {
+                GlobalStatisticsQuery = @"
+                    SELECT 
+                        COUNT(1) AS documentCount,
+                        [
+                            {
+                                totalWordCount: SUM(_FullTextWordCount(c.text)),
+                                hitCounts: [
+                                    COUNTIF(FullTextContains(c.text, ""swim"")),
+                                    COUNTIF(FullTextContains(c.text, ""run""))
+                                ]
+                            },
+                            {
+                                totalWordCount: SUM(_FullTextWordCount(c.abstract)),
+                                hitCounts: [
+                                    COUNTIF(FullTextContains(c.abstract, ""energy""))
+                                ]
+                            }
+                        ] AS fullTextStatistics
+                    FROM c",
+
+                ComponentQueryInfos = new List<QueryInfo>
+                {
+                    new QueryInfo
+                    {
+                        DistinctType = DistinctQueryType.None,
+                        Top = 200,
+                        OrderBy = new List<SortOrder>{ sortOrders[0] },
+                        OrderByExpressions = new List<string>
+                        {
+                            "_FullTextScore(c.text, [\"swim\", \"run\"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0})",
+                        },
+                        HasSelectValue = false,
+                        RewrittenQuery = @"
+                            SELECT TOP 200 
+                                c._rid,
+                                [
+                                    {
+                                        item: _FullTextScore(c.text, [""swim"", ""run""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0})
+                                    }
+                                ] AS orderByItems,
+                                {
+                                    payload: {
+                                        text: c.text,
+                                        abstract: c.abstract
+                                    },
+                                    componentScores: [
+                                        _FullTextScore(c.text, [""swim"", ""run""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}),
+                                        _FullTextScore(c.abstract, [""energy""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-1}, {documentdb-formattablehybridsearchquery-hitcountsarray-1})
+                                    ]
+                                } AS payload
+                            FROM c
+                            WHERE {documentdb-formattableorderbyquery-filter}
+                            ORDER BY _FullTextScore(c.text, [""swim"", ""run""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) " + sortOrderText[0],
+                        HasNonStreamingOrderBy = true,
+                    },
+
+                    new QueryInfo
+                    {
+                        DistinctType = DistinctQueryType.None,
+                        Top = 200,
+                        OrderBy = new List<SortOrder>{ sortOrders[1] },
+                        OrderByExpressions = new List<string>
+                        {
+                            "_FullTextScore(c.abstract, [\"energy\"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-1}, {documentdb-formattablehybridsearchquery-hitcountsarray-1})",
+                        },
+                        HasSelectValue = false,
+                        RewrittenQuery = @"
+                            SELECT TOP 200 
+                                c._rid,
+                                [
+                                    {
+                                        item: _FullTextScore(c.abstract, [""energy""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-1}, {documentdb-formattablehybridsearchquery-hitcountsarray-1})
+                                    }
+                                ] AS orderByItems,
+                                {
+                                    payload: {
+                                        text: c.text,
+                                        abstract: c.abstract
+                                    },
+                                    componentScores: [
+                                        _FullTextScore(c.text, [""swim"", ""run""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}),
+                                        _FullTextScore(c.abstract, [""energy""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-1}, {documentdb-formattablehybridsearchquery-hitcountsarray-1})
+                                    ]
+                                } AS payload
+                            FROM c
+                            WHERE {documentdb-formattableorderbyquery-filter}
+                            ORDER BY _FullTextScore(c.abstract, [""energy""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-1}, {documentdb-formattablehybridsearchquery-hitcountsarray-1}) " + sortOrderText[1],
+                        HasNonStreamingOrderBy = true,
+                    },
+                },
+
+                Skip = skip,
+                Take = take,
+                ComponentWeights = weights?.Select(x => x).ToList(),
+                RequiresGlobalStatistics = requiresGlobalStatistics,
+            };
+        }
+
+        private static HybridSearchQueryInfo Create2ItemHybridSearchSkipOrderByRewriteQueryInfo(bool requiresGlobalStatistics, uint? skip, uint? take, double[] weights)
+        {
+            if (weights != null)
+            {
+                Assert.AreEqual(2, weights.Length);
+
+                for (int i = 0; i < weights.Length; ++i)
+                {
+                    weights[i] = Math.Abs(weights[i]);
+                }
+            }
+
+            return new HybridSearchQueryInfo
+            {
+                GlobalStatisticsQuery = @"
+                    SELECT 
+                        COUNT(1) AS documentCount,
+                        [
+                            {
+                                totalWordCount: SUM(_FullTextWordCount(c.text)),
+                                hitCounts: [
+                                    COUNTIF(FullTextContains(c.text, ""swim"")),
+                                    COUNTIF(FullTextContains(c.text, ""run""))
+                                ]
+                            },
+                            {
+                                totalWordCount: SUM(_FullTextWordCount(c.abstract)),
+                                hitCounts: [
+                                    COUNTIF(FullTextContains(c.abstract, ""energy""))
+                                ]
+                            }
+                        ] AS fullTextStatistics
+                    FROM c",
+
+                ComponentQueryInfos = new List<QueryInfo>
+                {
+                    new QueryInfo
+                    {
+                        DistinctType = DistinctQueryType.None,
+                        HasSelectValue = false,
+                        RewrittenQuery = @"
+                            SELECT TOP 200 
+                                c._rid,
+                                {
+                                    text: c.text,
+                                    abstract: c.abstract
+                                } AS payload,
+                                [
+                                    (_FullTextScore(c.text, [""swim"", ""run""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) ?? -1),
+                                    (_FullTextScore(c.abstract, [""energy""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-1}, {documentdb-formattablehybridsearchquery-hitcountsarray-1}) ?? -1)
+                                ] AS componentScores
+                            FROM c
+                            ORDER BY _FullTextScore(c.text, [""swim"", ""run""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) DESC",
+                        HasNonStreamingOrderBy = false,
+                    },
+
+                    new QueryInfo
+                    {
+                        DistinctType = DistinctQueryType.None,
+                        HasSelectValue = false,
+                        RewrittenQuery = @"
+                            SELECT TOP 200 
+                                c._rid,
+                                {
+                                    text: c.text,
+                                    abstract: c.abstract
+                                } AS payload,
+                                [
+                                    (_FullTextScore(c.text, [""swim"", ""run""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) ?? -1),
+                                    (_FullTextScore(c.abstract, [""energy""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-1}, {documentdb-formattablehybridsearchquery-hitcountsarray-1}) ?? -1)
+                                ] AS componentScores
+                            FROM c
+                            ORDER BY _FullTextScore(c.abstract, [""energy""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-1}, {documentdb-formattablehybridsearchquery-hitcountsarray-1}) DESC",
+                        HasNonStreamingOrderBy = false,
+                    },
+                },
+
+                Skip = skip,
+                Take = take,
+                ComponentWeights = weights?.ToList(),
+                RequiresGlobalStatistics = requiresGlobalStatistics,
+            };
+        }
+
+        private static SqlQuerySpec Create2ItemSqlQuerySpec(double[] weights = null)
+        {
+            if (weights != null)
+            {
+                Assert.AreEqual(2, weights.Length);
+
+                CosmosArray weightsArray = CosmosArray.Create(new List<CosmosElement>
+                {
+                    CosmosNumber64.Create(weights[0]),
+                    CosmosNumber64.Create(weights[1]),
+                });
+
+                return new SqlQuerySpec(@$"
+                  SELECT TOP 100 c.text, c.abstract
+                  FROM c
+                  ORDER BY RANK RRF(FullTextScore(c.text, ['swim', 'run']), FullTextScore(c.abstract, ['energy']), {weightsArray})");
+            }
+
+            return new SqlQuerySpec(@"
+              SELECT TOP 100 c.text, c.abstract
+              FROM c
+              ORDER BY RANK RRF(FullTextScore(c.text, ['swim', 'run']), FullTextScore(c.abstract, ['energy']))");
         }
 
         private static async Task<IDocumentContainer> CreateDocumentContainerAsync(int documentCount)

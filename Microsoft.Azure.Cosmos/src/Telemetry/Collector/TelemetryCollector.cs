@@ -13,6 +13,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Collector
 
     internal class TelemetryCollector : ITelemetryCollector
     {
+        private static readonly char[] pathSeparators = new char[] { '/' };
+
         private readonly ClientTelemetry clientTelemetry = null;
         private readonly ConnectionPolicy connectionPolicy = null;
 
@@ -42,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Collector
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceError("Error while collecting cache {0} telemetry. Exception : {1}", cacheName, ex);
+                DefaultTrace.TraceError("Error while collecting cache {0} telemetry. Exception : {1}", cacheName, ex.Message);
             }
         }
 
@@ -63,13 +65,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Collector
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceError("Error while collecting operation telemetry. Exception : {0}", ex);
+                DefaultTrace.TraceError("Error while collecting operation telemetry. Exception : {0}", ex.Message);
             }
         }
 
         private static void GetDatabaseAndCollectionName(string path, out string databaseName, out string collectionName)
         {
-            string[] segments = path.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+            string[] segments = path.Split(pathSeparators, StringSplitOptions.RemoveEmptyEntries);
 
             PathsHelper.ParseDatabaseNameAndCollectionNameFromUrlSegments(segments, out databaseName, out collectionName);
         }

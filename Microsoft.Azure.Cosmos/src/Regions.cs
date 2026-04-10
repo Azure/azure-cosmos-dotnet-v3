@@ -36,6 +36,11 @@ namespace Microsoft.Azure.Cosmos
         public const string EastUS2 = "East US 2";
 
         /// <summary>
+        /// Name of the Azure East US 3 region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string EastUS3 = "East US 3";
+
+        /// <summary>
         /// Name of the Azure Central US region in the Azure Cosmos DB service.
         /// </summary>
         public const string CentralUS = "Central US";
@@ -439,5 +444,50 @@ namespace Microsoft.Azure.Cosmos
         /// Name of the Azure South Central US 2 region in the Azure Cosmos DB service.
         /// </summary>
         public const string SouthCentralUS2 = "South Central US 2";
+
+        /// <summary>
+        /// Name of the Azure Israel Northwest region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string IsraelNorthwest = "Israel Northwest";
+
+        /// <summary>
+        /// Name of the Azure Belgium Central region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string BelgiumCentral = "Belgium Central";
+
+        /// <summary>
+        /// Name of the Azure Denmark East region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string DenmarkEast = "Denmark East";
+
+        /// <summary>
+        /// Name of the Azure Southeast US 3 region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string SoutheastUS3 = "Southeast US 3";
+
+        /// <summary>
+        /// Name of the Azure Southeast US 5 region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string SoutheastUS5 = "Southeast US 5";
+
+        /// <summary>
+        /// Name of the Azure Northeast US 5 region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string NortheastUS5 = "Northeast US 5";
+
+        /// <summary>
+        /// Name of the Azure India South Central region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string IndiaSouthCentral = "India South Central";
+
+        /// <summary>
+        /// Name of the Azure Singapore Central region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string SingaporeCentral = "Singapore Central";
+
+        /// <summary>
+        /// Name of the Azure Singapore North region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string SingaporeNorth = "Singapore North";
     }
 }

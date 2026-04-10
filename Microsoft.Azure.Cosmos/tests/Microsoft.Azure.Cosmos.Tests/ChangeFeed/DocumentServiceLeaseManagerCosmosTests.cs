@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<DocumentServiceLease>(),
                 It.IsAny<string>(),
                 It.IsAny<PartitionKey>(),
-                It.Is<Func<DocumentServiceLease, DocumentServiceLease>>(f=> validateUpdater(f))))
+                It.Is<Func<DocumentServiceLease, DocumentServiceLease>>(f => validateUpdater(f))))
                 .ReturnsAsync(lease);
 
             DocumentServiceLeaseManagerCosmos documentServiceLeaseManagerCosmos = new DocumentServiceLeaseManagerCosmos(

@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (NotImplementedException ex)
             {
-                DefaultTrace.TraceWarning("Failed to get headers from FeedResponse<T>. Exception: {0}", ex);
+                DefaultTrace.TraceWarning("Failed to get headers from FeedResponse<T>. Exception: {0}", ex.Message);
                 return null;
             }
         }
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (NotImplementedException ex)
             {
-                DefaultTrace.TraceWarning("Failed to get headers from Response<T>. Exception: {0}", ex);
+                DefaultTrace.TraceWarning("Failed to get headers from Response<T>. Exception: {0}", ex.Message);
                 return null;
             }
         }

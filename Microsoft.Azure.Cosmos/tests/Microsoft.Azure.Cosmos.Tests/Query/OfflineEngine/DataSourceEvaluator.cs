@@ -63,13 +63,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             {
                 alias = collectionExpression.Alias.Value;
             }
-            else if (identifer != null)
-            {
-                alias = identifer;
-            }
             else
             {
-                alias = $"#{aliasCounter++}";
+                alias = identifer != null ? identifer : $"#{aliasCounter++}";
             }
 
             // Wrap the collection in the alias so it's easier to bind later
@@ -288,10 +284,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                 // First token in optional
                 Either<long, string> firstToken = tokens.First();
                 firstToken.Match(
-                    (long longToken) =>
-                    {
-                        throw new InvalidOperationException();
-                    },
+                    (long longToken) => throw new InvalidOperationException(),
                     (string stringToken) =>
                     {
                         if (documentAsObject.TryGetValue(stringToken, out CosmosElement value))
@@ -311,14 +304,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                         (long arrayIndex) =>
                         {
                             CosmosArray arraySubDocument = (CosmosArray)document;
-                            if (arrayIndex >= arraySubDocument.Count)
-                            {
-                                document = null;
-                            }
-                            else
-                            {
-                                document = arraySubDocument[(int)arrayIndex];
-                            }
+                            document = arrayIndex >= arraySubDocument.Count ? null : arraySubDocument[(int)arrayIndex];
                         },
                         (string propertyName) =>
                         {

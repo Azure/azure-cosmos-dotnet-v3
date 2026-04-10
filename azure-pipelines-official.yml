@@ -23,6 +23,7 @@ stages:
         Arguments: '${{ variables.ReleaseArguments }}'
         VmImage: '${{ variables.VmImage }}'
         MultiRegionConnectionString: $(COSMOSDB_MULTI_REGION)
+        MultiRegionMultiMasterConnectionString: $(COSMOSDB_MULTIMASTER)
         
     - job:
       displayName: TelemetryToService ${{ variables.BuildConfiguration }}
@@ -48,6 +49,7 @@ stages:
           version: '8.x'
 
       - task: DotNetCoreCLI@2
+        timeoutInMinutes: 120
         displayName: Integration Test With Client Telemetry Service
         condition: succeeded()
         inputs:

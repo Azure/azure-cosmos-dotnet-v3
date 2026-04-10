@@ -57,6 +57,8 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
             IReadOnlyDictionary<string, object> ITrace.Data => this.innerTrace.Data;
 
+            bool ITrace.IsBeingWalked => this.innerTrace.IsBeingWalked;
+
             public ParallelPrefetchTestConfig(
                 ArrayPool<IPrefetcher> prefetcherPool,
                 ArrayPool<Task> taskPool,
@@ -115,6 +117,11 @@ namespace Microsoft.Azure.Cosmos.Pagination
             void IDisposable.Dispose()
             {
                 this.innerTrace.Dispose();
+            }
+
+            bool ITrace.TryGetDatum(string key, out object datum)
+            {
+                return this.innerTrace.TryGetDatum(key, out datum);
             }
         }
     }

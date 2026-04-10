@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
             string input = "{\"GlossDiv\":10,\"title\":\"example glossary\"}";
             CosmosElementJsonConverterTests.VerifyConverter(input);
         }
-        
+
 
         private static string NewtonsoftFormat(string json)
         {

@@ -10,12 +10,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
     /// Vector index fluent definition.
     /// </summary>
     /// <seealso cref="VectorIndexPath"/>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    class VectorIndexDefinition<T>
+    public class VectorIndexDefinition<T>
     {
         private readonly VectorIndexPath vectorIndexPath = new ();
         private readonly T parent;
@@ -56,6 +51,26 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Configures the quantizer type for the current <see cref="VectorIndexPath"/> definition.
+        /// </summary>
+        /// <param name="quantizerType">
+        /// The quantizer type to be used for vector quantization. This is an optional parameter and applies to index
+        /// types DiskANN and quantizedFlat. Allowed values are Product and Spherical.
+        /// </param>
+        /// <returns>An instance of the current <see cref="VectorIndexDefinition{T}"/>.</returns>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        VectorIndexDefinition<T> WithQuantizerType(
+            QuantizerType quantizerType)
+        {
+            this.vectorIndexPath.QuantizerType = quantizerType;
+            return this;
+        }
+
+        /// <summary>
         /// Configures the quantization byte size for the current <see cref="VectorIndexPath"/> definition.
         /// </summary>
         /// <param name="quantizationByteSize">
@@ -63,7 +78,12 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// types DiskANN and quantizedFlat. Note that, the allowed range for this parameter is between 1 and 3.
         /// </param>
         /// <returns>An instance of the current <see cref="VectorIndexDefinition{T}"/>.</returns>
-        public VectorIndexDefinition<T> WithQuantizationByteSize(
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        VectorIndexDefinition<T> WithQuantizationByteSize(
             int quantizationByteSize)
         {
             this.vectorIndexPath.QuantizationByteSize = quantizationByteSize;
@@ -78,7 +98,12 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// This is an optional parameter and applies to index type DiskANN only. The allowed range for this parameter is between 25 and 500.
         /// </param>
         /// <returns>An instance of the current <see cref="VectorIndexDefinition{T}"/>.</returns>
-        public VectorIndexDefinition<T> WithIndexingSearchListSize(
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        VectorIndexDefinition<T> WithIndexingSearchListSize(
             int indexingSearchListSize)
         {
             this.vectorIndexPath.IndexingSearchListSize = indexingSearchListSize;
@@ -93,7 +118,12 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// applies to index types DiskANN and quantizedFlat.
         /// </param>
         /// <returns>An instance of the current <see cref="VectorIndexDefinition{T}"/>.</returns>
-        public VectorIndexDefinition<T> WithVectorIndexShardKey(
+#if PREVIEW
+        public
+#else
+        internal
+#endif        
+        VectorIndexDefinition<T> WithVectorIndexShardKey(
             string[] vectorIndexShardKey)
         {
             this.vectorIndexPath.VectorIndexShardKey = vectorIndexShardKey ?? throw new ArgumentNullException(nameof(vectorIndexShardKey));

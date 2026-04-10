@@ -1,7 +1,7 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
- 
+
 namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 {
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -31,9 +31,9 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         public void EffectivePartitionKeyRange()
         {
             Microsoft.Azure.Documents.Routing.Range<string> range = new Microsoft.Azure.Documents.Routing.Range<string>(
-                min: "A", 
-                max: "B", 
-                isMinInclusive: true, 
+                min: "A",
+                max: "B",
+                isMinInclusive: true,
                 isMaxInclusive: false);
 
             FeedRangeInternal feedRange = new FeedRangeEpk(range);

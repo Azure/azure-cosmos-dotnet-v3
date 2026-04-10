@@ -46,7 +46,7 @@
         public void TestNull()
         {
             ReadOnlyMemory<byte> result = JsonSerializer.Serialize((object)null);
-            CosmosNull cosmosNull = (CosmosNull)CosmosElement.CreateFromBuffer(result);
+            _ = (CosmosNull)CosmosElement.CreateFromBuffer(result);
         }
 
         [TestMethod]
@@ -166,7 +166,7 @@
         public void TestUnknownStruct()
         {
             DateTime value = DateTime.MinValue;
-            ReadOnlyMemory<byte> result = JsonSerializer.Serialize(value);
+            _ = JsonSerializer.Serialize(value);
         }
     }
 }

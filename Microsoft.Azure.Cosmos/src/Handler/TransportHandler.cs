@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, request.Trace);
             serviceRequest.RequestContext.ClientRequestStatistics = clientSideRequestStatisticsTraceDatum;
 
-            //TODO: extrace auth into a separate handler
+            //TODO: extract auth into a separate handler
             string authorization = await ((ICosmosAuthorizationTokenProvider)this.client.DocumentClient).GetUserAuthorizationTokenAsync(
                 serviceRequest.ResourceAddress,
                 PathsHelper.GetResourcePath(request.ResourceType),
@@ -107,7 +107,21 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             serviceRequest.Headers[HttpConstants.HttpHeaders.Authorization] = authorization;
 
+            // GetStoreProxy now throws ObjectDisposedException if client is disposed.
+            // The null check below is a safety net for any unexpected scenarios.
             IStoreModel storeProxy = this.client.DocumentClient.GetStoreProxy(serviceRequest);
+            if (storeProxy == null)
+            {
+                // Retry once as a safety measure
+                storeProxy = this.client.DocumentClient.GetStoreProxy(serviceRequest);
+
+                if (storeProxy == null)
+                {
+                    throw new InvalidOperationException(
+                        "StoreProxy is unexpectedly null. This may indicate a race condition during client initialization or disposal.");
+                }
+            }
+
             using (ITrace processMessageAsyncTrace = request.Trace.StartChild(
                             name: $"{storeProxy.GetType().FullName} Transport Request",
                             component: TraceComponent.Transport,

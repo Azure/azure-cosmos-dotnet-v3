@@ -17,11 +17,179 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     {
         private const string CollectionDataPath = "Documents\\text-3properties-1536dimensions-100documents.json";
 
+        private const string SampleVector = @"[0.02, 0, -0.02, 0, -0.04, -0.01, -0.04, -0.01, 0.06, 0.08, -0.05, -0.04, -0.03, 0.05, -0.03, 0, -0.03, 0, 0.05, 0, 0.03,
+0.02, 0, 0.04, 0.05, 0.03, 0, 0, 0, -0.03, -0.01, 0.01, 0, -0.01, -0.03, -0.02, -0.05, 0.01, 0, 0.01, 0, 0.01, -0.03, -0.02, 0.02, 0.02, 0.04, 0.01, 0.04, 0.02, -0.01, -0.01, 0.02, 0.01, 0.02, -0.04, -0.01, 0.06, -0.01, -0.03, -0.04, -0.01, -0.01, 0, 0.03,
+-0.02, 0.03, 0.05, 0.01, 0.04, 0.05, -0.05, -0.01, 0.03, 0.02, -0.02, 0, -0.02, -0.02, -0.04, 0.01, -0.05, 0.01, 0.05, 0, -0.02, 0.03, -0.07, 0.05, 0.02, 0.03, 0.05, 0.05, -0.01, 0.03, -0.08, -0.01, -0.03, 0.04, -0.01, -0.02, -0.01, -0.02, -0.03, 0.03, 0.03,
+-0.04, 0.04, 0.02, 0, 0.03, -0.02, -0.04, 0.02, 0.01, 0.02, -0.01, 0.03, 0.02, 0.01, -0.02, 0, 0.02, 0, -0.01, 0.02, -0.05, 0.03, 0.03, 0.04, -0.02, 0.04, -0.04, 0.03, 0.03, -0.03, 0, 0.02, 0.06, 0.02, 0.02, -0.01, 0.03, 0, -0.03, -0.06, 0.02, 0, 0.02, -0.04,
+-0.05, 0.01, 0.02, 0.02, 0.07, 0.05, -0.01, 0.03, -0.03, -0.06, 0.04, 0.01, -0.01, 0.04, 0.02, 0.03, -0.03, 0.03, -0.01, 0.03, -0.04, -0.02, 0.02, -0.02, -0.03, -0.02, 0.02, -0.01, -0.05, -0.07, 0.02, -0.01, 0, -0.01, -0.02, -0.02, -0.03, -0.03, 0, -0.08, -0.01,
+0, -0.01, -0.03, 0.01, 0, -0.02, -0.03, -0.04, -0.01, 0.02, 0, 0, -0.04, 0.04, -0.01, 0.04, 0, -0.06, 0.02, 0.03, 0.01, 0.06, -0.02, 0, 0.01, 0.01, 0.01, 0, -0.02, 0.03, 0.02, 0.01, -0.01, -0.05, 0.03, -0.04, 0, 0.01, -0.02, -0.04, 0.02, 0, 0.09, -0.04, -0.01,
+0.02, 0.01, -0.03, 0.04, 0.02, -0.02, -0.02, -0.01, 0.01, -0.04, -0.01, 0.02, 0, 0, 0.07, 0.02, 0, 0, -0.01, 0.01, 0.03, -0.02, 0, 0.03, -0.02, -0.07, -0.04, -0.03, 0, -0.03, -0.02, 0, -0.02, -0.02, -0.05, -0.02, 0, 0.05, 0.01, -0.01, -0.04, 0.02, 0, 0, 0.03,
+0.02, -0.03, -0.01, -0.02, 0.06, -0.02, 0.01, 0.01, 0.04, -0.04, 0.06, -0.02, 0.01, 0.03, 0.01, 0.02, -0.02, 0.01, -0.04, 0.05, -0.03, 0.01, -0.01, 0, -0.03, -0.03, 0.04, 0.02, -0.03, -0.03, -0.02, 0.06, 0.04, -0.01, 0.01, 0.01, -0.01, -0.02, -0.02, 0.04, 0.01,
+-0.01, 0.01, -0.01, 0, 0.01, -0.04, 0.01, 0, -0.04, 0.05, 0.01, 0.01, 0.09, -0.04, -0.02, 0.04, 0, 0.04, -0.04, -0.04, 0, 0, -0.01, 0.05, -0.01, 0.02, 0.01, -0.03, 0, -0.06, 0.02, 0.04, 0.01, 0.03, 0.01, -0.04, 0, 0.01, 0.05, 0.02, -0.02, 0.02, 0, -0.02, -0.04,
+-0.07, -0.02, -0.05, 0.06, 0.01, 0.02, -0.03, 0.06, -0.01, -0.02, -0.02, -0.01, 0, -0.05, 0.06, -0.05, 0, -0.02, -0.02, 0, -0.01, 0.01, 0, -0.01, 0.05, 0.02, 0, 0.02, -0.02, 0.02, 0, 0.08, -0.02, 0.01, -0.03, 0.02, -0.03, 0, -0.01, -0.02, -0.04, 0.06, 0.01,
+-0.03, -0.03, 0.01, -0.01, 0.01, -0.01, 0.02, -0.03, 0.03, 0.04, 0.02, -0.02, 0.04, 0.01, 0.01, 0.02, 0.01, 0, -0.03, 0.03, -0.02, -0.03, -0.02, 0.02, 0, -0.01, -0.02, -0.02, 0, -0.01, -0.03, 0.02, -0.01, 0.01, -0.08, 0.01, -0.04, -0.05, 0.02, -0.01, -0.03,
+0.02, 0.01, -0.03, 0.01, 0.02, 0.03, 0.04, -0.04, 0.02, 0, 0.02, 0.02, 0.04, -0.04, -0.1, 0, 0.05, -0.01, 0.03, 0.05, 0.03, -0.02, 0.01, 0.02, -0.05, 0.01, 0, 0.05, -0.01, 0.03, -0.01, 0, 0.04, 0, 0, 0.08, 0.01, 0, -0.04, -0.03, 0, -0.02, -0.01, 0.02, 0.03,
+0, -0.01, 0, 0, 0, 0.06, 0, 0, 0.01, -0.01, 0.01, 0.04, 0.07, -0.01, 0.01, 0, -0.01, -0.02, 0.01, 0.01, 0, 0.02, 0.01, 0, -0.02, 0.03, 0.02, 0.06, 0.02, -0.01, 0.03, 0.02, -0.02, 0.01, -0.01, 0.03, 0.05, 0.02, 0.01, 0, 0, 0.01, 0.03, -0.03, -0.01, -0.04, 0.03,
+-0.02, 0.02, -0.02, -0.01, -0.02, 0.01, -0.04, 0.01, -0.04, 0.03, -0.02, -0.02, -0.01, -0.01, 0.07, 0.04, -0.01, 0.08, -0.04, -0.04, 0, 0, -0.01, -0.01, 0.03, -0.04, 0.02, -0.01, -0.04, 0.02, -0.07, -0.02, 0.02, -0.01, 0.02, 0.01, 0, 0.07, -0.01, 0.03, 0.01,
+-0.05, 0.02, 0.02, -0.01, 0.02, 0.02, -0.03, -0.02, 0.03, -0.01, 0.02, 0, 0, 0.02, -0.01, -0.02, 0.05, 0.02, 0.01, 0.01, -0.03, -0.05, -0.03, 0.01, 0.03, -0.02, -0.01, -0.01, -0.01, 0.03, -0.01, -0.03, 0.02, -0.02, -0.03, -0.02, -0.01, -0.01, -0.01, 0, -0.01,
+-0.04, -0.02, -0.02, -0.03, 0.04, 0.03, 0, -0.02, -0.01, -0.03, -0.01, -0.04, -0.04, 0.02, 0.01, -0.05, 0.04, -0.03, 0.01, -0.01, -0.03, 0.01, 0.01, 0.01, 0.02, -0.01, -0.02, -0.03, -0.01, -0.01, -0.01, -0.01, -0.03, 0, 0.01, -0.02, -0.01, -0.01, 0.01, 0, -0.04,
+0.01, -0.01, 0.02, 0, 0, -0.01, 0, 0, 0.03, -0.01, -0.06, -0.04, -0.01, 0, 0.02, -0.05, -0.02, 0.02, -0.01, 0.01, 0.01, -0.01, -0.02, 0, 0.02, -0.01, -0.02, 0.04, -0.01, 0, -0.02, -0.04, -0.03, -0.03, 0, 0.03, -0.01, -0.02, 0, 0.01, -0.01, -0.04, 0.01, -0.03,
+0.01, 0.03, 0, -0.02, 0, -0.04, -0.02, -0.02, 0.03, -0.02, 0.05, 0.02, 0.03, -0.02, -0.05, -0.01, 0.02, -0.04, 0.02, 0.01, -0.03, 0.01, 0.02, 0, 0.04, 0, -0.01, 0.02, 0.01, 0.02, 0.02, -0.02, 0.04, -0.01, 0, -0.01, 0, 0.01, -0.02, -0.04, 0.06, 0.01, 0, 0.01,
+-0.02, 0.02, 0.05, 0, 0.03, -0.02, 0.02, -0.03, -0.02, 0.01, 0, 0.06, -0.01, 0, -0.02, -0.02, 0.01, -0.01, 0, -0.03, 0.02, 0, -0.01, -0.02, -0.01, 0.03, -0.03, 0, 0, 0, -0.03, -0.06, 0.04, 0.02, -0.03, -0.06, -0.03, -0.01, -0.03, -0.02, -0.04, 0.01, 0, -0.01,
+0.02, -0.01, 0.03, 0.02, -0.02, -0.01, -0.02, -0.03, -0.01, 0.01, -0.04, 0.04, 0.03, 0.02, 0, -0.07, -0.02, -0.01, 0, 0.03, -0.01, -0.03, 0, 0.03, 0, -0.01, 0.02, 0.01, 0.02, -0.03, 0, 0.01, -0.02, 0.04, -0.04, 0, -0.05, 0, -0.02, -0.01, 0.03, 0.01, 0, -0.02,
+0, -0.05, 0.01, -0.01, 0, -0.08, -0.01, -0.02, 0.02, 0.01, -0.01, -0.01, -0.01, 0, 0, -0.01, -0.03, 0, 0, -0.02, 0.05, -0.03, 0.02, 0.01, -0.02, 0.01, 0.01, 0, 0.01, -0.01, 0, -0.04, -0.06, 0.03, -0.02, 0, -0.02, 0.01, 0.03, 0.03, -0.03, -0.01, 0, 0, 0.01,
+-0.02, -0.01, -0.01, -0.03, -0.02, 0.03, -0.02, 0.03, 0.01, 0.04, -0.04, 0.02, 0.02, 0.02, 0.03, 0, 0.06, -0.01, 0.02, -0.01, 0.01, -0.01, -0.01, -0.03, -0.01, 0.02, 0.01, 0.01, 0, -0.02, 0.03, 0.02, -0.01, -0.02, 0.01, 0.01, 0.04, -0.01, -0.05, 0, -0.01, 0,
+0.03, -0.01, 0.02, 0.02, -0.04, 0.01, -0.03, -0.02, 0, 0.02, 0, -0.01, 0.02, 0.01, 0.04, -0.04, 0, -0.01, -0.02, 0, -0.02, 0.01, -0.02, 0, 0, 0.03, 0.04, -0.01, 0, 0, 0.03, -0.02, 0.01, -0.02, 0, -0.03, 0.04, 0, 0.01, 0.04, 0, 0.03, -0.02, 0.01, 0.01, -0.02,
+0.02, -0.05, 0.03, -0.02, -0.01, 0.01, -0.01, 0.02, 0.04, 0.02, 0, -0.02, 0.02, -0.01, -0.03, -0.06, -0.01, -0.01, -0.04, 0.01, -0.01, -0.01, -0.01, -0.02, 0.03, -0.03, 0.05, 0, -0.01, -0.03, 0.03, 0.01, -0.01, -0.01, 0, 0.01, 0.01, 0.02, -0.01, 0.02, -0.02,
+-0.03, 0.03, -0.02, 0.01, 0, -0.03, 0.02, 0.02, -0.02, 0.01, 0.02, -0.01, 0.02, 0, 0.02, 0.01, 0, 0.05, -0.03, 0.01, 0.03, 0.04, 0.01, 0.01, -0.01, 0.02, -0.03, 0.02, 0.01, 0, -0.01, -0.03, -0.01, 0.02, 0.03, 0, 0.03, 0.02, 0, 0.01, 0.01, 0.02, 0.01, 0.02, 0.03,
+0.01, -0.03, 0.02, 0.01, 0.02, 0.03, -0.01, 0.01, -0.03, -0.01, -0.02, 0.01, 0, 0, -0.01, -0.02, -0.01, -0.01, 0.01, 0.06, 0.01, 0, -0.01, 0.01, 0, 0, -0.01, -0.01, 0, -0.02, -0.02, -0.01, -0.02, -0.01, -0.05, -0.02, 0.03, 0.02, 0, 0.03, -0.03, -0.03, 0.03, 0,
+0.02, -0.03, 0.04, -0.04, 0, -0.04, 0.04, 0.01, -0.03, 0.01, -0.02, -0.01, -0.04, 0.02, -0.01, 0.01, 0.01, 0.02, -0.02, 0.03, -0.01, 0, 0.01, 0, 0.02, 0.01, 0.01, 0.03, -0.06, 0.02, 0, -0.02, 0, 0.04, -0.03, 0, 0, -0.02, 0.06, 0.01, -0.03, -0.02, -0.01, -0.03,
+-0.04, 0.04, 0.03, -0.02, 0, 0.03, -0.04, -0.01, -0.02, -0.02, -0.01, 0.02, 0.02, 0.01, 0.01, 0.01, -0.02, -0.02, -0.03, -0.01, 0.01, 0, 0, 0, 0.02, -0.04, -0.01, -0.01, 0.04, -0.01, 0.01, -0.01, 0.01, -0.03, 0.01, -0.01, 0, -0.01, 0.01, 0, 0.01, -0.04, 0.01, 0,
+0, 0, 0, 0.02, 0.04, 0.01, 0.01, -0.01, -0.02, 0, 0, 0.01, -0.01, 0.01, -0.01, 0, 0.04, -0.01, -0.02, -0.01, -0.01, -0.01, 0, 0, 0.01, 0.01, 0.04, -0.01, -0.01, 0, -0.03, -0.01, 0.01, -0.01, -0.02, 0.01, -0.02, 0.01, -0.03, 0.02, 0, 0.03, 0.01, -0.03, -0.01,
+-0.01, 0.02, 0.01, 0, -0.01, 0.03, -0.04, 0.01, -0.01, -0.03, -0.02, 0.02, -0.01, 0, -0.01, 0.02, 0.02, 0.01, 0.03, 0, -0.03, 0, 0.02, -0.03, -0.01, 0.01, 0.06, -0.01, -0.02, 0.01, 0, 0.04, -0.04, 0.01, -0.02, 0, -0.04, 0, 0.02, 0.02, -0.02, 0.04, -0.01, 0.01,
+0, 0.03, -0.03, 0.04, -0.01, -0.02, -0.02, 0.01, -0.02, -0.01, 0, -0.03, -0.01, 0.02, -0.01, -0.05, 0.02, 0.01, 0, -0.02, -0.03, 0, 0, 0, -0.01, 0.02, 0, 0.02, 0.03, -0.02, 0.02, -0.02, 0.02, -0.01, 0.02, 0, -0.07, -0.01, 0.01, 0.01, -0.01, 0.02, 0, -0.01, 0,
+0.01, 0.01, -0.06, 0.04, 0, -0.04, -0.01, -0.03, -0.04, -0.01, -0.01, 0.03, -0.02, -0.01, 0.02, 0, -0.04, 0.01, 0.01, -0.01, 0.02, 0.01, 0.03, -0.01, 0, -0.02, -0.02, -0.01, 0.04, -0.02, 0.06, 0, 0, -0.02, 0, 0.01, 0, -0.02, 0.02, 0.02, -0.06, -0.02, 0, 0.02,
+0.01, -0.01, 0, 0, -0.01, 0.01, -0.04, -0.01, -0.01, 0.01, -0.02, -0.03, 0.01, 0.03, -0.01, -0.01, 0, -0.01, 0, -0.01, 0.05, 0.02, 0, 0, 0.02, -0.01, 0.02, -0.03, -0.01, -0.02, 0.02, 0, 0.01, -0.06, -0.01, 0.01, 0.01, 0.02, 0.02, -0.02, 0.03, 0.01, -0.01, -0.01,
+0, 0, 0.03, 0.05, 0.05, -0.01, 0.01, -0.03, 0, -0.01, -0.01, 0, -0.02, 0.02, 0, 0.02, -0.01, 0.01, -0.02, 0.01, 0, -0.02, 0.02, 0.01, -0.03, 0.03, -0.04, -0.02, -0.01, 0.01, -0.04, -0.03, -0.02, -0.03, 0.01, 0, 0, -0.02, -0.01, 0.02, 0.01, -0.01, 0.01, 0.03,
+-0.01, -0.02, -0.01, 0, 0, -0.03, 0, 0.02, 0.03, 0.01, -0.01, 0.02, 0.04, -0.04, 0.02, 0.01, -0.02, -0.01, 0.03, -0.04, -0.01, 0, 0.01, 0.01, 0, 0.03, 0.05, 0, 0, 0.05, 0.01, -0.01, 0, -0.01, 0, -0.01, -0.01, 0.03, -0.01, 0.02, 0, 0, -0.01, 0, -0.02, -0.02,
+0.05, -0.02, -0.01, -0.01, -0.01, 0.02, 0, -0.01, 0, 0, 0, -0.02, -0.04, 0.01, 0.01, -0.01, 0.01, 0, -0.06, -0.01, -0.04, -0.03, 0.01, 0, -0.01, 0.03, -0.04, -0.01, 0, 0.04, 0.03]";
+
         private static readonly IndexingPolicy CompositeIndexPolicy = CreateIndexingPolicy();
 
-        [Ignore("This test can only be enabled after Direct package and emulator upgrade")]
         [TestMethod]
         public async Task SanityTests()
+        {
+            List<SanityTestCase> testCases = new List<SanityTestCase>
+            {
+                MakeSanityTest(@"
+                    SELECT c.index AS Index, c.title AS Title, c.text AS Text
+                    FROM c
+                    WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')
+                    ORDER BY RANK FullTextScore(c.title, 'John')",
+                    new List<List<int>>{ new List<int>{ 2, 57, 85 }, new List<int>{ 2, 85, 57 } }),
+                MakeSanityTest(@"
+                    SELECT c.index AS Index, c.title AS Title, c.text AS Text
+                    FROM c
+                    WHERE (FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')) AND (c.index = 2)
+                    ORDER BY RANK FullTextScore(c.title, 'John')",
+                    new List<List<int>>{ new List<int>{ 2 } }),
+                MakeSanityTest(@"
+                    SELECT c.index AS Index, c.title AS Title, c.text AS Text
+                    FROM c
+                    WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')
+                    ORDER BY RANK FullTextScore(c.title, 'John')",
+                    new List<List<int>>{ new List<int>{ 2 } },
+                    new PartitionKey(2)),
+                MakeSanityTest(@"
+                    SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text
+                    FROM c
+                    WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')
+                    ORDER BY RANK FullTextScore(c.title, 'John')",
+                    new List<List<int>>{ new List<int>{ 2, 57, 85 }, new List<int>{ 2, 85, 57 } }),
+                MakeSanityTest(@"
+                    SELECT c.index AS Index, c.title AS Title, c.text AS Text
+                    FROM c
+                    WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')
+                    ORDER BY RANK FullTextScore(c.title, 'John')
+                    OFFSET 1 LIMIT 5",
+                    new List<List<int>>{ new List<int>{ 57, 85 }, new List<int>{ 85, 57 } }),
+                MakeSanityTest(@"
+                    SELECT c.index AS Index, c.title AS Title, c.text AS Text
+                    FROM c
+                    WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')
+                    ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'))",
+                    new List<List<int>>{
+                        new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2, 22, 57, 85 },
+                        new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2, 22, 85, 57 },
+                    }),
+                MakeSanityTest(@"
+                    SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text
+                    FROM c
+                    WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')
+                    ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'))",
+                    new List<List<int>>{ new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2 } }),
+                MakeSanityTest(@"
+                    SELECT c.index AS Index, c.title AS Title, c.text AS Text
+                    FROM c
+                    WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')
+                    ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'))
+                    OFFSET 5 LIMIT 10",
+                    new List<List<int>>{
+                        new List<int>{ 24, 77, 76, 80, 2, 22, 57, 85 },
+                        new List<int>{ 24, 77, 76, 80, 2, 22, 85, 57 },
+                    }),
+                MakeSanityTest(@"
+                    SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text
+                    FROM c
+                    ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'))",
+                    new List<List<int>>{new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2 } }),
+                MakeSanityTest(@"
+                    SELECT c.index AS Index, c.title AS Title, c.text AS Text
+                    FROM c
+                    ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'))
+                    OFFSET 0 LIMIT 11",
+                    new List<List<int>>{ new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2, 22 } }),
+                MakeSanityTest($@"
+                    SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text
+                    FROM c
+                    ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'), VectorDistance(c.vector, {SampleVector}))",
+                    new List<List<int>>{new List<int>{ 21, 37, 75, 26, 35, 24, 87, 55, 49, 9 } }),
+                MakeSanityTest($@"
+                    SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text
+                    FROM c
+                    ORDER BY RANK RRF(VectorDistance(c.vector, {SampleVector}), FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'))",
+                    new List<List<int>>{new List<int>{ 21, 37, 75, 26, 35, 24, 87, 55, 49, 9 } }),
+                MakeSanityTest($@"
+                    SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text
+                    FROM c
+                    ORDER BY RANK RRF(VectorDistance(c.vector, {SampleVector}), FullTextScore(c.title, 'John'), VectorDistance(c.image, {SampleVector}), VectorDistance(c.backup_image, {SampleVector}), FullTextScore(c.text, 'United States'))",
+                    new List<List<int>>{new List<int>{ 21, 37, 75, 26, 35, 24, 87, 55, 49, 9 } }),
+            };
+
+            await this.RunTests(testCases);
+        }
+
+        [TestMethod]
+        public async Task WeightedRankFusionTests()
+        {
+            List<SanityTestCase> testCases = new List<SanityTestCase>
+            {
+                MakeSanityTest(@"
+                    SELECT c.index AS Index, c.title AS Title, c.text AS Text
+                    FROM c
+                    WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')
+                    ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'), [1, 1])",
+                    new List<List<int>>{
+                        new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2, 22, 85, 57 },
+                        new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2, 22, 57, 85 },
+                    }),
+                MakeSanityTest(@"
+                    SELECT c.index AS Index, c.title AS Title, c.text AS Text
+                    FROM c
+                    WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')
+                    ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'), [10, 10])",
+                    new List<List<int>>{
+                        new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2, 22, 57, 85 },
+                        new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2, 22, 85, 57 },
+                    }),
+                MakeSanityTest(@"
+                    SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text
+                    FROM c
+                    WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')
+                    ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'), [0.1, 0.1])",
+                    new List<List<int>>{ new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2 } }),
+                MakeSanityTest(@"
+                    SELECT c.index AS Index, c.title AS Title, c.text AS Text
+                    FROM c
+                    WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')
+                    ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'), [-1, -1])",
+                    new List<List<int>>{ new List<int>{ 57, 85, 2, 22, 80, 76, 77, 24, 75, 54, 49, 51, 61 } }),
+            };
+
+            await this.RunTests(testCases);
+        }
+
+        private async Task RunTests(IEnumerable<SanityTestCase> testCases)
         {
             CosmosArray documentsArray = await LoadDocuments();
             IEnumerable<string> documents = documentsArray.Select(document => document.ToString());
@@ -30,80 +198,56 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 connectionModes: ConnectionModes.Direct, // | ConnectionModes.Gateway,
                 collectionTypes: CollectionTypes.MultiPartition, // | CollectionTypes.SinglePartition,
                 documents: documents,
-                query: RunSanityTests,
+                query: (container, _) => RunTests(container, testCases),
+                partitionKey: "/index",
                 indexingPolicy: CompositeIndexPolicy);
         }
 
-        private static async Task RunSanityTests(Container container, IReadOnlyList<CosmosObject> _)
+        private static async Task RunTests(Container container, IEnumerable<SanityTestCase> testCases)
         {
-            List<SanityTestCase> testCases = new List<SanityTestCase>
+            foreach (FullTextScoreScope fullTextScoreScope in new[]{ FullTextScoreScope.Local, FullTextScoreScope.Global })
             {
-                MakeSanityTest(@"
-                    SELECT c.index AS Index, c.title AS Title, c.text AS Text
-                    FROM c
-                    WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')
-                    ORDER BY RANK FullTextScore(c.title, ['John'])",
-                    new List<int>{ 2, 57, 85 }),
-                MakeSanityTest(@"
-                    SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text
-                    FROM c
-                    WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')
-                    ORDER BY RANK FullTextScore(c.title, ['John'])",
-                    new List<int>{ 2, 57, 85 }),
-                MakeSanityTest(@"
-                    SELECT c.index AS Index, c.title AS Title, c.text AS Text
-                    FROM c
-                    WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')
-                    ORDER BY RANK FullTextScore(c.title, ['John'])
-                    OFFSET 1 LIMIT 5",
-                    new List<int>{ 57, 85 }),
-                MakeSanityTest(@"
-                    SELECT c.index AS Index, c.title AS Title, c.text AS Text
-                    FROM c
-                    WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')
-                    ORDER BY RANK RRF(FullTextScore(c.title, ['John']), FullTextScore(c.text, ['United States']))",
-                    new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 25, 22, 2, 66, 57, 85 }),
-                MakeSanityTest(@"
-                    SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text
-                    FROM c
-                    WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')
-                    ORDER BY RANK RRF(FullTextScore(c.title, ['John']), FullTextScore(c.text, ['United States']))",
-                    new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 25 }),
-                MakeSanityTest(@"
-                    SELECT c.index AS Index, c.title AS Title, c.text AS Text
-                    FROM c
-                    WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')
-                    ORDER BY RANK RRF(FullTextScore(c.title, ['John']), FullTextScore(c.text, ['United States']))
-                    OFFSET 5 LIMIT 10",
-                    new List<int>{ 24, 77, 76, 80, 25, 22, 2, 66, 57, 85 }),
-                MakeSanityTest(@"
-                    SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text
-                    FROM c
-                    ORDER BY RANK RRF(FullTextScore(c.title, ['John']), FullTextScore(c.text, ['United States']))",
-                    new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 25 }),
-                MakeSanityTest(@"
-                    SELECT c.index AS Index, c.title AS Title, c.text AS Text
-                    FROM c
-                    ORDER BY RANK RRF(FullTextScore(c.title, ['John']), FullTextScore(c.text, ['United States']))
-                    OFFSET 0 LIMIT 13",
-                    new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 25, 22, 2, 66 }),
-            };
-
-            foreach (SanityTestCase testCase in testCases)
-            {
-                List<TextDocument> result = await RunQueryCombinationsAsync<TextDocument>(
-                    container,
-                    testCase.Query,
-                    queryRequestOptions: null,
-                    queryDrainingMode: QueryDrainingMode.HoldState);
-
-                IEnumerable<int> actual = result.Select(document => document.Index);
-                if (!testCase.ExpectedIndices.SequenceEqual(actual))
+                foreach (SanityTestCase testCase in testCases)
                 {
-                    Trace.WriteLine($"Query: {testCase.Query}");
-                    Trace.WriteLine($"Expected: {string.Join(", ", testCase.ExpectedIndices)}");
-                    Trace.WriteLine($"Actual: {string.Join(", ", actual)}");
-                    Assert.Fail("The query results did not match the expected results.");
+                    QueryRequestOptions testRequestOptions = new QueryRequestOptions
+                    {
+                        FullTextScoreScope = fullTextScoreScope,
+                    };
+
+                    if (testCase.PartitionKey.HasValue)
+                    {
+                        testRequestOptions.PartitionKey = testCase.PartitionKey;
+                    }
+
+                    List<TextDocument> result = await RunQueryCombinationsAsync<TextDocument>(
+                        container,
+                        testCase.Query,
+                        queryRequestOptions: testRequestOptions,
+                        queryDrainingMode: QueryDrainingMode.HoldState);
+
+                    IEnumerable<int> actual = result.Select(document => document.Index);
+
+                    bool match = false;
+                    foreach (IReadOnlyList<int> expectedIndices in testCase.ExpectedIndices)
+                    {
+                        if (expectedIndices.SequenceEqual(actual))
+                        {
+                            match = true;
+                            break;
+                        }
+                    }
+
+                    if (!match)
+                    {
+                        Trace.WriteLine($"Query: {testCase.Query}");
+                        Trace.WriteLine($"Actual: {string.Join(", ", actual)}");
+
+                        string errorMessage = @"The query results did not match any of the expected results." +
+                            "Please set HybridSearchCrossPartitionQueryPipelineStage.HybridSearchDebugTraceHelpers.Enabled = true to debug." +
+                            "Usually, the failure may be due to some swaps in the results that have equal scores. You can see this in the debug output." +
+                            "The solution is to add another expected result that matches the actual results (provided the scores are in decresing order).";
+                        Assert.Fail(errorMessage);
+                    }
                 }
             }
         }
@@ -133,12 +277,13 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             return policy;
         }
 
-        private static SanityTestCase MakeSanityTest(string query, IReadOnlyList<int> expectedIndices)
+        private static SanityTestCase MakeSanityTest(string query, IReadOnlyList<IReadOnlyList<int>> expectedIndices, PartitionKey? partitionKey = null)
         {
             return new SanityTestCase
             {
                 Query = query,
                 ExpectedIndices = expectedIndices,
+                PartitionKey = partitionKey,
             };
         }
 
@@ -146,7 +291,9 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         {
             public string Query { get; init; }
 
-            public IReadOnlyList<int> ExpectedIndices { get; init; }
+            public IReadOnlyList<IReadOnlyList<int>> ExpectedIndices { get; init; }
+
+            public PartitionKey? PartitionKey { get; init; }
         }
 
         private sealed class TextDocument

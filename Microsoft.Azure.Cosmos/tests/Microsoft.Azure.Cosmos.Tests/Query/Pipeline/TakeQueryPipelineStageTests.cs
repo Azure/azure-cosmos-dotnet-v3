@@ -66,7 +66,7 @@
         [TestMethod]
         public async Task BasicTests()
         {
-            foreach((PageList pages, int takeCount, long expectedPageIndex) in TestCases())
+            foreach ((PageList pages, int takeCount, long expectedPageIndex) in TestCases())
             {
                 (List<CosmosElement> elements, long pageIndex) = await TakeQueryPipelineStageTests.CreateAndDrainAsync(
                     pages: pages,

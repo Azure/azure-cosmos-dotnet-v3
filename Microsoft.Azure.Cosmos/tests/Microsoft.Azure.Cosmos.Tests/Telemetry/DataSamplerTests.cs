@@ -21,11 +21,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
         {
             int numberOfElementsInEachGroup = ClientTelemetryOptions.NetworkRequestsSampleSizeThreshold;
             int numberOfGroups = 5;
-               
+
             List<RequestInfo> requestInfoList = new List<RequestInfo>();
 
             for (int counter = 0; counter < 100; counter++)
-            { 
+            {
                 RequestInfo requestInfo = new RequestInfo()
                 {
                     DatabaseName = "dbId " + (counter % numberOfGroups), // To repeat similar elements
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 };
                 requestInfoList.Add(requestInfo);
             }
-            
+
             List<RequestInfo> sampleDataByLatency = DataSampler.OrderAndSample(requestInfoList, DataLatencyComparer.Instance);
             Assert.AreEqual(numberOfGroups * numberOfElementsInEachGroup, sampleDataByLatency.Count);
 

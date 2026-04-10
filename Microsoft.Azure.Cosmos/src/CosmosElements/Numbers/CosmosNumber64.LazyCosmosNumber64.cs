@@ -39,12 +39,12 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
                 }
 
                 JsonNodeType type = jsonNavigator.GetNodeType(jsonNavigatorNode);
-                if (type != JsonNodeType.Number64)
+                if (type != JsonNodeType.Number)
                 {
-                    throw new ArgumentOutOfRangeException($"{nameof(jsonNavigatorNode)} must be a {JsonNodeType.Number64} node. Got {type} instead.");
+                    throw new ArgumentOutOfRangeException($"{nameof(jsonNavigatorNode)} must be a {JsonNodeType.Number} node. Got {type} instead.");
                 }
 
-                this.lazyNumber = new Lazy<Number64>(() => jsonNavigator.GetNumber64Value(jsonNavigatorNode));
+                this.lazyNumber = new Lazy<Number64>(() => jsonNavigator.GetNumberValue(jsonNavigatorNode));
             }
 
             public override Number64 GetValue()

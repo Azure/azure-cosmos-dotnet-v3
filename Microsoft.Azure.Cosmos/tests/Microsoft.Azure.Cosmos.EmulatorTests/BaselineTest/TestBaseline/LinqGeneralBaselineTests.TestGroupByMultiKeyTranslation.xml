@@ -2,31 +2,13 @@
   <Result>
     <Input>
       <Description><![CDATA[GroupBy Multi Key Constant]]></Description>
-      <Expression><![CDATA[query.GroupBy(k => new AnonymousType(key1 = 123, key2 = "abc"), (key, values) => key.key1)]]></Expression>
-    </Input>
-    <Output>
-      <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Only path expressions are supported for SelectMany.]]></ErrorMessage>
-    </Output>
-  </Result>
-  <Result>
-    <Input>
-      <Description><![CDATA[GroupBy Multi Key Multi Value Constant]]></Description>
-      <Expression><![CDATA[query.GroupBy(k => new AnonymousType(key1 = 123, key2 = "abc"), (key, values) => new AnonymousType(NumValue = key.key1, StringValue = key.key2))]]></Expression>
-    </Input>
-    <Output>
-      <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Only path expressions are supported for SelectMany.]]></ErrorMessage>
-    </Output>
-  </Result>
-  <Result>
-    <Input>
-      <Description><![CDATA[GroupBy Multi Key Constant]]></Description>
       <Expression><![CDATA[query.GroupBy(k => new AnonymousType(key1 = k.Id, key2 = k.FamilyId), (key, values) => key.key1)]]></Expression>
     </Input>
     <Output>
-      <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Only path expressions are supported for SelectMany.]]></ErrorMessage>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"key1": root["id"], "key2": root["FamilyId"]}["key1"] 
+FROM root 
+GROUP BY root["id"], root["FamilyId"] ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -35,8 +17,10 @@
       <Expression><![CDATA[query.GroupBy(k => new AnonymousType(key1 = k.Id, key2 = k.FamilyId), (key, values) => new AnonymousType(IdField = key.key1, FamilyField = key.key2))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Only path expressions are supported for SelectMany.]]></ErrorMessage>
+      <SqlQuery><![CDATA[
+SELECT {"key1": root["id"], "key2": root["FamilyId"]}["key1"] AS IdField, {"key1": root["id"], "key2": root["FamilyId"]}["key2"] AS FamilyField 
+FROM root 
+GROUP BY root["id"], root["FamilyId"] ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -45,8 +29,10 @@
       <Expression><![CDATA[query.GroupBy(k => new AnonymousType(Id = k.Id, FamilyId = k.FamilyId), (key, values) => new AnonymousType(IdField = key.Id, FamilyField = key.FamilyId))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Only path expressions are supported for SelectMany.]]></ErrorMessage>
+      <SqlQuery><![CDATA[
+SELECT {"Id": root["id"], "FamilyId": root["FamilyId"]}["Id"] AS IdField, {"Id": root["id"], "FamilyId": root["FamilyId"]}["FamilyId"] AS FamilyField 
+FROM root 
+GROUP BY root["id"], root["FamilyId"] ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -55,28 +41,49 @@
       <Expression><![CDATA[query.GroupBy(k => new AnonymousType(key1 = k.Id, key2 = k.FamilyId), (key, values) => new AnonymousType(key1 = key.key1, key2 = key.key2))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Only path expressions are supported for SelectMany.]]></ErrorMessage>
+      <SqlQuery><![CDATA[
+SELECT {"key1": root["id"], "key2": root["FamilyId"]}["key1"] AS key1, {"key1": root["id"], "key2": root["FamilyId"]}["key2"] AS key2 
+FROM root 
+GROUP BY root["id"], root["FamilyId"] ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[GroupBy Multi Key Multi Value With Scalar Expressions Key Selector]]></Description>
-      <Expression><![CDATA[query.GroupBy(k => new AnonymousType(key1 = k.Id.Trim(), key2 = (k.FamilyId + Convert(2, Object))), (key, values) => new AnonymousType(IdField = key.key1, FamilyField = key.key2))]]></Expression>
+      <Expression><![CDATA[query.GroupBy(k => new AnonymousType(key1 = k.Id.Trim(), key2 = k.FamilyId), (key, values) => new AnonymousType(IdField = key.key1, FamilyField = key.key2))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Only path expressions are supported for SelectMany.]]></ErrorMessage>
+      <SqlQuery><![CDATA[
+SELECT {"key1": TRIM(root["id"]), "key2": root["FamilyId"]}["key1"] AS IdField, {"key1": TRIM(root["id"]), "key2": root["FamilyId"]}["key2"] AS FamilyField 
+FROM root 
+GROUP BY TRIM(root["id"]), root["FamilyId"] ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy Multi Key Multi Value With Aggregate]]></Description>
+      <Expression><![CDATA[query.GroupBy(k => new AnonymousType(key1 = k.Id, key2 = k.FamilyId), (key, values) => new AnonymousType(IdField = key.key1, FamilyField = values.Count()))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT {"key1": root["id"], "key2": root["FamilyId"]}["key1"] AS IdField, COUNT(1) AS FamilyField 
+FROM root 
+GROUP BY root["id"], root["FamilyId"] ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Select + GroupBy]]></Description>
-      <Expression><![CDATA[query.Select(x => x.Id).GroupBy(k => new AnonymousType(key1 = k, key2 = k), (key, values) => new AnonymousType(keyAlias = key.key1, count = key.key2.Count()))]]></Expression>
+      <Expression><![CDATA[query.Select(x => x.Id).GroupBy(k => new AnonymousType(key1 = k, key2 = k.ToLower()), (key, values) => new AnonymousType(keyAlias = key.key1, keyAlias2 = key.key2))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Only path expressions are supported for SelectMany.]]></ErrorMessage>
+      <SqlQuery><![CDATA[
+SELECT {"key1": r0, "key2": LOWER(r0)}["key1"] AS keyAlias, {"key1": r0, "key2": LOWER(r0)}["key2"] AS keyAlias2 
+FROM (
+    SELECT VALUE root["id"] 
+    FROM root) AS r0 
+    GROUP BY r0, LOWER(r0) 
+]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -85,8 +92,14 @@
       <Expression><![CDATA[query.Select(x => new AnonymousType(Id1 = x.Id, family1 = x.FamilyId, childrenN1 = x.Children)).GroupBy(k => new AnonymousType(key1 = k.Id1, key2 = k.family1), (key, values) => new AnonymousType(keyAlias = key.key1, count = values.Count(x => (x.family1 != "a"))))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Only path expressions are supported for SelectMany.]]></ErrorMessage>
+      <SqlQuery><![CDATA[
+SELECT {"key1": r0["Id1"], "key2": r0["family1"]}["key1"] AS keyAlias, COUNT(1) AS count 
+FROM (
+    SELECT VALUE {"Id1": root["id"], "family1": root["FamilyId"], "childrenN1": root["Children"]} 
+    FROM root) AS r0 
+    WHERE (r0["family1"] != "a") 
+    GROUP BY r0["Id1"], r0["family1"] 
+]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -95,8 +108,11 @@
       <Expression><![CDATA[query.SelectMany(x => x.Children).GroupBy(k => new AnonymousType(key1 = k.FamilyName, key2 = k.Gender), (key, values) => new AnonymousType(ValueKey1 = key.key1, ValueKey2 = key.key2))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Only path expressions are supported for SelectMany.]]></ErrorMessage>
+      <SqlQuery><![CDATA[
+SELECT {"key1": x0["FamilyName"], "key2": x0["Gender"]}["key1"] AS ValueKey1, {"key1": x0["FamilyName"], "key2": x0["Gender"]}["key2"] AS ValueKey2 
+FROM root 
+JOIN x0 IN root["Children"] 
+GROUP BY x0["FamilyName"], x0["Gender"] ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -105,8 +121,15 @@
       <Expression><![CDATA[query.Skip(10).GroupBy(k => new AnonymousType(key1 = k.Id, key2 = k.Int), (key, values) => new AnonymousType(idField = key.key1, intField = key.key2))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Only path expressions are supported for SelectMany.]]></ErrorMessage>
+      <SqlQuery><![CDATA[
+SELECT {"key1": r0["id"], "key2": r0["Int"]}["key1"] AS idField, {"key1": r0["id"], "key2": r0["Int"]}["key2"] AS intField 
+FROM (
+    SELECT VALUE root 
+    FROM root 
+    OFFSET 10 LIMIT 2147483647) AS r0 
+    GROUP BY r0["id"], r0["Int"] 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":157,"end":183},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -115,8 +138,14 @@
       <Expression><![CDATA[query.Take(10).GroupBy(k => new AnonymousType(key1 = k.Id, key2 = k.Int), (key, values) => new AnonymousType(idField = key.key1, intField = key.key2))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Only path expressions are supported for SelectMany.]]></ErrorMessage>
+      <SqlQuery><![CDATA[
+SELECT {"key1": r0["id"], "key2": r0["Int"]}["key1"] AS idField, {"key1": r0["id"], "key2": r0["Int"]}["key2"] AS intField 
+FROM (
+    SELECT TOP 10 VALUE root 
+    FROM root) AS r0 
+    GROUP BY r0["id"], r0["Int"] 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":136,"end":142},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -125,8 +154,15 @@
       <Expression><![CDATA[query.Skip(10).Take(10).GroupBy(k => new AnonymousType(key1 = k.Id, key2 = k.Int), (key, values) => new AnonymousType(idField = key.key1, intField = key.key2))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Only path expressions are supported for SelectMany.]]></ErrorMessage>
+      <SqlQuery><![CDATA[
+SELECT {"key1": r0["id"], "key2": r0["Int"]}["key1"] AS idField, {"key1": r0["id"], "key2": r0["Int"]}["key2"] AS intField 
+FROM (
+    SELECT VALUE root 
+    FROM root 
+    OFFSET 10 LIMIT 10) AS r0 
+    GROUP BY r0["id"], r0["Int"] 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":157,"end":175},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -135,8 +171,11 @@
       <Expression><![CDATA[query.Where(x => (x.Id != "a")).GroupBy(k => new AnonymousType(key1 = k.Id, key2 = k.Int), (key, values) => new AnonymousType(idField = key.key1, intField = key.key2))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Only path expressions are supported for SelectMany.]]></ErrorMessage>
+      <SqlQuery><![CDATA[
+SELECT {"key1": root["id"], "key2": root["Int"]}["key1"] AS idField, {"key1": root["id"], "key2": root["Int"]}["key2"] AS intField 
+FROM root 
+WHERE (root["id"] != "a") 
+GROUP BY root["id"], root["Int"] ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -145,8 +184,15 @@
       <Expression><![CDATA[query.OrderBy(x => x.Int).GroupBy(k => new AnonymousType(key1 = k.Id, key2 = k.Int), (key, values) => new AnonymousType(idField = key.key1, intField = key.key2))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Only path expressions are supported for SelectMany.]]></ErrorMessage>
+      <SqlQuery><![CDATA[
+SELECT {"key1": r0["id"], "key2": r0["Int"]}["key1"] AS idField, {"key1": r0["id"], "key2": r0["Int"]}["key2"] AS intField 
+FROM (
+    SELECT VALUE root 
+    FROM root 
+    ORDER BY root["Int"] ASC) AS r0 
+    GROUP BY r0["id"], r0["Int"] 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":157,"end":181},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -155,8 +201,15 @@
       <Expression><![CDATA[query.OrderByDescending(x => x.Id).GroupBy(k => new AnonymousType(key1 = k.Id, key2 = k.Int), (key, values) => new AnonymousType(idField = key.key1, intField = key.key2))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Only path expressions are supported for SelectMany.]]></ErrorMessage>
+      <SqlQuery><![CDATA[
+SELECT {"key1": r0["id"], "key2": r0["Int"]}["key1"] AS idField, {"key1": r0["id"], "key2": r0["Int"]}["key2"] AS intField 
+FROM (
+    SELECT VALUE root 
+    FROM root 
+    ORDER BY root["id"] DESC) AS r0 
+    GROUP BY r0["id"], r0["Int"] 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":157,"end":181},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -165,8 +218,16 @@
       <Expression><![CDATA[query.Where(x => (x.Id != "a")).OrderBy(x => x.Id).GroupBy(k => new AnonymousType(key1 = k.Id, key2 = k.Int), (key, values) => new AnonymousType(idField = key.key1, intField = key.key2))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Only path expressions are supported for SelectMany.]]></ErrorMessage>
+      <SqlQuery><![CDATA[
+SELECT {"key1": r0["id"], "key2": r0["Int"]}["key1"] AS idField, {"key1": r0["id"], "key2": r0["Int"]}["key2"] AS intField 
+FROM (
+    SELECT VALUE root 
+    FROM root 
+    WHERE (root["id"] != "a") 
+    ORDER BY root["id"] ASC) AS r0 
+    GROUP BY r0["id"], r0["Int"] 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":183,"end":206},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -176,7 +237,7 @@
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Only path expressions are supported for SelectMany.]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Group By cannot be followed by other methods]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -186,7 +247,7 @@
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Only path expressions are supported for SelectMany.]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Group By cannot be followed by other methods]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -196,7 +257,7 @@
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Only path expressions are supported for SelectMany.]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Group By cannot be followed by other methods]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -206,7 +267,7 @@
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Only path expressions are supported for SelectMany.]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Group By cannot be followed by other methods]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -216,7 +277,7 @@
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Only path expressions are supported for SelectMany.]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Group By cannot be followed by other methods]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -226,7 +287,7 @@
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Only path expressions are supported for SelectMany.]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Group By cannot be followed by other methods]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -236,7 +297,7 @@
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Only path expressions are supported for SelectMany.]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Group By cannot be followed by other methods]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -246,7 +307,7 @@
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Only path expressions are supported for SelectMany.]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Group By cannot be followed by other methods]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -256,7 +317,7 @@
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Only path expressions are supported for SelectMany.]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Group By cannot be followed by other methods]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -266,7 +327,59 @@
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Only path expressions are supported for SelectMany.]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Group By cannot be followed by other methods]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy Multi Key Constant]]></Description>
+      <Expression><![CDATA[query.GroupBy(k => new AnonymousType(key1 = 123, key2 = "abc"), (key, values) => key.key1)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Expression with NodeType 'Constant' is not supported.]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy Multi Key Multi Value Constant]]></Description>
+      <Expression><![CDATA[query.GroupBy(k => new AnonymousType(key1 = 123, key2 = "abc"), (key, values) => new AnonymousType(NumValue = key.key1, StringValue = key.key2))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Expression with NodeType 'Constant' is not supported.]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy Multi Key Multi Value Constant 2]]></Description>
+      <Expression><![CDATA[query.GroupBy(k => new AnonymousType(NumValue = 10, StringValue = "abc"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Expression with NodeType 'Constant' is not supported.]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy Multi Key Multi Value Constant 2]]></Description>
+      <Expression><![CDATA[query.GroupBy(k => new AnonymousType(Id = k.Id), (key, values) => new AnonymousType(NumValue = 10, StringValue = "abc"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"NumValue": 10, "StringValue": "abc"} 
+FROM root 
+GROUP BY root["id"] ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy Multi Key Multi Value Constant No Member expression]]></Description>
+      <Expression><![CDATA[query.GroupBy(k => new NoMemberExampleClass(k.Id), (key, values) => new AnonymousType(NumValue = 10, StringValue = "abc"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Constructor invocation is not supported.]]></ErrorMessage>
     </Output>
   </Result>
 </Results>

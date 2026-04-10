@@ -46,9 +46,11 @@
 
   <ItemGroup>
     <Compile Include="..\Microsoft.Azure.Cosmos.EmulatorTests\Utils\LocalEmulatorTokenCredential.cs" Link="Utils\LocalEmulatorTokenCredential.cs" />
+    <Compile Include="..\Microsoft.Azure.Cosmos.EmulatorTests\Linq\SystemTextJsonSerializer.cs" Link="Linq\SystemTextJsonSerializer.cs" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Azure.Core" Version="1.44.1" />
     <PackageReference Include="FluentAssertions" Version="5.10.3" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.1.1" />
     <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="6.7.1" />
@@ -116,6 +118,12 @@
     <None Update="BaselineTest\TestBaseline\OrderByClauseSqlParserBaselineTests.MultiOrderBy.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="BaselineTest\TestBaseline\OrderByClauseSqlParserBaselineTests.MultiOrderByRank.xml">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+      <None Update="BaselineTest\TestBaseline\OrderByClauseSqlParserBaselineTests.SingleOrderByRank.xml">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
     <None Update="BaselineTest\TestBaseline\PartitionKeyHashBaselineTest.Numbers.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -269,13 +277,13 @@
     <None Update="BaselineTest\TestBaseline\OptimisticDirectExecutionQueryBaselineTests.NegativeOptimisticDirectExecutionOutput.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Contracts\DotNetPreviewSDKAPI.json">
+    <None Update="Contracts\DotNetPreviewSDKAPI*.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Contracts\DotNetSDKAPI.json">
+    <None Update="Contracts\DotNetSDKAPI*.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Contracts\DotNetSDKTelemetryAPI.json">
+    <None Update="Contracts\DotNetSDKTelemetryAPI*.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Routing\resources\BaselineTest.PartitionRoutingHelper.AddFormattedContinuationToHeader.json">
@@ -423,4 +431,3 @@
   </PropertyGroup>
   
 </Project>
-

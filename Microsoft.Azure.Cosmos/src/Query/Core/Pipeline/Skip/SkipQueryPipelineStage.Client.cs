@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
@@ -121,6 +122,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip
 
                 int numberOfDocumentsSkipped = sourcePage.Documents.Count - documentsAfterSkip.Count;
                 this.skipCount -= numberOfDocumentsSkipped;
+
+                Debug.Assert(this.skipCount >= 0, $"{nameof(SkipQueryPipelineStage)} Assert!", "this.skipCount should be greater than or equal to 0");
 
                 QueryState state;
                 if ((sourcePage.State != null) && (sourcePage.DisallowContinuationTokenMessage == null))

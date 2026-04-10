@@ -250,8 +250,8 @@ namespace Microsoft.Azure.Cosmos.Linq
                     break;
                 }
 
-                // In case of Select -> Group by cases, the Select query should not be flattened and kept as a subquery
-                if ((query.inputQuery?.selectClause != null) && (query.groupByClause != null))
+                // In case of Select/Order By -> Group by cases, the Select/Order By query should not be flattened and kept as a subquery
+                if (((query.inputQuery?.selectClause != null) || (query.inputQuery?.orderByClause != null)) && (query.groupByClause != null))
                 {
                     flattenQuery = this;
                     break;
@@ -458,7 +458,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     SqlScalarExpression substituted = SqlExpressionManipulation.Substitute(replaced, inputParam, orderByClause.OrderByItems[i].Expression);
                     substitutedItems[i] = SqlOrderByItem.Create(substituted, orderByClause.OrderByItems[i].IsDescending);
                 }
-                SqlOrderByClause result = SqlOrderByClause.Create(substitutedItems);
+                SqlOrderByClause result = SqlOrderByClause.Create(orderByClause.Rank, substitutedItems);
                 return result;
             }
 
@@ -551,24 +551,29 @@ namespace Microsoft.Azure.Cosmos.Linq
                 // Where expression parameter needs to be substituted if necessary so
                 // It is not needed in Select distinct because the Select distinct would have the necessary parameter name adjustment.
                 case LinqMethods.Any:
+                case nameof(CosmosLinqExtensions.OrderByRank):
                 case LinqMethods.OrderBy:
                 case LinqMethods.OrderByDescending:
                 case LinqMethods.ThenBy:
                 case LinqMethods.ThenByDescending:
                 case LinqMethods.Distinct:
                     // New query is needed when there is already a Take or a non-distinct Select
+                    // Or when an Order By Rank is added to a query with an Order By clause (and vice versa)
                     shouldPackage = (this.topSpec != null) ||
                         (this.offsetSpec != null) ||
                         (this.selectClause != null && !this.selectClause.HasDistinct) || 
-                        (this.groupByClause != null);
+                        (this.groupByClause != null) || 
+                        (this.orderByClause != null && (methodName == nameof(CosmosLinqExtensions.OrderByRank))) ||
+                        (this.orderByClause != null && (this.orderByClause.Rank == true) && (methodName == LinqMethods.OrderBy));
                     break;
 
                 case LinqMethods.GroupBy:
-                    // New query is needed when there is already a Take or a Select or a Group by clause
+                    // New query is needed when there is already a Take or a Select or a Group by clause or an Order By clause
                     shouldPackage = (this.topSpec != null) ||
                         (this.offsetSpec != null) ||
                         (this.selectClause != null) || 
-                        (this.groupByClause != null);
+                        (this.groupByClause != null) || 
+                        (this.orderByClause != null);
                     break;
 
                 case LinqMethods.Skip:
@@ -647,7 +652,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             List<SqlOrderByItem> items = new List<SqlOrderByItem>(context.CurrentQuery.orderByClause.OrderByItems);
             items.AddRange(thenBy.OrderByItems);
-            context.CurrentQuery.orderByClause = SqlOrderByClause.Create(items.ToImmutableArray());
+            context.CurrentQuery.orderByClause = SqlOrderByClause.Create(context.CurrentQuery.orderByClause.Rank, items.ToImmutableArray());
 
             foreach (Binding binding in context.CurrentSubqueryBinding.TakeBindings()) context.CurrentQuery.AddBinding(binding);
 

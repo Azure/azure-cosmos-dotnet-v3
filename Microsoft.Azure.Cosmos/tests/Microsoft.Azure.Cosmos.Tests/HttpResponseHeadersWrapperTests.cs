@@ -100,9 +100,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void TestCountWithContentHeaders()
         {
-            HttpResponseMessage responseMessage = new HttpResponseMessage() 
-            { 
-                Content = new StringContent("Test") 
+            HttpResponseMessage responseMessage = new HttpResponseMessage()
+            {
+                Content = new StringContent("Test")
             };
 
             HttpResponseHeadersWrapper headers = new HttpResponseHeadersWrapper(
@@ -287,7 +287,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 case HeaderType.HttpResponseHeadersNameValueCollectionWrapperWithContentHeaders:
                     HttpResponseMessage responseMessageWithContent = new HttpResponseMessage()
                     {
-                       Content = new StringContent("testscontent")
+                        Content = new StringContent("testscontent")
                     };
 
                     return new HttpResponseHeadersWrapper(

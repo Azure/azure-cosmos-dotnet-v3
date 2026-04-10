@@ -191,7 +191,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     // then try seeing if we can execute as a passthrough using client side only logic.
                     // This is to short circuit the need to go to the gateway to get the query plan.
                     if (cosmosQueryContext.QueryClient.BypassQueryParsing()
-                        && inputParameters.PartitionKey.HasValue)
+                        && inputParameters.PartitionKey.HasValue && containerQueryProperties.PartitionKeyDefinition.Paths.Count <= 1)
                     {
                         bool parsed;
                         SqlQuery sqlQuery;
@@ -205,7 +205,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                             bool hasDistinct = sqlQuery.SelectClause.HasDistinct;
                             bool hasGroupBy = sqlQuery.GroupByClause != default;
                             bool hasAggregates = AggregateProjectionDetector.HasAggregate(sqlQuery.SelectClause.SelectSpec);
-                            bool createPassthroughQuery = !hasAggregates && !hasDistinct && !hasGroupBy;
+                            bool hasOrderBy = sqlQuery.OrderByClause != default;
+                            bool createPassthroughQuery = !hasAggregates && !hasDistinct && !hasGroupBy && !hasOrderBy;
 
                             if (createPassthroughQuery)
                             {
@@ -300,11 +301,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 }
                 else
                 {
-                    bool singleLogicalPartitionKeyQuery = (inputParameters.PartitionKey.HasValue && targetRanges.Count == 1)
+                    bool singleLogicalPartitionKeyQuery = ((inputParameters.PartitionKey.HasValue && targetRanges.Count == 1)
                         || ((partitionedQueryExecutionInfo.QueryRanges.Count == 1)
-                        && partitionedQueryExecutionInfo.QueryRanges[0].IsSingleValue);
+                        && partitionedQueryExecutionInfo.QueryRanges[0].IsSingleValue))
+                        && containerQueryProperties.PartitionKeyDefinition.Paths.Count <= 1;
                     bool serverStreamingQuery = !partitionedQueryExecutionInfo.QueryInfo.HasAggregates
                         && !partitionedQueryExecutionInfo.QueryInfo.HasDistinct
+                        && !partitionedQueryExecutionInfo.QueryInfo.HasNonStreamingOrderBy
                         && !partitionedQueryExecutionInfo.QueryInfo.HasGroupBy;
                     bool streamingSinglePartitionQuery = singleLogicalPartitionKeyQuery && serverStreamingQuery;
 
@@ -514,9 +517,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                             isMinInclusive: true,
                             isMaxInclusive: false)))
                     .ToList(),
+                partitionKey: inputParameters.PartitionKey,
                 queryPaginationOptions: new QueryExecutionOptions(
                     pageSizeHint: inputParameters.MaxItemCount),
-                partitionKey: inputParameters.PartitionKey,
                 containerQueryProperties: containerQueryProperties,
                 maxConcurrency: inputParameters.MaxConcurrency,
                 prefetchPolicy: PrefetchPolicy.PrefetchSinglePage,
@@ -564,6 +567,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 allRanges: allFeedRanges,
                 isContinuationExpected: cosmosQueryContext.IsContinuationExpected,
                 maxConcurrency: inputParameters.MaxConcurrency,
+                fullTextScoreScope: inputParameters.FullTextScoreScope,
                 requestContinuationToken: inputParameters.InitialUserContinuationToken);
         }
 
@@ -584,7 +588,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     inputParameters.SqlQuerySpec,
                     cosmosQueryContext.ResourceLink,
                     inputParameters.PartitionKey,
-                    inputParameters.IsNonStreamingOrderByQueryFeatureDisabled,
+                    inputParameters.IsHybridSearchQueryPlanOptimizationDisabled,
                     trace,
                     cancellationToken);
             }
@@ -601,6 +605,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     inputParameters.PartitionKey != null,
                     containerQueryProperties.GeospatialType,
                     cosmosQueryContext.UseSystemPrefix,
+                    inputParameters.IsHybridSearchQueryPlanOptimizationDisabled,
                     trace,
                     cancellationToken);
             }
@@ -832,8 +837,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
                 bool returnResultsInDeterministicOrder,
                 bool enableOptimisticDirectExecution,
-                bool isNonStreamingOrderByQueryFeatureDisabled,
+                bool isHybridSearchQueryPlanOptimizationDisabled,
                 bool enableDistributedQueryGatewayMode,
+                FullTextScoreScope fullTextScoreScope,
                 TestInjections testInjections)
             {
                 this.SqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));
@@ -847,8 +853,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 this.PartitionedQueryExecutionInfo = partitionedQueryExecutionInfo;
                 this.ReturnResultsInDeterministicOrder = returnResultsInDeterministicOrder;
                 this.EnableOptimisticDirectExecution = enableOptimisticDirectExecution;
-                this.IsNonStreamingOrderByQueryFeatureDisabled = isNonStreamingOrderByQueryFeatureDisabled;
+                this.IsHybridSearchQueryPlanOptimizationDisabled = isHybridSearchQueryPlanOptimizationDisabled;
                 this.EnableDistributedQueryGatewayMode = enableDistributedQueryGatewayMode;
+                this.FullTextScoreScope = fullTextScoreScope;
                 this.TestInjections = testInjections;
             }
 
@@ -864,8 +871,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
                 bool? returnResultsInDeterministicOrder,
                 bool enableOptimisticDirectExecution,
-                bool isNonStreamingOrderByQueryFeatureDisabled,
+                bool isHybridSearchQueryPlanOptimizationDisabled,
                 bool enableDistributedQueryGatewayMode,
+                FullTextScoreScope fullTextScoreScope,
                 TestInjections testInjections)
             {
                 if (sqlQuerySpec == null)
@@ -903,8 +911,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     partitionedQueryExecutionInfo: partitionedQueryExecutionInfo,
                     returnResultsInDeterministicOrder: returnResultsInDeterministicOrder.GetValueOrDefault(InputParameters.DefaultReturnResultsInDeterministicOrder),
                     enableOptimisticDirectExecution: enableOptimisticDirectExecution,
-                    isNonStreamingOrderByQueryFeatureDisabled: isNonStreamingOrderByQueryFeatureDisabled,
+                    isHybridSearchQueryPlanOptimizationDisabled: isHybridSearchQueryPlanOptimizationDisabled,
                     enableDistributedQueryGatewayMode: enableDistributedQueryGatewayMode,
+                    fullTextScoreScope: fullTextScoreScope,
                     testInjections: testInjections);
             }
 
@@ -920,8 +929,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             public bool ReturnResultsInDeterministicOrder { get; }
             public TestInjections TestInjections { get; }
             public bool EnableOptimisticDirectExecution { get; }
-            public bool IsNonStreamingOrderByQueryFeatureDisabled { get; }
+            public bool IsHybridSearchQueryPlanOptimizationDisabled { get; }
             public bool EnableDistributedQueryGatewayMode { get; }
+            public bool UseLengthAwareRangeComparer { get; }
+            public FullTextScoreScope FullTextScoreScope { get; }
 
             public InputParameters WithContinuationToken(CosmosElement token)
             {
@@ -937,8 +948,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     this.PartitionedQueryExecutionInfo,
                     this.ReturnResultsInDeterministicOrder,
                     this.EnableOptimisticDirectExecution,
-                    this.IsNonStreamingOrderByQueryFeatureDisabled,
+                    this.IsHybridSearchQueryPlanOptimizationDisabled,
                     this.EnableDistributedQueryGatewayMode,
+                    this.FullTextScoreScope,
                     this.TestInjections);
             }
         }

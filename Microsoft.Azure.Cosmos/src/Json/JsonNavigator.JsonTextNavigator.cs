@@ -56,7 +56,10 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 JsonTextNavigatorNode CreateRootNode()
                 {
-                    IJsonReader jsonTextReader = JsonReader.Create(buffer: buffer);
+                    IJsonReader jsonTextReader = JsonReader.Create(
+                                buffer: buffer,
+                                jsonStringDictionary: null);
+
                     if (!(jsonTextReader is IJsonTextReaderPrivateImplementation jsonTextReaderExtensions))
                     {
                         throw new InvalidOperationException($"{nameof(jsonTextReader)} needs to implement {nameof(IJsonTextReaderPrivateImplementation)}.");
@@ -86,6 +89,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.rootNode = rootNode;
             }
 
+            #region IJsonNavigator
             /// <inheritdoc />
             public override JsonSerializationFormat SerializationFormat => JsonSerializationFormat.Text;
 
@@ -107,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override Number64 GetNumber64Value(IJsonNavigatorNode node)
+            public override Number64 GetNumberValue(IJsonNavigatorNode node)
             {
                 if (!(node is NumberNode numberNode))
                 {
@@ -404,15 +408,26 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
             }
 
-            public override IJsonReader CreateReader(IJsonNavigatorNode jsonNavigatorNode)
+            public override IJsonReader CreateReader(IJsonNavigatorNode node)
             {
-                if (!(jsonNavigatorNode is JsonTextNavigatorNode jsonTextNavigatorNode))
+                if (!(node is JsonTextNavigatorNode jsonTextNavigatorNode))
                 {
-                    throw new ArgumentException($"{nameof(jsonNavigatorNode)} must be a {nameof(JsonTextNavigatorNode)}.");
+                    throw new ArgumentException($"{nameof(node)} must be a {nameof(JsonTextNavigatorNode)}.");
                 }
 
                 ReadOnlyMemory<byte> buffer = JsonTextNavigator.GetNodeBuffer(jsonTextNavigatorNode);
                 return JsonReader.Create(JsonSerializationFormat.Text, buffer);
+            }
+            #endregion
+
+            protected override bool TryGetUInt64Value(IJsonNavigatorNode node, out ulong value)
+            {
+                if (!(node is NumberNode numberNode))
+                {
+                    throw new ArgumentException($"{node} was not of type: {nameof(NumberNode)}.");
+                }
+
+                return JsonTextParser.TryGetUInt64Value(numberNode.BufferedToken.Span, out value);
             }
 
             private static ReadOnlyMemory<byte> GetNodeBuffer(JsonTextNavigatorNode jsonTextNavigatorNode)
@@ -867,7 +882,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 public ReadOnlyMemory<byte> BufferedToken { get; }
 
-                public override JsonNodeType Type => JsonNodeType.Number64;
+                public override JsonNodeType Type => JsonNodeType.Number;
 
                 public static NumberNode Create(ReadOnlyMemory<byte> bufferedToken)
                 {

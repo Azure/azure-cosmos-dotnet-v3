@@ -6,11 +6,11 @@
 namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
 {
     using System.Collections.Generic;
-    using SqlObjects;
-    using OfflineEngine;
-    using VisualStudio.TestTools.UnitTesting;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
+    using OfflineEngine;
+    using SqlObjects;
+    using VisualStudio.TestTools.UnitTesting;
 
     /// <summary>
     /// CosmosObjectEqualityComparerUnitTests Class.

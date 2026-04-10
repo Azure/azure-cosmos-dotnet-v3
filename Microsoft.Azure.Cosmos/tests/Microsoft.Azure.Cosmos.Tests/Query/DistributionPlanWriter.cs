@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan
 
     internal class DistributionPlanWriter : ICqlVisitor
     {
-        private StringBuilder output = new StringBuilder();
+        private readonly StringBuilder output = new StringBuilder();
 
         public string SerializedOutput => "{ \"clientDistributionPlan\": { \"clientQL\": { " + this.output.ToString() + " } } }";
 

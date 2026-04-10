@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.IsFalse(this.DefaultTraceHasDefaultTraceListener());
                 DefaultTrace.TraceSource.Listeners.Add(new DefaultTraceListener());
             }
-            
+
             Assert.IsTrue(this.DefaultTraceHasDefaultTraceListener());
             typeof(CosmosClient).GetMethod("RemoveDefaultTraceListener", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, null);
             //CosmosClient.RemoveDefaultTraceListener();

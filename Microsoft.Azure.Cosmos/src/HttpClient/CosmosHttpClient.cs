@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     internal abstract class CosmosHttpClient : IDisposable
     {
         public static readonly TimeSpan GatewayRequestTimeout = TimeSpan.FromSeconds(65);
+        public abstract bool IsFaultInjectionClient { get; }
 
         public abstract HttpMessageHandler HttpMessageHandler { get; }
 
@@ -23,14 +24,16 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             HttpTimeoutPolicy timeoutPolicy,
             IClientSideRequestStatistics clientSideRequestStatistics,
-            CancellationToken cancellationToken);
+            CancellationToken cancellationToken,
+            DocumentServiceRequest documentServiceRequest = null);
 
         public abstract Task<HttpResponseMessage> SendHttpAsync(
             Func<ValueTask<HttpRequestMessage>> createRequestMessageAsync,
             ResourceType resourceType,
             HttpTimeoutPolicy timeoutPolicy,
             IClientSideRequestStatistics clientSideRequestStatistics,
-            CancellationToken cancellationToken);
+            CancellationToken cancellationToken,
+            DocumentServiceRequest documentServiceRequest = null);
 
         protected abstract void Dispose(bool disposing);
 

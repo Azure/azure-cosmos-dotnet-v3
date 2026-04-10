@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         [TestMethod]
         public void CapacityValidationTests()
         {
-            foreach (int x in new[] {-512, -256, -1, 0 })
+            foreach (int x in new[] { -512, -256, -1, 0 })
             {
                 Assert.ThrowsException<ArgumentOutOfRangeException>(() => new BoundedList<int>(x));
             }
@@ -25,10 +25,10 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         }
 
         [TestMethod]
-        [DataRow(    3,    21, DisplayName = "Extra small")]
-        [DataRow(    5,    25, DisplayName = "Small")]
-        [DataRow(  256,  1024, DisplayName = "Medium")]
-        [DataRow( 5120, 10240, DisplayName = "Large")]
+        [DataRow(3, 21, DisplayName = "Extra small")]
+        [DataRow(5, 25, DisplayName = "Small")]
+        [DataRow(256, 1024, DisplayName = "Medium")]
+        [DataRow(5120, 10240, DisplayName = "Large")]
         [DataRow(10240, 20480, DisplayName = "Large")]
         public void BasicTests(int capacity, int numElements)
         {
@@ -38,8 +38,8 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             {
                 boundedList.Add(i);
 
-                int expected = (i >= capacity) ? (i - capacity + 1) : 0; 
-                foreach(int actual in boundedList)
+                int expected = (i >= capacity) ? (i - capacity + 1) : 0;
+                foreach (int actual in boundedList)
                 {
                     Assert.AreEqual(expected, actual);
                     ++expected;

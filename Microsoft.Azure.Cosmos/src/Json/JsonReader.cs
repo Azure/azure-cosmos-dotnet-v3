@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <summary>
         /// The <see cref="JsonObjectState"/>
         /// </summary>
-        internal readonly JsonObjectState JsonObjectState;
+        protected readonly JsonObjectState JsonObjectState;
 
         /// <summary>
         /// Initializes a new instance of the JsonReader class.
@@ -44,8 +44,9 @@ namespace Microsoft.Azure.Cosmos.Json
         /// Creates a JsonReader that can read from the supplied byte array (assumes utf-8 encoding) with format marker.
         /// </summary>
         /// <param name="buffer">The byte array (with format marker) to read from.</param>
+        /// <param name="jsonStringDictionary">The dictionary to use for user string encoding.</param>
         /// <returns>A concrete JsonReader that can read the supplied byte array.</returns>
-        public static IJsonReader Create(ReadOnlyMemory<byte> buffer)
+        public static IJsonReader Create(ReadOnlyMemory<byte> buffer, IJsonStringDictionary jsonStringDictionary = null)
         {
             if (buffer.IsEmpty)
             {
@@ -56,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
             // Explicitly pick from the set of supported formats, or otherwise assume text format
             JsonSerializationFormat jsonSerializationFormat = (firstByte == (byte)JsonSerializationFormat.Binary) ? JsonSerializationFormat.Binary : JsonSerializationFormat.Text;
-            return JsonReader.Create(jsonSerializationFormat, buffer);
+            return JsonReader.Create(jsonSerializationFormat, buffer, jsonStringDictionary);
         }
 
         /// <summary>
@@ -64,10 +65,12 @@ namespace Microsoft.Azure.Cosmos.Json
         /// </summary>
         /// <param name="jsonSerializationFormat">The serialization format of the payload.</param>
         /// <param name="buffer">The buffer to read from.</param>
+        /// <param name="jsonStringDictionary">The optional dictionary to decode strings.</param>
         /// <returns>An <see cref="IJsonReader"/> for the buffer, format, and dictionary.</returns>
         public static IJsonReader Create(
             JsonSerializationFormat jsonSerializationFormat,
-            ReadOnlyMemory<byte> buffer)
+            ReadOnlyMemory<byte> buffer,
+            IJsonStringDictionary jsonStringDictionary = null)
         {
             if (buffer.IsEmpty)
             {
@@ -77,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Json
             // Explicitly pick from the set of supported formats, or otherwise assume text format
             return jsonSerializationFormat switch
             {
-                JsonSerializationFormat.Binary => new JsonBinaryReader(buffer),
+                JsonSerializationFormat.Binary => new JsonBinaryReader(buffer, jsonStringDictionary),
                 JsonSerializationFormat.Text => new JsonTextReader(buffer),
                 _ => throw new ArgumentOutOfRangeException($"Unknown {nameof(JsonSerializationFormat)}: {jsonSerializationFormat}."),
             };
@@ -85,8 +88,13 @@ namespace Microsoft.Azure.Cosmos.Json
 
         internal static IJsonReader CreateBinaryFromOffset(
             ReadOnlyMemory<byte> buffer,
-            int offset) => new JsonBinaryReader(buffer, offset);
+            int offset,
+            IJsonStringDictionary jsonStringDictionary = null)
+        {
+            return new JsonBinaryReader(buffer, offset, jsonStringDictionary);
+        }
 
+        #region IJsonReader
         /// <inheritdoc />
         public abstract bool Read();
 
@@ -188,9 +196,14 @@ namespace Microsoft.Azure.Cosmos.Json
                     break;
 
                 case JsonTokenType.Number:
+                    if (this.TryGetUInt64NumberValue(out ulong uint64Value))
+                    {
+                        writer.WriteNumberValue(uint64Value);
+                    }
+                    else
                     {
                         Number64 value = this.GetNumberValue();
-                        writer.WriteNumber64Value(value);
+                        writer.WriteNumberValue(value);
                     }
                     break;
 
@@ -282,5 +295,13 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.WriteCurrentToken(writer);
             }
         }
+        #endregion
+
+        /// <summary>
+        /// Attempts to read the current number token as an unsigned 64-bit integer.
+        /// </summary>
+        /// <param name="value">When this method returns, contains the value of the current number token if it was an unsigned 64-bit integer; otherwise, the default value of <c>ulong</c>.</param>
+        /// <returns><c>true</c> if the number token value is an unsigned 64-bit integer; otherwise, <c>false</c>.</returns>
+        protected abstract bool TryGetUInt64NumberValue(out ulong value);
     }
 }

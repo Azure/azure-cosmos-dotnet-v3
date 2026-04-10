@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
     using global::Azure;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.FaultInjection;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
 
@@ -583,6 +584,26 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Provides SessionTokenMismatchRetryPolicy optimization through customer supplied region switch hints,
+        /// which guide SDK-internal retry policies on how early to fallback to the next applicable region.
+        /// With a single-write-region account the next applicable region is the write-region, with a 
+        /// multi-write-region account the next applicable region is the next region in the order of effective 
+        /// preferred regions (same order also used for read/query operations).
+        /// </summary>
+        /// <param name="enableRemoteRegionPreferredForSessionRetry"></param>
+        /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        CosmosClientBuilder WithEnableRemoteRegionPreferredForSessionRetry(bool enableRemoteRegionPreferredForSessionRetry)
+        {
+            this.clientOptions.EnableRemoteRegionPreferredForSessionRetry = enableRemoteRegionPreferredForSessionRetry;
+            return this;
+        }
+
+        /// <summary>
         /// Set a custom JSON serializer. 
         /// </summary>
         /// <param name="cosmosJsonSerializer">The custom class that implements <see cref="CosmosSerializer"/> </param>
@@ -705,12 +726,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </summary>
         /// <param name="strategy"></param>
         /// <returns>The CosmosClientBuilder</returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        CosmosClientBuilder WithAvailabilityStrategy(AvailabilityStrategy strategy)
+        public CosmosClientBuilder WithAvailabilityStrategy(AvailabilityStrategy strategy)
         {
             this.clientOptions.AvailabilityStrategy = strategy;
             return this;
@@ -739,21 +755,23 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Enabled partition level failover in the SDK
-        /// </summary>
-        internal CosmosClientBuilder WithPartitionLevelFailoverEnabled()
-        {
-            this.clientOptions.EnablePartitionLevelFailover = true;
-            return this;
-        }
-
-        /// <summary>
         /// Enables SDK to inject fault. Used for testing applications.  
         /// </summary>
         /// <param name="chaosInterceptorFactory"></param>
         internal CosmosClientBuilder WithFaultInjection(IChaosInterceptorFactory chaosInterceptorFactory)
         {
             this.clientOptions.ChaosInterceptorFactory = chaosInterceptorFactory;
+            return this;
+        }
+
+        /// <summary>
+        /// Enables SDK to inject fault. Used for testing applications.  
+        /// </summary>
+        /// <param name="faultInjector"></param>
+        /// <returns>>The <see cref="CosmosClientBuilder"/> object</returns>
+        public CosmosClientBuilder WithFaultInjection(IFaultInjector faultInjector)
+        {
+            this.clientOptions.ChaosInterceptorFactory = faultInjector.GetChaosInterceptorFactory();
             return this;
         }
 
@@ -788,6 +806,47 @@ namespace Microsoft.Azure.Cosmos.Fluent
         public CosmosClientBuilder WithClientTelemetryOptions(CosmosClientTelemetryOptions options)
         {
             this.clientOptions.CosmosClientTelemetryOptions = options;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the throughput bucket for requests created using cosmos client.
+        /// </summary>
+        /// <remarks>
+        /// If throughput bucket is also set at request level in <see cref="RequestOptions.ThroughputBucket"/>, that throughput bucket is used.
+        /// If <see cref="WithBulkExecution(bool)"/> is set to true, throughput bucket can only be set at client level.
+        /// </remarks>
+        /// <param name="throughputBucket">The desired throughput bucket for the client.</param>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
+        /// <seealso href="https://aka.ms/cosmsodb-bucketing"/>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        CosmosClientBuilder WithThroughputBucket(int throughputBucket)
+        {
+            this.clientOptions.ThroughputBucket = throughputBucket;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the <see cref="ReadConsistencyStrategy"/> to be used for read operations.
+        /// </summary>
+        /// <remarks>
+        /// When set, this takes precedence over the consistency level set via <see cref="WithConsistencyLevel(Cosmos.ConsistencyLevel)"/>.
+        /// If also set at request level, the request-level value is used.
+        /// </remarks>
+        /// <param name="readConsistencyStrategy">The desired read consistency strategy for the client.</param>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        CosmosClientBuilder WithReadConsistencyStrategy(Cosmos.ReadConsistencyStrategy readConsistencyStrategy)
+        {
+            this.clientOptions.ReadConsistencyStrategy = readConsistencyStrategy;
             return this;
         }
     }

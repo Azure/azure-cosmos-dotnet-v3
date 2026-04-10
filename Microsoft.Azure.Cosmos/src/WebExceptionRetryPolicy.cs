@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos
                 this.currentBackoffSeconds *= WebExceptionRetryPolicy.backoffMultiplier;
             }
 
-            DefaultTrace.TraceWarning("Received retriable web exception, will retry, {0}", exception);
+            DefaultTrace.TraceWarning("Received retriable web exception, will retry, {0}", exception.Message);
 
             return Task.FromResult(ShouldRetryResult.RetryAfter(backoffTime));
         }

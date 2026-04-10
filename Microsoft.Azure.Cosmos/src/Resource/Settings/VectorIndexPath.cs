@@ -39,6 +39,7 @@ namespace Microsoft.Azure.Cosmos
     ///         {
     ///             "path": "/embeddings/vector",
     ///             "type": "DiskANN",
+    ///             "quantizerType": "product",  // or "spherical"
     ///             "quantizationByteSize": 2,
     ///             "indexingSearchListSize": 100,
     ///             "vectorIndexShardKey": ["/Country"]
@@ -47,12 +48,7 @@ namespace Microsoft.Azure.Cosmos
     /// }
     /// ]]>
     /// </example>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    sealed class VectorIndexPath
+    public sealed class VectorIndexPath
     {
         [JsonProperty(PropertyName = "indexingSearchListSize", NullValueHandling = NullValueHandling.Ignore)]
         private int? indexingSearchListSizeInternal;
@@ -74,11 +70,32 @@ namespace Microsoft.Azure.Cosmos
         public VectorIndexType Type { get; set; }
 
         /// <summary>
+        /// Gets or sets the quantizer type for the vector index path. This is only applicable for the quantizedFlat and diskann vector index types.
+        /// Allowed values are "product" and "spherical".
+        /// </summary>
+        [JsonProperty(PropertyName = Constants.Properties.QuantizerType, NullValueHandling = NullValueHandling.Ignore)]
+        [JsonConverter(typeof(StringEnumConverter))]
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        QuantizerType? QuantizerType
+        { get; set; }
+
+        /// <summary>
         /// Gets or sets the quantization byte size for the vector index path. This is only applicable for the quantizedFlat and diskann vector index types.
-        /// The allowed range for this parameter is between 1 and 3.
+        /// The allowed range for this parameter is between 1 and min(dimensions, 512). 
+        /// e.g. if dimensions is 256, then allowed range for QuantizationByteSize is between 1 and 256 if dimensions is 1024, 
+        /// then allowed range for QuantizationByteSize is between 1 and 512
         /// </summary>
         [JsonIgnore]
-        public int QuantizationByteSize
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        int QuantizationByteSize
         {
             get => this.quantizationByteSizeInternal == null ? 0 : this.quantizationByteSizeInternal.Value;
             set => this.quantizationByteSizeInternal = value;

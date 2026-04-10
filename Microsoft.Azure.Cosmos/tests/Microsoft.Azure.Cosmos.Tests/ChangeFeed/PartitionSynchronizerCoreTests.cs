@@ -61,8 +61,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<Routing.PartitionKeyRangeCache> pkRangeCache = new Mock<Routing.PartitionKeyRangeCache>(
                 Mock.Of<ICosmosAuthorizationTokenProvider>(),
                 Mock.Of<Documents.IStoreModel>(),
-                Mock.Of<Common.CollectionCache>(),
-                this.endpointManager);
+                new Mock<Common.CollectionCache>(false).Object,
+                this.endpointManager,
+                false,
+                false);
 
             List<Documents.PartitionKeyRange> resultingRanges = new List<Documents.PartitionKeyRange>()
             {
@@ -125,8 +127,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<Routing.PartitionKeyRangeCache> pkRangeCache = new Mock<Routing.PartitionKeyRangeCache>(
                 Mock.Of<ICosmosAuthorizationTokenProvider>(),
                 Mock.Of<Documents.IStoreModel>(),
-                Mock.Of<Common.CollectionCache>(),
-                this.endpointManager);
+                new Mock<Common.CollectionCache>(false).Object,
+                this.endpointManager,
+                false,
+                false);
 
             List<Documents.PartitionKeyRange> resultingRanges = new List<Documents.PartitionKeyRange>()
             {
@@ -194,8 +198,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<Routing.PartitionKeyRangeCache> pkRangeCache = new Mock<Routing.PartitionKeyRangeCache>(
                 Mock.Of<ICosmosAuthorizationTokenProvider>(),
                 Mock.Of<Documents.IStoreModel>(),
-                Mock.Of<Common.CollectionCache>(),
-                this.endpointManager);
+                new Mock<Common.CollectionCache>(false).Object,
+                this.endpointManager,
+                false,
+                false);
 
             List<Documents.PartitionKeyRange> resultingRanges = new List<Documents.PartitionKeyRange>()
             {
@@ -253,8 +259,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<Routing.PartitionKeyRangeCache> pkRangeCache = new Mock<Routing.PartitionKeyRangeCache>(
                 Mock.Of<ICosmosAuthorizationTokenProvider>(),
                 Mock.Of<Documents.IStoreModel>(),
-                Mock.Of<Common.CollectionCache>(),
-                this.endpointManager);
+                new Mock<Common.CollectionCache>(false).Object,
+                this.endpointManager,
+                false,
+                false);
 
             List<Documents.PartitionKeyRange> resultingRanges = new List<Documents.PartitionKeyRange>()
             {
@@ -302,8 +310,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<Routing.PartitionKeyRangeCache> pkRangeCache = new Mock<Routing.PartitionKeyRangeCache>(
                 Mock.Of<ICosmosAuthorizationTokenProvider>(),
                 Mock.Of<Documents.IStoreModel>(),
-                Mock.Of<Common.CollectionCache>(),
-                this.endpointManager);
+                new Mock<Common.CollectionCache>(false).Object,
+                this.endpointManager,
+                false,
+                false);
 
             List<Documents.PartitionKeyRange> resultingRanges = new List<Documents.PartitionKeyRange>()
             {
@@ -348,8 +358,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<Routing.PartitionKeyRangeCache> pkRangeCache = new Mock<Routing.PartitionKeyRangeCache>(
                 Mock.Of<ICosmosAuthorizationTokenProvider>(),
                 Mock.Of<Documents.IStoreModel>(),
-                Mock.Of<Common.CollectionCache>(),
-                this.endpointManager);
+                new Mock<Common.CollectionCache>(false).Object,
+                this.endpointManager,
+                false,
+                false);
 
             List<Documents.PartitionKeyRange> resultingRanges = new List<Documents.PartitionKeyRange>()
             {
@@ -365,7 +377,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 .ReturnsAsync(resultingRanges);
 
             Mock<DocumentServiceLeaseManager> leaseManager = new Mock<DocumentServiceLeaseManager>();
-            
+
             // Existing for only one partition
             List<DocumentServiceLease> existingLeases = new List<DocumentServiceLease>()
             {
@@ -400,8 +412,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<Routing.PartitionKeyRangeCache> pkRangeCache = new Mock<Routing.PartitionKeyRangeCache>(
                 Mock.Of<ICosmosAuthorizationTokenProvider>(),
                 Mock.Of<Documents.IStoreModel>(),
-                Mock.Of<Common.CollectionCache>(),
-                this.endpointManager);
+                new Mock<Common.CollectionCache>(false).Object,
+                this.endpointManager,
+                false,
+                false);
 
             List<Documents.PartitionKeyRange> resultingRanges = new List<Documents.PartitionKeyRange>()
             {
@@ -418,7 +432,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 .ReturnsAsync(resultingRanges);
 
             Mock<DocumentServiceLeaseManager> leaseManager = new Mock<DocumentServiceLeaseManager>();
-    
+
             // Existing for only one partition
             List<DocumentServiceLease> existingLeases = new List<DocumentServiceLease>()
             {

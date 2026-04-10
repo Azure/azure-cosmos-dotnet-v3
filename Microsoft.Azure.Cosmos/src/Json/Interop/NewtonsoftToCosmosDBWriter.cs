@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
             this.writer.WriteNull();
         }
 
-        public override void WriteNumber64Value(Number64 value)
+        public override void WriteNumberValue(Number64 value)
         {
             if (value.IsInteger)
             {
@@ -112,6 +112,11 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
             {
                 this.writer.WriteValue(Number64.ToDouble(value));
             }
+        }
+
+        public override void WriteNumberValue(ulong value)
+        {
+            this.writer.WriteValue(value);
         }
 
         public override void WriteObjectEnd()

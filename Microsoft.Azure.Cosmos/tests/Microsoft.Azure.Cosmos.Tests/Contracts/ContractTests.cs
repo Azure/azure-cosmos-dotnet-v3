@@ -22,14 +22,14 @@ namespace Microsoft.Azure.Cosmos.Contracts
                 new CosmosClient((string)null);
                 Assert.Fail();
             }
-            catch(ArgumentNullException)
+            catch (ArgumentNullException)
             { }
 
             Assert.AreEqual(HttpConstants.Versions.v2020_07_15, HttpConstants.Versions.CurrentVersion);
             CollectionAssert.AreEqual(Encoding.UTF8.GetBytes(HttpConstants.Versions.v2020_07_15), HttpConstants.Versions.CurrentVersionUTF8);
 
             ulong capabilitites = SDKSupportedCapabilitiesHelpers.GetSDKSupportedCapabilities();
-            Assert.AreEqual(capabilitites & (ulong)SDKSupportedCapabilities.PartitionMerge, (ulong)SDKSupportedCapabilities.PartitionMerge);
+            Assert.AreEqual((ulong)(SDKSupportedCapabilities.PartitionMerge | SDKSupportedCapabilities.IgnoreUnknownRntbdTokens), capabilitites & (ulong)(SDKSupportedCapabilities.PartitionMerge | SDKSupportedCapabilities.IgnoreUnknownRntbdTokens));
         }
 
         [TestMethod]
@@ -37,9 +37,9 @@ namespace Microsoft.Azure.Cosmos.Contracts
         {
 
 #if INTERNAL
-            int expected = 7;
+            int expected = 8;
 #else
-            int expected = 5;
+            int expected = 6;
 #endif
             ContractTests.NamespaceCountTest(typeof(CosmosClient), expected);
         }
@@ -78,11 +78,11 @@ namespace Microsoft.Azure.Cosmos.Contracts
                 AuthorizationHelper.ParseAuthorizationToken(keyAuthorizationSignature, out ReadOnlyMemory<char> typeOutput1, out ReadOnlyMemory<char> versionoutput1, out ReadOnlyMemory<char> tokenOutput1);
                 Assert.AreEqual("master", typeOutput1.ToString());
                 Assert.IsTrue(AuthorizationHelper.CheckPayloadUsingKey(
-                    tokenOutput1, 
-                    generateKeyAuthorizationSignatureArgs[2], 
-                    generateKeyAuthorizationSignatureArgs[1], 
-                    generateKeyAuthorizationSignatureArgs[3], 
-                    headers, 
+                    tokenOutput1,
+                    generateKeyAuthorizationSignatureArgs[2],
+                    generateKeyAuthorizationSignatureArgs[1],
+                    generateKeyAuthorizationSignatureArgs[3],
+                    headers,
                     key));
             }
         }

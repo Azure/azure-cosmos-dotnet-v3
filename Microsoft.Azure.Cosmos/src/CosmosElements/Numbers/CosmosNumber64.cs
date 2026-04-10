@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 
         public override void WriteTo(IJsonWriter jsonWriter)
         {
-            jsonWriter.WriteNumber64Value(this.GetValue());
+            jsonWriter.WriteNumberValue(this.GetValue());
         }
 
         public static CosmosNumber64 Create(

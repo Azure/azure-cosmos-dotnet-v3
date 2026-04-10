@@ -9,16 +9,19 @@
     [TestClass]
     public class BatchOperationResultTests
     {
-        static TransactionalBatchOperationResult CreateTestResult() => new TransactionalBatchOperationResult(HttpStatusCode.Unused)
+        static TransactionalBatchOperationResult CreateTestResult()
         {
-            SubStatusCode = Documents.SubStatusCodes.CanNotAcquireOfferOwnerLock,
-            ETag = "TestETag",
-            ResourceStream = new MemoryStream(),
-            RequestCharge = 1.5,
-            RetryAfter = TimeSpan.FromMilliseconds(1234),
-            SessionToken = Guid.NewGuid().ToString(),
-            ActivityId = Guid.NewGuid().ToString(),
-        };
+            return new TransactionalBatchOperationResult(HttpStatusCode.Unused)
+            {
+                SubStatusCode = Documents.SubStatusCodes.CanNotAcquireOfferOwnerLock,
+                ETag = "TestETag",
+                ResourceStream = new MemoryStream(),
+                RequestCharge = 1.5,
+                RetryAfter = TimeSpan.FromMilliseconds(1234),
+                SessionToken = Guid.NewGuid().ToString(),
+                ActivityId = Guid.NewGuid().ToString(),
+            };
+        }
 
         [TestMethod]
         public void StatusCodeIsSetThroughCtor()
@@ -43,7 +46,7 @@
             Assert.AreEqual(other.ActivityId, result.ActivityId);
             Assert.AreSame(other.ResourceStream, result.ResourceStream);
         }
-        
+
         [TestMethod]
         public void PropertiesAreSetThroughGenericCtor()
         {
@@ -97,7 +100,7 @@
             Mock<TransactionalBatchOperationResult> mockResult = new Mock<TransactionalBatchOperationResult>();
             TransactionalBatchOperationResult result = mockResult.Object;
 
-            Assert.AreEqual(default(HttpStatusCode), result.StatusCode);
+            Assert.AreEqual(default, result.StatusCode);
         }
 
         [TestMethod]
@@ -106,8 +109,8 @@
             Mock<TransactionalBatchOperationResult<object>> mockResult = new Mock<TransactionalBatchOperationResult<object>>();
             TransactionalBatchOperationResult<object> result = mockResult.Object;
 
-            Assert.AreEqual(default(HttpStatusCode), result.StatusCode);
-            Assert.AreEqual(default(object), result.Resource);
+            Assert.AreEqual(default, result.StatusCode);
+            Assert.AreEqual(default, result.Resource);
         }
     }
 }

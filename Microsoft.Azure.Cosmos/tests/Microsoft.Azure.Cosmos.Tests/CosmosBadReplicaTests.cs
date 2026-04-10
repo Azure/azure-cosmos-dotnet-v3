@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     cRid,
                     out IReadOnlyList<string> partitionKeyRanges);
 
-                    List<string> replicaIds1 = new List<string>()
+                List<string> replicaIds1 = new List<string>()
                 {
                     "11111111111111111",
                     "22222222222222222",
@@ -78,8 +78,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     "eastus",
                     cRid);
 
-                    // One replica changed on the refresh
-                    List<string> replicaIds2 = new List<string>()
+                // One replica changed on the refresh
+                List<string> replicaIds2 = new List<string>()
                 {
                     "11111111111111111",
                     "22222222222222222",
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 mockHttpHandler.SetupSequence(x => x.SendAsync(
                     It.Is<HttpRequestMessage>(r => r.RequestUri.ToString().Contains("addresses")), It.IsAny<CancellationToken>()))
                     .Returns(Task.FromResult(replicaSet1))
-                    .Returns(async ()=>
+                    .Returns(async () =>
                     {
                         //block cache refresh to verify bad replica is not visited during refresh
                         while (delayCacheRefresh)
@@ -198,15 +198,15 @@ namespace Microsoft.Azure.Cosmos.Tests
                         do
                         {
                             await Task.Delay(TimeSpan.FromMilliseconds(100));
-                        }while (!delayRefreshUnblocked);
+                        } while (!delayRefreshUnblocked);
 
-                        for (int i = 0; i < 20; i++)
+                        for (int i = 0; i < 30; i++)
                         {
                             ResponseMessage response = await container.ReadItemStreamAsync(Guid.NewGuid().ToString(), new Cosmos.PartitionKey(Guid.NewGuid().ToString()));
                             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
                         }
 
-                        Assert.AreEqual(4, urisVisited.ToHashSet().Count());
+                        Assert.AreEqual(4, urisVisited.ToHashSet().Count(), "All 4 replicas should be visited after refresh.");
 
                         // Clears all the setups. No network calls should be done on the next operation.
                         mockHttpHandler.Reset();

@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                     ""extra"":1,
                     ""crs"":{""type"":""name"", ""properties"":{""name"":""hello""}}}";
 
-            var multiPolygon = JsonConvert.DeserializeObject<MultiPolygon>(json);
+            MultiPolygon multiPolygon = JsonConvert.DeserializeObject<MultiPolygon>(json);
 
             Assert.AreEqual(2, multiPolygon.Polygons.Count);
             Assert.AreEqual(2, multiPolygon.Polygons[0].Rings.Count);
@@ -48,13 +48,13 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
             Assert.AreEqual(1, multiPolygon.AdditionalProperties.Count);
             Assert.AreEqual(1L, multiPolygon.AdditionalProperties["extra"]);
 
-            var geom = JsonConvert.DeserializeObject<Geometry>(json);
+            Geometry geom = JsonConvert.DeserializeObject<Geometry>(json);
             Assert.AreEqual(GeometryType.MultiPolygon, geom.Type);
 
             Assert.AreEqual(geom, multiPolygon);
 
             string json1 = JsonConvert.SerializeObject(multiPolygon);
-            var geom1 = JsonConvert.DeserializeObject<Geometry>(json1);
+            Geometry geom1 = JsonConvert.DeserializeObject<Geometry>(json1);
             Assert.AreEqual(geom1, geom);
         }
 
@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
         [TestMethod]
         public void TestMultiPolygonEqualsHashCode()
         {
-            var multiPolygon1 =
+            MultiPolygon multiPolygon1 =
                 new MultiPolygon(
                     new[]
                         {
@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                         Crs = Crs.Named("SomeCrs")
                     });
 
-            var multiPolygon2 =
+            MultiPolygon multiPolygon2 =
                 new MultiPolygon(
                     new[]
                         {
@@ -108,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                         Crs = Crs.Named("SomeCrs")
                     });
 
-            var polygon3 =
+            MultiPolygon polygon3 =
                 new MultiPolygon(
                     new[]
                         {
@@ -130,7 +130,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                         Crs = Crs.Named("SomeCrs")
                     });
 
-            var polygon4 =
+            MultiPolygon polygon4 =
                 new MultiPolygon(
                     new[]
                         {
@@ -152,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                         Crs = Crs.Named("SomeCrs")
                     });
 
-            var polygon5 =
+            MultiPolygon polygon5 =
                 new MultiPolygon(
                     new[]
                         {
@@ -174,7 +174,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                         Crs = Crs.Named("SomeCrs")
                     });
 
-            var polygon6 =
+            MultiPolygon polygon6 =
                 new MultiPolygon(
                     new[]
                         {
@@ -228,7 +228,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
         [TestMethod]
         public void TestMultiPolygonConstructors()
         {
-            var multiPolygon =
+            MultiPolygon multiPolygon =
                 new MultiPolygon(
                     new[]
                         {

@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class QueryDefinitionComparerUnitTests
     {
-     
+
         [TestMethod]
         public void ValidateHashWithSameParameter()
         {

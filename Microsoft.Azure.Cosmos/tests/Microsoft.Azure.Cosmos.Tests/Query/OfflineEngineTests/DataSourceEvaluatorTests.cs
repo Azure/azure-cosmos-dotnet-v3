@@ -9,13 +9,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Microsoft.Azure.Cosmos.SqlObjects;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
+    using Microsoft.Azure.Cosmos.SqlObjects;
+    using Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// CosmosElementEqualityComparerUnitTests Class.
@@ -219,7 +219,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
             CosmosElement wakeFieldParent1 = CosmosElement.Parse(@"{ ""p"" : { ""familyName"": ""Wakefield"", ""givenName"": ""Robin"" }, ""_rid"": ""0fomAIxnukU1AQAAAAAAAB=="" }");
             CosmosElement wakeFieldParent2 = CosmosElement.Parse(@"{ ""p"" : { ""familyName"": ""Miller"", ""givenName"": ""Ben"" }, ""_rid"": ""0fomAIxnukU1AQAAAAAAAB=="" }");
 
-            AssertEvaluation(new CosmosElement[] 
+            AssertEvaluation(new CosmosElement[]
             {
                 andersenParent1,
                 andersenParent2,

@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Trace rootTrace = Trace.GetRootTrace(name: "RootTrace");
 
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0, Cosmos.PartitionKey.Null);
-            
+
             // Start with the base trace
             ItemBatchOperationContext batchAsyncOperationContext = new ItemBatchOperationContext(Guid.NewGuid().ToString(), rootTrace, retryPolicy);
             operation.AttachContext(batchAsyncOperationContext);
@@ -51,6 +51,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
             batchAsyncOperationContext.Complete(null, result);
+
+            if (result.Trace is Trace rootLevelTrace)
+            {
+                rootLevelTrace.SetWalkingStateRecursively();
+            }
 
             Assert.AreEqual(result, await batchAsyncOperationContext.OperationTask);
             Assert.AreEqual(2, result.Trace.Children.Count, "The final trace should have the initial trace, plus the retries, plus the final trace");
@@ -92,6 +97,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
             batchAsyncOperationContext.Complete(null, result);
+
+            if (result.Trace is Trace rootLevelTrace)
+            {
+                rootLevelTrace.SetWalkingStateRecursively();
+            }
 
             Assert.AreEqual(result, await batchAsyncOperationContext.OperationTask);
             Assert.AreEqual(1, result.Trace.Children.Count, "The final trace should have the initial trace, plus the final trace, since the result is not retried, it should not capture it");
@@ -287,7 +297,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             public ClientWithSplitDetection()
             {
-                this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(MockBehavior.Strict, null, null, null, null);
+                this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(MockBehavior.Strict, null, null, null, null, false, false);
                 this.partitionKeyRangeCache.Setup(
                         m => m.TryGetOverlappingRangesAsync(
                             It.IsAny<string>(),

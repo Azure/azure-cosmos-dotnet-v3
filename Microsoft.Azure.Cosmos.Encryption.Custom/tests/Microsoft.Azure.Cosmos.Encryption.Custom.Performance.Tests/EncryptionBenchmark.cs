@@ -3,18 +3,46 @@
     using System.IO;
     using BenchmarkDotNet.Attributes;
     using Microsoft.Data.Encryption.Cryptography;
+#if NET8_0_OR_GREATER
+    using Microsoft.IO;
+#endif
     using Moq;
 
     [RPlotExporter]
     public partial class EncryptionBenchmark
     {
-        private static readonly byte[] DekData = Enumerable.Repeat((byte)0, 32).ToArray();
+        private static class RequestOptionsOverrideHelper
+        {
+            public static RequestOptions? Create(JsonProcessor processor)
+            {
+#if NET8_0_OR_GREATER
+                if (processor == JsonProcessor.Newtonsoft)
+                {
+                    return null;
+                }
+                return new ItemRequestOptions
+                {
+                    Properties = new System.Collections.Generic.Dictionary<string, object>
+                    {
+                        { "encryption-json-processor", processor.ToString() }
+                    }
+                };
+#else
+                return null;
+#endif
+            }
+        }
+    private static readonly byte[] DekData = Enumerable.Repeat((byte)0, 32).ToArray();
         private static readonly DataEncryptionKeyProperties DekProperties = new(
                 "id",
                 CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
                 DekData,
                 new EncryptionKeyWrapMetadata("name", "value"), DateTime.UtcNow);
         private static readonly Mock<EncryptionKeyStoreProvider> StoreProvider = new();
+
+#if NET8_0_OR_GREATER
+        private readonly RecyclableMemoryStreamManager recyclableMemoryStreamManager = new ();
+#endif
 
         private CosmosEncryptor? encryptor;
 
@@ -25,11 +53,12 @@
         [Params(1, 10, 100)]
         public int DocumentSizeInKb { get; set; }
 
-        [Params(CompressionOptions.CompressionAlgorithm.None, CompressionOptions.CompressionAlgorithm.Brotli)]
-        public CompressionOptions.CompressionAlgorithm CompressionAlgorithm { get; set; }
-
-        [Params(JsonProcessor.Newtonsoft, JsonProcessor.SystemTextJson)]
-        public JsonProcessor JsonProcessor { get; set; }
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+        [Params(JsonProcessor.Newtonsoft, JsonProcessor.Stream)]
+#else
+        [Params(JsonProcessor.Newtonsoft)]
+#endif
+        internal JsonProcessor JsonProcessor { get; set; }
 
         [GlobalSetup]
         public async Task Setup()
@@ -41,7 +70,7 @@
             Mock<DataEncryptionKeyProvider> keyProvider = new();
             keyProvider
                 .Setup(x => x.FetchDataEncryptionKeyWithoutRawKeyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(() => new MdeEncryptionAlgorithm(DekProperties, EncryptionType.Randomized, StoreProvider.Object, cacheTimeToLive: TimeSpan.MaxValue));
+                .Returns(async () => await MdeEncryptionAlgorithm.CreateAsync(DekProperties, EncryptionType.Randomized, StoreProvider.Object, cacheTimeToLive: TimeSpan.MaxValue, false, default));
 
             this.encryptor = new(keyProvider.Object);
             this.encryptionOptions = this.CreateEncryptionOptions();
@@ -51,6 +80,7 @@
                  new MemoryStream(this.plaintext),
                  this.encryptor,
                  this.encryptionOptions,
+                 this.JsonProcessor,
                  new CosmosDiagnosticsContext(),
                  CancellationToken.None);
 
@@ -59,6 +89,7 @@
             this.encryptedData = memoryStream.ToArray();
         }
 
+        
         [Benchmark]
         public async Task Encrypt()
         {
@@ -66,9 +97,26 @@
                  new MemoryStream(this.plaintext!),
                  this.encryptor,
                  this.encryptionOptions,
+                 this.JsonProcessor,
                  new CosmosDiagnosticsContext(),
                  CancellationToken.None);
         }
+
+#if NET8_0_OR_GREATER
+        [Benchmark]
+        public async Task EncryptToProvidedStream()
+        {
+            using RecyclableMemoryStream rms = new (this.recyclableMemoryStreamManager);
+            await EncryptionProcessor.EncryptAsync(
+                new MemoryStream(this.plaintext!),
+                rms,
+                this.encryptor,
+                this.encryptionOptions,
+                 this.JsonProcessor,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None);
+        }
+#endif
 
         [Benchmark]
         public async Task Decrypt()
@@ -77,9 +125,24 @@
                 new MemoryStream(this.encryptedData!),
                 this.encryptor,
                 new CosmosDiagnosticsContext(),
-                this.JsonProcessor,
+                RequestOptionsOverrideHelper.Create(this.JsonProcessor),
                 CancellationToken.None);
         }
+
+#if NET8_0_OR_GREATER
+        [Benchmark]
+        public async Task DecryptToProvidedStream()
+        {
+            using RecyclableMemoryStream rms = new(this.recyclableMemoryStreamManager);
+            await EncryptionProcessor.DecryptAsync(
+                new MemoryStream(this.encryptedData!),
+                rms,
+                this.encryptor,
+                new CosmosDiagnosticsContext(),
+                RequestOptionsOverrideHelper.Create(this.JsonProcessor),
+                CancellationToken.None);
+        }
+#endif
 
         private EncryptionOptions CreateEncryptionOptions()
         {
@@ -88,11 +151,6 @@
                 DataEncryptionKeyId = "dekId",
                 EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
                 PathsToEncrypt = TestDoc.PathsToEncrypt,
-                CompressionOptions = new()
-                {
-                    Algorithm = this.CompressionAlgorithm
-                },
-                JsonProcessor = this.JsonProcessor,
             };
 
             return options;

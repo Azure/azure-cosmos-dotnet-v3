@@ -18,5 +18,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         ///  emit both the old and the stable database conventions, allowing for a seamless transition.
         /// </summary>
         public const string DatabaseDupe = "database/dup";
+
+        /// <summary>
+        /// Environment Variable to support the classic AppInsight conventions
+        /// </summary>
+        public const string ClassicAppInsights = "appinsightssdk";
     }
 }

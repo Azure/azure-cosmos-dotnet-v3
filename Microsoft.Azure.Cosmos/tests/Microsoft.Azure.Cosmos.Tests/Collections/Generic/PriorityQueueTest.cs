@@ -339,8 +339,8 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
 
             for (int trial = 0; trial < 20; ++trial)
             {
-                foreach (IComparer<int> comparer in new[] 
-                { 
+                foreach (IComparer<int> comparer in new[]
+                {
                     Comparer<int>.Default,
                     Comparer<int>.Create((i1, i2) => i2.CompareTo(i1)),
                 })

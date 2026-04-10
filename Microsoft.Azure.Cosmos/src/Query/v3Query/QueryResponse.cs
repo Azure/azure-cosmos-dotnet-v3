@@ -7,12 +7,10 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.IO;
     using System.Net;
-    using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryAdvisor;
     using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Tracing;
-    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Represents the template class used by feed methods (enumeration operations) for the Azure Cosmos DB service.
@@ -171,7 +169,15 @@ namespace Microsoft.Azure.Cosmos
             this.IndexUtilizationText = ResponseMessage.DecodeIndexMetrics(
                 responseMessageHeaders, 
                 isBase64Encoded: false);
-            
+
+            this.QueryAdviceText = (this.Headers?.QueryAdvice != null)
+                ? new Lazy<string>(() =>
+                {
+                    Query.Core.QueryAdvisor.QueryAdvice.TryCreateFromString(this.Headers.QueryAdvice, out QueryAdvice queryAdvice);
+                    return queryAdvice?.ToString();
+                })
+                : null;
+
             this.RequestMessage = requestMessage;
         }
 
@@ -192,6 +198,10 @@ namespace Microsoft.Azure.Cosmos
         private Lazy<string> IndexUtilizationText { get; }
 
         public override string IndexMetrics => this.IndexUtilizationText?.Value;
+
+        private Lazy<string> QueryAdviceText { get; }
+
+        public override string QueryAdvice => this.QueryAdviceText?.Value;
 
         public override IEnumerator<T> GetEnumerator()
         {

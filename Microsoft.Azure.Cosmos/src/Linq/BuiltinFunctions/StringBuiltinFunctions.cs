@@ -423,6 +423,92 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return null;
             }
         }
+        
+        private class FullTextContainsVisit : SqlBuiltinFunctionVisitor
+        {
+            public FullTextContainsVisit()
+                : base("FullTextContains",
+                    true,
+                    new List<Type[]>()
+                    {
+                        new Type[]{typeof(object), typeof(string)}
+                    })
+            {
+            }
+        }
+
+        private class FullTextContainsAllVisit : SqlBuiltinFunctionVisitor
+        {
+            public FullTextContainsAllVisit()
+                : base("FullTextContainsAll",
+                    true,
+                    new List<Type[]>()
+                    {
+                        new Type[]{typeof(object), typeof(string[])}
+                    })
+            {
+            }
+
+            protected override SqlScalarExpression VisitImplicit(MethodCallExpression methodCallExpression, TranslationContext context)
+            {
+                if (methodCallExpression.Arguments.Count == 2
+                    && methodCallExpression.Arguments[1] is ConstantExpression stringListArgumentExpression
+                    && ExpressionToSql.VisitConstant(stringListArgumentExpression, context) is SqlArrayCreateScalarExpression arrayScalarExpressions)
+                {
+                    List<SqlScalarExpression> arguments = new List<SqlScalarExpression>
+                    {
+                        ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Arguments[0], context)
+                    };
+                    arguments.AddRange(arrayScalarExpressions.Items);
+
+                    return SqlFunctionCallScalarExpression.CreateBuiltin(SqlFunctionCallScalarExpression.Names.FullTextContainsAll, arguments.ToImmutableArray());
+                }
+
+                return null;
+            }
+
+            protected override SqlScalarExpression VisitExplicit(MethodCallExpression methodCallExpression, TranslationContext context)
+            {
+                return null;
+            }
+        }
+
+        private class FullTextContainsAnyVisit : SqlBuiltinFunctionVisitor
+        {
+            public FullTextContainsAnyVisit()
+                : base("FullTextContainsAny",
+                    true,
+                    new List<Type[]>()
+                    {
+                        new Type[]{typeof(object), typeof(string[])}
+                    })
+            {
+            }
+
+            protected override SqlScalarExpression VisitImplicit(MethodCallExpression methodCallExpression, TranslationContext context)
+            {
+                if (methodCallExpression.Arguments.Count == 2
+                    && methodCallExpression.Arguments[1] is ConstantExpression stringListArgumentExpression
+                    && ExpressionToSql.VisitConstant(stringListArgumentExpression, context) is SqlArrayCreateScalarExpression arrayScalarExpressions)
+                {
+                    List<SqlScalarExpression> arguments = new List<SqlScalarExpression>
+                    {
+                        ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Arguments[0], context)
+                    };
+
+                    arguments.AddRange(arrayScalarExpressions.Items);
+
+                    return SqlFunctionCallScalarExpression.CreateBuiltin(SqlFunctionCallScalarExpression.Names.FullTextContainsAny, arguments.ToImmutableArray());
+                }
+
+                return null;
+            }
+
+            protected override SqlScalarExpression VisitExplicit(MethodCallExpression methodCallExpression, TranslationContext context)
+            {
+                return null;
+            }
+        }
 
         static StringBuiltinFunctions()
         {
@@ -528,6 +614,18 @@ namespace Microsoft.Azure.Cosmos.Linq
                 {
                     "Equals",
                     new StringEqualsVisitor()
+                },
+                {
+                    nameof(CosmosLinqExtensions.FullTextContains),
+                    new FullTextContainsVisit()
+                },
+                {
+                    nameof(CosmosLinqExtensions.FullTextContainsAll),
+                    new FullTextContainsAllVisit()
+                },
+                {
+                    nameof(CosmosLinqExtensions.FullTextContainsAny),
+                    new FullTextContainsAnyVisit()
                 }
             };
         }

@@ -6,14 +6,14 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Cosmos.Tracing; 
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
     [TestClass]
     public class CosmosOperationCanceledTests
     {
-        
+
         [TestMethod]
         public void SerializationValidation()
         {
@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             //serialize exception
             string serialized = JsonConvert.SerializeObject(originalException);
 
-            CosmosOperationCanceledException deserializedExceptoin = 
+            CosmosOperationCanceledException deserializedExceptoin =
                 JsonConvert.DeserializeObject<CosmosOperationCanceledException>(serialized);
 
             //Asserts

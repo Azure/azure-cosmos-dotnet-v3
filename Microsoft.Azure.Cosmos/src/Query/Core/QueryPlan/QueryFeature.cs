@@ -32,5 +32,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         ListAndSetAggregate = 1 << 12,
         CountIf = 1 << 13,
         HybridSearch = 1 << 14,
+        WeightedRankFusion = 1 << 15,
+        HybridSearchSkipOrderByRewrite = 1 << 16,
     }
 }

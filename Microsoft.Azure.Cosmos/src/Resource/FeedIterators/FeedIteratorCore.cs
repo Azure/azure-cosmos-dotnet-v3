@@ -10,10 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Runtime.InteropServices;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
-    using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -47,11 +44,14 @@ namespace Microsoft.Azure.Cosmos
             this.requestOptions = options;
             this.hasMoreResultsInternal = true;
 
-            this.databaseName = databaseId;
             this.container = container;
 
-            this.operationName = OpenTelemetryConstants.Operations.QueryItems;
-            this.operationType = OperationType.Query;
+            this.SetupInfoForTelemetry(databaseName: databaseId,
+                operationName: OpenTelemetryConstants.Operations.QueryItems,
+                operationType: OperationType.Query,
+                querySpec: this.querySpec,
+                operationMetricsOptions: options?.OperationMetricsOptions,
+                networkMetricOptions: options?.NetworkMetricsOptions);
         }
 
         public override bool HasMoreResults => this.hasMoreResultsInternal;
@@ -213,11 +213,20 @@ namespace Microsoft.Azure.Cosmos
             this.responseCreator = responseCreator;
             this.feedIterator = feedIterator;
 
-            this.databaseName = feedIterator.databaseName;
-            this.container = feedIterator.container;
+            this.SetupInfoForTelemetry(feedIterator);
+        }
 
-            this.operationName = feedIterator.operationName;
-            this.operationType = feedIterator.operationType;
+        private void SetupInfoForTelemetry(FeedIterator feedIteratorInternal)
+        {
+            this.container = feedIteratorInternal.container;
+            this.databaseName = feedIteratorInternal.databaseName;
+
+            this.operationName = feedIteratorInternal.operationName;
+            this.operationType = feedIteratorInternal.operationType;
+
+            this.querySpec = feedIteratorInternal.querySpec;
+            this.operationMetricsOptions = feedIteratorInternal.operationMetricsOptions;
+            this.networkMetricsOptions = feedIteratorInternal.networkMetricsOptions;
         }
 
         public override bool HasMoreResults => this.feedIterator.HasMoreResults;

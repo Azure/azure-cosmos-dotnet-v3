@@ -27,23 +27,23 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Parser
                     query: "SELECT * " +
                            "FROM ALL IN (SELECT VALUE 1)"),
                 CreateInput(
-                    description: "ALL in an InputPathCollection and IdentifierPathExpression", 
+                    description: "ALL in an InputPathCollection and IdentifierPathExpression",
                     query: "SELECT * " +
                            "FROM ALL.ALL"),
                 CreateInput(
-                    description: "ALL in a PropertyRefScalarExpression", 
+                    description: "ALL in a PropertyRefScalarExpression",
                     query: "SELECT ALL"),
                 CreateInput(
-                    description: "ALL in a PropertyRefScalarExpression as child", 
+                    description: "ALL in a PropertyRefScalarExpression as child",
                     query: "SELECT c.ALL"),
                 CreateInput(
-                    description: "ALL in a PropertyRefScalarExpression as parent and child", 
+                    description: "ALL in a PropertyRefScalarExpression as parent and child",
                     query: "SELECT ALL.ALL"),
                 CreateInput(
-                    description: "ALL in a function call", 
+                    description: "ALL in a function call",
                     query: "SELECT ALL(1, 2)"),
                 CreateInput(
-                    description: "ALL in a UDF function call", 
+                    description: "ALL in a UDF function call",
                     query: "SELECT udf.ALL(1, 2)"),
                 CreateInput(
                     description: "ALL in every possible grammar rule at the same time",
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Parser
                            "    WHERE ALL( SELECT VALUE 1) " +
                            ")")
             };
-            
+
             this.ExecuteTestSuite(inputs);
         }
 

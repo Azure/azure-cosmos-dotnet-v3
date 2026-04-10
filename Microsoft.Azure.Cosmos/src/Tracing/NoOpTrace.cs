@@ -40,6 +40,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public IReadOnlyDictionary<string, object> Data => NoOpData;
 
+        public bool IsBeingWalked => true; // this needs to return true to allow materialization of NoOpTrace
+
         public void Dispose()
         {
             // NoOp
@@ -85,6 +87,12 @@ namespace Microsoft.Azure.Cosmos.Tracing
         public void UpdateRegionContacted(TraceDatum traceDatum)
         {
             // NoOp
+        }
+
+        bool ITrace.TryGetDatum(string key, out object datum)
+        {
+            datum = null;
+            return false;
         }
     }
 }

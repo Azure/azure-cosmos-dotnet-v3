@@ -118,27 +118,27 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.AreEqual(parsedPartitionKey.ToJsonString(), serializedPartitionKey);
             }
 
-            Assert.IsFalse(Cosmos.PartitionKey.TryParseJsonString("Ceci n'est pas une partition key.", out Cosmos.PartitionKey thisNotAPartitionKey));
+            Assert.IsFalse(Cosmos.PartitionKey.TryParseJsonString("Ceci n'est pas une partition key.", out _));
         }
 
         [TestMethod]
         public void TestCosmosPartitionKeyComparison()
         {
-            Assert.IsTrue(new Cosmos.PartitionKey("pk").Equals((object) new Cosmos.PartitionKey("pk")));
+            Assert.IsTrue(new Cosmos.PartitionKey("pk").Equals((object)new Cosmos.PartitionKey("pk")));
             Assert.IsTrue(new Cosmos.PartitionKey("pk").Equals(new Cosmos.PartitionKey("pk")));
             Assert.IsTrue(new Cosmos.PartitionKey("pk") == new Cosmos.PartitionKey("pk"));
             Assert.IsTrue(new Cosmos.PartitionKey("pk") != new Cosmos.PartitionKey("other_pk"));
             Assert.IsTrue(new Cosmos.PartitionKey("pk").GetHashCode() == new Cosmos.PartitionKey("pk").GetHashCode());
 
-            Assert.IsFalse(new Cosmos.PartitionKey("pk").Equals((object) new Cosmos.PartitionKey("other_pk")));
+            Assert.IsFalse(new Cosmos.PartitionKey("pk").Equals((object)new Cosmos.PartitionKey("other_pk")));
             Assert.IsFalse(new Cosmos.PartitionKey("pk").Equals(new Cosmos.PartitionKey("other_pk")));
             Assert.IsFalse(new Cosmos.PartitionKey("pk") == new Cosmos.PartitionKey("other_pk"));
             Assert.IsFalse(new Cosmos.PartitionKey("pk") != new Cosmos.PartitionKey("pk"));
             Assert.IsTrue(Cosmos.PartitionKey.None.Equals(Cosmos.PartitionKey.None));
             Assert.IsTrue(Cosmos.PartitionKey.Null.Equals(Cosmos.PartitionKey.Null));
-            Assert.IsTrue(default(Cosmos.PartitionKey).Equals(default(Cosmos.PartitionKey)));
-            Assert.IsFalse(Cosmos.PartitionKey.None.Equals(default(Cosmos.PartitionKey)));
-            Assert.IsFalse(new Cosmos.PartitionKey("pk").Equals(default(Cosmos.PartitionKey)));
+            Assert.IsTrue(default(Cosmos.PartitionKey).Equals(default));
+            Assert.IsFalse(Cosmos.PartitionKey.None.Equals(default));
+            Assert.IsFalse(new Cosmos.PartitionKey("pk").Equals(default));
             Assert.IsFalse(default(Cosmos.PartitionKey).Equals(Cosmos.PartitionKey.None));
             Assert.IsFalse(default(Cosmos.PartitionKey).Equals(new Cosmos.PartitionKey("pk")));
         }

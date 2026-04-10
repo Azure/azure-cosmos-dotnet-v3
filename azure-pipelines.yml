@@ -15,8 +15,8 @@ pr:
     - 'Microsoft.Azure.Cosmos/contracts/**/*'
 
 variables:
-  DebugArguments: ' --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional" --verbosity normal '
-  ReleaseArguments: ' --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional" --verbosity normal '
+  DebugArguments: ' --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=Ignore" --verbosity normal '
+  ReleaseArguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Ignore" --verbosity normal '
   VmImage: windows-latest # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
 
 
@@ -51,8 +51,9 @@ jobs:
     Arguments: $(ReleaseArguments)
     VmImage: $(VmImage)
     MultiRegionConnectionString: $(COSMOSDB_MULTI_REGION)
-    IncludePerformance: false
-    IncludeCoverage: false
+    MultiRegionMultiMasterConnectionString: $(COSMOSDB_MULTIMASTER)
+    IncludePerformance: true
+    IncludeCoverage: true
 
 - template:  templates/build-internal.yml
   parameters:
@@ -71,3 +72,14 @@ jobs:
     BuildConfiguration: Release
     Arguments: $(ReleaseArguments)
     VmImage:  $(VmImage)
+    
+- template:  templates/build-thinclient.yml
+  parameters:
+    BuildConfiguration: Release
+    Arguments: $(ReleaseArguments)
+    VmImage: $(VmImage)
+    ThinClientConnectionString: $(COSMOSDB_THINCLIENT)
+    ThinClientStrongConsistencyString: $(COSMOSDB_THINCLIENTSTRONG)
+    MultiRegionConnectionString: $(COSMOSDB_MULTI_REGION)
+    IncludePerformance: true
+    IncludeCoverage: true

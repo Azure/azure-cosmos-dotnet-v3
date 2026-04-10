@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
             {
                 PointOperationLatencyThreshold = this.rootTrace.Duration.Add(TimeSpan.FromSeconds(1))
             };
-            
+
             OpenTelemetryAttributes response = new OpenTelemetryAttributes
             {
                 StatusCode = HttpStatusCode.Accepted,
@@ -45,10 +45,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
 
             Assert.IsFalse(
                 DiagnosticsFilterHelper
-                                .IsLatencyThresholdCrossed(distributedTracingOptions, OperationType.Read, response), 
+                                .IsLatencyThresholdCrossed(distributedTracingOptions, OperationType.Read, response),
                 $" Response time is {response.Diagnostics.GetClientElapsedTime().Milliseconds}ms " +
                 $"and Configured threshold value is {distributedTracingOptions.PointOperationLatencyThreshold.Milliseconds}ms " +
-                $"and Is response Success : {response.StatusCode.IsSuccess()}" );
+                $"and Is response Success : {response.StatusCode.IsSuccess()}");
         }
 
         [TestMethod]
@@ -108,11 +108,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
 
             Array values = Enum.GetValues(typeof(OperationType));
 
-            foreach(OperationType operationType in values)
+            foreach (OperationType operationType in values)
             {
                 TimeSpan defaultThreshold = DiagnosticsFilterHelper.DefaultLatencyThreshold(operationType, config);
 
-                if(DiagnosticsFilterHelper.IsPointOperation(operationType))
+                if (DiagnosticsFilterHelper.IsPointOperation(operationType))
                     Assert.AreEqual(defaultThreshold, config.PointOperationLatencyThreshold);
                 else
                     Assert.AreEqual(defaultThreshold, config.NonPointOperationLatencyThreshold);

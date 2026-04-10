@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryAdvisor;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -85,6 +86,14 @@ namespace Microsoft.Azure.Cosmos
 
             this.IndexUtilizationText = ResponseMessage.DecodeIndexMetrics(this.Headers, isBase64Encoded: false);
 
+            this.QueryAdviceText = (this.Headers?.QueryAdvice != null)
+                ? new Lazy<string>(() =>
+                {
+                    Query.Core.QueryAdvisor.QueryAdvice.TryCreateFromString(this.Headers.QueryAdvice, out QueryAdvice queryAdvice);
+                    return queryAdvice?.ToString();
+                })
+                : null;
+
             if (requestMessage != null && requestMessage.Trace != null)
             {
                 this.Trace = requestMessage.Trace;
@@ -142,6 +151,18 @@ namespace Microsoft.Azure.Cosmos
         /// The index utilization metrics.
         /// </value>
         public string IndexMetrics => this.IndexUtilizationText?.Value;
+
+        private Lazy<string> QueryAdviceText { get; }
+
+        /// <summary>
+        /// Gets the Query Advice in the current <see cref="ResponseMessage"/> to be used for debugging purposes. 
+        /// It's applicable to query response only. Other feed response will return null for this field.
+        /// This result is only available if QueryRequestOptions.PopulateQueryAdvice is set to true.
+        /// </summary>
+        /// <value>
+        /// The query advice.
+        /// </value>
+        internal string QueryAdvice => this.QueryAdviceText?.Value;
 
         /// <summary>
         /// Gets the original request message

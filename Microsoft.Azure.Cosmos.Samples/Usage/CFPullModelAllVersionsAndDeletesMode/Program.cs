@@ -60,12 +60,12 @@ namespace CFPullModelAllVersionsAndDeletesMode
             Console.WriteLine("Creating ChangeFeedIterator to read the change feed in All Versions and Deletes mode.");
 
             // <InitializeFeedIterator>
-            using (FeedIterator<ChangeFeedItem<Item>> allVersionsIterator = container
-                .GetChangeFeedIterator<ChangeFeedItem<Item>>(ChangeFeedStartFrom.Now(), ChangeFeedMode.AllVersionsAndDeletes))
+            using (FeedIterator<dynamic> allVersionsIterator = container
+                .GetChangeFeedIterator<dynamic>(ChangeFeedStartFrom.Now(), ChangeFeedMode.AllVersionsAndDeletes))
             {
                 while (allVersionsIterator.HasMoreResults)
                 {
-                    FeedResponse<ChangeFeedItem<Item>> response = await allVersionsIterator.ReadNextAsync();
+                    FeedResponse<dynamic> response = await allVersionsIterator.ReadNextAsync();
 
                     if (response.StatusCode == HttpStatusCode.NotModified)
                     {
@@ -134,11 +134,11 @@ namespace CFPullModelAllVersionsAndDeletesMode
             Console.WriteLine("Press any key to stop.");
 
             // <ReadAllVersionsAndDeletesChanges>
-            using (FeedIterator<ChangeFeedItem<Item>> allVersionsIterator = container.GetChangeFeedIterator<ChangeFeedItem<Item>>(ChangeFeedStartFrom.ContinuationToken(allVersionsContinuationToken), ChangeFeedMode.AllVersionsAndDeletes, new ChangeFeedRequestOptions { PageSizeHint = 10 }))
+            using (FeedIterator<dynamic> allVersionsIterator = container.GetChangeFeedIterator<dynamic>(ChangeFeedStartFrom.ContinuationToken(allVersionsContinuationToken), ChangeFeedMode.AllVersionsAndDeletes, new ChangeFeedRequestOptions { PageSizeHint = 10 }))
             {
                 while (allVersionsIterator.HasMoreResults)
                 {
-                    FeedResponse<ChangeFeedItem<Item>> response = await allVersionsIterator.ReadNextAsync();
+                    FeedResponse<dynamic> response = await allVersionsIterator.ReadNextAsync();
 
                     if (response.StatusCode == HttpStatusCode.NotModified)
                     {
@@ -147,25 +147,21 @@ namespace CFPullModelAllVersionsAndDeletesMode
                     }
                     else
                     {
-                        foreach (ChangeFeedItem<Item> item in response)
+                        foreach (dynamic item in response)
                         {
                             // if operaiton is delete
-                            if (item.Metadata.OperationType == ChangeFeedOperationType.Delete)
+                            if (item.metadata.operationType == "delete")
                             {
-                                if (item.Metadata.IsTimeToLiveExpired == true)
-                                {
-                                    Console.WriteLine($"Operation: {item.Metadata.OperationType} (due to TTL). Item id: {item.Previous.Id}. Previous value: {item.Previous.Value}");
-                                }
-                                else
-                                {
-                                    Console.WriteLine($"Operation: {item.Metadata.OperationType} (not due to TTL). Item id: {item.Previous.Id}. Previous value: {item.Previous.Value}");
-                                }
+                                bool isTTL = (item.metadata?.timeToLiveExpired == null) ? false : true;
+                                Console.WriteLine($"Operation: {item.metadata.operationType}. Item id: {item.metadata.id}. Due to ttl: {isTTL}");
                             }
                             // if operation is create or replace
                             else
                             {
-                                Console.WriteLine($"Operation: {item.Metadata.OperationType}. Item id: {item.Current.Id}. Current value: {item.Current.Value}");
+                                Console.WriteLine($"Operation: {item.metadata.operationType}. Item id: {item.current.Id}. Current value: {item.current.Value}");
                             }
+
+                            Console.WriteLine($"{item}");
                         }
                     }
 

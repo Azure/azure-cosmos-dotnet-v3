@@ -28,6 +28,7 @@
         private static Uri Location1Endpoint = new Uri("https://location1.documents.azure.com");
         private static Uri Location2Endpoint = new Uri("https://location2.documents.azure.com");
 
+        private const string HubRegionHeader = "x-ms-cosmos-hub-region-processing-only";
         private ReadOnlyCollection<string> preferredLocations;
         private AccountProperties databaseAccount;
         private GlobalPartitionEndpointManager partitionKeyRangeLocationCache;
@@ -164,13 +165,16 @@
         }
 
         /// <summary>
-        /// Tests to see if different 503 substatus codes are handeled correctly
+        /// Tests to see if different 503 substatus and other similar status codes are handeled correctly
         /// </summary>
         /// <param name="testCode">The substatus code being Tested.</param>
-        [DataRow((int)SubStatusCodes.Unknown)]
-        [DataRow((int)SubStatusCodes.TransportGenerated503)]
+        [DataRow((int)StatusCodes.ServiceUnavailable, (int)SubStatusCodes.Unknown, "ServiceUnavailable")]
+        [DataRow((int)StatusCodes.ServiceUnavailable, (int)SubStatusCodes.TransportGenerated503, "ServiceUnavailable")]
+        [DataRow((int)StatusCodes.InternalServerError, (int)SubStatusCodes.Unknown, "InternalServerError")]
+        [DataRow((int)StatusCodes.Gone, (int)SubStatusCodes.LeaseNotFound, "LeaseNotFound")]
+        [DataRow((int)StatusCodes.Forbidden, (int)SubStatusCodes.DatabaseAccountNotFound, "DatabaseAccountNotFound")]
         [DataTestMethod]
-        public void Http503SubStatusHandelingTests(int testCode)
+        public void Http503LikeSubStatusHandelingTests(int statusCode, int SubStatusCode, string message)
         {
 
             const bool enableEndpointDiscovery = true;
@@ -187,14 +191,14 @@
             Exception serviceUnavailableException = new Exception();
             Mock<INameValueCollection> nameValueCollection = new Mock<INameValueCollection>();
 
-            HttpStatusCode serviceUnavailable = HttpStatusCode.ServiceUnavailable;
+            HttpStatusCode serviceUnavailable = (HttpStatusCode)statusCode;
 
             DocumentClientException documentClientException = new DocumentClientException(
-               message: "Service Unavailable",
+               message: message,
                innerException: serviceUnavailableException,
                responseHeaders: nameValueCollection.Object,
                statusCode: serviceUnavailable,
-               substatusCode: (SubStatusCodes)testCode,
+               substatusCode: (SubStatusCodes)SubStatusCode,
                requestUri: null
                );
 
@@ -210,7 +214,6 @@
         [TestMethod]
         [DataRow(true, DisplayName = "Case when partition level failover is enabled.")]
         [DataRow(false, DisplayName = "Case when partition level failover is disabled.")]
-
         public void HttpRequestExceptionHandelingTests(
             bool enablePartitionLevelFailover)
         {
@@ -237,14 +240,15 @@
                 partitionKeyRangeLocationCache: this.partitionKeyRangeLocationCache,
                 retryOptions: new RetryOptions(),
                 enableEndpointDiscovery: enableEndpointDiscovery,
-                isPertitionLevelFailoverEnabled: enablePartitionLevelFailover);
+                isThinClientEnabled: false);
 
             CancellationToken cancellationToken = new ();
             HttpRequestException httpRequestException = new (message: "Connecting to endpoint has failed.");
 
             GlobalPartitionEndpointManagerCore.PartitionKeyRangeFailoverInfo partitionKeyRangeFailoverInfo = ClientRetryPolicyTests.GetPartitionKeyRangeFailoverInfoUsingReflection(
                 this.partitionKeyRangeLocationCache,
-                request.RequestContext.ResolvedPartitionKeyRange);
+                request.RequestContext.ResolvedPartitionKeyRange,
+                isReadOnlyOrMultiMasterWriteRequest: false);
 
             // Validate that the partition key range failover info is not present before the http request exception was captured in the retry policy.
             Assert.IsNull(partitionKeyRangeFailoverInfo);
@@ -256,11 +260,92 @@
 
             partitionKeyRangeFailoverInfo = ClientRetryPolicyTests.GetPartitionKeyRangeFailoverInfoUsingReflection(
                 this.partitionKeyRangeLocationCache,
-                request.RequestContext.ResolvedPartitionKeyRange);
+                request.RequestContext.ResolvedPartitionKeyRange,
+                isReadOnlyOrMultiMasterWriteRequest: false);
 
             if (enablePartitionLevelFailover)
             {
                 // Validate that the partition key range failover info to the next account region is present after the http request exception was captured in the retry policy.
+                Assert.AreEqual(partitionKeyRangeFailoverInfo.Current, readLocations[1]);
+            }
+            else
+            {
+                Assert.IsNull(partitionKeyRangeFailoverInfo);
+            }
+        }
+
+        /// <summary>
+        /// Test to validate that when an OperationCanceledException is thrown during the retry attempt, for a single master write account with PPAF enabled,
+        /// a partition level failover is applied and the subsequent requests will be retried on the next region for the faulty partition.
+        /// </summary>
+        [TestMethod]
+        [DataRow(true, true, DisplayName = "Read Request - Case when partition level failover is enabled.")]
+        [DataRow(false, true, DisplayName = "Write Request - Case when partition level failover is enabled.")]
+        [DataRow(true, false, DisplayName = "Read Request - Case when partition level failover is disabled.")]
+        [DataRow(false, false, DisplayName = "Write Request - Case when partition level failover is disabled.")]
+        public void CosmosOperationCancelledExceptionHandelingTests(
+            bool isReadOnlyRequest,
+            bool enablePartitionLevelFailover)
+        {
+            int requestThreshold = isReadOnlyRequest ? 10 : 5;
+            const bool enableEndpointDiscovery = true;
+            const string suffix = "-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF";
+
+            //Creates a sample write request
+            DocumentServiceRequest request = this.CreateRequest(isReadOnlyRequest, false);
+            request.RequestContext.ResolvedPartitionKeyRange = new PartitionKeyRange() { Id = "0", MinInclusive = "3F" + suffix, MaxExclusive = "5F" + suffix };
+
+            //Create GlobalEndpointManager
+            using GlobalEndpointManager endpointManager = this.Initialize(
+               useMultipleWriteLocations: false,
+               enableEndpointDiscovery: enableEndpointDiscovery,
+               isPreferredLocationsListEmpty: false,
+               enablePartitionLevelFailover: enablePartitionLevelFailover);
+
+            // Capture the read locations.
+            ReadOnlyCollection<Uri> readLocations = endpointManager.ReadEndpoints;
+
+            //Create Retry Policy
+            ClientRetryPolicy retryPolicy = new(
+                globalEndpointManager: endpointManager,
+                partitionKeyRangeLocationCache: this.partitionKeyRangeLocationCache,
+                retryOptions: new RetryOptions(),
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isThinClientEnabled: false);
+
+            CancellationToken cancellationToken = new();
+            OperationCanceledException operationCancelledException = new(message: "Operation was cancelled due to cancellation token expiry.");
+
+            GlobalPartitionEndpointManagerCore.PartitionKeyRangeFailoverInfo partitionKeyRangeFailoverInfo = ClientRetryPolicyTests.GetPartitionKeyRangeFailoverInfoUsingReflection(
+                this.partitionKeyRangeLocationCache,
+                request.RequestContext.ResolvedPartitionKeyRange,
+                isReadOnlyOrMultiMasterWriteRequest: isReadOnlyRequest);
+
+            // Validate that the partition key range failover info is not present before the http request exception was captured in the retry policy.
+            Assert.IsNull(partitionKeyRangeFailoverInfo);
+
+            Task<ShouldRetryResult> retryStatus;
+
+            // With cancellation token expiry, the retry policy should not failover the offending partition
+            // until the write threshold is met.
+            for (int i=0; i< requestThreshold; i++)
+            {
+                retryPolicy.OnBeforeSendRequest(request);
+                retryStatus = retryPolicy.ShouldRetryAsync(operationCancelledException, cancellationToken);
+            }
+
+            retryStatus = retryPolicy.ShouldRetryAsync(operationCancelledException, cancellationToken);
+            Assert.IsFalse(retryStatus.Result.ShouldRetry);
+
+            partitionKeyRangeFailoverInfo = ClientRetryPolicyTests.GetPartitionKeyRangeFailoverInfoUsingReflection(
+                this.partitionKeyRangeLocationCache,
+                request.RequestContext.ResolvedPartitionKeyRange,
+                isReadOnlyOrMultiMasterWriteRequest: isReadOnlyRequest);
+
+            if (enablePartitionLevelFailover)
+            {
+                // Validate that the partition key range failover info to the next account region is present after the http request exception was captured in the retry policy.
+                Assert.IsNotNull(partitionKeyRangeFailoverInfo);
                 Assert.AreEqual(partitionKeyRangeFailoverInfo.Current, readLocations[1]);
             }
             else
@@ -317,6 +402,134 @@
             await this.ValidateConnectTimeoutTriggersClientRetryPolicyAsync(isReadRequest: false, useMultipleWriteLocations: true, usesPreferredLocations: false, true);
         }
 
+        /// <summary>
+        /// Test to validate that hub region header is added on 404/1002 for single master accounts only,
+        /// starting from the second retry (after first retry also fails). For multi-master accounts, 
+        /// the header should NOT be added.
+        /// </summary>
+        [TestMethod]
+        [DataRow(true, true, DisplayName = "Read request on single master - Hub region header added after first retry fails")]
+        [DataRow(false, true, DisplayName = "Write request on single master - Hub region header added after first retry fails")]
+        [DataRow(true, false, DisplayName = "Read request on multi-master - Hub region header NOT added")]
+        [DataRow(false, false, DisplayName = "Write request on multi-master - Hub region header NOT added")]
+        public async Task ClientRetryPolicy_HubRegionHeader_AddedOn404_1002_BasedOnAccountType(bool isReadRequest, bool isSingleMaster)
+        {
+            // Arrange
+            const bool enableEndpointDiscovery = true;
+
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: !isSingleMaster,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enforceSingleMasterSingleWriteLocation: isSingleMaster);
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                endpointManager,
+                this.partitionKeyRangeLocationCache,
+                new RetryOptions(),
+                enableEndpointDiscovery,
+                isThinClientEnabled: false);
+
+            DocumentServiceRequest request = this.CreateRequest(isReadRequest: isReadRequest, isMasterResourceType: false);
+
+            // First attempt - header should not exist
+            retryPolicy.OnBeforeSendRequest(request);
+            Assert.IsNull(request.Headers.GetValues(HubRegionHeader), "Header should not exist on initial request before any 404/1002 error.");
+
+            // Simulate first 404/1002 error
+            DocumentClientException sessionNotAvailableException = new DocumentClientException(
+                message: "Simulated 404/1002 ReadSessionNotAvailable",
+                innerException: null,
+                statusCode: HttpStatusCode.NotFound,
+                substatusCode: SubStatusCodes.ReadSessionNotAvailable,
+                requestUri: request.RequestContext.LocationEndpointToRoute,
+                responseHeaders: new DictionaryNameValueCollection());
+
+            ShouldRetryResult shouldRetry = await retryPolicy.ShouldRetryAsync(sessionNotAvailableException, CancellationToken.None);
+            Assert.IsTrue(shouldRetry.ShouldRetry, "Should retry on 404/1002.");
+
+            // First retry attempt - header should NOT be present yet
+            retryPolicy.OnBeforeSendRequest(request);
+            string[] headerValues = request.Headers.GetValues(HubRegionHeader);
+            Assert.IsNull(headerValues, "Header should NOT be present on first retry attempt (before it fails).");
+
+            // Simulate first retry also failing with 404/1002
+            DocumentClientException sessionNotAvailableException2 = new DocumentClientException(
+                message: "Simulated 404/1002 ReadSessionNotAvailable on first retry",
+                innerException: null,
+                statusCode: HttpStatusCode.NotFound,
+                substatusCode: SubStatusCodes.ReadSessionNotAvailable,
+                requestUri: request.RequestContext.LocationEndpointToRoute,
+                responseHeaders: new DictionaryNameValueCollection());
+
+            shouldRetry = await retryPolicy.ShouldRetryAsync(sessionNotAvailableException2, CancellationToken.None);
+
+            if (isSingleMaster)
+            {
+                // For single master, after one retry fails with 404/1002, it won't retry further
+                // But the header flag should be set for any potential future retries due to other errors
+                Assert.IsFalse(shouldRetry.ShouldRetry, "Single master should not retry again after first 404/1002 retry fails.");
+
+                // The header flag should be set even though no more 404/1002 retries will happen
+                // This ensures if the request is retried for a different reason (e.g., 503), it will have the header
+            }
+            else
+            {
+                // Multi-master can retry across multiple regions
+                Assert.IsTrue(shouldRetry.ShouldRetry, "Multi-master should continue retrying on 404/1002.");
+            }
+
+            // For single master: Verify header would be added if request is retried for other reasons (e.g., 503)
+            // For multi-master: Verify header is NOT added even on subsequent retries
+            if (isSingleMaster)
+            {
+                // Simulate a 503 error to trigger another retry
+                DocumentClientException serviceUnavailableException = new DocumentClientException(
+                    message: "Simulated 503 ServiceUnavailable",
+                    innerException: null,
+                    statusCode: HttpStatusCode.ServiceUnavailable,
+                    substatusCode: SubStatusCodes.Unknown,
+                    requestUri: request.RequestContext.LocationEndpointToRoute,
+                    responseHeaders: new DictionaryNameValueCollection());
+
+                shouldRetry = await retryPolicy.ShouldRetryAsync(serviceUnavailableException, CancellationToken.None);
+
+                if (shouldRetry.ShouldRetry)
+                {
+                    // Now verify the header is present on this retry triggered by 503
+                    retryPolicy.OnBeforeSendRequest(request);
+                    headerValues = request.Headers.GetValues(HubRegionHeader);
+                    Assert.IsNotNull(headerValues, "Header should be present on retry after 404/1002 flag was set.");
+                    Assert.AreEqual(1, headerValues.Length, "Header should have exactly one value.");
+                    Assert.AreEqual(bool.TrueString, headerValues[0], "Header value should be 'True'.");
+                }
+            }
+            else
+            {
+                // For multi-master: Verify header is NOT added even on subsequent retries
+                for (int retryAttempt = 2; retryAttempt <= 3; retryAttempt++)
+                {
+                    if (shouldRetry.ShouldRetry)
+                    {
+                        retryPolicy.OnBeforeSendRequest(request);
+                        headerValues = request.Headers.GetValues(HubRegionHeader);
+                        Assert.IsNull(headerValues, $"Header should NOT be present on retry attempt {retryAttempt} for multi-master account.");
+
+                        // Simulate another 404/1002 or 503 to continue retry loop
+                        DocumentClientException nextException = new DocumentClientException(
+                            message: $"Simulated error on retry {retryAttempt}",
+                            innerException: null,
+                            statusCode: retryAttempt % 2 == 0 ? HttpStatusCode.ServiceUnavailable : HttpStatusCode.NotFound,
+                            substatusCode: retryAttempt % 2 == 0 ? SubStatusCodes.Unknown : SubStatusCodes.ReadSessionNotAvailable,
+                            requestUri: request.RequestContext.LocationEndpointToRoute,
+                            responseHeaders: new DictionaryNameValueCollection());
+
+                        shouldRetry = await retryPolicy.ShouldRetryAsync(nextException, CancellationToken.None);
+                    }
+                }
+            }
+        }
+
         private async Task ValidateConnectTimeoutTriggersClientRetryPolicyAsync(
             bool isReadRequest,
             bool useMultipleWriteLocations,
@@ -362,7 +575,7 @@
 
             this.partitionKeyRangeLocationCache = GlobalPartitionEndpointManagerNoOp.Instance;
 
-            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(mockDocumentClientContext.GlobalEndpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery: true, isPertitionLevelFailoverEnabled: false);
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(mockDocumentClientContext.GlobalEndpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery: true, false);
 
             INameValueCollection headers = new DictionaryNameValueCollection();
             headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.BoundedStaleness.ToString());
@@ -433,12 +646,14 @@
 
         private static GlobalPartitionEndpointManagerCore.PartitionKeyRangeFailoverInfo GetPartitionKeyRangeFailoverInfoUsingReflection(
             GlobalPartitionEndpointManager globalPartitionEndpointManager,
-            PartitionKeyRange pkRange)
+            PartitionKeyRange pkRange,
+            bool isReadOnlyOrMultiMasterWriteRequest)
         {
+            string fieldName = isReadOnlyOrMultiMasterWriteRequest ? "PartitionKeyRangeToLocationForReadAndWrite" : "PartitionKeyRangeToLocationForWrite";
             FieldInfo fieldInfo = globalPartitionEndpointManager
                 .GetType()
                 .GetField(
-                    name: "PartitionKeyRangeToLocation",
+                    name: fieldName,
                     bindingAttr: BindingFlags.Instance | BindingFlags.NonPublic);
 
             if (fieldInfo != null)
@@ -494,6 +709,7 @@
             bool enforceSingleMasterSingleWriteLocation = false, // Some tests depend on the Initialize to create an account with multiple write locations, even when not multi master
             ReadOnlyCollection<string> preferedRegionListOverride = null,
             bool enablePartitionLevelFailover = false,
+            bool enablePartitionLevelCircuitBreaker = false,
             bool multimasterMetadataWriteRetryTest = false)
         {
             this.databaseAccount = ClientRetryPolicyTests.CreateDatabaseAccount(
@@ -543,7 +759,10 @@
 
             if (enablePartitionLevelFailover)
             {
-                this.partitionKeyRangeLocationCache = new GlobalPartitionEndpointManagerCore(endpointManager);
+                this.partitionKeyRangeLocationCache = new GlobalPartitionEndpointManagerCore(
+                    globalEndpointManager: endpointManager,
+                    isPartitionLevelFailoverEnabled: enablePartitionLevelFailover,
+                    isPartitionLevelCircuitBreakerEnabled: enablePartitionLevelFailover || enablePartitionLevelCircuitBreaker);
             }
             else
             {

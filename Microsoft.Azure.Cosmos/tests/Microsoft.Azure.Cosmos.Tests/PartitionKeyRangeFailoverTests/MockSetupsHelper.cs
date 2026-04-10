@@ -8,18 +8,18 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Text;
-    using System.Linq;
     using System.IO;
+    using System.Linq;
+    using System.Net;
     using System.Net.Http;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Net;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
     using Moq;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
-    using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Collections;
 
 
     public static class MockSetupsHelper
@@ -29,12 +29,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             string accountName,
             string endpoint,
             IList<AccountRegion> writeRegions,
-            IList<AccountRegion> readRegions)
+            IList<AccountRegion> readRegions,
+            bool? shouldEnablePPAF)
         {
             HttpResponseMessage httpResponseMessage = MockSetupsHelper.CreateStrongAccount(
                 accountName,
                 writeRegions,
-                readRegions);
+                readRegions,
+                shouldEnablePPAF: shouldEnablePPAF);
 
             Uri endpointUri = new Uri(endpoint);
             mockHttpClientHandler.Setup(x => x.SendAsync(
@@ -89,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     MaxReplicaSetSize = 4
                 }
             };
-            
+
 
             Uri endpointUri = new Uri($"https://{accountName}.documents.azure.com");
             mockHttpHandler.Setup(x => x.SendAsync(
@@ -106,7 +108,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         public static HttpResponseMessage CreateStrongAccount(
             string accountName,
             IList<AccountRegion> writeRegions,
-            IList<AccountRegion> readRegions)
+            IList<AccountRegion> readRegions,
+            bool shouldEnableThinClient = false,
+            bool? shouldEnablePPAF = null)
         {
             AccountProperties accountProperties = new AccountProperties()
             {
@@ -114,6 +118,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 WriteLocationsInternal = new Collection<AccountRegion>(writeRegions),
                 ReadLocationsInternal = new Collection<AccountRegion>(readRegions),
                 EnableMultipleWriteLocations = writeRegions.Count > 1,
+                EnablePartitionLevelFailover = shouldEnablePPAF,
                 Consistency = new AccountConsistency()
                 {
                     DefaultConsistencyLevel = Cosmos.ConsistencyLevel.Strong
@@ -133,8 +138,28 @@ namespace Microsoft.Azure.Cosmos.Tests
                     AsyncReplication = false,
                     MinReplicaSetSize = 3,
                     MaxReplicaSetSize = 4
-                }
+                },
             };
+
+            if (shouldEnableThinClient)
+            {
+                accountProperties.AdditionalProperties = new Dictionary<string, JToken>
+                {
+                    {
+                        "thinClientWritableLocations",
+                        JArray.Parse(@"[
+                            { 'name': 'East US', 'databaseAccountEndpoint': 'https://thinclientwrite-eastus.documents.azure.com:10650/' }
+                        ]")
+                    },
+                    {
+                        "thinClientReadableLocations",
+                        JArray.Parse(@"[
+                            { 'name': 'East US', 'databaseAccountEndpoint': 'https://thinclientread-eastus.documents.azure.com:10650/' },
+                            { 'name': 'West US', 'databaseAccountEndpoint': 'https://thinclientread-westus.documents.azure.com:10650/' }
+                        ]")
+                    }
+                };
+            }
 
             return new HttpResponseMessage()
             {
@@ -283,7 +308,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             int[] ports = new int[replicaIds.Count];
             string basePhysicalUri = "rntbd://cdb-ms-prod-{0}-fd4.documents.azure.com:{1}/apps/9dc0394e-d25f-4c98-baa5-72f1c700bf3e/services/060067c7-a4e9-4465-a412-25cb0104cb58/partitions/2cda760c-f81f-4094-85d0-7bcfb2acc4e6/replicas/{2}";
 
-            for (int i=0; i< replicaIds.Count; i++)
+            for (int i = 0; i < replicaIds.Count; i++)
             {
                 ports[i] = initialPort++;
             }
@@ -292,7 +317,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             List<Address> addresses = new List<Address>();
             for (int i = 0; i < replicaIds.Count; i++)
             {
-                string repliaId = replicaIds[i] + (i == 0 ? "p":"s") + "/";
+                string repliaId = replicaIds[i] + (i == 0 ? "p" : "s") + "/";
                 addresses.Add(new Address()
                 {
                     IsPrimary = i == 0,
@@ -376,7 +401,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 { "Addresss", JArray.FromObject(addresses) }
             };
 
-            Uri addressUri = new Uri($"{regionEndpoint }//addresses/?$resolveFor=dbs{HttpUtility.UrlEncode($"/{databaseRid}/colls/{containerRid}/docs")}&$filter=protocol eq rntbd&$partitionKeyRangeIds={partitionKeyRangeId}");
+            Uri addressUri = new Uri($"{regionEndpoint}//addresses/?$resolveFor=dbs{HttpUtility.UrlEncode($"/{databaseRid}/colls/{containerRid}/docs")}&$filter=protocol eq rntbd&$partitionKeyRangeIds={partitionKeyRangeId}");
             mockHttpHandler.Setup(x => x.SendAsync(It.Is<HttpRequestMessage>(x => x.RequestUri == addressUri), It.IsAny<CancellationToken>()))
                .Returns(() => Task.FromResult(new HttpResponseMessage()
                {

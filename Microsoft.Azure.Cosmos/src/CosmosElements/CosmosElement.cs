@@ -227,7 +227,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 JsonNodeType.Null => CosmosNull.Create(),
                 JsonNodeType.False => CosmosBoolean.Create(false),
                 JsonNodeType.True => CosmosBoolean.Create(true),
-                JsonNodeType.Number64 => CosmosNumber64.Create(jsonNavigator, jsonNavigatorNode),
+                JsonNodeType.Number => CosmosNumber64.Create(jsonNavigator, jsonNavigatorNode),
                 JsonNodeType.FieldName => CosmosString.Create(jsonNavigator, jsonNavigatorNode),
                 JsonNodeType.String => CosmosString.Create(jsonNavigator, jsonNavigatorNode),
                 JsonNodeType.Array => CosmosArray.Create(jsonNavigator, jsonNavigatorNode),

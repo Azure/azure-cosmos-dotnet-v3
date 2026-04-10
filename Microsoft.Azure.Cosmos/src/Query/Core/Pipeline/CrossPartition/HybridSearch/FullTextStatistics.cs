@@ -4,8 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 {
-    using System;
-    using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.CosmosElements;
 
     internal sealed class FullTextStatistics
@@ -14,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
         public long TotalWordCount { get; }
 
-        public ReadOnlyMemory<long> HitCounts => this.hitCounts;
+        public System.ReadOnlyMemory<long> HitCounts => this.hitCounts;
 
         public FullTextStatistics(long totalWordCount, long[] hitCounts)
         {

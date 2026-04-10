@@ -194,5 +194,12 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
             bufferedUtf8StringValue = default;
             return false;
         }
+
+        /// <inheritdoc />
+        protected override bool TryGetUInt64NumberValue(out ulong value)
+        {
+            value = 0;
+            return false;
+        }
     }
 }

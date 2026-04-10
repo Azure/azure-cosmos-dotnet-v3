@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections;
     using System.Collections.Generic;
-    using System.Net;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -304,6 +303,15 @@ namespace Microsoft.Azure.Cosmos
                     }
                     for (int j = 0; j < this.partitionKeySelectors.Count; j++)
                     {
+                        if (pkValues[j] == Undefined.Value)
+                        {
+                            queryStringBuilder.Append(" AND ");
+                            queryStringBuilder.Append("IS_DEFINED(c");
+                            queryStringBuilder.Append(this.partitionKeySelectors[j]);
+                            queryStringBuilder.Append(") = false");
+                            continue;
+                        }
+
                         queryStringBuilder.Append(" AND ");
                         queryStringBuilder.Append("c");
                         queryStringBuilder.Append(this.partitionKeySelectors[j]);

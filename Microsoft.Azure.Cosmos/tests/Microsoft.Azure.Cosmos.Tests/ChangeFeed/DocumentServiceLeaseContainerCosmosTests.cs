@@ -10,8 +10,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
-    using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Cosmos.Fluent;
+    using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -20,13 +20,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     [TestCategory("ChangeFeed")]
     public class DocumentServiceLeaseContainerCosmosTests
     {
-        private static DocumentServiceLeaseStoreManagerOptions leaseStoreManagerSettings = new DocumentServiceLeaseStoreManagerOptions()
+        private static readonly DocumentServiceLeaseStoreManagerOptions leaseStoreManagerSettings = new DocumentServiceLeaseStoreManagerOptions()
         {
             ContainerNamePrefix = "prefix",
             HostName = "host"
         };
 
-        private static List<DocumentServiceLeaseCore> allLeases = new List<DocumentServiceLeaseCore>()
+        private static readonly List<DocumentServiceLeaseCore> allLeases = new List<DocumentServiceLeaseCore>()
         {
             new DocumentServiceLeaseCore()
             {
@@ -75,8 +75,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
         private static Container GetMockedContainer(string containerName = "myColl")
         {
-            Headers headers = new Headers();
-            headers.ContinuationToken = string.Empty;
+            Headers headers = new Headers
+            {
+                ContinuationToken = string.Empty
+            };
 
             MockFeedResponse<DocumentServiceLeaseCore> cosmosFeedResponse = new MockFeedResponse<DocumentServiceLeaseCore>()
             {
@@ -99,12 +101,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             mockedItems.Setup(i => i.GetItemQueryStreamIterator(
                 // To make sure the SQL Query gets correctly created
                 It.Is<string>(value => string.Equals("SELECT * FROM c WHERE STARTSWITH(c.id, '" + DocumentServiceLeaseContainerCosmosTests.leaseStoreManagerSettings.GetPartitionLeasePrefix() + "')", value)),
-                It.IsAny<string>(), 
+                It.IsAny<string>(),
                 It.IsAny<QueryRequestOptions>()))
-                .Returns(()=>
-                {
-                    return mockedQuery.Object;
-                });
+                .Returns(() => mockedQuery.Object);
 
             return mockedItems.Object;
         }

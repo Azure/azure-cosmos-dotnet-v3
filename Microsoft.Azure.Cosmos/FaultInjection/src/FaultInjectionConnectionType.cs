@@ -14,6 +14,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         Direct,
 
         /// <summary>
+        /// Requests to Gateway
+        /// </summary>
+        Gateway,
+
+        /// <summary>
         /// All connection types. Default value.
         /// </summary>
         All,

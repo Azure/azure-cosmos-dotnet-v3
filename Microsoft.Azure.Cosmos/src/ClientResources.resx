@@ -324,4 +324,7 @@
   <data name="FeedToken_InvalidFeedTokenForContainer" xml:space="preserve">
     <value>The continuation was generated for container {0} but current container is {1}.</value>
   </data>
+  <data name="ExtensionMethodNotImplemented" xml:space="preserve">
+    <value>Extension function can be used in LINQ expressions only and are evaluated in Azure Cosmos DB server.</value>
+  </data>
 </root>

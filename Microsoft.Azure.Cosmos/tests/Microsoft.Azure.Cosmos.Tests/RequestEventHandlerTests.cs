@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos
             EventHandler<ReceivedResponseEventArgs> receivedResponse;
             sendingRequest = this.SendingRequestEventHandler;
             receivedResponse = this.ReceivedRequestEventHandler;
-            ServerStoreModel storeModel = new ServerStoreModel(GetMockStoreClient(), sendingRequest, receivedResponse);
+            ServerStoreModel storeModel = new ServerStoreModel(this.GetMockStoreClient(), sendingRequest, receivedResponse);
 
             using (new ActivityScope(Guid.NewGuid()))
             {
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos
         {
             EventHandler<SendingRequestEventArgs> sendingRequest = null;
             EventHandler<ReceivedResponseEventArgs> receivedResponse = null;
-            ServerStoreModel storeModel = new ServerStoreModel(GetMockStoreClient(), sendingRequest, receivedResponse);
+            ServerStoreModel storeModel = new ServerStoreModel(this.GetMockStoreClient(), sendingRequest, receivedResponse);
 
             using (new ActivityScope(Guid.NewGuid()))
             {
@@ -90,8 +90,10 @@ namespace Microsoft.Azure.Cosmos
                 .Returns(Task.FromResult(0));
 
             // setup max replica set size on the config reader
-            ReplicationPolicy replicationPolicy = new ReplicationPolicy();
-            replicationPolicy.MaxReplicaSetSize = 4;
+            ReplicationPolicy replicationPolicy = new ReplicationPolicy
+            {
+                MaxReplicaSetSize = 4
+            };
             Mock<IServiceConfigurationReader> mockServiceConfigReader = new Mock<IServiceConfigurationReader>();
             mockServiceConfigReader.SetupGet(x => x.UserReplicationPolicy).Returns(replicationPolicy);
 
@@ -110,12 +112,14 @@ namespace Microsoft.Azure.Cosmos
             Mock<TransportClient> mockTransportClient = new Mock<TransportClient>();
 
             // setup mock to return respone
-            StoreResponse mockStoreResponse = new StoreResponse();
-            mockStoreResponse.Headers = new StoreResponseNameValueCollection
+            StoreResponse mockStoreResponse = new StoreResponse
+            {
+                Headers = new StoreResponseNameValueCollection
                 {
                     { WFConstants.BackendHeaders.LSN, "110" },
                     { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_1" }
-                };
+                }
+            };
             mockTransportClient.Setup(
                 client => client.InvokeResourceOperationAsync(
                     It.IsAny<TransportAddressUri>(),

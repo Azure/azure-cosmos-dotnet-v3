@@ -12,8 +12,8 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class ActiveClientDiagnosticTest
     {
-        private const string ConnectionString = "AccountEndpoint=https://localtestcosmos.documents.azure.com:443/;AccountKey=425Mcv8CXQqzRNCgFNjIhT424GK99CKJvASowTnq15Vt8LeahXTcN5wt3342vQ==;";
-        
+        private const string ConnectionString = "AccountEndpoint=https://example.documents.azure.com:443/;AccountKey=NotRealKey==;";
+
         [TestInitialize]
         public void Initialize()
         {
@@ -56,10 +56,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosClient cosmosClient1 = new CosmosClient(ConnectionString); // Initializing 1st time
             CosmosClient cosmosClient2 = new CosmosClient(ConnectionString);
 
-            Parallel.Invoke(cosmosClient2.Dispose, 
-                cosmosClient2.Dispose, 
-                cosmosClient2.Dispose, 
-                cosmosClient2.Dispose, 
+            Parallel.Invoke(cosmosClient2.Dispose,
+                cosmosClient2.Dispose,
+                cosmosClient2.Dispose,
+                cosmosClient2.Dispose,
                 cosmosClient2.Dispose);
 
             // Initializing 2nd time

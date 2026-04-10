@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             DiagnosticsHandlerHelper diagnosticHandlerHelper2 = DiagnosticsHandlerHelper.GetInstance();
             Assert.IsNotNull(diagnosticHandlerHelper2.GetDiagnosticsSystemHistory());
             int countAfterRefresh = diagnosticHandlerHelper2.GetDiagnosticsSystemHistory().Values.Count;
-          
+
             Assert.IsTrue(countBeforeRefresh <= countAfterRefresh, "After Refresh count should be greater than or equal to before refresh count");
             Assert.AreNotEqual(diagnosticHandlerHelper1, diagnosticHandlerHelper2);
 

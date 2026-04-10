@@ -236,7 +236,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal async Task AssertPartitioningDetailsAsync(CosmosClient client, CancellationToken cancellationToken, ITrace trace)
         {
-            if (this.IsMasterOperation())
+            if (this.IsMasterOperation() || DistributedTransactionConstants.IsDistributedTransactionRequest(this.OperationType, this.ResourceType))
             {
                 return;
             }
@@ -266,7 +266,8 @@ namespace Microsoft.Azure.Cosmos
             if (this.DocumentServiceRequest == null)
             {
                 DocumentServiceRequest serviceRequest;
-                if (this.OperationType == OperationType.ReadFeed && this.ResourceType == ResourceType.Database)
+                if ((this.OperationType == OperationType.ReadFeed && this.ResourceType == ResourceType.Database)
+                    || DistributedTransactionConstants.IsDistributedTransactionRequest(this.OperationType, this.ResourceType))
                 {
                     serviceRequest = new DocumentServiceRequest(
                         operationType: this.OperationType,
@@ -295,6 +296,8 @@ namespace Microsoft.Azure.Cosmos
 
                 serviceRequest.UseStatusCodeForFailures = true;
                 serviceRequest.UseStatusCodeFor429 = true;
+                serviceRequest.UseStatusCodeFor403 = true;
+                serviceRequest.UseStatusCodeForBadRequest = true;
                 serviceRequest.Properties = this.Properties;
                 this.DocumentServiceRequest = serviceRequest;
             }
@@ -386,8 +389,12 @@ namespace Microsoft.Azure.Cosmos
             bool partitionKeyRangeIdExists = !string.IsNullOrEmpty(this.Headers.PartitionKeyRangeId);
             if (partitionKeyRangeIdExists)
             {
+                OperationType operationType = this.OperationType;
                 // Assert operation type is not write
-                if (this.OperationType != OperationType.Query && this.OperationType != OperationType.ReadFeed && this.OperationType != OperationType.Batch)
+                if (operationType != OperationType.Query
+                    && operationType != OperationType.QueryPlan
+                    && operationType != OperationType.ReadFeed 
+                    && operationType != OperationType.Batch)
                 {
                     throw new ArgumentOutOfRangeException(RMResources.UnexpectedPartitionKeyRangeId);
                 }

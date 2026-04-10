@@ -35,25 +35,16 @@
 
             foreach (PathToken token in path.Skip(1))
             {
-                SqlLiteralScalarExpression memberIndexer;
-                switch (token)
+                SqlLiteralScalarExpression memberIndexer = token switch
                 {
-                    case StringPathToken stringPathToken:
-                        memberIndexer = SqlLiteralScalarExpression.Create(
-                            SqlStringLiteral.Create(
-                                stringPathToken.PropertyName));
-                        break;
-
-                    case IntegerPathToken integerPathToken:
-                        memberIndexer = SqlLiteralScalarExpression.Create(
-                            SqlNumberLiteral.Create(
-                                integerPathToken.Index));
-                        break;
-
-                    default:
-                        throw new ArgumentException($"Unknown token type: {token.GetType()}; {token}");
-                }
-
+                    StringPathToken stringPathToken => SqlLiteralScalarExpression.Create(
+                                                SqlStringLiteral.Create(
+                                                    stringPathToken.PropertyName)),
+                    IntegerPathToken integerPathToken => SqlLiteralScalarExpression.Create(
+                                                SqlNumberLiteral.Create(
+                                                    integerPathToken.Index)),
+                    _ => throw new ArgumentException($"Unknown token type: {token.GetType()}; {token}"),
+                };
                 rootExpression = SqlMemberIndexerScalarExpression.Create(rootExpression, memberIndexer);
             }
 

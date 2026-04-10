@@ -1,17 +1,17 @@
 ﻿namespace Microsoft.Azure.Cosmos.Tests.Tracing
 {
     using System;
-    using Microsoft.Azure.Cosmos.Tracing;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Microsoft.Azure.Documents;
-    using System.Reflection;
-    using System.Linq;
     using System.Collections.Generic;
-    using Microsoft.Azure.Cosmos.Tracing.TraceData;
-    using static Microsoft.Azure.Cosmos.Tracing.TraceData.ClientSideRequestStatisticsTraceDatum;
-    using Microsoft.Azure.Cosmos.Json;
+    using System.Linq;
+    using System.Reflection;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
+    using Microsoft.Azure.Documents;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
+    using static Microsoft.Azure.Cosmos.Tracing.TraceData.ClientSideRequestStatisticsTraceDatum;
 
     [TestClass]
     public class TraceTests
@@ -23,6 +23,7 @@
             using (rootTrace = Trace.GetRootTrace(name: "RootTrace"))
             {
                 Assert.IsNotNull(rootTrace);
+                rootTrace.SetWalkingStateRecursively();
                 Assert.IsNotNull(rootTrace.Children);
                 Assert.AreEqual(0, rootTrace.Children.Count);
                 Assert.AreEqual(rootTrace.Component, TraceComponent.Unknown);
@@ -49,6 +50,7 @@
                 rootTrace.AddChild(twoChild);
             }
 
+            rootTrace.SetWalkingStateRecursively();
             Assert.AreEqual(2, rootTrace.Children.Count);
             Assert.AreEqual(oneChild, rootTrace.Children[0]);
             Assert.AreEqual(twoChild, rootTrace.Children[1]);
@@ -67,6 +69,7 @@
                 {
                 }
 
+                rootTrace.SetWalkingStateRecursively();
                 Assert.AreEqual(rootTrace.Children.Count, 2);
                 Assert.AreEqual(rootTrace.Children[0].Component, TraceComponent.Query);
                 Assert.AreEqual(rootTrace.Children[1].Component, TraceComponent.Transport);
@@ -109,7 +112,8 @@
                             ResourceType.Document,
                             OperationType.Query,
                             "42",
-                            new Uri("http://someUri1.com"));
+                            new Uri("http://someUri1.com"),
+                            "region1");
 
             ((List<StoreResponseStatistics>)datum.GetType().GetField("storeResponseStatistics", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(datum)).Add(storeResponseStatistics);
 
@@ -132,6 +136,54 @@
             }
 
             Assert.AreEqual(0, storeResultProperties.Count, $"Json is missing properties: {string.Join(';', storeResultProperties)}");
+        }
+
+        [TestMethod]
+        public void TestAddOrUpdateDatumThreadSafety()
+        {
+            Trace trace = Trace.GetRootTrace("ThreadSafetyTest");
+
+            // Create multiple threads to access the dictionary concurrently
+            const int numThreads = 10;
+            const int operationsPerThread = 100;
+
+            // Use a list to keep track of the tasks
+            List<Task> tasks = new List<Task>();
+
+            for (int i = 0; i < numThreads; i++)
+            {
+                int threadIndex = i;
+                tasks.Add(Task.Run(() =>
+                {
+                    for (int j = 0; j < operationsPerThread; j++)
+                    {
+                        string key = $"key_{threadIndex}_{j}";
+                        object value = j;
+
+                        // Perform operations that would previously cause thread safety issues
+                        trace.AddOrUpdateDatum(key, value);
+
+                        // Also test AddDatum
+                        try
+                        {
+                            trace.AddDatum($"add_{threadIndex}_{j}", value);
+                        }
+                        catch (ArgumentException)
+                        {
+                            // Ignore key already exists exceptions which may occur
+                            // when threads try to add the same key
+                        }
+                    }
+                }));
+            }
+
+            // Wait for all tasks to complete
+            Task.WaitAll(tasks.ToArray());
+
+            trace.SetWalkingStateRecursively();
+
+            // Verify the data dictionary has entries
+            Assert.IsTrue(trace.Data.Count > 0);
         }
     }
 }

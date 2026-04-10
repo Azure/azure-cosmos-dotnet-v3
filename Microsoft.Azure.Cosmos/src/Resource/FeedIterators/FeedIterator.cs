@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Cosmos Result set iterator that keeps track of the continuation token when retrieving results form a query.
@@ -151,5 +152,56 @@ namespace Microsoft.Azure.Cosmos
         /// collect SQL query Specs for tracing
         /// </summary>
         internal SqlQuerySpec querySpec;
+
+        /// <summary>
+        /// Collect operation metrics options for open telemetry metrics
+        /// </summary>
+        internal OperationMetricsOptions operationMetricsOptions;
+
+        /// <summary>
+        /// Collect network metrics options for open telemetry metrics
+        /// </summary>
+        internal NetworkMetricsOptions networkMetricsOptions;
+
+        /// <summary>
+        /// Setup the information required for telemetry
+        /// </summary>
+        /// <param name="feedIteratorInternal"></param>
+        internal void SetupInfoForTelemetry(FeedIterator feedIteratorInternal)
+        {
+            this.SetupInfoForTelemetry(
+                feedIteratorInternal.databaseName,
+                feedIteratorInternal.operationName,
+                feedIteratorInternal.operationType,
+                feedIteratorInternal.querySpec,
+                feedIteratorInternal.operationMetricsOptions,
+                feedIteratorInternal.networkMetricsOptions);
+        }
+
+        /// <summary>
+        /// Setup the information required for telemetry
+        /// </summary>
+        /// <param name="databaseName"></param>
+        /// <param name="operationName"></param>
+        /// <param name="operationType"></param>
+        /// <param name="querySpec"></param>
+        /// <param name="operationMetricsOptions"></param>
+        /// <param name="networkMetricOptions"></param>
+        internal void SetupInfoForTelemetry(string databaseName, 
+            string operationName, 
+            OperationType? operationType, 
+            SqlQuerySpec querySpec, 
+            OperationMetricsOptions operationMetricsOptions, 
+            NetworkMetricsOptions networkMetricOptions)
+        {
+            this.databaseName = databaseName;
+
+            this.operationName = operationName;
+            this.operationType = operationType;
+
+            this.querySpec = querySpec;
+            this.operationMetricsOptions = operationMetricsOptions;
+            this.networkMetricsOptions = networkMetricOptions;
+        }
     }
 }

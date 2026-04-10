@@ -323,7 +323,8 @@ namespace Microsoft.Azure.Cosmos
                     new AuthorizationTokenProviderTokenCredential(
                         tokenCredential,
                         new Uri(accountEndpoint),
-                        clientOptions?.TokenCredentialBackgroundRefreshInterval),
+                        clientOptions?.TokenCredentialBackgroundRefreshInterval,
+                        AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature),
                     clientOptions)
         {
         }
@@ -1197,6 +1198,20 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Creates a new instance of a distributed write transaction.
+        /// </summary>
+        /// <returns>An instance of Distributed transaction.</returns>
+#if INTERNAL
+        public 
+#else
+        internal
+#endif
+        virtual DistributedWriteTransaction CreateDistributedWriteTransaction()
+        {
+            return new DistributedWriteTransactionCore(this.ClientContext);
+        }
+
+        /// <summary>
         /// Send a request for creating a database.
         ///
         /// A database manages users, permissions and a set of containers.
@@ -1472,6 +1487,8 @@ namespace Microsoft.Azure.Cosmos
             // In case dispose is called multiple times. Check if at least 1 active client is there
             if (NumberOfActiveClients > 0)
             {
+                CosmosDbOperationMeter.RemoveInstanceCount(this.Endpoint);
+
                 return Interlocked.Decrement(ref NumberOfActiveClients);
             }
 

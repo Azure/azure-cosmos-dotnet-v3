@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     {
                         Tuple.Create(new PartitionKeyRange{ Id = "0", MinInclusive = "", MaxExclusive = "FF"}, (ServiceIdentity)null)
                     },
-                string.Empty);
+                string.Empty, false);
             mockContainer.Setup(x => x.GetRoutingMapAsync(It.IsAny<CancellationToken>())).Returns(Task.FromResult(routingMap));
             BatchAsyncContainerExecutor executor = new BatchAsyncContainerExecutor(mockContainer.Object, mockedContext.Object, 20, BatchAsyncContainerExecutorCache.DefaultMaxBulkRequestBodySizeInBytes);
             TransactionalBatchOperationResult result = await executor.AddAsync(itemBatchOperation, NoOpTrace.Singleton);
@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 {
                     Tuple.Create(new PartitionKeyRange{ Id = "0", MinInclusive = "", MaxExclusive = "FF"}, (ServiceIdentity)null)
                 },
-                string.Empty);
+                string.Empty, false);
             mockContainer.Setup(x => x.GetRoutingMapAsync(It.IsAny<CancellationToken>())).Returns(Task.FromResult(routingMap));
             BatchAsyncContainerExecutor executor = new BatchAsyncContainerExecutor(mockContainer.Object, mockedContext.Object, 20, BatchAsyncContainerExecutorCache.DefaultMaxBulkRequestBodySizeInBytes);
             TransactionalBatchOperationResult result = await executor.AddAsync(itemBatchOperation, NoOpTrace.Singleton);
@@ -178,7 +178,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     {
                         Tuple.Create(new PartitionKeyRange{ Id = "0", MinInclusive = "", MaxExclusive = "FF"}, (ServiceIdentity)null)
                     },
-                string.Empty);
+                string.Empty, false);
             mockContainer.Setup(x => x.GetRoutingMapAsync(It.IsAny<CancellationToken>())).Returns(Task.FromResult(routingMap));
             BatchAsyncContainerExecutor executor = new BatchAsyncContainerExecutor(mockContainer.Object, mockedContext.Object, 20, BatchAsyncContainerExecutorCache.DefaultMaxBulkRequestBodySizeInBytes);
             TransactionalBatchOperationResult result = await executor.AddAsync(itemBatchOperation, NoOpTrace.Singleton);
@@ -235,7 +235,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     {
                         Tuple.Create(new PartitionKeyRange{ Id = "0", MinInclusive = "", MaxExclusive = "FF"}, (ServiceIdentity)null)
                     },
-                string.Empty);
+                string.Empty, false);
             mockContainer.Setup(x => x.GetRoutingMapAsync(It.IsAny<CancellationToken>())).Returns(Task.FromResult(routingMap));
             BatchAsyncContainerExecutor executor = new BatchAsyncContainerExecutor(mockContainer.Object, mockedContext.Object, 20, BatchAsyncContainerExecutorCache.DefaultMaxBulkRequestBodySizeInBytes);
             TransactionalBatchOperationResult result = await executor.AddAsync(itemBatchOperation, NoOpTrace.Singleton);
@@ -258,8 +258,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         private static async Task<ResponseMessage> GenerateResponseAsync(
-            ItemBatchOperation itemBatchOperation, 
-            HttpStatusCode httpStatusCode, 
+            ItemBatchOperation itemBatchOperation,
+            HttpStatusCode httpStatusCode,
             SubStatusCodes subStatusCode)
         {
             List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
@@ -350,12 +350,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<OperationType>(),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<object>>>(),
-                It.IsAny<Tuple<string, Func<object, OpenTelemetryAttributes>>>(),
+                It.IsAny<(string OperationName, Func<object, OpenTelemetryAttributes> GetAttributes)?>(),
                 It.IsAny<ResourceType?>(),
                 It.IsAny<TraceComponent>(),
                 It.IsAny<TraceLevel>()))
-               .Returns<string, string, string, OperationType, RequestOptions, Func<ITrace, Task<object>>, Tuple<string, Func<object, OpenTelemetryAttributes>>, ResourceType?, TraceComponent, TraceLevel>(
-                (operationName,containerName, databaseName, operationType, requestOptions, func, oTelFunc, resourceType, comp, level) => func(NoOpTrace.Singleton));
+               .Returns<string, string, string, OperationType, RequestOptions, Func<ITrace, Task<object>>, (string OperationName, Func<object, OpenTelemetryAttributes> GetAttributes)?, ResourceType?, TraceComponent, TraceLevel>(
+                (operationName, containerName, databaseName, operationType, requestOptions, func, oTelFunc, resourceType, comp, level) => func(NoOpTrace.Singleton));
 
             mockContext.Setup(x => x.Client).Returns(MockCosmosUtil.CreateMockCosmosClient());
 
@@ -377,7 +377,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             public ClientWithSplitDetection()
             {
-                this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(MockBehavior.Strict, null, null, null, null);
+                this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(MockBehavior.Strict, null, null, null, null, false, false);
                 this.partitionKeyRangeCache.Setup(
                         m => m.TryGetOverlappingRangesAsync(
                             It.IsAny<string>(),

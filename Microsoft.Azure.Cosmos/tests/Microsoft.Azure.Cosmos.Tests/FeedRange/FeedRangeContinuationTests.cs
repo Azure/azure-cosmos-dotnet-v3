@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 
             ResponseMessage split = new ResponseMessage(HttpStatusCode.Gone);
             split.Headers.SubStatusCode = Documents.SubStatusCodes.PartitionKeyRangeGone;
-            Assert.IsTrue((await feedRangeCompositeContinuation.HandleSplitAsync(containerCore.Object, split, default(CancellationToken))).ShouldRetry);
+            Assert.IsTrue((await feedRangeCompositeContinuation.HandleSplitAsync(containerCore.Object, split, default)).ShouldRetry);
 
             // verify token state
             // Split should have updated initial and created a new token at the end
@@ -148,7 +148,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 
             ResponseMessage split = new ResponseMessage(HttpStatusCode.Gone);
             split.Headers.SubStatusCode = Documents.SubStatusCodes.PartitionKeyRangeGone;
-            Assert.IsTrue((await feedRangeCompositeContinuation.HandleSplitAsync(containerCore.Object, split, default(CancellationToken))).ShouldRetry);
+            Assert.IsTrue((await feedRangeCompositeContinuation.HandleSplitAsync(containerCore.Object, split, default)).ShouldRetry);
 
             // verify token state
             // Split should have updated initial and created a new token at the end

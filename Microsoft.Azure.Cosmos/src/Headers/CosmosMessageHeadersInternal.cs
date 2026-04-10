@@ -5,11 +5,8 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
-    using System.Collections.Specialized;
     using System.Globalization;
-    using System.Text;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
@@ -91,6 +88,12 @@ namespace Microsoft.Azure.Cosmos
         {
             get => this.GetValueOrDefault(HttpConstants.HttpHeaders.IndexUtilization);
             set => this.SetProperty(HttpConstants.HttpHeaders.IndexUtilization, value);
+        }
+
+        public virtual string QueryAdvice
+        {
+            get => this.GetValueOrDefault(HttpConstants.HttpHeaders.QueryAdvice);
+            set => this.SetProperty(HttpConstants.HttpHeaders.QueryAdvice, value);
         }
 
         public virtual string BackendRequestDurationMilliseconds

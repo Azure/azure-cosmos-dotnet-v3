@@ -350,7 +350,7 @@
             {
                 if (item.Metadata.OperationType == ChangeFeedOperationType.Delete)
                 {
-                    Console.WriteLine($"\tDetected {item.Metadata.OperationType} operation for item with id {item.Previous.id}.");
+                    Console.WriteLine($"\tDetected {item.Metadata.OperationType} operation for item.");
                 }
                 else
                 {

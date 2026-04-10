@@ -11,8 +11,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
-    using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Cosmos.Fluent;
+    using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -36,12 +36,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.Is<Cosmos.PartitionKey>(pk => pk.Equals(partitionKey)),
                 It.IsAny<ItemRequestOptions>(),
                 It.IsAny<CancellationToken>()))
-                .ReturnsAsync((Stream stream, string id, PartitionKey pk, ItemRequestOptions options, CancellationToken cancellationToken) =>
+                .ReturnsAsync((Stream stream, string id, PartitionKey pk, ItemRequestOptions options, CancellationToken cancellationToken) => new ResponseMessage(HttpStatusCode.OK)
                 {
-                    return new ResponseMessage(HttpStatusCode.OK)
-                    {
-                        Content = stream
-                    };
+                    Content = stream
                 });
 
             DocumentServiceLeaseUpdaterCosmos updater = new DocumentServiceLeaseUpdaterCosmos(DocumentServiceLeaseUpdaterCosmosTests.GetMockedContainer(mockedItems));
@@ -80,12 +77,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.Is<Cosmos.PartitionKey>(pk => pk.Equals(partitionKey)),
                 It.IsAny<ItemRequestOptions>(),
                 It.IsAny<CancellationToken>()))
-                .ReturnsAsync(() =>
+                .ReturnsAsync(() => new ResponseMessage(HttpStatusCode.OK)
                 {
-                    return new ResponseMessage(HttpStatusCode.OK)
-                    {
-                        Content = new CosmosJsonDotNetSerializer().ToStream(leaseToUpdate)
-                    };
+                    Content = new CosmosJsonDotNetSerializer().ToStream(leaseToUpdate)
                 });
 
             mockedItems.SetupSequence(i => i.ReplaceItemStreamAsync(
@@ -94,17 +88,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.Is<Cosmos.PartitionKey>(pk => pk.Equals(partitionKey)),
                 It.IsAny<ItemRequestOptions>(),
                 It.IsAny<CancellationToken>()))
-                .Returns(() =>
+                .Returns(() => Task.FromResult(new ResponseMessage(HttpStatusCode.PreconditionFailed)))
+                .Returns(() => Task.FromResult(new ResponseMessage(HttpStatusCode.OK)
                 {
-                    return Task.FromResult(new ResponseMessage(HttpStatusCode.PreconditionFailed));
-                })
-                .Returns(() =>
-                {
-                    return Task.FromResult(new ResponseMessage(HttpStatusCode.OK)
-                    {
-                        Content = new CosmosJsonDotNetSerializer().ToStream(leaseToUpdate)
-                    });
-                });
+                    Content = new CosmosJsonDotNetSerializer().ToStream(leaseToUpdate)
+                }));
 
             DocumentServiceLeaseUpdaterCosmos updater = new DocumentServiceLeaseUpdaterCosmos(DocumentServiceLeaseUpdaterCosmosTests.GetMockedContainer(mockedItems));
             DocumentServiceLease updatedLease = await updater.UpdateLeaseAsync(leaseToUpdate, itemId, partitionKey, serverLease =>
@@ -141,12 +129,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.Is<Cosmos.PartitionKey>(pk => pk.Equals(partitionKey)),
                 It.IsAny<ItemRequestOptions>(),
                 It.IsAny<CancellationToken>()))
-                .ReturnsAsync(() =>
+                .ReturnsAsync(() => new ResponseMessage(HttpStatusCode.OK)
                 {
-                    return new ResponseMessage(HttpStatusCode.OK)
-                    {
-                        Content = new CosmosJsonDotNetSerializer().ToStream(leaseToUpdate)
-                    };
+                    Content = new CosmosJsonDotNetSerializer().ToStream(leaseToUpdate)
                 });
 
             mockedItems.Setup(i => i.ReplaceItemStreamAsync(
@@ -155,10 +140,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.Is<Cosmos.PartitionKey>(pk => pk.Equals(partitionKey)),
                 It.IsAny<ItemRequestOptions>(),
                 It.IsAny<CancellationToken>()))
-                .Returns(() =>
-                {
-                    return Task.FromResult(new ResponseMessage(HttpStatusCode.PreconditionFailed));
-                });
+                .Returns(() => Task.FromResult(new ResponseMessage(HttpStatusCode.PreconditionFailed)));
 
             DocumentServiceLeaseUpdaterCosmos updater = new DocumentServiceLeaseUpdaterCosmos(DocumentServiceLeaseUpdaterCosmosTests.GetMockedContainer(mockedItems));
             DocumentServiceLease updatedLease = await updater.UpdateLeaseAsync(leaseToUpdate, itemId, partitionKey, serverLease =>
@@ -181,12 +163,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.Is<Cosmos.PartitionKey>(pk => pk.Equals(partitionKey)),
                 It.IsAny<ItemRequestOptions>(),
                 It.IsAny<CancellationToken>()))
-                .ReturnsAsync(() =>
+                .ReturnsAsync(() => new ResponseMessage(HttpStatusCode.OK)
                 {
-                    return new ResponseMessage(HttpStatusCode.OK)
-                    {
-                        Content = new CosmosJsonDotNetSerializer().ToStream(leaseToUpdate)
-                    };
+                    Content = new CosmosJsonDotNetSerializer().ToStream(leaseToUpdate)
                 });
 
             mockedItems.SetupSequence(i => i.ReplaceItemStreamAsync(
@@ -195,17 +174,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.Is<Cosmos.PartitionKey>(pk => pk.Equals(partitionKey)),
                 It.IsAny<ItemRequestOptions>(),
                 It.IsAny<CancellationToken>()))
-                .Returns(() =>
+                .Returns(() => Task.FromResult(new ResponseMessage(HttpStatusCode.Conflict)))
+                .Returns(() => Task.FromResult(new ResponseMessage(HttpStatusCode.OK)
                 {
-                    return Task.FromResult(new ResponseMessage(HttpStatusCode.Conflict));
-                })
-                .Returns(() =>
-                {
-                    return Task.FromResult(new ResponseMessage(HttpStatusCode.OK)
-                    {
-                        Content = new CosmosJsonDotNetSerializer().ToStream(leaseToUpdate)
-                    });
-                });
+                    Content = new CosmosJsonDotNetSerializer().ToStream(leaseToUpdate)
+                }));
 
             DocumentServiceLeaseUpdaterCosmos updater = new DocumentServiceLeaseUpdaterCosmos(DocumentServiceLeaseUpdaterCosmosTests.GetMockedContainer(mockedItems));
             LeaseLostException leaseLost = await Assert.ThrowsExceptionAsync<LeaseLostException>(() => updater.UpdateLeaseAsync(leaseToUpdate, itemId, partitionKey, serverLease =>
@@ -231,12 +204,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.Is<Cosmos.PartitionKey>(pk => pk.Equals(partitionKey)),
                 It.IsAny<ItemRequestOptions>(),
                 It.IsAny<CancellationToken>()))
-                .ReturnsAsync(() =>
+                .ReturnsAsync(() => new ResponseMessage(HttpStatusCode.OK)
                 {
-                    return new ResponseMessage(HttpStatusCode.OK)
-                    {
-                        Content = new CosmosJsonDotNetSerializer().ToStream(leaseToUpdate)
-                    };
+                    Content = new CosmosJsonDotNetSerializer().ToStream(leaseToUpdate)
                 });
 
             mockedItems.SetupSequence(i => i.ReplaceItemStreamAsync(
@@ -245,17 +215,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.Is<Cosmos.PartitionKey>(pk => pk.Equals(partitionKey)),
                 It.IsAny<ItemRequestOptions>(),
                 It.IsAny<CancellationToken>()))
-                .Returns(() =>
+                .Returns(() => Task.FromResult(new ResponseMessage(HttpStatusCode.NotFound)))
+                .Returns(() => Task.FromResult(new ResponseMessage(HttpStatusCode.OK)
                 {
-                    return Task.FromResult(new ResponseMessage(HttpStatusCode.NotFound));
-                })
-                .Returns(() =>
-                {
-                    return Task.FromResult(new ResponseMessage(HttpStatusCode.OK)
-                    {
-                        Content = new CosmosJsonDotNetSerializer().ToStream(leaseToUpdate)
-                    });
-                });
+                    Content = new CosmosJsonDotNetSerializer().ToStream(leaseToUpdate)
+                }));
 
             DocumentServiceLeaseUpdaterCosmos updater = new DocumentServiceLeaseUpdaterCosmos(DocumentServiceLeaseUpdaterCosmosTests.GetMockedContainer(mockedItems));
             LeaseLostException leaseLost = await Assert.ThrowsExceptionAsync<LeaseLostException>(() => updater.UpdateLeaseAsync(leaseToUpdate, itemId, partitionKey, serverLease =>
@@ -281,10 +245,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.Is<Cosmos.PartitionKey>(pk => pk.Equals(partitionKey)),
                 It.IsAny<ItemRequestOptions>(),
                 It.IsAny<CancellationToken>()))
-                .ReturnsAsync(() =>
-                {
-                    return new ResponseMessage(HttpStatusCode.NotFound);
-                });
+                .ReturnsAsync(() => new ResponseMessage(HttpStatusCode.NotFound));
 
             mockedItems.SetupSequence(i => i.ReplaceItemStreamAsync(
                 It.IsAny<Stream>(),
@@ -292,17 +253,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.Is<Cosmos.PartitionKey>(pk => pk.Equals(partitionKey)),
                 It.IsAny<ItemRequestOptions>(),
                 It.IsAny<CancellationToken>()))
-                .Returns(() =>
+                .Returns(() => Task.FromResult(new ResponseMessage(HttpStatusCode.PreconditionFailed)))
+                .Returns(() => Task.FromResult(new ResponseMessage(HttpStatusCode.OK)
                 {
-                    return Task.FromResult(new ResponseMessage(HttpStatusCode.PreconditionFailed));
-                })
-                .Returns(() =>
-                {
-                    return Task.FromResult(new ResponseMessage(HttpStatusCode.OK)
-                    {
-                        Content = new CosmosJsonDotNetSerializer().ToStream(leaseToUpdate)
-                    });
-                });
+                    Content = new CosmosJsonDotNetSerializer().ToStream(leaseToUpdate)
+                }));
 
             DocumentServiceLeaseUpdaterCosmos updater = new DocumentServiceLeaseUpdaterCosmos(DocumentServiceLeaseUpdaterCosmosTests.GetMockedContainer(mockedItems));
             LeaseLostException leaseLost = await Assert.ThrowsExceptionAsync<LeaseLostException>(() => updater.UpdateLeaseAsync(leaseToUpdate, itemId, partitionKey, serverLease =>

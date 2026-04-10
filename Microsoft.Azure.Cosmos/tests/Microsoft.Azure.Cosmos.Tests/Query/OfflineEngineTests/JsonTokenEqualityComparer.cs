@@ -106,24 +106,16 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
                 return false;
             }
 
-            switch (type1)
+            return type1 switch
             {
-
-                case JsonType.Object:
-                    return this.Equals((JObject)jToken1, (JObject)jToken2);
-                case JsonType.Array:
-                    return this.Equals((JArray)jToken1, (JArray)jToken2);
-                case JsonType.Number:
-                    return this.Equals((double)jToken1, (double)jToken2);
-                case JsonType.String:
-                    return this.Equals(jToken1.ToString(), jToken2.ToString());
-                case JsonType.Boolean:
-                    return this.Equals((bool)jToken1, (bool)jToken2);
-                case JsonType.Null:
-                    return true;
-                default:
-                    throw new InvalidEnumArgumentException(nameof(type1));
-            }
+                JsonType.Object => this.Equals((JObject)jToken1, (JObject)jToken2),
+                JsonType.Array => this.Equals((JArray)jToken1, (JArray)jToken2),
+                JsonType.Number => this.Equals((double)jToken1, (double)jToken2),
+                JsonType.String => this.Equals(jToken1.ToString(), jToken2.ToString()),
+                JsonType.Boolean => this.Equals((bool)jToken1, (bool)jToken2),
+                JsonType.Null => true,
+                _ => throw new InvalidEnumArgumentException(nameof(type1)),
+            };
         }
 
         public int GetHashCode(JToken obj)
@@ -143,36 +135,16 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
 
         private static JsonType JTokenTypeToJsonType(JTokenType type)
         {
-            switch (type)
+            return type switch
             {
-
-                case JTokenType.Object:
-                    return JsonType.Object;
-                case JTokenType.Array:
-                    return JsonType.Array;
-                case JTokenType.Integer:
-                case JTokenType.Float:
-                    return JsonType.Number;
-                case JTokenType.Guid:
-                case JTokenType.Uri:
-                case JTokenType.TimeSpan:
-                case JTokenType.Date:
-                case JTokenType.String:
-                    return JsonType.String;
-                case JTokenType.Boolean:
-                    return JsonType.Boolean;
-                case JTokenType.Null:
-                    return JsonType.Null;
-                case JTokenType.None:
-                case JTokenType.Undefined:
-                case JTokenType.Constructor:
-                case JTokenType.Property:
-                case JTokenType.Comment:
-                case JTokenType.Raw:
-                case JTokenType.Bytes:
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(type));
-            }
+                JTokenType.Object => JsonType.Object,
+                JTokenType.Array => JsonType.Array,
+                JTokenType.Integer or JTokenType.Float => JsonType.Number,
+                JTokenType.Guid or JTokenType.Uri or JTokenType.TimeSpan or JTokenType.Date or JTokenType.String => JsonType.String,
+                JTokenType.Boolean => JsonType.Boolean,
+                JTokenType.Null => JsonType.Null,
+                _ => throw new ArgumentOutOfRangeException(nameof(type)),
+            };
         }
     }
 }

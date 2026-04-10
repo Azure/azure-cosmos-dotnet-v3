@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
-    [TestClass]    
+    [TestClass]
     public class BatchAsyncContainerExecutorCacheTests
     {
         [TestMethod]

@@ -34,10 +34,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             new CosmosClientOptions() { ConnectionMode = ConnectionMode.Direct, ConnectionProtocol = Documents.Client.Protocol.Tcp });
         private static readonly CosmosClient[] Clients = new CosmosClient[] { GatewayClient, RntbdClient };
         private static readonly CosmosClient Client = RntbdClient;
-        private static readonly AsyncLazy<Database> Database = new AsyncLazy<Database>(async () =>
-        {
-            return await Client.CreateDatabaseAsync(Guid.NewGuid().ToString());
-        });
+        private static readonly AsyncLazy<Database> Database = new AsyncLazy<Database>(async () => await Client.CreateDatabaseAsync(Guid.NewGuid().ToString()));
 
         private static async Task<Container> CreateContainerAsync()
         {
@@ -346,8 +343,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     string name = kvp.Key;
                     JToken value1 = kvp.Value;
 
-                    JToken value2;
-                    if (jObject2.TryGetValue(name, out value2))
+                    if (jObject2.TryGetValue(name, out JToken value2))
                     {
                         deepEquals &= this.Equals(value1, value2);
                     }
@@ -430,36 +426,16 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             private static JsonType JTokenTypeToJsonType(JTokenType type)
             {
-                switch (type)
+                return type switch
                 {
-
-                    case JTokenType.Object:
-                        return JsonType.Object;
-                    case JTokenType.Array:
-                        return JsonType.Array;
-                    case JTokenType.Integer:
-                    case JTokenType.Float:
-                        return JsonType.Number;
-                    case JTokenType.Guid:
-                    case JTokenType.Uri:
-                    case JTokenType.TimeSpan:
-                    case JTokenType.Date:
-                    case JTokenType.String:
-                        return JsonType.String;
-                    case JTokenType.Boolean:
-                        return JsonType.Boolean;
-                    case JTokenType.Null:
-                        return JsonType.Null;
-                    case JTokenType.None:
-                    case JTokenType.Undefined:
-                    case JTokenType.Constructor:
-                    case JTokenType.Property:
-                    case JTokenType.Comment:
-                    case JTokenType.Raw:
-                    case JTokenType.Bytes:
-                    default:
-                        throw new ArgumentException();
-                }
+                    JTokenType.Object => JsonType.Object,
+                    JTokenType.Array => JsonType.Array,
+                    JTokenType.Integer or JTokenType.Float => JsonType.Number,
+                    JTokenType.Guid or JTokenType.Uri or JTokenType.TimeSpan or JTokenType.Date or JTokenType.String => JsonType.String,
+                    JTokenType.Boolean => JsonType.Boolean,
+                    JTokenType.Null => JsonType.Null,
+                    _ => throw new ArgumentException(),
+                };
             }
         }
     }

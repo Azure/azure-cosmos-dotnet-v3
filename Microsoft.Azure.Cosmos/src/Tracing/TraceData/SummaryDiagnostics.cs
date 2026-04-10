@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Globalization;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Json;
@@ -22,7 +23,11 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 = new Lazy<Dictionary<(int, int), int>>(() => new Dictionary<(int, int), int>());
             this.AllRegionsContacted 
                 = new Lazy<HashSet<Uri>>(() => new HashSet<Uri>());
-            
+
+            if (trace is Tracing.Trace rootConcreteTrace)
+            {
+                rootConcreteTrace.SetWalkingStateRecursively();
+            }
             this.CollectSummaryFromTraceTree(trace);
         }
 
@@ -38,6 +43,9 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
         private void CollectSummaryFromTraceTree(ITrace currentTrace)
         {
+            // Assert that walking state is set
+            Debug.Assert(currentTrace.IsBeingWalked, "SetWalkingStateRecursively should be set to true");
+
             foreach (object datums in currentTrace.Data.Values)
             {
                 if (datums is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
@@ -125,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 foreach (KeyValuePair<(int, int), int> kvp in this.DirectRequestsSummary.Value)
                 {
                     jsonWriter.WriteFieldName(kvp.Key.ToString());
-                    jsonWriter.WriteNumber64Value(kvp.Value);
+                    jsonWriter.WriteNumberValue(kvp.Value);
                 }
                 jsonWriter.WriteObjectEnd();
             }
@@ -133,7 +141,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             if (this.AllRegionsContacted.IsValueCreated)
             {
                 jsonWriter.WriteFieldName("RegionsContacted");
-                jsonWriter.WriteNumber64Value(this.AllRegionsContacted.Value.Count);
+                jsonWriter.WriteNumberValue(this.AllRegionsContacted.Value.Count);
             }
 
             if (this.GatewayRequestsSummary.IsValueCreated)
@@ -143,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 foreach (KeyValuePair<(int, int), int> kvp in this.GatewayRequestsSummary.Value)
                 {
                     jsonWriter.WriteFieldName(kvp.Key.ToString());
-                    jsonWriter.WriteNumber64Value(kvp.Value);
+                    jsonWriter.WriteNumberValue(kvp.Value);
                 }
                 jsonWriter.WriteObjectEnd();
             }

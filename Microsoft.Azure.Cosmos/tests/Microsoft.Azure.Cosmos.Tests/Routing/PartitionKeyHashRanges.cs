@@ -34,20 +34,13 @@ namespace Microsoft.Azure.Cosmos.Routing
             IComparer<TKey> comparer,
             bool descending)
         {
-            IOrderedEnumerable<PartitionKeyHashRange> orderedEnumerable;
-            if (descending)
-            {
-                orderedEnumerable = this.partitionKeyHashRanges
+            IOrderedEnumerable<PartitionKeyHashRange> orderedEnumerable = descending
+                ? this.partitionKeyHashRanges
                     .OrderByDescending((range) => range.StartInclusive.Value)
-                    .ThenByDescending(keySelector, comparer);
-            }
-            else
-            {
-                orderedEnumerable = this.partitionKeyHashRanges
+                    .ThenByDescending(keySelector, comparer)
+                : this.partitionKeyHashRanges
                     .OrderBy((range) => range.StartInclusive.Value)
                     .ThenBy(keySelector, comparer);
-            }
-
             return orderedEnumerable;
         }
 

@@ -23,14 +23,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Action<dynamic> fromStreamCallback,
             Action<dynamic> toStreamCallBack)
         {
-            if (jsonSerializerSettings == null)
-            {
-                this.cosmosSerializer = new CosmosJsonDotNetSerializer();
-            }
-            else
-            {
-                this.cosmosSerializer = new CosmosJsonDotNetSerializer(jsonSerializerSettings);
-            }
+            this.cosmosSerializer = jsonSerializerSettings == null ? new CosmosJsonDotNetSerializer() : (CosmosSerializer)new CosmosJsonDotNetSerializer(jsonSerializerSettings);
 
             this.fromStreamCallback = fromStreamCallback;
             this.toStreamCallBack = toStreamCallBack;

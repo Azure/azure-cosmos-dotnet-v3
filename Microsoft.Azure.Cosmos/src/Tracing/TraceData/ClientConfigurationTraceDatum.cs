@@ -26,6 +26,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                                                 cosmosClientContext.ClientOptions.AllowBulkExecution);
 
             this.ConsistencyConfig = new ConsistencyConfig(cosmosClientContext.ClientOptions.ConsistencyLevel,
+                                                    cosmosClientContext.ClientOptions.ReadConsistencyStrategy,
                                                     cosmosClientContext.ClientOptions.ApplicationPreferredRegions, cosmosClientContext.ClientOptions.ApplicationRegion);
 
             this.cachedNumberOfClientCreated = CosmosClient.numberOfClientsCreated;
@@ -105,9 +106,9 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 jsonTextWriter.WriteStringValue(this.cachedVMRegion);
             }
             jsonTextWriter.WriteFieldName("NumberOfClientsCreated");
-            jsonTextWriter.WriteNumber64Value(this.cachedNumberOfClientCreated);
+            jsonTextWriter.WriteNumberValue(this.cachedNumberOfClientCreated);
             jsonTextWriter.WriteFieldName("NumberOfActiveClients");
-            jsonTextWriter.WriteNumber64Value(this.cachedNumberOfActiveClient);
+            jsonTextWriter.WriteNumberValue(this.cachedNumberOfActiveClient);
             jsonTextWriter.WriteFieldName("ConnectionMode");
             jsonTextWriter.WriteStringValue(this.ConnectionMode.ToString());
             jsonTextWriter.WriteFieldName("User Agent");
@@ -128,7 +129,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             jsonTextWriter.WriteFieldName("ConsistencyConfig");
             jsonTextWriter.WriteStringValue(this.ConsistencyConfig.ToString());
             jsonTextWriter.WriteFieldName("ProcessorCount");
-            jsonTextWriter.WriteNumber64Value(this.ProcessorCount);
+            jsonTextWriter.WriteNumberValue(this.ProcessorCount);
 
             jsonTextWriter.WriteObjectEnd();
 
