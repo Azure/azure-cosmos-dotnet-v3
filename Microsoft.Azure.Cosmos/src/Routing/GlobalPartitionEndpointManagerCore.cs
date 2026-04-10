@@ -665,15 +665,45 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
         /// <summary>
-        /// Checks whether the request has the hub region processing header,
+        /// Checks whether the request has the hub region processing header or the hub region processing property,
         /// indicating it is in the hub region discovery flow (after 2× 404/1002).
         /// </summary>
-        public static bool IsHubRegionRoutingActive(DocumentServiceRequest request)
+        public static bool IsHubRegionRoutingActive(
+            DocumentServiceRequest request)
         {
-            return request.IsReadOnlyRequest && string.Equals(
-                request?.Headers?[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion],
-                bool.TrueString,
-                StringComparison.OrdinalIgnoreCase);
+            return request.IsReadOnlyRequest
+                && (GlobalPartitionEndpointManagerCore.IsHubRegionHeaderPresentInRequest(request)
+                || GlobalPartitionEndpointManagerCore.IsHubRegionPropertyPresentInRequest(request));
+        }
+
+        /// <summary>
+        /// Determines whether the request contains a header indicating that processing should occur only in the hub region.
+        /// </summary>
+        /// <param name="request">The request to inspect for the presence of the hub region processing header. Cannot be null.</param>
+        /// <returns>true if the request contains the header with a value indicating processing should occur only in the hub
+        /// region; otherwise, false.</returns>
+        private static bool IsHubRegionHeaderPresentInRequest(
+            DocumentServiceRequest request)
+        {
+            return string.Equals(
+                    request?.Headers?[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion],
+                    bool.TrueString,
+                    StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Determines whether the hub region override property is present and set to true in the specified request.
+        /// </summary>
+        /// <param name="request">The request to inspect for the presence of the hub region override property. Cannot be null.</param>
+        /// <returns>true if the hub region override property is present in the request and its value is true; otherwise, false.</returns>
+        private static bool IsHubRegionPropertyPresentInRequest(
+            DocumentServiceRequest request)
+        {
+            return request?.Properties != null
+                && request.Properties.TryGetValue(
+                    GlobalPartitionEndpointManager.HubRegionOverridePresentInCache,
+                    out object value)
+                && value is true;
         }
 
         internal sealed class PartitionKeyRangeFailoverInfo

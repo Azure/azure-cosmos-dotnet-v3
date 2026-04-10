@@ -274,10 +274,10 @@ namespace Microsoft.Azure.Cosmos
                 && subStatusCode == SubStatusCodes.WriteForbidden)
             {
 #if !INTERNAL
-                // We received a 403.3 on the read path. This is possible only when the hub region header is present. Retry
-                // the request to continue discovering the hub region.
                 if (this.documentServiceRequest.IsReadOnlyRequest && this.addHubRegionProcessingOnlyHeader)
                 {
+                    // We received a 403.3 on the read path. This is possible only when the hub region header is present and the request
+                    // landed on a non-hub region. This triggers the retry process to discover the new hub region for the given partition.
                     this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(this.documentServiceRequest);
                     TimeSpan retryDelay = TimeSpan.FromMilliseconds(ClientRetryPolicy.RetryIntervalInMS);
                     return ShouldRetryResult.RetryAfter(retryDelay);
@@ -445,9 +445,9 @@ namespace Microsoft.Azure.Cosmos
             }
             else
             {
-                ReadOnlyCollection<Uri> endpoints = this.globalEndpointManager.GetApplicableEndpoints(request, this.isReadRequest);
                 if (this.canUseMultipleWriteLocations)
                 {
+                    ReadOnlyCollection<Uri> endpoints = this.globalEndpointManager.GetApplicableEndpoints(request, this.isReadRequest);
                     if (this.sessionTokenRetryCount > endpoints.Count)
                     {
                         // When use multiple write locations is true and the request has been tried 
@@ -476,26 +476,32 @@ namespace Microsoft.Azure.Cosmos
                     }
                     else if (this.addHubRegionProcessingOnlyHeader)
                     {
-                        // The Hub region with the new header returned 404/1002.
-                        // This is the source of truth and there won't be any more retries.
+                        // When hub region processing header is attached, then only the hub region can return either 200 or 404/1002.
+                        // If the request lands on a non-hub region with the hub region processing request header, then ideally that
+                        // region should only return a 403.3 indicating this is not the hub region. If the Hub region with the new header
+                        // returns 404/1002 then treat that as the source of truth and there should not be any more retries.
                         return ShouldRetryResult.NoRetry();
                     }
                     else
                     {
                         // The hub region returned 404/1002. We will need to try on the hub region one more time with the hub region processing only header.
-                        // Note: If that also returns 404/1002, then we know for sure that the hub region for this partition doesn't have the respective document
-                        // and we can stop retrying.
+                        // Note: Always attach the header with the request only when the request has already reached the hub region without the header first.
+                        // If even after pinning the header, the request returns 404/1002, then we know for sure that the hub region for this partition doesn't
+                        // have the respective document and we can stop retrying.
                         if (this.sessionTokenRetryCount > 1)
                         {
                             this.addHubRegionProcessingOnlyHeader = true;
                         }
 
-                        // Check the per partition automatic failover cache for hub region overrides first. If the override is present,
+                        // Note: Check the per partition automatic failover cache for hub region overrides first. If the override is present,
                         // it means we have already discovered the hub region for this partition and can route directly there (skipping the 403/3 discovery chain).
+                        // We are attaching the hub region property to the request to ensure that the AddressResolver or the GatewayStoreModel is able to fetch the override
+                        // region and route to the correct hub region endpoint. Attaching the header here, would mean that the request will land on the overriden hub
+                        // region with the request header in place, which is what we want on the third attempt, but not on the second one.
                         if (this.partitionKeyRangeLocationCache.TryAddPartitionLevelLocationOverride(request, checkHubRegionOverrideInCache: true))
                         {
-                            this.addHubRegionProcessingOnlyHeader = true;
-                            DefaultTrace.TraceInformation("Partition level override added by hub-region override for request {0}. Routing to the cached hub region for this request.", request.ResourceAddress);
+                            request.Properties[GlobalPartitionEndpointManager.HubRegionOverridePresentInCache] = true;
+                            DefaultTrace.TraceVerbose("Partition level override added by hub-region override for request {0}. Routing to the cached hub region for this request.", request.ResourceAddress);
                         }
                         else
                         {
