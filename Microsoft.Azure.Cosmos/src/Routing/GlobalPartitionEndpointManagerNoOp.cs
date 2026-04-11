@@ -77,6 +77,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             return false;
         }
-    }
 #endif
+    }
 }
