@@ -72,9 +72,11 @@ namespace Microsoft.Azure.Cosmos.Routing
             return false;
         }
 
+#if !INTERNAL
         public override bool IsHubRegionProcessingEnabled()
         {
             return false;
         }
     }
+#endif
 }

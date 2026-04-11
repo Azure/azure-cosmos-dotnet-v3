@@ -2,7 +2,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Net;
@@ -2684,6 +2683,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
                 else if(connectionMode == ConnectionMode.Direct)
                 {
+                    // In Direct mode, SessionTokenMismatchRetryPolicy retries at the transport layer
+                    // upon receiving 404/1002 responses. Each retry goes through this interceptor,
+                    // so we cannot rely on requestCount for state transitions. Instead, we use
+                    // the hub header presence as the state driver: after 2× 404/1002, ClientRetryPolicy
+                    // sets the hub header, signaling the interceptor to advance to the 403/3 phase.
+                    bool returned403InDirect = false;
+
                     cosmosClientOptions.TransportClientHandlerFactory = (transport) => new TransportClientWrapper(
                         transport,
                         interceptorAfterResult: (request, storeResponse) =>
@@ -2695,63 +2701,50 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                                 bool.TryParse(request.Headers.Get(HubRegionHeader), out bool hasHubHeader);
 
-                                // Verify hub header is NOT present on first request.
-                                if (requestCount == 1)
+                                if (hasHubHeader && !returned403InDirect)
                                 {
-                                    Assert.IsFalse(hasHubHeader, $"Hub header should NOT be present on request {requestCount}");
-                                }
+                                    // Phase 2: Hub header is present → SDK completed 2× 404/1002 phase.
+                                    // Return 403/3 (WriteForbidden) once to trigger hub region discovery.
+                                    returned403InDirect = true;
 
-                                // Verify hub header is present on third request.
-                                if (requestCount == 3)
-                                {
-                                    Assert.IsTrue(hasHubHeader, $"Hub header should be present on request {requestCount}");
-                                }
-
-                                // Check if hub header is present on 4th request
-                                if (requestCount == 4)
-                                {
-                                    hubHeaderOnFourthRequest = hasHubHeader;
-                                }
-
-                                // Flow is: Request sent on preferred read region >> Request gets 404/1002 >> Request retried on account
-                                // hub region without hub header >> Request gets 403/3 >> Request retried again on account hub region with hub header
-                                // >> Request succeeds or gets 404/1002 or 403.3. In this test we are simulating a 403.3 from the account hub region.
-                                // This will trigger a hub region discovery. 
-                                if (requestCount == 3)
-                                {
-                                    // Create headers with substatus code
-                                    storeResponse.Headers.Set(Documents.WFConstants.BackendHeaders.NumberOfReadRegions, "3");
                                     storeResponse.Headers.Set(Documents.WFConstants.BackendHeaders.SubStatus, ((int)Documents.SubStatusCodes.WriteForbidden).ToString());
                                     storeResponse.Headers.Set(Documents.HttpConstants.HttpHeaders.ActivityId, Guid.NewGuid().ToString());
                                     storeResponse.Headers.Set(Documents.HttpConstants.HttpHeaders.RequestCharge, "1.0");
 
-                                    Documents.StoreResponse notFoundResposne = new Documents.StoreResponse()
+                                    Documents.StoreResponse forbiddenResponse = new Documents.StoreResponse()
                                     {
                                         Status = 403,
                                         Headers = storeResponse.Headers,
                                         ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes("The requested operation cannot be performed at this region"))
                                     };
 
-                                    storeResponse = notFoundResposne;
+                                    storeResponse = forbiddenResponse;
                                 }
-                                else if (return404Count < maxReturn404)
+                                else if (!hasHubHeader)
                                 {
+                                    // Phase 1: No hub header → return 404/1002 (ReadSessionNotAvailable).
+                                    // This may fire multiple times due to SessionTokenMismatchRetryPolicy
+                                    // retries at the transport layer — that's expected.
                                     return404Count++;
 
-                                    // Create headers with substatus code
-                                    storeResponse.Headers.Set(Documents.WFConstants.BackendHeaders.NumberOfReadRegions, "3");
                                     storeResponse.Headers.Set(Documents.WFConstants.BackendHeaders.SubStatus, ((int)Documents.SubStatusCodes.ReadSessionNotAvailable).ToString());
                                     storeResponse.Headers.Set(Documents.HttpConstants.HttpHeaders.ActivityId, Guid.NewGuid().ToString());
                                     storeResponse.Headers.Set(Documents.HttpConstants.HttpHeaders.RequestCharge, "1.0");
 
-                                    Documents.StoreResponse notFoundResposne = new Documents.StoreResponse()
+                                    Documents.StoreResponse notFoundResponse = new Documents.StoreResponse()
                                     {
                                         Status = 404,
                                         Headers = storeResponse.Headers,
                                         ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes($"Lease not found: Gone, rule: {0}"))
                                     };
 
-                                    storeResponse = notFoundResposne;
+                                    storeResponse = notFoundResponse;
+                                }
+                                else
+                                {
+                                    // Phase 3: Hub header present and 403/3 already returned → passthrough.
+                                    // The real server response (200 OK) goes through to ClientRetryPolicy.
+                                    hubHeaderOnFourthRequest = hasHubHeader;
                                 }
                             }
 
@@ -2780,7 +2773,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.AreEqual(testItem.id, response.Resource.id);
 
                     //Verify request counts
-                    Assert.AreEqual(2, return404Count, "Should have returned 404/1002 exactly twice");
+                    Assert.IsTrue(return404Count >= 2, $"Should have returned 404/1002 at least twice, got {return404Count}");
                     Assert.IsTrue(requestCount >= 3, $"Should have made at least 3 requests, but made {requestCount}");
 
                     // Hub header should be present on the 3rd request
