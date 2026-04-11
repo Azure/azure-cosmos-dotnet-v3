@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestInitialize]
-        public void TestInitialize()
+        public async Task TestInitialize()
         {
             this.client = TestCommon.CreateClient(true, defaultConsistencyLevel: ConsistencyLevel.Session);
 
@@ -65,13 +65,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                          (HttpMessageHandler)null,
                          connectionPolicy: null);
 
-            this.CleanUp();
+            await this.CleanUp();
         }
 
         [TestCleanup]
-        public void TestCleanup()
+        public async Task TestCleanup()
         {
-            this.CleanUp();
+            await this.CleanUp();
 
             this.client.Dispose();
             this.primaryReadonlyClient.Dispose();
@@ -85,42 +85,42 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public void TestQueryWithPageSize()
+        public async Task TestQueryWithPageSize()
         {
             // Create collection and insert 200 small documents
-            Database database = TestCommon.RetryRateLimiting<Database>(() =>
+            Database database = await TestCommon.AsyncRetryRateLimiting<Database>(async () =>
             {
-                return this.client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() }).Result.Resource;
+                return (await this.client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() })).Resource;
             });
 
-            DocumentCollection collection = TestCommon.RetryRateLimiting<DocumentCollection>(() =>
+            DocumentCollection collection = await TestCommon.AsyncRetryRateLimiting<DocumentCollection>(async () =>
             {
-                return TestCommon.CreateCollectionAsync(this.client, database, new DocumentCollection() { Id = Guid.NewGuid().ToString(), PartitionKey = defaultPartitionKeyDefinition }).Result;
+                return await TestCommon.CreateCollectionAsync(this.client, database, new DocumentCollection() { Id = Guid.NewGuid().ToString(), PartitionKey = defaultPartitionKeyDefinition });
             });
 
             for (int i = 0; i < 200; i++)
             {
-                TestCommon.RetryRateLimiting<Document>(() =>
+                await TestCommon.AsyncRetryRateLimiting<Document>(async () =>
                 {
-                    return this.client.CreateDocumentAsync(collection, new Document() { Id = Guid.NewGuid().ToString() }).Result.Resource;
+                    return (await this.client.CreateDocumentAsync(collection, new Document() { Id = Guid.NewGuid().ToString() })).Resource;
                 });
             }
 
             // Arbitrary count of elements up to int.MaxValue.
-            DocumentFeedResponse<dynamic> result = this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r", new FeedOptions() { EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync().Result;
+            DocumentFeedResponse<dynamic> result = await this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r", new FeedOptions() { EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync();
             Assert.IsTrue(result.Count <= 200, $"{result.Count} elements returned. It is more than available on collection");
 
             // dynamic page size (-1), expect arbitrary count of elements up to int.MaxValue.
-            result = this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r", new FeedOptions() { MaxItemCount = -1, EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync().Result;
+            result = await this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r", new FeedOptions() { MaxItemCount = -1, EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync();
             Assert.IsTrue(result.Count <= 200, $"{result.Count} elements returned. It is more than available on collection");
 
             // page size 10
-            result = this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r", new FeedOptions() { MaxItemCount = 10, EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync().Result;
+            result = await this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r", new FeedOptions() { MaxItemCount = 10, EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync();
             Assert.IsTrue(result.Count <= 10, $"{result.Count} elements returned. It is more than MaxItemCount = 10");
 
-            TestCommon.RetryRateLimiting<ResourceResponse<Database>>(() =>
+            await TestCommon.AsyncRetryRateLimiting<ResourceResponse<Database>>(async () =>
             {
-                return this.client.DeleteDatabaseAsync(database).Result;
+                return await this.client.DeleteDatabaseAsync(database);
             });
         }
 
@@ -782,12 +782,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public void TestQueryUnicodeDocumentHttpsGateway()
+        public async Task TestQueryUnicodeDocumentHttpsGateway()
         {
-            this.TestQueryUnicodeDocument(useGateway: true, protocol: Protocol.Https);
+            await this.TestQueryUnicodeDocument(useGateway: true, protocol: Protocol.Https);
         }
 
-        private void TestQueryUnicodeDocument(bool useGateway, Protocol protocol)
+        private async Task TestQueryUnicodeDocument(bool useGateway, Protocol protocol)
         {
             try
             {
@@ -809,7 +809,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         { "x-ms-indexing-directive", "include" }
                     };
 
-                    Action<string, string, string> testDocumentSQL = (name, rawValue, escapedValue) =>
+                    Func<string, string, string, Task> testDocumentSQL = async (name, rawValue, escapedValue) =>
                     {
                         escapedValue = escapedValue ?? rawValue;
 
@@ -822,43 +822,43 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         QueryDocument docCreated = testClient.Create<QueryDocument>(collection.GetIdOrFullName(), document, requestHeaders);
 
                         {
-                            IEnumerable<JObject> result = testClient
+                            IEnumerable<JObject> result = await testClient
                                 .CreateDocumentQuery(collection,
                                 string.Format(CultureInfo.InvariantCulture, "SELECT r.StringField FROM ROOT r WHERE r.StringField=\"{0}\"", rawValue),
-                                new FeedOptions { EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync<JObject>().Result;
+                                new FeedOptions { EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync<JObject>();
 
                             Assert.AreEqual(document.StringField, result.Single()["StringField"].Value<string>());
                         }
 
                         {
-                            IEnumerable<JObject> result = testClient
+                            IEnumerable<JObject> result = await testClient
                                 .CreateDocumentQuery(collection,
                                 string.Format(CultureInfo.InvariantCulture, "SELECT r.StringField FROM ROOT r WHERE r.StringField=\"{0}\"", escapedValue),
-                                new FeedOptions { EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync<JObject>().Result;
+                                new FeedOptions { EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync<JObject>();
 
                             Assert.AreEqual(document.StringField, result.Single()["StringField"].Value<string>());
                         }
 
                         {
-                            IEnumerable<JObject> result = testClient
+                            IEnumerable<JObject> result = await testClient
                                 .CreateDocumentQuery(collection,
                                 string.Format(CultureInfo.InvariantCulture, "SELECT * FROM ROOT r WHERE r.StringField=\"{0}\"", rawValue),
-                                new FeedOptions { EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync<JObject>().Result;
+                                new FeedOptions { EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync<JObject>();
 
                             Assert.AreEqual(document.Id, result.Single()["id"].Value<string>());
                         }
                     };
 
-                    testDocumentSQL("doc00", "simple", null);
-                    testDocumentSQL("doc10", "\uD83D\uDE03", @"\uD83D\uDE03");
-                    testDocumentSQL("doc20", "\uD83D\uDE03\t\u0005\uD83D\uDE03", @"\uD83D\uDE03\t\u0005\uD83D\uDE03");
-                    testDocumentSQL("doc30", "Små ord", null);
-                    testDocumentSQL("doc40", "contains space and other white characters like \t\r\n", null);
-                    testDocumentSQL("CJK Ext A0", "㐀㐁㨀㨁䶴䶵", null);
-                    testDocumentSQL("doc5CJK Ext B0", "������������", null);
-                    testDocumentSQL("Tibetan0", "དབྱངས་ཅན་སྒྲོལ་དཀར། བཀྲ་ཤིས་རྒྱལ།", null);
-                    testDocumentSQL("Uighur0", "ۋېڭكقق ھس قك كدسدق د كوكو الضعيف بقي قوي", null);
-                    testDocumentSQL("Yi0", "ꉬꄒꐵꄓꐨꐵꄓꐨ", null);
+                    await testDocumentSQL("doc00", "simple", null);
+                    await testDocumentSQL("doc10", "\uD83D\uDE03", @"\uD83D\uDE03");
+                    await testDocumentSQL("doc20", "\uD83D\uDE03\t\u0005\uD83D\uDE03", @"\uD83D\uDE03\t\u0005\uD83D\uDE03");
+                    await testDocumentSQL("doc30", "Små ord", null);
+                    await testDocumentSQL("doc40", "contains space and other white characters like \t\r\n", null);
+                    await testDocumentSQL("CJK Ext A0", "㐀㐁㨀㨁䶴䶵", null);
+                    await testDocumentSQL("doc5CJK Ext B0", "������������", null);
+                    await testDocumentSQL("Tibetan0", "དབྱངས་ཅན་སྒྲོལ་དཀར། བཀྲ་ཤིས་རྒྱལ།", null);
+                    await testDocumentSQL("Uighur0", "ۋېڭكقق ھس قك كدسدق د كوكو الضعيف بقي قوي", null);
+                    await testDocumentSQL("Yi0", "ꉬꄒꐵꄓꐨꐵꄓꐨ", null);
                 }
             }
             catch (DocumentClientException e)
@@ -869,38 +869,38 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [Ignore] // Flaky
         [TestMethod]
-        public void TestLazyIndexAllTerms()
+        public async Task TestLazyIndexAllTerms()
         {
             try
             {
                 // Let the lazy indexer do force checkpointing frequently as possible.
                 TestCommon.SetFederationWideConfigurationProperty("lazyIndexForceCheckpointIntervalInSeconds", 1);
 
-                Database db = this.client.CreateDatabaseAsync(new Database
+                Database db = (await this.client.CreateDatabaseAsync(new Database
                 {
                     Id = System.Reflection.MethodBase.GetCurrentMethod().Name + Guid.NewGuid().ToString("N")
-                }).Result.Resource;
+                })).Resource;
 
                 DocumentCollection coll = new DocumentCollection { Id = db.Id, PartitionKey = defaultPartitionKeyDefinition };
                 coll.IndexingPolicy.Automatic = true;
                 coll.IndexingPolicy.IndexingMode = IndexingMode.Lazy;
 
-                coll = TestCommon.CreateCollectionAsync(this.client, db, coll).Result;
+                coll = await TestCommon.CreateCollectionAsync(this.client, db, coll);
 
                 DateTime startTime = DateTime.Now;
-                this.LoadDocuments(coll).Wait();
+                await this.LoadDocuments(coll);
                 System.Diagnostics.Trace.TraceInformation("Load documents took {0} ms", (DateTime.Now - startTime).TotalMilliseconds);
 
                 startTime = DateTime.Now;
 
-                Util.WaitForLazyIndexingToCompleteAsync(coll).Wait();
+                await Util.WaitForLazyIndexingToCompleteAsync(coll);
                 System.Diagnostics.Trace.TraceInformation("Indexing took {0} ms", (DateTime.Now - startTime).TotalMilliseconds);
 
                 QueryOracle.QueryOracle qo =
                     new QueryOracle.QueryOracle(this.client, coll.SelfLink, true,
                                                 targetNumberOfQueriesToValidate: 20000);
                 Assert.AreEqual(0, qo.IndexAndValidate(100), "Query oracle validation failed");
-                this.client.DeleteDatabaseAsync(db).Wait();
+                await this.client.DeleteDatabaseAsync(db);
             }
             finally
             {
@@ -1142,7 +1142,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //3. Delete Database
             if (isDeleteDB)
             {
-                client.DeleteDatabaseAsync(database).Wait();
+                await client.DeleteDatabaseAsync(database);
             }
         }
 
@@ -1357,7 +1357,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             if (isDeleteDB)
             {
-                client.DeleteDatabaseAsync(database).Wait();
+                await client.DeleteDatabaseAsync(database);
             }
         }
 
@@ -1464,7 +1464,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             if (isDeleteDB)
             {
-                client.DeleteDatabaseAsync(database).Wait();
+                await client.DeleteDatabaseAsync(database);
             }
         }
 
@@ -1812,19 +1812,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         //Query metrics are not on by default anymore, but turned on hin Feed options. This to be quarantined until a recent FI from master to direct and sdk is completed
         [Ignore] // Need to use v3 pipeline
         [TestMethod]
-        public void TestQueryMetricsHeaders()
+        public async Task TestQueryMetricsHeaders()
         {
 
-            Database database = TestCommon.RetryRateLimiting<Database>(() =>
+            Database database = await TestCommon.AsyncRetryRateLimiting<Database>(async () =>
             {
-                return this.client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() }).Result.Resource;
+                return (await this.client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() })).Resource;
             });
 
-            this.TestQueryMetricsHeaders(database, true);
+            await this.TestQueryMetricsHeaders(database, true);
 
-            TestCommon.RetryRateLimiting<ResourceResponse<Database>>(() =>
+            await TestCommon.AsyncRetryRateLimiting<ResourceResponse<Database>>(async () =>
             {
-                return this.client.DeleteDatabaseAsync(database).Result;
+                return await this.client.DeleteDatabaseAsync(database);
             });
         }
 
@@ -1881,22 +1881,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [Ignore] //Ignore until v3 support query metrics
-        public void TestForceQueryScanHeaders()
+        public async Task TestForceQueryScanHeaders()
         {
-            Database database = TestCommon.RetryRateLimiting<Database>(() =>
+            Database database = await TestCommon.AsyncRetryRateLimiting<Database>(async () =>
             {
-                return this.client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() }).Result.Resource;
+                return (await this.client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() })).Resource;
             });
 
-            this.TestForceQueryScanHeaders(database, true);
+            await this.TestForceQueryScanHeaders(database, true);
 
-            TestCommon.RetryRateLimiting<ResourceResponse<Database>>(() =>
+            await TestCommon.AsyncRetryRateLimiting<ResourceResponse<Database>>(async () =>
             {
-                return this.client.DeleteDatabaseAsync(database).Result;
+                return await this.client.DeleteDatabaseAsync(database);
             });
         }
 
-        private void TestForceQueryScanHeaders(Database database, bool partitionedCollection)
+        private async Task TestForceQueryScanHeaders(Database database, bool partitionedCollection)
         {
             DocumentCollection collection;
             RequestOptions options = new RequestOptions();
@@ -1924,17 +1924,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 options.OfferThroughput = 20000;
             }
 
-            collection = TestCommon.RetryRateLimiting<DocumentCollection>(() =>
+            collection = await TestCommon.AsyncRetryRateLimiting<DocumentCollection>(async () =>
             {
-                return TestCommon.CreateCollectionAsync(this.client, database, collection, options).Result;
+                return await TestCommon.CreateCollectionAsync(this.client, database, collection, options);
             });
 
             int maxDocumentCount = 200;
             for (int i = 0; i < maxDocumentCount; i++)
             {
-                TestCommon.RetryRateLimiting<Document>(() =>
+                await TestCommon.AsyncRetryRateLimiting<Document>(async () =>
                 {
-                    return this.client.CreateDocumentAsync(collection, new Document() { Id = Guid.NewGuid().ToString() }).Result.Resource;
+                    return (await this.client.CreateDocumentAsync(collection, new Document() { Id = Guid.NewGuid().ToString() })).Resource;
                 });
             }
 
@@ -1955,10 +1955,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 PopulateQueryMetrics = true,
                 MaxDegreeOfParallelism = 10,
             };
-            result = this.client.CreateDocumentQuery<Document>(
+            result = await this.client.CreateDocumentQuery<Document>(
                     collection,
                     query,
-                    feedOptions).AsDocumentQuery().ExecuteNextAsync().Result;
+                    feedOptions).AsDocumentQuery().ExecuteNextAsync();
             queryMetrics = result.QueryMetrics.Values.Aggregate((curr, acc) => curr + acc);
             Assert.AreEqual(TimeSpan.Zero, queryMetrics.ServerSideMetrics.IndexLookupTime);
 
@@ -1971,10 +1971,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 PopulateQueryMetrics = true,
                 MaxDegreeOfParallelism = 10,
             };
-            result = this.client.CreateDocumentQuery<Document>(
+            result = await this.client.CreateDocumentQuery<Document>(
                     collection,
                     query,
-                    feedOptions).AsDocumentQuery().ExecuteNextAsync().Result;
+                    feedOptions).AsDocumentQuery().ExecuteNextAsync();
             queryMetrics = result.QueryMetrics.Values.Aggregate((curr, acc) => curr + acc);
             Assert.AreNotEqual(TimeSpan.Zero, queryMetrics.ServerSideMetrics.IndexLookupTime);
         }
@@ -2062,23 +2062,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public void TestContinuationLimitHeaders()
+        public async Task TestContinuationLimitHeaders()
         {
 
-            Database database = TestCommon.RetryRateLimiting<Database>(() =>
+            Database database = await TestCommon.AsyncRetryRateLimiting<Database>(async () =>
             {
-                return this.client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() }).Result.Resource;
+                return (await this.client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() })).Resource;
             });
 
-            this.TestContinuationLimitHeaders(database, true);
+            await this.TestContinuationLimitHeaders(database, true);
 
-            TestCommon.RetryRateLimiting<ResourceResponse<Database>>(() =>
+            await TestCommon.AsyncRetryRateLimiting<ResourceResponse<Database>>(async () =>
             {
-                return this.client.DeleteDatabaseAsync(database).Result;
+                return await this.client.DeleteDatabaseAsync(database);
             });
         }
 
-        private void TestContinuationLimitHeaders(Database database, bool partitionedCollection)
+        private async Task TestContinuationLimitHeaders(Database database, bool partitionedCollection)
         {
             DocumentCollection collection;
             RequestOptions options = new RequestOptions();
@@ -2106,17 +2106,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 options.OfferThroughput = 20000;
             }
 
-            collection = TestCommon.RetryRateLimiting<DocumentCollection>(() =>
+            collection = await TestCommon.AsyncRetryRateLimiting<DocumentCollection>(async () =>
             {
-                return TestCommon.CreateCollectionAsync(this.client, database, collection, options).Result;
+                return await TestCommon.CreateCollectionAsync(this.client, database, collection, options);
             });
 
             int maxDocumentCount = 200;
             for (int i = 0; i < maxDocumentCount; i++)
             {
-                TestCommon.RetryRateLimiting<Document>(() =>
+                await TestCommon.AsyncRetryRateLimiting<Document>(async () =>
                 {
-                    return this.client.CreateDocumentAsync(collection, new Document() { Id = Guid.NewGuid().ToString() }).Result.Resource;
+                    return (await this.client.CreateDocumentAsync(collection, new Document() { Id = Guid.NewGuid().ToString() })).Resource;
                 });
             }
 
@@ -2125,19 +2125,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             try
             {
-                result = this.client.CreateDocumentQuery<Document>(
+                result = await this.client.CreateDocumentQuery<Document>(
                     collection,
                     "SELECT r.id FROM root r WHERE r._ts > 0",
-                    feedOptions).AsDocumentQuery().ExecuteNextAsync().Result;
+                    feedOptions).AsDocumentQuery().ExecuteNextAsync();
                 Assert.Fail("Expected query to fail");
             }
-            catch (AggregateException e)
+            catch (DocumentClientException exception)
             {
-                if (!(e.InnerException is DocumentClientException exception))
-                {
-                    throw;
-                }
-
                 if (exception.StatusCode != HttpStatusCode.BadRequest)
                 {
                     throw;
@@ -2149,19 +2144,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             feedOptions.ResponseContinuationTokenLimitInKb = -1;
             try
             {
-                result = this.client.CreateDocumentQuery<Document>(
+                result = await this.client.CreateDocumentQuery<Document>(
                     collection,
                     "SELECT r.id FROM root r WHERE r._ts > 0",
-                    feedOptions).AsDocumentQuery().ExecuteNextAsync().Result;
+                    feedOptions).AsDocumentQuery().ExecuteNextAsync();
                 Assert.Fail("Expected query to fail");
             }
-            catch (AggregateException e)
+            catch (DocumentClientException exception)
             {
-                if (!(e.InnerException is DocumentClientException exception))
-                {
-                    throw;
-                }
-
                 if (exception.StatusCode != HttpStatusCode.BadRequest)
                 {
                     throw;
@@ -2171,21 +2161,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             feedOptions.ResponseContinuationTokenLimitInKb = 1;
-            result = this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r WHERE r._ts > 0", feedOptions).AsDocumentQuery().ExecuteNextAsync().Result;
+            result = await this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r WHERE r._ts > 0", feedOptions).AsDocumentQuery().ExecuteNextAsync();
             string continuation = result.ResponseContinuation;
             Assert.IsTrue(
                 continuation.StartsWith("CGW") || (!continuation.Contains("#FPC") && !continuation.Contains("#FPP")),
                 $"{continuation} neither constructed by Compute nor proper BE token");
 
             feedOptions.ResponseContinuationTokenLimitInKb = 2;
-            result = this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r WHERE r._ts > 0", feedOptions).AsDocumentQuery().ExecuteNextAsync().Result;
+            result = await this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r WHERE r._ts > 0", feedOptions).AsDocumentQuery().ExecuteNextAsync();
             continuation = result.ResponseContinuation;
             Assert.IsTrue(
                 continuation.StartsWith("CGW") || (continuation.Contains("#FPC") || continuation.Contains("#FPP")),
                 $"{continuation} neither constructed by Compute nor proper BE token");
         }
 
-        private void TestQueryMetricsHeaders(Database database, bool partitionedCollection)
+        private async Task TestQueryMetricsHeaders(Database database, bool partitionedCollection)
         {
             DocumentCollection collection;
             RequestOptions options = new RequestOptions();
@@ -2213,9 +2203,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 options.OfferThroughput = 20000;
             }
 
-            collection = TestCommon.RetryRateLimiting<DocumentCollection>(() =>
+            collection = await TestCommon.AsyncRetryRateLimiting<DocumentCollection>(async () =>
             {
-                return TestCommon.CreateCollectionAsync(this.client, database, collection, options).Result;
+                return await TestCommon.CreateCollectionAsync(this.client, database, collection, options);
             });
 
             int maxDocumentCount = 2000;
@@ -2228,22 +2218,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     StringField = i.ToString(CultureInfo.InvariantCulture),
                 };
 
-                TestCommon.RetryRateLimiting<Document>(() =>
+                await TestCommon.AsyncRetryRateLimiting<Document>(async () =>
                 {
-                    return this.client.CreateDocumentAsync(collection, doc).Result.Resource;
+                    return (await this.client.CreateDocumentAsync(collection, doc)).Resource;
                 });
             }
 
             // simple validations - existence - yes & no
-            DocumentFeedResponse<dynamic> result = this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r", new FeedOptions() { EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync().Result;
+            DocumentFeedResponse<dynamic> result = await this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r", new FeedOptions() { EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync();
             Assert.IsNull(result.ResponseHeaders[WFConstants.BackendHeaders.QueryMetrics], "Expected no metrics headers for query");
             Assert.IsNull(result.ResponseHeaders[WFConstants.BackendHeaders.IndexUtilization], "Expected no index utilization headers for query");
 
-            result = this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r", new FeedOptions() { PopulateQueryMetrics = true, EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync().Result;
+            result = await this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r", new FeedOptions() { PopulateQueryMetrics = true, EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync();
             Assert.IsNotNull(result.ResponseHeaders[WFConstants.BackendHeaders.QueryMetrics], "Expected metrics headers for query");
             Assert.IsNull(result.ResponseHeaders[WFConstants.BackendHeaders.IndexUtilization], "Expected index utilization headers for query"); // False for now
 
-            this.ValidateQueryMetricsHeadersOverContinuations(collection, maxDocumentCount).Wait();
+            await this.ValidateQueryMetricsHeadersOverContinuations(collection, maxDocumentCount);
         }
 
         private async Task ValidateQueryMetricsHeadersOverContinuations(
@@ -2597,14 +2587,14 @@ function sproc(feed) {
             queryAction(this.secondaryReadonlyClient);
         }
 
-        private void CleanUp()
+        private async Task CleanUp()
         {
             IEnumerable<Database> allDatabases = from database in this.client.CreateDatabaseQuery()
                                                  select database;
 
             foreach (Database database in allDatabases)
             {
-                this.client.DeleteDatabaseAsync(database.SelfLink).Wait();
+                await this.client.DeleteDatabaseAsync(database.SelfLink);
             }
         }
 
