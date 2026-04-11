@@ -240,30 +240,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return documentCollections;
         }
 
-        private void Retry(Action action)
-        {
-            Queue<int> timeouts = new Queue<int>(new[] { 500, 1000, 1000, 1000, 1000, 1000, 5000, 10000 });
-
-            while (true)
-            {
-                try
-                {
-                    action();
-                    return;
-                }
-                catch (Exception)
-                {
-                    if (timeouts.Count == 0)
-                    {
-                        throw;
-                    }
-                    int retryMilliseconds = timeouts.Dequeue();
-                    Logger.LogLine("Retry {0} milliseconds", retryMilliseconds);
-                    Task.Delay(retryMilliseconds);
-                }
-            }
-        }
-
         private async Task RetryAsync(Func<Task> asyncAction)
         {
             Queue<int> timeouts = new Queue<int>(new[] { 500, 1000, 1000, 1000, 1000, 1000, 5000, 10000 });
@@ -273,7 +249,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 try
                 {
                     await asyncAction();
-                    return;
                 }
                 catch (Exception)
                 {
