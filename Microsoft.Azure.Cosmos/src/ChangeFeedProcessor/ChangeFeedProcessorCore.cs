@@ -59,6 +59,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         {
             if (!this.initialized)
             {
+                if (!this.changeFeedProcessorOptions.StartFromBeginning
+                    && this.changeFeedProcessorOptions.StartTime == null
+                    && string.IsNullOrEmpty(this.changeFeedProcessorOptions.StartContinuation))
+                {
+                    // StartTime is serialized as RFC1123 (seconds precision) and interpreted as exclusive.
+                    // Back off by one second so writes occurring immediately after StartAsync are not missed.
+                    this.changeFeedProcessorOptions.StartTime = DateTime.UtcNow.AddSeconds(-1);
+                }
+
                 await this.InitializeAsync().ConfigureAwait(false);
             }
 
