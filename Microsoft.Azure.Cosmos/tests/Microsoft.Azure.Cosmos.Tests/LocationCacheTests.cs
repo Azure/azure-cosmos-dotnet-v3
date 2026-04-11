@@ -196,7 +196,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 this.partitionKeyRangeLocationCache,
                 new RetryOptions(),
                 enableEndpointDiscovery,
-                isThinClientEnabled: false);
+                false);
         }
 
         [TestMethod]
@@ -224,65 +224,52 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             {
                 int retryCount = 0;
 
-                await BackoffRetryUtility<bool>.ExecuteAsync(
-                    () =>
-                    {
-                        retryPolicy.OnBeforeSendRequest(request);
-
-                        if (retryCount == 0)
+                try
+                {
+                    await BackoffRetryUtility<bool>.ExecuteAsync(
+                        () =>
                         {
-                            Uri expectedEndpoint = isPreferredLocationsListEmpty ?
-                                new Uri(this.databaseAccount.WriteLocationsInternal[0].Endpoint) :
-                                LocationCacheTests.EndpointByLocation[this.preferredLocations[0]];
+                            retryPolicy.OnBeforeSendRequest(request);
 
-                            Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
+                            if (retryCount == 0)
+                            {
+                                Uri expectedEndpoint = isPreferredLocationsListEmpty ?
+                                    new Uri(this.databaseAccount.WriteLocationsInternal[0].Endpoint) : // All requests go to write endpoint
+                                    LocationCacheTests.EndpointByLocation[this.preferredLocations[0]];
+
+                                Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
+                            }
+                            else if (retryCount == 1)
+                            {
+                                // Second request must go to write endpoint
+                                Uri expectedEndpoint = new Uri(this.databaseAccount.WriteLocationsInternal[0].Endpoint);
+                                Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
+                            }
+                            else
+                            {
+                                Assert.Fail();
+                            }
 
                             retryCount++;
 
-                            // First attempt: 404/1002
                             StoreResponseNameValueCollection headers = new()
                             {
                                 [WFConstants.BackendHeaders.SubStatus] = ((int)SubStatusCodes.ReadSessionNotAvailable).ToString()
                             };
-                            throw new NotFoundException(RMResources.NotFound, headers);
-                        }
-                        else if (retryCount == 1)
-                        {
-                            // Second request must go to write endpoint
-                            Uri expectedEndpoint = new Uri(this.databaseAccount.WriteLocationsInternal[0].Endpoint);
-                            Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
+                            DocumentClientException notFoundException = new NotFoundException(RMResources.NotFound, headers);
 
-                            retryCount++;
 
-                            // Second attempt: 404/1002 again → triggers hub header
-                            StoreResponseNameValueCollection headers = new()
-                            {
-                                [WFConstants.BackendHeaders.SubStatus] = ((int)SubStatusCodes.ReadSessionNotAvailable).ToString()
-                            };
-                            throw new NotFoundException(RMResources.NotFound, headers);
-                        }
-                        else if (retryCount == 2)
-                        {
-                            // Third attempt: Hub header is now attached
-                            // In real scenario, hub region returns 200 (success)
-                            // Note: If this hit a non-hub region, it would return 403/3 and trigger
-                            // more retries, but for this test we simulate hitting the hub directly.
-                            retryCount++;
-                            return Task.FromResult(true);
-                        }
-                        else
-                        {
-                            // Safety net for this test only - we expect success on the 3rd attempt.
-                            // In production, more retries are possible if 403/3 is returned.
-                            Assert.Fail("Test expected success on 3rd attempt with hub header");
-                        }
+                            throw notFoundException;
+                        },
+                        retryPolicy);
 
-                        return Task.FromResult(true);
-                    },
-                    retryPolicy);
-
-                // Verify we made exactly 3 attempts and succeeded on the 3rd
-                Assert.AreEqual(3, retryCount);
+                    Assert.Fail();
+                }
+                catch (NotFoundException)
+                {
+                    DefaultTrace.TraceInformation("Received expected notFoundException");
+                    Assert.AreEqual(2, retryCount);
+                }
             }
         }
 
