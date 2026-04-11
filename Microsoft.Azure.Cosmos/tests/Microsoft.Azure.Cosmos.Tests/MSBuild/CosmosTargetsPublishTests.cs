@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
     using System;
     using System.Diagnostics;
     using System.IO;
+    using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>
@@ -15,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
     /// These tests pack the SDK into a local NuGet package to properly test the .targets file behavior.
     /// </summary>
     [TestClass]
+    [TestCategory("LongRunning")]
     public class CosmosTargetsPublishTests
     {
         private static string testProjectsRoot;
@@ -88,6 +90,19 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
             this.AssertWindowsDllsPresent(publishPath, runtimeIdentifier);
         }
 
+        /// <summary>
+        /// Tests that Windows native DLLs are copied when publishing without a RuntimeIdentifier,
+        /// which is the most common developer scenario (regular 'dotnet publish' without -r).
+        /// </summary>
+        [TestMethod]
+        public void Publish_WithoutRuntimeIdentifier_CopiesWindowsDlls()
+        {
+            string projectPath = this.CreateTestProject("NoRidTest");
+            string publishPath = this.PublishProjectWithoutRid(projectPath);
+
+            this.AssertWindowsDllsPresent(publishPath, "no RuntimeIdentifier");
+        }
+
         private static void CreateLocalNuGetPackage()
         {
             string repoRoot = GetRepositoryRoot();
@@ -119,10 +134,18 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
 
             using (packProcess)
             {
-                packProcess.WaitForExit((int)TimeSpan.FromMinutes(10).TotalMilliseconds);
+                Task<string> outputTask = packProcess.StandardOutput.ReadToEndAsync();
+                Task<string> errorTask = packProcess.StandardError.ReadToEndAsync();
 
-                string output = packProcess.StandardOutput.ReadToEnd();
-                string error = packProcess.StandardError.ReadToEnd();
+                bool exited = packProcess.WaitForExit((int)TimeSpan.FromMinutes(10).TotalMilliseconds);
+                if (!exited)
+                {
+                    packProcess.Kill();
+                    Assert.Fail("dotnet pack timed out after 10 minutes");
+                }
+
+                string output = outputTask.GetAwaiter().GetResult();
+                string error = errorTask.GetAwaiter().GetResult();
 
                 if (packProcess.ExitCode != 0)
                 {
@@ -158,7 +181,7 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
             File.WriteAllText(projectFile, $@"<Project Sdk=""Microsoft.NET.Sdk"">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
@@ -212,10 +235,18 @@ class Program
 
             using (process!)
             {
-                process.WaitForExit((int)TimeSpan.FromMinutes(5).TotalMilliseconds);
+                Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
+                Task<string> errorTask = process.StandardError.ReadToEndAsync();
 
-                string output = process.StandardOutput.ReadToEnd();
-                string error = process.StandardError.ReadToEnd();
+                bool exited = process.WaitForExit((int)TimeSpan.FromMinutes(5).TotalMilliseconds);
+                if (!exited)
+                {
+                    process.Kill();
+                    Assert.Fail($"dotnet publish timed out after 5 minutes for {runtimeIdentifier}.\nCommand: {commandLine}");
+                }
+
+                string output = outputTask.GetAwaiter().GetResult();
+                string error = errorTask.GetAwaiter().GetResult();
 
                 if (process.ExitCode != 0)
                 {
@@ -224,6 +255,59 @@ class Program
                 else
                 {
                     Console.WriteLine($"Publish succeeded for {runtimeIdentifier}. Exit code: {process.ExitCode}");
+                }
+            }
+
+            return publishDir;
+        }
+
+        private string PublishProjectWithoutRid(string projectFile)
+        {
+            string projectDir = Path.GetDirectoryName(projectFile);
+            string publishDir = Path.Combine(projectDir, "bin", "publish", "no-rid");
+
+            ProcessStartInfo processInfo = new ProcessStartInfo
+            {
+                FileName = "dotnet",
+                Arguments = $"publish \"{projectFile}\" -c Release -o \"{publishDir}\"",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            string commandLine = $"{processInfo.FileName} {processInfo.Arguments}";
+            Console.WriteLine($"Executing: {commandLine}");
+            Console.WriteLine($"Working directory: {projectDir}");
+
+            Process process = Process.Start(processInfo);
+            if (process == null)
+            {
+                Assert.Fail("Failed to start dotnet publish process (no RID)");
+            }
+
+            using (process!)
+            {
+                Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
+                Task<string> errorTask = process.StandardError.ReadToEndAsync();
+
+                bool exited = process.WaitForExit((int)TimeSpan.FromMinutes(5).TotalMilliseconds);
+                if (!exited)
+                {
+                    process.Kill();
+                    Assert.Fail($"dotnet publish timed out after 5 minutes (no RID).\nCommand: {commandLine}");
+                }
+
+                string output = outputTask.GetAwaiter().GetResult();
+                string error = errorTask.GetAwaiter().GetResult();
+
+                if (process.ExitCode != 0)
+                {
+                    Assert.Fail($"dotnet publish failed (no RID).\nCommand: {commandLine}\nOutput: {output}\nError: {error}");
+                }
+                else
+                {
+                    Console.WriteLine($"Publish succeeded (no RID). Exit code: {process.ExitCode}");
                 }
             }
 
