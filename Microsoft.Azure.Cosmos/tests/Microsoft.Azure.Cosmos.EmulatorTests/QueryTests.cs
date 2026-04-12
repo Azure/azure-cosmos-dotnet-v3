@@ -554,7 +554,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         */
 
         [TestMethod]
-        public void TestQueryDocumentsSecondaryIndex()
+        public async Task TestQueryDocumentsSecondaryIndex()
         {
             try
             {
@@ -563,7 +563,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 collectionDefinition.IndexingPolicy.Automatic = true;
                 collectionDefinition.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
 
-                DocumentCollection collection = TestCommon.CreateCollectionAsync(this.client, database, collectionDefinition).Result;
+                DocumentCollection collection = await TestCommon.CreateCollectionAsync(this.client, database, collectionDefinition);
 
                 this.TestQueryDocuments(collection);
             }
@@ -574,14 +574,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public void TestQueryDocumentsIndex()
+        public async Task TestQueryDocumentsIndex()
         {
             try
             {
                 Database database = this.client.Create<Database>(null, new Database { Id = "TestQueryDocumentsDatabase" + Guid.NewGuid().ToString() });
                 DocumentCollection documentCollection = new DocumentCollection { Id = "TestQueryDocumentsCollection" + Guid.NewGuid().ToString(), PartitionKey = defaultPartitionKeyDefinition };
                 documentCollection.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
-                DocumentCollection collection = TestCommon.CreateCollectionAsync(this.client, database, documentCollection).Result;
+                DocumentCollection collection = await TestCommon.CreateCollectionAsync(this.client, database, documentCollection);
 
                 this.TestQueryDocuments(collection);
             }
@@ -592,7 +592,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public void TestQueryDocumentManualRemoveIndex()
+        public async Task TestQueryDocumentManualRemoveIndex()
         {
             try
             {
@@ -604,7 +604,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     PartitionKey = defaultPartitionKeyDefinition
                 };
                 sourceCollection.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
-                DocumentCollection collection = TestCommon.CreateCollectionAsync(this.client, database, sourceCollection).Result;
+                DocumentCollection collection = await TestCommon.CreateCollectionAsync(this.client, database, sourceCollection);
                 JObject property = new JObject
                 {
                     ["pk"] = JToken.FromObject("test")
@@ -634,7 +634,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
 
         [TestMethod]
-        public void TestQueryDocumentManualAddRemoveIndex()
+        public async Task TestQueryDocumentManualAddRemoveIndex()
         {
             try
             {
@@ -646,7 +646,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     PartitionKey = defaultPartitionKeyDefinition
                 };
                 sourceCollection.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
-                DocumentCollection collection = TestCommon.CreateCollectionAsync(this.client, database, sourceCollection).Result;
+                DocumentCollection collection = await TestCommon.CreateCollectionAsync(this.client, database, sourceCollection);
 
                 QueryDocument doc = new QueryDocument()
                 {
@@ -693,7 +693,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public void TestQueryDocumentsManualIndex()
+        public async Task TestQueryDocumentsManualIndex()
         {
             try
             {
@@ -707,7 +707,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 sourceCollection.IndexingPolicy.Automatic = false;
                 sourceCollection.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
 
-                DocumentCollection collection = TestCommon.CreateCollectionAsync(this.client, database, sourceCollection).Result;
+                DocumentCollection collection = await TestCommon.CreateCollectionAsync(this.client, database, sourceCollection);
 
                 this.TestQueryDocuments(collection, true);
             }
@@ -718,7 +718,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public void TestSessionTokenControlThroughFeedOptions()
+        public async Task TestSessionTokenControlThroughFeedOptions()
         {
             Database database = this.client.Create<Database>(null, new Database { Id = "TestSessionTokenControlThroughFeedOptions" + Guid.NewGuid().ToString() });
 
@@ -728,7 +728,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 PartitionKey = defaultPartitionKeyDefinition
             };
             collection.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
-            collection = TestCommon.CreateCollectionAsync(this.client, database, collection).Result;
+            collection = await TestCommon.CreateCollectionAsync(this.client, database, collection);
 
             try
             {
@@ -736,7 +736,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 dynamic myDocument = new Document();
                 myDocument.Id = "doc0";
                 myDocument.Title = "TestSessionTokenControlThroughFeedOptions";
-                ResourceResponse<Document> response = this.client.CreateDocumentAsync(collection.GetLink(), myDocument).Result;
+                ResourceResponse<Document> response = await this.client.CreateDocumentAsync(collection.GetLink(), myDocument);
                 sessionTokenBeforeReplication = response.SessionToken;
 
                 Assert.IsNotNull(sessionTokenBeforeReplication);
@@ -755,7 +755,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     myDocument = new Document();
                     myDocument.Id = "doc" + retryCounter;
                     myDocument.Title = "TestSessionTokenControlThroughFeedOptions";
-                    response = this.client.CreateDocumentAsync(collection.SelfLink, myDocument).Result;
+                    response = await this.client.CreateDocumentAsync(collection.SelfLink, myDocument);
 
                     sessionTokenAfterReplication = response.SessionToken;
                     Assert.IsNotNull(sessionTokenAfterReplication);
@@ -777,7 +777,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             finally
             {
-                this.client.DeleteDocumentCollectionAsync(collection).Wait();
+                await this.client.DeleteDocumentCollectionAsync(collection);
             }
         }
 
@@ -1979,7 +1979,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreNotEqual(TimeSpan.Zero, queryMetrics.ServerSideMetrics.IndexLookupTime);
         }
 
-        private void TestFeedOptionInput(
+        private async Task TestFeedOptionInput(
             string feedOptionPropertyName,
             string componentPropertyName,
             List<Tuple<int?, int>> inputOutputs)
@@ -1993,7 +1993,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }).Result.Resource;
             });
 
-            DocumentCollection documentCollection = this.client.CreateDocumentCollectionAsync(
+            DocumentCollection documentCollection = (await this.client.CreateDocumentCollectionAsync(
                 database.SelfLink,
                 new DocumentCollection()
                 {
@@ -2006,7 +2006,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             "/id",
                         }
                     }
-                }).Result.Resource;
+                })).Resource;
 
             foreach (Tuple<int?, int> inputOutput in inputOutputs)
             {
@@ -2029,7 +2029,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     .AsDocumentQuery();
 
                 // Execute Once to force the execution context to initialize
-                DocumentFeedResponse<dynamic> garbage = documentQuery.ExecuteNextAsync().Result;
+                DocumentFeedResponse<dynamic> garbage = await documentQuery.ExecuteNextAsync();
 
                 // Get the value using reflection.
                 Type documentQueryType = documentQuery.GetType();
