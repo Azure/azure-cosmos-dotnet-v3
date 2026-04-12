@@ -42,7 +42,7 @@ When you receive a 404 (Not Found) status code from Cosmos DB, it can indicate t
 
 ### InternalServerError (500) - Partition has more than two children <a id="partition-split-change-feed"></a>
 
-When using the `AllVersionsAndDeletes` change feed mode, you may encounter an `InternalServerError` with the message **"Partition has more than two children which is not supported"**. This error occurs when a partition split results in more than two child partitions, which is not supported by the `AllVersionsAndDeletes` change feed mode.
+When using the `AllVersionsAndDeletes` change feed mode, you may encounter an `InternalServerError` with the message **"Partition has more than two children which is not supported"**. This error occurs when a partition split results in more than two child partitions, which is not supported by the `AllVersionsAndDeletes` change feed mode. Similarly, partitions that have undergone merges in the past are also not supported by this mode.
 
 ### Workaround
 
