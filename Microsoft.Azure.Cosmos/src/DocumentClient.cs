@@ -1405,9 +1405,9 @@ namespace Microsoft.Azure.Cosmos
                 this.cosmosAuthorization.Dispose();
             }
 
-            if (this.PartitionKeyRangeLocation is IDisposable partitionKeyRangeLocationDisposable)
+            if (this.PartitionKeyRangeLocation != null)
             {
-                partitionKeyRangeLocationDisposable.Dispose();
+                (this.PartitionKeyRangeLocation as IDisposable)?.Dispose();
                 this.PartitionKeyRangeLocation = null;
             }
 

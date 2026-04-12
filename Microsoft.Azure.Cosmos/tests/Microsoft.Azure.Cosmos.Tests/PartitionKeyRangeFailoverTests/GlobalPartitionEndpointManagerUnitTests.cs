@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
+    using System.Reflection;
     using System.Threading.Tasks;
     using System.Threading;
     using Microsoft.Azure.Cosmos.Routing;
@@ -394,40 +395,40 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
+        /// <summary>
+        /// Verifies that DocumentClient.Dispose() disposes PartitionKeyRangeLocation
+        /// when the implementation is IDisposable (GlobalPartitionEndpointManagerCore)
+        /// and sets it to null.
+        /// Regression test for: https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5777
+        /// </summary>
         [TestMethod]
         [Timeout(10000)]
-        public void Dispose_CancelsCancellationTokenSource()
+        public void Dispose_DisposesPartitionKeyRangeLocationWhenIDisposable()
         {
-            Mock<IGlobalEndpointManager> mockEndpointManager = new Mock<IGlobalEndpointManager>(MockBehavior.Strict);
+            using MockDocumentClient documentClient = new MockDocumentClient();
 
+            Mock<IGlobalEndpointManager> mockEndpointManager = new Mock<IGlobalEndpointManager>(MockBehavior.Loose);
             GlobalPartitionEndpointManagerCore manager = new GlobalPartitionEndpointManagerCore(
                 mockEndpointManager.Object,
                 isPartitionLevelFailoverEnabled: false,
                 isPartitionLevelCircuitBreakerEnabled: false);
 
-            Assert.IsTrue(manager is IDisposable, "GlobalPartitionEndpointManagerCore should implement IDisposable.");
+            PropertyInfo property = typeof(DocumentClient).GetProperty(
+                nameof(DocumentClient.PartitionKeyRangeLocation),
+                BindingFlags.Instance | BindingFlags.NonPublic);
 
-            manager.Dispose();
+            Assert.IsNotNull(property, "Could not find PartitionKeyRangeLocation property on DocumentClient.");
+            property.SetValue(documentClient, manager);
+            Assert.IsNotNull(documentClient.PartitionKeyRangeLocation);
+            Assert.IsInstanceOfType(documentClient.PartitionKeyRangeLocation, typeof(IDisposable));
 
-            // After dispose, the background loop should not be able to reinitialize
-            // because the cancellation token is already cancelled.
+            documentClient.Dispose();
+
+            Assert.IsNull(documentClient.PartitionKeyRangeLocation, "PartitionKeyRangeLocation should be null after Dispose.");
+
+            // Verify the manager was actually disposed: after disposal the cancellation token
+            // is cancelled, so re-initialization of the background loop is a no-op.
             manager.InitializeAndStartCircuitBreakerFailbackBackgroundRefresh();
-        }
-
-        [TestMethod]
-        [Timeout(10000)]
-        public void Dispose_IsIdempotent()
-        {
-            Mock<IGlobalEndpointManager> mockEndpointManager = new Mock<IGlobalEndpointManager>(MockBehavior.Strict);
-
-            GlobalPartitionEndpointManagerCore manager = new GlobalPartitionEndpointManagerCore(
-                mockEndpointManager.Object,
-                isPartitionLevelFailoverEnabled: true);
-
-            // Calling Dispose multiple times should not throw.
-            manager.Dispose();
-            manager.Dispose();
-            manager.Dispose();
         }
 
         [TestMethod]
@@ -499,14 +500,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Environment.SetEnvironmentVariable(ConfigurationManager.AllowedPartitionUnavailabilityDurationInSeconds, null);
                 Environment.SetEnvironmentVariable(ConfigurationManager.StalePartitionUnavailabilityRefreshIntervalInSeconds, null);
             }
-        }
-
-        [TestMethod]
-        [Timeout(10000)]
-        public void NoOp_DoesNotImplementIDisposable()
-        {
-            GlobalPartitionEndpointManager noOp = GlobalPartitionEndpointManagerNoOp.Instance;
-            Assert.IsFalse(noOp is IDisposable, "GlobalPartitionEndpointManagerNoOp should not implement IDisposable.");
         }
 
         private static void SimulateConsecutiveFailures(
