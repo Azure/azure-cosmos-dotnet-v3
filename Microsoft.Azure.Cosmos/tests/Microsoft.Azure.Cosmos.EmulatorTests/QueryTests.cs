@@ -88,21 +88,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task TestQueryWithPageSize()
         {
             // Create collection and insert 200 small documents
-            Database database = TestCommon.RetryRateLimiting<Database>(() =>
+            Database database = await TestCommon.AsyncRetryRateLimiting<Database>(async () =>
             {
-                return this.client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() }).Result.Resource;
+                return (await this.client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() })).Resource;
             });
 
-            DocumentCollection collection = TestCommon.RetryRateLimiting<DocumentCollection>(() =>
+            DocumentCollection collection = await TestCommon.AsyncRetryRateLimiting<DocumentCollection>(async () =>
             {
-                return TestCommon.CreateCollectionAsync(this.client, database, new DocumentCollection() { Id = Guid.NewGuid().ToString(), PartitionKey = defaultPartitionKeyDefinition }).Result;
+                return await TestCommon.CreateCollectionAsync(this.client, database, new DocumentCollection() { Id = Guid.NewGuid().ToString(), PartitionKey = defaultPartitionKeyDefinition });
             });
 
             for (int i = 0; i < 200; i++)
             {
-                TestCommon.RetryRateLimiting<Document>(() =>
+                await TestCommon.AsyncRetryRateLimiting<Document>(async () =>
                 {
-                    return this.client.CreateDocumentAsync(collection, new Document() { Id = Guid.NewGuid().ToString() }).Result.Resource;
+                    return (await this.client.CreateDocumentAsync(collection, new Document() { Id = Guid.NewGuid().ToString() })).Resource;
                 });
             }
 
@@ -118,9 +118,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             result = await this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r", new FeedOptions() { MaxItemCount = 10, EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync();
             Assert.IsTrue(result.Count <= 10, $"{result.Count} elements returned. It is more than MaxItemCount = 10");
 
-            TestCommon.RetryRateLimiting<ResourceResponse<Database>>(() =>
+            await TestCommon.AsyncRetryRateLimiting<ResourceResponse<Database>>(async () =>
             {
-                return this.client.DeleteDatabaseAsync(database).Result;
+                return await this.client.DeleteDatabaseAsync(database);
             });
         }
 
@@ -1815,16 +1815,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task TestQueryMetricsHeaders()
         {
 
-            Database database = TestCommon.RetryRateLimiting<Database>(() =>
+            Database database = await TestCommon.AsyncRetryRateLimiting<Database>(async () =>
             {
-                return this.client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() }).Result.Resource;
+                return (await this.client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() })).Resource;
             });
 
             await this.TestQueryMetricsHeaders(database, true);
 
-            TestCommon.RetryRateLimiting<ResourceResponse<Database>>(() =>
+            await TestCommon.AsyncRetryRateLimiting<ResourceResponse<Database>>(async () =>
             {
-                return this.client.DeleteDatabaseAsync(database).Result;
+                return await this.client.DeleteDatabaseAsync(database);
             });
         }
 
@@ -1883,16 +1883,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Ignore] //Ignore until v3 support query metrics
         public async Task TestForceQueryScanHeaders()
         {
-            Database database = TestCommon.RetryRateLimiting<Database>(() =>
+            Database database = await TestCommon.AsyncRetryRateLimiting<Database>(async () =>
             {
-                return this.client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() }).Result.Resource;
+                return (await this.client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() })).Resource;
             });
 
             await this.TestForceQueryScanHeaders(database, true);
 
-            TestCommon.RetryRateLimiting<ResourceResponse<Database>>(() =>
+            await TestCommon.AsyncRetryRateLimiting<ResourceResponse<Database>>(async () =>
             {
-                return this.client.DeleteDatabaseAsync(database).Result;
+                return await this.client.DeleteDatabaseAsync(database);
             });
         }
 
@@ -1924,17 +1924,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 options.OfferThroughput = 20000;
             }
 
-            collection = TestCommon.RetryRateLimiting<DocumentCollection>(() =>
+            collection = await TestCommon.AsyncRetryRateLimiting<DocumentCollection>(async () =>
             {
-                return TestCommon.CreateCollectionAsync(this.client, database, collection, options).Result;
+                return await TestCommon.CreateCollectionAsync(this.client, database, collection, options);
             });
 
             int maxDocumentCount = 200;
             for (int i = 0; i < maxDocumentCount; i++)
             {
-                TestCommon.RetryRateLimiting<Document>(() =>
+                await TestCommon.AsyncRetryRateLimiting<Document>(async () =>
                 {
-                    return this.client.CreateDocumentAsync(collection, new Document() { Id = Guid.NewGuid().ToString() }).Result.Resource;
+                    return (await this.client.CreateDocumentAsync(collection, new Document() { Id = Guid.NewGuid().ToString() })).Resource;
                 });
             }
 
@@ -2065,16 +2065,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task TestContinuationLimitHeaders()
         {
 
-            Database database = TestCommon.RetryRateLimiting<Database>(() =>
+            Database database = await TestCommon.AsyncRetryRateLimiting<Database>(async () =>
             {
-                return this.client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() }).Result.Resource;
+                return (await this.client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() })).Resource;
             });
 
             await this.TestContinuationLimitHeaders(database, true);
 
-            TestCommon.RetryRateLimiting<ResourceResponse<Database>>(() =>
+            await TestCommon.AsyncRetryRateLimiting<ResourceResponse<Database>>(async () =>
             {
-                return this.client.DeleteDatabaseAsync(database).Result;
+                return await this.client.DeleteDatabaseAsync(database);
             });
         }
 
@@ -2106,17 +2106,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 options.OfferThroughput = 20000;
             }
 
-            collection = TestCommon.RetryRateLimiting<DocumentCollection>(() =>
+            collection = await TestCommon.AsyncRetryRateLimiting<DocumentCollection>(async () =>
             {
-                return TestCommon.CreateCollectionAsync(this.client, database, collection, options).Result;
+                return await TestCommon.CreateCollectionAsync(this.client, database, collection, options);
             });
 
             int maxDocumentCount = 200;
             for (int i = 0; i < maxDocumentCount; i++)
             {
-                TestCommon.RetryRateLimiting<Document>(() =>
+                await TestCommon.AsyncRetryRateLimiting<Document>(async () =>
                 {
-                    return this.client.CreateDocumentAsync(collection, new Document() { Id = Guid.NewGuid().ToString() }).Result.Resource;
+                    return (await this.client.CreateDocumentAsync(collection, new Document() { Id = Guid.NewGuid().ToString() })).Resource;
                 });
             }
 
@@ -2203,9 +2203,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 options.OfferThroughput = 20000;
             }
 
-            collection = TestCommon.RetryRateLimiting<DocumentCollection>(() =>
+            collection = await TestCommon.AsyncRetryRateLimiting<DocumentCollection>(async () =>
             {
-                return TestCommon.CreateCollectionAsync(this.client, database, collection, options).Result;
+                return await TestCommon.CreateCollectionAsync(this.client, database, collection, options);
             });
 
             int maxDocumentCount = 2000;
@@ -2218,9 +2218,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     StringField = i.ToString(CultureInfo.InvariantCulture),
                 };
 
-                TestCommon.RetryRateLimiting<Document>(() =>
+                await TestCommon.AsyncRetryRateLimiting<Document>(async () =>
                 {
-                    return this.client.CreateDocumentAsync(collection, doc).Result.Resource;
+                    return (await this.client.CreateDocumentAsync(collection, doc)).Resource;
                 });
             }
 
