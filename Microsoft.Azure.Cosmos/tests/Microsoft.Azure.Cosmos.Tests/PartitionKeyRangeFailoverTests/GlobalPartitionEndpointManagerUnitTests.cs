@@ -394,6 +394,121 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
+        [TestMethod]
+        [Timeout(10000)]
+        public void Dispose_CancelsCancellationTokenSource()
+        {
+            Mock<IGlobalEndpointManager> mockEndpointManager = new Mock<IGlobalEndpointManager>(MockBehavior.Strict);
+
+            GlobalPartitionEndpointManagerCore manager = new GlobalPartitionEndpointManagerCore(
+                mockEndpointManager.Object,
+                isPartitionLevelFailoverEnabled: false,
+                isPartitionLevelCircuitBreakerEnabled: false);
+
+            Assert.IsTrue(manager is IDisposable, "GlobalPartitionEndpointManagerCore should implement IDisposable.");
+
+            manager.Dispose();
+
+            // After dispose, the background loop should not be able to reinitialize
+            // because the cancellation token is already cancelled.
+            manager.InitializeAndStartCircuitBreakerFailbackBackgroundRefresh();
+        }
+
+        [TestMethod]
+        [Timeout(10000)]
+        public void Dispose_IsIdempotent()
+        {
+            Mock<IGlobalEndpointManager> mockEndpointManager = new Mock<IGlobalEndpointManager>(MockBehavior.Strict);
+
+            GlobalPartitionEndpointManagerCore manager = new GlobalPartitionEndpointManagerCore(
+                mockEndpointManager.Object,
+                isPartitionLevelFailoverEnabled: true);
+
+            // Calling Dispose multiple times should not throw.
+            manager.Dispose();
+            manager.Dispose();
+            manager.Dispose();
+        }
+
+        [TestMethod]
+        [Timeout(10000)]
+        public async Task Dispose_StopsBackgroundFailbackLoop()
+        {
+            Environment.SetEnvironmentVariable(ConfigurationManager.StalePartitionUnavailabilityRefreshIntervalInSeconds, "1");
+            Environment.SetEnvironmentVariable(ConfigurationManager.AllowedPartitionUnavailabilityDurationInSeconds, "1");
+            try
+            {
+                Mock<IGlobalEndpointManager> mockEndpointManager = new Mock<IGlobalEndpointManager>(MockBehavior.Strict);
+
+                List<Uri> readRegions = new();
+                for (int i = 1; i <= 3; i++)
+                {
+                    readRegions.Add(new Uri($"https://localhost:{i}/"));
+                }
+
+                mockEndpointManager.Setup(x => x.ReadEndpoints).Returns(() => new ReadOnlyCollection<Uri>(readRegions));
+                mockEndpointManager.Setup(x => x.AccountReadEndpoints).Returns(() => new ReadOnlyCollection<Uri>(readRegions));
+                mockEndpointManager.Setup(x => x.WriteEndpoints).Returns(() => new ReadOnlyCollection<Uri>(readRegions));
+                mockEndpointManager.Setup(x => x.CanSupportMultipleWriteLocations(ResourceType.Document, OperationType.Create)).Returns(true);
+
+                int callbackInvocationCount = 0;
+
+                GlobalPartitionEndpointManagerCore manager = new GlobalPartitionEndpointManagerCore(
+                    mockEndpointManager.Object,
+                    isPartitionLevelFailoverEnabled: false,
+                    isPartitionLevelCircuitBreakerEnabled: true);
+
+                manager.SetBackgroundConnectionPeriodicRefreshTask(
+                    async (pkRangeUriMappings) =>
+                    {
+                        Interlocked.Increment(ref callbackInvocationCount);
+                        await Task.CompletedTask;
+                    });
+
+                PartitionKeyRange partitionKeyRange = new PartitionKeyRange()
+                {
+                    Id = "0",
+                    MinInclusive = "",
+                    MaxExclusive = "FF"
+                };
+
+                Uri routeToLocation = new Uri("https://localhost:0/");
+
+                using DocumentServiceRequest createRequest = DocumentServiceRequest.Create(OperationType.Create, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey);
+                createRequest.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
+                createRequest.RequestContext.RouteToLocation(routeToLocation);
+                createRequest.RequestContext.ResolvedCollectionRid = "test-collection";
+
+                GlobalPartitionEndpointManagerUnitTests.SimulateConsecutiveFailures(manager, createRequest);
+
+                Assert.IsTrue(manager.TryMarkEndpointUnavailableForPartitionKeyRange(createRequest));
+
+                // Dispose should cancel the background loop.
+                manager.Dispose();
+
+                int countAfterDispose = callbackInvocationCount;
+
+                // Wait long enough for the background loop to have triggered if it were still running.
+                await Task.Delay(TimeSpan.FromSeconds(3));
+
+                // The callback should not be invoked after dispose.
+                Assert.AreEqual(countAfterDispose, callbackInvocationCount, "Background failback loop should not invoke callback after Dispose.");
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.AllowedPartitionUnavailabilityDurationInSeconds, null);
+                Environment.SetEnvironmentVariable(ConfigurationManager.StalePartitionUnavailabilityRefreshIntervalInSeconds, null);
+            }
+        }
+
+        [TestMethod]
+        [Timeout(10000)]
+        public void NoOp_DoesNotImplementIDisposable()
+        {
+            GlobalPartitionEndpointManager noOp = GlobalPartitionEndpointManagerNoOp.Instance;
+            Assert.IsFalse(noOp is IDisposable, "GlobalPartitionEndpointManagerNoOp should not implement IDisposable.");
+        }
+
         private static void SimulateConsecutiveFailures(
             GlobalPartitionEndpointManagerCore failoverManager,
             DocumentServiceRequest requestMessage)
