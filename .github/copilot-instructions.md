@@ -41,6 +41,12 @@ Purpose: quick, actionable context so an AI coding assistant can be immediately 
 
 - **How AI should produce code/changes here**:
   - **🚫 HARD RULE: NEVER push directly to `master` — NO EXCEPTIONS.** Always create a feature branch and submit a pull request. This rule cannot be overridden.
+  - **Branch naming**: Always use the format `users/<user-name>/feature-name` (e.g. `users/ntripician/fix-retry-logic`). Do not use other conventions like `feature/`, `fix/`, or `dev/`.
+  - **PR title format**: All pull request titles **must** match the CI lint regex: `(\[Internal\]|\[v4\] )?.{3}.+: (Adds|Fixes|Refactors|Removes) .{3}.+`. The format is `[Optional Prefix] Category: Verb Description` where the verb is one of `Adds`, `Fixes`, `Refactors`, or `Removes`. Optional prefixes are `[Internal]` (for PRs with no customer impact) or `[v4]` (for v4-specific changes). Examples:
+    - `Diagnostics: Adds GetElapsedClientLatency to CosmosDiagnostics`
+    - `PartitionKey: Fixes null reference when using default(PartitionKey)`
+    - `[v4] Client Encryption: Refactors code to external project`
+    - `[Internal] Query: Adds code generator for CosmosNumbers for easy additions in the future`
   - Keep changes minimal and focused; prefer small, targeted edits and follow existing code style.
   - When suggesting build/test changes, reference the relevant MSBuild property or pipeline YAML (point to `Directory.Build.props` or `templates/*`).
   - Do not change version numbers or packaging settings without explicit instruction — these are centrally managed.
@@ -54,5 +60,12 @@ Purpose: quick, actionable context so an AI coding assistant can be immediately 
   - **IssueFixAgent** (`.github/agents/issue-fix-agent.agent.md`) — Comprehensive workflow for triaging and fixing GitHub issues. Use `@IssueFixAgent` in VS Code Copilot Chat or follow the plan manually.
   - Includes: environment setup, issue investigation, fix implementation, testing requirements, PR workflow, and learnings capture.
   - Start with: `@IssueFixAgent investigate issue #XXXX` or see Quick Start in the agent file.
+  - **ReleaseCopilotAgent** (`.github/agents/release-copilot-agent.agent.md`) — Guides the team through full releases and hotfix releases of the Cosmos DB .NET SDK. Automates changelog generation, version bumping, API contract file generation (GenAPI), and PR creation.
+  - Three modes: **Minor Mode** (full GA + Preview release), **Hotfix Mode** (cherry-pick patch release on any previous version), and **Add Missed PRs** (add PRs that were missed in a previous changelog).
+  - In VS Code Copilot Chat: `@ReleaseCopilotAgent start minor`, `@ReleaseCopilotAgent start hotfix`, or `@ReleaseCopilotAgent add missed PRs`.
+  - In the Copilot CLI: describe the task naturally (e.g., "I want to start a minor release", "start hotfix", or "I need to add missed PRs to a release"). The agent instructions are loaded automatically via this file.
+  - **MsdataDirectSyncAgent** (`.github/agents/msdata-direct-sync-agent.agent.md`) — Orchestrates syncing the msdata/direct branch with the latest v3 master and msdata direct codebase.
+  - In VS Code Copilot Chat: `@MsdataDirectSyncAgent sync msdata/direct`.
+  - In the Copilot CLI: describe the task naturally (e.g., "sync the msdata/direct branch with master").
 
 If anything here is unclear or you want the file to include additional examples (specific files, common refactor targets, or typical PR reviewers), tell me what to add and I will iterate.
