@@ -150,7 +150,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                 {
                     if (Range<string>.CheckOverlapping(this.orderedRanges[i], providedRange))
                     {
-                        partitionRanges[this.OrderedPartitionKeyRanges[i].MinInclusive] = this.OrderedPartitionKeyRanges[i];
+                        // Use orderedRanges[i].Min (already cached string) instead of
+                        // OrderedPartitionKeyRanges[i].MinInclusive which triggers
+                        // JsonSerializable.GetValue → JToken.ToObject on every access.
+                        // See: https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5747
+                        partitionRanges[this.orderedRanges[i].Min] = this.OrderedPartitionKeyRanges[i];
                     }
                 }
             }
