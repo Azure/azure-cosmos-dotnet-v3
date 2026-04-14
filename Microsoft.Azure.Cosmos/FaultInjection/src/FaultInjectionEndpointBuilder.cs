@@ -24,9 +24,19 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <param name="feedRange">the <see cref="FeedRange"/>.</param>
         public FaultInjectionEndpointBuilder(string databaseName, string containerName, FeedRange feedRange)
         {
+            if (string.IsNullOrEmpty(databaseName))
+            {
+                throw new ArgumentNullException(nameof(databaseName));
+            }
+
+            if (string.IsNullOrEmpty(containerName))
+            {
+                throw new ArgumentNullException(nameof(containerName));
+            }
+
             this.databaseName = databaseName;
             this.containerName = containerName;
-            this.feedRange = feedRange;
+            this.feedRange = feedRange ?? throw new ArgumentNullException(nameof(feedRange));
         }
 
         /// <summary>

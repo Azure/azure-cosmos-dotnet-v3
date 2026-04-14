@@ -57,6 +57,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         [TestMethod]
         [TestCategory("Flaky")]
+        [Timeout(120000)]
         public async Task RetryTransientIssuesTestAsync()
         {
             using CancellationTokenSource cancellationTokenSource1 = new CancellationTokenSource();
@@ -68,15 +69,15 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 {HttpTimeoutPolicyControlPlaneRead.Instance,  new List<TimeSpan>()
                 {
-                    TimeSpan.FromSeconds(5.1),
-                    TimeSpan.FromSeconds(10.1),
-                    TimeSpan.FromSeconds(20.1)
+                    TimeSpan.FromSeconds(6),
+                    TimeSpan.FromSeconds(11),
+                    TimeSpan.FromSeconds(21)
                 }},
                 {HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,  new List<TimeSpan>()
                 {
-                    TimeSpan.FromSeconds(.6),
-                    TimeSpan.FromSeconds(5.1),
-                    TimeSpan.FromSeconds(65.1)
+                    TimeSpan.FromSeconds(1),
+                    TimeSpan.FromSeconds(6),
+                    TimeSpan.FromSeconds(66)
                 }},
             };
 
@@ -388,6 +389,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         [TestMethod]
         [TestCategory("Flaky")]
+        [Timeout(120000)]
         public async Task RetryTransientIssuesForQueryPlanTestAsync()
         {
             DocumentServiceRequest documentServiceRequest = DocumentServiceRequest.Create(
@@ -411,7 +413,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 if (count <= 2)
                 {
                     Assert.IsFalse(cancellationToken.IsCancellationRequested);
-                    await Task.Delay(retry.Current.requestTimeout + TimeSpan.FromSeconds(.1));
+                    await Task.Delay(retry.Current.requestTimeout + TimeSpan.FromSeconds(1));
                     cancellationToken.ThrowIfCancellationRequested();
                     Assert.Fail("Cancellation token should be canceled");
                 }
@@ -462,6 +464,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(TimeSpan.FromMinutes(5) <= socketsHandler.PooledConnectionLifetime);
             Assert.AreEqual(webProxy, socketsHandler.Proxy);
             Assert.AreEqual(gatewayLimit, socketsHandler.MaxConnectionsPerServer);
+            Assert.IsTrue(socketsHandler.EnableMultipleHttp2Connections, "EnableMultipleHttp2Connections should be true for HTTP/2 thin client support");
 
             //Create cert for test
             X509Certificate2 x509Certificate2 = new CertificateRequest("cn=www.test", ECDsa.Create(), HashAlgorithmName.SHA256).CreateSelfSigned(DateTime.Now, DateTime.Now.AddYears(1));
