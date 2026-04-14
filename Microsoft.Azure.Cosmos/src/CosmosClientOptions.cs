@@ -312,7 +312,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <value>Default value is 5 seconds.</value>
         /// <remarks>
-        /// This timeout is specific to inference service operations and is separate from the standard RequestTimeout.
+        /// This timeout is specific to inference service operations and is separate from the standard RequestTimeout. 
         /// Inference operations typically require more processing time than standard database operations.
         /// </remarks>
 #if PREVIEW

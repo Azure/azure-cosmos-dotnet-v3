@@ -356,23 +356,24 @@ namespace Microsoft.Azure.Cosmos
             DocumentServiceRequest documentServiceRequest)
         {
             DateTime startDateTimeUtc = DateTime.UtcNow;
-            HttpMethod currentMethod = null;
-            ITrace currentTrace = NoOpTrace.Singleton;
+            IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> timeoutEnumerator = timeoutPolicy.GetTimeoutEnumerator();
+            timeoutEnumerator.MoveNext();
+            while (true)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
 
-            return await HttpTimeoutPolicyHelper.ExecuteWithTimeoutAsync(
-                timeoutPolicy,
-                cancellationToken,
-                executeAsync: async (CancellationToken ct) =>
+                (TimeSpan requestTimeout, TimeSpan delayForNextRequest) = timeoutEnumerator.Current;
+                using (HttpRequestMessage requestMessage = await createRequestMessageAsync())
                 {
-                    using HttpRequestMessage requestMessage = await createRequestMessageAsync();
-                    currentMethod = requestMessage.Method;
+                    // If the default cancellation token is passed then use the timeout policy
+                    using CancellationTokenSource cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                    cancellationTokenSource.CancelAfter(requestTimeout);
                     DateTime requestStartTime = DateTime.UtcNow;
-
                     try
                     {
                         if (this.chaosInterceptor != null && documentServiceRequest != null)
                         {
-                            (bool hasFault, HttpResponseMessage fiResponseMessage) = await this.InjectFaultsAsync(ct, documentServiceRequest, requestMessage);
+                            (bool hasFault, HttpResponseMessage fiResponseMessage) = await this.InjectFaultsAsync(cancellationTokenSource, documentServiceRequest, requestMessage);
                             if (hasFault)
                             {
                                 return fiResponseMessage;
@@ -382,12 +383,13 @@ namespace Microsoft.Azure.Cosmos
                         HttpResponseMessage responseMessage = await this.ExecuteHttpHelperAsync(
                             requestMessage,
                             resourceType,
-                            ct);
+                            cancellationTokenSource.Token);
 
                         if (this.chaosInterceptor != null && documentServiceRequest != null)
                         {
-                            ct.ThrowIfCancellationRequested();
-                            await this.chaosInterceptor.OnAfterHttpSendAsync(documentServiceRequest, ct);
+                            CancellationToken fiToken = cancellationTokenSource.Token;
+                            fiToken.ThrowIfCancellationRequested();
+                            await this.chaosInterceptor.OnAfterHttpSendAsync(documentServiceRequest, fiToken);
                         }
 
                         if (clientSideRequestStatistics is ClientSideRequestStatisticsTraceDatum datum)
@@ -395,99 +397,119 @@ namespace Microsoft.Azure.Cosmos
                             datum.RecordHttpResponse(requestMessage, responseMessage, resourceType, requestStartTime);
                         }
 
-                        return responseMessage;
+                        if (!timeoutPolicy.ShouldRetryBasedOnResponse(requestMessage.Method, responseMessage))
+                        {
+                            return responseMessage;
+                        }
+
+                        bool isOutOfRetries = CosmosHttpClientCore.IsOutOfRetries(timeoutEnumerator);
+                        if (isOutOfRetries)
+                        {
+                            return responseMessage;
+                        }
                     }
                     catch (Exception e)
                     {
+                        ITrace trace = NoOpTrace.Singleton;
                         if (clientSideRequestStatistics is ClientSideRequestStatisticsTraceDatum datum)
                         {
                             datum.RecordHttpException(requestMessage, e, resourceType, requestStartTime);
-                            currentTrace = datum.Trace;
+                            trace = datum.Trace;
                         }
+                        bool isOutOfRetries = CosmosHttpClientCore.IsOutOfRetries(timeoutEnumerator);
 
-                        throw;
-                    }
-                },
-                shouldRetryOnResult: (HttpResponseMessage response) =>
-                {
-                    return timeoutPolicy.ShouldRetryBasedOnResponse(currentMethod, response);
-                },
-                // User-initiated cancellation is already handled by HttpTimeoutPolicyHelper
-                // via catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested),
-                // so onException only sees timeout-caused or transient exceptions.
-                onException: (Exception e, bool isOutOfRetries, TimeSpan requestTimeout) =>
-                {
-                    switch (e)
-                    {
-                        case OperationCanceledException operationCanceledException:
-                            // Convert OperationCanceledException to 408 when the HTTP client throws it. This makes it clear that the 
-                            // the request timed out and was not user canceled operation.
-                            if (isOutOfRetries || !CosmosHttpClientCore.IsSafeToRetry(documentServiceRequest))
-                            {
-                                // throw current exception (caught in transport handler)
-                                string message =
-                                        $"GatewayStoreClient Request Timeout. Start Time UTC:{startDateTimeUtc}; Total Duration:{(DateTime.UtcNow - startDateTimeUtc).TotalMilliseconds} Ms; Request Timeout {requestTimeout.TotalMilliseconds} Ms; Http Client Timeout:{this.httpClient.Timeout.TotalMilliseconds} Ms; Activity id: {System.Diagnostics.Trace.CorrelationManager.ActivityId};";
-                                e.Data.Add("Message", message);
-                                    
-                                if (timeoutPolicy.ShouldThrow503OnTimeout)
+                        switch (e)
+                        {
+                            case OperationCanceledException operationCanceledException:
+                                // Throw if the user passed in cancellation was requested
+                                if (cancellationToken.IsCancellationRequested)
                                 {
-                                    return CosmosExceptionFactory.CreateServiceUnavailableException(
-                                        message: message,
-                                        headers: new Headers()
-                                        {
-                                            ActivityId = System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString(),
-                                            SubStatusCode = SubStatusCodes.TransportGenerated503
-                                        },
-                                        trace: currentTrace,
-                                        innerException: e);
+                                    throw;
                                 }
 
-                                return e;
-                            }
+                                // Convert OperationCanceledException to 408 when the HTTP client throws it. This makes it clear that the 
+                                // the request timed out and was not user canceled operation.
+                                if (isOutOfRetries || !CosmosHttpClientCore.IsSafeToRetry(documentServiceRequest))
+                                {
+                                    // throw current exception (caught in transport handler)
+                                    string message =
+                                            $"GatewayStoreClient Request Timeout. Start Time UTC:{startDateTimeUtc}; Total Duration:{(DateTime.UtcNow - startDateTimeUtc).TotalMilliseconds} Ms; Request Timeout {requestTimeout.TotalMilliseconds} Ms; Http Client Timeout:{this.httpClient.Timeout.TotalMilliseconds} Ms; Activity id: {System.Diagnostics.Trace.CorrelationManager.ActivityId};";
+                                    e.Data.Add("Message", message);
+                                    
+                                    if (timeoutPolicy.ShouldThrow503OnTimeout)
+                                    {
+                                        throw CosmosExceptionFactory.CreateServiceUnavailableException(
+                                            message: message,
+                                            headers: new Headers()
+                                            {
+                                                ActivityId = System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString(),
+                                                SubStatusCode = SubStatusCodes.TransportGenerated503
+                                            },
+                                            trace: trace,
+                                            innerException: e);
+                                    }
 
-                            return null;
-                        case WebException webException:
-                            if (isOutOfRetries || (!CosmosHttpClientCore.IsSafeToRetry(documentServiceRequest) && !WebExceptionUtility.IsWebExceptionRetriable(webException)))
-                            {
-                                return e;
-                            }
+                                    throw;
+                                }
 
-                            return null;
-                        case HttpRequestException httpRequestException:
-                            if (isOutOfRetries || !CosmosHttpClientCore.IsSafeToRetry(documentServiceRequest))
-                            {
-                                return e;
-                            }
+                                break;
+                            case WebException webException:
+                                if (isOutOfRetries || (!CosmosHttpClientCore.IsSafeToRetry(documentServiceRequest) && !WebExceptionUtility.IsWebExceptionRetriable(webException)))
+                                {
+                                    throw;
+                                }
 
-                            return null;
-                        default:
-                            return e;
+                                break;
+                            case HttpRequestException httpRequestException:
+                                if (isOutOfRetries || !CosmosHttpClientCore.IsSafeToRetry(documentServiceRequest))
+                                {
+                                    throw;
+                                }
+
+                                break;
+                            default:
+                                throw;
+                        }
                     }
-                });
+
+                }
+
+                if (delayForNextRequest != TimeSpan.Zero)
+                {
+                    await Task.Delay(delayForNextRequest);
+                }
+            }
         }
 
         private async Task<(bool, HttpResponseMessage)> InjectFaultsAsync(
-            CancellationToken cancellationToken, 
+            CancellationTokenSource cancellationTokenSource, 
             DocumentServiceRequest documentServiceRequest, 
             HttpRequestMessage requestMessage)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            CancellationToken fiToken = cancellationTokenSource.Token;
+            fiToken.ThrowIfCancellationRequested();
 
             //Set a request fault injeciton id for rule limit tracking
             if (string.IsNullOrEmpty(documentServiceRequest.Headers.Get(CosmosHttpClientCore.FautInjecitonId)))
             {
                 documentServiceRequest.Headers.Set(CosmosHttpClientCore.FautInjecitonId, Guid.NewGuid().ToString());
             }
-            await this.chaosInterceptor.OnBeforeHttpSendAsync(documentServiceRequest, cancellationToken);
+            await this.chaosInterceptor.OnBeforeHttpSendAsync(documentServiceRequest, fiToken);
 
             (bool hasFault,
-                HttpResponseMessage fiResponseMessage) = await this.chaosInterceptor.OnHttpRequestCallAsync(documentServiceRequest, cancellationToken);
+                HttpResponseMessage fiResponseMessage) = await this.chaosInterceptor.OnHttpRequestCallAsync(documentServiceRequest, fiToken);
 
             if (hasFault)
             {
                 fiResponseMessage.RequestMessage = requestMessage;
             }
             return (hasFault, fiResponseMessage);
+        }
+
+        private static bool IsOutOfRetries(
+            IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> timeoutEnumerator)
+        {
+            return !timeoutEnumerator.MoveNext(); // No more retries are configured
         }
 
         private static bool IsSafeToRetry(DocumentServiceRequest documentServiceRequest)
