@@ -732,7 +732,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
 #if ENCRYPTIONPREVIEW
-#if SDKPROJECTREF
         public override Task<SemanticRerankResult> SemanticRerankAsync(
             string rerankContext,
             IEnumerable<string> documents,
@@ -746,7 +745,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 cancellationToken);
         }
 
-#endif
         public override async Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
             Cosmos.PartitionKey partitionKey,
             RequestOptions requestOptions = null,
