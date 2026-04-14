@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     /// to prevent ArrayPool exhaustion.
     /// </summary>
     [TestClass]
-    public class PooledResourceMemoryLeakTests
+    public class PooledResourceStressTests
     {
         [TestMethod]
         [TestCategory("MemoryLeak")]
@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             }
 
             // If we got here without OutOfMemoryException, disposal is working
-            Assert.IsTrue(true, "1000 iterations completed without memory leak");
+            Assert.IsTrue(true, "1000 iterations completed without stress test failure");
         }
 
         [TestMethod]
@@ -139,7 +139,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             }
 
             // If we got here without ArrayPool exhaustion, exception handling is correct
-            Assert.IsTrue(true, "100 iterations with exceptions completed without memory leak");
+            Assert.IsTrue(true, "100 iterations with exceptions completed without stress test failure");
             await Task.CompletedTask;
         }
 
@@ -168,7 +168,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 // Final buffer returned to pool here
             }
 
-            Assert.IsTrue(true, "100 iterations of rapid growth completed without memory leak");
+            Assert.IsTrue(true, "100 iterations of rapid growth completed without stress test failure");
         }
 
         [TestMethod]

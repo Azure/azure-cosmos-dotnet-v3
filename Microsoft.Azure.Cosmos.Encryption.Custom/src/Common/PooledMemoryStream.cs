@@ -122,18 +122,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         public override void Flush()
         {
-            // No-op for memory stream
+            this.EnsureNotDisposed();
         }
 
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
+            this.EnsureNotDisposed();
             return Task.CompletedTask;
         }
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            this.ValidateArguments(buffer, offset, count);
             this.EnsureNotDisposed();
+            this.ValidateArguments(buffer, offset, count);
 
             int availableBytes = this.length - this.position;
             if (availableBytes <= 0)
@@ -167,6 +168,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
+            this.EnsureNotDisposed();
             this.ValidateArguments(buffer, offset, count);
 
             if (cancellationToken.IsCancellationRequested)
@@ -260,8 +262,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            this.ValidateArguments(buffer, offset, count);
             this.EnsureNotDisposed();
+            this.ValidateArguments(buffer, offset, count);
 
             long newPositionLong = (long)this.position + count;
             if (newPositionLong > int.MaxValue)
@@ -325,6 +327,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
+            this.EnsureNotDisposed();
             this.ValidateArguments(buffer, offset, count);
 
             if (cancellationToken.IsCancellationRequested)
@@ -411,6 +414,55 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return result;
         }
 
+#if NET8_0_OR_GREATER
+        public override void CopyTo(Stream destination, int bufferSize)
+        {
+            this.EnsureNotDisposed();
+
+            if (destination == null)
+            {
+                throw new ArgumentNullException(nameof(destination));
+            }
+
+            if (bufferSize <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(bufferSize));
+            }
+
+            int bytesToCopy = this.length - this.position;
+            if (bytesToCopy > 0)
+            {
+                destination.Write(this.buffer, this.position, bytesToCopy);
+                this.position = this.length;
+            }
+        }
+#endif
+
+        public override async Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+        {
+            this.EnsureNotDisposed();
+
+            if (destination == null)
+            {
+                throw new ArgumentNullException(nameof(destination));
+            }
+
+            if (bufferSize <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(bufferSize));
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+
+            int bytesToCopy = this.length - this.position;
+            if (bytesToCopy > 0)
+            {
+                int sourceOffset = this.position;
+                await destination.WriteAsync(this.buffer, sourceOffset, bytesToCopy, cancellationToken);
+                this.position = this.length;
+            }
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (!this.disposed && disposing)
@@ -476,9 +528,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             // SECURITY FIX: Clear the new buffer to prevent exposing pool garbage.
             // Rented buffers from ArrayPool may contain data from previous usage.
+            // Only clear the region beyond copied data — [0, length) will be overwritten by BlockCopy.
             if (this.clearOnReturn)
             {
-                Array.Clear(newBuffer, 0, newBuffer.Length);
+                if (this.length < newBuffer.Length)
+                {
+                    Array.Clear(newBuffer, this.length, newBuffer.Length - this.length);
+                }
             }
 
             if (this.length > 0)

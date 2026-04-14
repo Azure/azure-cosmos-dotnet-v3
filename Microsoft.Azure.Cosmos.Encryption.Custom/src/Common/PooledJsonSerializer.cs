@@ -44,11 +44,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// MaxDepth is set to 64 to protect against Denial of Service (DoS) attacks from deeply nested JSON structures.
         /// This prevents stack overflow and excessive memory consumption. See: https://github.com/advisories/GHSA-5crp-9r3c-p9vr
         /// </remarks>
-        private static readonly JsonSerializerOptions DefaultOptions = new ()
+        private static readonly JsonSerializerOptions DefaultOptions = CreateDefaultOptions();
+
+        private static JsonSerializerOptions CreateDefaultOptions()
         {
-            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
-            MaxDepth = 64,
-        };
+            JsonSerializerOptions options = new ()
+            {
+                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+                MaxDepth = 64,
+            };
+            options.MakeReadOnly(populateMissingResolver: true);
+            return options;
+        }
 
         /// <summary>
         /// Serializes an object to a PooledMemoryStream using ArrayPool-backed buffers.
@@ -105,11 +112,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 throw new ArgumentNullException(nameof(stream));
             }
 
-            await using (Utf8JsonWriter writer = new (stream, new JsonWriterOptions { SkipValidation = false }))
-            {
-                JsonSerializer.Serialize(writer, value, options ?? DefaultOptions);
-                await writer.FlushAsync(cancellationToken);
-            }
+            await JsonSerializer.SerializeAsync(stream, value, options ?? DefaultOptions, cancellationToken);
         }
 
         /// <summary>
