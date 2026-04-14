@@ -1405,6 +1405,12 @@ namespace Microsoft.Azure.Cosmos
                 this.cosmosAuthorization.Dispose();
             }
 
+            if (this.PartitionKeyRangeLocation != null)
+            {
+                (this.PartitionKeyRangeLocation as IDisposable)?.Dispose();
+                this.PartitionKeyRangeLocation = null;
+            }
+
             if (this.GlobalEndpointManager != null)
             {
                 this.GlobalEndpointManager.OnEnablePartitionLevelFailoverConfigChanged -= this.UpdatePartitionLevelFailoverConfigWithAccountRefresh;
@@ -6782,6 +6788,9 @@ namespace Microsoft.Azure.Cosmos
                     remoteCertificateValidationCallback: this.remoteCertificateValidationCallback,
                     distributedTracingOptions: distributedTracingOptions,
                     enableChannelMultiplexing: ConfigurationManager.IsTcpChannelMultiplexingEnabled(),
+                    dnsResolutionFunction: ConfigurationManager.IsTcpDnsDotSuffixEnabled()
+                        ? DnsDotSuffixHelper.ResolveHostAsync
+                        : null,
                     chaosInterceptor: this.chaosInterceptor);
 
                 if (this.transportClientHandlerFactory != null)
