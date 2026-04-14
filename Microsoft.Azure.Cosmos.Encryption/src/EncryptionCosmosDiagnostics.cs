@@ -104,6 +104,16 @@ namespace Microsoft.Azure.Cosmos.Encryption
             };
         }
 
+        public override DateTime? GetStartTimeUtc()
+        {
+            return this.coreDiagnostics.GetStartTimeUtc();
+        }
+
+        public override int GetFailedRequestCount()
+        {
+            return this.coreDiagnostics.GetFailedRequestCount();
+        }
+
         private string BuildSummaryDiagnostics()
         {
             StringBuilder stringBuilder = new StringBuilder();
@@ -134,16 +144,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             return stringWriter.ToString();
-        }
-
-        public override DateTime? GetStartTimeUtc()
-        {
-            return this.coreDiagnostics.GetStartTimeUtc();
-        }
-
-        public override int GetFailedRequestCount()
-        {
-            return this.coreDiagnostics.GetFailedRequestCount();
         }
 #endif
 
