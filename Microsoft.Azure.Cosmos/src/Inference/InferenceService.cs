@@ -30,6 +30,7 @@ namespace Microsoft.Azure.Cosmos
         private const string inferenceUserAgent = "cosmos-inference-dotnet";
         // Default scope for AAD authentication.
         private const string inferenceServiceDefaultScope = "https://dbinference.azure.com/.default";
+        private const string InferenceTokenPrefix = "Bearer ";
         private const int inferenceServiceDefaultMaxConnectionLimit = 50;
 
         /// <summary>
@@ -106,7 +107,8 @@ namespace Microsoft.Azure.Cosmos
             this.cosmosAuthorization = new AuthorizationTokenProviderTokenCredential(
                 tokenCredential: tokenCredential,
                 accountEndpoint: new Uri(inferenceServiceDefaultScope),
-                backgroundTokenCredentialRefreshInterval: client.ClientOptions?.TokenCredentialBackgroundRefreshInterval);
+                backgroundTokenCredentialRefreshInterval: client.ClientOptions?.TokenCredentialBackgroundRefreshInterval,
+                (token) => $"{InferenceService.InferenceTokenPrefix}{token}");
         }
 
         /// <summary>
@@ -149,7 +151,7 @@ namespace Microsoft.Azure.Cosmos
 
                         // Prepare HTTP request for semantic reranking.
                         INameValueCollection additionalHeaders = new RequestNameValueCollection();
-                        await this.cosmosAuthorization.AddInferenceAuthorizationHeaderAsync(
+                        await this.cosmosAuthorization.AddAuthorizationHeaderAsync(
                             headersCollection: additionalHeaders,
                             this.inferenceEndpoint,
                             HttpConstants.HttpMethods.Post,

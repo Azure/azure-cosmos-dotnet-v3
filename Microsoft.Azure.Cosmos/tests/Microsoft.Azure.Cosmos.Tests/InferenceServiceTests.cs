@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         private static Mock<AuthorizationTokenProvider> CreateMockAuthorizationTokenProvider()
         {
             Mock<AuthorizationTokenProvider> mockAuth = new Mock<AuthorizationTokenProvider>();
-            mockAuth.Setup(a => a.AddInferenceAuthorizationHeaderAsync(
+            mockAuth.Setup(a => a.AddAuthorizationHeaderAsync(
                     It.IsAny<INameValueCollection>(),
                     It.IsAny<Uri>(),
                     It.IsAny<string>(),
