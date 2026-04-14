@@ -443,9 +443,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             string json = System.Text.Encoding.UTF8.GetString(bytes);
             CachedDekPropertiesDto dto = JsonConvert.DeserializeObject<CachedDekPropertiesDto>(json, CacheSerializerSettings);
 
-            if (dto?.ServerProperties == null)
+            if (dto == null || dto.ServerProperties == null)
             {
                 throw new InvalidOperationException("Failed to deserialize cached DEK properties or properties are null.");
+            }
+
+            if (dto.Version != 1)
+            {
+                throw new InvalidOperationException($"Unsupported cache format version: {dto.Version}. Expected version 1.");
             }
 
             return new CachedDekProperties(

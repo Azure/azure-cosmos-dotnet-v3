@@ -635,5 +635,96 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             // Act & Assert
             _ = new DekCache(cacheKeyPrefix: "   ");
         }
+
+        [TestMethod]
+        public async Task DekCache_DistributedCacheEntry_WithMismatchedVersion_FallsBackToSource()
+        {
+            // Arrange - Simulate a distributed cache entry written by a future SDK version (v:2)
+            InMemoryDistributedCache distributedCache = new InMemoryDistributedCache();
+            DekCache cache = new DekCache(
+                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
+                distributedCache: distributedCache);
+
+            // Manually inject a v2 entry into the distributed cache
+            string v2Json = "{\"v\":2,\"serverProperties\":{\"id\":\"dek1\"},\"serverPropertiesExpiryUtc\":\"2099-01-01T00:00:00Z\"}";
+            await distributedCache.SetAsync(
+                "dek:dek1",
+                System.Text.Encoding.UTF8.GetBytes(v2Json),
+                new DistributedCacheEntryOptions { AbsoluteExpiration = DateTimeOffset.UtcNow.AddHours(1) });
+
+            int fetchCount = 0;
+
+            // Act - Should fall back to source because v2 is unsupported
+            DataEncryptionKeyProperties result = await cache.GetOrAddDekPropertiesAsync(
+                "dek1",
+                (id, ctx, ct) =>
+                {
+                    fetchCount++;
+                    return Task.FromResult(new DataEncryptionKeyProperties(
+                        id,
+                        "AEAD_AES_256_CBC_HMAC_SHA256",
+                        new byte[] { 1, 2, 3 },
+                        new EncryptionKeyWrapMetadata("test", "test", "RSA-OAEP", "test"),
+                        DateTime.UtcNow));
+                },
+                CosmosDiagnosticsContext.Create(null),
+                CancellationToken.None);
+
+            // Assert - Should have fallen back to source fetch
+            Assert.IsNotNull(result);
+            Assert.AreEqual("dek1", result.Id);
+            Assert.AreEqual(1, fetchCount, "Should fall back to source when distributed cache has unsupported version");
+        }
+
+        [TestMethod]
+        public async Task DekCache_DistributedCacheEntry_WithoutVersionField_DeserializesAsV1()
+        {
+            // Arrange - Simulate a legacy cache entry without the "v" field (pre-versioning SDK)
+            InMemoryDistributedCache distributedCache = new InMemoryDistributedCache();
+            DekCache cache = new DekCache(
+                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
+                distributedCache: distributedCache);
+
+            // First, populate the cache normally to get a valid entry
+            int fetchCount = 0;
+            await cache.GetOrAddDekPropertiesAsync(
+                "dek1",
+                (id, ctx, ct) =>
+                {
+                    fetchCount++;
+                    return Task.FromResult(new DataEncryptionKeyProperties(
+                        id,
+                        "AEAD_AES_256_CBC_HMAC_SHA256",
+                        new byte[] { 1, 2, 3 },
+                        new EncryptionKeyWrapMetadata("test", "test", "RSA-OAEP", "test"),
+                        DateTime.UtcNow));
+                },
+                CosmosDiagnosticsContext.Create(null),
+                CancellationToken.None);
+
+            Assert.AreEqual(1, fetchCount);
+
+            // Clear memory cache, re-fetch should use distributed cache (which has v:1)
+            await cache.DekPropertiesCache.RemoveAsync("dek1");
+
+            DataEncryptionKeyProperties result = await cache.GetOrAddDekPropertiesAsync(
+                "dek1",
+                (id, ctx, ct) =>
+                {
+                    fetchCount++;
+                    return Task.FromResult(new DataEncryptionKeyProperties(
+                        id,
+                        "AEAD_AES_256_CBC_HMAC_SHA256",
+                        new byte[] { 1, 2, 3 },
+                        new EncryptionKeyWrapMetadata("test", "test", "RSA-OAEP", "test"),
+                        DateTime.UtcNow));
+                },
+                CosmosDiagnosticsContext.Create(null),
+                CancellationToken.None);
+
+            // Assert - Should have used distributed cache, not fetched again
+            Assert.AreEqual(1, fetchCount, "Entries with v:1 (or default) should deserialize successfully");
+            Assert.AreEqual("dek1", result.Id);
+        }
     }
 }
