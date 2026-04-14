@@ -34,10 +34,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private const string GlobalDatabaseAccountName = "globaldb";
 
         [TestInitialize]
-        public void TestInitialize()
+        public async Task TestInitialize()
         {
             DocumentClient client = TestCommon.CreateClient(false);
-            TestCommon.DeleteAllDatabasesAsync().Wait();
+            await TestCommon.DeleteAllDatabasesAsync();
 
             this.writeRegionEndpointUri = new Uri(Utils.ConfigurationManager.AppSettings["GatewayEndpoint"]);
             this.masterKey = Utils.ConfigurationManager.AppSettings["MasterKey"];
@@ -456,9 +456,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [TestCategory("Quarantine") /* Used to filter out quarantined tests in gated runs */]
-        public void TestClientWithNoFailover()
+        public async Task TestClientWithNoFailover()
         {
-            TestClientWithNoFailoverAsync().Wait();
+            await TestClientWithNoFailoverAsync();
         }
 
         private async Task TestClientWithNoFailoverAsync()
@@ -514,9 +514,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [TestCategory("Quarantine") /* Used to filter out quarantined tests in gated runs */]
-        public void TestClientWithPreferredRegion()
+        public async Task TestClientWithPreferredRegion()
         {
-            TestClientWithPreferredRegionAsync().Wait();
+            await TestClientWithPreferredRegionAsync();
         }
 
         private async Task TestClientWithPreferredRegionAsync()
@@ -569,9 +569,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public void TestUpsertOperationWithPreferredRegion()
+        public async Task TestUpsertOperationWithPreferredRegion()
         {
-            TestUpsertOperationWithPreferredRegionAsync().Wait();
+            await TestUpsertOperationWithPreferredRegionAsync();
         }
 
         private async Task TestUpsertOperationWithPreferredRegionAsync()
@@ -617,9 +617,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public void TestPreferredRegionOrder()
+        public async Task TestPreferredRegionOrder()
         {
-            TestPreferredRegionOrderAsync().Wait();
+            await TestPreferredRegionOrderAsync();
         }
 
         private async Task TestPreferredRegionOrderAsync()
@@ -649,7 +649,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [TestCategory("Quarantine") /* Used to filter out quarantined tests in gated runs */]
-        public void TestDocumentClientMemoryLeakDirectTCP()
+        public async Task TestDocumentClientMemoryLeakDirectTCP()
         {
             ConnectionPolicy connectionPolicy = new ConnectionPolicy
             {
@@ -658,12 +658,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
 
 
-            this.TestDocumentClientMemoryLeakPrivate(connectionPolicy);
+            await this.TestDocumentClientMemoryLeakPrivateAsync(connectionPolicy);
         }
 
         [TestMethod]
         [TestCategory("Quarantine") /* Used to filter out quarantined tests in gated runs */]
-        public void TestDocumentClientMemoryLeakDirectHttps()
+        public async Task TestDocumentClientMemoryLeakDirectHttps()
         {
             ConnectionPolicy connectionPolicy = new ConnectionPolicy
             {
@@ -672,12 +672,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
 
 
-            this.TestDocumentClientMemoryLeakPrivate(connectionPolicy);
+            await this.TestDocumentClientMemoryLeakPrivateAsync(connectionPolicy);
         }
 
         [TestMethod]
         [TestCategory("Quarantine") /* Used to filter out quarantined tests in gated runs */]
-        public void TestDocumentClientMemoryLeakGatewayHttps()
+        public async Task TestDocumentClientMemoryLeakGatewayHttps()
         {
             ConnectionPolicy connectionPolicy = new ConnectionPolicy
             {
@@ -686,12 +686,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
 
 
-            this.TestDocumentClientMemoryLeakPrivate(connectionPolicy);
+            await this.TestDocumentClientMemoryLeakPrivateAsync(connectionPolicy);
         }
 
 
         [SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", Justification = "This is a test for checking memory leak fix which requires me to run GC.Collect")]
-        private void TestDocumentClientMemoryLeakPrivate(ConnectionPolicy connectionPolicy)
+        private async Task TestDocumentClientMemoryLeakPrivateAsync(ConnectionPolicy connectionPolicy)
         {
             Uri globalEndpointUri = new Uri(ConfigurationManager.AppSettings["GatewayEndpoint"]);
             string authKey = ConfigurationManager.AppSettings["MasterKey"];
@@ -702,7 +702,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             WeakReference reference = new WeakReference(client, true);
 
             // Executing any request using this client
-            client.CreateDatabaseAsync(new CosmosDatabaseSettings { Id = Guid.NewGuid().ToString() }).Wait();
+            await client.CreateDatabaseAsync(new CosmosDatabaseSettings { Id = Guid.NewGuid().ToString() });
 
             // Verify that the Write and Read Endpoints point to same endpoint(since no PreferredLocations was specified)
             Assert.AreEqual(client.WriteEndpoint, ConfigurationManager.AppSettings["GatewayEndpoint"]);
@@ -711,7 +711,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Adding a preferred read location, which should trigger the event handler to update the Read and Write endpoints
             connectionPolicy.PreferredLocations.Add(ConfigurationManager.AppSettings["Location2"]);
 
-            client.CreateDatabaseAsync(new CosmosDatabaseSettings { Id = Guid.NewGuid().ToString() }).Wait();
+            await client.CreateDatabaseAsync(new CosmosDatabaseSettings { Id = Guid.NewGuid().ToString() });
 
             // Verify that the read endpoint now changes to this new preferred location
             Assert.AreEqual(client.WriteEndpoint, ConfigurationManager.AppSettings["GatewayEndpoint"]);
@@ -732,9 +732,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [TestCategory("Quarantine") /* Used to filter out quarantined tests in gated runs */]
-        public void TestDatabaseAccountRegionList()
+        public async Task TestDatabaseAccountRegionList()
         {
-            TestDatabaseAccountRegionListAsync().Wait();
+            await TestDatabaseAccountRegionListAsync();
         }
 
         private async Task TestDatabaseAccountRegionListAsync()
@@ -765,15 +765,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public void TestMasterCRUD()
+        public async Task TestMasterCRUD()
         {
-            ValidateMasterCRUDAsync().Wait();
+            await ValidateMasterCRUDAsync();
         }
 
         [TestMethod]
-        public void ValidatePartitionResourceCRUD()
+        public async Task ValidatePartitionResourceCRUD()
         {
-            this.ValidatePartitionResourceCRUDAsync().Wait();
+            await this.ValidatePartitionResourceCRUDAsync();
         }
 
         private async Task ValidatePartitionResourceCRUDAsync()
@@ -825,60 +825,60 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public void TestTopologyWriteStatus()
+        public async Task TestTopologyWriteStatus()
         {
-            this.ValidateWriteStatus().Wait();
+            await this.ValidateWriteStatus();
         }
 
         [TestMethod]
         [TestCategory("Quarantine") /* Used to filter out quarantined in gated runs */]
-        public void TestFailoverAPIs()
+        public async Task TestFailoverAPIs()
         {
-            this.ValidateFailoverAPIs().Wait();
+            await this.ValidateFailoverAPIs();
         }
 
         [TestMethod]
         [TestCategory("Quarantine") /* Used to filter out quarantined tests in gated runs */]
-        public void TestGeoCollectionCRUD()
+        public async Task TestGeoCollectionCRUD()
         {
-            ValidateCollectionCRUDAsync().Wait();
+            await ValidateCollectionCRUDAsync();
         }
 
         [TestMethod]
         [TestCategory("Quarantine") /* Used to filter out quarantined tests in gated runs */]
-        public void TestGeoPartitionedCollectionCRUD()
+        public async Task TestGeoPartitionedCollectionCRUD()
         {
-            ValidatePartitionedCollectionCRUDAsync().Wait();
+            await ValidatePartitionedCollectionCRUDAsync();
         }
 
         [TestMethod]
-        public void TestFailoverWriteOperationRetryPolicy()
+        public async Task TestFailoverWriteOperationRetryPolicy()
         {
-            this.TestFailoverWriteOperationRetryPolicyAsync().Wait();
+            await this.TestFailoverWriteOperationRetryPolicyAsync();
         }
 
         [TestMethod]
-        public void ValidateUpdateServiceManagerConfigOperation()
+        public async Task ValidateUpdateServiceManagerConfigOperation()
         {
-            this.ValidateUpdateServiceManagerConfigOperationAsync().Wait();
+            await this.ValidateUpdateServiceManagerConfigOperationAsync();
         }
 
         [TestMethod]
-        public void ValidateCrossRegionCapacityAllocationWorkflow()
+        public async Task ValidateCrossRegionCapacityAllocationWorkflow()
         {
-            this.ValidateCrossRegionCapacityAllocationWorkflowAsync().Wait();
+            await this.ValidateCrossRegionCapacityAllocationWorkflowAsync();
         }
 
         [TestMethod]
-        public void ReadDocumentFromReadRegionWithRetry()
+        public async Task ReadDocumentFromReadRegionWithRetry()
         {
-            ReadDocumentFromReadRegionWithRetryAsync().Wait();
+            await ReadDocumentFromReadRegionWithRetryAsync();
         }
 
         [TestMethod]
-        public void ValidateGetDatabaseAccountFromGateway()
+        public async Task ValidateGetDatabaseAccountFromGateway()
         {
-            ValidateGetDatabaseAccountFromGatewayAsync().Wait();
+            await ValidateGetDatabaseAccountFromGatewayAsync();
         }
 
         private async Task TestFailoverWriteOperationRetryPolicyAsync()
@@ -980,8 +980,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string collectionId = "GlobalDB_SessionRetry_Col1";
 
             CosmosDatabaseSettings database =
-                    client.ReadDatabaseFeedAsync(new FeedOptions())
-                        .Result.FirstOrDefault(database1 => database1.Id.Equals(databaseId, StringComparison.InvariantCultureIgnoreCase));
+                    (await client.ReadDatabaseFeedAsync(new FeedOptions()))
+                        .FirstOrDefault(database1 => database1.Id.Equals(databaseId, StringComparison.InvariantCultureIgnoreCase));
 
             if (database == null)
             {
@@ -991,8 +991,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await Task.Delay(GlobalDatabaseAccountTests.WaitDurationForAsyncReplication);
 
             CosmosContainerSettings  collection =
-                client.ReadDocumentCollectionFeedAsync(database.SelfLink)
-                    .Result.FirstOrDefault(
+                (await client.ReadDocumentCollectionFeedAsync(database.SelfLink))
+                    .FirstOrDefault(
                         documentCollection => documentCollection.Id.Equals(collectionId, StringComparison.InvariantCultureIgnoreCase));
 
             if (collection == null)
@@ -1152,7 +1152,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 "region2"
             };
 
-            FederationEntity entityTemplate = storeProviderForEmulator.ListAsync<FederationEntity>(null).Result[0];
+            FederationEntity entityTemplate = (await storeProviderForEmulator.ListAsync<FederationEntity>(null))[0];
             IList<DocumentServiceManagerStateEntity> dsmEntities = await storeProviderForEmulator.ListAsync<DocumentServiceManagerStateEntity>("emulatorfederation");
 
             IFabricClient fabricClientFacade = new FabricClientFacade(new FabricClient(), this.GetType().ToString());
@@ -1165,7 +1165,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     fabricClientFacade);
 
             TestServiceProvider serviceProvider = new TestServiceProvider(new TestAdminClientFactory());
-            ManagementUtil.Initialize(serviceProvider).Wait();
+            await ManagementUtil.Initialize(serviceProvider);
             IStoreProvider storeProvider = serviceProvider.GetService<IStoreProvider>();
 
             const int numFederations = 2;
@@ -1201,7 +1201,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     Logger.LogLine("ServiceConfigUri : {0}", configUri.AbsoluteUri);
 
-                    Shared.BackoffRetryUtility<bool>.ExecuteAsync(async () =>
+                    await Shared.BackoffRetryUtility<bool>.ExecuteAsync(async () =>
                     {
                         try
                         {
@@ -1217,7 +1217,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         }
 
                         return true;
-                    }, new FabricExponentialRetryPolicy()).Wait();
+                    }, new FabricExponentialRetryPolicy());
 
                     List<ServicePoolLimits> servicePoolLimits =
                         new List<ServicePoolLimits>();
@@ -1225,7 +1225,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         ServicePool servicePool = new ServicePool(true, federationName,
                             FabricServiceType.ServerService.ToString() + "/" + servicePoolIndex, fabricClientFacade, true);
-                        servicePool.CreateAsync(default(CancellationToken)).Wait();
+                        await servicePool.CreateAsync(default(CancellationToken));
 
                         servicePoolLimits.Add(new ServicePoolLimits()
                         {
@@ -1238,7 +1238,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         {
                             Uri serviceUri = new Uri(appName + "/svc" + servicePoolIndex.ToString() + "-" + serviceIndex.ToString());
 
-                            Shared.BackoffRetryUtility<bool>.ExecuteAsync(async () =>
+                            await Shared.BackoffRetryUtility<bool>.ExecuteAsync(async () =>
                             {
                                 try
                                 {
@@ -1254,7 +1254,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                 }
 
                                 return true;
-                            }, new FabricExponentialRetryPolicy()).Wait();
+                            }, new FabricExponentialRetryPolicy());
 
                             FabricServiceConfiguration serviceConfig = new FabricServiceConfiguration()
                             {
@@ -2035,7 +2035,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     // make sure we always restore the write status in write region.
                     originalTopology.SetMajorIncrementGlobalConfigNumber(topology.GlobalConfigurationNumber);
-                    adminClientWriteRegion.GrantWriteStatusAsync(originalTopology, adminClientWriteRegion.MasterServiceIdentity).Wait();
+                    await adminClientWriteRegion.GrantWriteStatusAsync(originalTopology, adminClientWriteRegion.MasterServiceIdentity);
                 }
 
                 bool bWriteStatusRevoked1 = await adminClientWriteRegion.GetIsWriteStatusRevokedAsync(adminClientWriteRegion.MasterServiceIdentity);
@@ -2066,7 +2066,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.AreEqual(HttpStatusCode.Forbidden, responseMessage.StatusCode, @"Unexpected error code.");
 
-            if (!responseMessage.Content.ReadAsStringAsync().Result.Contains(
+            if (!(await responseMessage.Content.ReadAsStringAsync()).Contains(
                         @"The requested operation cannot be performed at this region"))
             {
                 Assert.Fail(@"Unexpected error returned, when checking for revoked write status.");
