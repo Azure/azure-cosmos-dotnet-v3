@@ -144,7 +144,8 @@ namespace Microsoft.Azure.Cosmos
                     this.failoverRetryCount,
                     this.locationEndpoint?.ToString() ?? string.Empty);
 
-                if (this.partitionKeyRangeLocationCache.IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(
+                if (!this.ShouldSuppressPPAFCacheUpdate()
+                    && this.partitionKeyRangeLocationCache.IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(
                         this.documentServiceRequest))
                 {
                     // In the event of a (ppaf + write operation) or (ppcb + read or multi-master write operation) getting timed
@@ -270,7 +271,8 @@ namespace Microsoft.Azure.Cosmos
                 && subStatusCode == SubStatusCodes.WriteForbidden)
             {
                 // It's a write forbidden so it safe to retry
-                if (this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
+                if (!this.ShouldSuppressPPAFCacheUpdate()
+                    && this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
                      this.documentServiceRequest))
                 {
                     return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
@@ -553,6 +555,7 @@ namespace Microsoft.Azure.Cosmos
             bool isSystemResourceUnavailableForWrite)
         {
             if (this.documentServiceRequest != null
+                && !this.ShouldSuppressPPAFCacheUpdate()
                 && (isSystemResourceUnavailableForWrite
                 || this.IsRequestEligibleForPerPartitionAutomaticFailover()
                 || this.IsRequestEligibleForPartitionLevelCircuitBreaker()))
@@ -608,6 +611,22 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.partitionKeyRangeLocationCache.IsRequestEligibleForPartitionLevelCircuitBreaker(this.documentServiceRequest)
                         && this.partitionKeyRangeLocationCache.IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(this.documentServiceRequest);
+        }
+
+        /// <summary>
+        /// Checks whether the current request is a PPAF write hedge request that should
+        /// suppress partition-level failover cache updates. Hedged (non-primary) write
+        /// requests set <see cref="CrossRegionHedgingAvailabilityStrategy.SuppressPPAFCacheUpdateKey"/>
+        /// on the request properties to prevent transient errors from poisoning the PPAF
+        /// cache and causing cascading hedge requests that amplify RU consumption.
+        /// </summary>
+        /// <returns>True if PPAF cache updates should be suppressed for this request.</returns>
+        private bool ShouldSuppressPPAFCacheUpdate()
+        {
+            return this.documentServiceRequest?.Properties != null
+                && this.documentServiceRequest.Properties.TryGetValue(
+                    CrossRegionHedgingAvailabilityStrategy.SuppressPPAFCacheUpdateKey, out object value)
+                && value is true;
         }
 
         private sealed class RetryContext

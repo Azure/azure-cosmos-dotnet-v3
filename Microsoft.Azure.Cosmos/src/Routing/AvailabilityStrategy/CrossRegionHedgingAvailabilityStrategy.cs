@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -26,6 +27,22 @@ namespace Microsoft.Azure.Cosmos
         private const string HedgeContext = "Hedge Context";
         private const string HedgeConfig = "Hedge Config";
         private const string ResponseRegion = "Response Region";
+
+        /// <summary>
+        /// Internal property key set on hedged (non-primary) write requests when PPAF is enabled.
+        /// When present, the ClientRetryPolicy will skip updating the per-partition failover cache
+        /// on error responses to prevent speculative hedge responses from poisoning the cache and
+        /// causing RU amplification. On successful (2xx) responses, the cache IS updated to record
+        /// that the primary region should be failed over for this partition.
+        /// </summary>
+        internal const string SuppressPPAFCacheUpdateKey = "x-ms-suppress-ppaf-cache-update";
+
+        /// <summary>
+        /// Internal property key storing the primary write endpoint URI on hedged PPAF write requests.
+        /// When a hedged request succeeds, the ClientRetryPolicy uses this to mark the primary endpoint
+        /// as unavailable for the partition, so future requests route directly to the successful region.
+        /// </summary>
+        internal const string PPAFHedgePrimaryEndpointKey = "x-ms-ppaf-hedge-primary-endpoint";
 
         /// <summary>
         /// Latency threshold which activates the first region hedging 
@@ -171,6 +188,13 @@ namespace Microsoft.Azure.Cosmos
 
                     List<Task> requestTasks = new List<Task>(hedgeRegions.Count + 1);
 
+                    // Capture the primary write endpoint for PPAF write hedging. When a hedged
+                    // request succeeds, this is used to mark the primary as unavailable in the
+                    // PPAF cache so future requests route directly to the successful region.
+                    Uri ppafPrimaryWriteEndpoint = this.ppafEnabled && !isReadRequest
+                        ? client.DocumentClient.GlobalEndpointManager.WriteEndpoints[0]
+                        : null;
+
                     HedgingResponse hedgeResponse = null;
 
                     //Send out hedged requests
@@ -190,7 +214,9 @@ namespace Microsoft.Azure.Cosmos
                                         hedgeRegions: hedgeRegions,
                                         requestNumber: requestNumber,
                                         trace: trace,
-                                        hedgeRequestsCancellationTokenSource: hedgeRequestsCancellationTokenSource);
+                                        hedgeRequestsCancellationTokenSource: hedgeRequestsCancellationTokenSource,
+                                        ppafPrimaryWriteEndpoint: ppafPrimaryWriteEndpoint,
+                                        partitionKeyRangeLocationCache: client.DocumentClient.PartitionKeyRangeLocation);
 
                                 requestTasks.Add(requestTask);
                                 requestTasks.Add(hedgeTimer);
@@ -322,7 +348,9 @@ namespace Microsoft.Azure.Cosmos
             IReadOnlyCollection<string> hedgeRegions,
             int requestNumber,
             ITrace trace,
-            CancellationTokenSource hedgeRequestsCancellationTokenSource)
+            CancellationTokenSource hedgeRequestsCancellationTokenSource,
+            Uri ppafPrimaryWriteEndpoint,
+            GlobalPartitionEndpointManager partitionKeyRangeLocationCache)
         {
             RequestMessage clonedRequest;
 
@@ -338,6 +366,20 @@ namespace Microsoft.Azure.Cosmos
                     List<string> excludeRegions = new List<string>(hedgeRegions);
                     excludeRegions.RemoveAt(requestNumber);
                     clonedRequest.RequestOptions.ExcludeRegions = excludeRegions;
+
+                    // For PPAF write hedging: suppress partition-level failover cache updates
+                    // on hedged (non-primary) error responses. Without this, hedged request errors
+                    // poison the PPAF cache, causing all subsequent requests for the same
+                    // partition to think the primary region failed over—triggering more hedging
+                    // and amplifying RU consumption. On success, the primary endpoint is used
+                    // to update the cache so future requests route directly to the successful region.
+                    if (this.ppafEnabled
+                        && !OperationTypeExtensions.IsReadOperation(request.OperationType)
+                        && ppafPrimaryWriteEndpoint != null)
+                    {
+                        clonedRequest.Properties[CrossRegionHedgingAvailabilityStrategy.SuppressPPAFCacheUpdateKey] = true;
+                        clonedRequest.Properties[CrossRegionHedgingAvailabilityStrategy.PPAFHedgePrimaryEndpointKey] = ppafPrimaryWriteEndpoint;
+                    }
                 }
 
                 return await this.RequestSenderAndResultCheckAsync(
@@ -345,7 +387,8 @@ namespace Microsoft.Azure.Cosmos
                     clonedRequest,
                     hedgeRegions.ElementAt(requestNumber),
                     hedgeRequestsCancellationTokenSource, 
-                    trace);
+                    trace,
+                    partitionKeyRangeLocationCache);
             }
         }
 
@@ -354,11 +397,23 @@ namespace Microsoft.Azure.Cosmos
             RequestMessage request,
             string targetRegionName,
             CancellationTokenSource hedgeRequestsCancellationTokenSource,
-            ITrace trace)
+            ITrace trace,
+            GlobalPartitionEndpointManager partitionKeyRangeLocationCache)
         {
             try
             {
                 ResponseMessage response = await sender.Invoke(request, hedgeRequestsCancellationTokenSource.Token);
+
+                // ShouldRetryAsync is only called on error responses (AbstractRetryHandler
+                // short-circuits on success), so the PPAF cache update for successful hedged
+                // writes must happen here, outside the retry policy pipeline.
+                if (response.IsSuccessStatusCode)
+                {
+                    CrossRegionHedgingAvailabilityStrategy.TryUpdatePPAFCacheOnSuccessfulHedge(
+                        request,
+                        partitionKeyRangeLocationCache);
+                }
+
                 if (IsFinalResult((int)response.StatusCode, (int)response.Headers.SubStatusCode))
                 {
                     if (!hedgeRequestsCancellationTokenSource.IsCancellationRequested)
@@ -409,6 +464,53 @@ namespace Microsoft.Azure.Cosmos
             //after enforcing the consistency model
             //All other errors should be treated as possibly transient errors
             return statusCode == (int)HttpStatusCode.NotFound && subStatusCode == (int)SubStatusCodes.Unknown;
+        }
+
+        /// <summary>
+        /// When a hedged PPAF write request receives a successful response, updates the
+        /// partition-level failover cache to route directly to the successful region.
+        /// This must be called from the hedging strategy (not from ClientRetryPolicy.ShouldRetryAsync)
+        /// because AbstractRetryHandler short-circuits on success and never invokes ShouldRetryAsync
+        /// for successful responses.
+        /// </summary>
+        private static void TryUpdatePPAFCacheOnSuccessfulHedge(
+            RequestMessage request,
+            GlobalPartitionEndpointManager partitionKeyRangeLocationCache)
+        {
+            if (request?.DocumentServiceRequest?.Properties == null
+                || partitionKeyRangeLocationCache == null)
+            {
+                return;
+            }
+
+            // Only update the PPAF write cache for write requests
+            if (OperationTypeExtensions.IsReadOperation(request.OperationType))
+            {
+                return;
+            }
+
+            if (!request.DocumentServiceRequest.Properties.TryGetValue(
+                    CrossRegionHedgingAvailabilityStrategy.PPAFHedgePrimaryEndpointKey, out object primaryEndpointObj)
+                || primaryEndpointObj is not Uri primaryEndpoint)
+            {
+                return;
+            }
+
+            // The successful endpoint is the one the hedged request was routed to
+            Uri successfulEndpoint = request.DocumentServiceRequest.RequestContext?.LocationEndpointToRoute;
+            if (successfulEndpoint == null)
+            {
+                return;
+            }
+
+            // Directly set the cache to point to the successful endpoint rather than
+            // marking the primary as failed and iterating sequentially. This ensures
+            // that in multi-region scenarios (e.g., Primary=A, Read=B, Read=C where C
+            // succeeds), the cache points to C, not B.
+            partitionKeyRangeLocationCache.TrySetPartitionLevelLocationOverrideForSuccessfulHedge(
+                request.DocumentServiceRequest,
+                primaryEndpoint,
+                successfulEndpoint);
         }
 
         private sealed class HedgingResponse
