@@ -163,6 +163,11 @@ github_access:
         - "github-mcp-server-issue_read"
         - "github-mcp-server-pull_request_read"
         - "All github-mcp-server-* tools for Azure org"
+      important: |
+        Do NOT reference github-mcp-server-* tools anywhere in your workflow
+        for Azure org repos. Always use gh CLI equivalents instead.
+        This includes: list_issues, issue_read, pull_request_read,
+        get_review_comments, search_code, search_issues, etc.
         
   recommended_approach:
     primary: "Use gh CLI for all GitHub operations"
@@ -685,6 +690,38 @@ troubleshooting:
     fix: "First MCP call opens browser - complete Microsoft login"
 ```
 
+### 0.8 Whitespace & Line Endings
+
+```yaml
+line_endings:
+  git_config:
+    # Repository uses core.autocrlf=input (LF in repo, no conversion on checkout)
+    # Verify with: git config core.autocrlf
+    expected: "input"
+    
+  common_pitfall: |
+    When editing a file, some editors normalize all line endings to LF or CRLF.
+    If the original file has mixed line endings (some CRLF, some LF), your edit
+    may produce a diff with spurious whitespace-only changes that reviewers will flag.
+    
+  prevention:
+    before_editing:
+      - "Check original line endings: git show master:{file} | python -c \"import sys; d=sys.stdin.buffer.read(); print(f'CRLF:{d.count(chr(13).encode()+chr(10).encode())} LF:{d.count(chr(10).encode())}')\""
+      
+    after_editing:
+      - "Verify no whitespace-only changes: git diff master --ignore-all-space -- {file}"
+      - "If whitespace diff appears, restore from master and re-apply only intentional changes"
+      
+    restore_pattern: |
+      # If you accidentally introduced whitespace changes:
+      git checkout master -- {file}          # Restore original
+      # Then re-apply only your intentional additions using edit tool
+      
+  diff_verification:
+    always_run: "git diff master --ignore-cr-at-eol -- {file}"
+    if_spurious_changes: "git checkout master -- {file} and re-apply edits"
+```
+
 ---
 
 ## 1. Executive Summary
@@ -796,6 +833,7 @@ mandatory_checkpoints:
     - "Search for existing PRs: `gh pr list --search 'ISSUE_NUMBER'`"
     - "Search for existing branches: `git branch -a | grep ISSUE_NUMBER`"
     - "If PR exists, use existing branch instead of creating new one"
+    - "If existing PR is stale (no activity >30 days), comment on it and create new branch"
     - "Document search results as evidence"
     
   before_creating_pr:
@@ -803,12 +841,16 @@ mandatory_checkpoints:
     - "Local tests MUST pass with captured output"
     - "Root cause MUST be documented with code path"
     - "Fix MUST be verified with before/after evidence"
+    - "If before/after evidence is not possible (environment-specific issue), document why and provide unit test evidence instead"
     - "PR MUST be created as DRAFT: `gh pr create --draft`"
+    - "PR title MUST follow format: `[Internal] Category: (Adds|Fixes|Refactors|Removes) Description` (enforced by PR Lint bot)"
+    - "Verify no spurious whitespace changes: `git diff master --ignore-all-space`"
     
   before_marking_pr_ready:
-    - "ALL CI gates MUST show COMPLETED status"
+    - "ALL CI gates MUST show green (passed) status — not just completed"
     - "PR description MUST follow full template"
     - "Issue comment MUST be posted with investigation summary"
+    - "All reviewer comments MUST be addressed (see Section 7.4.1)"
     - "Convert from draft: `gh pr ready <PR_NUMBER>`"
     
   before_claiming_issue_resolved:
@@ -2437,6 +2479,98 @@ Based on area labels, assign to: @{reviewer}
 
 ---
 
+### 4.9 Compiled Dependencies (NuGet Transport Layer)
+
+```yaml
+compiled_dependencies:
+  context: |
+    The SDK's Direct mode transport layer (Connection.cs, StoreClientFactory.cs, etc.)
+    is compiled into a NuGet package (Microsoft.Azure.Cosmos.Direct). Source code for
+    these files is NOT in the repository — they exist only in a separate internal repo
+    and are consumed as binary references.
+    
+  identifying_compiled_code:
+    signs:
+      - "File referenced in code but not found with `find` or `glob`"
+      - "Class/method visible via IntelliSense but no .cs source file in repo"
+      - "grep finds usage sites but not the definition"
+    confirm: "Check .csproj for PackageReference to Microsoft.Azure.Cosmos.Direct"
+    
+  working_with_compiled_code:
+    cannot_do:
+      - "Modify internal methods (e.g., Connection.ResolveHostAsync)"
+      - "Change constructor signatures"
+      - "Access private/internal members from the main SDK assembly"
+    can_do:
+      - "Use public/internal API surface exposed by the package"
+      - "Use injection points (e.g., dnsResolutionFunction parameter)"
+      - "Wrap compiled functionality with custom delegates/functions"
+      
+  strategy_when_plan_references_compiled_code: |
+    If your implementation plan references modifying compiled code:
+    1. STOP — verify the file exists in the repo first
+    2. If NOT in repo, find the public injection point (constructor parameter, interface, etc.)
+    3. Implement your logic in the main SDK assembly and inject via the public API
+    4. Update your plan to document the deviation
+    
+  example: |
+    Plan said: "Modify Connection.ResolveHostAsync() to add trailing dot"
+    Reality: Connection.cs is in compiled NuGet, not in repo
+    Fix: Use StoreClientFactory's dnsResolutionFunction parameter to inject
+         a custom resolver that wraps Dns.GetHostAddressesAsync() with dot-suffix logic
+```
+
+### 4.10 Environment-Specific Issues
+
+```yaml
+environment_specific_issues:
+  context: |
+    Some issues only manifest in specific environments (Kubernetes, Linux, specific
+    cloud regions, multi-region setups). These cannot be reproduced on a local Windows
+    development machine with the Cosmos DB emulator.
+    
+  identification:
+    keywords:
+      - "Kubernetes", "k8s", "ndots", "pod", "container"
+      - "Linux", "Alpine", "Docker"
+      - "multi-region", "failover", "cross-region"
+      - "proxy", "SNAT", "NAT gateway"
+      - "connection pooling", "socket exhaustion"
+      
+  when_reproduction_impossible:
+    acceptable_evidence:
+      - "Unit tests that verify the fix logic in isolation"
+      - "Integration tests that verify the injection point works"
+      - "Documented explanation of why the environment cannot be replicated"
+      - "Link to external documentation confirming the behavior (e.g., Kubernetes DNS docs)"
+      
+    before_after_alternatives:
+      - "Show conceptual before/after (DNS query flow, connection sequence, etc.)"
+      - "Show unit test before/after (input → output)"
+      - "Reference customer-reported metrics if available"
+      
+    pr_description: |
+      In the "Generated Output (Before/After)" section, clearly state:
+      "Note: This behavior only manifests in {environment}. Before/after evidence
+      is conceptual — unit tests verify the fix logic."
+      
+  common_patterns:
+    kubernetes_dns:
+      issue: "ndots:5 causes search-domain expansion latency"
+      cannot_reproduce: "Local Windows DNS resolver doesn't use ndots"
+      evidence: "Unit tests for hostname transformation + Kubernetes docs reference"
+    linux_specific:
+      issue: "Different socket/TLS behavior on Linux"
+      cannot_reproduce: "Windows emulator only"
+      evidence: "Conditional compilation tests + runtime platform detection"
+    multi_region:
+      issue: "Failover, consistency, replication lag"
+      cannot_reproduce: "Emulator is single-region"
+      evidence: "Mock-based tests + CI multi-region pipeline (requires secrets)"
+```
+
+---
+
 ## 5. Investigation Issue Creation
 
 > **Note:** Section 5 covers creating investigation issues for complex bugs that require detailed tracking. The investigation issue template is detailed in Section 4's "Investigation Issue Template" subsection.
@@ -2569,7 +2703,41 @@ do_not_create_pr_when:
   - Security-sensitive fix (escalate instead)
 ```
 
-### 7.3 PR Template
+### 7.3 PR Title Format
+
+**The repository has a PR Lint bot that enforces title format. PRs with incorrect titles will be flagged.**
+
+```yaml
+pr_title:
+  format: "[Internal] Category: (Adds|Fixes|Refactors|Removes) Description"
+  
+  rules:
+    - "[Internal] prefix is for PRs with no customer impact (internal refactoring, CI changes, test additions)"
+    - "Omit [Internal] for customer-facing changes (bug fixes, new features, behavior changes)"
+    - "Category matches the SDK area: Query, LINQ, Batch, DirectMode, ChangeFeed, SDK, Diagnostics, etc."
+    - "Verb must be one of: Adds, Fixes, Refactors, Removes"
+    
+  decision_tree:
+    is_customer_facing:
+      yes: "Category: Verb Description"
+      no: "[Internal] Category: Verb Description"
+    verb_selection:
+      new_feature: "Adds"
+      bug_fix: "Fixes"
+      code_restructure: "Refactors"
+      deprecated_removal: "Removes"
+      
+  examples:
+    - "DirectMode: Adds DNS dot-suffix to avoid Kubernetes ndots latency"
+    - "LINQ: Fixes Dictionary.Any() to generate correct SQL with OBJECTTOARRAY"
+    - "[Internal] Tests: Adds unit tests for DnsDotSuffixHelper"
+    - "SDK: Adds support for hierarchical partition keys"
+    - "Query: Refactors SQL generation for better readability"
+    
+  fix_if_rejected: "gh pr edit {pr_number} --title 'Category: Verb Description'"
+```
+
+### 7.3.1 PR Description Template
 
 **PR must include full investigation details, not just a summary.**
 
@@ -2749,6 +2917,52 @@ branch_to_pr_url:
 | DirectMode | @transport-owners | @sdk-team |
 | Serialization | @serialization-owners | @sdk-team |
 | Encryption | @encryption-owners | @security-team |
+
+### 7.4.1 Handling Reviewer Feedback
+
+```yaml
+reviewer_feedback_workflow:
+  monitoring:
+    when: "After PR is created and after each push"
+    how: "gh api repos/{owner}/{repo}/pulls/{pr}/comments --jq '.[] | {id, path, line, body, user: .user.login}'"
+    frequency: "Check after each push; respond before pushing more changes"
+    
+  addressing_comments:
+    steps:
+      1_acknowledge: |
+        Read all inline review comments before making changes.
+        Group related comments to avoid multiple fix-then-break cycles.
+      2_implement: |
+        Make all requested changes in a single commit.
+        Commit message: "Address PR review: <summary of changes>"
+      3_reply: |
+        Reply to EACH review comment with what was done:
+        gh api repos/{owner}/{repo}/pulls/{pr}/comments/{comment_id}/replies \
+          -f body="Done. <brief description of change> in <commit_sha_short>."
+      4_verify: |
+        Rebuild and rerun tests after addressing feedback.
+        Push only after local verification passes.
+        
+  common_review_patterns:
+    naming_feedback:
+      action: "Rename as requested, update all references, reply with new name"
+    whitespace_noise:
+      action: "Restore original file from master, re-apply only intentional changes"
+      command: "git checkout master -- {file} && re-apply edits"
+    missing_tests:
+      action: "Add requested tests, show pass evidence in reply"
+    style_issues:
+      action: "Follow existing code patterns in the file being modified"
+      
+  disagreements:
+    approach: "Do NOT argue. Implement reviewer's suggestion unless it introduces a bug."
+    if_reviewer_wrong: "Explain politely with evidence (code path, test output). Let reviewer decide."
+    escalation: "If deadlocked after 2 rounds, ask reviewer to suggest specific alternative."
+    
+  re_review:
+    after_pushing_fixes: "GitHub automatically requests re-review on new pushes to draft PRs"
+    manual: "gh pr edit {pr} --add-reviewer {reviewer} (only if needed)"
+```
 
 ### 7.5 Remote CI Validation (Azure Pipelines Gates)
 

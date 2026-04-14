@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.FaultInjection
@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
         private long hitCount;
         private long evaluationCount;
-        private bool enabled;
+        private volatile bool enabled;
 
         public FaultInjectionServerErrorRule(
             string id,

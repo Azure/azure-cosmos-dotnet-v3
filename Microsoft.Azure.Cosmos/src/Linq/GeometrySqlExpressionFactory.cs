@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             try
             {
                 Expression<Func<Geometry>> le = Expression.Lambda<Func<Geometry>>(geometryExpression);
-                Func<Geometry> compiledExpression = le.Compile();
+                Func<Geometry> compiledExpression = le.Compile(preferInterpretation: true);
                 geometry = compiledExpression();
             }
             catch (Exception ex)
