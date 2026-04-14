@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Extensions.Caching.Distributed;
-    using Microsoft.Extensions.Time.Testing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -102,13 +101,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         public async Task DekCache_WithProactiveRefresh_TriggersBackgroundRefresh()
         {
             // Arrange
-            FakeTimeProvider fakeTime = new FakeTimeProvider(DateTimeOffset.UtcNow);
+            DateTime fakeNow = DateTime.UtcNow;
             InMemoryDistributedCache distributedCache = new InMemoryDistributedCache();
             DekCache cache = new DekCache(
                 dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
                 distributedCache: distributedCache,
                 proactiveRefreshThreshold: TimeSpan.FromMinutes(25), // Refresh when 5 minutes left
-                timeProvider: fakeTime);
+                utcNow: () => fakeNow);
 
             int fetchCount = 0;
             SemaphoreSlim fetchSignal = new SemaphoreSlim(0, 10);
@@ -122,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                     "AEAD_AES_256_CBC_HMAC_SHA256",
                     new byte[] { 1, 2, 3 },
                     new EncryptionKeyWrapMetadata("test", "test", "RSA-OAEP", "test"),
-                    fakeTime.GetUtcNow().UtcDateTime);
+                    fakeNow);
             }
 
             // Act - First fetch
@@ -137,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             Assert.AreEqual(1, fetchCount, "Should fetch once initially");
 
             // Advance time past the proactive refresh threshold (25 min into 30 min TTL)
-            fakeTime.Advance(TimeSpan.FromMinutes(26));
+            fakeNow = fakeNow.AddMinutes(26);
 
             // Act - Second fetch (should return cached value but trigger background refresh)
             DataEncryptionKeyProperties result2 = await cache.GetOrAddDekPropertiesAsync(
