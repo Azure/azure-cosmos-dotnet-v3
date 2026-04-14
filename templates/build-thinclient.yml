@@ -18,7 +18,7 @@ jobs:
 - job:
   displayName: EmulatorTests ${{ parameters.BuildConfiguration }} - ${{ parameters.EmulatorPipeline5CategoryListName }}
   timeoutInMinutes: 120
-  condition: always()
+  condition: and(always(), ne(variables['System.PullRequest.IsFork'], 'True'))
   continueOnError: true
   pool:
     name: 'OneES'

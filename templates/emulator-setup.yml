@@ -2,8 +2,13 @@
 
 steps:
   - pwsh: |
-      Write-Host "Downloading Cosmos Emulator - $env:EMULATORMSIURL" -ForegroundColor green 
-      Invoke-WebRequest "$env:EMULATORMSIURL" -OutFile "$env:temp\azure-cosmosdb-emulator.msi"
+      $emulatorUrl = $env:EMULATORMSIURL
+      if ([string]::IsNullOrWhiteSpace($emulatorUrl)) {
+        $emulatorUrl = 'https://aka.ms/cosmosdb-emulator'
+        Write-Host "EMULATORMSIURL not set, using default: $emulatorUrl" -ForegroundColor yellow
+      }
+      Write-Host "Downloading Cosmos Emulator - $emulatorUrl" -ForegroundColor green 
+      Invoke-WebRequest "$emulatorUrl" -OutFile "$env:temp\azure-cosmosdb-emulator.msi"
       Write-Host "Finished Downloading Cosmos Emulator - $env:temp\azure-cosmosdb-emulator.msi" -ForegroundColor green 
       dir "$env:temp" 
 
