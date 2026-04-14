@@ -1405,6 +1405,12 @@ namespace Microsoft.Azure.Cosmos
                 this.cosmosAuthorization.Dispose();
             }
 
+            if (this.PartitionKeyRangeLocation != null)
+            {
+                (this.PartitionKeyRangeLocation as IDisposable)?.Dispose();
+                this.PartitionKeyRangeLocation = null;
+            }
+
             if (this.GlobalEndpointManager != null)
             {
                 this.GlobalEndpointManager.OnEnablePartitionLevelFailoverConfigChanged -= this.UpdatePartitionLevelFailoverConfigWithAccountRefresh;
