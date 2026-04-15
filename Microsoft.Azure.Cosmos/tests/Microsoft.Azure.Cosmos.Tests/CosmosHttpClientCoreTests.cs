@@ -466,6 +466,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(gatewayLimit, socketsHandler.MaxConnectionsPerServer);
             Assert.IsTrue(socketsHandler.EnableMultipleHttp2Connections, "EnableMultipleHttp2Connections should be true for HTTP/2 thin client support");
 
+            // HTTP/2 PING keep-alive: detects broken connections lingering in the pool
+            Assert.AreEqual(TimeSpan.FromSeconds(30), socketsHandler.KeepAlivePingDelay, "KeepAlivePingDelay should be 30 seconds for HTTP/2 connection health monitoring");
+            Assert.AreEqual(TimeSpan.FromSeconds(20), socketsHandler.KeepAlivePingTimeout, "KeepAlivePingTimeout should be 20 seconds");
+            Assert.AreEqual(HttpKeepAlivePingPolicy.Always, socketsHandler.KeepAlivePingPolicy, "KeepAlivePingPolicy should be Always to detect broken idle connections");
+
             //Create cert for test
             X509Certificate2 x509Certificate2 = new CertificateRequest("cn=www.test", ECDsa.Create(), HashAlgorithmName.SHA256).CreateSelfSigned(DateTime.Now, DateTime.Now.AddYears(1));
             X509Chain x509Chain = new X509Chain();

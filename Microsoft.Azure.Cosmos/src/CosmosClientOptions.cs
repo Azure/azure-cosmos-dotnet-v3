@@ -244,11 +244,19 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <remarks>
         /// This setting is only applicable in Gateway mode.
-        /// The SDK sets EnableMultipleHttp2Connections = true on the underlying SocketsHttpHandler,
-        /// allowing additional HTTP/2 TCP connections to be opened when the maximum concurrent streams
-        /// limit on an existing connection is reached. This property controls the upper bound on the
-        /// total number of connections per server endpoint.
-        /// When using a custom <see cref="HttpClientFactory"/>, set EnableMultipleHttp2Connections
+        /// The SDK sets the following on the underlying SocketsHttpHandler:
+        /// <list type="bullet">
+        /// <item><description>EnableMultipleHttp2Connections = true — allows additional HTTP/2 TCP connections
+        /// to be opened when the maximum concurrent streams limit on an existing connection is reached.</description></item>
+        /// <item><description>KeepAlivePingDelay = 30 seconds — sends HTTP/2 PING frames after 30 seconds
+        /// of inactivity to detect broken connections in the pool.</description></item>
+        /// <item><description>KeepAlivePingTimeout = 20 seconds — marks a connection as dead if no PONG
+        /// response is received within 20 seconds.</description></item>
+        /// <item><description>KeepAlivePingPolicy = Always — sends pings even for idle connections, which
+        /// is critical for detecting broken connections that remain in the pool.</description></item>
+        /// </list>
+        /// This property controls the upper bound on the total number of connections per server endpoint.
+        /// When using a custom <see cref="HttpClientFactory"/>, configure these properties
         /// directly on your SocketsHttpHandler for equivalent behavior.
         /// </remarks>
         /// <example>
@@ -268,7 +276,10 @@ namespace Microsoft.Azure.Cosmos
         /// SocketsHttpHandler handler = new SocketsHttpHandler
         /// {
         ///     MaxConnectionsPerServer = 100,
-        ///     EnableMultipleHttp2Connections = true
+        ///     EnableMultipleHttp2Connections = true,
+        ///     KeepAlivePingDelay = TimeSpan.FromSeconds(30),
+        ///     KeepAlivePingTimeout = TimeSpan.FromSeconds(20),
+        ///     KeepAlivePingPolicy = HttpKeepAlivePingPolicy.Always
         /// };
         /// CosmosClientOptions options = new CosmosClientOptions()
         /// {
