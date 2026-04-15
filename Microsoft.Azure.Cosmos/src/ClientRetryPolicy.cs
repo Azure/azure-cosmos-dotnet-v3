@@ -493,9 +493,6 @@ namespace Microsoft.Azure.Cosmos
                         // region with the request header in place, which is what we want on the third attempt, but not on the second one.
                         if (this.partitionKeyRangeLocationCache.TryAddPartitionLevelLocationOverride(request, checkHubRegionOverrideInCache: true))
                         {
-                            request.Properties ??= new Dictionary<string, object>();
-                            request.Properties[GlobalPartitionEndpointManager.HubRegionOverridePresentInCache] = true;
-
                             DefaultTrace.TraceVerbose("Partition level override added by hub-region override for request {0}. Routing to the cached hub region for this request.", request.ResourceAddress);
                         }
                         else
