@@ -665,26 +665,14 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
         /// <summary>
-        /// Checks whether the request has the hub region processing header or the hub region processing property,
+        /// Checks whether the request has the hub region processing header,
         /// indicating it is in the hub region discovery flow (after 2× 404/1002).
         /// </summary>
         public static bool IsHubRegionRoutingActive(
             DocumentServiceRequest request)
         {
             return request.IsReadOnlyRequest
-                && GlobalPartitionEndpointManagerCore.IsHubRegionHeaderPresentInRequest(request);
-        }
-
-        /// <summary>
-        /// Determines whether the request contains a header indicating that processing should occur only in the hub region.
-        /// </summary>
-        /// <param name="request">The request to inspect for the presence of the hub region processing header. Cannot be null.</param>
-        /// <returns>true if the request contains the header with a value indicating processing should occur only in the hub
-        /// region; otherwise, false.</returns>
-        private static bool IsHubRegionHeaderPresentInRequest(
-            DocumentServiceRequest request)
-        {
-            return string.Equals(
+                && string.Equals(
                     request?.Headers?[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion],
                     bool.TrueString,
                     StringComparison.OrdinalIgnoreCase);

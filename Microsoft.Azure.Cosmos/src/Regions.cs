@@ -489,5 +489,20 @@ namespace Microsoft.Azure.Cosmos
         /// Name of the Azure Singapore North region in the Azure Cosmos DB service.
         /// </summary>
         public const string SingaporeNorth = "Singapore North";
+
+        /// <summary>
+        /// Name of the Azure Southeast Asia 3 region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string SoutheastAsia3 = "Southeast Asia 3";
+
+        /// <summary>
+        /// Name of the Azure Saudi Arabia East region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string SaudiArabiaEast = "Saudi Arabia East";
+
+        /// <summary>
+        /// Name of the Azure West Central US FRE region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string WestCentralUSFRE = "West Central US FRE";
     }
 }
