@@ -103,8 +103,7 @@ namespace Microsoft.Azure.Cosmos
 
                 bool isPPAFEnabled = this.IsPartitionLevelFailoverEnabled();
                 // This is applicable for both per partition automatic failover and per partition circuit breaker.
-                bool isHubRegionRoutingActive = GlobalPartitionEndpointManagerCore.IsHubRegionRoutingActive(request);
-                if ((isPPAFEnabled || this.isThinClientEnabled || isHubRegionRoutingActive)
+                if ((isPPAFEnabled || this.isThinClientEnabled)
                     && !ReplicatedResourceClient.IsMasterResource(request.ResourceType)
                     && (request.ResourceType.IsPartitioned() || request.ResourceType == ResourceType.StoredProcedure))
                 {
@@ -117,9 +116,9 @@ namespace Microsoft.Azure.Cosmos
 
                     request.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
 
-                    if (isPPAFEnabled || isHubRegionRoutingActive)
+                    if (isPPAFEnabled)
                     {
-                        this.globalPartitionEndpointManager.TryAddPartitionLevelLocationOverride(request, isHubRegionRoutingActive);
+                        this.globalPartitionEndpointManager.TryAddPartitionLevelLocationOverride(request, false);
                     }
                 }
 

@@ -235,16 +235,19 @@ namespace Microsoft.Azure.Cosmos
                 && this.addHubRegionProcessingOnlyHeader)
             {
                 request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion] = bool.TrueString;
+                this.partitionKeyRangeLocationCache.TryAddPartitionLevelLocationOverride(request, checkHubRegionOverrideInCache: true);
             }
+            else
 #endif
+            {
+                // Resolve the endpoint for the request and pin the resolution to the resolved endpoint
+                this.locationEndpoint = this.isThinClientEnabled
+                    && GatewayStoreModel.IsOperationSupportedByThinClient(request)
+                    ? this.globalEndpointManager.ResolveThinClientEndpoint(request)
+                    : this.globalEndpointManager.ResolveServiceEndpoint(request);
 
-            // Resolve the endpoint for the request and pin the resolution to the resolved endpoint
-            this.locationEndpoint = this.isThinClientEnabled
-                && GatewayStoreModel.IsOperationSupportedByThinClient(request)
-                ? this.globalEndpointManager.ResolveThinClientEndpoint(request)
-                : this.globalEndpointManager.ResolveServiceEndpoint(request);
-
-            request.RequestContext.RouteToLocation(this.locationEndpoint);
+                request.RequestContext.RouteToLocation(this.locationEndpoint);
+            }
         }
 
         private async Task<ShouldRetryResult> ShouldRetryInternalAsync(
