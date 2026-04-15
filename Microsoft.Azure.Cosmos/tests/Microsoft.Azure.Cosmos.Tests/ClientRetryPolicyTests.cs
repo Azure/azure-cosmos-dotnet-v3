@@ -314,7 +314,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 isThinClientEnabled: false);
 
             CancellationToken cancellationToken = new();
-            OperationCanceledException operationCancelledException= new(message: "Operation was cancelled due to cancellation token expiry.");
+            OperationCanceledException operationCancelledException = new(message: "Operation was cancelled due to cancellation token expiry.");
 
             GlobalPartitionEndpointManagerCore.PartitionKeyRangeFailoverInfo partitionKeyRangeFailoverInfo = ClientRetryPolicyTests.GetPartitionKeyRangeFailoverInfoUsingReflection(
                 this.partitionKeyRangeLocationCache,
@@ -421,57 +421,57 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
             try
             {
-                using GlobalEndpointManager endpointManager = this.Initialize(
-                    useMultipleWriteLocations: !isSingleMaster,
-                    enableEndpointDiscovery: enableEndpointDiscovery,
-                    isPreferredLocationsListEmpty: false,
-                    enforceSingleMasterSingleWriteLocation: isSingleMaster);
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: !isSingleMaster,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enforceSingleMasterSingleWriteLocation: isSingleMaster);
 
                 GlobalPartitionEndpointManagerCore cacheManager = new GlobalPartitionEndpointManagerCore(endpointManager);
 
-                ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
-                    endpointManager,
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                endpointManager,
                     cacheManager,
-                    new RetryOptions(),
-                    enableEndpointDiscovery,
-                    isThinClientEnabled: false);
+                new RetryOptions(),
+                enableEndpointDiscovery,
+                isThinClientEnabled: false);
 
-                DocumentServiceRequest request = this.CreateRequest(isReadRequest: isReadRequest, isMasterResourceType: false);
+            DocumentServiceRequest request = this.CreateRequest(isReadRequest: isReadRequest, isMasterResourceType: false);
 
-                // First attempt - header should not exist
-                retryPolicy.OnBeforeSendRequest(request);
-                Assert.IsNull(request.Headers.GetValues(HubRegionHeader), "Header should not exist on initial request before any 404/1002 error.");
+            // First attempt - header should not exist
+            retryPolicy.OnBeforeSendRequest(request);
+            Assert.IsNull(request.Headers.GetValues(HubRegionHeader), "Header should not exist on initial request before any 404/1002 error.");
 
-                // Simulate first 404/1002 error
-                DocumentClientException sessionNotAvailableException = new DocumentClientException(
-                    message: "Simulated 404/1002 ReadSessionNotAvailable",
-                    innerException: null,
-                    statusCode: HttpStatusCode.NotFound,
-                    substatusCode: SubStatusCodes.ReadSessionNotAvailable,
-                    requestUri: request.RequestContext.LocationEndpointToRoute,
-                    responseHeaders: new DictionaryNameValueCollection());
+            // Simulate first 404/1002 error
+            DocumentClientException sessionNotAvailableException = new DocumentClientException(
+                message: "Simulated 404/1002 ReadSessionNotAvailable",
+                innerException: null,
+                statusCode: HttpStatusCode.NotFound,
+                substatusCode: SubStatusCodes.ReadSessionNotAvailable,
+                requestUri: request.RequestContext.LocationEndpointToRoute,
+                responseHeaders: new DictionaryNameValueCollection());
 
-                ShouldRetryResult shouldRetry = await retryPolicy.ShouldRetryAsync(sessionNotAvailableException, CancellationToken.None);
+            ShouldRetryResult shouldRetry = await retryPolicy.ShouldRetryAsync(sessionNotAvailableException, CancellationToken.None);
                 Assert.IsTrue(shouldRetry.ShouldRetry, "Should retry on first 404/1002.");
 
-                // First retry attempt - header should NOT be present yet
-                retryPolicy.OnBeforeSendRequest(request);
-                string[] headerValues = request.Headers.GetValues(HubRegionHeader);
-                Assert.IsNull(headerValues, "Header should NOT be present on first retry attempt (before it fails).");
+            // First retry attempt - header should NOT be present yet
+            retryPolicy.OnBeforeSendRequest(request);
+            string[] headerValues = request.Headers.GetValues(HubRegionHeader);
+            Assert.IsNull(headerValues, "Header should NOT be present on first retry attempt (before it fails).");
 
-                // Simulate first retry also failing with 404/1002
-                DocumentClientException sessionNotAvailableException2 = new DocumentClientException(
-                    message: "Simulated 404/1002 ReadSessionNotAvailable on first retry",
-                    innerException: null,
-                    statusCode: HttpStatusCode.NotFound,
-                    substatusCode: SubStatusCodes.ReadSessionNotAvailable,
-                    requestUri: request.RequestContext.LocationEndpointToRoute,
-                    responseHeaders: new DictionaryNameValueCollection());
+            // Simulate first retry also failing with 404/1002
+            DocumentClientException sessionNotAvailableException2 = new DocumentClientException(
+                message: "Simulated 404/1002 ReadSessionNotAvailable on first retry",
+                innerException: null,
+                statusCode: HttpStatusCode.NotFound,
+                substatusCode: SubStatusCodes.ReadSessionNotAvailable,
+                requestUri: request.RequestContext.LocationEndpointToRoute,
+                responseHeaders: new DictionaryNameValueCollection());
 
-                shouldRetry = await retryPolicy.ShouldRetryAsync(sessionNotAvailableException2, CancellationToken.None);
+            shouldRetry = await retryPolicy.ShouldRetryAsync(sessionNotAvailableException2, CancellationToken.None);
 
-                if (isSingleMaster)
-                {
+            if (isSingleMaster)
+            {
                     // For single master, after second 404/1002, the SDK sets hub header flag and retries
                     Assert.IsTrue(shouldRetry.ShouldRetry, "Single master should retry after second 404/1002 with hub header flag set.");
 
@@ -485,12 +485,12 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                         Assert.IsNotNull(headerValues, "Hub header MUST be present on retry after 2x 404/1002 for single master.");
                         Assert.AreEqual(1, headerValues.Length, "Header should have exactly one value.");
                         Assert.AreEqual(bool.TrueString, headerValues[0], "Header value should be 'True'.");
-                    }
-                    else
-                    {
+            }
+            else
+            {
                         Assert.IsNull(request.Headers.GetValues(HubRegionHeader), "Hub header should NOT be present for a write request on single-master account.");
                     }
-                }
+            }
                 else
                 {
                     // For multi-master: Should retry across regions but hub header should NOT be added
@@ -747,8 +747,8 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
             // Act - Simulate 3 consecutive 404/1002 errors
             for (int attempt = 1; attempt <= 3; attempt++)
-            {
-                retryPolicy.OnBeforeSendRequest(request);
+                {
+                    retryPolicy.OnBeforeSendRequest(request);
 
                 string[] headerValues = request.Headers.GetValues(HubRegionHeader);
 
@@ -763,10 +763,10 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                     {
                         Assert.IsNotNull(headerValues, $"Single-master: Hub header MUST be present on attempt {attempt} (after 2x 404/1002).");
                         Assert.AreEqual(bool.TrueString, headerValues[0], "Hub header value should be 'True'.");
-                    }
                 }
-                else
-                {
+            }
+            else
+            {
                     // Multi-master: Hub header should NEVER be added
                     Assert.IsNull(headerValues, $"Multi-master: Hub header should NOT be present on any attempt (attempt {attempt}).");
                 }
@@ -875,7 +875,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 "Attempt 2: Should retry after second 404/1002 — addHubRegionProcessingOnlyHeader is now true.");
 
             // ===== Attempt 3: Hub header is active, sent to hub region → hub returns 404/1002 =====
-            retryPolicy.OnBeforeSendRequest(request);
+                        retryPolicy.OnBeforeSendRequest(request);
 
             string[] hubHeaderValues = request.Headers.GetValues(HubRegionHeader);
             Assert.IsNotNull(hubHeaderValues,
@@ -886,11 +886,11 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             // Simulate 404/1002 from the hub region itself — document genuinely doesn't exist in session
             DocumentClientException hubError = new DocumentClientException(
                 message: "404/1002 from hub region — source of truth says document not found",
-                innerException: null,
+                            innerException: null,
                 statusCode: HttpStatusCode.NotFound,
                 substatusCode: SubStatusCodes.ReadSessionNotAvailable,
-                requestUri: request.RequestContext.LocationEndpointToRoute,
-                responseHeaders: new DictionaryNameValueCollection());
+                            requestUri: request.RequestContext.LocationEndpointToRoute,
+                            responseHeaders: new DictionaryNameValueCollection());
 
             ShouldRetryResult retryFromHub = await retryPolicy.ShouldRetryAsync(hubError, CancellationToken.None);
 
@@ -903,8 +903,8 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             finally
             {
                 Environment.SetEnvironmentVariable(ConfigurationManager.HubRegionProcessingEnabled, originalHubRegionFlag);
-            }
-        }
+                    }
+                }
 
         /// <summary>
         /// Verifies that when AZURE_COSMOS_HUB_REGION_PROCESSING_ENABLED is set to "False",

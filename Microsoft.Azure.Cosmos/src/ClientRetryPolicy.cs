@@ -240,14 +240,14 @@ namespace Microsoft.Azure.Cosmos
             else
 #endif
             {
-                // Resolve the endpoint for the request and pin the resolution to the resolved endpoint
-                this.locationEndpoint = this.isThinClientEnabled
-                    && GatewayStoreModel.IsOperationSupportedByThinClient(request)
-                    ? this.globalEndpointManager.ResolveThinClientEndpoint(request)
-                    : this.globalEndpointManager.ResolveServiceEndpoint(request);
+            // Resolve the endpoint for the request and pin the resolution to the resolved endpoint
+            this.locationEndpoint = this.isThinClientEnabled
+                && GatewayStoreModel.IsOperationSupportedByThinClient(request)
+                ? this.globalEndpointManager.ResolveThinClientEndpoint(request)
+                : this.globalEndpointManager.ResolveServiceEndpoint(request);
 
-                request.RequestContext.RouteToLocation(this.locationEndpoint);
-            }
+            request.RequestContext.RouteToLocation(this.locationEndpoint);
+        }
         }
 
         private async Task<ShouldRetryResult> ShouldRetryInternalAsync(
@@ -298,7 +298,7 @@ namespace Microsoft.Azure.Cosmos
                     if (this.retryContext != null && this.retryContext.RouteToHub)
                     {
                         forceRefresh = true;
-
+                        
                     }
 
                     ShouldRetryResult retryResult = await this.ShouldRetryOnEndpointFailureAsync(
@@ -312,7 +312,7 @@ namespace Microsoft.Azure.Cosmos
                     {
                         this.retryContext.RouteToHub = true;
                     }
-
+                    
                     return retryResult;
                 }
 
@@ -499,11 +499,11 @@ namespace Microsoft.Azure.Cosmos
                         {
                             // No override is present, this means we have not yet discovered the hub region for this partition.
                             // Route to the account hub region first.
-                            this.retryContext = new RetryContext
-                            {
-                                RetryLocationIndex = 0,
-                                RetryRequestOnPreferredLocations = false
-                            };
+                        this.retryContext = new RetryContext
+                        {
+                            RetryLocationIndex = 0,
+                            RetryRequestOnPreferredLocations = false
+                        };
                         }
 
                         return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
