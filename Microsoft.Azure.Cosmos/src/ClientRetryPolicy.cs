@@ -235,11 +235,15 @@ namespace Microsoft.Azure.Cosmos
                 && this.addHubRegionProcessingOnlyHeader)
             {
                 request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion] = bool.TrueString;
-                this.partitionKeyRangeLocationCache.TryAddPartitionLevelLocationOverride(request, checkHubRegionOverrideInCache: true);
+
+                // If there is a cache override present, that would resolve and set the location endpoint from the cache. No need
+                // for re-resolving the service endpoint.
+                if (this.partitionKeyRangeLocationCache.TryAddPartitionLevelLocationOverride(request, checkHubRegionOverrideInCache: true))
+                {
+                    return;
+                }
             }
-            else
 #endif
-            {
             // Resolve the endpoint for the request and pin the resolution to the resolved endpoint
             this.locationEndpoint = this.isThinClientEnabled
                 && GatewayStoreModel.IsOperationSupportedByThinClient(request)
@@ -247,7 +251,6 @@ namespace Microsoft.Azure.Cosmos
                 : this.globalEndpointManager.ResolveServiceEndpoint(request);
 
             request.RequestContext.RouteToLocation(this.locationEndpoint);
-        }
         }
 
         private async Task<ShouldRetryResult> ShouldRetryInternalAsync(
@@ -488,22 +491,16 @@ namespace Microsoft.Azure.Cosmos
 
                         // Note: Check the per partition automatic failover cache for hub region overrides first. If the override is present,
                         // it means we have already discovered the hub region for this partition and can route directly there (skipping the 403/3 discovery chain).
-                        // We are attaching the hub region property to the request to ensure that the AddressResolver or the GatewayStoreModel is able to fetch the override
-                        // region and route to the correct hub region endpoint. Attaching the header here, would mean that the request will land on the overriden hub
-                        // region with the request header in place, which is what we want on the third attempt, but not on the second one.
-                        if (this.partitionKeyRangeLocationCache.TryAddPartitionLevelLocationOverride(request, checkHubRegionOverrideInCache: true))
+                        // if no override is present, this means we have not yet discovered the hub region for this partition. In that case, Route to the account
+                        // hub region first.
+                        if (!this.partitionKeyRangeLocationCache.TryAddPartitionLevelLocationOverride(request, checkHubRegionOverrideInCache: true))
                         {
-                            DefaultTrace.TraceVerbose("Partition level override added by hub-region override for request {0}. Routing to the cached hub region for this request.", request.ResourceAddress);
-                        }
-                        else
-                        {
-                            // No override is present, this means we have not yet discovered the hub region for this partition.
-                            // Route to the account hub region first.
-                        this.retryContext = new RetryContext
-                        {
-                            RetryLocationIndex = 0,
-                            RetryRequestOnPreferredLocations = false
-                        };
+                            DefaultTrace.TraceVerbose("Partition level hub-region override not present for request {0}. Routing to the acount hub region for this request.", request.ResourceAddress);
+                            this.retryContext = new RetryContext
+                            {
+                                RetryLocationIndex = 0,
+                                RetryRequestOnPreferredLocations = false
+                            };
                         }
 
                         return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
