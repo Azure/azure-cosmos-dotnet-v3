@@ -12,11 +12,6 @@ namespace Microsoft.Azure.Cosmos.Routing
     internal abstract class GlobalPartitionEndpointManager
     {
         /// <summary>
-        /// A constant string representing if hub region override is present in the pk range to location cache for a request.
-        /// </summary>
-        public const string HubRegionOverridePresentInCache = "x-ms-hub-region-override-active";
-
-        /// <summary>
         /// Updates the DocumentServiceRequest routing location to point
         /// new a location based if a partition level failover occurred
         /// </summary>

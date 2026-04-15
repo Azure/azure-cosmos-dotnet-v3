@@ -672,8 +672,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             DocumentServiceRequest request)
         {
             return request.IsReadOnlyRequest
-                && (GlobalPartitionEndpointManagerCore.IsHubRegionHeaderPresentInRequest(request)
-                || GlobalPartitionEndpointManagerCore.IsHubRegionPropertyPresentInRequest(request));
+                && GlobalPartitionEndpointManagerCore.IsHubRegionHeaderPresentInRequest(request);
         }
 
         /// <summary>
@@ -689,21 +688,6 @@ namespace Microsoft.Azure.Cosmos.Routing
                     request?.Headers?[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion],
                     bool.TrueString,
                     StringComparison.OrdinalIgnoreCase);
-        }
-
-        /// <summary>
-        /// Determines whether the hub region override property is present and set to true in the specified request.
-        /// </summary>
-        /// <param name="request">The request to inspect for the presence of the hub region override property. Cannot be null.</param>
-        /// <returns>true if the hub region override property is present in the request and its value is true; otherwise, false.</returns>
-        private static bool IsHubRegionPropertyPresentInRequest(
-            DocumentServiceRequest request)
-        {
-            return request?.Properties != null
-                && request.Properties.TryGetValue(
-                    GlobalPartitionEndpointManager.HubRegionOverridePresentInCache,
-                    out object value)
-                && value is true;
         }
 
         internal sealed class PartitionKeyRangeFailoverInfo
