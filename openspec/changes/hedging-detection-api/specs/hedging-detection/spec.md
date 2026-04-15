@@ -23,23 +23,31 @@ The `CosmosDiagnostics` class SHALL expose a public virtual method `IsHedged()` 
 - **WHEN** `IsHedged()` is called on a response that was not hedged
 - **THEN** the method SHALL return in O(1) time without walking the diagnostics trace tree, performing string operations, or allocating memory
 
-### Requirement: Retrieve responding region from hedged request
-The `CosmosDiagnostics` class SHALL expose a public virtual method `GetRespondingRegion()` that returns the name of the region that produced the final response when hedging was active.
+### Requirement: Retrieve hedged regions from diagnostics
+The `CosmosDiagnostics` class SHALL expose a public virtual method `GetHedgedRegions()` that returns all regions that received hedge requests, in the order they were dispatched.
 
-#### Scenario: Returns region name when hedged
-- **WHEN** a request was hedged AND the response came from region "West US"
-- **THEN** `response.Diagnostics.GetRespondingRegion()` SHALL return `"West US"`
+#### Scenario: Returns all hedged regions when primary wins
+- **WHEN** a request was hedged across regions ["East US", "West US"] AND the primary region "East US" responded first
+- **THEN** `response.Diagnostics.GetHedgedRegions()` SHALL return a list containing `["East US"]` (only the primary was dispatched before a result arrived)
 
-#### Scenario: Returns null when not hedged
+#### Scenario: Returns all hedged regions when hedge wins
+- **WHEN** a request was hedged across regions ["East US", "West US", "North Europe"] AND the hedge to "West US" responded first after both "East US" and "West US" were dispatched
+- **THEN** `response.Diagnostics.GetHedgedRegions()` SHALL return a list containing `["East US", "West US"]`
+
+#### Scenario: Returns all regions when all hedges dispatched
+- **WHEN** a request was hedged AND all available regions ["East US", "West US", "North Europe"] were dispatched before any responded
+- **THEN** `response.Diagnostics.GetHedgedRegions()` SHALL return a list containing `["East US", "West US", "North Europe"]`
+
+#### Scenario: Returns empty list when not hedged
 - **WHEN** a request was not hedged
-- **THEN** `response.Diagnostics.GetRespondingRegion()` SHALL return `null`
+- **THEN** `response.Diagnostics.GetHedgedRegions()` SHALL return an empty `IReadOnlyList<string>`
 
-#### Scenario: Default implementation returns null
-- **WHEN** a custom subclass of `CosmosDiagnostics` does not override `GetRespondingRegion()`
-- **THEN** the default implementation SHALL return `null`
+#### Scenario: Default implementation returns empty list
+- **WHEN** a custom subclass of `CosmosDiagnostics` does not override `GetHedgedRegions()`
+- **THEN** the default implementation SHALL return an empty `IReadOnlyList<string>`
 
 #### Scenario: No performance impact
-- **WHEN** `GetRespondingRegion()` is called
+- **WHEN** `GetHedgedRegions()` is called
 - **THEN** the method SHALL return in O(1) time without walking the diagnostics trace tree, performing string operations, or allocating memory
 
 ### Requirement: Hedging flag set by availability strategy
@@ -47,18 +55,18 @@ The `CrossRegionHedgingAvailabilityStrategy` SHALL set the hedging detection fie
 
 #### Scenario: Flag set when hedging activates and primary region responds first
 - **WHEN** hedging is activated AND the primary region (request 0) returns a final result before any hedge timer fires
-- **THEN** the response diagnostics SHALL have `IsHedged()` return `true` AND `GetRespondingRegion()` return the primary region name
+- **THEN** the response diagnostics SHALL have `IsHedged()` return `true` AND `GetHedgedRegions()` return the list of regions that were dispatched (at minimum the primary region)
 
 #### Scenario: Flag set when hedge region responds first
 - **WHEN** hedging is activated AND a hedge request to a secondary region returns a final result first
-- **THEN** the response diagnostics SHALL have `IsHedged()` return `true` AND `GetRespondingRegion()` return the secondary region name
+- **THEN** the response diagnostics SHALL have `IsHedged()` return `true` AND `GetHedgedRegions()` return all regions that had requests dispatched up to that point
 
 #### Scenario: Flag not set when hedging strategy skips
 - **WHEN** the hedging strategy determines the request should not be hedged (e.g., non-document resource type, single region)
-- **THEN** the response diagnostics SHALL have `IsHedged()` return `false` AND `GetRespondingRegion()` return `null`
+- **THEN** the response diagnostics SHALL have `IsHedged()` return `false` AND `GetHedgedRegions()` return an empty list
 
 ### Requirement: Hedging detection available on exceptions
-When a `CosmosException` or `CosmosOperationCanceledException` is thrown from a hedged request, the `Diagnostics` property on the exception SHALL support the same `IsHedged()` and `GetRespondingRegion()` methods.
+When a `CosmosException` or `CosmosOperationCanceledException` is thrown from a hedged request, the `Diagnostics` property on the exception SHALL support the same `IsHedged()` and `GetHedgedRegions()` methods.
 
 #### Scenario: Exception from hedged request reflects hedging state
 - **WHEN** a hedged request results in a `CosmosException`

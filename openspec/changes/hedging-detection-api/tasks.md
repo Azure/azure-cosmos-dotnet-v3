@@ -5,24 +5,24 @@
 ## 2. Public API — CosmosDiagnostics
 
 - [ ] 2.1 Add virtual method `IsHedged()` to `CosmosDiagnostics` returning `false` by default, with XML doc comments explaining the method's purpose and behavior
-- [ ] 2.2 Add virtual method `GetRespondingRegion()` to `CosmosDiagnostics` returning `null` by default, with XML doc comments
+- [ ] 2.2 Add virtual method `GetHedgedRegions()` to `CosmosDiagnostics` returning an empty `IReadOnlyList<string>` by default, with XML doc comments
 
 ## 3. Internal Implementation — CosmosTraceDiagnostics
 
-- [ ] 3.1 Add `internal bool isHedged` field and `internal string respondingRegion` field to `CosmosTraceDiagnostics`
+- [ ] 3.1 Add `internal bool isHedged` field and `internal IReadOnlyList<string> hedgedRegions` field to `CosmosTraceDiagnostics`
 - [ ] 3.2 Override `IsHedged()` in `CosmosTraceDiagnostics` to return the `isHedged` field
-- [ ] 3.3 Override `GetRespondingRegion()` in `CosmosTraceDiagnostics` to return the `respondingRegion` field
+- [ ] 3.3 Override `GetHedgedRegions()` in `CosmosTraceDiagnostics` to return the `hedgedRegions` field
 
 ## 4. Hedging Strategy Integration
 
-- [ ] 4.1 In `CrossRegionHedgingAvailabilityStrategy.ExecuteAvailabilityStrategyAsync`, set `isHedged = true` and `respondingRegion` on the response diagnostics at every code path that returns a hedged response (both the fast-path when a final result arrives during the hedging loop and the fallback path that drains remaining tasks)
+- [ ] 4.1 In `CrossRegionHedgingAvailabilityStrategy.ExecuteAvailabilityStrategyAsync`, set `isHedged = true` and `hedgedRegions` on the response diagnostics at every code path that returns a hedged response (both the fast-path when a final result arrives during the hedging loop and the fallback path that drains remaining tasks). The hedged regions list should match the `"Hedge Context"` datum — i.e., `hedgeRegions.Take(requestNumber + 1)` for the fast path and full `hedgeRegions` for the drain path.
 - [ ] 4.2 Ensure the flag is set for the primary-region-wins case (requestNumber == 0) as well as hedge-region-wins cases
 
 ## 5. Tests
 
-- [ ] 5.1 Add unit tests verifying `CosmosDiagnostics.IsHedged()` default returns `false` and `GetRespondingRegion()` default returns `null`
+- [ ] 5.1 Add unit tests verifying `CosmosDiagnostics.IsHedged()` default returns `false` and `GetHedgedRegions()` default returns an empty list
 - [ ] 5.2 Add unit tests for `CosmosTraceDiagnostics` overrides — verify fields are readable after being set
-- [ ] 5.3 Add or update hedging integration/emulator tests to assert `IsHedged()` returns `true` and `GetRespondingRegion()` returns the expected region when hedging is activated
+- [ ] 5.3 Add or update hedging integration/emulator tests to assert `IsHedged()` returns `true` and `GetHedgedRegions()` returns the expected regions when hedging is activated
 - [ ] 5.4 Add tests verifying non-hedged requests (no availability strategy, single region, non-document resource type) return `IsHedged() == false`
 
 ## 6. API Contract Update

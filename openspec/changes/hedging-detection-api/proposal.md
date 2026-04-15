@@ -5,14 +5,14 @@ Users of the Azure Cosmos DB .NET SDK who enable cross-region hedging via `Avail
 ## What Changes
 
 - **New virtual method `IsHedged()` on `CosmosDiagnostics`** — returns `bool` indicating whether the availability strategy activated hedging for this request. Default implementation returns `false` (preserves back-compat).
-- **New virtual method `GetRespondingRegion()` on `CosmosDiagnostics`** — returns `string?` with the region that produced the winning response when hedging was active, or `null` when not hedged. Default implementation returns `null`.
+- **New virtual method `GetHedgedRegions()` on `CosmosDiagnostics`** — returns `IReadOnlyList<string>` containing all regions that received hedge requests (in the order they were dispatched), or an empty list when not hedged. Default implementation returns an empty list.
 - **Internal boolean flag on `CosmosTraceDiagnostics`** — set directly by `CrossRegionHedgingAvailabilityStrategy` when a hedge is activated, avoiding any trace-tree walking or dictionary lookup at query time.
-- **Internal string field on `CosmosTraceDiagnostics`** — captures the responding region name, set by the hedging strategy alongside the existing `AddOrUpdateDatum` calls.
+- **Internal string field on `CosmosTraceDiagnostics`** — captures the list of all hedged region names, set by the hedging strategy alongside the existing `AddOrUpdateDatum` calls.
 
 ## Capabilities
 
 ### New Capabilities
-- `hedging-detection`: Public APIs on `CosmosDiagnostics` to efficiently detect hedging status and the responding region without parsing diagnostics strings.
+- `hedging-detection`: Public APIs on `CosmosDiagnostics` to efficiently detect hedging status and the hedged regions without parsing diagnostics strings.
 
 ### Modified Capabilities
 <!-- No existing specs to modify -->
@@ -24,6 +24,6 @@ Users of the Azure Cosmos DB .NET SDK who enable cross-region hedging via `Avail
   - `Microsoft.Azure.Cosmos/src/Diagnostics/CosmosDiagnostics.cs` — add virtual methods
   - `Microsoft.Azure.Cosmos/src/Diagnostics/CosmosTraceDiagnostics.cs` — add internal fields + overrides
   - `Microsoft.Azure.Cosmos/src/Routing/AvailabilityStrategy/CrossRegionHedgingAvailabilityStrategy.cs` — set flags on response diagnostics
-- **Performance**: Zero overhead on non-hedged paths (field defaults to `false`). On hedged paths, a single boolean + string assignment replaces no new work (piggybacks on the existing `AddOrUpdateDatum` call site).
+- **Performance**: Zero overhead on non-hedged paths (field defaults to `false`). On hedged paths, a single boolean + list assignment replaces no new work (piggybacks on the existing `AddOrUpdateDatum` call site).
 - **Dependencies**: No new external dependencies. Internal-only wiring between hedging strategy and diagnostics.
 - **API contract files**: Will require contract update for the new public methods.
