@@ -8205,6 +8205,11 @@
           "Attributes": [],
           "MethodInfo": "System.String QatarCentral;IsInitOnly:False;IsStatic:True;"
         },
+        "System.String SaudiArabiaEast": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String SaudiArabiaEast;IsInitOnly:False;IsStatic:True;"
+        },
         "System.String SingaporeCentral": {
           "Type": "Field",
           "Attributes": [],
@@ -8239,6 +8244,11 @@
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "System.String SoutheastAsia;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String SoutheastAsia3": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String SoutheastAsia3;IsInitOnly:False;IsStatic:True;"
         },
         "System.String SoutheastUS": {
           "Type": "Field",
@@ -8374,6 +8384,11 @@
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "System.String WestCentralUS;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String WestCentralUSFRE": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String WestCentralUSFRE;IsInitOnly:False;IsStatic:True;"
         },
         "System.String WestEurope": {
           "Type": "Field",
