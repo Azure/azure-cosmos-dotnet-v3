@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos
 
                 // In the event of the routing gateway having outage on region A, mark the partition as unavailable assuming that the
                 // partition has been failed over to region B, when per partition automatic failover is enabled.
-                this.TryMarkEndpointUnavailableForPkRange(isSystemResourceUnavailableForWrite: false);
+                this.TryMarkEndpointUnavailableForPkRange(shouldMarkEndpointUnavailableForPkRange: false);
 
                 // Mark both read and write requests because it gateway exception.
                 // This means all requests going to the region will fail.
@@ -266,71 +266,60 @@ namespace Microsoft.Azure.Cosmos
                     this.documentServiceRequest?.ResourceAddress ?? string.Empty);
 
                 // Mark the partition key range as unavailable to retry future request on a new region.
-                this.TryMarkEndpointUnavailableForPkRange(isSystemResourceUnavailableForWrite: false);
+                this.TryMarkEndpointUnavailableForPkRange(shouldMarkEndpointUnavailableForPkRange: false);
             }
 
-            // Received 403.3 on write region, initiate the endpoint rediscovery
+            // Received 403.3 on write region or a read region, initiate the endpoint rediscovery
             if (statusCode == HttpStatusCode.Forbidden
                 && subStatusCode == SubStatusCodes.WriteForbidden)
             {
-#if !INTERNAL
-                if (this.isReadRequest && this.addHubRegionProcessingOnlyHeader)
+                // A 403.3 can be returned for both read or write requests. The read request will return a 403.3 only when
+                // the region, with the hub region processing only header determines that it is not the current hub region
+                // for the partition. In either of the case, we mark the endpoint unavailable for the partition key range.
+                // If we exhaust all the region level mark down for the partition key range, then we will mark the endpoint
+                // unavailable for writes in that region.
+                if (this.TryMarkEndpointUnavailableForPkRange(
+                    shouldMarkEndpointUnavailableForPkRange: true))
                 {
-                    // We received a 403.3 on the read path. This is possible only when the hub region header is present and the request
-                    // landed on a non-hub region. This triggers the retry process to discover the new hub region for the given partition.
-                    this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
-                        this.documentServiceRequest);
-
-                    return this.ShouldRetryOnNonHubRegion();
+                    return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
                 }
-                else
-#endif
+
+                DefaultTrace.TraceWarning("ClientRetryPolicy: Endpoint not writable. Refresh cache and retry. Failed Location: {0}; ResourceAddress: {1}",
+                    this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
+                    this.documentServiceRequest?.ResourceAddress ?? string.Empty);
+
+                if (this.globalEndpointManager.IsMultimasterMetadataWriteRequest(this.documentServiceRequest))
                 {
-                    // It's a write forbidden so it safe to retry.
-                    // For hub region routing, TryMarkEndpointUnavailableForPartitionKeyRange
-                    // removes any stale cached hub entry and returns false, so the request
-                    // falls through to ShouldRetryOnEndpointFailureAsync for normal region cycling.
-                    if (this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
-                         this.documentServiceRequest))
+                    bool forceRefresh = false;
+
+                    if (this.retryContext != null && this.retryContext.RouteToHub)
                     {
-                        return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
+                        forceRefresh = true;
+
                     }
 
-                    DefaultTrace.TraceWarning("ClientRetryPolicy: Endpoint not writable. Refresh cache and retry. Failed Location: {0}; ResourceAddress: {1}",
-                        this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
-                        this.documentServiceRequest?.ResourceAddress ?? string.Empty);
-
-                    if (this.globalEndpointManager.IsMultimasterMetadataWriteRequest(this.documentServiceRequest))
-                    {
-                        bool forceRefresh = false;
-
-                        if (this.retryContext != null && this.retryContext.RouteToHub)
-                        {
-                            forceRefresh = true;
-
-                        }
-
-                        ShouldRetryResult retryResult = await this.ShouldRetryOnEndpointFailureAsync(
-                            isReadRequest: false,
-                            markBothReadAndWriteAsUnavailable: false,
-                            forceRefresh: forceRefresh,
-                            retryOnPreferredLocations: false,
-                            overwriteEndpointDiscovery: true);
-
-                        if (retryResult.ShouldRetry)
-                        {
-                            this.retryContext.RouteToHub = true;
-                        }
-
-                        return retryResult;
-                    }
-
-                    return await this.ShouldRetryOnEndpointFailureAsync(
+                    ShouldRetryResult retryResult = await this.ShouldRetryOnEndpointFailureAsync(
                         isReadRequest: false,
                         markBothReadAndWriteAsUnavailable: false,
-                        forceRefresh: true,
-                        retryOnPreferredLocations: false);
+                        forceRefresh: forceRefresh,
+                        retryOnPreferredLocations: false,
+                        overwriteEndpointDiscovery: true);
+
+                    if (retryResult.ShouldRetry)
+                    {
+                        this.retryContext.RouteToHub = true;
+                    }
+
+                    return retryResult;
                 }
+
+                // Note: This can be triggered by the read requests as well. In that case, we will set the isReadRequest to
+                // false to ensure that we mark the endpoint unavailable for writes only.
+                return await this.ShouldRetryOnEndpointFailureAsync(
+                    isReadRequest: false,
+                    markBothReadAndWriteAsUnavailable: false,
+                    forceRefresh: true,
+                    retryOnPreferredLocations: false);
             }
 
             // Regional endpoint is not available yet for reads (e.g. add/ online of region is in progress)
@@ -613,37 +602,18 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Checks if the request should be retried on a non-hub region when the region returns a 403.3
-        /// on a read request with the hub region processing request header. The retry will only be attempted
-        /// if the retry count is within limits and endpoint discovery is enabled.
-        /// </summary>
-        /// <returns>An instance of <see cref="ShouldRetryResult"/> indicating whether the request should be retried.</returns>
-        private ShouldRetryResult ShouldRetryOnNonHubRegion()
-        {
-            if (this.failoverRetryCount > MaxRetryCount || !this.enableEndpointDiscovery)
-            {
-                DefaultTrace.TraceInformation("ClientRetryPolicy: ShouldRetryOnNonHubRegion() Not retrying. Retry count = {0}, Endpoint = {1}",
-                    this.failoverRetryCount,
-                    this.locationEndpoint?.ToString() ?? string.Empty);
-                return ShouldRetryResult.NoRetry();
-            }
-
-            this.failoverRetryCount++;
-            return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
-        }
-
-        /// <summary>
         /// Attempts to mark the endpoint associated with the current partition key range as unavailable
         /// which will influence future routing decisions.
         /// </summary>
-        /// <param name="isSystemResourceUnavailableForWrite">A boolean flag indicating if the system resource was unavailable. If true,
-        /// the endpoint will be marked unavailable for the pk-range of a multi master write request, bypassing the circuit breaker check.</param>
+        /// <param name="shouldMarkEndpointUnavailableForPkRange">A boolean flag indicating if the endpoint should be marked as unavailable for the pk-range. If true,
+        /// the endpoint will be marked unavailable is either 1) for the pk-range of a multi master write request, bypassing the circuit breaker check
+        /// or 2) for the pk-range when a read request received a 403.3 with the hub region header.</param>
         /// <returns>A boolean flag indicating whether the endpoint was marked as unavailable.</returns>
         private bool TryMarkEndpointUnavailableForPkRange(
-            bool isSystemResourceUnavailableForWrite)
+            bool shouldMarkEndpointUnavailableForPkRange)
         {
             if (this.documentServiceRequest != null
-                && (isSystemResourceUnavailableForWrite
+                && (shouldMarkEndpointUnavailableForPkRange
                 || this.IsRequestEligibleForPerPartitionAutomaticFailover()
                 || this.IsRequestEligibleForPartitionLevelCircuitBreaker()))
             {
