@@ -48,7 +48,6 @@ namespace Microsoft.Azure.Cosmos
         private readonly string inferenceServiceBaseUrl;
         private readonly Uri inferenceEndpoint;
         private readonly TimeSpan inferenceRequestTimeout;
-        private readonly HttpTimeoutPolicy inferenceTimeoutPolicy;
 
         private HttpClient httpClient;
         private AuthorizationTokenProvider cosmosAuthorization;
@@ -76,9 +75,6 @@ namespace Microsoft.Azure.Cosmos
             // Get the inference timeout from client options, or use default
             Debug.Assert(client.ClientOptions != null, "ClientOptions should not be null");
             this.inferenceRequestTimeout = client.ClientOptions.InferenceRequestTimeout;
-
-            // Create timeout policy for inference requests
-            this.inferenceTimeoutPolicy = HttpTimeoutInferencePolicy.Create(this.inferenceRequestTimeout);
 
             // Create and configure HttpClient for inference requests.
             HttpMessageHandler httpMessageHandler = CosmosHttpClientCore.CreateHttpClientHandler(
@@ -117,7 +113,6 @@ namespace Microsoft.Azure.Cosmos
         internal InferenceService(HttpMessageHandler messageHandler, Uri inferenceEndpoint, AuthorizationTokenProvider cosmosAuthorization)
         {
             this.inferenceRequestTimeout = InferenceService.DefaultInferenceRequestTimeout;
-            this.inferenceTimeoutPolicy = HttpTimeoutInferencePolicy.Create(this.inferenceRequestTimeout);
             this.httpClient = new HttpClient(messageHandler);
             this.CreateClientHelper(this.httpClient);
             this.inferenceEndpoint = inferenceEndpoint;
@@ -142,62 +137,55 @@ namespace Microsoft.Azure.Cosmos
 
             try
             {
-                return await HttpTimeoutPolicyHelper.ExecuteWithTimeoutAsync(
-                    this.inferenceTimeoutPolicy,
-                    cancellationToken,
-                    executeAsync: async (CancellationToken ct) =>
-                    {
-                        using HttpRequestMessage message = new HttpRequestMessage(HttpMethod.Post, this.inferenceEndpoint);
+                cancellationToken.ThrowIfCancellationRequested();
 
-                        // Prepare HTTP request for semantic reranking.
-                        INameValueCollection additionalHeaders = new RequestNameValueCollection();
-                        await this.cosmosAuthorization.AddAuthorizationHeaderAsync(
-                            headersCollection: additionalHeaders,
-                            this.inferenceEndpoint,
-                            HttpConstants.HttpMethods.Post,
-                            AuthorizationTokenType.AadToken);
-                        additionalHeaders.Add(HttpConstants.HttpHeaders.UserAgent, inferenceUserAgent);
+                using CancellationTokenSource linkedCts =
+                    CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                linkedCts.CancelAfter(this.inferenceRequestTimeout);
 
-                        // Add all headers to the HTTP request.
-                        foreach (string key in additionalHeaders.AllKeys())
-                        {
-                            message.Headers.Add(key, additionalHeaders[key]);
-                        }
+                using HttpRequestMessage message = new HttpRequestMessage(HttpMethod.Post, this.inferenceEndpoint);
 
-                        // Build the request payload.
-                        Dictionary<string, object> body = this.AddSemanticRerankPayload(rerankContext, documents, options);
+                // Prepare HTTP request for semantic reranking.
+                INameValueCollection additionalHeaders = new RequestNameValueCollection();
+                await this.cosmosAuthorization.AddAuthorizationHeaderAsync(
+                    headersCollection: additionalHeaders,
+                    this.inferenceEndpoint,
+                    HttpConstants.HttpMethods.Post,
+                    AuthorizationTokenType.AadToken);
+                additionalHeaders.Add(HttpConstants.HttpHeaders.UserAgent, inferenceUserAgent);
 
-                        message.Content = new StringContent(
-                            Newtonsoft.Json.JsonConvert.SerializeObject(body),
-                            Encoding.UTF8,
-                            RuntimeConstants.MediaTypes.Json);
+                // Add all headers to the HTTP request.
+                foreach (string key in additionalHeaders.AllKeys())
+                {
+                    message.Headers.Add(key, additionalHeaders[key]);
+                }
 
-                        // Send the request and check for success.
-                        HttpResponseMessage responseMessage = await this.httpClient.SendAsync(message, ct);
+                // Build the request payload.
+                Dictionary<string, object> body = this.AddSemanticRerankPayload(rerankContext, documents, options);
 
-                        if (!responseMessage.IsSuccessStatusCode)
-                        {
-                            string responseBody = await responseMessage.Content.ReadAsStringAsync();
-                            throw new CosmosException(
-                                message: responseBody,
-                                statusCode: responseMessage.StatusCode,
-                                subStatusCode: 0,
-                                activityId: string.Empty,
-                                requestCharge: 0);
-                        }
+                message.Content = new StringContent(
+                    Newtonsoft.Json.JsonConvert.SerializeObject(body),
+                    Encoding.UTF8,
+                    RuntimeConstants.MediaTypes.Json);
 
-                        responseMessage.EnsureSuccessStatusCode();
+                // Send the request and check for success.
+                HttpResponseMessage responseMessage = await this.httpClient.SendAsync(message, linkedCts.Token);
 
-                        // Deserialize and return the response content.
-                        return await SemanticRerankResult.DeserializeSemanticRerankResultAsync(responseMessage);
-                    },
-                    shouldRetryOnResult: null,
-                    // Use the same re-throw-on-exhaustion pattern as CosmosHttpClientCore so
-                    // future reliability improvements to either path stay in sync.
-                    onException: (Exception exception, bool isOutOfRetries, TimeSpan requestTimeout) =>
-                    {
-                        return isOutOfRetries ? exception : null;
-                    });
+                if (!responseMessage.IsSuccessStatusCode)
+                {
+                    string responseBody = await responseMessage.Content.ReadAsStringAsync();
+                    throw new CosmosException(
+                        message: responseBody,
+                        statusCode: responseMessage.StatusCode,
+                        subStatusCode: 0,
+                        activityId: string.Empty,
+                        requestCharge: 0);
+                }
+
+                responseMessage.EnsureSuccessStatusCode();
+
+                // Deserialize and return the response content.
+                return await SemanticRerankResult.DeserializeSemanticRerankResultAsync(responseMessage);
             }
             catch (OperationCanceledException operationCanceledException) when (!cancellationToken.IsCancellationRequested)
             {

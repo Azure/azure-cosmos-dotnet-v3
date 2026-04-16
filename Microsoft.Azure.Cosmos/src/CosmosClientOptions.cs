@@ -309,11 +309,12 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets or sets the request timeout for inference service operations (e.g., semantic reranking).
         /// The number specifies the time to wait for response to come back from the inference service.
+        /// This is a single-attempt timeout with no retries.
         /// </summary>
         /// <value>Default value is 5 seconds.</value>
         /// <remarks>
         /// This timeout is specific to inference service operations and is separate from the standard RequestTimeout. 
-        /// Inference operations typically require more processing time than standard database operations.
+        /// If the request does not complete within the specified duration, a <see cref="CosmosException"/> with status 408 is thrown.
         /// </remarks>
 #if PREVIEW
         public

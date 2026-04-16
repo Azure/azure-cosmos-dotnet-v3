@@ -389,6 +389,8 @@ namespace Microsoft.Azure.Cosmos.Fluent
 
         /// <summary>
         /// Sets the request timeout for inference service operations (e.g., semantic reranking).
+        /// This is a single-attempt timeout with no retries; if the request does not complete
+        /// within the specified duration, a <see cref="CosmosException"/> with status 408 is thrown.
         /// </summary>
         /// <param name="inferenceRequestTimeout">A time to use as timeout for inference operations.</param>
         /// <value>Default value is 5 seconds.</value>
