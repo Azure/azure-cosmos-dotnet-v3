@@ -48,6 +48,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly string inferenceServiceBaseUrl;
         private readonly Uri inferenceEndpoint;
         private readonly TimeSpan inferenceRequestTimeout;
+        private readonly HttpTimeoutPolicy inferenceTimeoutPolicy;
 
         private HttpClient httpClient;
         private AuthorizationTokenProvider cosmosAuthorization;
@@ -75,6 +76,7 @@ namespace Microsoft.Azure.Cosmos
             // Get the inference timeout from client options, or use default
             Debug.Assert(client.ClientOptions != null, "ClientOptions should not be null");
             this.inferenceRequestTimeout = client.ClientOptions.InferenceRequestTimeout;
+            this.inferenceTimeoutPolicy = HttpTimeoutInferencePolicy.Create(this.inferenceRequestTimeout);
 
             // Create and configure HttpClient for inference requests.
             HttpMessageHandler httpMessageHandler = CosmosHttpClientCore.CreateHttpClientHandler(
@@ -113,6 +115,7 @@ namespace Microsoft.Azure.Cosmos
         internal InferenceService(HttpMessageHandler messageHandler, Uri inferenceEndpoint, AuthorizationTokenProvider cosmosAuthorization)
         {
             this.inferenceRequestTimeout = InferenceService.DefaultInferenceRequestTimeout;
+            this.inferenceTimeoutPolicy = HttpTimeoutInferencePolicy.Create(this.inferenceRequestTimeout);
             this.httpClient = new HttpClient(messageHandler);
             this.CreateClientHelper(this.httpClient);
             this.inferenceEndpoint = inferenceEndpoint;
@@ -137,11 +140,17 @@ namespace Microsoft.Azure.Cosmos
 
             try
             {
+                IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> timeoutEnumerator =
+                    this.inferenceTimeoutPolicy.GetTimeoutEnumerator();
+                timeoutEnumerator.MoveNext();
+
                 cancellationToken.ThrowIfCancellationRequested();
+
+                (TimeSpan requestTimeout, TimeSpan delayForNextRequest) = timeoutEnumerator.Current;
 
                 using CancellationTokenSource linkedCts =
                     CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                linkedCts.CancelAfter(this.inferenceRequestTimeout);
+                linkedCts.CancelAfter(requestTimeout);
 
                 using HttpRequestMessage message = new HttpRequestMessage(HttpMethod.Post, this.inferenceEndpoint);
 
