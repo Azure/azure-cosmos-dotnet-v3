@@ -130,15 +130,15 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 enableEndpointDiscovery: true,
                 isPreferredLocationsListEmpty: false);
 
-            string expectedHubRegionName = this.databaseAccount.WriteLocationsInternal.First().Name;
+            string expectedRegionName = this.databaseAccount.WriteLocationsInternal.First().Name;
 
-            Assert.AreEqual(expectedHubRegionName, this.cache.GetLocation(LocationCacheTests.DefaultEndpoint));
+            Assert.AreEqual(expectedRegionName, this.cache.GetLocation(LocationCacheTests.DefaultEndpoint));
 
             Assert.AreEqual(true, this.cache.TryGetLocationForGatewayDiagnostics(LocationCacheTests.DefaultEndpoint, out string regionName));
-            Assert.AreEqual(expectedHubRegionName, regionName);
+            Assert.AreEqual(expectedRegionName, regionName);
 
             Assert.AreEqual(true, this.cache.TryGetLocationForGatewayDiagnostics(new Uri(LocationCacheTests.DefaultEndpoint, "random/path"), out regionName));
-            Assert.AreEqual(expectedHubRegionName, regionName);
+            Assert.AreEqual(expectedRegionName, regionName);
         }
 
         [TestMethod]
@@ -146,7 +146,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         public void ValidateTryGetLocationForGatewayDiagnosticsOnDefaultEndpointForMultiMasterWithClientOptOut()
         {
             // Account is multi-master but client has UseMultipleWriteLocations = false.
-            // Diagnostics should still resolve the default endpoint to the hub region.
+            // Diagnostics should still resolve the default endpoint to the first write region.
             using GlobalEndpointManager endpointManager = this.Initialize(
                 useMultipleWriteLocations: false,
                 enableEndpointDiscovery: true,
@@ -158,15 +158,15 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 enforceSingleMasterSingleWriteLocation: false);
             this.cache.OnDatabaseAccountRead(this.databaseAccount);
 
-            string expectedHubRegionName = this.databaseAccount.WriteLocationsInternal.First().Name;
+            string expectedRegionName = this.databaseAccount.WriteLocationsInternal.First().Name;
 
-            Assert.AreEqual(expectedHubRegionName, this.cache.GetLocation(LocationCacheTests.DefaultEndpoint));
+            Assert.AreEqual(expectedRegionName, this.cache.GetLocation(LocationCacheTests.DefaultEndpoint));
 
             Assert.AreEqual(true, this.cache.TryGetLocationForGatewayDiagnostics(LocationCacheTests.DefaultEndpoint, out string regionName));
-            Assert.AreEqual(expectedHubRegionName, regionName);
+            Assert.AreEqual(expectedRegionName, regionName);
 
             Assert.AreEqual(true, this.cache.TryGetLocationForGatewayDiagnostics(new Uri(LocationCacheTests.DefaultEndpoint, "random/path"), out regionName));
-            Assert.AreEqual(expectedHubRegionName, regionName);
+            Assert.AreEqual(expectedRegionName, regionName);
         }
 
         [TestMethod]

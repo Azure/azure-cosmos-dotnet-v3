@@ -172,12 +172,11 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             string location = this.locationInfo.AvailableWriteEndpointByLocation.FirstOrDefault(uri => uri.Value == endpoint).Key ?? this.locationInfo.AvailableReadEndpointByLocation.FirstOrDefault(uri => uri.Value == endpoint).Key;
 
-            if (location == null && endpoint == this.defaultEndpoint)
+            if (location == null
+                && endpoint == this.defaultEndpoint
+                && this.locationInfo.AvailableWriteLocations.Count > 0)
             {
-                if (this.locationInfo.AvailableWriteLocations.Any())
-                {
-                    return this.locationInfo.AvailableWriteLocations[0];
-                }
+                return this.locationInfo.AvailableWriteLocations[0];
             }
 
             return location;
@@ -186,7 +185,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <summary>
         /// Set region name for a location if present in the locationcache otherwise set region name as null.
         /// For multi-master accounts, if endpoint's hostname is same as default endpoint hostname,
-        /// set regionName to the write hub region.
+        /// set regionName to the first available write region.
         /// </summary>
         /// <param name="endpoint"></param>
         /// <param name="regionName"></param>
@@ -201,8 +200,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                     StringComparison.OrdinalIgnoreCase) == 0)
             {
                 // Use account-level enableMultipleWriteLocations (not CanUseMultipleWriteLocations which also
-                // requires client opt-in) because diagnostics should resolve the hub region regardless of whether
-                // the client uses multi-write. The default endpoint routes to the hub/write region server-side.
+                // requires client opt-in) because diagnostics should resolve the region regardless of whether
+                // the client uses multi-write. The default endpoint routes to the first write region server-side.
                 regionName = this.enableMultipleWriteLocations
                     ? this.GetLocation(this.defaultEndpoint)
                     : null;
@@ -210,7 +209,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
 
             regionName = this.GetLocation(endpoint);
-            return regionName != null;
+            return true;
         }
 
         /// <summary>
