@@ -830,8 +830,8 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Assert.IsTrue(object.ReferenceEquals(webProxy, handler.Proxy));
             Assert.IsTrue(handler.EnableMultipleHttp2Connections, "EnableMultipleHttp2Connections should be set through the builder pipeline");
-            Assert.AreEqual(TimeSpan.FromSeconds(30), handler.KeepAlivePingDelay, "KeepAlivePingDelay should be set through the builder pipeline");
-            Assert.AreEqual(TimeSpan.FromSeconds(20), handler.KeepAlivePingTimeout, "KeepAlivePingTimeout should be set through the builder pipeline");
+            Assert.AreEqual(TimeSpan.FromSeconds(1), handler.KeepAlivePingDelay, "KeepAlivePingDelay should be set through the builder pipeline");
+            Assert.AreEqual(TimeSpan.FromSeconds(2), handler.KeepAlivePingTimeout, "KeepAlivePingTimeout should be set through the builder pipeline");
             Assert.AreEqual(HttpKeepAlivePingPolicy.Always, handler.KeepAlivePingPolicy, "KeepAlivePingPolicy should be set through the builder pipeline");
         }
 

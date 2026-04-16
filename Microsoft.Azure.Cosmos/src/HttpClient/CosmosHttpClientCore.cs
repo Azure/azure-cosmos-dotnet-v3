@@ -187,13 +187,22 @@ namespace Microsoft.Azure.Cosmos
             // Without this, a broken HTTP/2 connection (e.g. after a network blip or load balancer
             // reset) can remain in the pool indefinitely, causing persistent request failures
             // that only resolve after application restart.
+            // KeepAlivePingDelay/Timeout/Policy are available on SocketsHttpHandler in .NET 5.0+.
             try
             {
+                int pingDelayInSeconds = ConfigurationManager.GetEnvironmentVariable<int>(
+                    ConfigurationManager.Http2KeepAlivePingDelayInSeconds,
+                    defaultValue: 1);
+
+                int pingTimeoutInSeconds = ConfigurationManager.GetEnvironmentVariable<int>(
+                    ConfigurationManager.Http2KeepAlivePingTimeoutInSeconds,
+                    defaultValue: 2);
+
                 PropertyInfo keepAlivePingDelayInfo = socketHandlerType.GetProperty("KeepAlivePingDelay");
-                keepAlivePingDelayInfo?.SetValue(socketHttpHandler, TimeSpan.FromSeconds(30));
+                keepAlivePingDelayInfo?.SetValue(socketHttpHandler, TimeSpan.FromSeconds(pingDelayInSeconds));
 
                 PropertyInfo keepAlivePingTimeoutInfo = socketHandlerType.GetProperty("KeepAlivePingTimeout");
-                keepAlivePingTimeoutInfo?.SetValue(socketHttpHandler, TimeSpan.FromSeconds(20));
+                keepAlivePingTimeoutInfo?.SetValue(socketHttpHandler, TimeSpan.FromSeconds(pingTimeoutInSeconds));
 
                 // HttpKeepAlivePingPolicy.Always = 1: send pings even for idle connections,
                 // which is critical for detecting broken connections lingering in the pool.
