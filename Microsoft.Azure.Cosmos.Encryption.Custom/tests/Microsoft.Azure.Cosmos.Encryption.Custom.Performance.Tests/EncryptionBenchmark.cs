@@ -8,6 +8,7 @@
 #endif
     using Moq;
 
+    [MemoryDiagnoser]
     [RPlotExporter]
     public partial class EncryptionBenchmark
     {
@@ -54,11 +55,13 @@
         public int DocumentSizeInKb { get; set; }
 
 #if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
-        [Params(JsonProcessor.Newtonsoft, JsonProcessor.Stream)]
+        [Params("Newtonsoft", "Stream")]
 #else
-        [Params(JsonProcessor.Newtonsoft)]
+        [Params("Newtonsoft")]
 #endif
-        internal JsonProcessor JsonProcessor { get; set; }
+        public string Processor { get; set; }
+
+        internal JsonProcessor JsonProcessor => Enum.Parse<JsonProcessor>(this.Processor);
 
         [GlobalSetup]
         public async Task Setup()
