@@ -441,6 +441,21 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        internal override bool TryGetCachedContainerPropertiesFromMemory(out ContainerProperties containerProperties)
+        {
+            containerProperties = null;
+            ClientCollectionCache cache = this.ClientContext.DocumentClient.CollectionCacheIfInitialized;
+            if (cache == null)
+            {
+                return false;
+            }
+
+            return cache.TryGetCachedContainerProperties(
+                HttpConstants.Versions.CurrentVersion,
+                this.LinkUri,
+                out containerProperties);
+        }
+
         // Name based look-up, needs re-computation and can't be cached
         public override async Task<string> GetCachedRIDAsync(
             bool forceRefresh,

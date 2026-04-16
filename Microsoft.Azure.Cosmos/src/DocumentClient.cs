@@ -616,6 +616,12 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        /// <summary>
+        /// Returns the collection cache if the client is already initialized.
+        /// Does not trigger initialization. Returns null if the client has not been initialized yet.
+        /// </summary>
+        internal ClientCollectionCache CollectionCacheIfInitialized => this.collectionCache;
+
         internal virtual async Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync(ITrace trace)
         {
             using (ITrace childTrace = trace.StartChild("Get Partition Key Range Cache", TraceComponent.Routing, Tracing.TraceLevel.Info))

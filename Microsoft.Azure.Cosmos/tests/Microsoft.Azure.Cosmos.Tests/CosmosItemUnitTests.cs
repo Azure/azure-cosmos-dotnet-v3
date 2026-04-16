@@ -1208,6 +1208,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<ITrace>(),
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(containerProperties);
+            mock.Setup(x => x.TryGetCachedContainerPropertiesFromMemory(out containerProperties))
+                .Returns(true);
             return mock;
         }
 
