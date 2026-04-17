@@ -18,7 +18,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
     internal partial class StreamProcessor
     {
-        private const string EncryptionPropertiesPath = "/" + Constants.EncryptedInfo;
         private static readonly SqlBitSerializer SqlBoolSerializer = new ();
         private static readonly SqlFloatSerializer SqlDoubleSerializer = new ();
         private static readonly SqlBigIntSerializer SqlLongSerializer = new ();
@@ -54,12 +53,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             JsonReaderState state = new (StreamProcessor.JsonReaderOptions);
 
-            // Pre-encode the encrypted-paths and the _ei metadata property name as UTF-8 byte
-            // sequences so that we can match them with Utf8JsonReader.ValueTextEquals (which
-            // correctly handles JSON escape sequences) without materializing a new string per
-            // property name read.
+            // Pre-encode the encrypted-paths as UTF-8 byte sequences so that we can match them
+            // with Utf8JsonReader.ValueTextEquals (which correctly handles JSON escape
+            // sequences) without materializing a new string per property name read. The _ei
+            // metadata property name is pre-encoded once per StreamProcessor instance in the
+            // encryptionPropertiesNameBytes field (declared in StreamProcessor.Encryptor.cs).
             (byte[] nameBytes, string fullPath)[] encryptedPathsTable = BuildEncryptedPathsTable(properties.EncryptedPaths);
-            byte[] encryptionPropertiesNameBytes = System.Text.Encoding.UTF8.GetBytes(Constants.EncryptedInfo);
 
             int leftOver = 0;
 
@@ -170,7 +169,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             {
                                 decryptPropertyName = matchedPath;
                             }
-                            else if (reader.ValueTextEquals(encryptionPropertiesNameBytes))
+                            else if (reader.ValueTextEquals(this.encryptionPropertiesNameBytes))
                             {
                                 if (!reader.TrySkip())
                                 {
