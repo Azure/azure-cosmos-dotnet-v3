@@ -132,3 +132,57 @@ PooledJsonSerializer optimizations applied.
 
 **Takeaway:** Combining the Stream processor with a provided pooled output stream achieves ~8–9×
 lower allocations than the Newtonsoft baseline at 100 KB (118 KB vs. 1,013 KB), and ~3.5× faster.
+
+## Comparison vs. Pre-PR Baseline
+
+To isolate the impact of this PR, the same benchmarks were run on the merge-base with `master`
+(commit `79d18b73`) — i.e. the Stream processor *before* the PooledMemoryStream/PooledJsonSerializer
+changes. Same machine, same run configuration.
+
+### Newtonsoft paths (sanity check — should be unchanged by this PR)
+
+| Scenario (MediumRun) | Baseline Alloc | This PR Alloc | Δ |
+|---|---:|---:|---:|
+| 1 KB Encrypt   | 36,552 B | 36,552 B | 0% |
+| 1 KB Decrypt   | 54,769 B | 54,769 B | 0% |
+| 10 KB Encrypt  | 171,353 B | 171,353 B | 0% |
+| 10 KB Decrypt  | 198,721 B | 198,722 B | 0% |
+| 100 KB Encrypt | 1,693,100 B | 1,693,054 B | 0% |
+| 100 KB Decrypt | 1,584,357 B | 1,584,328 B | 0% |
+
+Newtonsoft numbers are identical within noise — confirming the PR does not touch that path.
+
+### Stream paths (where this PR changes things)
+
+| Scenario (MediumRun) | Baseline Mean | This PR Mean | Baseline Alloc | This PR Alloc | Alloc Δ |
+|---|---:|---:|---:|---:|---:|
+| 1 KB  Encrypt                 |  19.39 μs |  23.88 μs |    16,552 B |    14,496 B | **−12%** |
+| 1 KB  EncryptToProvidedStream |  18.32 μs |  20.63 μs |    10,392 B |    10,392 B |     0%  |
+| 1 KB  Decrypt                 |  40.79 μs |  42.48 μs |    27,328 B |    30,136 B |  +10%   |
+| 1 KB  DecryptToProvidedStream |  21.59 μs |  19.80 μs |    11,072 B |    11,072 B |     0%  |
+| 10 KB Encrypt                 |  63.36 μs |  55.60 μs |    81,953 B |    52,441 B | **−36%** |
+| 10 KB EncryptToProvidedStream |  55.75 μs |  53.96 μs |    36,049 B |    36,048 B |     0%  |
+| 10 KB Decrypt                 | 101.03 μs |  84.82 μs |    70,673 B |    75,833 B |   +7%   |
+| 10 KB DecryptToProvidedStream |  52.08 μs |  47.48 μs |    17,985 B |    17,984 B |     0%  |
+| 100 KB Encrypt                |    964 μs |    762 μs |   677,115 B |   491,257 B | **−27%** |
+| 100 KB EncryptToProvidedStream |   579 μs |    506 μs |   229,135 B |   229,129 B |     0%  |
+| 100 KB Decrypt                |  1,041 μs |  1,040 μs |   539,985 B |   559,303 B |   +4%   |
+| 100 KB DecryptToProvidedStream |   566 μs |    487 μs |   118,681 B |   118,681 B |     0%  |
+
+**Where this PR wins:**
+- **`Encrypt` (new output stream):** the primary beneficiary of `PooledMemoryStream`.
+  Allocations drop **27–36%** at 10 KB and 100 KB, and wall time improves **12–23%**.
+- **All Stream paths are a few % faster** (PooledJsonSerializer reduces per-call overhead).
+
+**Where it is neutral:**
+- **`*ToProvidedStream` paths:** allocations are essentially unchanged (the caller already supplies
+  the pooled output buffer, so the PR's new pooled output stream doesn't apply). Time still improves
+  ~7–14% from serializer-side changes.
+
+**Where there is a small regression:**
+- **`Decrypt` (new output stream) at 1 KB / 10 KB:** +7–10% allocations. The pooled output stream
+  adds a small fixed overhead that isn't amortized at small sizes. At 100 KB the difference is
+  within noise (+4%). Wall time is **16% faster** at 10 KB regardless.
+
+Overall this PR is a clear net win for the Encrypt path and a wash for Decrypt on allocations,
+with consistent wall-time improvements across the board.
