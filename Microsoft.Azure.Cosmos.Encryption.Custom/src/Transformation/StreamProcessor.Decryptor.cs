@@ -54,7 +54,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             JsonReaderState state = new (StreamProcessor.JsonReaderOptions);
 
-            HashSet<string> encryptedPaths = properties.EncryptedPaths as HashSet<string> ?? new (properties.EncryptedPaths, StringComparer.Ordinal);
+            // Pre-encode the encrypted-paths and the _ei metadata property name as UTF-8 byte
+            // sequences so that we can match them with Utf8JsonReader.ValueTextEquals (which
+            // correctly handles JSON escape sequences) without materializing a new string per
+            // property name read.
+            (byte[] nameBytes, string fullPath)[] encryptedPathsTable = BuildEncryptedPathsTable(properties.EncryptedPaths);
+            byte[] encryptionPropertiesNameBytes = System.Text.Encoding.UTF8.GetBytes(Constants.EncryptedInfo);
 
             int leftOver = 0;
 
@@ -151,12 +156,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             writer.WriteEndArray();
                             break;
                         case JsonTokenType.PropertyName:
-                            string propertyName = "/" + reader.GetString();
-                            if (encryptedPaths.Contains(propertyName))
+                            string matchedPath = null;
+                            for (int i = 0; i < encryptedPathsTable.Length; i++)
                             {
-                                decryptPropertyName = propertyName;
+                                if (reader.ValueTextEquals(encryptedPathsTable[i].nameBytes))
+                                {
+                                    matchedPath = encryptedPathsTable[i].fullPath;
+                                    break;
+                                }
                             }
-                            else if (propertyName == StreamProcessor.EncryptionPropertiesPath)
+
+                            if (matchedPath != null)
+                            {
+                                decryptPropertyName = matchedPath;
+                            }
+                            else if (reader.ValueTextEquals(encryptionPropertiesNameBytes))
                             {
                                 if (!reader.TrySkip())
                                 {

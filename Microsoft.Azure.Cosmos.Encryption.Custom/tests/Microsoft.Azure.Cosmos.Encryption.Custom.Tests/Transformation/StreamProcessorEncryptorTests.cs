@@ -745,6 +745,68 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             // If we got here without OutOfMemoryException, disposal is working
             Assert.IsTrue(true, "100 iterations completed without resource leak");
         }
+
+        // Regression tests for the Utf8JsonReader.ValueTextEquals-based property-name
+        // comparison (replaces the prior "/" + reader.GetString() path). These ensure JSON
+        // escape sequences in property names are still matched correctly.
+
+        [TestMethod]
+        public async Task Encrypt_PropertyName_WithUnicodeEscape_IsMatched()
+        {
+            // "Sensitive" encoded with \u escape for S.
+            string escapedName = "\\u0053ensitive";
+            string json = "{\"id\":\"1\",\"" + escapedName + "\":\"secret\"}";
+            using MemoryStream input = new (Encoding.UTF8.GetBytes(json));
+            MemoryStream output = new ();
+            EncryptionOptions options = CreateOptions(new[] { "/Sensitive" });
+
+            await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, JsonProcessor.Stream, new CosmosDiagnosticsContext(), CancellationToken.None);
+
+            output.Position = 0;
+            using JsonDocument jd = JsonDocument.Parse(output);
+            Assert.IsTrue(jd.RootElement.TryGetProperty(Constants.EncryptedInfo, out JsonElement ei), "_ei metadata should be present");
+            JsonElement encryptedPaths = ei.GetProperty(Constants.EncryptedPaths);
+            bool found = false;
+            foreach (JsonElement p in encryptedPaths.EnumerateArray())
+            {
+                if (p.GetString() == "/Sensitive")
+                {
+                    found = true;
+                    break;
+                }
+            }
+
+            Assert.IsTrue(found, "Escaped property name \\u0053ensitive must match path /Sensitive");
+        }
+
+        [TestMethod]
+        public async Task Encrypt_PropertyName_Surrogate_IsMatched()
+        {
+            // Non-BMP property name "😀" via surrogate pair escape.
+            string escaped = "\\uD83D\\uDE00"; // 😀
+            string json = "{\"id\":\"1\",\"" + escaped + "\":\"secret\"}";
+            using MemoryStream input = new (Encoding.UTF8.GetBytes(json));
+            MemoryStream output = new ();
+            EncryptionOptions options = CreateOptions(new[] { "/😀" });
+
+            await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, JsonProcessor.Stream, new CosmosDiagnosticsContext(), CancellationToken.None);
+
+            output.Position = 0;
+            using JsonDocument jd = JsonDocument.Parse(output);
+            Assert.IsTrue(jd.RootElement.TryGetProperty(Constants.EncryptedInfo, out JsonElement ei));
+            JsonElement encryptedPaths = ei.GetProperty(Constants.EncryptedPaths);
+            bool found = false;
+            foreach (JsonElement p in encryptedPaths.EnumerateArray())
+            {
+                if (p.GetString() == "/😀")
+                {
+                    found = true;
+                    break;
+                }
+            }
+
+            Assert.IsTrue(found, "Surrogate-pair escaped property name must match /😀");
+        }
     }
 }
 #endif

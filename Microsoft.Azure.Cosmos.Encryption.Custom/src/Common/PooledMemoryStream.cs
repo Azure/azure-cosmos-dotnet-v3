@@ -41,6 +41,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         private const int MaxArrayLength = 0X7FFFFFC7; // From Array.MaxLength
 
         private readonly bool clearOnReturn;
+        private readonly int initialCapacity;
 
         private byte[] buffer;
         private int position;
@@ -64,8 +65,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 throw new ArgumentOutOfRangeException(nameof(capacity));
             }
 
-            this.buffer = capacity > 0 ? ArrayPool<byte>.Shared.Rent(capacity) : Array.Empty<byte>();
-            this.capacity = this.buffer.Length;
+            // Defer ArrayPool rental to the first write. This mirrors MemoryStream's
+            // lazy-allocation behavior and eliminates a fixed ~4 KB per-instance cost
+            // for short-lived streams whose final size is smaller than the configured
+            // initial capacity. The configured capacity is preserved as a floor so the
+            // first rent is at least that large, matching the pre-lazy growth policy
+            // for typical writes.
+            this.initialCapacity = capacity;
+            this.buffer = Array.Empty<byte>();
+            this.capacity = 0;
             this.position = 0;
             this.length = 0;
         }
@@ -78,8 +86,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
 
             this.clearOnReturn = clearOnReturn;
-            this.buffer = capacity > 0 ? ArrayPool<byte>.Shared.Rent(capacity) : Array.Empty<byte>();
-            this.capacity = this.buffer.Length;
+            this.initialCapacity = capacity;
+            this.buffer = Array.Empty<byte>();
+            this.capacity = 0;
             this.position = 0;
             this.length = 0;
         }
@@ -501,6 +510,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 // Use checked arithmetic to detect integer overflow when doubling capacity
                 newCapacity = checked(this.capacity * 2);
                 newCapacity = Math.Max(requiredCapacity, newCapacity);
+
+                // Honor the constructor-configured initial-capacity floor on the first rent.
+                // This preserves the pre-lazy growth policy for typical writes: a caller that
+                // asked for a 4 KB initial buffer still gets at least 4 KB on the very first
+                // rent, avoiding an extra realloc/copy for medium payloads.
+                if (this.capacity == 0 && this.initialCapacity > newCapacity)
+                {
+                    newCapacity = this.initialCapacity;
+                }
 
                 // Cap at MaxArrayLength; fail if the required capacity itself exceeds the limit
                 if (newCapacity > MaxArrayLength)

@@ -30,7 +30,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionOptions.DataEncryptionKeyId, encryptionOptions.EncryptionAlgorithm, cancellationToken);
 
-            HashSet<string> pathsToEncrypt = encryptionOptions.PathsToEncrypt as HashSet<string> ?? new (encryptionOptions.PathsToEncrypt, StringComparer.Ordinal);
+            // Pre-encode the paths-to-encrypt as UTF-8 byte sequences so that we can match
+            // against Utf8JsonReader tokens with ValueTextEquals (which correctly handles
+            // JSON escape sequences), without allocating a new string per property name.
+            // The leading '/' is stripped here since ValueTextEquals compares against the
+            // decoded property-name bytes, while the original slash-prefixed path string is
+            // preserved for the pathsEncrypted output list.
+            (byte[] nameBytes, string fullPath)[] encryptedPathsTable = BuildEncryptedPathsTable(encryptionOptions.PathsToEncrypt);
 
             using Utf8JsonWriter writer = new (outputStream);
 
@@ -194,10 +200,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                             break;
                         case JsonTokenType.PropertyName:
-                            string propertyName = "/" + reader.GetString();
-                            if (pathsToEncrypt.Contains(propertyName))
+                            string matchedPath = null;
+                            for (int i = 0; i < encryptedPathsTable.Length; i++)
                             {
-                                encryptPropertyName = propertyName;
+                                if (reader.ValueTextEquals(encryptedPathsTable[i].nameBytes))
+                                {
+                                    matchedPath = encryptedPathsTable[i].fullPath;
+                                    break;
+                                }
+                            }
+
+                            if (matchedPath != null)
+                            {
+                                encryptPropertyName = matchedPath;
                             }
 
                             currentWriter.WritePropertyName(reader.ValueSpan);
@@ -283,6 +298,29 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 pathsEncrypted.Add(encryptPropertyName);
                 return encryptedBytes.AsSpan(0, encryptedBytesCount);
             }
+        }
+
+        private static (byte[] nameBytes, string fullPath)[] BuildEncryptedPathsTable(System.Collections.Generic.IEnumerable<string> pathsToEncrypt)
+        {
+            System.Collections.Generic.List<(byte[] nameBytes, string fullPath)> table = new ();
+            foreach (string path in pathsToEncrypt)
+            {
+                if (string.IsNullOrEmpty(path) || path[0] != '/' || path.Length < 2)
+                {
+                    // Paths are already validated by EncryptionOptions; skip defensively.
+                    continue;
+                }
+
+                // Strip the leading '/'. The property name bytes are what the JSON reader
+                // token surfaces (without the JSON Pointer prefix). The original slash-
+                // prefixed string is preserved for the output pathsEncrypted list so the
+                // serialized _ei metadata remains byte-identical to the previous
+                // implementation.
+                byte[] nameBytes = System.Text.Encoding.UTF8.GetBytes(path.AsSpan(1).ToString());
+                table.Add((nameBytes, path));
+            }
+
+            return table.ToArray();
         }
 
         private static (byte[] buffer, int length) Serialize(bool value, ArrayPoolManager arrayPoolManager)

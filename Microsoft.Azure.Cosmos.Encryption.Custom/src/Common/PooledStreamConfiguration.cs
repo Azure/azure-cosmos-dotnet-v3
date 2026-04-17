@@ -13,16 +13,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// <para><strong>Thread Safety:</strong></para>
     /// <para>
     /// This configuration object is immutable and thread-safe. Reading configuration values
-    /// from the Current property is always safe from multiple threads. Updating configuration
-    /// via SetConfiguration performs an atomic reference swap, ensuring readers always see a
-    /// consistent configuration snapshot.
+    /// from the Current property is always safe from multiple threads.
     /// </para>
     /// <para><strong>Configuration Timing:</strong></para>
     /// <para>
     /// Configure once at application startup using SetConfiguration before any encryption/decryption
-    /// operations begin. While the configuration swap itself is atomic, changing values during runtime
-    /// while operations are in progress may cause inconsistent behavior as some operations will use
-    /// old values while others use new values.
+    /// operations begin. Runtime reconfiguration is NOT supported: several code paths read the
+    /// configuration independently during a single operation, so a late reconfiguration can produce
+    /// a mix of old and new values inside the same call.
     /// </para>
     /// <para><strong>Security Considerations:</strong></para>
     /// <para>
@@ -68,14 +66,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         public static PooledStreamConfiguration Current => current;
 
         /// <summary>
-        /// Sets a new configuration atomically. Thread-safe.
+        /// Sets a new configuration. Must be called once at application startup before any
+        /// encryption/decryption operations begin.
         /// </summary>
         /// <param name="configuration">The new configuration to use. Cannot be null.</param>
         /// <exception cref="System.ArgumentNullException">Thrown when configuration is null.</exception>
         /// <remarks>
-        /// This performs an atomic reference swap. All operations started after this call
-        /// will use the new configuration. Operations already in progress will continue
-        /// using their captured configuration values.
+        /// <para>
+        /// This method is intended for startup configuration only. Calling it after
+        /// encryption/decryption operations have begun is unsupported: different code paths
+        /// read the configuration independently during a single logical operation, so a late
+        /// reconfiguration can produce an inconsistent mix of old and new values for an
+        /// in-progress call. The reference swap itself is atomic (the field write is a single
+        /// aligned reference write on all supported runtimes), but atomicity of the swap
+        /// does not extend to consistency across an operation that reads multiple properties.
+        /// </para>
         /// </remarks>
         public static void SetConfiguration(PooledStreamConfiguration configuration)
         {
