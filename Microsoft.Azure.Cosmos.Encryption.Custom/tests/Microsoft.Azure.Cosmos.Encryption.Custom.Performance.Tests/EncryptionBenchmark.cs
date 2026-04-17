@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.Encryption.Custom.Performance.Tests
+namespace Microsoft.Azure.Cosmos.Encryption.Custom.Performance.Tests
 {
     using System.IO;
     using BenchmarkDotNet.Attributes;
@@ -6,12 +6,35 @@
 #if NET8_0_OR_GREATER
     using Microsoft.IO;
 #endif
+
     using Moq;
 
     [MemoryDiagnoser]
-    [RPlotExporter]
     public partial class EncryptionBenchmark
     {
+        /// <summary>
+        /// Concrete key store provider — MDE requires ProviderName, Sign, and Verify
+        /// to be implemented. Moq-based setups silently fail inside MDE's internal caching.
+        /// </summary>
+        private sealed class BenchmarkKeyStoreProvider : EncryptionKeyStoreProvider
+        {
+            private static readonly byte[] RawKey = Enumerable.Range(0, 32).Select(static i => (byte)(255 - i)).ToArray();
+
+            public override string ProviderName => "benchmark-store";
+
+            public override byte[] UnwrapKey(string encryptionKeyId, KeyEncryptionKeyAlgorithm algorithm, byte[] encryptedKey)
+                => RawKey;
+
+            public override byte[] WrapKey(string encryptionKeyId, KeyEncryptionKeyAlgorithm algorithm, byte[] key)
+                => key;
+
+            public override byte[] Sign(string encryptionKeyId, bool allowEnclaveComputations)
+                => new byte[] { 0x01 };
+
+            public override bool Verify(string encryptionKeyId, bool allowEnclaveComputations, byte[] signature)
+                => signature?.Length == 1 && signature[0] == 0x01;
+        }
+
         private static class RequestOptionsOverrideHelper
         {
             public static RequestOptions? Create(JsonProcessor processor)
@@ -33,13 +56,13 @@
 #endif
             }
         }
-    private static readonly byte[] DekData = Enumerable.Repeat((byte)0, 32).ToArray();
+
+        private static readonly BenchmarkKeyStoreProvider KeyStoreProvider = new();
         private static readonly DataEncryptionKeyProperties DekProperties = new(
                 "id",
                 CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
-                DekData,
+                Enumerable.Range(0, 32).Select(static i => (byte)i).ToArray(),
                 new EncryptionKeyWrapMetadata("name", "value"), DateTime.UtcNow);
-        private static readonly Mock<EncryptionKeyStoreProvider> StoreProvider = new();
 
 #if NET8_0_OR_GREATER
         private readonly RecyclableMemoryStreamManager recyclableMemoryStreamManager = new ();
@@ -54,26 +77,22 @@
         [Params(1, 10, 100)]
         public int DocumentSizeInKb { get; set; }
 
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
         [Params("Newtonsoft", "Stream")]
 #else
         [Params("Newtonsoft")]
 #endif
-        public string Processor { get; set; }
+        public string Processor { get; set; } = "Newtonsoft";
 
         internal JsonProcessor JsonProcessor => Enum.Parse<JsonProcessor>(this.Processor);
 
         [GlobalSetup]
         public async Task Setup()
         {
-            StoreProvider
-                .Setup(x => x.UnwrapKey(It.IsAny<string>(), It.IsAny<KeyEncryptionKeyAlgorithm>(), It.IsAny<byte[]>()))
-                .Returns(DekData);
-
             Mock<DataEncryptionKeyProvider> keyProvider = new();
             keyProvider
                 .Setup(x => x.FetchDataEncryptionKeyWithoutRawKeyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .Returns(async () => await MdeEncryptionAlgorithm.CreateAsync(DekProperties, EncryptionType.Randomized, StoreProvider.Object, cacheTimeToLive: TimeSpan.MaxValue, false, default));
+                .Returns(async () => await MdeEncryptionAlgorithm.CreateAsync(DekProperties, EncryptionType.Randomized, KeyStoreProvider, cacheTimeToLive: TimeSpan.MaxValue, false, default));
 
             this.encryptor = new(keyProvider.Object);
             this.encryptionOptions = this.CreateEncryptionOptions();
