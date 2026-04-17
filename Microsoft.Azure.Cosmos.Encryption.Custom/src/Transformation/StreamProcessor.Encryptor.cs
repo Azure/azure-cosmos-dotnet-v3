@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             EncryptionOptions encryptionOptions,
             CancellationToken cancellationToken)
         {
-            List<string> pathsEncrypted = new ();
+            List<string> pathsEncrypted = new (encryptionOptions.PathsToEncrypt is ICollection<string> c ? c.Count : 0);
 
             using ArrayPoolManager arrayPoolManager = new ();
 
@@ -300,9 +300,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             }
         }
 
-        private static (byte[] nameBytes, string fullPath)[] BuildEncryptedPathsTable(System.Collections.Generic.IEnumerable<string> pathsToEncrypt)
+        private static (byte[] nameBytes, string fullPath)[] BuildEncryptedPathsTable(IEnumerable<string> pathsToEncrypt)
         {
-            System.Collections.Generic.List<(byte[] nameBytes, string fullPath)> table = new ();
+            List<(byte[] nameBytes, string fullPath)> table = pathsToEncrypt is ICollection<string> c
+                ? new List<(byte[], string)>(c.Count)
+                : new List<(byte[], string)>();
             foreach (string path in pathsToEncrypt)
             {
                 if (string.IsNullOrEmpty(path) || path[0] != '/' || path.Length < 2)
@@ -316,7 +318,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 // prefixed string is preserved for the output pathsEncrypted list so the
                 // serialized _ei metadata remains byte-identical to the previous
                 // implementation.
-                byte[] nameBytes = System.Text.Encoding.UTF8.GetBytes(path.AsSpan(1).ToString());
+                ReadOnlySpan<char> nameChars = path.AsSpan(1);
+                byte[] nameBytes = new byte[Encoding.UTF8.GetByteCount(nameChars)];
+                Encoding.UTF8.GetBytes(nameChars, nameBytes);
                 table.Add((nameBytes, path));
             }
 
