@@ -111,58 +111,79 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Performance.Tests
             this.encryptedData = memoryStream.ToArray();
         }
 
-        
-        [Benchmark]
+        // OperationsPerInvoke amortizes the first-rent ArrayPool miss that BenchmarkDotNet's
+        // MemoryDiagnoser introduces. BDN forces a Gen2 GC between iterations which can trim
+        // ArrayPool<byte>.Shared's thread-local and per-core buckets; the first Rent inside a
+        // measured invocation then tends to allocate a fresh array rather than hit the pool.
+        // Running N back-to-back operations per invocation means the second-and-later Rents
+        // hit the warm pool (populated by the prior Return), which is what production servers
+        // — where the pool stays warm across requests — actually see. The reported
+        // Allocated / Mean columns are divided by OperationsPerInvoke automatically by BDN.
+        private const int OperationsPerInvoke = 16;
+
+        [Benchmark(OperationsPerInvoke = OperationsPerInvoke)]
         public async Task Encrypt()
         {
-            await EncryptionProcessor.EncryptAsync(
-                 new MemoryStream(this.plaintext!),
-                 this.encryptor,
-                 this.encryptionOptions,
-                 this.JsonProcessor,
-                 new CosmosDiagnosticsContext(),
-                 CancellationToken.None);
+            for (int i = 0; i < OperationsPerInvoke; i++)
+            {
+                await EncryptionProcessor.EncryptAsync(
+                     new MemoryStream(this.plaintext!),
+                     this.encryptor,
+                     this.encryptionOptions,
+                     this.JsonProcessor,
+                     new CosmosDiagnosticsContext(),
+                     CancellationToken.None);
+            }
         }
 
 #if NET8_0_OR_GREATER
-        [Benchmark]
+        [Benchmark(OperationsPerInvoke = OperationsPerInvoke)]
         public async Task EncryptToProvidedStream()
         {
-            using RecyclableMemoryStream rms = new (this.recyclableMemoryStreamManager);
-            await EncryptionProcessor.EncryptAsync(
-                new MemoryStream(this.plaintext!),
-                rms,
-                this.encryptor,
-                this.encryptionOptions,
-                 this.JsonProcessor,
-                new CosmosDiagnosticsContext(),
-                CancellationToken.None);
+            for (int i = 0; i < OperationsPerInvoke; i++)
+            {
+                using RecyclableMemoryStream rms = new (this.recyclableMemoryStreamManager);
+                await EncryptionProcessor.EncryptAsync(
+                    new MemoryStream(this.plaintext!),
+                    rms,
+                    this.encryptor,
+                    this.encryptionOptions,
+                     this.JsonProcessor,
+                    new CosmosDiagnosticsContext(),
+                    CancellationToken.None);
+            }
         }
 #endif
 
-        [Benchmark]
+        [Benchmark(OperationsPerInvoke = OperationsPerInvoke)]
         public async Task Decrypt()
         {
-            await EncryptionProcessor.DecryptAsync(
-                new MemoryStream(this.encryptedData!),
-                this.encryptor,
-                new CosmosDiagnosticsContext(),
-                RequestOptionsOverrideHelper.Create(this.JsonProcessor),
-                CancellationToken.None);
+            for (int i = 0; i < OperationsPerInvoke; i++)
+            {
+                await EncryptionProcessor.DecryptAsync(
+                    new MemoryStream(this.encryptedData!),
+                    this.encryptor,
+                    new CosmosDiagnosticsContext(),
+                    RequestOptionsOverrideHelper.Create(this.JsonProcessor),
+                    CancellationToken.None);
+            }
         }
 
 #if NET8_0_OR_GREATER
-        [Benchmark]
+        [Benchmark(OperationsPerInvoke = OperationsPerInvoke)]
         public async Task DecryptToProvidedStream()
         {
-            using RecyclableMemoryStream rms = new(this.recyclableMemoryStreamManager);
-            await EncryptionProcessor.DecryptAsync(
-                new MemoryStream(this.encryptedData!),
-                rms,
-                this.encryptor,
-                new CosmosDiagnosticsContext(),
-                RequestOptionsOverrideHelper.Create(this.JsonProcessor),
-                CancellationToken.None);
+            for (int i = 0; i < OperationsPerInvoke; i++)
+            {
+                using RecyclableMemoryStream rms = new(this.recyclableMemoryStreamManager);
+                await EncryptionProcessor.DecryptAsync(
+                    new MemoryStream(this.encryptedData!),
+                    rms,
+                    this.encryptor,
+                    new CosmosDiagnosticsContext(),
+                    RequestOptionsOverrideHelper.Create(this.JsonProcessor),
+                    CancellationToken.None);
+            }
         }
 #endif
 
