@@ -87,10 +87,32 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
         /// <summary>
         /// Exhaustive coverage: every declared <see cref="TransportErrorCode"/>
-        /// must map to a non-<see cref="RefreshReason.Unspecified"/> value.
-        /// This fails (in CI) if an upstream TransportErrorCode is added
-        /// without updating the switch in FromTransportErrorCode.
+        /// must be explicitly handled by
+        /// <c>RefreshReasonExtensions.TryMapKnownTransportErrorCode</c>. This
+        /// test fails in CI if an upstream code is added without updating the
+        /// switch (without this, new codes would silently fall through to
+        /// <see cref="RefreshReason.GoneUnknown"/> in the public API).
         /// </summary>
+        [TestMethod]
+        public void TryMapKnownTransportErrorCode_CoversEveryCode()
+        {
+            List<TransportErrorCode> unhandled = new List<TransportErrorCode>();
+            foreach (TransportErrorCode code in Enum.GetValues(typeof(TransportErrorCode)))
+            {
+                if (!RefreshReasonExtensions.TryMapKnownTransportErrorCode(code, out RefreshReason _))
+                {
+                    unhandled.Add(code);
+                }
+            }
+
+            Assert.AreEqual(
+                0,
+                unhandled.Count,
+                "TransportErrorCode(s) not explicitly handled by TryMapKnownTransportErrorCode: " +
+                string.Join(", ", unhandled) +
+                ". Add explicit cases in RefreshReasonExtensions.");
+        }
+
         [TestMethod]
         public void FromTransportErrorCode_CoversEveryCode()
         {
@@ -177,6 +199,73 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 enumCount,
                 RefreshReasonExtensions.WireValues.Count,
                 "Every RefreshReason member must have exactly one entry in WireValues (no orphans, no extras).");
+        }
+
+        // ---- ClassifyGoneFromException -------------------------------------
+        // Transport-exception walking is covered transitively by the exhaustive
+        // FromTransportErrorCode tests above; constructing TransportException
+        // instances directly in unit tests hits a resource-manifest path that
+        // isn't resolvable in the test host. The substatus paths below cover
+        // the switch-case behavior fully.
+
+        [TestMethod]
+        public void ClassifyGoneFromException_NoTransport_SubStatusCompletingSplit_MapsToSplit()
+        {
+            Assert.AreEqual(
+                RefreshReason.GoneCompletingSplit,
+                RefreshReasonExtensions.ClassifyGoneFromException(
+                    exception: null,
+                    subStatusCode: SubStatusCodes.CompletingSplit));
+        }
+
+        [TestMethod]
+        public void ClassifyGoneFromException_NoTransport_SubStatusCompletingPartitionMigration_MapsToMigration()
+        {
+            Assert.AreEqual(
+                RefreshReason.GoneCompletingPartitionMigration,
+                RefreshReasonExtensions.ClassifyGoneFromException(
+                    exception: null,
+                    subStatusCode: SubStatusCodes.CompletingPartitionMigration));
+        }
+
+        [TestMethod]
+        public void ClassifyGoneFromException_NoTransport_SubStatusNameCacheIsStale_MapsToNameCacheStale()
+        {
+            Assert.AreEqual(
+                RefreshReason.GoneNameCacheStale,
+                RefreshReasonExtensions.ClassifyGoneFromException(
+                    exception: null,
+                    subStatusCode: SubStatusCodes.NameCacheIsStale));
+        }
+
+        [TestMethod]
+        public void ClassifyGoneFromException_NoTransport_SubStatusPartitionKeyRangeGone_MapsToPkrGone()
+        {
+            Assert.AreEqual(
+                RefreshReason.GonePartitionKeyRangeGone,
+                RefreshReasonExtensions.ClassifyGoneFromException(
+                    exception: null,
+                    subStatusCode: SubStatusCodes.PartitionKeyRangeGone));
+        }
+
+        [TestMethod]
+        public void ClassifyGoneFromException_NoTransport_PlainGone_MapsToGoneServer()
+        {
+            Assert.AreEqual(
+                RefreshReason.GoneServer,
+                RefreshReasonExtensions.ClassifyGoneFromException(
+                    exception: new Exception("server 410"),
+                    subStatusCode: SubStatusCodes.Unknown));
+        }
+
+        [TestMethod]
+        public void ClassifyGoneFromException_NullException_NoSubStatus_MapsToGoneServer()
+        {
+            Assert.AreEqual(
+                RefreshReason.GoneServer,
+                RefreshReasonExtensions.ClassifyGoneFromException(
+                    exception: null,
+                    subStatusCode: SubStatusCodes.Unknown));
         }
     }
 }

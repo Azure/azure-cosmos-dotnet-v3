@@ -742,7 +742,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// throws <see cref="InvalidOperationException"/> so that any untagged
         /// force-refresh site is caught in tests.
         /// </summary>
-        private static void EmitRefreshReasonHeader(
+        internal static void EmitRefreshReasonHeader(
             INameValueCollection headers,
             DocumentServiceRequest request,
             RefreshReason explicitReason,

@@ -87,58 +87,88 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// </summary>
         public static RefreshReason FromTransportErrorCode(TransportErrorCode code)
         {
+            if (TryMapKnownTransportErrorCode(code, out RefreshReason reason))
+            {
+                return reason;
+            }
+
+            // A new TransportErrorCode was added upstream without updating
+            // the switch below. Fall back to GoneUnknown so the gateway still
+            // gets *a* reason; the exhaustive test in
+            // RefreshReasonFormatterTests will fail in CI and prompt a fix.
+            return RefreshReason.GoneUnknown;
+        }
+
+        /// <summary>
+        /// Explicit-case mapping for <see cref="TransportErrorCode"/>. Returns
+        /// <c>false</c> for codes that are not explicitly handled — this is
+        /// how the exhaustive test detects new upstream codes (a silent
+        /// fall-through to <see cref="RefreshReason.GoneUnknown"/> in the
+        /// public <see cref="FromTransportErrorCode"/> would hide them).
+        /// </summary>
+        internal static bool TryMapKnownTransportErrorCode(TransportErrorCode code, out RefreshReason reason)
+        {
             switch (code)
             {
                 case TransportErrorCode.Unknown:
                 case TransportErrorCode.ChannelOpenFailed:
                 case TransportErrorCode.ChannelOpenTimeout:
                 case TransportErrorCode.RequestTimeout:
-                    return RefreshReason.GoneUnknown;
+                    reason = RefreshReason.GoneUnknown;
+                    return true;
 
                 case TransportErrorCode.DnsResolutionFailed:
                 case TransportErrorCode.DnsResolutionTimeout:
-                    return RefreshReason.GoneDnsResolution;
+                    reason = RefreshReason.GoneDnsResolution;
+                    return true;
 
                 case TransportErrorCode.ConnectFailed:
                 case TransportErrorCode.ConnectTimeout:
-                    return RefreshReason.GoneConnect;
+                    reason = RefreshReason.GoneConnect;
+                    return true;
 
                 case TransportErrorCode.SslNegotiationFailed:
                 case TransportErrorCode.SslNegotiationTimeout:
-                    return RefreshReason.GoneSslNegotiation;
+                    reason = RefreshReason.GoneSslNegotiation;
+                    return true;
 
                 case TransportErrorCode.TransportNegotiationTimeout:
-                    return RefreshReason.GoneNegotiationTimeout;
+                    reason = RefreshReason.GoneNegotiationTimeout;
+                    return true;
 
                 case TransportErrorCode.ChannelMultiplexerClosed:
-                    return RefreshReason.GoneChannelMultiplexerClosed;
+                    reason = RefreshReason.GoneChannelMultiplexerClosed;
+                    return true;
 
                 case TransportErrorCode.SendFailed:
                 case TransportErrorCode.SendTimeout:
-                    return RefreshReason.GoneSend;
+                    reason = RefreshReason.GoneSend;
+                    return true;
 
                 case TransportErrorCode.SendLockTimeout:
-                    return RefreshReason.GoneSendLockTimeout;
+                    reason = RefreshReason.GoneSendLockTimeout;
+                    return true;
 
                 case TransportErrorCode.ReceiveFailed:
                 case TransportErrorCode.ReceiveTimeout:
-                    return RefreshReason.GoneReceive;
+                    reason = RefreshReason.GoneReceive;
+                    return true;
 
                 case TransportErrorCode.ReceiveStreamClosed:
-                    return RefreshReason.GoneReceiveStreamClosed;
+                    reason = RefreshReason.GoneReceiveStreamClosed;
+                    return true;
 
                 case TransportErrorCode.ConnectionBroken:
-                    return RefreshReason.GoneConnectionBroken;
+                    reason = RefreshReason.GoneConnectionBroken;
+                    return true;
 
                 case TransportErrorCode.ChannelWaitingToOpenTimeout:
-                    return RefreshReason.GoneChannelWaitingToOpenTimeout;
+                    reason = RefreshReason.GoneChannelWaitingToOpenTimeout;
+                    return true;
 
                 default:
-                    // A new TransportErrorCode was added upstream without
-                    // updating this switch. Fall back to GoneUnknown so the
-                    // gateway still gets *a* reason; the exhaustive test in
-                    // RefreshReasonFormatterTests will fail and prompt a fix.
-                    return RefreshReason.GoneUnknown;
+                    reason = RefreshReason.Unspecified;
+                    return false;
             }
         }
 
