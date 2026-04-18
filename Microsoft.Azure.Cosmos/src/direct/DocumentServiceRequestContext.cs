@@ -21,6 +21,20 @@ namespace Microsoft.Azure.Documents
         public bool ForceRefreshAddressCache { get; set; }
 
         /// <summary>
+        /// When a forced cache refresh is performed (address cache today,
+        /// partition-key-range cache and others in future), this carries the
+        /// reason for attribution. It is serialized on the wire via the
+        /// <c>x-ms-cosmos-refresh-reason</c> header by
+        /// <see cref="Microsoft.Azure.Cosmos.Routing.RefreshReasonExtensions"/>.
+        ///
+        /// Defaults to <see cref="Microsoft.Azure.Cosmos.Routing.RefreshReason.Unspecified"/>.
+        /// Call sites that flip <see cref="ForceRefreshAddressCache"/> (or
+        /// any other force-refresh flag) must also set this property.
+        /// </summary>
+        public Microsoft.Azure.Cosmos.Routing.RefreshReason RefreshReason { get; set; }
+            = Microsoft.Azure.Cosmos.Routing.RefreshReason.Unspecified;
+
+        /// <summary>
         /// PartitionAddressInformation hash code is used in the cache
         /// refresh scenarios to avoid doing a refresh when another
         /// request already completed one.
@@ -236,6 +250,7 @@ namespace Microsoft.Azure.Documents
             requestContext.TimeoutHelper = this.TimeoutHelper;
             requestContext.RequestChargeTracker = this.RequestChargeTracker;
             requestContext.ForceRefreshAddressCache = this.ForceRefreshAddressCache;
+            requestContext.RefreshReason = this.RefreshReason;
             requestContext.TargetIdentity = this.TargetIdentity;
             requestContext.PerformLocalRefreshOnGoneException = this.PerformLocalRefreshOnGoneException;
             requestContext.SessionToken = this.SessionToken;

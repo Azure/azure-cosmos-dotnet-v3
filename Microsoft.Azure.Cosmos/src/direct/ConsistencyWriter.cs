@@ -737,6 +737,7 @@ Sequence of steps:
 
             // Always force refresh before hitting primary to avoid stale primary selection
             barrierRequest.RequestContext.ForceRefreshAddressCache = true;
+            barrierRequest.RequestContext.RefreshReason = Microsoft.Azure.Cosmos.Routing.RefreshReason.InsufficientReplicasQuorum;
             using (ReferenceCountedDisposable<StoreResult> primaryResult = await this.storeReader.ReadPrimaryAsync(
                 barrierRequest,
                 requiresValidLsn: false,

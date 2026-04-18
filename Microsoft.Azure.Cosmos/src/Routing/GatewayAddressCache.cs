@@ -36,6 +36,18 @@ namespace Microsoft.Azure.Cosmos.Routing
         // value for this timeout is 45 minutes at the moment.
         private static readonly TimeSpan WarmupCacheAndOpenConnectionTimeout = TimeSpan.FromMinutes(45);
 
+        /// <summary>
+        /// Opt-in test-only invariant: when <c>true</c> and a forced address-cache
+        /// refresh is emitted with an <see cref="RefreshReason.Unspecified"/> reason,
+        /// <see cref="GetServerAddressesViaGatewayAsync"/> and
+        /// <see cref="GetMasterAddressesViaGatewayAsync"/> throw
+        /// <see cref="InvalidOperationException"/>. Tests set this to <c>true</c> via
+        /// <c>[AssemblyInitialize]</c> so any future force-refresh call-site that
+        /// forgets to tag its cause is caught automatically. Default <c>false</c>:
+        /// zero production overhead.
+        /// </summary>
+        internal static bool ValidateRefreshReasonPresence;
+
         private readonly Uri serviceEndpoint;
         private readonly Uri addressEndpoint;
 
@@ -237,6 +249,10 @@ namespace Microsoft.Azure.Cosmos.Routing
                     if (forceRefreshDueToSuboptimalPartitionReplicaSet && this.suboptimalServerPartitionTimestamps.TryUpdate(partitionKeyRangeIdentity, DateTime.MaxValue, suboptimalServerPartitionTimestamp))
                     {
                         forceRefreshPartitionAddresses = true;
+                        if (request.RequestContext.RefreshReason == RefreshReason.Unspecified)
+                        {
+                            request.RequestContext.RefreshReason = RefreshReason.InsufficientReplicasSuboptimalTimer;
+                        }
                     }
                 }
 
@@ -330,7 +346,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                                     cachedAddresses: currentCachedValue,
                                     partitionKeyRangeIdentity.CollectionRid,
                                     partitionKeyRangeIdentity.PartitionKeyRangeId,
-                                    forceRefresh: true));
+                                    forceRefresh: true,
+                                    explicitReason: RefreshReason.ReplicaHealthUnhealthyLongLived));
                         }
                         else
                         {
@@ -589,13 +606,20 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             int targetReplicaSetSize = this.serviceConfigReader.SystemReplicationPolicy.MaxReplicaSetSize;
 
-            forceRefresh = forceRefresh ||
-                (masterAddressAndRange != null &&
+            bool masterSuboptimalTriggered =
+                masterAddressAndRange != null &&
                 masterAddressAndRange.Item2.AllAddresses.Count() < targetReplicaSetSize &&
-                DateTime.UtcNow.Subtract(this.suboptimalMasterPartitionTimestamp) > TimeSpan.FromSeconds(this.suboptimalPartitionForceRefreshIntervalInSeconds));
+                DateTime.UtcNow.Subtract(this.suboptimalMasterPartitionTimestamp) > TimeSpan.FromSeconds(this.suboptimalPartitionForceRefreshIntervalInSeconds);
+
+            forceRefresh = forceRefresh || masterSuboptimalTriggered;
 
             if (forceRefresh || request.ForceCollectionRoutingMapRefresh || this.masterPartitionAddressCache == null)
             {
+                if (masterSuboptimalTriggered && request.RequestContext.RefreshReason == RefreshReason.Unspecified)
+                {
+                    request.RequestContext.RefreshReason = RefreshReason.InsufficientReplicasSuboptimalTimer;
+                }
+
                 string entryUrl = PathsHelper.GeneratePath(
                    ResourceType.Database,
                    string.Empty,
@@ -640,10 +664,11 @@ namespace Microsoft.Azure.Cosmos.Routing
             PartitionAddressInformation cachedAddresses,
             string collectionRid,
             string partitionKeyRangeId,
-            bool forceRefresh)
+            bool forceRefresh,
+            RefreshReason explicitReason = RefreshReason.Unspecified)
         {
             using (DocumentServiceResponse response =
-                await this.GetServerAddressesViaGatewayAsync(request, collectionRid, new[] { partitionKeyRangeId }, forceRefresh))
+                await this.GetServerAddressesViaGatewayAsync(request, collectionRid, new[] { partitionKeyRangeId }, forceRefresh, explicitReason))
             {
                 FeedResource<Address> addressFeed = response.GetResource<FeedResource<Address>>();
 
@@ -706,13 +731,51 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
+        /// <summary>
+        /// Resolves the effective <see cref="RefreshReason"/> for a forced
+        /// address-cache egress and writes the <c>x-ms-cosmos-refresh-reason</c>
+        /// header. Called only when <c>forceRefresh=true</c>.
+        ///
+        /// Precedence: <paramref name="explicitReason"/> (if non-Unspecified) wins
+        /// over <c>request.RequestContext.RefreshReason</c>. When both are
+        /// Unspecified and <see cref="ValidateRefreshReasonPresence"/> is enabled,
+        /// throws <see cref="InvalidOperationException"/> so that any untagged
+        /// force-refresh site is caught in tests.
+        /// </summary>
+        internal static void EmitRefreshReasonHeader(
+            INameValueCollection headers,
+            DocumentServiceRequest request,
+            RefreshReason explicitReason,
+            string callerName)
+        {
+            RefreshReason effective = explicitReason != RefreshReason.Unspecified
+                ? explicitReason
+                : request?.RequestContext?.RefreshReason ?? RefreshReason.Unspecified;
+
+            if (effective == RefreshReason.Unspecified)
+            {
+                if (GatewayAddressCache.ValidateRefreshReasonPresence)
+                {
+                    throw new InvalidOperationException(
+                        $"{callerName} was invoked with forceRefresh=true but no RefreshReason was set. " +
+                        $"Every forced address-cache refresh must be tagged via DocumentServiceRequestContext.RefreshReason " +
+                        $"or an explicitReason argument so the gateway can attribute the cause.");
+                }
+
+                return;
+            }
+
+            headers.Set(HttpConstants.HttpHeaders.CosmosRefreshReason, effective.ToHeaderValue());
+        }
+
         private async Task<DocumentServiceResponse> GetMasterAddressesViaGatewayAsync(
             DocumentServiceRequest request,
             ResourceType resourceType,
             string resourceAddress,
             string entryUrl,
             bool forceRefresh,
-            bool useMasterCollectionResolver)
+            bool useMasterCollectionResolver,
+            RefreshReason explicitReason = RefreshReason.Unspecified)
         {
             INameValueCollection addressQuery = new RequestNameValueCollection
             {
@@ -723,6 +786,11 @@ namespace Microsoft.Azure.Cosmos.Routing
             if (forceRefresh)
             {
                 headers.Set(HttpConstants.HttpHeaders.ForceRefresh, bool.TrueString);
+                GatewayAddressCache.EmitRefreshReasonHeader(
+                    headers: headers,
+                    request: request,
+                    explicitReason: explicitReason,
+                    callerName: nameof(GetMasterAddressesViaGatewayAsync));
             }
 
             if (useMasterCollectionResolver)
@@ -799,7 +867,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             DocumentServiceRequest request,
             string collectionRid,
             IEnumerable<string> partitionKeyRangeIds,
-            bool forceRefresh)
+            bool forceRefresh,
+            RefreshReason explicitReason = RefreshReason.Unspecified)
         {
             string entryUrl = PathsHelper.GeneratePath(ResourceType.Document, collectionRid, true);
 
@@ -812,6 +881,11 @@ namespace Microsoft.Azure.Cosmos.Routing
             if (forceRefresh)
             {
                 headers.Set(HttpConstants.HttpHeaders.ForceRefresh, bool.TrueString);
+                GatewayAddressCache.EmitRefreshReasonHeader(
+                    headers: headers,
+                    request: request,
+                    explicitReason: explicitReason,
+                    callerName: nameof(GetServerAddressesViaGatewayAsync));
             }
 
             if (request != null && request.ForceCollectionRoutingMapRefresh)

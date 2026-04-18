@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Documents
     using System.Runtime.CompilerServices;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Routing;
 
     internal sealed class StoreReader
     {
@@ -77,6 +78,7 @@ namespace Microsoft.Azure.Documents
                 {
                     entity.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
 
+                    entity.RequestContext.RefreshReason = StoreReader.ClassifyPriorGone(readQuorumResult);
                     entity.RequestContext.ForceRefreshAddressCache = true;
                     using ReadReplicaResult readQuorumResultSecondCall = await this.ReadMultipleReplicasInternalAsync(
                         entity,
@@ -119,6 +121,7 @@ namespace Microsoft.Azure.Documents
                     !entity.RequestContext.ForceRefreshAddressCache)
                 {
                     entity.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
+                    entity.RequestContext.RefreshReason = StoreReader.ClassifyPriorGone(readQuorumResult);
                     entity.RequestContext.ForceRefreshAddressCache = true;
                     using ReadReplicaResult readQuorumResultSecondCall = await this.ReadPrimaryInternalAsync(
                             entity, 
@@ -145,6 +148,31 @@ namespace Microsoft.Azure.Documents
             }
 
             return storeResultList.GetFirstStoreResultAndDereference();
+        }
+
+        /// <summary>
+        /// Classifies the Gone that caused <paramref name="readReplicaResult"/>
+        /// to set <c>RetryWithForceRefresh = true</c> so the subsequent
+        /// /addresses egress can carry the originating cause in the
+        /// <c>x-ms-cosmos-refresh-reason</c> header. Falls back to
+        /// <see cref="RefreshReason.GoneUnknown"/> if no Gone StoreResult is
+        /// present (e.g., empty primary-read result with retry-flag set).
+        /// </summary>
+        private static RefreshReason ClassifyPriorGone(ReadReplicaResult readReplicaResult)
+        {
+            IList<ReferenceCountedDisposable<StoreResult>> results = readReplicaResult.StoreResultList.GetValue();
+            foreach (ReferenceCountedDisposable<StoreResult> disposable in results)
+            {
+                StoreResult storeResult = disposable?.Target;
+                if (storeResult == null || storeResult.StatusCode != StatusCodes.Gone)
+                {
+                    continue;
+                }
+
+                return RefreshReasonExtensions.ClassifyGoneFromException(storeResult.Exception, storeResult.SubStatusCode);
+            }
+
+            return RefreshReason.GoneUnknown;
         }
 
         /// <summary>
