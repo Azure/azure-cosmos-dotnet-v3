@@ -249,6 +249,10 @@ namespace Microsoft.Azure.Cosmos.Routing
                     if (forceRefreshDueToSuboptimalPartitionReplicaSet && this.suboptimalServerPartitionTimestamps.TryUpdate(partitionKeyRangeIdentity, DateTime.MaxValue, suboptimalServerPartitionTimestamp))
                     {
                         forceRefreshPartitionAddresses = true;
+                        if (request.RequestContext.RefreshReason == RefreshReason.Unspecified)
+                        {
+                            request.RequestContext.RefreshReason = RefreshReason.InsufficientReplicasSuboptimalTimer;
+                        }
                     }
                 }
 
@@ -342,7 +346,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                                     cachedAddresses: currentCachedValue,
                                     partitionKeyRangeIdentity.CollectionRid,
                                     partitionKeyRangeIdentity.PartitionKeyRangeId,
-                                    forceRefresh: true));
+                                    forceRefresh: true,
+                                    explicitReason: RefreshReason.ReplicaHealthUnhealthyLongLived));
                         }
                         else
                         {
@@ -601,13 +606,20 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             int targetReplicaSetSize = this.serviceConfigReader.SystemReplicationPolicy.MaxReplicaSetSize;
 
-            forceRefresh = forceRefresh ||
-                (masterAddressAndRange != null &&
+            bool masterSuboptimalTriggered =
+                masterAddressAndRange != null &&
                 masterAddressAndRange.Item2.AllAddresses.Count() < targetReplicaSetSize &&
-                DateTime.UtcNow.Subtract(this.suboptimalMasterPartitionTimestamp) > TimeSpan.FromSeconds(this.suboptimalPartitionForceRefreshIntervalInSeconds));
+                DateTime.UtcNow.Subtract(this.suboptimalMasterPartitionTimestamp) > TimeSpan.FromSeconds(this.suboptimalPartitionForceRefreshIntervalInSeconds);
+
+            forceRefresh = forceRefresh || masterSuboptimalTriggered;
 
             if (forceRefresh || request.ForceCollectionRoutingMapRefresh || this.masterPartitionAddressCache == null)
             {
+                if (masterSuboptimalTriggered && request.RequestContext.RefreshReason == RefreshReason.Unspecified)
+                {
+                    request.RequestContext.RefreshReason = RefreshReason.InsufficientReplicasSuboptimalTimer;
+                }
+
                 string entryUrl = PathsHelper.GeneratePath(
                    ResourceType.Database,
                    string.Empty,

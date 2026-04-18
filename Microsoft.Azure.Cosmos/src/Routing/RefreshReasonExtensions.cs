@@ -141,5 +141,41 @@ namespace Microsoft.Azure.Cosmos.Routing
                     return RefreshReason.GoneUnknown;
             }
         }
+
+        /// <summary>
+        /// Classifies a Gone surfaced on a prior <see cref="StoreResult"/> into
+        /// the most specific <see cref="RefreshReason"/>. Called by
+        /// <c>StoreReader</c> right before it flips
+        /// <c>ForceRefreshAddressCache</c> on the retry, so the outgoing
+        /// /addresses request carries the originating cause.
+        /// Preference order: inner <c>TransportException</c> (transport-synth
+        /// 410) &gt; server substatus &gt; <see cref="RefreshReason.GoneServer"/>.
+        /// </summary>
+        public static RefreshReason ClassifyGoneFromException(Exception exception, SubStatusCodes subStatusCode)
+        {
+            // Walk inner-exception chain for a TransportException; transport-
+            // synth 410 always has one.
+            for (Exception current = exception; current != null; current = current.InnerException)
+            {
+                if (current is TransportException transportException)
+                {
+                    return FromTransportErrorCode(transportException.ErrorCode);
+                }
+            }
+
+            switch (subStatusCode)
+            {
+                case SubStatusCodes.CompletingSplit:
+                    return RefreshReason.GoneCompletingSplit;
+                case SubStatusCodes.CompletingPartitionMigration:
+                    return RefreshReason.GoneCompletingPartitionMigration;
+                case SubStatusCodes.NameCacheIsStale:
+                    return RefreshReason.GoneNameCacheStale;
+                case SubStatusCodes.PartitionKeyRangeGone:
+                    return RefreshReason.GonePartitionKeyRangeGone;
+                default:
+                    return RefreshReason.GoneServer;
+            }
+        }
     }
 }
