@@ -456,10 +456,13 @@ namespace Microsoft.Azure.Cosmos
                 }
                 else
                 {
-                    if (this.sessionTokenRetryCount > 1)
+                    if (this.sessionTokenRetryCount > 2)
                     {
-                        // When cannot use multiple write locations, then don't retry the request if 
-                        // we have already tried this request on the write location
+                        // When cannot use multiple write locations, then don't retry the request if
+                        // we have already tried this request on the write location.
+                        // The count threshold is 2 (not 1) because the hub region processing header
+                        // is set after the first retry fails (count=2) and the request must be retried
+                        // once more with that header before giving up.
                         return ShouldRetryResult.NoRetry();
                     }
                     else
