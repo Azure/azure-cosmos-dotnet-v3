@@ -639,7 +639,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     operationIndex: i,
                     database: "testDb",
                     container: "testContainer",
-                    partitionKey: new PartitionKey($"pk{i}")));
+                    partitionKey: new PartitionKey($"pk{i}"),
+                    id: $"doc{i}"));
             }
 
             return await DistributedTransactionServerRequest.CreateAsync(

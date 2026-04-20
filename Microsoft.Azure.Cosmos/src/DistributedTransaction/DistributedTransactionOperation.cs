@@ -1,4 +1,4 @@
-﻿// ------------------------------------------------------------
+// ------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
@@ -84,19 +84,6 @@ namespace Microsoft.Azure.Cosmos
             string database,
             string container,
             PartitionKey partitionKey,
-            T resource,
-            DistributedTransactionRequestOptions requestOptions = null)
-            : base(operationType, operationIndex, database, container, partitionKey, id: null, requestOptions)
-        {
-            this.Resource = resource;
-        }
-
-        public DistributedTransactionOperation(
-            Documents.OperationType operationType,
-            int operationIndex,
-            string database,
-            string container,
-            PartitionKey partitionKey,
             string id,
             T resource,
             DistributedTransactionRequestOptions requestOptions = null)
@@ -107,15 +94,13 @@ namespace Microsoft.Azure.Cosmos
 
         public T Resource { get; internal set; }
 
-        internal override Task MaterializeResourceAsync(CosmosSerializerCore serializerCore, CancellationToken cancellationToken)
+        internal override async Task MaterializeResourceAsync(CosmosSerializerCore serializerCore, CancellationToken cancellationToken)
         {
             if (this.body.IsEmpty && this.Resource != null)
             {
                 this.ResourceStream = serializerCore.ToStream(this.Resource);
-                return base.MaterializeResourceAsync(serializerCore, cancellationToken);
+                await base.MaterializeResourceAsync(serializerCore, cancellationToken);
             }
-
-            return Task.CompletedTask;
         }
     }
 }
