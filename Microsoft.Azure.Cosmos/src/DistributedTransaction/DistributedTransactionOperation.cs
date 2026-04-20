@@ -94,13 +94,15 @@ namespace Microsoft.Azure.Cosmos
 
         public T Resource { get; internal set; }
 
-        internal override async Task MaterializeResourceAsync(CosmosSerializerCore serializerCore, CancellationToken cancellationToken)
+        internal override Task MaterializeResourceAsync(CosmosSerializerCore serializerCore, CancellationToken cancellationToken)
         {
             if (this.body.IsEmpty && this.Resource != null)
             {
                 this.ResourceStream = serializerCore.ToStream(this.Resource);
-                await base.MaterializeResourceAsync(serializerCore, cancellationToken);
+                return base.MaterializeResourceAsync(serializerCore, cancellationToken);
             }
+
+            return Task.CompletedTask;
         }
     }
 }
