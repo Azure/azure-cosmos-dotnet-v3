@@ -150,7 +150,8 @@ namespace Microsoft.Azure.Cosmos.Common
                     return collectionInfo;
                 }
 
-                if (request.RequestContext.ResolvedCollectionRid == null)
+                if (request.RequestContext.ResolvedCollectionRid == null
+                    || !CollectionCache.IsCollectionRid(request.RequestContext.ResolvedCollectionRid))
                 {
                     collectionInfo =
                         await this.ResolveByNameAsync(
@@ -356,6 +357,24 @@ namespace Microsoft.Azure.Cosmos.Common
             }
 
             return this.cacheByApiList[0];
+        }
+
+        private static bool IsCollectionRid(string resourceId)
+        {
+            if (string.IsNullOrWhiteSpace(resourceId) ||
+                !ResourceId.TryParse(resourceId, out ResourceId resourceIdParsed))
+            {
+                return false;
+            }
+
+            string databaseRid = resourceIdParsed.DatabaseId.ToString();
+            if (StringComparer.Ordinal.Equals(databaseRid, resourceId))
+            {
+                return false;
+            }
+
+            string collectionRid = resourceIdParsed.DocumentCollectionId.ToString();
+            return StringComparer.Ordinal.Equals(collectionRid, resourceId);
         }
 
         private sealed class CollectionRidComparer : IEqualityComparer<ContainerProperties>
