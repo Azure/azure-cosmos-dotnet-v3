@@ -37,10 +37,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             get
             {
-                Container container = Volatile.Read(ref this.container);
-                if (container != null)
+                if (this.container != null)
                 {
-                    return container;
+                    return this.container;
                 }
 
                 throw new InvalidOperationException($"The {nameof(CosmosDataEncryptionKeyProvider)} was not initialized.");
@@ -152,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             string containerId,
             CancellationToken cancellationToken = default)
         {
-            if (Volatile.Read(ref this.container) != null)
+            if (this.container != null)
             {
                 throw new InvalidOperationException($"{nameof(CosmosDataEncryptionKeyProvider)} has already been initialized.");
             }
@@ -181,11 +180,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <param name="container">Existing Cosmos DB container containing wrapped DEKs or ready to store them.</param>
         public void Initialize(Container container)
         {
-            if (container == null)
-            {
-                throw new ArgumentNullException(nameof(container));
-            }
-
             this.SetContainer(container);
         }
 
@@ -196,6 +190,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <param name="container">The container to associate with this provider.</param>
         private void SetContainer(Container container)
         {
+            ArgumentValidation.ThrowIfNull(container);
+
             Container previous = Interlocked.CompareExchange(ref this.container, container, null);
             if (previous != null)
             {
