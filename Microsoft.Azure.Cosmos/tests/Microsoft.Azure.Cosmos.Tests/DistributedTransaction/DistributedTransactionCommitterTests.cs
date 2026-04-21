@@ -56,7 +56,8 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                     operationIndex: 0,
                     DatabaseName,
                     ContainerName,
-                    new PartitionKey("pk1"))
+                    new PartitionKey("pk1"),
+                    id: "doc1")
             };
 
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
@@ -89,7 +90,8 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                     operationIndex: 0,
                     DatabaseName,
                     ContainerName,
-                    new PartitionKey("pk1"))
+                    new PartitionKey("pk1"),
+                    id: "doc1")
             };
 
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
@@ -165,13 +167,15 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                     operationIndex: 0,
                     DatabaseName,
                     ContainerName,
-                    new PartitionKey("pk1")),
+                    new PartitionKey("pk1"),
+                    id: "doc1"),
                 new DistributedTransactionOperation(
                     OperationType.Create,
                     operationIndex: 1,
                     DatabaseName,
                     container2,
-                    new PartitionKey("pk2")),
+                    new PartitionKey("pk2"),
+                    id: "doc2"),
             };
 
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
@@ -218,7 +222,8 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                     operationIndex: 0,
                     DatabaseName,
                     ContainerName,
-                    new PartitionKey("pk1"))
+                    new PartitionKey("pk1"),
+                    id: "doc1")
             };
 
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
@@ -252,7 +257,8 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                     operationIndex: 0,
                     DatabaseName,
                     ContainerName,
-                    new PartitionKey("pk1"))
+                    new PartitionKey("pk1"),
+                    id: "doc1")
             };
 
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
