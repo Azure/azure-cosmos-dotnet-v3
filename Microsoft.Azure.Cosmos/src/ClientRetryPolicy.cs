@@ -23,6 +23,7 @@ namespace Microsoft.Azure.Cosmos
         private const int RetryIntervalInMS = 1000; // Once we detect failover wait for 1 second before retrying request.
         private const int MaxRetryCount = 120;
         private const int MaxServiceUnavailableRetryCount = 1;
+        private const int MaxDtxRetryCount = 100; // DTX commits carry an idempotency token, making them safe to retry regardless of account topology
 
         private readonly IDocumentClientRetryPolicy throttlingRetry;
         private readonly GlobalEndpointManager globalEndpointManager;
@@ -33,6 +34,7 @@ namespace Microsoft.Azure.Cosmos
 
         private int sessionTokenRetryCount;
         private int serviceUnavailableRetryCount;
+        private int distributedTransactionRetryCount;
         private bool isReadRequest;
         private bool canUseMultipleWriteLocations;
         private bool isMultiMasterWriteRequest;
@@ -117,7 +119,8 @@ namespace Microsoft.Azure.Cosmos
 
                 ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
                     clientException?.StatusCode,
-                    clientException?.GetSubStatus());
+                    clientException?.GetSubStatus(),
+                    clientException?.RetryAfter);
                 if (shouldRetryResult != null)
                 {
                     return shouldRetryResult;
@@ -131,7 +134,8 @@ namespace Microsoft.Azure.Cosmos
             {
                 ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
                     cosmosException.StatusCode,
-                    cosmosException.Headers.SubStatusCode);
+                    cosmosException.Headers.SubStatusCode,
+                    cosmosException.RetryAfter);
                 if (shouldRetryResult != null)
                 {
                     return shouldRetryResult;
@@ -172,7 +176,8 @@ namespace Microsoft.Azure.Cosmos
 
             ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
                     cosmosResponseMessage?.StatusCode,
-                    cosmosResponseMessage?.Headers.SubStatusCode);
+                    cosmosResponseMessage?.Headers.SubStatusCode,
+                    cosmosResponseMessage?.Headers.RetryAfter);
             if (shouldRetryResult != null)
             {
                 return shouldRetryResult;
@@ -245,7 +250,8 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ShouldRetryResult> ShouldRetryInternalAsync(
             HttpStatusCode? statusCode,
-            SubStatusCodes? subStatusCode)
+            SubStatusCodes? subStatusCode,
+            TimeSpan? retryAfter = null)
         {
             if (!statusCode.HasValue
                 && (!subStatusCode.HasValue
@@ -354,6 +360,55 @@ namespace Microsoft.Azure.Cosmos
                 || (statusCode == HttpStatusCode.Gone && subStatusCode == SubStatusCodes.LeaseNotFound))
             {
                 return this.ShouldRetryOnUnavailableEndpointStatusCodes();
+            }
+
+            // DTX-specific retriable codes. DTX commits carry an idempotency token making them safe
+            // to retry regardless of account topology (single-master, multi-master, single-region).
+            // 403.3 WriteForbidden and 429 throttling are already handled for all request types above.
+            if (this.documentServiceRequest != null
+                && DistributedTransactionConstants.IsDistributedTransactionRequest(
+                    this.documentServiceRequest.OperationType,
+                    this.documentServiceRequest.ResourceType))
+            {
+                TimeSpan? dtxRetryDelay = null;
+
+                // 408 RequestTimeout: endpoint already marked unavailable above; retry (idempotency ensures safety).
+                if (statusCode == HttpStatusCode.RequestTimeout)
+                {
+                    dtxRetryDelay = TimeSpan.Zero;
+                }
+                // 449/5352: coordinator race conflict — retry after server-specified backoff.
+                else if ((int?)statusCode == (int)StatusCodes.RetryWith
+                    && subStatusCode == (SubStatusCodes)DistributedTransactionConstants.DtcCoordinatorRaceConflict)
+                {
+                    dtxRetryDelay = retryAfter ?? TimeSpan.Zero;
+                }
+                // 500/5411-5413: transient infrastructure failures — safe to retry for writes (idempotency guaranteed).
+                else if (statusCode == HttpStatusCode.InternalServerError
+                    && (subStatusCode == (SubStatusCodes)DistributedTransactionConstants.DtcLedgerFailure
+                        || subStatusCode == (SubStatusCodes)DistributedTransactionConstants.DtcAccountConfigFailure
+                        || subStatusCode == (SubStatusCodes)DistributedTransactionConstants.DtcDispatchFailure))
+                {
+                    dtxRetryDelay = TimeSpan.Zero;
+                }
+
+                if (dtxRetryDelay.HasValue)
+                {
+                    if (this.distributedTransactionRetryCount++ >= ClientRetryPolicy.MaxDtxRetryCount)
+                    {
+                        DefaultTrace.TraceInformation("ClientRetryPolicy: DTX retry budget exhausted. distributedTransactionRetryCount={0}, StatusCode={1}, SubStatusCode={2}.",
+                            this.distributedTransactionRetryCount, statusCode, subStatusCode);
+                        return ShouldRetryResult.NoRetry();
+                    }
+
+                    DefaultTrace.TraceWarning("ClientRetryPolicy: DTX retriable response (StatusCode={0}, SubStatusCode={1}, attempt={2}). Retrying. Failed Location: {3}",
+                        statusCode,
+                        subStatusCode,
+                        this.distributedTransactionRetryCount,
+                        this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty);
+
+                    return ShouldRetryResult.RetryAfter(dtxRetryDelay.Value);
+                }
             }
 
             return null;

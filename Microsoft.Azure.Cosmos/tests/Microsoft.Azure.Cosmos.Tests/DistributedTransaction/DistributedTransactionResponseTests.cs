@@ -623,6 +623,133 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "SessionToken must equal the value from the JSON 'sessionToken' field.");
         }
 
+        // IsRetriable parsing
+
+        [TestMethod]
+        [Description("When the response body contains isRetriable:true, IsRetriable must be true.")]
+        public async Task FromResponseMessage_IsRetriableTrue_ReturnsTrue()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            string json = @"{""isRetriable"":true,""operationResponses"":[{""index"":0,""statusCode"":503}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.ServiceUnavailable, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                Guid.NewGuid(),
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.IsTrue(response.IsRetriable, "IsRetriable must be true when the JSON body contains isRetriable:true.");
+        }
+
+        [TestMethod]
+        [Description("When the response body contains isRetriable:false, IsRetriable must be false.")]
+        public async Task FromResponseMessage_IsRetriableFalse_ReturnsFalse()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            string json = @"{""isRetriable"":false,""operationResponses"":[{""index"":0,""statusCode"":503}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.ServiceUnavailable, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                Guid.NewGuid(),
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.IsFalse(response.IsRetriable, "IsRetriable must be false when the JSON body contains isRetriable:false.");
+        }
+
+        [TestMethod]
+        [Description("When the response body does not contain an isRetriable field, IsRetriable must default to false.")]
+        public async Task FromResponseMessage_IsRetriableAbsent_ReturnsFalse()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":503}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.ServiceUnavailable, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                Guid.NewGuid(),
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.IsFalse(response.IsRetriable, "IsRetriable must be false when the JSON body does not contain an isRetriable field.");
+        }
+
+        [TestMethod]
+        [Description("When isRetriable is a string (not a boolean), IsRetriable must be false — strict boolean parsing.")]
+        public async Task FromResponseMessage_IsRetriableStringValue_ReturnsFalse()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            // "true" as a string is not a JSON boolean — the parsing must require JsonValueKind.True.
+            string json = @"{""isRetriable"":""true"",""operationResponses"":[{""index"":0,""statusCode"":503}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.ServiceUnavailable, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                Guid.NewGuid(),
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.IsFalse(response.IsRetriable, "IsRetriable must be false when isRetriable is a string — only JSON boolean true is accepted.");
+        }
+
+        // ThrowIfDisposed guards on Count and GetEnumerator
+
+        [TestMethod]
+        [Description("Calling Count after Dispose() must throw ObjectDisposedException.")]
+        public async Task Count_AfterDispose_ThrowsObjectDisposedException()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":201}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                Guid.NewGuid(),
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            response.Dispose();
+
+            Assert.ThrowsException<ObjectDisposedException>(() => _ = response.Count);
+        }
+
+        [TestMethod]
+        [Description("Calling GetEnumerator after Dispose() must throw ObjectDisposedException.")]
+        public async Task GetEnumerator_AfterDispose_ThrowsObjectDisposedException()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":201}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                Guid.NewGuid(),
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            response.Dispose();
+
+            Assert.ThrowsException<ObjectDisposedException>(() => response.GetEnumerator());
+        }
+
         // Helpers
 
         /// <summary>

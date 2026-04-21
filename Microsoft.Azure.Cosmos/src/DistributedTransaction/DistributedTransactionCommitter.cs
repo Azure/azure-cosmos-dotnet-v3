@@ -19,6 +19,8 @@ namespace Microsoft.Azure.Cosmos
     {
         private static readonly TimeSpan DefaultRetryBaseDelay = TimeSpan.FromSeconds(1);
 
+        internal const int MaxIsRetriableRetryCount = 100;
+
         private readonly IReadOnlyList<DistributedTransactionOperation> operations;
         private readonly CosmosClientContext clientContext;
         private readonly TimeSpan retryBaseDelay;
@@ -74,105 +76,40 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             int attempt = 0;
-            while (true)
+            using (ITrace retryTrace = Trace.GetRootTrace("Distributed Transaction Commit", TraceComponent.Batch, TraceLevel.Info))
             {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                DistributedTransactionResponse response;
-                try
+                while (true)
                 {
-                    response = await this.ExecuteCommitAsync(serverRequest, cancellationToken);
-                }
-                catch (CosmosException cosmosEx) when (
-                    !cancellationToken.IsCancellationRequested
-                    && cosmosEx.StatusCode == HttpStatusCode.RequestTimeout)
-                {
-                    DefaultTrace.TraceWarning(
-                        $"Distributed transaction commit timed out (attempt {attempt + 1}). " +
-                        $"Retrying with idempotency token {serverRequest.IdempotencyToken}.");
-                    await this.delayProvider(this.GetRetryDelay(attempt, retryAfter: null), cancellationToken);
-                    attempt++;
-                    continue;
-                }
+                    cancellationToken.ThrowIfCancellationRequested();
 
-                if (!response.IsSuccessStatusCode)
-                {
-                    // Eagerly evaluate IsRetriableByStatusCode so that the out parameter (retryAfter)
-                    // is always populated when applicable, regardless of the order of the || operands.
-                    bool isRetriableByStatusCode = DistributedTransactionCommitter.IsRetriableByStatusCode(response, out TimeSpan? retryAfter);
-                    bool shouldRetry = response.IsRetriable || isRetriableByStatusCode;
+                    DistributedTransactionResponse response = await this.ExecuteCommitAsync(serverRequest, retryTrace, cancellationToken);
 
-                    if (shouldRetry)
+                    if (!response.IsSuccessStatusCode && response.IsRetriable)
                     {
+                        if (attempt >= DistributedTransactionCommitter.MaxIsRetriableRetryCount)
+                        {
+                            DefaultTrace.TraceWarning(
+                                $"Distributed transaction isRetriable retry budget exhausted after {attempt} attempts " +
+                                $"(StatusCode={response.StatusCode}). Returning last response.");
+                            return response;
+                        }
+
                         DefaultTrace.TraceWarning(
                             $"Distributed transaction commit retriable (StatusCode={response.StatusCode}, " +
-                            $"SubStatusCode={response.SubStatusCode}, IsRetriable={response.IsRetriable}, " +
-                            $"attempt {attempt + 1}). Retrying with idempotency token {serverRequest.IdempotencyToken}.");
+                            $"IsRetriable={response.IsRetriable}, attempt {attempt + 1}). " +
+                            $"Retrying with idempotency token {serverRequest.IdempotencyToken}.");
                         response.Dispose();
-                        await this.delayProvider(this.GetRetryDelay(attempt, retryAfter), cancellationToken);
-                        attempt++;
+                        await this.delayProvider(this.GetRetryDelay(attempt++), cancellationToken);
                         continue;
                     }
+
+                    return response;
                 }
-
-                return response;
             }
         }
 
-        /// <summary>
-        /// Determines whether the response should be retried based on the envelope status code and
-        /// sub-status code defined in the DTx SDK response contract, independently of the JSON body.
-        /// The server returns an empty body for 408, 449, 429, and 500 responses, so the
-        /// <see cref="DistributedTransactionResponse.IsRetriable"/> flag (which requires a JSON body)
-        /// cannot be used for these cases.
-        /// </summary>
-        private static bool IsRetriableByStatusCode(DistributedTransactionResponse response, out TimeSpan? retryAfter)
+        private TimeSpan GetRetryDelay(int attempt)
         {
-            retryAfter = null;
-            int statusCode = (int)response.StatusCode;
-            int subStatusCode = (int)response.SubStatusCode;
-
-            // 408: coordinator retries exhausted with no terminal state reached ("stuck").
-            if (statusCode == (int)HttpStatusCode.RequestTimeout)
-            {
-                return true;
-            }
-
-            // 449/5352: coordinator race conflict — server signals the required backoff via Retry-After.
-            if (statusCode == (int)StatusCodes.RetryWith && subStatusCode == DistributedTransactionConstants.DtcCoordinatorRaceConflict)
-            {
-                retryAfter = response.Headers?.RetryAfter;
-                return true;
-            }
-
-            // 429/3200: ledger RU throttled — coordinator exhausted its internal retry budget.
-            if (statusCode == (int)StatusCodes.TooManyRequests
-                && subStatusCode == DistributedTransactionConstants.DtcLedgerThrottled)
-            {
-                retryAfter = response.Headers?.RetryAfter;
-                return true;
-            }
-
-            // 500/5411-5413: transient infrastructure failures (ledger, account config, dispatch).
-            // Only these specific sub-statuses are retriable; generic 500s are not.
-            if (statusCode == (int)HttpStatusCode.InternalServerError
-                && (subStatusCode == DistributedTransactionConstants.DtcLedgerFailure
-                    || subStatusCode == DistributedTransactionConstants.DtcAccountConfigFailure
-                    || subStatusCode == DistributedTransactionConstants.DtcDispatchFailure))
-            {
-                return true;
-            }
-
-            return false;
-        }
-
-        private TimeSpan GetRetryDelay(int attempt, TimeSpan? retryAfter)
-        {
-            if (retryAfter.HasValue)
-            {
-                return retryAfter.Value;
-            }
-
             const int maxExponent = 5;
             int exponent = Math.Min(attempt, maxExponent);
             double baseDelayMs = this.retryBaseDelay.TotalMilliseconds * Math.Pow(2, exponent);
@@ -183,10 +120,11 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<DistributedTransactionResponse> ExecuteCommitAsync(
             DistributedTransactionServerRequest serverRequest,
+            ITrace parentTrace,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            using (ITrace trace = Trace.GetRootTrace("Execute Distributed Transaction Commit", TraceComponent.Batch, TraceLevel.Info))
+            using (ITrace attemptTrace = parentTrace.StartChild("Execute Distributed Transaction Commit", TraceComponent.Batch, TraceLevel.Info))
             {
                 using (MemoryStream bodyStream = serverRequest.CreateBodyStream())
                 {
@@ -200,7 +138,7 @@ namespace Microsoft.Azure.Cosmos
                         itemId: null,
                         streamPayload: bodyStream,
                         requestEnricher: requestMessage => DistributedTransactionCommitter.EnrichRequestMessage(requestMessage, serverRequest),
-                        trace: trace,
+                        trace: attemptTrace,
                         cancellationToken: cancellationToken);
 
                     using (responseMessage)
@@ -209,7 +147,7 @@ namespace Microsoft.Azure.Cosmos
                             responseMessage,
                             serverRequest,
                             this.clientContext.SerializerCore,
-                            trace,
+                            parentTrace,
                             cancellationToken);
 
                         DistributedTransactionCommitter.MergeSessionTokens(
