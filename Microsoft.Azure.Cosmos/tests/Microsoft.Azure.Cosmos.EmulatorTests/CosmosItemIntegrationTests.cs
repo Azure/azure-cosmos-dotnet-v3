@@ -381,6 +381,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
           
+        [TestMethod]
         [Owner("dkunda")]
         [TestCategory("MultiRegion")]
         [DataRow(true, DisplayName = "Test scenario when binary encoding is enabled at client level.")]
@@ -2243,7 +2244,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             CrossRegionHedgingAvailabilityStrategy strat = cosmosClient.DocumentClient.ConnectionPolicy.AvailabilityStrategy as CrossRegionHedgingAvailabilityStrategy;
             Assert.IsNotNull(strat);
-            Assert.AreNotEqual(0, strat.Threshold);
+            Assert.AreNotEqual(TimeSpan.Zero, strat.Threshold);
         }
         
         
