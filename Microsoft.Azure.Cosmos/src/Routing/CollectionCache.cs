@@ -179,6 +179,15 @@ namespace Microsoft.Azure.Cosmos.Common
                             collectionInfo.ResourceId,
                             System.Diagnostics.Trace.CorrelationManager.ActivityId);
 
+                        if (!CollectionCache.IsCollectionRid(collectionInfo.ResourceId))
+                        {
+                            throw new InvalidOperationException(
+                                $"Resolved resource '{request.ResourceAddress}' has a non-collection ResourceId " +
+                                $"'{collectionInfo.ResourceId}'. This indicates the server returned a database or " +
+                                $"other resource RID instead of a collection RID. ActivityId: " +
+                                $"'{System.Diagnostics.Trace.CorrelationManager.ActivityId}'.");
+                        }
+
                         request.ResourceId = collectionInfo.ResourceId;
                         request.RequestContext.ResolvedCollectionRid = collectionInfo.ResourceId;
                     }
