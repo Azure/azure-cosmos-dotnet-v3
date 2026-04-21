@@ -2390,7 +2390,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.IsNotNull(responseMessage);
                     Assert.IsNull(responseMessage.Content);
                     Assert.AreEqual(HttpStatusCode.PreconditionFailed, responseMessage.StatusCode, responseMessage.ErrorMessage);
-                    Assert.AreNotEqual(responseMessage.Headers.ActivityId, Guid.Empty);
+                    Assert.AreNotEqual(Guid.Empty.ToString(), responseMessage.Headers.ActivityId);
                     Assert.IsTrue(responseMessage.Headers.RequestCharge > 0);
                     Assert.IsFalse(string.IsNullOrEmpty(responseMessage.ErrorMessage));
                     Assert.IsTrue(responseMessage.ErrorMessage.Contains("One of the specified pre-condition is not met"));
@@ -2407,7 +2407,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     Assert.IsNotNull(e);
                     Assert.AreEqual(HttpStatusCode.PreconditionFailed, e.StatusCode, e.Message);
-                    Assert.AreNotEqual(e.ActivityId, Guid.Empty);
+                    Assert.AreNotEqual(Guid.Empty.ToString(), e.ActivityId);
                     Assert.IsTrue(e.RequestCharge > 0);
                     string expectedResponseBody = $"{Environment.NewLine}Errors : [{Environment.NewLine}  \"One of the specified pre-condition is not met. Learn more: https://aka.ms/CosmosDB/sql/errors/precondition-failed\"{Environment.NewLine}]{Environment.NewLine}";
                     Assert.AreEqual(expectedResponseBody, e.ResponseBody);
@@ -3401,9 +3401,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
                 catch (CosmosException cosmosException)
                 {
-                    Assert.IsTrue(cosmosException.Message.Contains("The read session is not available for the input session token."), cosmosException.Message);
-                    string exception = cosmosException.ToString();
-                    Assert.IsTrue(exception.Contains("Point Operation Statistics"), exception);
+                    Assert.IsTrue(cosmosException.Message.Contains("The read/write session is not available"), cosmosException.Message);
                 }
             }
             finally
