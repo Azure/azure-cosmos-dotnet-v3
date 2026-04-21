@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Text.Json;
     using Microsoft.Azure.Documents;
@@ -62,6 +63,9 @@ namespace Microsoft.Azure.Cosmos
             // collectionName
             jsonWriter.WriteString("collectionName", operation.Container);
 
+            // id
+            jsonWriter.WriteString("id", operation.Id);
+
             // collectionResourceId
             if (operation.CollectionResourceId != null)
             {
@@ -72,12 +76,6 @@ namespace Microsoft.Azure.Cosmos
             if (operation.DatabaseResourceId != null)
             {
                 jsonWriter.WriteString("databaseResourceId", operation.DatabaseResourceId);
-            }
-
-            // id 
-            if (operation.Id != null)
-            {
-                jsonWriter.WriteString("id", operation.Id);
             }
 
             // partitionKey
