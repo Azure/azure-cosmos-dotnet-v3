@@ -209,7 +209,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
 
             regionName = this.GetLocation(endpoint);
-            return true;
+            return regionName != null;
         }
 
         /// <summary>
