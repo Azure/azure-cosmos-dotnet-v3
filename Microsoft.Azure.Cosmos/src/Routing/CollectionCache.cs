@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.Common
                     if (request.RequestContext.ResolvedCollectionRid != null)
                     {
                         DefaultTrace.TraceWarning(
-                            "ResolvedCollectionRid '{0}' for resource '{1}' is not a collection RID; falling back to name-based resolution. '{2}'",
+                            "ResolvedCollectionRid '{0}' for resource '{1}' is not a collection RID; falling back to name-based resolution. ActivityId: '{2}'",
                             request.RequestContext.ResolvedCollectionRid,
                             request.ResourceAddress,
                             System.Diagnostics.Trace.CorrelationManager.ActivityId);
