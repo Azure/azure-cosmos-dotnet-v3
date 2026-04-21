@@ -87,12 +87,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                 CancellationToken cancellationToken)
             {
                 this.RidLookupCount++;
-                if (!StringComparer.Ordinal.Equals(collectionRid, this.containerRid))
+                if (StringComparer.Ordinal.Equals(collectionRid, this.containerRid))
+                {
+                    return Task.FromResult(ContainerProperties.CreateWithResourceId(this.containerRid));
+                }
+                else
                 {
                     throw new InvalidOperationException($"Unexpected collection rid: {collectionRid}");
                 }
-
-                return Task.FromResult(ContainerProperties.CreateWithResourceId(this.containerRid));
             }
 
             protected override Task<ContainerProperties> GetByNameAsync(
