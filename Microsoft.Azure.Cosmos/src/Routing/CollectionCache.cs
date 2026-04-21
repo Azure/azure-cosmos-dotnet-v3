@@ -153,6 +153,15 @@ namespace Microsoft.Azure.Cosmos.Common
                 if (request.RequestContext.ResolvedCollectionRid == null
                     || !CollectionCache.IsCollectionRid(request.RequestContext.ResolvedCollectionRid))
                 {
+                    if (request.RequestContext.ResolvedCollectionRid != null)
+                    {
+                        DefaultTrace.TraceWarning(
+                            "ResolvedCollectionRid '{0}' for resource '{1}' is not a collection RID; falling back to name-based resolution. '{2}'",
+                            request.RequestContext.ResolvedCollectionRid,
+                            request.ResourceAddress,
+                            System.Diagnostics.Trace.CorrelationManager.ActivityId);
+                    }
+
                     collectionInfo =
                         await this.ResolveByNameAsync(
                             apiVersion: request.Headers[HttpConstants.HttpHeaders.Version],
