@@ -200,6 +200,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             TestHandler testHandler = new TestHandler((request, cancellationToken) =>
             {
                 if (handlerCalls == 0)
+
+                if (handlerCalls == 1)
                 {
                     handlerCalls++;
                     return TestHandler.ReturnStatusCode((HttpStatusCode)StatusCodes.TooManyRequests);
