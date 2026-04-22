@@ -52,10 +52,11 @@
     <!--
       Library consumes only Microsoft.Extensions.Caching.Distributed.IDistributedCache from the
       Abstractions package. The Memory package is intentionally NOT referenced here — the
-      library has no MemoryCache dependency. Version floor is the lowest non-EOL build that
-      still targets netstandard2.0 (3.1.x reached end-of-support Dec 2022).
+      library has no MemoryCache dependency. Version floor stays at the lowest build that
+      satisfies the API surface (3.1.7) so consumers inherit the minimum possible constraint
+      and are free to unify upward to any LTS they prefer.
     -->
-    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="3.1.7" />
   </ItemGroup>
 
   <ItemGroup>
