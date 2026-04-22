@@ -20,6 +20,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     [TestCategory("ChangeFeed")]
     public class DocumentServiceLeaseManagerCosmosTests
     {
+        [TestInitialize]
+        public void TestInitialize()
+        {
+            Environment.SetEnvironmentVariable(ConfigurationManager.ChangeFeedLeaseIdAsPartitionKeyEnabled, null);
+        }
+
         [TestCleanup]
         public void TestCleanup()
         {
@@ -77,8 +83,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [DataRow(2, DisplayName = "Container with partitionKey PK")]
         public async Task CreatesEPKBasedLease(int factoryType)
         {
-            Environment.SetEnvironmentVariable(ConfigurationManager.ChangeFeedLeaseIdAsPartitionKeyEnabled, "true");
-
             RequestOptionsFactory requestOptionsFactory = GetRequestOptionsFactory(factoryType);
             string continuation = Guid.NewGuid().ToString();
             DocumentServiceLeaseStoreManagerOptions options = new DocumentServiceLeaseStoreManagerOptions
@@ -121,8 +125,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [DataRow(2, DisplayName = "Container with partitionKey PK")]
         public async Task CreatesPartitionKeyBasedLease(int factoryType)
         {
-            Environment.SetEnvironmentVariable(ConfigurationManager.ChangeFeedLeaseIdAsPartitionKeyEnabled, "true");
-
             RequestOptionsFactory requestOptionsFactory = GetRequestOptionsFactory(factoryType);
             string continuation = Guid.NewGuid().ToString();
             DocumentServiceLeaseStoreManagerOptions options = new DocumentServiceLeaseStoreManagerOptions
