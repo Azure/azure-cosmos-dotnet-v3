@@ -133,6 +133,11 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal static readonly string TcpDnsDotSuffixEnabled = "AZURE_COSMOS_TCP_DNS_DOT_SUFFIX_ENABLED";
 
+        /// <summary>
+        /// Environment variable name to enable deterministic lease-id partition key values for Change Feed lease creation.
+        /// </summary>
+        internal static readonly string ChangeFeedLeaseIdAsPartitionKeyEnabled = "AZURE_COSMOS_CHANGE_FEED_LEASE_ID_AS_PARTITION_KEY_ENABLED";
+
         public static T GetEnvironmentVariable<T>(string variable, T defaultValue)
         {
             string value = Environment.GetEnvironmentVariable(variable);
@@ -199,6 +204,18 @@ namespace Microsoft.Azure.Cosmos
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.ThinClientModeEnabled,
                         defaultValue: defaultValue);
+        }
+
+        /// <summary>
+        /// Gets the boolean value indicating whether Change Feed lease creation should use lease id as the partition key value.
+        /// </summary>
+        /// <returns>A boolean flag indicating if deterministic lease-id partition key behavior is enabled.</returns>
+        public static bool IsChangeFeedLeaseIdAsPartitionKeyEnabled()
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.ChangeFeedLeaseIdAsPartitionKeyEnabled,
+                        defaultValue: true);
         }
 
         /// <summary>
