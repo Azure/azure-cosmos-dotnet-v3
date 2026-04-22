@@ -84,6 +84,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             int httpCallCount = 0;
             int metadataCallCount = 0;
+            ConcurrentBag<string> httpRequestUris = new ConcurrentBag<string>();
             bool delayCallBack = true;
 
             var isInitializedField = typeof(VmMetadataApiHandler).GetField("isInitialized",
@@ -100,15 +101,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 RequestCallBack = async (request, cancellToken) =>
                 {
-                    if(request.RequestUri.AbsoluteUri ==  VmMetadataApiHandler.vmMetadataEndpointUrl.AbsoluteUri)
+                    string requestUri = request.RequestUri?.AbsoluteUri;
+                    if (requestUri == VmMetadataApiHandler.vmMetadataEndpointUrl.AbsoluteUri)
                     {
                         Interlocked.Increment(ref metadataCallCount);
-                    } 
+                    }
                     else
                     {
                         Interlocked.Increment(ref httpCallCount);
+                        httpRequestUris.Add(requestUri ?? "<null>");
                     }
-                    
+
                     while (delayCallBack)
                     {
                         await Task.Delay(TimeSpan.FromMilliseconds(100));
@@ -149,13 +152,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await Task.WhenAll(tasks);
 
                 Assert.AreEqual(1, metadataCallCount, "Only one call for VM Metadata call with be made");
-                Assert.AreEqual(1, httpCallCount, "Only the first task should do the http call. All other should wait on the first task");
+                Assert.AreEqual(
+                    1,
+                    httpCallCount,
+                    $"Only the first task should do the http call. All other should wait on the first task. Observed URIs: [{string.Join(", ", httpRequestUris)}]");
 
                 // Reset counters and retry the client to verify a new http call is done for new requests
                 tasks.Clear();
                 delayCallBack = true;
                 this.TaskStartedCount = 0;
                 httpCallCount = 0;
+                while (httpRequestUris.TryTake(out _))
+                {
+                }
             }
         }
 
