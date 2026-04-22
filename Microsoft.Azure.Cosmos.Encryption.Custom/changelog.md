@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#5428](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5428) Adds distributed-cache (`IDistributedCache`) support to the DEK properties cache. When the in-process cache entry expires, the next request consults the distributed cache before hitting Cosmos metadata, allowing a peer-populated entry to rescue the request during transient metadata unavailability. Adds optional proactive background refresh, cross-process cache-key prefix scoping, and format-version-scoped cache keys for rolling-upgrade safety.
 
 #### Updates
-- Bumps `Microsoft.Extensions.Caching.Memory` / `Microsoft.Extensions.Caching.Abstractions` from the end-of-life 3.1.7 to 8.0.x.
+- Drops the unused `Microsoft.Extensions.Caching.Memory` dependency (the library consumes only `IDistributedCache`) and pins `Microsoft.Extensions.Caching.Abstractions` to `8.0.0` (the lowest non-EOL floor that targets netstandard2.0).
 
 ### <a name="1.0.0-preview08"/> [1.0.0-preview08](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption.Custom/1.0.0-preview08) - 2024-09-11
 

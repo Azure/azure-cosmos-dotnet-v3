@@ -50,14 +50,11 @@
 
   <ItemGroup>
     <!--
-      Microsoft.Extensions.Caching.Memory / .Abstractions are pinned to the 8.0.x LTS line.
-      3.1.7 reached end-of-life in December 2022 and would flag SCA advisories; 6.0.x is also
-      unsupported. ALE (the primary consumer) ships 8.0.1 of the same packages, so aligning
-      here avoids forcing a higher unification at consumer restore time.
-      Both 8.0.0 (Abstractions) and 8.0.1 (Memory) target netstandard2.0, so a single
-      ItemGroup covers both the netstandard2.0 and net8.0 TFMs emitted by TargetFrameworks.
+      Library consumes only Microsoft.Extensions.Caching.Distributed.IDistributedCache from the
+      Abstractions package. The Memory package is intentionally NOT referenced here — the
+      library has no MemoryCache dependency. Version floor is the lowest non-EOL build that
+      still targets netstandard2.0 (3.1.x reached end-of-support Dec 2022).
     -->
-    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="8.0.0" />
   </ItemGroup>
 
