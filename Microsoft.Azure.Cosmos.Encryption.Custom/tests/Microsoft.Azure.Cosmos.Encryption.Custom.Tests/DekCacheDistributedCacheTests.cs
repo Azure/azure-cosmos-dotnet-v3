@@ -510,7 +510,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             await cache.LastDistributedCacheWriteTask;
 
             // Assert
-            Assert.IsTrue(distributedCache.ContainsKey("test-dek:dek1"), "Distributed cache should contain the key after SetDekProperties");
+            Assert.IsTrue(distributedCache.ContainsKey("test-dek:v1:dek1"), "Distributed cache should contain the key after SetDekProperties");
         }
 
         [TestMethod]
@@ -578,13 +578,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 CosmosDiagnosticsContext.Create(null),
                 CancellationToken.None);
 
-            Assert.IsTrue(distributedCache.ContainsKey("test-dek:dek1"), "Precondition: distributed cache should contain the key");
+            Assert.IsTrue(distributedCache.ContainsKey("test-dek:v1:dek1"), "Precondition: distributed cache should contain the key");
 
             // Act
             await cache.RemoveAsync("dek1");
 
             // Assert
-            Assert.IsFalse(distributedCache.ContainsKey("test-dek:dek1"), "Distributed cache should be cleared after RemoveAsync");
+            Assert.IsFalse(distributedCache.ContainsKey("test-dek:v1:dek1"), "Distributed cache should be cleared after RemoveAsync");
         }
 
         [TestMethod]
@@ -608,7 +608,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 CosmosDiagnosticsContext.Create(null),
                 CancellationToken.None);
 
-            Assert.IsTrue(distributedCache.ContainsKey("test-dek:dek1"), "Precondition: distributed cache populated");
+            Assert.IsTrue(distributedCache.ContainsKey("test-dek:v1:dek1"), "Precondition: distributed cache populated");
 
             // Create a fresh instance (simulates process restart) - memory cache is empty
             DekCache cache2 = new DekCache(
@@ -620,7 +620,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             await cache2.RemoveAsync("dek1");
 
             // Assert - distributed cache should STILL be cleared (BUG-1 fix verification)
-            Assert.IsFalse(distributedCache.ContainsKey("test-dek:dek1"),
+            Assert.IsFalse(distributedCache.ContainsKey("test-dek:v1:dek1"),
                 "Distributed cache should be cleared even when memory cache doesn't have the entry");
         }
 

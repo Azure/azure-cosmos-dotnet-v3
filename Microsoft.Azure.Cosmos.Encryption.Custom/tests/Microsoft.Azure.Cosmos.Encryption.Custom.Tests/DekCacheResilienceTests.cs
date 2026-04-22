@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
     {
         private const string DekId = "testDek";
         private const string DefaultCachePrefix = "dek";
-        private const string DefaultCacheKey = DefaultCachePrefix + ":" + DekId;
+        private const string DefaultCacheKey = DefaultCachePrefix + ":v1:" + DekId;
 
         private static readonly TimeSpan DefaultTtl = TimeSpan.FromMinutes(30);
 
@@ -352,9 +352,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         }
 
         /// <summary>
-        /// A future cache-format version must be rejected without overwriting the shared L2
-        /// entry. A fleet with mixed SDK versions (rolling upgrade) must not see v1 peers
-        /// downgrade a v2 entry every read.
+        /// A future-version peer's entry must survive a present-version peer's read/write
+        /// cycle. A rolling-upgrade fleet that shares one distributed cache must not see a
+        /// v1 SDK overwrite a v2 SDK's entry on every read.
+        /// The version is scoped into the cache key itself ("{prefix}:v{N}:{id}") so v1 and
+        /// v2 writers occupy disjoint slots and cannot downgrade each other.
         /// </summary>
         [TestMethod]
         public async Task L2ContainsFutureVersion_DoesNotOverwriteOnFallbackFetch()
@@ -363,22 +365,25 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             ClockControlledDistributedCache l2 = new ClockControlledDistributedCache(() => now);
             DekCache cache = NewCache(DefaultTtl, l2, () => now);
 
+            // A peer SDK at format version 2 writes to its own slot. The current SDK (v1) must
+            // not touch this slot — it reads/writes at ":v1:{id}" only.
+            string v2Slot = DefaultCachePrefix + ":v2:" + DekId;
             byte[] originalV2 = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(new
             {
                 v = 2,
                 serverProperties = MakeDekProperties(DekId),
                 serverPropertiesExpiryUtc = now.AddHours(1),
             }));
-            l2.SetRawForTest(DefaultCacheKey, originalV2);
+            l2.SetRawForTest(v2Slot, originalV2);
 
             await cache.GetOrAddDekPropertiesAsync(
                 DekId, HealthyFetcher, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
 
-            byte[] afterRead = l2.GetRawForTest(DefaultCacheKey);
+            byte[] afterRead = l2.GetRawForTest(v2Slot);
             CollectionAssert.AreEqual(
                 originalV2,
                 afterRead,
-                "A v1 SDK must not overwrite a v2 entry when falling through to Cosmos after a version-mismatch read.");
+                "A v1 SDK must not touch a v2 peer's L2 slot — the cache key must scope by format version.");
         }
 
         /// <summary>

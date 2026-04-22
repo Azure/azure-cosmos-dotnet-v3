@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
     {
         private const string DekId = "secDek";
         private const string DefaultCachePrefix = "dek";
-        private const string DefaultCacheKey = DefaultCachePrefix + ":" + DekId;
+        private const string DefaultCacheKey = DefaultCachePrefix + ":v1:" + DekId;
 
         private static readonly TimeSpan DefaultTtl = TimeSpan.FromMinutes(30);
 

@@ -14,6 +14,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
     internal class DekCache
     {
+        // Cache-entry format version. Embedded both in the cache key (so mixed-version fleets
+        // do not share a slot and therefore cannot downgrade each other) and in the serialised
+        // payload (so a peer can reject a blob whose shape it does not understand). Bump this
+        // whenever CachedDekPropertiesDto gains, loses, or changes the semantics of a field.
+        private const int CurrentCacheFormatVersion = 1;
+
         private readonly TimeSpan dekPropertiesTimeToLive;
         private readonly TimeSpan distributedCacheEntryLifetime;
         private readonly TimeSpan? proactiveRefreshThreshold;
@@ -452,12 +458,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         private string GetDistributedCacheKey(string dekId)
         {
-            // dekId is escaped so that a colon (or any other delimiter-sensitive character
-            // that DataEncryptionKeyProperties happens to allow in an Id) cannot alias with a
-            // differently-prefixed provider's cache key. Example of the ambiguity that escaping
-            // prevents: (prefix="a", dekId="b:c") and (prefix="a:b", dekId="c") previously both
-            // produced the key "a:b:c" and aliased each other's entries.
-            return $"{this.cacheKeyPrefix}:{Uri.EscapeDataString(dekId)}";
+            // Key shape: "{prefix}:v{version}:{escaped-dekId}".
+            //  - prefix scopes the entry to one container (M6).
+            //  - version isolates mixed-SDK-version fleets so a v1 reader cannot overwrite a v2
+            //    writer's entry during a rolling upgrade (M4).
+            //  - Uri.EscapeDataString on dekId prevents colon-collision between providers
+            //    with differently-sized prefixes (M7).
+            return $"{this.cacheKeyPrefix}:v{CurrentCacheFormatVersion}:{Uri.EscapeDataString(dekId)}";
         }
 
         private static readonly JsonSerializerSettings CacheSerializerSettings = new JsonSerializerSettings
@@ -505,9 +512,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 throw new InvalidOperationException("Cached DEK properties are incomplete.");
             }
 
-            if (dto.Version != 1)
+            if (dto.Version != CurrentCacheFormatVersion)
             {
-                throw new InvalidOperationException($"Unsupported cache format version: {dto.Version}. Expected version 1.");
+                throw new InvalidOperationException(
+                    $"Unsupported cache format version: {dto.Version}. Expected version {CurrentCacheFormatVersion}.");
             }
 
             return new CachedDekProperties(
@@ -521,7 +529,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         private sealed class CachedDekPropertiesDto
         {
             [JsonProperty("v")]
-            public int Version { get; set; } = 1;
+            public int Version { get; set; } = CurrentCacheFormatVersion;
 
             [JsonProperty("serverProperties")]
             public DataEncryptionKeyProperties ServerProperties { get; set; }
