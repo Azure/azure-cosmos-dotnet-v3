@@ -57,8 +57,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         /// if the root object does not contain an <c>_ei</c> property.
         /// </summary>
         /// <remarks>
+        /// <para>
         /// Leaves <paramref name="input"/>'s <see cref="Stream.Position"/> at 0 on return.
-        /// Requires <see cref="Stream.CanSeek"/>.
+        /// </para>
+        /// <para>
+        /// Requires <see cref="Stream.CanSeek"/>. The stream is read forward to locate
+        /// <c>_ei</c> and is then rewound so the downstream decrypt loop can re-read the
+        /// full document from the start. A non-seekable stream cannot support that
+        /// contract, so the method fails fast with <see cref="ArgumentException"/> rather
+        /// than silently producing partial output.
+        /// </para>
         /// </remarks>
         public static async ValueTask<EncryptionProperties> ReadAsync(
             Stream input,
@@ -70,10 +78,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 throw new ArgumentNullException(nameof(input));
             }
 
-            if (input.CanSeek)
+            if (!input.CanSeek)
             {
-                input.Position = 0;
+                throw new ArgumentException(
+                    "The encryption-properties reader requires a seekable stream so the document can be re-read from the start after scanning _ei.",
+                    nameof(input));
             }
+
+            input.Position = 0;
 
             byte[] buffer = ArrayPool<byte>.Shared.Rent(InitialBufferSize);
             try
@@ -96,21 +108,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                     if (outcome.Status == ScanResult.Found)
                     {
-                        if (input.CanSeek)
-                        {
-                            input.Position = 0;
-                        }
-
+                        input.Position = 0;
                         return outcome.Properties;
                     }
 
                     if (outcome.Status == ScanResult.RootEnded)
                     {
-                        if (input.CanSeek)
-                        {
-                            input.Position = 0;
-                        }
-
+                        input.Position = 0;
                         return null;
                     }
 
@@ -141,12 +145,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     // next ReadAsync will simply append more bytes to them.
                 }
 
-                // In practice this line is unreachable: well-formed input exits the loop via
-                // ScanResult.Found or ScanResult.RootEnded, and malformed input causes
-                // Utf8JsonReader (with isFinalBlock: true on the final chunk) to throw
-                // JsonReaderException. The fallback is kept for defensive completeness so
-                // any future reader-state change that allows the loop to exit naturally does
-                // not silently return a partially-parsed object.
+                // Reached when the outer loop exits with isFinalBlock:true without having
+                // seen either the _ei property or a root-level EndObject. This happens for
+                // well-formed JSON whose root is a non-object value (array, number, string,
+                // literal) — the scanner only recognises _ei at depth 1 inside a root
+                // object, so it falls through here with no properties to return. Reset the
+                // stream position for parity with the Found / RootEnded paths so the caller
+                // can re-read the input if desired.
+                input.Position = 0;
                 return null;
             }
             finally

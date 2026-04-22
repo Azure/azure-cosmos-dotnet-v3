@@ -293,7 +293,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             if (!this.disposed && disposing)
             {
-                this.bufferWriter?.Dispose();
+                // bufferWriter is guaranteed non-null while !disposed: the ctor rejects a
+                // null argument and Dispose is the only code path that clears it, guarded by
+                // the same disposed flag.
+                this.bufferWriter.Dispose();
                 this.bufferWriter = null;
                 this.disposed = true;
             }

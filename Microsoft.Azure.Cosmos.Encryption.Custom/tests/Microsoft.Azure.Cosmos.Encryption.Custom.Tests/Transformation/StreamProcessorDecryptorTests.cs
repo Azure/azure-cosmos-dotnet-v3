@@ -684,6 +684,44 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             }
         }
 
+        [TestMethod]
+        public async Task DecryptStreamAsync_IBufferWriterOverload_WritesDirectlyToBufferWriter()
+        {
+            // Direct test of the new (Stream, IBufferWriter<byte>, ...) overload that E1
+            // introduced. Previously exercised only transitively via the Stream overload;
+            // asserting here that a caller-supplied IBufferWriter receives the decrypted
+            // bytes directly, with no intermediate Stream copy.
+            var doc = new { id = "1", SensitiveStr = "secret" };
+            string[] paths = new[] { "/SensitiveStr" };
+            EncryptionOptions options = CreateOptions(paths);
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(doc, options);
+
+            using RentArrayBufferWriter bw = new ();
+            DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(encrypted, bw, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
+
+            Assert.IsNotNull(ctx);
+            Assert.IsTrue(bw.BytesWritten > 0);
+
+            byte[] bytes = bw.WrittenSpan.ToArray();
+            using JsonDocument parsed = JsonDocument.Parse(bytes);
+            Assert.AreEqual("secret", parsed.RootElement.GetProperty("SensitiveStr").GetString());
+            Assert.IsFalse(parsed.RootElement.TryGetProperty(Constants.EncryptedInfo, out _));
+        }
+
+        [TestMethod]
+        public async Task DecryptStreamAsync_IBufferWriterOverload_ThrowsOnNullArguments()
+        {
+            // Argument-null guards on the new overload fire before any I/O or crypto.
+            using MemoryStream input = new ();
+            using RentArrayBufferWriter bw = new ();
+            CosmosDiagnosticsContext diag = new ();
+            EncryptionProperties anyProps = new (EncryptionFormatVersion.Mde, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized, "k", null, System.Array.Empty<string>());
+
+            await Assert.ThrowsExceptionAsync<ArgumentNullException>(() => new StreamProcessor().DecryptStreamAsync(null, bw, mockEncryptor.Object, anyProps, diag, default));
+            await Assert.ThrowsExceptionAsync<ArgumentNullException>(() => new StreamProcessor().DecryptStreamAsync(input, (System.Buffers.IBufferWriter<byte>)null, mockEncryptor.Object, anyProps, diag, default));
+            await Assert.ThrowsExceptionAsync<ArgumentNullException>(() => new StreamProcessor().DecryptStreamAsync(input, bw, null, anyProps, diag, default));
+            await Assert.ThrowsExceptionAsync<ArgumentNullException>(() => new StreamProcessor().DecryptStreamAsync(input, bw, mockEncryptor.Object, null, diag, default));
+        }
     }
 
     /// <summary>

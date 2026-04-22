@@ -222,19 +222,77 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
         }
 
         [TestMethod]
-        public async Task DecryptAsync_NewOutput_WhenNoMetadata_OnNonSeekableStream_StillReturnsOriginal()
+        [TestCategory("Stress")]
+        [TestCategory("MemoryLeak")]
+        public async Task DecryptAsync_NewOutputOverload_RepeatedCalls_NoMemoryLeak()
         {
-            // The adapter's early-return path returns the original input stream when no _ei is
-            // present. The EncryptionPropertiesStreamReader must not blow up on a non-seekable
-            // stream (it only resets Position when CanSeek is true).
+            // Stress test for the new (Stream, DecryptionContext)-returning overload. The
+            // returned Stream is a ReadOnlyBufferWriterStream that owns a RentArrayBufferWriter
+            // rented from ArrayPool<byte>.Shared. If disposal of the returned Stream fails
+            // to return the rented buffer, ArrayPool would exhaust after a few hundred
+            // iterations and the Rent call would allocate fresh arrays. We mirror the
+            // existing leak-stress test for the provided-output overload.
+            SystemTextJsonStreamAdapter adapter = new (new StreamProcessor());
+
+            for (int i = 0; i < 1000; i++)
+            {
+                using Stream encrypted = await CreateEncryptedPayloadAsync(adapter);
+                CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContext();
+
+                (Stream decrypted, DecryptionContext context) = await adapter.DecryptAsync(
+                    encrypted, mockEncryptor.Object, diagnostics, CancellationToken.None);
+
+                Assert.IsNotNull(context, $"Iteration {i}: Context should not be null");
+                using (decrypted)
+                {
+                    // Touch the result so reads are actually exercised across iterations.
+                    byte[] scratch = new byte[1];
+                    Assert.AreNotEqual(0, decrypted.Length, $"Iteration {i}: decrypted length");
+                    decrypted.Position = 0;
+                    int n = await decrypted.ReadAsync(scratch.AsMemory(0, 1), CancellationToken.None);
+                    Assert.AreEqual(1, n);
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task DecryptAsync_NewOutput_ReturnedStream_ReadAsync_ProducesSameBytesAsEncrypted()
+        {
+            // End-to-end round-trip asserting that the new (Stream, DecryptionContext)-returning
+            // adapter path produces a stream whose bytes decrypt back to the original plaintext.
+            SystemTextJsonStreamAdapter adapter = new (new StreamProcessor());
+
+            object original = new { id = "1", Sensitive = "secret-value", NonSensitive = 42 };
+            using Stream plaintextIn = TestCommon.ToStream(original);
+            using Stream encrypted = await adapter.EncryptAsync(plaintextIn, mockEncryptor.Object, defaultOptions, CancellationToken.None);
+            encrypted.Position = 0;
+
+            CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContext();
+            (Stream decrypted, DecryptionContext context) = await adapter.DecryptAsync(encrypted, mockEncryptor.Object, diagnostics, CancellationToken.None);
+            using (decrypted)
+            {
+                Assert.IsNotNull(context);
+                using JsonDocument doc = JsonDocument.Parse(decrypted);
+                Assert.AreEqual("secret-value", doc.RootElement.GetProperty("Sensitive").GetString());
+                Assert.AreEqual(42, doc.RootElement.GetProperty("NonSensitive").GetInt32());
+                Assert.IsFalse(doc.RootElement.TryGetProperty(Constants.EncryptedInfo, out _));
+            }
+        }
+
+        [TestMethod]
+        public async Task DecryptAsync_NewOutput_OnNonSeekableStream_ThrowsArgumentException()
+        {
+            // The decrypt path reads the input forward to locate _ei, then restarts reading
+            // from byte 0 for the decrypt loop. A non-seekable stream cannot satisfy that
+            // contract, so the _ei reader fails fast. This preserves the pre-change
+            // behaviour of throwing on non-seekable input (the old DeserializeAsync call
+            // threw NotSupportedException from input.Position = 0).
             SystemTextJsonStreamAdapter adapter = new (new StreamProcessor());
             using Stream input = new NonSeekableReadOnlyStream(Encoding.UTF8.GetBytes("{\"id\":\"1\"}"));
             CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContext();
 
-            (Stream result, DecryptionContext context) = await adapter.DecryptAsync(input, mockEncryptor.Object, diagnostics, CancellationToken.None);
-
-            Assert.AreSame(input, result);
-            Assert.IsNull(context);
+            await Assert.ThrowsExceptionAsync<ArgumentException>(
+                async () => await adapter.DecryptAsync(input, mockEncryptor.Object, diagnostics, CancellationToken.None));
         }
 
         private sealed class NonSeekableReadOnlyStream : Stream

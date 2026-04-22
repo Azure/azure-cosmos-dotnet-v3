@@ -166,17 +166,68 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         }
 
         [TestMethod]
-        public async Task ReadAsync_WhenInputIsNonSeekable_DoesNotTouchPosition()
+        public async Task ReadAsync_WhenRootIsArray_ReturnsNull()
         {
-            // Non-seekable stream with valid _ei must still succeed; the reader must not
-            // attempt input.Position = 0 (which would throw NotSupportedException).
-            string json = @"{""_ei"":{""_ef"":3,""_ea"":""AEAD_AES_256_CBC_HMAC_SHA256_RANDOMIZED"",""_en"":""k"",""_ep"":[]},""id"":""x""}";
-            await using Stream stream = new NonSeekableReadOnlyStream(Encoding.UTF8.GetBytes(json));
+            // A valid JSON document whose root is an array (not an object) is syntactically
+            // well-formed but has no `_ei` property and no root-level `EndObject` token.
+            // The scanner's loop exits cleanly on isFinalBlock:true and falls through to
+            // the post-loop return-null path.
+            await using MemoryStream stream = new (Encoding.UTF8.GetBytes("[1,2,3]"));
 
             EncryptionProperties result = await EncryptionPropertiesStreamReader.ReadAsync(stream, Options, CancellationToken.None);
 
-            Assert.IsNotNull(result);
-            Assert.AreEqual("k", result.DataEncryptionKeyId);
+            Assert.IsNull(result);
+            Assert.AreEqual(0, stream.Position);
+        }
+
+        [TestMethod]
+        public async Task ReadAsync_WhenRootIsNumber_ReturnsNull()
+        {
+            // Same as above but with a primitive root.
+            await using MemoryStream stream = new (Encoding.UTF8.GetBytes("123"));
+
+            EncryptionProperties result = await EncryptionPropertiesStreamReader.ReadAsync(stream, Options, CancellationToken.None);
+
+            Assert.IsNull(result);
+        }
+
+        [TestMethod]
+        public async Task ReadAsync_WhenRootIsString_ReturnsNull()
+        {
+            await using MemoryStream stream = new (Encoding.UTF8.GetBytes("\"hello\""));
+
+            EncryptionProperties result = await EncryptionPropertiesStreamReader.ReadAsync(stream, Options, CancellationToken.None);
+
+            Assert.IsNull(result);
+        }
+
+        [TestMethod]
+        public async Task ReadAsync_WhenInputIsNonSeekable_ThrowsArgumentException()
+        {
+            // The reader rewinds the input so the downstream decrypt loop can re-read the
+            // document from the start. A non-seekable stream cannot support that contract;
+            // the reader fails fast rather than silently producing partial output.
+            string json = @"{""_ei"":{""_ef"":3,""_ea"":""AEAD_AES_256_CBC_HMAC_SHA256_RANDOMIZED"",""_en"":""k"",""_ep"":[]},""id"":""x""}";
+            await using Stream stream = new NonSeekableReadOnlyStream(Encoding.UTF8.GetBytes(json));
+
+            await Assert.ThrowsExceptionAsync<ArgumentException>(
+                async () => await EncryptionPropertiesStreamReader.ReadAsync(stream, Options, CancellationToken.None));
+        }
+
+        [TestMethod]
+        public async Task ReadAsync_WhenCancelled_PropagatesCancellation()
+        {
+            // The reader does ReadAsync on the input stream inside a loop. A pre-cancelled
+            // token must propagate out (TaskCanceledException derives from
+            // OperationCanceledException) rather than completing with partial data.
+            // TrickleReadStream honours the token so ReadAsync returns FromCanceled.
+            byte[] payload = Encoding.UTF8.GetBytes(@"{""id"":""a"",""_ei"":{""_ef"":3,""_ea"":""AEAD_AES_256_CBC_HMAC_SHA256_RANDOMIZED"",""_en"":""k"",""_ep"":[]}}");
+            await using TrickleReadStream stream = new (payload);
+            using CancellationTokenSource cts = new ();
+            cts.Cancel();
+
+            await Assert.ThrowsExceptionAsync<TaskCanceledException>(
+                async () => await EncryptionPropertiesStreamReader.ReadAsync(stream, Options, cts.Token));
         }
 
         private sealed class NonSeekableReadOnlyStream : Stream
@@ -273,6 +324,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
 
             public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
             {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return ValueTask.FromCanceled<int>(cancellationToken);
+                }
+
                 if (this.position >= this.data.Length || buffer.Length == 0)
                 {
                     return new ValueTask<int>(0);

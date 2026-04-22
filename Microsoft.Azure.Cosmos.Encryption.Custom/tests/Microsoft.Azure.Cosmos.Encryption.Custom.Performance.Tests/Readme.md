@@ -104,7 +104,10 @@ differs.
 - **`master`** run: `origin/master` at commit `79d18b73` with this PR's harness
   back-ported (harness-only changes: concrete `BenchmarkKeyStoreProvider`, drop of the
   spurious `ENCRYPTION_CUSTOM_PREVIEW` gate, `OperationsPerInvoke = 16`).
-- **`this PR`** run: `users/adamnova/decrypt-bufwriter-opts` at commit `9fea360f`.
+- **`this PR`** run: `feature/stream-processor-optimizations` at the commit whose
+  product code (everything under `Microsoft.Azure.Cosmos.Encryption.Custom/src/`)
+  matches the current branch HEAD. Subsequent commits on the branch add tests
+  and documentation only and leave the measured numbers unchanged.
 
 Raw output lives at
 `BenchmarkDotNet.Artifacts/results/Microsoft.Azure.Cosmos.Encryption.Custom.Performance.Tests.EncryptionBenchmark-report-github.md`
