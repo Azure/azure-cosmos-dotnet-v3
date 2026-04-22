@@ -179,6 +179,101 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
         }
 
         [TestMethod]
+        public async Task DecryptAsync_WhenStreamProcessorThrows_DisposesBufferWriterAndRethrows()
+        {
+            // Covers the catch-path in SystemTextJsonStreamAdapter.DecryptAsync(Stream input, ...)
+            // where the RentArrayBufferWriter must be disposed before re-throwing so the
+            // rented ArrayPool buffer doesn't leak.
+            SystemTextJsonStreamAdapter adapter = new (new StreamProcessor());
+            Stream encrypted = await CreateEncryptedPayloadAsync(adapter);
+
+            Mock<Encryptor> failingEncryptor = new ();
+            failingEncryptor
+                .Setup(e => e.GetEncryptionKeyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new InvalidOperationException("key-unwrap failure"));
+
+            CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContext();
+
+            InvalidOperationException ex = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                async () => await adapter.DecryptAsync(encrypted, failingEncryptor.Object, diagnostics, CancellationToken.None));
+            Assert.AreEqual("key-unwrap failure", ex.Message);
+        }
+
+        [TestMethod]
+        public async Task DecryptAsync_OutputStream_WhenStreamProcessorThrows_Rethrows()
+        {
+            // Covers the caller-provided-output overload's exception path. The underlying
+            // RentArrayBufferWriter in the Stream-overload-of-StreamProcessor is scoped via
+            // `using` so it must be disposed even when decrypt throws.
+            SystemTextJsonStreamAdapter adapter = new (new StreamProcessor());
+            Stream encrypted = await CreateEncryptedPayloadAsync(adapter);
+
+            Mock<Encryptor> failingEncryptor = new ();
+            failingEncryptor
+                .Setup(e => e.GetEncryptionKeyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new InvalidOperationException("key-unwrap failure"));
+
+            using MemoryStream output = new ();
+            CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContext();
+
+            InvalidOperationException ex = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                async () => await adapter.DecryptAsync(encrypted, output, failingEncryptor.Object, diagnostics, CancellationToken.None));
+            Assert.AreEqual("key-unwrap failure", ex.Message);
+        }
+
+        [TestMethod]
+        public async Task DecryptAsync_NewOutput_WhenNoMetadata_OnNonSeekableStream_StillReturnsOriginal()
+        {
+            // The adapter's early-return path returns the original input stream when no _ei is
+            // present. The EncryptionPropertiesStreamReader must not blow up on a non-seekable
+            // stream (it only resets Position when CanSeek is true).
+            SystemTextJsonStreamAdapter adapter = new (new StreamProcessor());
+            using Stream input = new NonSeekableReadOnlyStream(Encoding.UTF8.GetBytes("{\"id\":\"1\"}"));
+            CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContext();
+
+            (Stream result, DecryptionContext context) = await adapter.DecryptAsync(input, mockEncryptor.Object, diagnostics, CancellationToken.None);
+
+            Assert.AreSame(input, result);
+            Assert.IsNull(context);
+        }
+
+        private sealed class NonSeekableReadOnlyStream : Stream
+        {
+            private readonly byte[] data;
+            private int position;
+
+            public NonSeekableReadOnlyStream(byte[] data) { this.data = data; }
+
+            public override bool CanRead => true;
+            public override bool CanSeek => false;
+            public override bool CanWrite => false;
+            public override long Length => throw new NotSupportedException();
+            public override long Position
+            {
+                get => throw new NotSupportedException();
+                set => throw new NotSupportedException();
+            }
+
+            public override void Flush() { }
+            public override int Read(byte[] buffer, int offset, int count)
+            {
+                if (this.position >= this.data.Length)
+                {
+                    return 0;
+                }
+
+                int n = Math.Min(count, this.data.Length - this.position);
+                Array.Copy(this.data, this.position, buffer, offset, n);
+                this.position += n;
+                return n;
+            }
+
+            public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+            public override void SetLength(long value) => throw new NotSupportedException();
+            public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        }
+
+        [TestMethod]
         public async Task DecryptAsync_WithLegacyAlgorithm_Throws()
         {
             SystemTextJsonStreamAdapter adapter = new (new StreamProcessor());

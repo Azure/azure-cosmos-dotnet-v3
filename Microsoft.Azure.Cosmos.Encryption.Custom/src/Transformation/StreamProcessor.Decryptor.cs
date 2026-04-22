@@ -40,13 +40,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             // .NET 8 eagerly creates a GC-heap-backed ArrayBufferWriter<byte> that doubles
             // from 256 bytes and produces hundreds of KB of garbage per op for medium
             // documents), at the cost of one pooled-to-caller memcpy on completion.
+            //
+            // The IBufferWriter overload below always returns a non-null DecryptionContext
+            // (it either completes normally or throws), so no defensive null-check is needed
+            // around its result.
             using RentArrayBufferWriter bufferWriter = new (PooledStreamConfiguration.Current.StreamInitialCapacity);
             DecryptionContext context = await this.DecryptStreamAsync(inputStream, bufferWriter, encryptor, properties, diagnosticsContext, cancellationToken);
-            if (context == null)
-            {
-                return null;
-            }
-
             await bufferWriter.CopyToAsync(outputStream, cancellationToken).ConfigureAwait(false);
             outputStream.Position = 0;
             return context;

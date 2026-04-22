@@ -141,11 +141,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     // next ReadAsync will simply append more bytes to them.
                 }
 
-                if (input.CanSeek)
-                {
-                    input.Position = 0;
-                }
-
+                // In practice this line is unreachable: well-formed input exits the loop via
+                // ScanResult.Found or ScanResult.RootEnded, and malformed input causes
+                // Utf8JsonReader (with isFinalBlock: true on the final chunk) to throw
+                // JsonReaderException. The fallback is kept for defensive completeness so
+                // any future reader-state change that allows the loop to exit naturally does
+                // not silently return a partially-parsed object.
                 return null;
             }
             finally

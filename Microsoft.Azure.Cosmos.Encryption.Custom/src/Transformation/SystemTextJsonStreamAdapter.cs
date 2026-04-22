@@ -59,19 +59,16 @@ internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
         // Utf8JsonWriter(Stream) performs on .NET 8 (it eagerly creates a GC-heap-
         // backed ArrayBufferWriter<byte> that doubles from 256 bytes, producing
         // hundreds of KB of garbage per operation for medium documents).
+        //
+        // The streamProcessor's IBufferWriter overload always returns a non-null
+        // DecryptionContext (it either completes normally or throws), so only the
+        // exception path needs to clean up the rented buffer. On success, ownership
+        // transfers to ReadOnlyBufferWriterStream which disposes the writer (and
+        // returns the rented buffer to the pool) when the caller disposes the Stream.
         RentArrayBufferWriter bufferWriter = new (PooledStreamConfiguration.Current.StreamInitialCapacity);
         try
         {
             DecryptionContext context = await this.streamProcessor.DecryptStreamAsync(input, bufferWriter, encryptor, properties, diagnosticsContext, cancellationToken);
-            if (context == null)
-            {
-                bufferWriter.Dispose();
-                return (input, null);
-            }
-
-            // ReadOnlyBufferWriterStream takes ownership of bufferWriter; disposal of
-            // the returned Stream (handled by the caller, e.g. ResponseMessage.Dispose)
-            // returns the rented buffer to the pool.
             return (new ReadOnlyBufferWriterStream(bufferWriter), context);
         }
         catch
@@ -95,17 +92,10 @@ internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
             return null;
         }
 
+        // The streamProcessor Stream-overload always returns a non-null DecryptionContext
+        // (it either completes normally or throws), so no defensive null-check is required
+        // around its result.
         DecryptionContext context = await this.streamProcessor.DecryptStreamAsync(input, output, encryptor, properties, diagnosticsContext, cancellationToken);
-        if (context == null)
-        {
-            if (input.CanSeek)
-            {
-                input.Position = 0;
-            }
-
-            return null;
-        }
-
         await input.DisposeAsync();
         return context;
     }

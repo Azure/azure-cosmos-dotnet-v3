@@ -127,6 +127,96 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         }
 
         [TestMethod]
+        public async Task ReadAsync_WhenStreamIsEmpty_ThrowsJsonException()
+        {
+            // Utf8JsonReader with isFinalBlock:true on an empty span rejects the input with
+            // a JsonReaderException ("The input does not contain any JSON tokens") which
+            // derives from JsonException. This matches the behaviour of
+            // System.Text.Json.JsonSerializer.DeserializeAsync on an empty stream,
+            // preserving pre-existing contract.
+            await using MemoryStream stream = new (Array.Empty<byte>());
+
+            await ExpectJsonExceptionAsync(async () =>
+                await EncryptionPropertiesStreamReader.ReadAsync(stream, Options, CancellationToken.None));
+        }
+
+        [TestMethod]
+        public async Task ReadAsync_WhenStreamIsOpenBraceOnly_ThrowsJsonException()
+        {
+            // A truncated JSON (just `{`) hits isFinalBlock:true with an incomplete object
+            // and throws. Confirms we do not silently return null on malformed input.
+            await using MemoryStream stream = new (Encoding.UTF8.GetBytes("{"));
+
+            await ExpectJsonExceptionAsync(async () =>
+                await EncryptionPropertiesStreamReader.ReadAsync(stream, Options, CancellationToken.None));
+        }
+
+        private static async Task ExpectJsonExceptionAsync(Func<Task> action)
+        {
+            try
+            {
+                await action();
+                Assert.Fail("Expected a JsonException.");
+            }
+            catch (System.Text.Json.JsonException)
+            {
+                // Utf8JsonReader throws JsonReaderException (internal sealed) which derives
+                // from JsonException; accept any JsonException subtype.
+            }
+        }
+
+        [TestMethod]
+        public async Task ReadAsync_WhenInputIsNonSeekable_DoesNotTouchPosition()
+        {
+            // Non-seekable stream with valid _ei must still succeed; the reader must not
+            // attempt input.Position = 0 (which would throw NotSupportedException).
+            string json = @"{""_ei"":{""_ef"":3,""_ea"":""AEAD_AES_256_CBC_HMAC_SHA256_RANDOMIZED"",""_en"":""k"",""_ep"":[]},""id"":""x""}";
+            await using Stream stream = new NonSeekableReadOnlyStream(Encoding.UTF8.GetBytes(json));
+
+            EncryptionProperties result = await EncryptionPropertiesStreamReader.ReadAsync(stream, Options, CancellationToken.None);
+
+            Assert.IsNotNull(result);
+            Assert.AreEqual("k", result.DataEncryptionKeyId);
+        }
+
+        private sealed class NonSeekableReadOnlyStream : Stream
+        {
+            private readonly byte[] data;
+            private int position;
+
+            public NonSeekableReadOnlyStream(byte[] data) { this.data = data; }
+
+            public override bool CanRead => true;
+            public override bool CanSeek => false;
+            public override bool CanWrite => false;
+            public override long Length => throw new NotSupportedException();
+            public override long Position
+            {
+                get => throw new NotSupportedException();
+                set => throw new NotSupportedException();
+            }
+
+            public override void Flush() { }
+
+            public override int Read(byte[] buffer, int offset, int count)
+            {
+                if (this.position >= this.data.Length)
+                {
+                    return 0;
+                }
+
+                int n = Math.Min(count, this.data.Length - this.position);
+                Array.Copy(this.data, this.position, buffer, offset, n);
+                this.position += n;
+                return n;
+            }
+
+            public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+            public override void SetLength(long value) => throw new NotSupportedException();
+            public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        }
+
+        [TestMethod]
         public async Task ReadAsync_WhenStreamTricklesBytes_DoesNotGrowBufferPathologically()
         {
             // Guard against regressions to partial-read handling: a stream that returns one
