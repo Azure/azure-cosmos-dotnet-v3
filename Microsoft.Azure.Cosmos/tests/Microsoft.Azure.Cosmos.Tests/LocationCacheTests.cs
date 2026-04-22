@@ -1433,6 +1433,104 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
         }
 
+        /// <summary>
+        /// Validates that when all preferred regions are included in ExcludeRegions, read requests fall
+        /// back to the configured default (Hub) endpoint unconditionally — even when that endpoint has
+        /// been marked as unavailable.  The unavailability tracking used by the normal ReadEndpoints
+        /// ordering does NOT intercept the ExcludeRegions fallback path inside GetApplicableEndpoints.
+        /// </summary>
+        [TestMethod]
+        [DataRow(false, false, DisplayName = "All regions excluded - global default endpoint - default endpoint is available")]
+        [DataRow(false, true, DisplayName = "All regions excluded - global default endpoint - default endpoint is also marked unavailable")]
+        [DataRow(true, false, DisplayName = "All regions excluded - regional default endpoint - default endpoint is available")]
+        [DataRow(true, true, DisplayName = "All regions excluded - regional default endpoint - default endpoint is also marked unavailable")]
+        public void ValidateFallbackToDefaultEndpointWhenAllRegionsExcluded(
+            bool isDefaultEndpointARegionalEndpoint,
+            bool markDefaultEndpointUnavailable)
+        {
+            // The hub/configured endpoint — a global URI when not regional, a regional URI otherwise.
+            Uri defaultEndpoint = isDefaultEndpointARegionalEndpoint
+                ? new Uri("https://location1.documents.azure.com")
+                : new Uri("https://testaccount.documents.azure.com");
+
+            Collection<AccountRegion> readLocations = new Collection<AccountRegion>()
+            {
+                new AccountRegion { Name = "location1", Endpoint = "https://location1.documents.azure.com" },
+                new AccountRegion { Name = "location2", Endpoint = "https://location2.documents.azure.com" },
+                new AccountRegion { Name = "location3", Endpoint = "https://location3.documents.azure.com" },
+            };
+
+            Collection<AccountRegion> writeLocations = new Collection<AccountRegion>()
+            {
+                new AccountRegion { Name = "location1", Endpoint = "https://location1.documents.azure.com" },
+            };
+
+            AccountProperties accountProps = new AccountProperties
+            {
+                ReadLocationsInternal = readLocations,
+                WriteLocationsInternal = writeLocations,
+                EnableMultipleWriteLocations = false,
+            };
+
+            ReadOnlyCollection<string> preferredLocations = new List<string>
+            {
+                "location1",
+                "location2",
+                "location3",
+            }.AsReadOnly();
+
+            LocationCache cache = new LocationCache(
+                preferredLocations: preferredLocations,
+                defaultEndpoint: defaultEndpoint,
+                enableEndpointDiscovery: true,
+                connectionLimit: 10,
+                useMultipleWriteLocations: false);
+
+            cache.OnDatabaseAccountRead(accountProps);
+
+            // Sanity check: before excluding any region the preferred read endpoints are the named regions.
+            Assert.IsTrue(cache.ReadEndpoints.Count > 0, "There should be read endpoints before any exclusion.");
+            if (!isDefaultEndpointARegionalEndpoint)
+            {
+                // When defaultEndpoint is a global (non-regional) URI it should not appear in the
+                // named-region read-endpoint list.
+                Assert.IsFalse(cache.ReadEndpoints.Contains(defaultEndpoint),
+                    "The global default endpoint should not appear in the ordered read-endpoint list when named regions are available.");
+            }
+
+            if (markDefaultEndpointUnavailable)
+            {
+                // Mark the hub/default endpoint unavailable for reads to confirm the ExcludeRegions
+                // fallback is unconditional and does not consult the unavailability registry.
+                cache.MarkEndpointUnavailableForRead(defaultEndpoint);
+            }
+
+            // Exclude every named region so that no applicable endpoint survives filtering.
+            List<string> allRegions = new List<string> { "location1", "location2", "location3" };
+
+            using (DocumentServiceRequest request = DocumentServiceRequest.Create(
+                OperationType.Read,
+                ResourceType.Document,
+                AuthorizationTokenType.PrimaryMasterKey))
+            {
+                request.RequestContext.ExcludeRegions = allRegions;
+
+                // GetApplicableEndpoints must fall back to the configured default endpoint when every
+                // preferred region is excluded, regardless of the endpoint's own availability status.
+                ReadOnlyCollection<Uri> applicableEndpoints = cache.GetApplicableEndpoints(request, isReadRequest: true);
+
+                Assert.AreEqual(1, applicableEndpoints.Count,
+                    "Exactly one fallback endpoint should be returned when all regions are excluded.");
+                Assert.AreEqual(defaultEndpoint, applicableEndpoints[0],
+                    "The fallback endpoint must be the configured default/Hub endpoint, even if it is marked unavailable.");
+
+                // ResolveServiceEndpoint must also route the request to that same default endpoint.
+                Uri resolvedEndpoint = cache.ResolveServiceEndpoint(request);
+                Assert.AreEqual(defaultEndpoint, resolvedEndpoint,
+                    "ResolveServiceEndpoint must route to the default/Hub endpoint when all regions are excluded.");
+            }
+        }
+
         [TestMethod]
         public void ValidateThinClientReadFallbackToWriteEndpointTest()
         {
