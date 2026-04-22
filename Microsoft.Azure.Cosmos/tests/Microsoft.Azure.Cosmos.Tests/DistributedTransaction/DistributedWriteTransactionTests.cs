@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             DistributedWriteTransaction tx = this.NewTransaction();
             Assert.ThrowsException<ArgumentNullException>(
-                () => tx.CreateItem(null, Container, new PartitionKey("pk"), new TestItem()));
+                () => tx.CreateItem(null, Container, new PartitionKey("pk"), "item-id", new TestItem()));
         }
 
         [TestMethod]
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             DistributedWriteTransaction tx = this.NewTransaction();
             Assert.ThrowsException<ArgumentNullException>(
-                () => tx.CreateItem(Database, null, new PartitionKey("pk"), new TestItem()));
+                () => tx.CreateItem(Database, null, new PartitionKey("pk"), "item-id", new TestItem()));
         }
 
         [TestMethod]
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             DistributedWriteTransaction tx = this.NewTransaction();
             Assert.ThrowsException<ArgumentNullException>(
-                () => tx.CreateItem<TestItem>(Database, Container, new PartitionKey("pk"), null));
+                () => tx.CreateItem<TestItem>(Database, Container, new PartitionKey("pk"), "item-id", null));
         }
 
         [TestMethod]
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             DistributedWriteTransaction tx = this.NewTransaction();
             Assert.ThrowsException<ArgumentNullException>(
-                () => tx.CreateItemStream(Database, Container, new PartitionKey("pk"), null));
+                () => tx.CreateItemStream(Database, Container, new PartitionKey("pk"), "item-id", null));
         }
 
         [TestMethod]
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             DistributedWriteTransaction tx = this.NewTransaction();
             Assert.ThrowsException<ArgumentNullException>(
-                () => tx.UpsertItemStream(Database, Container, new PartitionKey("pk"), null));
+                () => tx.UpsertItemStream(Database, Container, new PartitionKey("pk"), "item-id", null));
         }
 
         // Request structure
@@ -151,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     });
 
             await new DistributedWriteTransactionCore(contextMock.Object)
-                .CreateItem(Database, Container, new PartitionKey("pk"), new TestItem())
+                .CreateItem(Database, Container, new PartitionKey("pk"), "item-id", new TestItem())
                 .CommitTransactionAsync(CancellationToken.None);
 
             Assert.AreEqual(ResourceType.DistributedTransactionBatch, capturedResourceType);
@@ -187,7 +187,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     });
 
             await new DistributedWriteTransactionCore(contextMock.Object)
-                .CreateItem(Database, Container, new PartitionKey("pk"), new TestItem())
+                .CreateItem(Database, Container, new PartitionKey("pk"), "item-id", new TestItem())
                 .CommitTransactionAsync(CancellationToken.None);
 
             Assert.IsNotNull(capturedToken, "Idempotency token header must be set.");
@@ -227,7 +227,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     });
 
             DistributedTransactionResponse response = await new DistributedWriteTransactionCore(contextMock.Object)
-                .CreateItem(Database, Container, new PartitionKey("pk"), new TestItem())
+                .CreateItem(Database, Container, new PartitionKey("pk"), "item-id", new TestItem())
                 .CommitTransactionAsync(CancellationToken.None);
 
             Assert.AreNotEqual(Guid.Empty, response.IdempotencyToken, "Response must carry the idempotency token.");
@@ -262,7 +262,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     });
 
             await new DistributedWriteTransactionCore(contextMock.Object)
-                .CreateItem(Database, Container, new PartitionKey("pk1"), new TestItem("id1"))
+                .CreateItem(Database, Container, new PartitionKey("pk1"), "id1", new TestItem("id1"))
                 .ReplaceItem(Database, Container, new PartitionKey("pk2"), "id2", new TestItem("id2"))
                 .DeleteItem(Database, Container, new PartitionKey("pk3"), "id3")
                 .CommitTransactionAsync(CancellationToken.None);
@@ -306,11 +306,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                     });
 
             await new DistributedWriteTransactionCore(contextMock.Object)
-                .CreateItem(Database, Container, new PartitionKey("pk"), new TestItem("create"))
+                .CreateItem(Database, Container, new PartitionKey("pk"), "create", new TestItem("create"))
                 .ReplaceItem(Database, Container, new PartitionKey("pk"), "replace", new TestItem("replace"))
                 .DeleteItem(Database, Container, new PartitionKey("pk"), "delete")
                 .PatchItem(Database, Container, new PartitionKey("pk"), "patch", new[] { PatchOperation.Add("/value", "v") })
-                .UpsertItem(Database, Container, new PartitionKey("pk"), new TestItem("upsert"))
+                .UpsertItem(Database, Container, new PartitionKey("pk"), "upsert", new TestItem("upsert"))
                 .CommitTransactionAsync(CancellationToken.None);
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
@@ -351,8 +351,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .ReturnsAsync(BuildSuccessResponse(2));
 
             DistributedTransactionResponse response = await new DistributedWriteTransactionCore(contextMock.Object)
-                .CreateItem(Database, Container, new PartitionKey("pk1"), new TestItem("id1"))
-                .CreateItem(Database, Container, new PartitionKey("pk2"), new TestItem("id2"))
+                .CreateItem(Database, Container, new PartitionKey("pk1"), "id1", new TestItem("id1"))
+                .CreateItem(Database, Container, new PartitionKey("pk2"), "id2", new TestItem("id2"))
                 .CommitTransactionAsync(CancellationToken.None);
 
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
@@ -380,7 +380,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .ReturnsAsync(BuildErrorResponse(HttpStatusCode.Conflict));
 
             DistributedTransactionResponse response = await new DistributedWriteTransactionCore(contextMock.Object)
-                .CreateItem(Database, Container, new PartitionKey("pk"), new TestItem())
+                .CreateItem(Database, Container, new PartitionKey("pk"), "item-id", new TestItem())
                 .CommitTransactionAsync(CancellationToken.None);
 
             Assert.AreEqual(HttpStatusCode.Conflict, response.StatusCode);

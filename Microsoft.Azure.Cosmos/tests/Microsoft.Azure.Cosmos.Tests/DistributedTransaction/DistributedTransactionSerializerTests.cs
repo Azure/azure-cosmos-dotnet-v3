@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Text;
     using System.Text.Json;
     using System.Threading;
@@ -35,17 +36,20 @@ namespace Microsoft.Azure.Cosmos.Tests
         // id field presence per operation type
 
         [TestMethod]
-        [Description("CreateItem does not set an explicit id field on the operation, so 'id' must be absent from the serialized JSON.")]
-        public async Task CreateItem_SerializedBody_HasResourceBody_NoIdField()
+        [Description("CreateItem sets id explicitly; 'id' must be present in the serialized JSON with the correct value.")]
+        public async Task CreateItem_SerializedBody_HasResourceBody_AndIdField()
         {
+            const string itemId = "create-item";
             string capturedJson = await this.CaptureCommitBodyAsync(tx =>
-                tx.CreateItem(Database, Container, new PartitionKey("pk"), new TestItem("create-item")));
+                tx.CreateItem(Database, Container, new PartitionKey("pk"), itemId, new TestItem(itemId)));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
             JsonElement op = doc.RootElement.GetProperty("operations")[0];
 
-            Assert.IsFalse(op.TryGetProperty("id", out _),
-                "Create operation must NOT include an 'id' field in the serialized body.");
+            Assert.IsTrue(op.TryGetProperty("id", out JsonElement idElement),
+                "Create operation must include an 'id' field.");
+            Assert.AreEqual(itemId, idElement.GetString(),
+                "The 'id' field must match the id passed to CreateItem.");
             Assert.IsTrue(op.TryGetProperty("resourceBody", out _),
                 "Create operation must include a 'resourceBody' field.");
         }
@@ -87,17 +91,20 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [Description("UpsertItem provides a resource but no explicit id, so 'resourceBody' must be present and 'id' must be absent.")]
-        public async Task UpsertItem_SerializedBody_HasResourceBody_NoIdField()
+        [Description("UpsertItem sets id explicitly; 'id' must be present in the serialized JSON with the correct value.")]
+        public async Task UpsertItem_SerializedBody_HasResourceBody_AndIdField()
         {
+            const string itemId = "upsert-item";
             string capturedJson = await this.CaptureCommitBodyAsync(tx =>
-                tx.UpsertItem(Database, Container, new PartitionKey("pk"), new TestItem("upsert-item")));
+                tx.UpsertItem(Database, Container, new PartitionKey("pk"), itemId, new TestItem(itemId)));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
             JsonElement op = doc.RootElement.GetProperty("operations")[0];
 
-            Assert.IsFalse(op.TryGetProperty("id", out _),
-                "Upsert operation must NOT include an 'id' field.");
+            Assert.IsTrue(op.TryGetProperty("id", out JsonElement idElement),
+                "Upsert operation must include an 'id' field.");
+            Assert.AreEqual(itemId, idElement.GetString(),
+                "The 'id' field must match the id passed to UpsertItem.");
             Assert.IsTrue(op.TryGetProperty("resourceBody", out _),
                 "Upsert operation must include a 'resourceBody' field.");
         }
@@ -145,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task CreateItem_SerializedBody_ResourceBodyIsValidJson()
         {
             string capturedJson = await this.CaptureCommitBodyAsync(tx =>
-                tx.CreateItem(Database, Container, new PartitionKey("pk"), new TestItem("json-check")));
+                tx.CreateItem(Database, Container, new PartitionKey("pk"), "json-check", new TestItem("json-check")));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
             JsonElement op = doc.RootElement.GetProperty("operations")[0];
@@ -165,10 +172,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             IReadOnlyList<PatchOperation> patchOps = new[] { PatchOperation.Add("/value", "v") };
 
             string capturedJson = await this.CaptureCommitBodyAsync(tx =>
-                tx.CreateItem(Database, Container, new PartitionKey("pk"), new TestItem("c"))
+                tx.CreateItem(Database, Container, new PartitionKey("pk"), "c", new TestItem("c"))
                   .ReplaceItem(Database, Container, new PartitionKey("pk"), "r", new TestItem("r"))
                   .DeleteItem(Database, Container, new PartitionKey("pk"), "d")
-                  .UpsertItem(Database, Container, new PartitionKey("pk"), new TestItem("u"))
+                  .UpsertItem(Database, Container, new PartitionKey("pk"), "u", new TestItem("u"))
                   .PatchItem(Database, Container, new PartitionKey("pk"), "p", patchOps),
                 expectedResultCount: 5);
 
@@ -190,10 +197,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             IReadOnlyList<PatchOperation> patchOps = new[] { PatchOperation.Add("/value", "v") };
 
             string capturedJson = await this.CaptureCommitBodyAsync(tx =>
-                tx.CreateItem(Database, Container, new PartitionKey("pk"), new TestItem("c"))
+                tx.CreateItem(Database, Container, new PartitionKey("pk"), "c", new TestItem("c"))
                   .ReplaceItem(Database, Container, new PartitionKey("pk"), "r", new TestItem("r"))
                   .DeleteItem(Database, Container, new PartitionKey("pk"), "d")
-                  .UpsertItem(Database, Container, new PartitionKey("pk"), new TestItem("u"))
+                  .UpsertItem(Database, Container, new PartitionKey("pk"), "u", new TestItem("u"))
                   .PatchItem(Database, Container, new PartitionKey("pk"), "p", patchOps),
                 expectedResultCount: 5);
 
@@ -238,19 +245,22 @@ namespace Microsoft.Azure.Cosmos.Tests
         // Stream operations
 
         [TestMethod]
-        [Description("CreateItemStream with a JSON stream sets resourceBody on the operation; no explicit 'id' field should appear.")]
-        public async Task CreateItemStream_SerializedBody_HasResourceBody_NoIdField()
+        [Description("CreateItemStream sets id explicitly; 'id' must be present in the serialized JSON with the correct value.")]
+        public async Task CreateItemStream_SerializedBody_HasResourceBody_AndIdField()
         {
-            byte[] docBytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new TestItem("test-id")));
+            const string itemId = "test-id";
+            byte[] docBytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new TestItem(itemId)));
             using MemoryStream stream = new MemoryStream(docBytes);
             string capturedJson = await this.CaptureCommitBodyAsync(
-                tx => tx.CreateItemStream(Database, Container, new PartitionKey("pk"), stream));
+                tx => tx.CreateItemStream(Database, Container, new PartitionKey("pk"), itemId, stream));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
             JsonElement op = doc.RootElement.GetProperty("operations")[0];
 
-            Assert.IsFalse(op.TryGetProperty("id", out _),
-                "CreateItemStream operation must NOT include an 'id' field in the serialized body.");
+            Assert.IsTrue(op.TryGetProperty("id", out JsonElement idElement),
+                "CreateItemStream operation must include an 'id' field.");
+            Assert.AreEqual(itemId, idElement.GetString(),
+                "The 'id' field must match the id passed to CreateItemStream.");
             Assert.IsTrue(op.TryGetProperty("resourceBody", out _),
                 "CreateItemStream operation must include a 'resourceBody' field.");
         }
@@ -294,19 +304,22 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [Description("UpsertItemStream sets resource but no explicit id; 'resourceBody' must be present and 'id' must be absent.")]
-        public async Task UpsertItemStream_SerializedBody_HasResourceBody_NoIdField()
+        [Description("UpsertItemStream sets id explicitly; 'id' must be present in the serialized JSON with the correct value.")]
+        public async Task UpsertItemStream_SerializedBody_HasResourceBody_AndIdField()
         {
-            byte[] docBytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new TestItem("upsert-stream-id")));
+            const string itemId = "upsert-stream-id";
+            byte[] docBytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new TestItem(itemId)));
             using MemoryStream stream = new MemoryStream(docBytes);
             string capturedJson = await this.CaptureCommitBodyAsync(
-                tx => tx.UpsertItemStream(Database, Container, new PartitionKey("pk"), stream));
+                tx => tx.UpsertItemStream(Database, Container, new PartitionKey("pk"), itemId, stream));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
             JsonElement op = doc.RootElement.GetProperty("operations")[0];
 
-            Assert.IsFalse(op.TryGetProperty("id", out _),
-                "UpsertItemStream operation must NOT include an 'id' field in the serialized body.");
+            Assert.IsTrue(op.TryGetProperty("id", out JsonElement idElement),
+                "UpsertItemStream operation must include an 'id' field.");
+            Assert.AreEqual(itemId, idElement.GetString(),
+                "The 'id' field must match the id passed to UpsertItemStream.");
             Assert.IsTrue(op.TryGetProperty("resourceBody", out _),
                 "UpsertItemStream operation must include a 'resourceBody' field.");
         }
@@ -376,7 +389,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task Operations_WithoutIfMatchEtag_DoNotIncludeEtagField()
         {
             string capturedJson = await this.CaptureCommitBodyAsync(tx =>
-                tx.CreateItem(Database, Container, new PartitionKey("pk"), new TestItem("create-no-etag"))
+                tx.CreateItem(Database, Container, new PartitionKey("pk"), "create-no-etag", new TestItem("create-no-etag"))
                   .ReplaceItem(Database, Container, new PartitionKey("pk"), "replace-no-etag", new TestItem("replace-no-etag")),
                 expectedResultCount: 2);
 
@@ -388,6 +401,44 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.IsFalse(ops[i].TryGetProperty("etag", out _),
                     $"Operation[{i}] without IfMatchEtag must NOT include an 'etag' field.");
             }
+        }
+
+        [TestMethod]
+        [Description("CreateItem with a null id must throw ArgumentNullException at the call site.")]
+        public void CreateItem_NullId_ThrowsArgumentNullException()
+        {
+            DistributedWriteTransaction tx = new DistributedWriteTransactionCore(this.BuildContextSetup().Object);
+            Assert.ThrowsException<ArgumentNullException>(() =>
+                tx.CreateItem(Database, Container, new PartitionKey("pk"), id: null, new TestItem("body-id")));
+        }
+
+        [TestMethod]
+        [Description("UpsertItem with an empty id must throw ArgumentNullException at the call site.")]
+        public void UpsertItem_EmptyId_ThrowsArgumentNullException()
+        {
+            DistributedWriteTransaction tx = new DistributedWriteTransactionCore(this.BuildContextSetup().Object);
+            Assert.ThrowsException<ArgumentNullException>(() =>
+                tx.UpsertItem(Database, Container, new PartitionKey("pk"), id: string.Empty, new TestItem("body-id")));
+        }
+
+        [TestMethod]
+        [Description("CreateItemStream with a null id must throw ArgumentNullException at the call site.")]
+        public void CreateItemStream_NullId_ThrowsArgumentNullException()
+        {
+            DistributedWriteTransaction tx = new DistributedWriteTransactionCore(this.BuildContextSetup().Object);
+            using MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(@"{""value"":1}"));
+            Assert.ThrowsException<ArgumentNullException>(() =>
+                tx.CreateItemStream(Database, Container, new PartitionKey("pk"), id: null, stream));
+        }
+
+        [TestMethod]
+        [Description("UpsertItemStream with a whitespace id must throw ArgumentNullException at the call site.")]
+        public void UpsertItemStream_WhitespaceId_ThrowsArgumentNullException()
+        {
+            DistributedWriteTransaction tx = new DistributedWriteTransactionCore(this.BuildContextSetup().Object);
+            using MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(@"{""value"":1}"));
+            Assert.ThrowsException<ArgumentNullException>(() =>
+                tx.UpsertItemStream(Database, Container, new PartitionKey("pk"), id: "   ", stream));
         }
 
         // Helpers
