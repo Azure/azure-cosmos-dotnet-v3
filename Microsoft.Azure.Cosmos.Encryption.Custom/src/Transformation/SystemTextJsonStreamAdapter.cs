@@ -48,7 +48,7 @@ internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
 
     public async Task<(Stream, DecryptionContext)> DecryptAsync(Stream input, Encryptor encryptor, CosmosDiagnosticsContext diagnosticsContext, CancellationToken cancellationToken)
     {
-        EncryptionProperties properties = await this.ReadMdeEncryptionPropertiesStreamingAsync(input, cancellationToken);
+        EncryptionProperties properties = await ReadMdeEncryptionPropertiesStreamingAsync(input, cancellationToken);
         if (properties == null)
         {
             return (input, null);
@@ -84,7 +84,7 @@ internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
 
     public async Task<DecryptionContext> DecryptAsync(Stream input, Stream output, Encryptor encryptor, CosmosDiagnosticsContext diagnosticsContext, CancellationToken cancellationToken)
     {
-        EncryptionProperties properties = await this.ReadMdeEncryptionPropertiesStreamingAsync(input, cancellationToken);
+        EncryptionProperties properties = await ReadMdeEncryptionPropertiesStreamingAsync(input, cancellationToken);
         if (properties == null)
         {
             if (input.CanSeek)
@@ -111,28 +111,33 @@ internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
     }
 
     /// <summary>
-    /// Reads encryption properties from the stream using System.Text.Json streaming API.
-    /// Returns null if no encryption properties are found.
+    /// Reads encryption properties from the stream using a streaming <see cref="Utf8JsonReader"/>
+    /// scan. Returns null if no encryption properties are found.
     /// Throws NotSupportedException if legacy encryption algorithm is detected.
     /// </summary>
-    private async Task<EncryptionProperties> ReadMdeEncryptionPropertiesStreamingAsync(Stream input, CancellationToken cancellationToken)
+    /// <remarks>
+    /// Uses <see cref="EncryptionPropertiesStreamReader"/> so that documents without
+    /// unusually large root-level values stay within a small pooled buffer and never
+    /// grow into the LOH bucket that a full-document <c>JsonSerializer.DeserializeAsync</c>
+    /// forces on medium-size payloads.
+    /// </remarks>
+    private static async Task<EncryptionProperties> ReadMdeEncryptionPropertiesStreamingAsync(Stream input, CancellationToken cancellationToken)
     {
-        input.Position = 0;
-        EncryptionPropertiesWrapper properties = await PooledJsonSerializer.DeserializeFromStreamAsync<EncryptionPropertiesWrapper>(input, cancellationToken: cancellationToken);
-        input.Position = 0;
-        if (properties?.EncryptionProperties == null)
+        EncryptionProperties encryptionProperties = await EncryptionPropertiesStreamReader.ReadAsync(input, PooledJsonSerializer.SerializerOptions, cancellationToken).ConfigureAwait(false);
+
+        if (encryptionProperties == null)
         {
             return null;
         }
 
 #pragma warning disable CS0618
-        if (properties.EncryptionProperties.EncryptionAlgorithm != CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)
+        if (encryptionProperties.EncryptionAlgorithm != CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)
         {
-            throw new NotSupportedException($"JsonProcessor.Stream is not supported for encryption algorithm '{properties.EncryptionProperties.EncryptionAlgorithm}'. Only '{CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized}' is supported with the Stream processor.");
+            throw new NotSupportedException($"JsonProcessor.Stream is not supported for encryption algorithm '{encryptionProperties.EncryptionAlgorithm}'. Only '{CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized}' is supported with the Stream processor.");
         }
 #pragma warning restore CS0618
 
-        return properties.EncryptionProperties;
+        return encryptionProperties;
     }
 }
 #endif
