@@ -11,18 +11,37 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
     internal sealed class EncryptionFeedIterator<T> : FeedIterator<T>
     {
-        private readonly EncryptionFeedIterator feedIterator;
+        private readonly EncryptionFeedIterator encryptionFeedIterator;
         private readonly CosmosResponseFactory responseFactory;
+        private readonly Encryptor encryptor;
+        private readonly CosmosSerializer cosmosSerializer;
+        private readonly JsonProcessor jsonProcessor;
 
         public EncryptionFeedIterator(
-            EncryptionFeedIterator feedIterator,
-            CosmosResponseFactory responseFactory)
+            EncryptionFeedIterator encryptionFeedIterator,
+            CosmosResponseFactory responseFactory,
+            Encryptor encryptor,
+            CosmosSerializer cosmosSerializer,
+            JsonProcessor jsonProcessor)
         {
-            this.feedIterator = feedIterator ?? throw new ArgumentNullException(nameof(feedIterator));
+            this.encryptionFeedIterator = encryptionFeedIterator ?? throw new ArgumentNullException(nameof(encryptionFeedIterator));
             this.responseFactory = responseFactory ?? throw new ArgumentNullException(nameof(responseFactory));
+            this.encryptor = encryptor ?? throw new ArgumentNullException(nameof(encryptor));
+            this.cosmosSerializer = cosmosSerializer ?? throw new ArgumentNullException(nameof(cosmosSerializer));
+            this.jsonProcessor = jsonProcessor;
         }
 
-        public override bool HasMoreResults => this.feedIterator.HasMoreResults;
+        public EncryptionFeedIterator(
+            EncryptionFeedIterator encryptionFeedIterator,
+            CosmosResponseFactory responseFactory,
+            Encryptor encryptor,
+            CosmosSerializer cosmosSerializer,
+            RequestOptions requestOptions)
+            : this(encryptionFeedIterator, responseFactory, encryptor, cosmosSerializer, requestOptions?.GetJsonProcessor() ?? JsonProcessor.Newtonsoft)
+        {
+        }
+
+        public override bool HasMoreResults => this.encryptionFeedIterator.HasMoreResults;
 
         public override async Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken = default)
         {
@@ -31,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             if (typeof(T) == typeof(DecryptableItem))
             {
                 IReadOnlyCollection<T> resource;
-                (responseMessage, resource) = await this.feedIterator.ReadNextWithoutDecryptionAsync<T>(cancellationToken);
+                (responseMessage, resource) = await this.ReadNextWithoutDecryptionAsync(cancellationToken).ConfigureAwait(false);
 
                 return DecryptableFeedResponse<T>.CreateResponse(
                     responseMessage,
@@ -39,10 +58,41 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
             else
             {
-                responseMessage = await this.feedIterator.ReadNextAsync(cancellationToken);
+                responseMessage = await this.encryptionFeedIterator.ReadNextAsync(cancellationToken).ConfigureAwait(false);
             }
 
             return this.responseFactory.CreateItemFeedResponse<T>(responseMessage);
+        }
+
+        private async Task<(ResponseMessage, List<T>)> ReadNextWithoutDecryptionAsync(CancellationToken cancellationToken = default)
+        {
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(options: null);
+            using (diagnosticsContext.CreateScope("FeedIterator.ReadNextWithoutDecryption"))
+            {
+                ResponseMessage responseMessage = await this.encryptionFeedIterator.ReadNextRawResponseAsync(cancellationToken).ConfigureAwait(false);
+                List<T> decryptableContent = null;
+
+                if (!responseMessage.IsSuccessStatusCode || responseMessage.Content == null)
+                {
+                    return (responseMessage, decryptableContent);
+                }
+
+                List<DecryptableItem> decryptableItems = await EncryptionProcessor.ConvertResponseToDecryptableItemsAsync(
+                    responseMessage.Content,
+                    this.encryptor,
+                    this.cosmosSerializer,
+                    this.jsonProcessor,
+                    cancellationToken).ConfigureAwait(false);
+
+                decryptableContent = new List<T>(decryptableItems.Count);
+
+                foreach (DecryptableItem decryptableItem in decryptableItems)
+                {
+                    decryptableContent.Add((T)(object)decryptableItem);
+                }
+
+                return (responseMessage, decryptableContent);
+            }
         }
     }
 }
