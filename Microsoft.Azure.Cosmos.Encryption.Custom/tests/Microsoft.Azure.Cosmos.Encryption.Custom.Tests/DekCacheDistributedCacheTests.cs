@@ -384,11 +384,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             int tenant1FetchCount = 0;
             int tenant2FetchCount = 0;
 
+            // Each tenant's fetcher returns a DataEncryptionKeyProperties whose Id matches the
+            // requested dekId (the new fetcher-Id guard requires this — the DekCache refuses to
+            // cache a result whose Id disagrees with the key that was looked up). Tenant isolation
+            // is expressed through the different KEK metadata and wrapped-key bytes, which is the
+            // property that actually matters at unwrap time.
             DataEncryptionKeyProperties CreateTenant1DekProperties(string id)
             {
                 tenant1FetchCount++;
                 return new DataEncryptionKeyProperties(
-                    "tenant1-" + id, // Prefix DEK ID with tenant
+                    id,
                     "AEAD_AES_256_CBC_HMAC_SHA256",
                     new byte[] { 1, 1, 1 }, // Tenant 1 key
                     new EncryptionKeyWrapMetadata("test", "test", "RSA-OAEP", "tenant1-kek"),
@@ -399,7 +404,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             {
                 tenant2FetchCount++;
                 return new DataEncryptionKeyProperties(
-                    "tenant2-" + id, // Prefix DEK ID with tenant
+                    id,
                     "AEAD_AES_256_CBC_HMAC_SHA256",
                     new byte[] { 2, 2, 2 }, // Tenant 2 key (different)
                     new EncryptionKeyWrapMetadata("test", "test", "RSA-OAEP", "tenant2-kek"),
@@ -428,11 +433,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             Assert.AreEqual(1, tenant1FetchCount, "Tenant 1 should fetch once");
             Assert.AreEqual(1, tenant2FetchCount, "Tenant 2 should fetch once");
 
-            // Each tenant received its own DEK — no cross-pollination.
-            Assert.AreEqual("tenant1-shared-dek-id", tenant1Result.Id);
-            Assert.AreEqual("tenant2-shared-dek-id", tenant2Result.Id);
+            // Each tenant received its own DEK — no cross-pollination. The Id matches the
+            // looked-up dekId (per the fetcher-Id invariant); isolation is visible through the
+            // KEK metadata and wrapped-key bytes that the fetcher supplies.
+            Assert.AreEqual("shared-dek-id", tenant1Result.Id);
+            Assert.AreEqual("shared-dek-id", tenant2Result.Id);
             Assert.AreEqual("tenant1-kek", tenant1Result.EncryptionKeyWrapMetadata.Name);
             Assert.AreEqual("tenant2-kek", tenant2Result.EncryptionKeyWrapMetadata.Name);
+            CollectionAssert.AreEqual(new byte[] { 1, 1, 1 }, tenant1Result.WrappedDataEncryptionKey);
+            CollectionAssert.AreEqual(new byte[] { 2, 2, 2 }, tenant2Result.WrappedDataEncryptionKey);
 
             // A third fresh provider with the same "tenant1" prefix must see tenant1's entry,
             // proving the keyspace is genuinely partitioned per prefix.

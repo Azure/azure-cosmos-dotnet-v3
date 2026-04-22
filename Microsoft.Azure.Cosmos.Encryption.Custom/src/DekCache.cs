@@ -359,8 +359,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
                     activity?.SetTag("cache.result", "miss");
                 }
-                catch (OperationCanceledException)
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                 {
+                    // The caller genuinely asked for cancellation; honour it.
                     throw;
                 }
                 catch (Exception ex)
@@ -371,8 +372,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     activity?.SetTag("cache.error", ex.GetType().Name);
                     activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
 
-                    // If distributed cache fails, fall back to source
-                    // Don't throw - this is an optimization layer
+                    // If distributed cache fails, fall back to source. An OperationCanceledException
+                    // raised by the IDistributedCache implementation itself (e.g., an internal
+                    // timeout it wired up) falls here — the caller's token was not cancelled, so
+                    // surfacing it would defeat the fail-open contract of this optimization layer.
                     Debug.WriteLine($"Failed to retrieve DEK '{dekId}' from distributed cache: {ex.Message}");
                 }
 
@@ -391,6 +394,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             // Fetch from source (Cosmos DB)
             DataEncryptionKeyProperties serverProperties = await fetcher(dekId, diagnosticsContext, cancellationToken);
+
+            // Guard against a fetcher returning a DEK whose Id disagrees with the one the caller
+            // requested. Caching such a result under the requested key would cross-pollinate the
+            // L1/L2 slot and hand peers the wrong material on their next lookup.
+            if (serverProperties == null || !string.Equals(serverProperties.Id, dekId, StringComparison.Ordinal))
+            {
+                string returnedId = serverProperties?.Id ?? "<null>";
+                throw new InvalidOperationException(
+                    $"DEK fetcher returned a DataEncryptionKeyProperties with Id '{returnedId}' for requested dekId '{dekId}'. Refusing to cache mismatched properties.");
+            }
+
             CachedDekProperties cachedProperties = new CachedDekProperties(
                 serverProperties,
                 this.utcNow() + this.dekPropertiesTimeToLive);
@@ -433,7 +447,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     },
                     cancellationToken);
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
                 throw;
             }
