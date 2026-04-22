@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
         public void Publish_WithoutRuntimeIdentifier_CopiesWindowsDlls()
         {
             string projectPath = this.CreateTestProject("NoRidTest");
-            string publishPath = this.PublishProjectWithoutRid(projectPath);
+            string publishPath = this.PublishProject(projectPath, runtimeIdentifier: null);
 
             this.AssertWindowsDllsPresent(publishPath, "no RuntimeIdentifier");
         }
@@ -152,6 +152,7 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
                     Assert.Fail($"dotnet pack failed.\nOutput: {output}\nError: {error}");
                 }
 
+                Assert.IsTrue(string.IsNullOrEmpty(error), $"dotnet pack had unexpected error output:\n{error}");
                 Console.WriteLine($"Pack succeeded. Output: {output}");
             }
 
@@ -192,16 +193,7 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
 </Project>");
 
             // Create a minimal Program.cs
-            File.WriteAllText(programFile, @"using System;
-using Microsoft.Azure.Cosmos;
-
-class Program
-{
-    static void Main()
-    {
-        Console.WriteLine(""Test app for verifying Cosmos SDK package behavior"");
-    }
-}");
+            File.WriteAllText(programFile, @"System.Console.WriteLine(""Test app for verifying Cosmos SDK package behavior"");");
 
             return projectFile;
         }
@@ -209,13 +201,14 @@ class Program
         private string PublishProject(string projectFile, string runtimeIdentifier)
         {
             string projectDir = Path.GetDirectoryName(projectFile);
-            string publishDir = Path.Combine(projectDir, "bin", "publish", runtimeIdentifier);
+            string publishDir = Path.Combine(projectDir, "bin", "publish", runtimeIdentifier ?? "no-rid");
 
             // Run dotnet publish
+            string ridArgument = runtimeIdentifier != null ? $"-r {runtimeIdentifier} --self-contained false" : string.Empty;
             ProcessStartInfo processInfo = new ProcessStartInfo
             {
                 FileName = "dotnet",
-                Arguments = $"publish \"{projectFile}\" -r {runtimeIdentifier} -c Release -o \"{publishDir}\" --self-contained false",
+                Arguments = $"publish \"{projectFile}\" -c Release -o \"{publishDir}\" {ridArgument}".Trim(),
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
@@ -230,7 +223,7 @@ class Program
             Process process = Process.Start(processInfo);
             if (process == null)
             {
-                Assert.Fail($"Failed to start dotnet publish process for {runtimeIdentifier}");
+                Assert.Fail($"Failed to start dotnet publish process for {runtimeIdentifier ?? "no RID"}");
             }
 
             using (process!)
@@ -242,7 +235,7 @@ class Program
                 if (!exited)
                 {
                     process.Kill();
-                    Assert.Fail($"dotnet publish timed out after 5 minutes for {runtimeIdentifier}.\nCommand: {commandLine}");
+                    Assert.Fail($"dotnet publish timed out after 5 minutes for {runtimeIdentifier ?? "no RID"}.\nCommand: {commandLine}");
                 }
 
                 string output = outputTask.GetAwaiter().GetResult();
@@ -250,65 +243,11 @@ class Program
 
                 if (process.ExitCode != 0)
                 {
-                    Assert.Fail($"dotnet publish failed for {runtimeIdentifier}.\nCommand: {commandLine}\nOutput: {output}\nError: {error}");
-                }
-                else
-                {
-                    Console.WriteLine($"Publish succeeded for {runtimeIdentifier}. Exit code: {process.ExitCode}");
-                }
-            }
-
-            return publishDir;
-        }
-
-        private string PublishProjectWithoutRid(string projectFile)
-        {
-            string projectDir = Path.GetDirectoryName(projectFile);
-            string publishDir = Path.Combine(projectDir, "bin", "publish", "no-rid");
-
-            ProcessStartInfo processInfo = new ProcessStartInfo
-            {
-                FileName = "dotnet",
-                Arguments = $"publish \"{projectFile}\" -c Release -o \"{publishDir}\"",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            string commandLine = $"{processInfo.FileName} {processInfo.Arguments}";
-            Console.WriteLine($"Executing: {commandLine}");
-            Console.WriteLine($"Working directory: {projectDir}");
-
-            Process process = Process.Start(processInfo);
-            if (process == null)
-            {
-                Assert.Fail("Failed to start dotnet publish process (no RID)");
-            }
-
-            using (process!)
-            {
-                Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
-                Task<string> errorTask = process.StandardError.ReadToEndAsync();
-
-                bool exited = process.WaitForExit((int)TimeSpan.FromMinutes(5).TotalMilliseconds);
-                if (!exited)
-                {
-                    process.Kill();
-                    Assert.Fail($"dotnet publish timed out after 5 minutes (no RID).\nCommand: {commandLine}");
+                    Assert.Fail($"dotnet publish failed for {runtimeIdentifier ?? "no RID"}.\nCommand: {commandLine}\nOutput: {output}\nError: {error}");
                 }
 
-                string output = outputTask.GetAwaiter().GetResult();
-                string error = errorTask.GetAwaiter().GetResult();
-
-                if (process.ExitCode != 0)
-                {
-                    Assert.Fail($"dotnet publish failed (no RID).\nCommand: {commandLine}\nOutput: {output}\nError: {error}");
-                }
-                else
-                {
-                    Console.WriteLine($"Publish succeeded (no RID). Exit code: {process.ExitCode}");
-                }
+                Assert.IsTrue(string.IsNullOrEmpty(error), $"dotnet publish had unexpected error output:\n{error}");
+                Console.WriteLine($"Publish succeeded for {runtimeIdentifier ?? "no RID"}. Exit code: {process.ExitCode}");
             }
 
             return publishDir;
