@@ -26,11 +26,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
         /// <summary>
         /// Called when the processor is stopping. Allows implementations to perform
-        /// cleanup or state persistence. Default is a no-op.
+        /// cleanup or state persistence.
         /// </summary>
-        public virtual Task ShutdownAsync()
-        {
-            return Task.CompletedTask;
-        }
+        public abstract Task ShutdownAsync();
     }
 }

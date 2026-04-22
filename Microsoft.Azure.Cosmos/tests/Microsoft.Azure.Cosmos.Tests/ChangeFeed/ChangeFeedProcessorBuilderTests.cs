@@ -428,7 +428,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         #region Edge Case Tests
 
         [TestMethod]
-        [ExpectedException(typeof(JsonReaderException))]
+        [ExpectedException(typeof(InvalidOperationException))]
         public void WithInMemoryLeaseContainerWithCorruptedStreamThrows()
         {
             byte[] garbage = System.Text.Encoding.UTF8.GetBytes("not valid json {{{");
@@ -491,6 +491,56 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 ChangeFeedProcessorBuilderTests.GetEmptyInitialization());
 
             builder.WithInMemoryLeaseContainer(stream);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(InvalidOperationException))]
+        public void WithInMemoryLeaseContainerWithEmptyLeaseIdThrows()
+        {
+            byte[] emptyId = System.Text.Encoding.UTF8.GetBytes("[{\"id\":\"\"}]");
+            MemoryStream stream = new MemoryStream(emptyId);
+
+            ChangeFeedProcessorBuilder builder = new ChangeFeedProcessorBuilder("workflowName",
+                ChangeFeedProcessorBuilderTests.GetMockedContainer(),
+                ChangeFeedProcessorBuilderTests.GetMockedProcessor(),
+                ChangeFeedProcessorBuilderTests.GetEmptyInitialization());
+
+            builder.WithInMemoryLeaseContainer(stream);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void WithInMemoryLeaseContainerWithReadOnlyStreamThrows()
+        {
+            byte[] data = System.Text.Encoding.UTF8.GetBytes("[]");
+            MemoryStream readOnlyStream = new MemoryStream(data, writable: false);
+
+            ChangeFeedProcessorBuilder builder = new ChangeFeedProcessorBuilder("workflowName",
+                ChangeFeedProcessorBuilderTests.GetMockedContainer(),
+                ChangeFeedProcessorBuilderTests.GetMockedProcessor(),
+                ChangeFeedProcessorBuilderTests.GetEmptyInitialization());
+
+            builder.WithInMemoryLeaseContainer(readOnlyStream);
+        }
+
+        [TestMethod]
+        public void WithInMemoryLeaseContainerWithCorruptedStreamThrowsInvalidOperation()
+        {
+            byte[] corruptedData = System.Text.Encoding.UTF8.GetBytes("this is not valid JSON{{{");
+            MemoryStream corruptedStream = new MemoryStream();
+            corruptedStream.Write(corruptedData, 0, corruptedData.Length);
+            corruptedStream.Position = 0;
+
+            ChangeFeedProcessorBuilder builder = new ChangeFeedProcessorBuilder("workflowName",
+                ChangeFeedProcessorBuilderTests.GetMockedContainer(),
+                ChangeFeedProcessorBuilderTests.GetMockedProcessor(),
+                ChangeFeedProcessorBuilderTests.GetEmptyInitialization());
+
+            InvalidOperationException ex = Assert.ThrowsException<InvalidOperationException>(
+                () => builder.WithInMemoryLeaseContainer(corruptedStream));
+
+            Assert.IsTrue(ex.Message.Contains("Failed to deserialize lease state"));
+            Assert.IsNotNull(ex.InnerException);
         }
 
         #endregion

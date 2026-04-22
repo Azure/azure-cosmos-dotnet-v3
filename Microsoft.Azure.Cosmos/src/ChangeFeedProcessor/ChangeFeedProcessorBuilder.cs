@@ -248,7 +248,9 @@ namespace Microsoft.Azure.Cosmos
         /// A <see cref="MemoryStream"/> that serves as both input and output for lease state.
         /// If the stream contains data, leases are deserialized and used to initialize the container.
         /// When the processor stops, the current lease state is serialized back into this stream.
-        /// The stream must be writable and resizable.
+        /// The stream must be writable and expandable (for example, created via <c>new MemoryStream()</c>).
+        /// A fixed-size stream such as <c>new MemoryStream(byte[])</c> will fail at shutdown if the
+        /// serialized lease state exceeds the original buffer capacity.
         /// </param>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="leaseState"/> is null.</exception>
@@ -257,6 +259,11 @@ namespace Microsoft.Azure.Cosmos
             if (leaseState == null)
             {
                 throw new ArgumentNullException(nameof(leaseState));
+            }
+
+            if (!leaseState.CanWrite)
+            {
+                throw new ArgumentException("The lease state stream must be writable so that state can be persisted on shutdown.", nameof(leaseState));
             }
 
             this.ValidateNoLeaseContainerConfigured();
@@ -273,23 +280,33 @@ namespace Microsoft.Azure.Cosmos
             {
                 leaseState.Position = 0;
 
-                using (StreamReader sr = new StreamReader(leaseState, encoding: System.Text.Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
-                using (JsonTextReader jsonReader = new JsonTextReader(sr))
+                List<DocumentServiceLease> leases;
+                try
                 {
-                    JsonSerializer serializer = JsonSerializer.Create();
-                    List<DocumentServiceLease> leases = serializer.Deserialize<List<DocumentServiceLease>>(jsonReader);
-
-                    if (leases != null)
+                    using (StreamReader sr = new StreamReader(leaseState, encoding: System.Text.Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
+                    using (JsonTextReader jsonReader = new JsonTextReader(sr))
                     {
-                        foreach (DocumentServiceLease lease in leases)
-                        {
-                            if (lease?.Id == null)
-                            {
-                                throw new InvalidOperationException("Lease state contains a null or invalid lease entry.");
-                            }
+                        JsonSerializer serializer = JsonSerializer.Create();
+                        leases = serializer.Deserialize<List<DocumentServiceLease>>(jsonReader);
+                    }
+                }
+                catch (JsonException ex)
+                {
+                    throw new InvalidOperationException(
+                        "Failed to deserialize lease state from the provided MemoryStream. Ensure the stream contains valid lease state JSON previously persisted by the ChangeFeedProcessor.",
+                        ex);
+                }
 
-                            container[lease.Id] = lease;
+                if (leases != null)
+                {
+                    foreach (DocumentServiceLease lease in leases)
+                    {
+                        if (string.IsNullOrEmpty(lease?.Id))
+                        {
+                            throw new InvalidOperationException("Lease state contains a null or invalid lease entry.");
                         }
+
+                        container[lease.Id] = lease;
                     }
                 }
             }

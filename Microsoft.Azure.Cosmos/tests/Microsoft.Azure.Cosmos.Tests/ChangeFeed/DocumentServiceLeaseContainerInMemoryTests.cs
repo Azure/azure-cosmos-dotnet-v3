@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             await inMemoryContainer.ShutdownAsync();
 
             // Assert
-            Assert.IsTrue(stream.Length > 0 || leaseCount == 0);
+            Assert.IsTrue(stream.Length > 0, "Stream should contain data even for an empty lease list (serialized as []).");
             stream.Position = 0;
             List<DocumentServiceLease> deserialized = DeserializeLeasesFromStream(stream);
             Assert.AreEqual(leaseCount, deserialized.Count);
@@ -215,8 +215,80 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             stream.Dispose();
 
-            await Assert.ThrowsExceptionAsync<NotSupportedException>(
+            await Assert.ThrowsExceptionAsync<ObjectDisposedException>(
                 () => inMemoryContainer.ShutdownAsync());
+        }
+
+        [TestMethod]
+        public async Task ShutdownAsync_WithNonResizableStream_SameSizeData_WritesSuccessfully()
+        {
+            // Arrange — simulate the documented restore pattern: new MemoryStream(byte[])
+            // which creates a non-expandable stream.
+            DocumentServiceLeaseCoreEpk lease = new DocumentServiceLeaseCoreEpk
+            {
+                LeaseId = "0",
+                LeaseToken = "0",
+                ContinuationToken = "1",
+                Owner = "owner",
+                FeedRange = new FeedRangeEpk(new Range<string>("", "FF", true, false))
+            };
+
+            ConcurrentDictionary<string, DocumentServiceLease> container = new ConcurrentDictionary<string, DocumentServiceLease>();
+            container.TryAdd(lease.Id, lease);
+
+            // First, serialize to get realistic bytes (non-expandable stream needs sufficient capacity)
+            MemoryStream temp = new MemoryStream();
+            DocumentServiceLeaseContainerInMemory seeder = new DocumentServiceLeaseContainerInMemory(container, temp);
+            await seeder.ShutdownAsync();
+
+            // Create a non-expandable stream from the byte array (matches user pattern: new MemoryStream(File.ReadAllBytes(...)))
+            byte[] savedState = temp.ToArray();
+            MemoryStream nonResizable = new MemoryStream(savedState);
+
+            DocumentServiceLeaseContainerInMemory inMemoryContainer = new DocumentServiceLeaseContainerInMemory(container, nonResizable);
+
+            // Act — should not throw NotSupportedException
+            await inMemoryContainer.ShutdownAsync();
+
+            // Assert
+            Assert.AreEqual(0, nonResizable.Position);
+            Assert.IsTrue(nonResizable.Length > 0);
+            List<DocumentServiceLease> deserialized = DeserializeLeasesFromStream(nonResizable);
+            Assert.AreEqual(1, deserialized.Count);
+            Assert.AreEqual("0", deserialized[0].Id);
+            Assert.AreEqual("1", deserialized[0].ContinuationToken);
+        }
+
+        [TestMethod]
+        public async Task ShutdownAsync_WithNonResizableStream_LargerData_ThrowsInvalidOperation()
+        {
+            // Arrange — start with a small non-expandable stream, then add more leases
+            // so serialized output exceeds the original buffer capacity.
+            byte[] smallBuffer = System.Text.Encoding.UTF8.GetBytes("[]");
+            MemoryStream nonResizable = new MemoryStream(smallBuffer);
+
+            ConcurrentDictionary<string, DocumentServiceLease> container = new ConcurrentDictionary<string, DocumentServiceLease>();
+            for (int i = 0; i < 10; i++)
+            {
+                DocumentServiceLeaseCoreEpk lease = new DocumentServiceLeaseCoreEpk
+                {
+                    LeaseId = i.ToString(),
+                    LeaseToken = i.ToString(),
+                    ContinuationToken = $"continuation-{i}",
+                    Owner = "owner",
+                    FeedRange = new FeedRangeEpk(new Range<string>("", "FF", true, false))
+                };
+                container.TryAdd(lease.Id, lease);
+            }
+
+            DocumentServiceLeaseContainerInMemory inMemoryContainer = new DocumentServiceLeaseContainerInMemory(container, nonResizable);
+
+            // Act & Assert — should throw InvalidOperationException with helpful message
+            InvalidOperationException ex = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => inMemoryContainer.ShutdownAsync());
+
+            Assert.IsTrue(ex.Message.Contains("not expandable"));
+            Assert.IsInstanceOfType(ex.InnerException, typeof(NotSupportedException));
         }
 
         #endregion

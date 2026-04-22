@@ -42,6 +42,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             return ownedLeases;
         }
 
+        public override Task ShutdownAsync()
+        {
+            return Task.CompletedTask;
+        }
+
         private async Task<IReadOnlyList<DocumentServiceLease>> ListDocumentsAsync(string prefix)
         {
             if (string.IsNullOrEmpty(prefix))
