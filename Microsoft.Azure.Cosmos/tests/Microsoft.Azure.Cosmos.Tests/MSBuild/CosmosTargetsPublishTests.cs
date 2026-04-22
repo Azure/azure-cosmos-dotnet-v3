@@ -32,13 +32,13 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
         };
 
         [ClassInitialize]
-        public static void ClassInitialize(TestContext _)
+        public static async Task ClassInitialize(TestContext _)
         {
             testProjectsRoot = Path.Combine(Path.GetTempPath(), "CosmosTargetsTests_" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(testProjectsRoot);
 
             // Create local NuGet package from the SDK
-            CreateLocalNuGetPackage();
+            await CreateLocalNuGetPackageAsync();
         }
 
         [ClassCleanup]
@@ -66,10 +66,10 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
         [DataRow("linux-arm64")]
         [DataRow("osx-x64")]
         [DataRow("osx-arm64")]
-        public void Publish_WithNonWindowsRuntimeIdentifier_DoesNotCopyWindowsDlls(string runtimeIdentifier)
+        public async Task Publish_WithNonWindowsRuntimeIdentifier_DoesNotCopyWindowsDlls(string runtimeIdentifier)
         {
             string projectPath = this.CreateTestProject($"NonWinTest_{runtimeIdentifier}");
-            string publishPath = this.PublishProject(projectPath, runtimeIdentifier);
+            string publishPath = await this.PublishProjectAsync(projectPath, runtimeIdentifier);
 
             this.AssertWindowsDllsNotPresent(publishPath, runtimeIdentifier);
         }
@@ -82,10 +82,10 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
         [DataRow("win-x64")]
         [DataRow("win-x86")]
         [DataRow("win-arm64")]
-        public void Publish_WithWindowsRuntimeIdentifier_CopiesWindowsDlls(string runtimeIdentifier)
+        public async Task Publish_WithWindowsRuntimeIdentifier_CopiesWindowsDlls(string runtimeIdentifier)
         {
             string projectPath = this.CreateTestProject($"WinTest_{runtimeIdentifier}");
-            string publishPath = this.PublishProject(projectPath, runtimeIdentifier);
+            string publishPath = await this.PublishProjectAsync(projectPath, runtimeIdentifier);
 
             this.AssertWindowsDllsPresent(publishPath, runtimeIdentifier);
         }
@@ -95,15 +95,15 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
         /// which is the most common developer scenario (regular 'dotnet publish' without -r).
         /// </summary>
         [TestMethod]
-        public void Publish_WithoutRuntimeIdentifier_CopiesWindowsDlls()
+        public async Task Publish_WithoutRuntimeIdentifier_CopiesWindowsDlls()
         {
             string projectPath = this.CreateTestProject("NoRidTest");
-            string publishPath = this.PublishProject(projectPath, runtimeIdentifier: null);
+            string publishPath = await this.PublishProjectAsync(projectPath, runtimeIdentifier: null);
 
             this.AssertWindowsDllsPresent(publishPath, "no RuntimeIdentifier");
         }
 
-        private static void CreateLocalNuGetPackage()
+        private static async Task CreateLocalNuGetPackageAsync()
         {
             string repoRoot = GetRepositoryRoot();
             string cosmosProjectPath = Path.Combine(repoRoot, "Microsoft.Azure.Cosmos", "src", "Microsoft.Azure.Cosmos.csproj");
@@ -144,8 +144,8 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
                     Assert.Fail("dotnet pack timed out after 10 minutes");
                 }
 
-                string output = outputTask.GetAwaiter().GetResult();
-                string error = errorTask.GetAwaiter().GetResult();
+                string output = await outputTask;
+                string error = await errorTask;
 
                 if (packProcess.ExitCode != 0)
                 {
@@ -198,7 +198,7 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
             return projectFile;
         }
 
-        private string PublishProject(string projectFile, string runtimeIdentifier)
+        private async Task<string> PublishProjectAsync(string projectFile, string runtimeIdentifier)
         {
             string projectDir = Path.GetDirectoryName(projectFile);
             string publishDir = Path.Combine(projectDir, "bin", "publish", runtimeIdentifier ?? "no-rid");
@@ -238,8 +238,8 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
                     Assert.Fail($"dotnet publish timed out after 5 minutes for {runtimeIdentifier ?? "no RID"}.\nCommand: {commandLine}");
                 }
 
-                string output = outputTask.GetAwaiter().GetResult();
-                string error = errorTask.GetAwaiter().GetResult();
+                string output = await outputTask;
+                string error = await errorTask;
 
                 if (process.ExitCode != 0)
                 {
