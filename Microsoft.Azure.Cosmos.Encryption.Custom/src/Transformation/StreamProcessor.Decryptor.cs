@@ -34,6 +34,32 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
+            // Route the caller-provided-stream path through the same IBufferWriter-based
+            // core used by the new-output-stream overload, then copy out to the user stream
+            // at the end. This avoids constructing a Utf8JsonWriter over a Stream (which on
+            // .NET 8 eagerly creates a GC-heap-backed ArrayBufferWriter<byte> that doubles
+            // from 256 bytes and produces hundreds of KB of garbage per op for medium
+            // documents), at the cost of one pooled-to-caller memcpy on completion.
+            using RentArrayBufferWriter bufferWriter = new (PooledStreamConfiguration.Current.StreamInitialCapacity);
+            DecryptionContext context = await this.DecryptStreamAsync(inputStream, bufferWriter, encryptor, properties, diagnosticsContext, cancellationToken);
+            if (context == null)
+            {
+                return null;
+            }
+
+            await bufferWriter.CopyToAsync(outputStream, cancellationToken).ConfigureAwait(false);
+            outputStream.Position = 0;
+            return context;
+        }
+
+        internal async Task<DecryptionContext> DecryptStreamAsync(
+            Stream inputStream,
+            IBufferWriter<byte> outputBufferWriter,
+            Encryptor encryptor,
+            EncryptionProperties properties,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
             _ = diagnosticsContext;
 
             if (properties.EncryptionFormatVersion != EncryptionFormatVersion.Mde)
@@ -41,13 +67,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 throw new NotSupportedException($"Unknown encryption format version: {properties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
             }
 
-            using ArrayPoolManager arrayPoolManager = new ();
+            // Pre-size the rent-tracking list to cover ~2 rents per encrypted property plus
+            // the structural streaming-buffer rents. Avoids the List<byte[]> grow chain.
+            int encryptedPathCount = properties.EncryptedPaths is ICollection<string> ec ? ec.Count : properties.EncryptedPaths.Count();
+            using ArrayPoolManager arrayPoolManager = new (initialRentCapacity: (encryptedPathCount * 2) + 4);
 
             DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(properties.DataEncryptionKeyId, properties.EncryptionAlgorithm, cancellationToken);
 
-            List<string> pathsDecrypted = new (properties.EncryptedPaths.Count());
+            List<string> pathsDecrypted = new (encryptedPathCount);
 
-            using Utf8JsonWriter writer = new (outputStream);
+            // Write through an IBufferWriter instead of a Stream. Utf8JsonWriter(IBufferWriter)
+            // stores the reference and writes directly — no internal ArrayBufferWriter<byte>,
+            // no GC-heap doubling chain, no per-flush memcpy.
+            using Utf8JsonWriter writer = new (outputBufferWriter);
 
             byte[] buffer = arrayPoolManager.Rent(PooledStreamConfiguration.Current.StreamProcessorBufferSize);
 
@@ -93,7 +125,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             }
 
             writer.Flush();
-            outputStream.Position = 0;
 
             return EncryptionProcessor.CreateDecryptionContext(pathsDecrypted, properties.DataEncryptionKeyId);
 

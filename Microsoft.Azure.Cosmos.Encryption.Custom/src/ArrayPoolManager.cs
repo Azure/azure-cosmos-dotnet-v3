@@ -12,8 +12,25 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     internal class ArrayPoolManager<T> : IDisposable
 #pragma warning restore SA1402 // File may only contain a single type
     {
-        private List<T[]> rentedBuffers = new ();
+        // Default list capacity chosen to cover the typical decrypt rent count
+        // (~2 rents per encrypted property + a small handful of structural rents).
+        // Starting the List<T[]> at a realistic capacity avoids the grow chain
+        // (4->8->16->...->256) that otherwise allocates several hundred bytes of
+        // pointer-array garbage per op on documents with many encrypted properties.
+        private const int DefaultRentCapacity = 16;
+
+        private List<T[]> rentedBuffers;
         private bool disposedValue;
+
+        public ArrayPoolManager()
+            : this(DefaultRentCapacity)
+        {
+        }
+
+        public ArrayPoolManager(int initialRentCapacity)
+        {
+            this.rentedBuffers = new List<T[]>(initialRentCapacity <= 0 ? DefaultRentCapacity : initialRentCapacity);
+        }
 
         public T[] Rent(int minimumLength)
         {
@@ -50,5 +67,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
     internal class ArrayPoolManager : ArrayPoolManager<byte>
     {
+        public ArrayPoolManager()
+        {
+        }
+
+        public ArrayPoolManager(int initialRentCapacity)
+            : base(initialRentCapacity)
+        {
+        }
     }
 }

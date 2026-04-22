@@ -54,23 +54,31 @@ internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
             return (input, null);
         }
 
-        PooledMemoryStream ms = new ();
+        // Write decrypt output through a pooled IBufferWriter and expose it as a
+        // read-only Stream. This avoids the double-buffering that
+        // Utf8JsonWriter(Stream) performs on .NET 8 (it eagerly creates a GC-heap-
+        // backed ArrayBufferWriter<byte> that doubles from 256 bytes, producing
+        // hundreds of KB of garbage per operation for medium documents).
+        RentArrayBufferWriter bufferWriter = new (PooledStreamConfiguration.Current.StreamInitialCapacity);
         try
         {
-            DecryptionContext context = await this.streamProcessor.DecryptStreamAsync(input, ms, encryptor, properties, diagnosticsContext, cancellationToken);
+            DecryptionContext context = await this.streamProcessor.DecryptStreamAsync(input, bufferWriter, encryptor, properties, diagnosticsContext, cancellationToken);
             if (context == null)
             {
-                await ms.DisposeAsync();
+                bufferWriter.Dispose();
                 return (input, null);
             }
 
-            return (ms, context);  // Ownership transfers successfully
+            // ReadOnlyBufferWriterStream takes ownership of bufferWriter; disposal of
+            // the returned Stream (handled by the caller, e.g. ResponseMessage.Dispose)
+            // returns the rented buffer to the pool.
+            return (new ReadOnlyBufferWriterStream(bufferWriter), context);
         }
         catch
         {
-            // CRITICAL: Dispose PooledMemoryStream on exception to prevent memory leak
-            await ms.DisposeAsync();
-            throw;  // Rethrow to preserve original exception
+            // CRITICAL: Dispose bufferWriter on exception to prevent memory leak
+            bufferWriter.Dispose();
+            throw;
         }
     }
 
