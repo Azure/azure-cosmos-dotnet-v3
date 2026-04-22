@@ -65,14 +65,48 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(1, cache.RidLookupCount);
         }
 
+        /// <summary>
+        /// Assignment guard: when the name-based lookup returns a container whose ResourceId is
+        /// a database-level RID (i.e. the server sent a corrupt response), CollectionCache must
+        /// throw <see cref="InvalidOperationException"/> before persisting the bad value onto
+        /// <c>request.RequestContext.ResolvedCollectionRid</c>.
+        ///
+        /// On the <c>msdata/direct</c> branch an additional first line of defence exists:
+        /// the <see cref="DocumentServiceRequestContext.ResolvedCollectionRid"/> setter itself
+        /// emits a <c>TraceWarning</c> (with the call stack) whenever a non-collection RID is
+        /// assigned, so the exact call site can be identified in production logs even before the
+        /// error surfaces in <see cref="CollectionCache"/>.
+        /// </summary>
+        [TestMethod]
+        public async Task ResolveCollectionAsync_WhenNameResolutionReturnsDatabaseRid_ThrowsInvalidOperation()
+        {
+            const string databaseRid = "jy2ekg==";
+
+            // The mock returns a container whose ResourceId is a database RID — simulating
+            // a corrupt server response or a stale in-process cache entry.
+            TestCollectionCache cache = new TestCollectionCache(returnRid: databaseRid);
+            using DocumentServiceRequest request = DocumentServiceRequest.CreateFromName(
+                OperationType.Read,
+                "dbs/db1/colls/c1/docs/d1",
+                ResourceType.Document,
+                AuthorizationTokenType.PrimaryMasterKey,
+                null);
+
+            await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => cache.ResolveCollectionAsync(
+                    request,
+                    CancellationToken.None,
+                    NoOpTrace.Singleton));
+        }
+
         private sealed class TestCollectionCache : CollectionCache
         {
-            private readonly string containerRid;
+            private readonly string returnRid;
 
-            public TestCollectionCache(string containerRid)
+            public TestCollectionCache(string returnRid)
                 : base(enableAsyncCacheExceptionNoSharing: false)
             {
-                this.containerRid = containerRid;
+                this.returnRid = returnRid;
             }
 
             public int NameLookupCount { get; private set; }
@@ -87,9 +121,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 CancellationToken cancellationToken)
             {
                 this.RidLookupCount++;
-                if (StringComparer.Ordinal.Equals(collectionRid, this.containerRid))
+                if (StringComparer.Ordinal.Equals(collectionRid, this.returnRid))
                 {
-                    return Task.FromResult(ContainerProperties.CreateWithResourceId(this.containerRid));
+                    return Task.FromResult(ContainerProperties.CreateWithResourceId(this.returnRid));
                 }
                 else
                 {
@@ -105,7 +139,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 CancellationToken cancellationToken)
             {
                 this.NameLookupCount++;
-                return Task.FromResult(ContainerProperties.CreateWithResourceId(this.containerRid));
+                return Task.FromResult(ContainerProperties.CreateWithResourceId(this.returnRid));
             }
         }
     }
