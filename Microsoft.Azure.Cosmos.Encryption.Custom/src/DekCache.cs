@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     internal class DekCache
     {
         private readonly TimeSpan dekPropertiesTimeToLive;
+        private readonly TimeSpan distributedCacheEntryLifetime;
         private readonly TimeSpan? proactiveRefreshThreshold;
         private readonly IDistributedCache distributedCache;
         private readonly string cacheKeyPrefix;
@@ -35,9 +36,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             IDistributedCache distributedCache = null,
             TimeSpan? proactiveRefreshThreshold = null,
             string cacheKeyPrefix = "dek",
-            Func<DateTime> utcNow = null)
+            Func<DateTime> utcNow = null,
+            TimeSpan? distributedCacheEntryLifetime = null)
         {
             this.dekPropertiesTimeToLive = dekPropertiesTimeToLive.HasValue == true ? dekPropertiesTimeToLive.Value : TimeSpan.FromMinutes(Constants.DekPropertiesDefaultTTLInMinutes);
+
+            // Distributed cache entries live strictly longer than the in-memory TTL so that a
+            // peer-populated L2 entry can rescue a request after L1 expiry — this is the
+            // resilience property the feature exists to provide. Default = 2x the L1 TTL.
+            this.distributedCacheEntryLifetime = distributedCacheEntryLifetime
+                ?? TimeSpan.FromTicks(this.dekPropertiesTimeToLive.Ticks * 2);
+            if (this.distributedCacheEntryLifetime <= this.dekPropertiesTimeToLive)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(distributedCacheEntryLifetime),
+                    "distributedCacheEntryLifetime must be strictly greater than dekPropertiesTimeToLive so that L2 entries outlive L1 expiry.");
+            }
 
             // Validate cacheKeyPrefix
             ArgumentValidation.ThrowIfNullOrWhiteSpace(cacheKeyPrefix, nameof(cacheKeyPrefix));
@@ -77,10 +91,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     activity?.SetTag("cache.expired", true);
                     activity?.SetTag("cache.operation", "refresh");
 
+                    // Route the refresh through FetchDekPropertiesAsync (which consults L2 first),
+                    // not FetchFromSourceAndUpdateCachesAsync (which goes straight to Cosmos). This
+                    // is the resilience guarantee of the feature: if a peer populated L2 and
+                    // Cosmos metadata is momentarily unavailable, the L1-expiry path must serve
+                    // from L2 rather than failing the caller.
                     cachedDekProperties = await this.DekPropertiesCache.GetAsync(
                         dekId,
                         null,
-                        () => this.FetchFromSourceAndUpdateCachesAsync(dekId, fetcher, diagnosticsContext, cancellationToken),
+                        () => this.FetchDekPropertiesAsync(dekId, fetcher, diagnosticsContext, cancellationToken),
                         cancellationToken,
                         forceRefresh: true);
                 }
@@ -306,21 +325,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     {
                         CachedDekProperties cachedProps = DeserializeCachedDekProperties(cachedBytes);
 
-                        // Validate the cached entry is still valid
-                        if (cachedProps.ServerPropertiesExpiryUtc > this.utcNow())
-                        {
-                            activity?.SetTag("cache.result", "hit");
-                            activity?.SetTag("cache.entry.valid", true);
-                            return cachedProps;
-                        }
+                        // Restamp with a fresh L1 freshness horizon so that the returned entry is
+                        // valid per L1's TTL semantics and the L1-expiry branch does not re-trigger
+                        // on the very next call. The original payload stamp is informational only;
+                        // the IDistributedCache's own AbsoluteExpiration bounds the maximum age of
+                        // the L2 entry at the store layer.
+                        CachedDekProperties freshForL1 = new CachedDekProperties(
+                            cachedProps.ServerProperties,
+                            this.utcNow() + this.dekPropertiesTimeToLive);
 
-                        activity?.SetTag("cache.result", "expired");
-                        activity?.SetTag("cache.entry.valid", false);
+                        activity?.SetTag("cache.result", "hit");
+                        activity?.SetTag("cache.entry.valid", true);
+                        return freshForL1;
                     }
-                    else
-                    {
-                        activity?.SetTag("cache.result", "miss");
-                    }
+
+                    activity?.SetTag("cache.result", "miss");
                 }
                 catch (OperationCanceledException)
                 {
@@ -380,12 +399,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             try
             {
                 byte[] serialized = SerializeCachedDekProperties(cachedProperties);
+
+                // L2's absolute expiration is the L2 entry's hard lifetime, intentionally longer
+                // than L1's TTL so that a peer's L2 entry survives the peer's (or this process')
+                // L1 expiry. This decoupling is what lets L2 rescue the caller on L1 expiry when
+                // Cosmos is unavailable.
+                DateTime l2HardExpiry = this.utcNow() + this.distributedCacheEntryLifetime;
+
                 await this.distributedCache.SetAsync(
                     this.GetDistributedCacheKey(dekId),
                     serialized,
                     new DistributedCacheEntryOptions
                     {
-                        AbsoluteExpiration = new DateTimeOffset(cachedProperties.ServerPropertiesExpiryUtc, TimeSpan.Zero),
+                        AbsoluteExpiration = new DateTimeOffset(l2HardExpiry, TimeSpan.Zero),
                     },
                     cancellationToken);
             }

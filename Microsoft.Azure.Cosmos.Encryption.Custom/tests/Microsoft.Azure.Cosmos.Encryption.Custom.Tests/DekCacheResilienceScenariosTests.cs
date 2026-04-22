@@ -80,20 +80,25 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 "Both coalesced callers must observe the same DEK properties instance.");
         }
 
-        // REQ: When L1 has an expired entry and N callers race the refresh path,
-        //      Cosmos must be invoked at most once. A resilience cache must not
-        //      amplify upstream load at the TTL boundary.
+        // REQ: When L1 has an expired entry, L2 is empty, and N callers race the refresh
+        //      path, the fetcher (Cosmos) must be invoked at most once. A resilience cache
+        //      must not amplify upstream load at the TTL boundary.
         // SOURCE-ASYNCCACHE: Mirrored/AsyncCache.cs:128-131 — compare-and-swap on
         //                    AddOrUpdate guarantees a single forceRefresh generator
         //                    wins even with N concurrent callers.
+        // NOTE: distributedCache is intentionally null — with an L2 populated by the warmup,
+        //       racers would be served from L2 and the fetcher would not be invoked at all,
+        //       which is correct but not the coalescing behaviour under test here.
         [TestMethod]
         public async Task ExpiredL1_NConcurrentCallers_CosmosInvokedAtMostOnce()
         {
             const int N = 16;
 
             DateTime now = NewClock();
-            ClockControlledDistributedCache l2 = new ClockControlledDistributedCache(() => now);
-            DekCache cache = NewCache(DefaultTtl, l2, () => now);
+            DekCache cache = new DekCache(
+                dekPropertiesTimeToLive: DefaultTtl,
+                distributedCache: null,
+                utcNow: () => now);
 
             // Warm L1 (fetcher #1).
             await cache.GetOrAddDekPropertiesAsync(
@@ -248,12 +253,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         //                  L1 expired. Line 310 uses "expiryUtc > utcNow()" to mark
         //                  an L2 entry valid. Both sides therefore say "expired" when
         //                  now == expiry.
+        // NOTE: L2 is intentionally null because this test targets the L1-expiry boundary,
+        //       not L2-rescue. With L2 populated, the refresh would be served from L2 and
+        //       the Cosmos counter would not move, which is correct resilience behaviour but
+        //       not the boundary condition under test here.
         [TestMethod]
         public async Task ClockExactlyAtExpiry_TreatedAsExpiredAndRefetches()
         {
             DateTime now = NewClock();
-            ClockControlledDistributedCache l2 = new ClockControlledDistributedCache(() => now);
-            DekCache cache = NewCache(DefaultTtl, l2, () => now);
+            DekCache cache = new DekCache(
+                dekPropertiesTimeToLive: DefaultTtl,
+                distributedCache: null,
+                utcNow: () => now);
 
             int cosmosCalls = 0;
             Func<string, CosmosDiagnosticsContext, CancellationToken, Task<DataEncryptionKeyProperties>> fetcher =
