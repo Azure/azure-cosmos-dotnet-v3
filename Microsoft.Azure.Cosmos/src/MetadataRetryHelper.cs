@@ -61,6 +61,18 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(retryPolicy));
             }
 
+            if (crossRegionRetryGrace < TimeSpan.Zero)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(crossRegionRetryGrace),
+                    "Cross-region retry grace must not be negative.");
+            }
+
+            // Contract: the operation lambda MUST honor the CancellationToken passed to it
+            // and MUST NOT close over any outer CancellationToken. On a grace retry attempt
+            // this will be a fresh, bounded-lifetime token decoupled from the caller's
+            // (already cancelled) token. Closing over the outer token re-introduces the
+            // defect this helper is designed to fix.
             bool graceTokenUsed = false;
             while (true)
             {

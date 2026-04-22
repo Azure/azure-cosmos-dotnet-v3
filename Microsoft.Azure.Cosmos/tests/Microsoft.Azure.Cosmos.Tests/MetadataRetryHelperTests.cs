@@ -342,6 +342,63 @@ namespace Microsoft.Azure.Cosmos.Tests
                 $"If this starts asserting on attempts==2, someone improved the shared retry utility to consult the policy " +
                 $"before honoring cancellation — in that case the bespoke MetadataRetryHelper may be removable.");
         }
+
+        /// <summary>
+        /// Regression guard: when the very first operation attempt throws
+        /// <see cref="OperationCanceledException"/> (caller token already cancelled and the
+        /// inner HTTP call honors it immediately), the helper must still consult the retry
+        /// policy before surfacing the OCE. If the policy returns NoRetry, the OCE is
+        /// surfaced. This test pins the "policy is consulted FIRST" invariant.
+        /// </summary>
+        [TestMethod]
+        [Owner("ntripician")]
+        public async Task ExecuteAsync_FirstAttemptOCE_PolicyIsConsultedBeforeSurfacing()
+        {
+            Mock<IDocumentClientRetryPolicy> policy = new Mock<IDocumentClientRetryPolicy>();
+            policy
+                .Setup(p => p.ShouldRetryAsync(It.IsAny<Exception>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(ShouldRetryResult.NoRetry());
+
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            int attempts = 0;
+
+            await Assert.ThrowsExceptionAsync<OperationCanceledException>(
+                () => MetadataRetryHelper.ExecuteAsync<int>(
+                    (ct) =>
+                    {
+                        attempts++;
+                        ct.ThrowIfCancellationRequested();
+                        return Task.FromResult(42);
+                    },
+                    policy.Object,
+                    cts.Token));
+
+            Assert.AreEqual(1, attempts);
+            policy.Verify(
+                p => p.ShouldRetryAsync(It.IsAny<Exception>(), It.IsAny<CancellationToken>()),
+                Times.AtLeastOnce,
+                "Retry policy must be consulted even on first-attempt OCE. If not, the helper's core invariant is broken.");
+        }
+
+        /// <summary>
+        /// Negative grace windows are invalid and must be rejected at the API boundary rather
+        /// than silently collapsed to "disabled". This prevents subtle misuse.
+        /// </summary>
+        [TestMethod]
+        [Owner("ntripician")]
+        public async Task ExecuteAsync_NegativeGrace_Throws()
+        {
+            Mock<IDocumentClientRetryPolicy> policy = new Mock<IDocumentClientRetryPolicy>();
+
+            await Assert.ThrowsExceptionAsync<ArgumentOutOfRangeException>(
+                () => MetadataRetryHelper.ExecuteAsync<int>(
+                    (ct) => Task.FromResult(1),
+                    policy.Object,
+                    TimeSpan.FromSeconds(-1),
+                    CancellationToken.None));
+        }
     }
 }
 
