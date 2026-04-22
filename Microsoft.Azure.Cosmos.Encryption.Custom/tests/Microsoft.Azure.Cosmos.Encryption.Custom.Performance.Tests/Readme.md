@@ -10,10 +10,18 @@ and **Stream** (pooled, ArrayPool-backed) JSON processors across different docum
 
 | Method | Description |
 |--------|-------------|
-| `Encrypt` | Encrypts a document, returning a new stream |
-| `EncryptToProvidedStream` | Encrypts into a caller-provided `RecyclableMemoryStream` |
-| `Decrypt` | Decrypts a document, returning a new stream |
-| `DecryptToProvidedStream` | Decrypts into a caller-provided `RecyclableMemoryStream` |
+| `Encrypt` | Encrypts a document, returning a new `Stream` |
+| `EncryptToProvidedStream` | Encrypts into a caller-provided output `Stream` |
+| `Decrypt` | Decrypts a document, returning a new `Stream` |
+| `DecryptToProvidedStream` | Decrypts into a caller-provided output `Stream` |
+
+> The `*ToProvidedStream` benchmarks supply a `Microsoft.IO.RecyclableMemoryStream`
+> as the output stream. That package is a **test-only** dependency of this
+> benchmark project (`Microsoft.Azure.Cosmos.Encryption.Custom.Performance.Tests.csproj`)
+> and is **not** referenced by `Microsoft.Azure.Cosmos.Encryption.Custom` itself —
+> the product code accepts any `Stream`. Callers of the production API are free
+> to pass a plain `MemoryStream`, a pooled stream of their choice, or any other
+> `Stream` implementation.
 
 ### Parameters
 
