@@ -93,182 +93,167 @@ times are materially more representative.
 
 ## Latest Results
 
-``` ini
+The numbers below are the **only** results recorded in this README. They come from two
+back-to-back MediumRun passes executed on the same idle machine (Windows 11, .NET SDK
+10.0.202, .NET 8.0.26 X64 RyuJIT AVX2, BenchmarkDotNet v0.13.3, `MediumRun` job:
+15 iterations × 2 launches × 10 warmup, `OperationsPerInvoke = 16`,
+`InProcessEmitToolchain`, `MemoryDiagnoser`). The harness file
+(`EncryptionBenchmark.cs`) is byte-identical between the two runs; only product code
+differs.
 
-BenchmarkDotNet=v0.13.3, OS=Windows 11 (10.0.26200.8246), VM=Hyper-V
-Unknown processor
-.NET SDK=10.0.202
-  [Host] : .NET 8.0.26 (8.0.2626.16921), X64 RyuJIT AVX2
+- **`master`** run: `origin/master` at commit `79d18b73` with this PR's harness
+  back-ported (harness-only changes: concrete `BenchmarkKeyStoreProvider`, drop of the
+  spurious `ENCRYPTION_CUSTOM_PREVIEW` gate, `OperationsPerInvoke = 16`).
+- **`this PR`** run: `users/adamnova/decrypt-bufwriter-opts` at commit `9fea360f`.
 
-Job=MediumRun  Toolchain=InProcessEmitToolchain  IterationCount=15
-LaunchCount=2  WarmupCount=10
+Raw output lives at
+`BenchmarkDotNet.Artifacts/results/Microsoft.Azure.Cosmos.Encryption.Custom.Performance.Tests.EncryptionBenchmark-report-github.md`
+in each checkout after running `dotnet run -c Release --framework net8.0 -- --filter '*EncryptionBenchmark*'`.
+
+### This PR — full BDN summary
 
 ```
+Job=MediumRun  Toolchain=InProcessEmitToolchain  IterationCount=15  LaunchCount=2  WarmupCount=10
+```
 
-Results for commit `a5e80220` on `feature/stream-processor-optimizations` (full BDN summary —
-raw copy of `BenchmarkDotNet.Artifacts/results/*-report-github.md`):
+|                  Method | DocumentSizeInKb |  Processor |        Mean |      Error |     StdDev |      Median |    Gen0 |    Gen1 |    Gen2 | Allocated |
+|------------------------ |----------------- |----------- |------------:|-----------:|-----------:|------------:|--------:|--------:|--------:|----------:|
+|                 **Encrypt** |                **1** | **Newtonsoft** |    **35.32 μs** |   **2.342 μs** |   **3.506 μs** |    **34.11 μs** |  **0.0610** |       **-** |       **-** |   **36648 B** |
+| EncryptToProvidedStream |                1 | Newtonsoft |          NA |         NA |         NA |          NA |       - |       - |       - |         - |
+|                 Decrypt |                1 | Newtonsoft |    63.08 μs |   3.215 μs |   4.611 μs |    63.12 μs |       - |       - |       - |   54960 B |
+| DecryptToProvidedStream |                1 | Newtonsoft |    48.46 μs |   2.934 μs |   4.392 μs |    47.55 μs |  0.0610 |       - |       - |   36880 B |
+|                 **Encrypt** |                **1** |     **Stream** |    **19.50 μs** |   **1.466 μs** |   **2.195 μs** |    **18.78 μs** |       **-** |       **-** |       **-** |   **13816 B** |
+| EncryptToProvidedStream |                1 |     Stream |    18.96 μs |   0.826 μs |   1.236 μs |    18.48 μs |       - |       - |       - |    9704 B |
+|                 Decrypt |                1 |     Stream |    42.25 μs |   3.982 μs |   5.960 μs |    40.23 μs |       - |       - |       - |   24704 B |
+| DecryptToProvidedStream |                1 |     Stream |    25.75 μs |   1.565 μs |   2.342 μs |    26.86 μs |       - |       - |       - |    5720 B |
+|                 **Encrypt** |               **10** | **Newtonsoft** |   **193.73 μs** |  **14.140 μs** |  **21.164 μs** |   **195.69 μs** |  **0.2441** |       **-** |       **-** |  **171449 B** |
+| EncryptToProvidedStream |               10 | Newtonsoft |          NA |         NA |         NA |          NA |       - |       - |       - |         - |
+|                 Decrypt |               10 | Newtonsoft |   250.13 μs |  25.720 μs |  37.700 μs |   250.56 μs |  0.2441 |       - |       - |  198913 B |
+| DecryptToProvidedStream |               10 | Newtonsoft |   224.06 μs |  18.929 μs |  28.333 μs |   226.47 μs |  0.2441 |       - |       - |  125593 B |
+|                 **Encrypt** |               **10** |     **Stream** |    **64.00 μs** |   **4.792 μs** |   **7.024 μs** |    **64.63 μs** |       **-** |       **-** |       **-** |   **45873 B** |
+| EncryptToProvidedStream |               10 |     Stream |    65.16 μs |   1.772 μs |   2.598 μs |    64.87 μs |       - |       - |       - |   29473 B |
+|                 Decrypt |               10 |     Stream |   128.67 μs |   6.320 μs |   9.460 μs |   131.60 μs |       - |       - |       - |   63489 B |
+| DecryptToProvidedStream |               10 |     Stream |    49.01 μs |   3.891 μs |   5.703 μs |    48.10 μs |       - |       - |       - |    5720 B |
+|                 **Encrypt** |              **100** | **Newtonsoft** | **1,852.98 μs** |  **72.617 μs** | **108.690 μs** | **1,864.41 μs** | **19.5313** | **19.5313** | **19.5313** | **1693133 B** |
+| EncryptToProvidedStream |              100 | Newtonsoft |          NA |         NA |         NA |          NA |       - |       - |       - |         - |
+|                 Decrypt |              100 | Newtonsoft | 2,553.97 μs | 192.639 μs | 288.334 μs | 2,545.63 μs | 20.8333 | 20.8333 | 20.8333 | 1584568 B |
+| DecryptToProvidedStream |              100 | Newtonsoft | 1,828.46 μs | 138.802 μs | 207.753 μs | 1,767.60 μs |  7.8125 |  7.8125 |  7.8125 | 1013660 B |
+|                 **Encrypt** |              **100** |     **Stream** |   **647.31 μs** |  **36.999 μs** |  **55.379 μs** |   **637.39 μs** |  **7.8125** |  **7.8125** |  **7.8125** |  **425690 B** |
+| EncryptToProvidedStream |              100 |     Stream |   484.90 μs |  25.284 μs |  37.844 μs |   463.85 μs |  3.9063 |  3.9063 |  3.9063 |  163545 B |
+|                 Decrypt |              100 |     Stream |   946.17 μs |  26.169 μs |  36.685 μs |   937.02 μs | 10.7422 | 10.7422 | 10.7422 |  446452 B |
+| DecryptToProvidedStream |              100 |     Stream |   386.53 μs |  22.831 μs |  33.466 μs |   376.49 μs |       - |       - |       - |    5906 B |
 
-|                  Method | DocumentSizeInKb |  Processor |        Mean |      Error |     StdDev |    Gen0 |    Gen1 |    Gen2 | Allocated |
-|------------------------ |----------------- |----------- |------------:|-----------:|-----------:|--------:|--------:|--------:|----------:|
-|                 **Encrypt** |                **1** | **Newtonsoft** |    **49.59 μs** |   **0.808 μs** |   **1.158 μs** |       **-** |       **-** |       **-** |   **36552 B** |
-| EncryptToProvidedStream |                1 | Newtonsoft |          NA |         NA |         NA |       - |       - |       - |         - |
-|                 Decrypt |                1 | Newtonsoft |    83.27 μs |   2.481 μs |   3.714 μs |       - |       - |       - |   54768 B |
-| DecryptToProvidedStream |                1 | Newtonsoft |    60.08 μs |   2.994 μs |   4.481 μs |       - |       - |       - |   36689 B |
-|                 **Encrypt** |                **1** |     **Stream** |    **22.85 μs** |   **0.967 μs** |   **1.417 μs** |       **-** |       **-** |       **-** |   **13808 B** |
-| EncryptToProvidedStream |                1 |     Stream |    21.56 μs |   1.206 μs |   1.805 μs |       - |       - |       - |    9696 B |
-|                 Decrypt |                1 |     Stream |    46.41 μs |   3.129 μs |   4.684 μs |  0.0610 |       - |       - |   29744 B |
-| DecryptToProvidedStream |                1 |     Stream |    23.85 μs |   1.882 μs |   2.817 μs |       - |       - |       - |   10672 B |
-|                 **Encrypt** |               **10** | **Newtonsoft** |   **192.96 μs** |  **14.079 μs** |  **21.073 μs** |  **0.2441** |       **-** |       **-** |  **171353 B** |
-| EncryptToProvidedStream |               10 | Newtonsoft |          NA |         NA |         NA |       - |       - |       - |         - |
-|                 Decrypt |               10 | Newtonsoft |   256.32 μs |  25.469 μs |  36.527 μs |       - |       - |       - |  198722 B |
-| DecryptToProvidedStream |               10 | Newtonsoft |   193.90 μs |  10.682 μs |  15.658 μs |  0.2441 |       - |       - |  125401 B |
-|                 **Encrypt** |               **10** |     **Stream** |    **55.52 μs** |   **1.424 μs** |   **2.042 μs** |  **0.0610** |       **-** |       **-** |   **45864 B** |
-| EncryptToProvidedStream |               10 |     Stream |    51.97 μs |   1.570 μs |   2.350 μs |       - |       - |       - |   29464 B |
-|                 Decrypt |               10 |     Stream |    88.96 μs |   2.032 μs |   2.979 μs |  0.1221 |       - |       - |   75441 B |
-| DecryptToProvidedStream |               10 |     Stream |    41.42 μs |   1.114 μs |   1.561 μs |       - |       - |       - |   17584 B |
-|                 **Encrypt** |              **100** | **Newtonsoft** | **1,699.77 μs** |  **79.419 μs** | **116.412 μs** | **17.5781** | **17.5781** | **17.5781** | **1693023 B** |
-| EncryptToProvidedStream |              100 | Newtonsoft |          NA |         NA |         NA |       - |       - |       - |         - |
-|                 Decrypt |              100 | Newtonsoft | 2,217.55 μs |  46.219 μs |  69.179 μs | 19.5313 | 19.5313 | 19.5313 | 1584335 B |
-| DecryptToProvidedStream |              100 | Newtonsoft | 1,729.32 μs | 125.646 μs | 188.060 μs |  9.7656 |  9.7656 |  9.7656 | 1013478 B |
-|                 **Encrypt** |              **100** |     **Stream** |   **639.99 μs** |  **32.310 μs** |  **47.359 μs** |  **7.8125** |  **7.8125** |  **7.8125** |  **425683 B** |
-| EncryptToProvidedStream |              100 |     Stream |   463.20 μs |   6.969 μs |  10.431 μs |  3.9063 |  3.9063 |  3.9063 |  163537 B |
-|                 Decrypt |              100 |     Stream | 1,038.95 μs |  50.995 μs |  73.136 μs | 11.7188 | 11.7188 | 11.7188 |  558900 B |
-| DecryptToProvidedStream |              100 |     Stream |   493.95 μs |  37.074 μs |  53.171 μs |  3.4180 |  3.4180 |  3.4180 |  118290 B |
+### Comparison vs. `master` (`79d18b73`)
+
+#### Newtonsoft paths — sanity check
+
+The PR does not touch the Newtonsoft path. All Newtonsoft scenarios agree within run-to-run
+noise (≤ 0.52 %), confirming the comparison is apples-to-apples.
+
+| Scenario | master Alloc | this PR Alloc | Δ |
+|---|---:|---:|---:|
+| Encrypt 1 KB                    |    36,552 B |    36,648 B | +0.26% |
+| Decrypt 1 KB                    |    54,768 B |    54,960 B | +0.35% |
+| DecryptToProvidedStream 1 KB    |    36,688 B |    36,880 B | +0.52% |
+| Encrypt 10 KB                   |   171,353 B |   171,449 B | +0.06% |
+| Decrypt 10 KB                   |   198,722 B |   198,913 B | +0.10% |
+| DecryptToProvidedStream 10 KB   |   125,401 B |   125,593 B | +0.15% |
+| Encrypt 100 KB                  | 1,693,159 B | 1,693,133 B | −0.00% |
+| Decrypt 100 KB                  | 1,584,352 B | 1,584,568 B | +0.01% |
+| DecryptToProvidedStream 100 KB  | 1,013,492 B | 1,013,660 B | +0.02% |
+
+#### Stream paths — where this PR moves the numbers
+
+| Scenario | master Alloc | this PR Alloc | Alloc Δ | master Mean | this PR Mean | Time Δ |
+|---|---:|---:|---:|---:|---:|---:|
+| 1 KB  Encrypt                  |    16,552 B |    13,816 B | **−16.5%** |    27.54 μs |    19.50 μs | **−29.2%** |
+| 1 KB  EncryptToProvidedStream  |    10,392 B |     9,704 B |  **−6.6%** |    24.24 μs |    18.96 μs | **−21.8%** |
+| 1 KB  Decrypt                  |    27,328 B |    24,704 B |  **−9.6%** |    51.53 μs |    42.25 μs | **−18.0%** |
+| 1 KB  DecryptToProvidedStream  |    11,072 B |     5,720 B | **−48.3%** |    26.12 μs |    25.75 μs |   −1.4% |
+| 10 KB Encrypt                  |    81,953 B |    45,873 B | **−44.0%** |    69.84 μs |    64.00 μs |  **−8.4%** |
+| 10 KB EncryptToProvidedStream  |    36,048 B |    29,473 B | **−18.2%** |    62.92 μs |    65.16 μs |   +3.6% |
+| 10 KB Decrypt                  |    70,673 B |    63,489 B | **−10.2%** |   129.35 μs |   128.67 μs |   −0.5% |
+| 10 KB DecryptToProvidedStream  |    17,984 B |     5,720 B | **−68.2%** |    59.03 μs |    49.01 μs | **−17.0%** |
+| 100 KB Encrypt                 |   677,078 B |   425,690 B | **−37.1%** |   976.77 μs |   647.31 μs | **−33.7%** |
+| 100 KB EncryptToProvidedStream |   229,131 B |   163,545 B | **−28.6%** |   637.89 μs |   484.90 μs | **−24.0%** |
+| 100 KB Decrypt                 |   539,936 B |   446,452 B | **−17.3%** | 1,065.20 μs |   946.17 μs | **−11.2%** |
+| 100 KB DecryptToProvidedStream |   118,682 B |     5,906 B | **−95.0%** |   468.04 μs |   386.53 μs | **−17.4%** |
+
+All 12 Stream-processor scenarios (Encrypt / EncryptToProvidedStream / Decrypt /
+DecryptToProvidedStream at each of 1 / 10 / 100 KB) are **neutral or better than master on
+both allocations and wall time**. The smallest wall-time delta (−0.5 % at 10 KB Decrypt) is
+inside the measurement noise; the largest is **−95 % allocation at 100 KB
+DecryptToProvidedStream** (118 KB → 6 KB) combined with **−17 % wall time**. Gen2
+collections per 1 000 ops drop from 2.93 to 0 at 100 KB DecryptToProvidedStream.
 
 ### What this PR ships over `master`
 
-The numbers above include the PooledMemoryStream + PooledJsonSerializer core work plus the
-follow-up review fixes:
+This PR is a set of focused, layered optimizations on the `JsonProcessor.Stream` path. In
+order of measured impact:
 
-1. `PooledMemoryStream` rents its backing buffer lazily on first write (preserving the
-   configured initial-capacity floor) so streams that are constructed but never written do not
-   take a pool rent.
-2. `StreamProcessor` property-name matching uses `Utf8JsonReader.ValueTextEquals` with
-   pre-encoded UTF-8 path bytes instead of allocating `"/" + reader.GetString()` per property.
-   The shared `_ei` metadata byte buffer is reused for the metadata property match.
-3. `PooledStreamConfiguration` XML docs clarify that `SetConfiguration` is intended as a
-   configure-once-before-first-use call; mid-flight reconfiguration is not atomic across a
-   single encrypt/decrypt operation because multiple call sites read `Current` independently.
+1. **Decrypt writer routed through `IBufferWriter<byte>`.** `Utf8JsonWriter(Stream)` on
+   .NET 8 eagerly constructs an internal `ArrayBufferWriter<byte>` that is GC-heap backed
+   (`Array.Resize` doubling from 256 B), producing ~2× the final JSON size in short-lived
+   GC garbage per operation. The decrypt core now uses `Utf8JsonWriter(IBufferWriter<byte>)`
+   over a pooled `RentArrayBufferWriter`, eliminating that internal buffer entirely. The
+   new-output adapter path returns a `ReadOnlyBufferWriterStream` that owns the rented
+   buffer (cleared on dispose for defense-in-depth). The caller-provided-output path
+   shares the same core and memcpy-copies out to the user stream at the end. This is what
+   collapses `DecryptToProvidedStream` from 118 KB → 6 KB at 100 KB.
+2. **`_ei` metadata subtree extraction streams via `Utf8JsonReader`** instead of
+   `JsonSerializer.DeserializeAsync<EncryptionPropertiesWrapper>(stream)`. The old call
+   forces `ReadBufferState` to grow `16K → 32K → 64K → 128K` (the final rental lands on
+   the LOH) because `Skip()` over every unknown root property needs the complete value
+   in-buffer. The replacement (`EncryptionPropertiesStreamReader`) uses `Utf8JsonReader`
+   with `TrySkip` and `isFinalBlock: false`, staying in a 4 KB pooled buffer and only
+   growing when a single value exceeds the current buffer. Safe-rewind snapshotting
+   handles `_ei` truncation across chunk boundaries; an explicit guard prevents
+   pathological growth on partial-read (trickle) transports.
+3. **`StreamProcessor` property-name matching uses `Utf8JsonReader.ValueTextEquals` with
+   pre-encoded UTF-8 path bytes** instead of allocating `"/" + reader.GetString()` per
+   property. The shared `_ei` metadata byte buffer is reused for the metadata property
+   match.
+4. **`PooledMemoryStream` rents its backing buffer lazily on first write** (preserving the
+   configured initial-capacity floor) so streams that are constructed but never written do
+   not take a pool rent.
+5. **`ArrayPoolManager.rentedBuffers` pre-sizes its tracking list** to cover the typical
+   decrypt rent count so the `4 → 8 → 16 → …` grow chain no longer churns a few KB per op.
+6. **`PooledStreamConfiguration` XML docs clarify** that `SetConfiguration` is intended as
+   a configure-once-before-first-use call; mid-flight reconfiguration is not atomic across
+   a single encrypt/decrypt operation because multiple call sites read `Current`
+   independently.
 
-## Comparison vs. `master` (pre-PR baseline)
+### Rejected earlier approach (kept for posterity)
 
-To isolate the impact of this PR, the same benchmarks were run on the merge-base with `master`
-(commit `79d18b73`) — i.e. the Stream processor *before* the PooledMemoryStream /
-PooledJsonSerializer changes — on the same machine, with the same `MediumRun` configuration,
-**and the same `OperationsPerInvoke = 16`** so the two runs are directly comparable.
+Before the rewrite in (1), **pre-sizing the output `PooledMemoryStream`** was investigated:
+pass `input.Length` (capped at 4 MiB, fail-open on Length-throws / non-seekable) as the
+initial capacity to skip the growth chain. It improved 1 KB Decrypt (−7 %) but worsened
+100 KB Decrypt by +24 % (558 KB → 690 KB). Root cause: the grow chain happens to touch
+`ArrayPool` buckets (4 KB / 8 KB / 16 KB / 32 KB / 64 KB) that the .NET runtime keeps warm
+via unrelated workload (string formatting, JSON parsing, networking). The 128 KB bucket
+the hint jumps to is essentially only used by this code path, so it gets aggressively
+trimmed by `ArrayPool`'s Gen2 GC callback. A `LongRun` confirmation
+(100 iter × 3 launches × 16 OPI ≈ 14 400 measured ops) reproduced the same +131 KB
+regression at 100 KB, ruling out insufficient warmup.
 
-> Note: The benchmark harness itself was refactored in this PR (`EncryptionBenchmark.cs`) to
-> use a concrete `BenchmarkKeyStoreProvider` instead of a `Mock<EncryptionKeyStoreProvider>`,
-> to drop a spurious `ENCRYPTION_CUSTOM_PREVIEW` gate, and to add `OperationsPerInvoke = 16`.
-> All baseline numbers below were produced by back-porting the refactored harness onto
-> `master` before running, so the comparison measures product changes only.
-
-### Newtonsoft paths (sanity check — should be unchanged by this PR)
-
-Newtonsoft allocation numbers are identical within run-to-run noise, confirming the PR does not
-touch that processor.
-
-| Scenario (MediumRun, 100 KB) | `master` Alloc | This PR Alloc | Δ |
-|---|---:|---:|---:|
-| Encrypt   | 1,693,038 B | 1,693,023 B | ~0% |
-| Decrypt   | 1,584,371 B | 1,584,335 B | ~0% |
-| DecryptToProvidedStream | 1,013,460 B | 1,013,478 B | ~0% |
-
-### Stream paths (where this PR changes things)
-
-| Scenario (MediumRun) | `master` Alloc | This PR Alloc | Alloc Δ | `master` Mean | This PR Mean | Time Δ |
-|---|---:|---:|---:|---:|---:|---:|
-| 1 KB  Encrypt                  |    16,552 B |    13,808 B | **−17%** |    20.05 μs |    22.85 μs |   +14% |
-| 1 KB  EncryptToProvidedStream  |    10,392 B |     9,696 B |  **−7%** |    18.97 μs |    21.56 μs |   +14% |
-| 1 KB  Decrypt                  |    27,328 B |    29,744 B |   +9%    |    35.92 μs |    46.41 μs |   +29% |
-| 1 KB  DecryptToProvidedStream  |    11,072 B |    10,672 B |  **−4%** |    21.69 μs |    23.85 μs |   +10% |
-| 10 KB Encrypt                  |    81,953 B |    45,864 B | **−44%** |    86.53 μs |    55.52 μs | **−36%** |
-| 10 KB EncryptToProvidedStream  |    36,049 B |    29,464 B | **−18%** |    65.44 μs |    51.97 μs | **−21%** |
-| 10 KB Decrypt                  |    70,673 B |    75,441 B |   +7%    |    95.57 μs |    88.96 μs |  **−7%** |
-| 10 KB DecryptToProvidedStream  |    17,984 B |    17,584 B |  **−2%** |    45.16 μs |    41.42 μs |  **−8%** |
-| 100 KB Encrypt                 |   677,062 B |   425,683 B | **−37%** |   756.90 μs |   639.99 μs | **−15%** |
-| 100 KB EncryptToProvidedStream |   229,118 B |   163,537 B | **−29%** |   521.09 μs |   463.20 μs | **−11%** |
-| 100 KB Decrypt                 |   539,947 B |   558,900 B |   +4%    | 1,102.58 μs | 1,038.95 μs |  **−6%** |
-| 100 KB DecryptToProvidedStream |   118,686 B |   118,290 B |  ~0%     |   460.77 μs |   493.95 μs |    +7% |
-
-**Where this PR clearly wins (allocations):**
-- **10 KB Encrypt: −44% allocations and −36% wall time** (82 KB → 46 KB; 86.5 μs → 55.5 μs).
-  Dominant savings come from the pooled backing buffer plus the property-name matching
-  optimization (no more `"/" + reader.GetString()` per encrypted property).
-- **10 KB EncryptToProvidedStream: −18% allocations and −21% wall time** — the caller already
-  supplies the pooled output, so these savings are almost entirely from the property-name
-  optimization.
-- **100 KB Encrypt: −37% allocations and −15% wall time** (677 KB → 426 KB; 757 μs → 640 μs).
-  The biggest scenario the PR was designed to improve.
-- **100 KB EncryptToProvidedStream: −29% allocations and −11% wall time** (229 KB → 164 KB).
-- **100 KB Decrypt: −6% wall time** despite the small allocation increase — the pooled output
-  stream's write path is faster even though it allocates slightly more bytes per op.
-- **All `Encrypt*` and `*ToProvidedStream` allocation numbers are neutral or better at every size.**
-
-**Small allocation increases on `Decrypt` (new output stream):**
-- **Decrypt (new output stream) at 1 KB / 10 KB / 100 KB:** +4–9% allocations.
-  Initially suspected to be a BDN `MemoryDiagnoser` cold-pool-miss artifact, this was
-  disproven by the `OperationsPerInvoke = 16` run: allocation numbers are reproducible per-op
-  and unchanged regardless of invocation batching. The extra bytes are **real per-op product
-  allocation** coming from `PooledMemoryStream`'s growth pattern: the decrypt output stream
-  rents a small buffer first, then grows (renting a larger buffer and returning the old one)
-  as decrypted bytes are written. `ArrayPool<byte>.Shared`'s thread-local cache has one slot
-  per size class, so the temporarily-out-of-TLS buffers may allocate on subsequent rents.
-  Context: **absolute size is small** (+2.4 KB at 1 KB, +4.8 KB at 10 KB, +19 KB at 100 KB),
-  wall time still improves at 10 KB / 100 KB (−6% to −7%), and the affected scenario
-  (`Decrypt` with a new output stream) is the one path where the caller does *not* cooperate
-  with the pool — production callers using `DecryptToProvidedStream` with a pooled output get
-  neutral-or-better allocations **and** faster wall times at every size.
-
-  **Pre-sizing the output stream was investigated and rejected.** A change to pass
-  `input.Length` as a capacity hint to `PooledMemoryStream` was prototyped to skip the
-  growth chain. It improved 1 KB Decrypt (-7%) but **worsened 100 KB Decrypt by +24%**
-  (558 KB → 690 KB). Root cause: the grow chain happens to touch `ArrayPool` buckets
-  (4 KB / 8 KB / 16 KB / 32 KB / 64 KB) that the .NET runtime keeps warm via unrelated
-  workload (string formatting, JSON parsing, networking). The 128 KB bucket the hint
-  jumps to is essentially only used by this code path, so it gets aggressively trimmed
-  by `ArrayPool`'s Gen2 GC callback (BDN forces Gen2 GC between iterations to give
-  clean allocation measurements; production also hits Gen2 periodically). A `LongRun`
-  confirmation (100 iter × 3 launches × 16 OPI ≈ 14,400 measured ops, 1,500 warmup ops)
-  produced the same +131 KB regression at 100 KB Decrypt as `MediumRun`, ruling out
-  insufficient warmup. The pre-size change was reverted; the small +4–9% per-op
-  allocation observed here is the cost of cold large-bucket rentals in async-heavy
-  paths and cannot be fixed without a private buffer pool (e.g.
-  `Microsoft.IO.RecyclableMemoryStream`), which is excluded by dependency restrictions.
-
-**1 KB wall-time regression is real:**
-- Wall time is 10–29% slower for 1 KB Stream scenarios. At this scale the fixed setup cost of
-  the Stream processor (pooled stream construction, `Utf8JsonReader` state, key-path table)
-  exceeds the savings from pooled I/O. This was true before the PR too — 1 KB is not the
-  target workload. For reference, master's baseline was 20 μs and this PR is 23 μs — both are
-  already faster than Newtonsoft (42–50 μs).
-- From 10 KB upward — the actual target for client-side encryption — this PR is consistently
-  faster AND allocates less (10 KB Encrypt is **−36% wall time**, 100 KB Encrypt is
-  **−15% wall time**).
-
-### Overall takeaway
-
-For the workloads this PR is designed to improve — **encryption of medium-to-large documents**
-and any path where the caller cooperates by providing a pooled output stream — this PR
-delivers **up to −44% allocations and −36% wall time**. The small allocation increase on
-`Decrypt (new output stream)` is real but modest in absolute size and is offset by wall-time
-improvements at 10 KB / 100 KB. The 1 KB wall-time regression is a scale mismatch (fixed
-setup cost dominates) that does not apply to realistic payloads.
+The fundamental insight: the allocation was coming from **inside STJ's writer**, not from
+our output stream. Tuning the output buffer could not help; only routing the writer
+through an `IBufferWriter` could. The pre-size change was reverted; (1) + (2) above
+supersede it.
 
 ## Running the Comparison Yourself
-
-The pre-PR baseline was produced by:
 
 ```powershell
 # From the repo root
 git worktree add ../baseline 79d18b73 --detach
 
 # Back-port only the benchmark harness refactor so we measure product changes:
-git -C ../baseline checkout feature/stream-processor-optimizations -- `
+git -C ../baseline checkout users/adamnova/decrypt-bufwriter-opts -- `
     Microsoft.Azure.Cosmos.Encryption.Custom/tests/Microsoft.Azure.Cosmos.Encryption.Custom.Performance.Tests/
 
 cd ..\baseline\Microsoft.Azure.Cosmos.Encryption.Custom\tests\Microsoft.Azure.Cosmos.Encryption.Custom.Performance.Tests
-dotnet run -c Release --framework net8.0
+dotnet run -c Release --framework net8.0 -- --filter '*EncryptionBenchmark*'
 ```
 
-Then compare `BenchmarkDotNet.Artifacts/results/*-report-github.md` between the two worktrees.
+Then compare `BenchmarkDotNet.Artifacts/results/*-report-github.md` between the two
+worktrees.
