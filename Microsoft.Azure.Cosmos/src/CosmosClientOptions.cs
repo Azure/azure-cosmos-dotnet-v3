@@ -307,6 +307,24 @@ namespace Microsoft.Azure.Cosmos
         public TimeSpan RequestTimeout { get; set; }
 
         /// <summary>
+        /// Gets or sets the request timeout for inference service operations (e.g., semantic reranking).
+        /// The number specifies the time to wait for a response from the inference service before the request is cancelled.
+        /// This is a single-attempt timeout with no retries.
+        /// </summary>
+        /// <value>Default value is 5 seconds.</value>
+        /// <remarks>
+        /// This timeout is specific to inference service operations and is separate from the standard <see cref="RequestTimeout"/>.
+        /// If the request does not complete within the specified duration, a <see cref="CosmosException"/> with status 408 (Request Timeout) is thrown.
+        /// No retries are attempted on timeout.
+        /// </remarks>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        TimeSpan InferenceRequestTimeout { get; set; } = InferenceService.DefaultInferenceRequestTimeout;
+
+        /// <summary>
         /// The SDK does a background refresh based on the time interval set to refresh the token credentials.
         /// This avoids latency issues because the old token is used until the new token is retrieved.
         /// </summary>
