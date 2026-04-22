@@ -29,7 +29,13 @@ namespace Microsoft.Azure.Cosmos.Tests
         [Owner("ntripician")]
         public void Request_AuthorizationHeader_IsRedactedInEtwPayload()
         {
-            using CapturingEventListener listener = new CapturingEventListener();
+            // Force creation of the EventSource singleton BEFORE the listener is
+            // constructed so that EnableEvents below binds to a live source. Under
+            // parallel CI test execution the OnEventSourceCreated callback on a
+            // subclassed EventListener can race with the subclass field initializer,
+            // so we avoid relying on it entirely and enable events explicitly.
+            DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
+            using CapturingEventListener listener = new CapturingEventListener(eventSource);
 
             using HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, "https://acct.documents.azure.com/dbs/db/colls/c/docs/id");
             Assert.IsTrue(
@@ -37,7 +43,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "Test setup failed: could not attach authorization header.");
 
             Guid activityId = Guid.NewGuid();
-            DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
             eventSource.Request(
                 activityId: activityId,
                 localId: Guid.NewGuid(),
@@ -88,12 +93,12 @@ namespace Microsoft.Azure.Cosmos.Tests
         [Owner("ntripician")]
         public void Request_NoAuthorizationHeader_EmitsEmptyString()
         {
-            using CapturingEventListener listener = new CapturingEventListener();
+            DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
+            using CapturingEventListener listener = new CapturingEventListener(eventSource);
 
             using HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, "https://acct.documents.azure.com/");
 
             Guid activityId = Guid.NewGuid();
-            DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
             eventSource.Request(
                 activityId: activityId,
                 localId: Guid.NewGuid(),
@@ -113,8 +118,24 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private sealed class CapturingEventListener : EventListener
         {
+            // Initialize fields via field initializers so they are assigned before any
+            // OnEventSourceCreated callback can fire from the base ctor. Under parallel
+            // CI execution the base EventListener constructor dispatches
+            // OnEventSourceCreated on the constructing thread while the derived ctor
+            // has not completed, so any field assigned in the derived ctor body would
+            // still be null at callback time.
             private readonly List<EventWrittenEventArgs> events = new List<EventWrittenEventArgs>();
             private readonly object sync = new object();
+            private readonly EventSource targetEventSource;
+
+            public CapturingEventListener(EventSource target)
+            {
+                this.targetEventSource = target ?? throw new ArgumentNullException(nameof(target));
+
+                // Enable events explicitly after base construction so we do not race with
+                // OnEventSourceCreated. Keyword 0x1 == DocumentClientEventSource.Keywords.HttpRequestAndResponse.
+                this.EnableEvents(target, EventLevel.Verbose, (EventKeywords)1);
+            }
 
             public IReadOnlyList<EventWrittenEventArgs> Events
             {
@@ -127,17 +148,23 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }
             }
 
-            protected override void OnEventSourceCreated(EventSource eventSource)
-            {
-                if (string.Equals(eventSource.Name, "DocumentDBClient", StringComparison.Ordinal))
-                {
-                    // Keyword 0x1 == DocumentClientEventSource.Keywords.HttpRequestAndResponse
-                    this.EnableEvents(eventSource, EventLevel.Verbose, (EventKeywords)1);
-                }
-            }
-
             protected override void OnEventWritten(EventWrittenEventArgs eventData)
             {
+                // Guard against events from sources other than the one we explicitly
+                // targeted (the base EventListener receives all sources until filtered).
+                if (this.targetEventSource != null && eventData.EventSource != this.targetEventSource)
+                {
+                    return;
+                }
+
+                // this.events may still be null if OnEventWritten fires from the base
+                // constructor before our field initializers run (observed under parallel
+                // test execution in CI). Ignore those pre-initialization events.
+                if (this.events == null)
+                {
+                    return;
+                }
+
                 lock (this.sync)
                 {
                     this.events.Add(eventData);
