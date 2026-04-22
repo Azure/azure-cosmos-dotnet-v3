@@ -16,13 +16,19 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class CollectionCacheTests
     {
+        // A real collection RID from the existing test suite (same value used in FeedRangeTests
+        // and CosmosBadReplicaTests).  ResourceId.Parse accepts this value, so it exercises the
+        // actual binary round-trip through the Direct-package parser.
+        private const string CollectionRid = "ccZ1ANCszwk=";
+
         [TestMethod]
         public async Task ResolveCollectionAsync_WithDatabaseRidInResolvedCollectionRid_FallsBackToNameResolution()
         {
-            const string databaseRid = "jy2ekg==";
-            const string containerRid = "jy2eklxnboe=";
+            // Derive a real database RID from the known collection RID so that
+            // ResourceId.TryParse recognises it as a valid (but database-level) RID.
+            string databaseRid = ResourceId.Parse(CollectionRid).DatabaseId.ToString();
 
-            TestCollectionCache cache = new TestCollectionCache(containerRid);
+            TestCollectionCache cache = new TestCollectionCache(CollectionRid);
             using DocumentServiceRequest request = DocumentServiceRequest.CreateFromName(
                 OperationType.Read,
                 "dbs/db1/colls/c1/docs/d1",
@@ -36,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 CancellationToken.None,
                 NoOpTrace.Singleton);
 
-            Assert.AreEqual(containerRid, resolved.ResourceId);
+            Assert.AreEqual(CollectionRid, resolved.ResourceId);
             Assert.AreEqual(1, cache.NameLookupCount);
             Assert.AreEqual(0, cache.RidLookupCount);
         }
@@ -44,23 +50,21 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task ResolveCollectionAsync_WithCollectionRidInResolvedCollectionRid_UsesRidResolution()
         {
-            const string containerRid = "jy2eklxnboe=";
-
-            TestCollectionCache cache = new TestCollectionCache(containerRid);
+            TestCollectionCache cache = new TestCollectionCache(CollectionRid);
             using DocumentServiceRequest request = DocumentServiceRequest.CreateFromName(
                 OperationType.Read,
                 "dbs/db1/colls/c1/docs/d1",
                 ResourceType.Document,
                 AuthorizationTokenType.PrimaryMasterKey,
                 null);
-            request.RequestContext.ResolvedCollectionRid = containerRid;
+            request.RequestContext.ResolvedCollectionRid = CollectionRid;
 
             ContainerProperties resolved = await cache.ResolveCollectionAsync(
                 request,
                 CancellationToken.None,
                 NoOpTrace.Singleton);
 
-            Assert.AreEqual(containerRid, resolved.ResourceId);
+            Assert.AreEqual(CollectionRid, resolved.ResourceId);
             Assert.AreEqual(0, cache.NameLookupCount);
             Assert.AreEqual(1, cache.RidLookupCount);
         }
@@ -80,7 +84,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task ResolveCollectionAsync_WhenNameResolutionReturnsDatabaseRid_ThrowsInvalidOperation()
         {
-            const string databaseRid = "jy2ekg==";
+            // Use a real database RID derived from a known collection RID so that
+            // ResourceId.TryParse recognises it as a database-level RID.
+            string databaseRid = ResourceId.Parse(CollectionRid).DatabaseId.ToString();
 
             // The mock returns a container whose ResourceId is a database RID — simulating
             // a corrupt server response or a stale in-process cache entry.
