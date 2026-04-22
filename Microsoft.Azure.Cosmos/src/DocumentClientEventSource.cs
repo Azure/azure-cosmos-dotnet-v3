@@ -278,7 +278,7 @@ namespace Microsoft.Azure.Cosmos
                 string[] keysToExtract =
                 {
                     HttpConstants.HttpHeaders.Accept,
-                    HttpConstants.HttpHeaders.Authorization,
+                    HttpConstants.HttpHeaders.Authorization, // SECURITY: value is redacted to "REDACTED" before Event 1 is emitted to ETW. Do not remove this entry or reorder the array without updating the redaction below - the [Event(1)] signature still declares the `authorization` parameter, so the slot must continue to be populated.
                     HttpConstants.HttpHeaders.ConsistencyLevel,
                     HttpConstants.HttpHeaders.ContentType,
                     HttpConstants.HttpHeaders.ContentEncoding,
