@@ -220,6 +220,22 @@ touch that processor.
   with the pool — production callers using `DecryptToProvidedStream` with a pooled output get
   neutral-or-better allocations **and** faster wall times at every size.
 
+  **Pre-sizing the output stream was investigated and rejected.** A change to pass
+  `input.Length` as a capacity hint to `PooledMemoryStream` was prototyped to skip the
+  growth chain. It improved 1 KB Decrypt (-7%) but **worsened 100 KB Decrypt by +24%**
+  (558 KB → 690 KB). Root cause: the grow chain happens to touch `ArrayPool` buckets
+  (4 KB / 8 KB / 16 KB / 32 KB / 64 KB) that the .NET runtime keeps warm via unrelated
+  workload (string formatting, JSON parsing, networking). The 128 KB bucket the hint
+  jumps to is essentially only used by this code path, so it gets aggressively trimmed
+  by `ArrayPool`'s Gen2 GC callback (BDN forces Gen2 GC between iterations to give
+  clean allocation measurements; production also hits Gen2 periodically). A `LongRun`
+  confirmation (100 iter × 3 launches × 16 OPI ≈ 14,400 measured ops, 1,500 warmup ops)
+  produced the same +131 KB regression at 100 KB Decrypt as `MediumRun`, ruling out
+  insufficient warmup. The pre-size change was reverted; the small +4–9% per-op
+  allocation observed here is the cost of cold large-bucket rentals in async-heavy
+  paths and cannot be fixed without a private buffer pool (e.g.
+  `Microsoft.IO.RecyclableMemoryStream`), which is excluded by dependency restrictions.
+
 **1 KB wall-time regression is real:**
 - Wall time is 10–29% slower for 1 KB Stream scenarios. At this scale the fixed setup cost of
   the Stream processor (pooled stream construction, `Utf8JsonReader` state, key-path table)
