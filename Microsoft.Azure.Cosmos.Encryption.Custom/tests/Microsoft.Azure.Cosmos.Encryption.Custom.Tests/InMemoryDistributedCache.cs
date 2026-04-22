@@ -24,15 +24,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
         public Task<byte[]> GetAsync(string key, CancellationToken token = default)
         {
+            // Intentionally does NOT enforce AbsoluteExpiration based on real wall-clock time.
+            // Expiry is the system-under-test's concern (DekCache evaluates ServerPropertiesExpiryUtc
+            // against its injected clock). Baking a DateTimeOffset.UtcNow check into this fake would
+            // silently skew tests that use an injected Func<DateTime>. Tests that need clock-aware
+            // expiration should use ClockControlledDistributedCache from the resilience test suite.
             if (this.cache.TryGetValue(key, out CacheEntry entry))
             {
-                if (!entry.AbsoluteExpiration.HasValue || entry.AbsoluteExpiration.Value > DateTimeOffset.UtcNow)
-                {
-                    return Task.FromResult(entry.Value);
-                }
-
-                // Expired
-                this.cache.TryRemove(key, out _);
+                return Task.FromResult(entry.Value);
             }
 
             return Task.FromResult<byte[]>(null);

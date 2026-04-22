@@ -524,6 +524,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         [TestMethod]
         public async Task StoreProvider_DistributedCacheIsWiredToDekCache()
         {
+            // REQ: When a CosmosDataEncryptionKeyProvider is constructed with a distributed cache,
+            //      the first source fetch must populate that distributed cache so that a peer
+            //      process (or this process after memory-cache discard) can read it.
+            // SOURCE: PR #5428 description — "cross-process/cross-instance caching of DEK properties."
+            // NOTE: This is a wiring test. We use a peer DekCache sharing the same L2 to prove
+            //       the populated entry is observable from a fresh instance, rather than asserting
+            //       the literal cache-key shape.
             InMemoryDistributedCache distributedCache = new InMemoryDistributedCache();
             TestEncryptionKeyStoreProvider storeProvider = new TestEncryptionKeyStoreProvider();
 
@@ -542,25 +549,27 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 },
                 CosmosDiagnosticsContext.Create(null),
                 CancellationToken.None);
-
             Assert.AreEqual(1, fetchCount);
-            Assert.IsTrue(distributedCache.ContainsKey("dek:dek1"), "Distributed cache should be populated");
+            await provider.DekCache.LastDistributedCacheWriteTask;
 
-            // Clear memory cache, re-fetch should use distributed cache
-            await provider.DekCache.DekPropertiesCache.RemoveAsync("dek1");
-
-            DataEncryptionKeyProperties props2 = await provider.DekCache.GetOrAddDekPropertiesAsync(
+            // A peer DekCache sharing the same L2 (simulating a second process / cold L1) must
+            // read the populated entry without invoking its fetcher.
+            DekCache peerCache = new DekCache(
+                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
+                distributedCache: distributedCache);
+            int peerFetchCount = 0;
+            DataEncryptionKeyProperties peerProps = await peerCache.GetOrAddDekPropertiesAsync(
                 "dek1",
                 (id, ctx, ct) =>
                 {
-                    fetchCount++;
+                    peerFetchCount++;
                     return Task.FromResult(CreateDekProperties(id));
                 },
                 CosmosDiagnosticsContext.Create(null),
                 CancellationToken.None);
 
-            Assert.AreEqual(1, fetchCount, "Should have used distributed cache, not fetched again");
-            Assert.AreEqual(props.Id, props2.Id);
+            Assert.AreEqual(0, peerFetchCount, "Peer cache must read L2 without invoking its fetcher.");
+            Assert.AreEqual(props.Id, peerProps.Id);
         }
 
 #pragma warning disable CS0618 // Type or member is obsolete
@@ -568,6 +577,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         [TestMethod]
         public async Task WrapProvider_DistributedCacheIsWiredToDekCache()
         {
+            // REQ: Same wiring guarantee as StoreProvider_DistributedCacheIsWiredToDekCache,
+            //      via the obsolete wrap-provider ctor overload.
+            // SOURCE: PR #5428 description.
             InMemoryDistributedCache distributedCache = new InMemoryDistributedCache();
             TestKeyWrapProvider wrapProvider = new TestKeyWrapProvider();
 
@@ -586,30 +598,32 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 },
                 CosmosDiagnosticsContext.Create(null),
                 CancellationToken.None);
-
             Assert.AreEqual(1, fetchCount);
-            Assert.IsTrue(distributedCache.ContainsKey("dek:dek1"), "Distributed cache should be populated");
+            await provider.DekCache.LastDistributedCacheWriteTask;
 
-            // Clear memory cache, re-fetch should use distributed cache
-            await provider.DekCache.DekPropertiesCache.RemoveAsync("dek1");
-
-            DataEncryptionKeyProperties props2 = await provider.DekCache.GetOrAddDekPropertiesAsync(
+            DekCache peerCache = new DekCache(
+                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
+                distributedCache: distributedCache);
+            int peerFetchCount = 0;
+            DataEncryptionKeyProperties peerProps = await peerCache.GetOrAddDekPropertiesAsync(
                 "dek1",
                 (id, ctx, ct) =>
                 {
-                    fetchCount++;
+                    peerFetchCount++;
                     return Task.FromResult(CreateDekProperties(id));
                 },
                 CosmosDiagnosticsContext.Create(null),
                 CancellationToken.None);
 
-            Assert.AreEqual(1, fetchCount, "Should have used distributed cache, not fetched again");
-            Assert.AreEqual(props.Id, props2.Id);
+            Assert.AreEqual(0, peerFetchCount, "Peer cache must read L2 without invoking its fetcher.");
+            Assert.AreEqual(props.Id, peerProps.Id);
         }
 
         [TestMethod]
         public async Task DualProvider_DistributedCacheIsWiredToDekCache()
         {
+            // REQ: Same wiring guarantee for the dual (wrap+store) ctor overload.
+            // SOURCE: PR #5428 description.
             InMemoryDistributedCache distributedCache = new InMemoryDistributedCache();
             TestKeyWrapProvider wrapProvider = new TestKeyWrapProvider();
             TestEncryptionKeyStoreProvider storeProvider = new TestEncryptionKeyStoreProvider();
@@ -630,30 +644,33 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 },
                 CosmosDiagnosticsContext.Create(null),
                 CancellationToken.None);
-
             Assert.AreEqual(1, fetchCount);
-            Assert.IsTrue(distributedCache.ContainsKey("dek:dek1"), "Distributed cache should be populated");
+            await provider.DekCache.LastDistributedCacheWriteTask;
 
-            // Clear memory cache, re-fetch should use distributed cache
-            await provider.DekCache.DekPropertiesCache.RemoveAsync("dek1");
-
-            DataEncryptionKeyProperties props2 = await provider.DekCache.GetOrAddDekPropertiesAsync(
+            DekCache peerCache = new DekCache(
+                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
+                distributedCache: distributedCache);
+            int peerFetchCount = 0;
+            DataEncryptionKeyProperties peerProps = await peerCache.GetOrAddDekPropertiesAsync(
                 "dek1",
                 (id, ctx, ct) =>
                 {
-                    fetchCount++;
+                    peerFetchCount++;
                     return Task.FromResult(CreateDekProperties(id));
                 },
                 CosmosDiagnosticsContext.Create(null),
                 CancellationToken.None);
 
-            Assert.AreEqual(1, fetchCount, "Should have used distributed cache, not fetched again");
-            Assert.AreEqual(props.Id, props2.Id);
+            Assert.AreEqual(0, peerFetchCount, "Peer cache must read L2 without invoking its fetcher.");
+            Assert.AreEqual(props.Id, peerProps.Id);
         }
 
         [TestMethod]
-        public async Task WrapProvider_WithoutDistributedCache_DoesNotPopulateDistributedCache()
+        public async Task WrapProvider_WithoutDistributedCache_MemoryCacheHonored()
         {
+            // REQ: When no distributed cache is provided, repeated lookups for the same dekId
+            //      must be served from the in-memory cache without re-invoking the fetcher.
+            // SOURCE: Pre-feature DekCache behaviour; distributedCache is documented as optional.
             TestKeyWrapProvider wrapProvider = new TestKeyWrapProvider();
 
             CosmosDataEncryptionKeyProvider provider = new CosmosDataEncryptionKeyProvider(
@@ -673,7 +690,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
             Assert.AreEqual(1, fetchCount);
 
-            // Second fetch from same provider should use memory cache
             await provider.DekCache.GetOrAddDekPropertiesAsync(
                 "dek1",
                 (id, ctx, ct) =>
@@ -684,12 +700,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 CosmosDiagnosticsContext.Create(null),
                 CancellationToken.None);
 
-            Assert.AreEqual(1, fetchCount, "Should have used memory cache");
+            Assert.AreEqual(1, fetchCount, "Memory cache must serve the second call.");
         }
 
         [TestMethod]
-        public async Task DualProvider_WithoutDistributedCache_DoesNotPopulateDistributedCache()
+        public async Task DualProvider_WithoutDistributedCache_MemoryCacheHonored()
         {
+            // REQ: Same as WrapProvider_WithoutDistributedCache_MemoryCacheHonored, via the dual ctor.
+            // SOURCE: Pre-feature DekCache behaviour; distributedCache is documented as optional.
             TestKeyWrapProvider wrapProvider = new TestKeyWrapProvider();
             TestEncryptionKeyStoreProvider storeProvider = new TestEncryptionKeyStoreProvider();
 
@@ -711,7 +729,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
             Assert.AreEqual(1, fetchCount);
 
-            // Second fetch from same provider should use memory cache
             await provider.DekCache.GetOrAddDekPropertiesAsync(
                 "dek1",
                 (id, ctx, ct) =>
@@ -722,7 +739,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 CosmosDiagnosticsContext.Create(null),
                 CancellationToken.None);
 
-            Assert.AreEqual(1, fetchCount, "Should have used memory cache");
+            Assert.AreEqual(1, fetchCount, "Memory cache must serve the second call.");
         }
 
         [TestMethod]

@@ -52,19 +52,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         }
 
         [TestMethod]
-        public async Task DekCache_WithDistributedCache_UsesDistributedCache()
+        public async Task DekCache_WithDistributedCache_SurvivesMemoryCacheRestart()
         {
-            // Arrange
+            // REQ: When the in-process memory cache is discarded (process restart / cold start)
+            //      but a peer-populated entry is present in the distributed cache, the next
+            //      lookup must serve from the distributed cache and avoid a source fetch.
+            // SOURCE: SOURCE-PR-INTENT (cross-process/cross-instance caching) and DekCache.cs:260-272.
+            //
+            // This exercises the COLD-MISS path (empty L1 dictionary). The parallel scenario of
+            // "L1 has an expired entry" is a different code path and is covered by
+            // DekCacheResilienceTests.ExpiredL1_L2HasFreshEntry_CosmosFails_ServesFromL2.
             InMemoryDistributedCache distributedCache = new InMemoryDistributedCache();
-            DekCache cache = new DekCache(
+            DekCache peerA = new DekCache(
                 dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
                 distributedCache: distributedCache);
 
-            int fetchCount = 0;
+            int peerAFetchCount = 0;
 
             DataEncryptionKeyProperties CreateDekProperties(string id)
             {
-                fetchCount++;
+                peerAFetchCount++;
                 return new DataEncryptionKeyProperties(
                     id,
                     "AEAD_AES_256_CBC_HMAC_SHA256",
@@ -73,28 +80,34 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                     DateTime.UtcNow);
             }
 
-            // Act - First fetch (will populate both memory cache and distributed cache)
-            DataEncryptionKeyProperties result1 = await cache.GetOrAddDekPropertiesAsync(
+            // Peer A populates L2 through a normal cold-miss fetch.
+            DataEncryptionKeyProperties peerAResult = await peerA.GetOrAddDekPropertiesAsync(
                 "testDek",
                 (id, ctx, ct) => Task.FromResult(CreateDekProperties(id)),
                 CosmosDiagnosticsContext.Create(null),
                 CancellationToken.None);
+            Assert.AreEqual(1, peerAFetchCount);
+            await peerA.LastDistributedCacheWriteTask;
 
-            // Clear only memory cache to test distributed cache
-            // Use internal property to clear memory cache without affecting distributed cache
-            await cache.DekPropertiesCache.RemoveAsync("testDek");
+            // Peer B is a brand-new DekCache instance sharing the same L2 (simulates a
+            // different process / a process that just restarted and has an empty L1).
+            DekCache peerB = new DekCache(
+                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
+                distributedCache: distributedCache);
 
-            // Act - Second fetch (should use distributed cache)
-            DataEncryptionKeyProperties result2 = await cache.GetOrAddDekPropertiesAsync(
+            int peerBFetchCount = 0;
+            DataEncryptionKeyProperties peerBResult = await peerB.GetOrAddDekPropertiesAsync(
                 "testDek",
-                (id, ctx, ct) => Task.FromResult(CreateDekProperties(id)),
+                (id, ctx, ct) =>
+                {
+                    peerBFetchCount++;
+                    return Task.FromResult(CreateDekProperties(id));
+                },
                 CosmosDiagnosticsContext.Create(null),
                 CancellationToken.None);
 
-            // Assert
-            Assert.AreEqual(1, fetchCount, "Should only fetch once - second call should use distributed cache");
-            Assert.AreEqual(result1.Id, result2.Id);
-            Assert.IsTrue(distributedCache.ContainsKey("dek:testDek"), "Distributed cache should contain the key");
+            Assert.AreEqual(0, peerBFetchCount, "Peer B must read L2 on cold L1, not invoke its fetcher.");
+            Assert.AreEqual(peerAResult.Id, peerBResult.Id);
         }
 
         [TestMethod]
@@ -287,42 +300,23 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             Assert.AreEqual("proactiveRefreshThreshold", ex.ParamName);
         }
 
-        [TestMethod]
-        public async Task DekCache_DefaultCacheKeyPrefix_UsesDekPrefix()
-        {
-            // Arrange
-            InMemoryDistributedCache distributedCache = new InMemoryDistributedCache();
-            DekCache cache = new DekCache(
-                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: distributedCache);
-
-            static DataEncryptionKeyProperties CreateDekProperties(string id)
-            {
-                return new DataEncryptionKeyProperties(
-                    id,
-                    "AEAD_AES_256_CBC_HMAC_SHA256",
-                    new byte[] { 1, 2, 3 },
-                    new EncryptionKeyWrapMetadata("test", "test", "RSA-OAEP", "test"),
-                    DateTime.UtcNow);
-            }
-
-            // Act
-            await cache.GetOrAddDekPropertiesAsync(
-                "testDek",
-                (id, ctx, ct) => Task.FromResult(CreateDekProperties(id)),
-                CosmosDiagnosticsContext.Create(null),
-                CancellationToken.None);
-
-            // Assert
-            Assert.IsTrue(distributedCache.ContainsKey("dek:testDek"), "Should use default 'dek' prefix");
-        }
+        // NOTE: The former DekCache_DefaultCacheKeyPrefix_UsesDekPrefix test has been deleted.
+        // It hard-coded the literal "dek:testDek" cache-key shape, which codifies the current
+        // collision-prone default (M6). The requirement — that two providers constructed with
+        // defaults do not read each other's entries — is covered by
+        // DekCacheResilienceTests.TwoProvidersWithDefaults_DoNotCollideOnSameDekId.
 
         [TestMethod]
-        public async Task DekCache_CustomCacheKeyPrefix_UsesCustomPrefix()
+        public async Task DekCache_CustomCacheKeyPrefix_KeysAreScopedToPrefix()
         {
-            // Arrange
+            // REQ: A custom prefix must scope the L2 keyspace — another cache with a different
+            //      (default) prefix must NOT see entries written by this cache for the same dekId.
+            // SOURCE: CosmosDataEncryptionKeyProvider XML doc on distributedCacheKeyPrefix
+            //         ("avoid collisions when multiple providers share the same cache instance").
+            // NOTE: This asserts behavioural isolation, not the literal cache-key shape, so it
+            //       continues to hold if the cache-key format evolves (e.g., container-scoping).
             InMemoryDistributedCache distributedCache = new InMemoryDistributedCache();
-            DekCache cache = new DekCache(
+            DekCache customPrefixCache = new DekCache(
                 dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
                 distributedCache: distributedCache,
                 cacheKeyPrefix: "tenant1-dek");
@@ -337,16 +331,33 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                     DateTime.UtcNow);
             }
 
-            // Act
-            await cache.GetOrAddDekPropertiesAsync(
+            await customPrefixCache.GetOrAddDekPropertiesAsync(
                 "testDek",
                 (id, ctx, ct) => Task.FromResult(CreateDekProperties(id)),
                 CosmosDiagnosticsContext.Create(null),
                 CancellationToken.None);
+            await customPrefixCache.LastDistributedCacheWriteTask;
 
-            // Assert
-            Assert.IsTrue(distributedCache.ContainsKey("tenant1-dek:testDek"), "Should use custom 'tenant1-dek' prefix");
-            Assert.IsFalse(distributedCache.ContainsKey("dek:testDek"), "Should NOT use default 'dek' prefix");
+            // A cache sharing the same L2 but using the DEFAULT prefix must not see the entry.
+            DekCache defaultPrefixCache = new DekCache(
+                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
+                distributedCache: distributedCache);
+
+            int defaultFetchCount = 0;
+            await defaultPrefixCache.GetOrAddDekPropertiesAsync(
+                "testDek",
+                (id, ctx, ct) =>
+                {
+                    defaultFetchCount++;
+                    return Task.FromResult(CreateDekProperties(id));
+                },
+                CosmosDiagnosticsContext.Create(null),
+                CancellationToken.None);
+
+            Assert.AreEqual(
+                1,
+                defaultFetchCount,
+                "A cache with the default prefix must not see entries written under a custom prefix.");
         }
 
         [TestMethod]
@@ -403,19 +414,39 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 CosmosDiagnosticsContext.Create(null),
                 CancellationToken.None);
 
-            // Assert - Both entries should exist with different prefixes
-            Assert.IsTrue(sharedDistributedCache.ContainsKey("tenant1:shared-dek-id"), "Tenant 1 entry should exist");
-            Assert.IsTrue(sharedDistributedCache.ContainsKey("tenant2:shared-dek-id"), "Tenant 2 entry should exist");
+            // REQ: Distinct explicit prefixes must isolate entries — each tenant's read path
+            //      invokes its own fetcher and produces its own result. This test asserts
+            //      behavioural isolation (no cross-pollination of keys / KEK metadata),
+            //      not the literal cache-key shape.
+            // SOURCE: CosmosDataEncryptionKeyProvider XML doc on distributedCacheKeyPrefix
+            //         ("avoid collisions when multiple providers share the same cache instance").
             Assert.AreEqual(1, tenant1FetchCount, "Tenant 1 should fetch once");
             Assert.AreEqual(1, tenant2FetchCount, "Tenant 2 should fetch once");
 
-            // Verify different DEK IDs showing proper isolation
+            // Each tenant received its own DEK — no cross-pollination.
             Assert.AreEqual("tenant1-shared-dek-id", tenant1Result.Id);
             Assert.AreEqual("tenant2-shared-dek-id", tenant2Result.Id);
-
-            // Verify different KEK names
             Assert.AreEqual("tenant1-kek", tenant1Result.EncryptionKeyWrapMetadata.Name);
             Assert.AreEqual("tenant2-kek", tenant2Result.EncryptionKeyWrapMetadata.Name);
+
+            // A third fresh provider with the same "tenant1" prefix must see tenant1's entry,
+            // proving the keyspace is genuinely partitioned per prefix.
+            DekCache tenant1Peer = new DekCache(
+                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
+                distributedCache: sharedDistributedCache,
+                cacheKeyPrefix: "tenant1");
+            int peerFetchCount = 0;
+            DataEncryptionKeyProperties peerResult = await tenant1Peer.GetOrAddDekPropertiesAsync(
+                "shared-dek-id",
+                (id, ctx, ct) =>
+                {
+                    peerFetchCount++;
+                    return Task.FromResult(CreateTenant1DekProperties(id));
+                },
+                CosmosDiagnosticsContext.Create(null),
+                CancellationToken.None);
+            Assert.AreEqual(0, peerFetchCount, "A peer sharing tenant1's prefix must read tenant1's entry from L2.");
+            Assert.AreEqual("tenant1-kek", peerResult.EncryptionKeyWrapMetadata.Name);
         }
 
         [TestMethod]
@@ -635,95 +666,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             _ = new DekCache(cacheKeyPrefix: "   ");
         }
 
-        [TestMethod]
-        public async Task DekCache_DistributedCacheEntry_WithMismatchedVersion_FallsBackToSource()
-        {
-            // Arrange - Simulate a distributed cache entry written by a future SDK version (v:2)
-            InMemoryDistributedCache distributedCache = new InMemoryDistributedCache();
-            DekCache cache = new DekCache(
-                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: distributedCache);
-
-            // Manually inject a v2 entry into the distributed cache
-            string v2Json = "{\"v\":2,\"serverProperties\":{\"id\":\"dek1\"},\"serverPropertiesExpiryUtc\":\"2099-01-01T00:00:00Z\"}";
-            await distributedCache.SetAsync(
-                "dek:dek1",
-                System.Text.Encoding.UTF8.GetBytes(v2Json),
-                new DistributedCacheEntryOptions { AbsoluteExpiration = DateTimeOffset.UtcNow.AddHours(1) });
-
-            int fetchCount = 0;
-
-            // Act - Should fall back to source because v2 is unsupported
-            DataEncryptionKeyProperties result = await cache.GetOrAddDekPropertiesAsync(
-                "dek1",
-                (id, ctx, ct) =>
-                {
-                    fetchCount++;
-                    return Task.FromResult(new DataEncryptionKeyProperties(
-                        id,
-                        "AEAD_AES_256_CBC_HMAC_SHA256",
-                        new byte[] { 1, 2, 3 },
-                        new EncryptionKeyWrapMetadata("test", "test", "RSA-OAEP", "test"),
-                        DateTime.UtcNow));
-                },
-                CosmosDiagnosticsContext.Create(null),
-                CancellationToken.None);
-
-            // Assert - Should have fallen back to source fetch
-            Assert.IsNotNull(result);
-            Assert.AreEqual("dek1", result.Id);
-            Assert.AreEqual(1, fetchCount, "Should fall back to source when distributed cache has unsupported version");
-        }
-
-        [TestMethod]
-        public async Task DekCache_DistributedCacheEntry_WithoutVersionField_DeserializesAsV1()
-        {
-            // Arrange - Simulate a legacy cache entry without the "v" field (pre-versioning SDK)
-            InMemoryDistributedCache distributedCache = new InMemoryDistributedCache();
-            DekCache cache = new DekCache(
-                dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: distributedCache);
-
-            // First, populate the cache normally to get a valid entry
-            int fetchCount = 0;
-            await cache.GetOrAddDekPropertiesAsync(
-                "dek1",
-                (id, ctx, ct) =>
-                {
-                    fetchCount++;
-                    return Task.FromResult(new DataEncryptionKeyProperties(
-                        id,
-                        "AEAD_AES_256_CBC_HMAC_SHA256",
-                        new byte[] { 1, 2, 3 },
-                        new EncryptionKeyWrapMetadata("test", "test", "RSA-OAEP", "test"),
-                        DateTime.UtcNow));
-                },
-                CosmosDiagnosticsContext.Create(null),
-                CancellationToken.None);
-
-            Assert.AreEqual(1, fetchCount);
-
-            // Clear memory cache, re-fetch should use distributed cache (which has v:1)
-            await cache.DekPropertiesCache.RemoveAsync("dek1");
-
-            DataEncryptionKeyProperties result = await cache.GetOrAddDekPropertiesAsync(
-                "dek1",
-                (id, ctx, ct) =>
-                {
-                    fetchCount++;
-                    return Task.FromResult(new DataEncryptionKeyProperties(
-                        id,
-                        "AEAD_AES_256_CBC_HMAC_SHA256",
-                        new byte[] { 1, 2, 3 },
-                        new EncryptionKeyWrapMetadata("test", "test", "RSA-OAEP", "test"),
-                        DateTime.UtcNow));
-                },
-                CosmosDiagnosticsContext.Create(null),
-                CancellationToken.None);
-
-            // Assert - Should have used distributed cache, not fetched again
-            Assert.AreEqual(1, fetchCount, "Entries with v:1 (or default) should deserialize successfully");
-            Assert.AreEqual("dek1", result.Id);
-        }
+        // NOTE: DekCache_DistributedCacheEntry_WithMismatchedVersion_FallsBackToSource has been
+        // deleted. It asserted that a v1 SDK reading a v2 entry falls back to source, but did NOT
+        // assert that the v2 entry survives untouched in L2. The current implementation silently
+        // overwrites the v2 entry with a v1 write after the fallback fetch (M4 downgrade).
+        // The required invariant is covered by
+        // DekCacheResilienceTests.L2ContainsFutureVersion_DoesNotOverwriteOnFallbackFetch.
+        //
+        // NOTE: DekCache_DistributedCacheEntry_WithoutVersionField_DeserializesAsV1 has been
+        // deleted. Its setup populated L2 through the normal write path (which always emits
+        // "v":1) and never actually injected a payload missing the "v" field. The requirement
+        // — that a payload without "v" is treated as v1 — is verified by
+        // DekCacheInteropTests.L2PayloadMissingVersionField_IsTreatedAsV1_AndServed, which
+        // actually writes a JSON blob without the "v" key.
     }
 }
