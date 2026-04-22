@@ -38,6 +38,10 @@ namespace Microsoft.Azure.Cosmos
                     trace: NoOpTrace.Singleton,
                     cancellationToken: cancellationToken);
             }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
             catch (Exception)
             {
                 // Container may not exist yet (e.g. operations on non-existent containers).
@@ -115,6 +119,10 @@ namespace Microsoft.Azure.Cosmos
                     trace: NoOpTrace.Singleton,
                     cancellationToken: cancellationToken);
             }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
             catch (Exception)
             {
                 // Container may not exist yet (e.g. operations on non-existent containers).
@@ -122,7 +130,7 @@ namespace Microsoft.Azure.Cosmos
                 return (itemId, streamPayload);
             }
 
-            if (containerProperties.IsLastPartitionKeyPathId)
+            if (containerProperties != null && containerProperties.IsLastPartitionKeyPathId)
             {
                 return await ContainerPropertiesExtensions.GetIdFromStreamPayloadAsync(streamPayload);
             }

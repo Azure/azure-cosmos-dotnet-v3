@@ -157,11 +157,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     httpCallCount,
                     $"Only the first task should do the http call. All other should wait on the first task. Observed URIs: [{string.Join(", ", httpRequestUris)}]");
 
-                // Reset counters and retry the client to verify a new http call is done for new requests
+                // Reset counters and retry the client to verify a new http call is done for new requests.
                 tasks.Clear();
                 delayCallBack = true;
                 this.TaskStartedCount = 0;
-                httpCallCount = 0;
+                Interlocked.Exchange(ref httpCallCount, 0);
+                Interlocked.Exchange(ref metadataCallCount, 0);
+                // Drain in-place: the RequestCallBack closure captured this specific bag instance,
+                // so we cannot swap the reference without the handler writing into a stale bag.
                 while (httpRequestUris.TryTake(out _))
                 {
                 }
