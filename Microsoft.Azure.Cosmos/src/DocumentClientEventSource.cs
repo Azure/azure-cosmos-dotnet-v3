@@ -316,11 +316,17 @@ namespace Microsoft.Azure.Cosmos
                 // subscribing to the "DocumentDBClient" EventSource at Verbose level
                 // (e.g., Geneva MonitoringAgent, PerfView, dotnet-trace) would capture it.
                 // Replace the value with a fixed placeholder while preserving the 33-field
-                // ETW manifest so existing consumers remain compatible.
-                const int AuthorizationIndex = 1; // matches position in keysToExtract above
-                if (!string.IsNullOrEmpty(headerValues[AuthorizationIndex]))
+                // ETW manifest so existing consumers remain compatible. The IsNullOrEmpty
+                // guard preserves the existing "" semantics for requests that never had an
+                // Authorization header attached (e.g. internal plumbing); we only overwrite
+                // when a real value is present.
+                int authorizationIndex = Array.IndexOf(keysToExtract, HttpConstants.HttpHeaders.Authorization);
+                System.Diagnostics.Debug.Assert(
+                    authorizationIndex >= 0,
+                    "Authorization must be present in keysToExtract so the redaction below takes effect.");
+                if (authorizationIndex >= 0 && !string.IsNullOrEmpty(headerValues[authorizationIndex]))
                 {
-                    headerValues[AuthorizationIndex] = "REDACTED";
+                    headerValues[authorizationIndex] = "REDACTED";
                 }
 
                 this.Request(activityId, localId, uri, resourceType, headerValues[0], headerValues[1], headerValues[2], headerValues[3], headerValues[4],

@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         /// master-key HMAC, resource token, or AAD Bearer token in plaintext.
         /// </summary>
         [TestMethod]
-        [Owner("cosmos-dotnet-sdk")]
+        [Owner("ntripician")]
         public void Request_AuthorizationHeader_IsRedactedInEtwPayload()
         {
             using CapturingEventListener listener = new CapturingEventListener();
@@ -36,16 +36,25 @@ namespace Microsoft.Azure.Cosmos.Tests
                 requestMessage.Headers.TryAddWithoutValidation("authorization", SecretAuthHeaderValue),
                 "Test setup failed: could not attach authorization header.");
 
+            Guid activityId = Guid.NewGuid();
             DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
             eventSource.Request(
-                activityId: Guid.NewGuid(),
+                activityId: activityId,
                 localId: Guid.NewGuid(),
                 uri: requestMessage.RequestUri.ToString(),
                 resourceType: "docs",
                 requestHeaders: requestMessage.Headers);
 
-            EventWrittenEventArgs requestEvent = listener.Events.SingleOrDefault(e => e.EventId == 1);
-            Assert.IsNotNull(requestEvent, "Expected Event ID 1 (Request) to be emitted.");
+            // Pin the assertion to this test's activityId so that concurrently-running
+            // tests which also emit Event 1 from the shared DocumentClientEventSource
+            // singleton don't cause SingleOrDefault to throw or match the wrong event.
+            EventWrittenEventArgs requestEvent = listener.Events
+                .FirstOrDefault(e => e.EventId == 1
+                    && e.Payload != null
+                    && e.Payload.Count > 0
+                    && e.Payload[0] is Guid g
+                    && g == activityId);
+            Assert.IsNotNull(requestEvent, "Expected Event ID 1 (Request) for this test's activityId to be emitted.");
 
             // The Authorization field is the 6th payload slot (index 5): activityId(0), localId(1),
             // uri(2), resourceType(3), accept(4), authorization(5), ...
@@ -76,22 +85,28 @@ namespace Microsoft.Azure.Cosmos.Tests
         /// an empty string should still be emitted, not the literal "REDACTED".
         /// </summary>
         [TestMethod]
-        [Owner("cosmos-dotnet-sdk")]
+        [Owner("ntripician")]
         public void Request_NoAuthorizationHeader_EmitsEmptyString()
         {
             using CapturingEventListener listener = new CapturingEventListener();
 
             using HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, "https://acct.documents.azure.com/");
 
+            Guid activityId = Guid.NewGuid();
             DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
             eventSource.Request(
-                activityId: Guid.NewGuid(),
+                activityId: activityId,
                 localId: Guid.NewGuid(),
                 uri: requestMessage.RequestUri.ToString(),
                 resourceType: "docs",
                 requestHeaders: requestMessage.Headers);
 
-            EventWrittenEventArgs requestEvent = listener.Events.SingleOrDefault(e => e.EventId == 1);
+            EventWrittenEventArgs requestEvent = listener.Events
+                .FirstOrDefault(e => e.EventId == 1
+                    && e.Payload != null
+                    && e.Payload.Count > 0
+                    && e.Payload[0] is Guid g
+                    && g == activityId);
             Assert.IsNotNull(requestEvent);
             Assert.AreEqual(string.Empty, requestEvent.Payload[5] as string);
         }
