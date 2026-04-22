@@ -113,48 +113,9 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
             // Use a unique version to avoid cache conflicts
             packageVersion = $"99.0.0-test.{DateTime.UtcNow:yyyyMMddHHmmss}";
 
-            // Pack the SDK project
-            ProcessStartInfo packInfo = new ProcessStartInfo
-            {
-                FileName = "dotnet",
-                Arguments = $"pack \"{cosmosProjectPath}\" -c Release -o \"{packOutputDir}\" /p:Version={packageVersion} /p:PackageVersion={packageVersion}",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            Console.WriteLine($"Packing SDK: dotnet {packInfo.Arguments}");
-
-            Process packProcess = Process.Start(packInfo);
-            if (packProcess == null)
-            {
-                Assert.Fail("Failed to start dotnet pack process");
-            }
-
-            using (packProcess)
-            {
-                Task<string> outputTask = packProcess.StandardOutput.ReadToEndAsync();
-                Task<string> errorTask = packProcess.StandardError.ReadToEndAsync();
-
-                bool exited = packProcess.WaitForExit((int)TimeSpan.FromMinutes(10).TotalMilliseconds);
-                if (!exited)
-                {
-                    packProcess.Kill();
-                    Assert.Fail("dotnet pack timed out after 10 minutes");
-                }
-
-                string output = await outputTask;
-                string error = await errorTask;
-
-                if (packProcess.ExitCode != 0)
-                {
-                    Assert.Fail($"dotnet pack failed.\nOutput: {output}\nError: {error}");
-                }
-
-                Assert.IsTrue(string.IsNullOrEmpty(error), $"dotnet pack had unexpected error output:\n{error}");
-                Console.WriteLine($"Pack succeeded. Output: {output}");
-            }
+            await RunDotnetCommandAsync(
+                $"pack \"{cosmosProjectPath}\" -c Release -o \"{packOutputDir}\" /p:Version={packageVersion} /p:PackageVersion={packageVersion}",
+                timeoutMinutes: 10);
 
             localNugetPackagePath = packOutputDir;
         }
@@ -203,52 +164,10 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
             string projectDir = Path.GetDirectoryName(projectFile);
             string publishDir = Path.Combine(projectDir, "bin", "publish", runtimeIdentifier ?? "no-rid");
 
-            // Run dotnet publish
             string ridArgument = runtimeIdentifier != null ? $"-r {runtimeIdentifier} --self-contained false" : string.Empty;
-            ProcessStartInfo processInfo = new ProcessStartInfo
-            {
-                FileName = "dotnet",
-                Arguments = $"publish \"{projectFile}\" -c Release -o \"{publishDir}\" {ridArgument}".Trim(),
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            // Trace the command being executed for debugging
-            string commandLine = $"{processInfo.FileName} {processInfo.Arguments}";
-            Console.WriteLine($"Executing: {commandLine}");
-            Console.WriteLine($"Working directory: {projectDir}");
-
-            Process process = Process.Start(processInfo);
-            if (process == null)
-            {
-                Assert.Fail($"Failed to start dotnet publish process for {runtimeIdentifier ?? "no RID"}");
-            }
-
-            using (process!)
-            {
-                Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
-                Task<string> errorTask = process.StandardError.ReadToEndAsync();
-
-                bool exited = process.WaitForExit((int)TimeSpan.FromMinutes(5).TotalMilliseconds);
-                if (!exited)
-                {
-                    process.Kill();
-                    Assert.Fail($"dotnet publish timed out after 5 minutes for {runtimeIdentifier ?? "no RID"}.\nCommand: {commandLine}");
-                }
-
-                string output = await outputTask;
-                string error = await errorTask;
-
-                if (process.ExitCode != 0)
-                {
-                    Assert.Fail($"dotnet publish failed for {runtimeIdentifier ?? "no RID"}.\nCommand: {commandLine}\nOutput: {output}\nError: {error}");
-                }
-
-                Assert.IsTrue(string.IsNullOrEmpty(error), $"dotnet publish had unexpected error output:\n{error}");
-                Console.WriteLine($"Publish succeeded for {runtimeIdentifier ?? "no RID"}. Exit code: {process.ExitCode}");
-            }
+            await RunDotnetCommandAsync(
+                $"publish \"{projectFile}\" -c Release -o \"{publishDir}\" {ridArgument}".Trim(),
+                timeoutMinutes: 5);
 
             return publishDir;
         }
@@ -307,6 +226,52 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
 
             Assert.IsNotNull(currentDir, "Could not find repository root");
             return currentDir;
+        }
+
+        private static async Task RunDotnetCommandAsync(string arguments, int timeoutMinutes = 5)
+        {
+            ProcessStartInfo processInfo = new ProcessStartInfo
+            {
+                FileName = "dotnet",
+                Arguments = arguments,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            string commandLine = $"dotnet {arguments}";
+            Console.WriteLine($"Executing: {commandLine}");
+
+            Process process = Process.Start(processInfo);
+            if (process == null)
+            {
+                Assert.Fail($"Failed to start process: {commandLine}");
+            }
+
+            using (process)
+            {
+                Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
+                Task<string> errorTask = process.StandardError.ReadToEndAsync();
+
+                bool exited = process.WaitForExit((int)TimeSpan.FromMinutes(timeoutMinutes).TotalMilliseconds);
+                if (!exited)
+                {
+                    process.Kill();
+                    Assert.Fail($"Command timed out after {timeoutMinutes} minutes.\nCommand: {commandLine}");
+                }
+
+                string output = await outputTask;
+                string error = await errorTask;
+
+                if (process.ExitCode != 0)
+                {
+                    Assert.Fail($"Command failed with exit code {process.ExitCode}.\nCommand: {commandLine}\nOutput: {output}\nError: {error}");
+                }
+
+                Assert.IsTrue(string.IsNullOrEmpty(error), $"Command had unexpected error output.\nCommand: {commandLine}\nError: {error}");
+                Console.WriteLine($"Command succeeded: {commandLine}");
+            }
         }
     }
 }
