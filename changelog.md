@@ -23,6 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [5634](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5634) Semantic Reranking: Adds response body in semantic reranking error responses
 - [5685](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5685) Read Consistency Strategy: Adds Read Consistency Strategy option for read requests
 
+#### Fixed
+
+- Diagnostics: Fixes Authorization header leaked to `DocumentDBClient` ETW EventSource. The `Request` event (ID 1) previously wrote the raw Authorization HTTP header value to its ETW payload, so any listener subscribing to the `DocumentDBClient` EventSource at Verbose level (for example a Geneva / GCS EtwProvider) would capture master-key HMAC tokens, resource tokens, or AAD Bearer access tokens in plaintext. The value is now replaced with `REDACTED` before being emitted.
+
 ### <a name="3.58.0"/> [3.58.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.58.0) - 2026-3-19
 
 #### Added

@@ -309,6 +309,20 @@ namespace Microsoft.Azure.Cosmos
                 };
 
                 string[] headerValues = Helpers.ExtractValuesFromHTTPHeaders(requestHeaders, keysToExtract);
+
+                // SECURITY: The Authorization header contains a live credential
+                // (master-key HMAC signature, resource token, or AAD Bearer access token).
+                // It must never be written to the ETW event payload where any listener
+                // subscribing to the "DocumentDBClient" EventSource at Verbose level
+                // (e.g., Geneva MonitoringAgent, PerfView, dotnet-trace) would capture it.
+                // Replace the value with a fixed placeholder while preserving the 33-field
+                // ETW manifest so existing consumers remain compatible.
+                const int AuthorizationIndex = 1; // matches position in keysToExtract above
+                if (!string.IsNullOrEmpty(headerValues[AuthorizationIndex]))
+                {
+                    headerValues[AuthorizationIndex] = "REDACTED";
+                }
+
                 this.Request(activityId, localId, uri, resourceType, headerValues[0], headerValues[1], headerValues[2], headerValues[3], headerValues[4],
                     headerValues[5], headerValues[6], headerValues[7], headerValues[8], headerValues[9], headerValues[10], headerValues[11], headerValues[12],
                     headerValues[13], headerValues[14], headerValues[15], headerValues[16], headerValues[17], headerValues[18], headerValues[19], headerValues[20],
