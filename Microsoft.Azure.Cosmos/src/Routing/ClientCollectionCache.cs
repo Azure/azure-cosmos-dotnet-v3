@@ -53,13 +53,13 @@ namespace Microsoft.Azure.Cosmos.Routing
             cancellationToken.ThrowIfCancellationRequested();
             IDocumentClientRetryPolicy retryPolicyInstance = new ClearingSessionContainerClientRetryPolicy(
                 this.sessionContainer, this.retryPolicy.GetRequestPolicy());
-            return TaskHelper.InlineIfPossible(
-                  () => this.ReadCollectionAsync(
+            return MetadataRetryHelper.ExecuteAsync(
+                  (ct) => this.ReadCollectionAsync(
                       PathsHelper.GeneratePath(ResourceType.Collection, collectionRid, false),
                       retryPolicyInstance,
                       trace,
                       clientSideRequestStatistics,
-                      cancellationToken),
+                      ct),
                   retryPolicyInstance,
                   cancellationToken);
         }
@@ -73,9 +73,9 @@ namespace Microsoft.Azure.Cosmos.Routing
             cancellationToken.ThrowIfCancellationRequested();
             IDocumentClientRetryPolicy retryPolicyInstance = new ClearingSessionContainerClientRetryPolicy(
                 this.sessionContainer, this.retryPolicy.GetRequestPolicy());
-            return TaskHelper.InlineIfPossible(
-                () => this.ReadCollectionAsync(
-                    resourceAddress, retryPolicyInstance, trace, clientSideRequestStatistics, cancellationToken),
+            return MetadataRetryHelper.ExecuteAsync(
+                (ct) => this.ReadCollectionAsync(
+                    resourceAddress, retryPolicyInstance, trace, clientSideRequestStatistics, ct),
                 retryPolicyInstance,
                 cancellationToken);
         }
