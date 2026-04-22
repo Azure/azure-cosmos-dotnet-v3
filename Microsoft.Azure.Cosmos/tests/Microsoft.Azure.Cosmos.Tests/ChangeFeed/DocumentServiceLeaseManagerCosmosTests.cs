@@ -628,6 +628,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             else if (requestOptionsFactory is PartitionedByPartitionKeyCollectionRequestOptionsFactory)
             {
                 Assert.IsNotNull(lease.PartitionKey);
+
+                // The lease's partition-key value must equal its id so that concurrent/retry creates
+                // for the same lease resolve to the same (id, partitionKey) tuple and Cosmos's per-
+                // partition-key id-uniqueness check turns duplicates into a 409 Conflict. Using a
+                // random Guid here would silently persist cross-partition-key duplicates and stall
+                // the change feed load balancer. See DocumentServiceLeaseManagerCosmos.CreateLeaseIfNotExistAsync.
+                Assert.AreEqual(lease.Id, lease.PartitionKey);
             }
             else
             {

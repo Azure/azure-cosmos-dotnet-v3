@@ -128,7 +128,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 Mode = this.GetChangeFeedMode()
             };
 
-            this.requestOptionsFactory.AddPartitionKeyIfNeeded((string pk) => documentServiceLease.LeasePartitionKey = pk, Guid.NewGuid().ToString());
+            // Use the lease document id as the partition-key value so that retries / concurrent
+            // creates for the same lease resolve to the same (id, partitionKey) tuple. This lets the
+            // Cosmos per-partition-key id-uniqueness check turn duplicates into a 409 Conflict
+            // instead of silently persisting cross-partition-key duplicates.
+            this.requestOptionsFactory.AddPartitionKeyIfNeeded((string pk) => documentServiceLease.LeasePartitionKey = pk, leaseDocId);
 
             return this.TryCreateDocumentServiceLeaseAsync(documentServiceLease);
         }
@@ -153,7 +157,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 Mode = this.GetChangeFeedMode()
             };
 
-            this.requestOptionsFactory.AddPartitionKeyIfNeeded((string pk) => documentServiceLease.LeasePartitionKey = pk, Guid.NewGuid().ToString());
+            // Use the lease document id as the partition-key value so that retries / concurrent
+            // creates for the same lease resolve to the same (id, partitionKey) tuple. This lets the
+            // Cosmos per-partition-key id-uniqueness check turn duplicates into a 409 Conflict
+            // instead of silently persisting cross-partition-key duplicates.
+            this.requestOptionsFactory.AddPartitionKeyIfNeeded((string pk) => documentServiceLease.LeasePartitionKey = pk, leaseDocId);
 
             return this.TryCreateDocumentServiceLeaseAsync(documentServiceLease);
         }
