@@ -20,7 +20,10 @@ Copyright (C) Microsoft Corporation. All rights reserved.
        
        Note: The 'win' prefix filter is used for backward compatibility and may copy
        DLLs for win-x86, win-x64, win-arm, win-arm64, etc. and ServiceInteropWrapper
-	   will attempt to load the correct one based on the actual architecture of the machine at runtime.
+	   will attempt to load the correct one based on the actual architecture of the 
+	   machine at runtime. 
+	   
+	    Currently on win-x64 only, but this allows for future expansion for win-arm64.
   -->
   <ItemGroup Condition="'$(RuntimeIdentifier)' == '' OR $(RuntimeIdentifier.StartsWith('win'))">
     <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\Microsoft.Azure.Cosmos.ServiceInterop.dll">

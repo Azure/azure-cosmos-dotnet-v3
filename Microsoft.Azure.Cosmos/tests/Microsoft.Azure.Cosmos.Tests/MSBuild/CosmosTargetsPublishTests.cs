@@ -68,8 +68,7 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
         [DataRow("osx-arm64")]
         public async Task Publish_WithNonWindowsRuntimeIdentifier_DoesNotCopyWindowsDlls(string runtimeIdentifier)
         {
-            string projectPath = this.CreateTestProject($"NonWinTest_{runtimeIdentifier}");
-            string publishPath = await this.PublishProjectAsync(projectPath, runtimeIdentifier);
+            string publishPath = await this.CreateAndPublishTestProjectAsync($"NonWinTest_{runtimeIdentifier}", runtimeIdentifier);
 
             this.AssertWindowsDllsNotPresent(publishPath, runtimeIdentifier);
         }
@@ -84,8 +83,7 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
         [DataRow("win-arm64")]
         public async Task Publish_WithWindowsRuntimeIdentifier_CopiesWindowsDlls(string runtimeIdentifier)
         {
-            string projectPath = this.CreateTestProject($"WinTest_{runtimeIdentifier}");
-            string publishPath = await this.PublishProjectAsync(projectPath, runtimeIdentifier);
+            string publishPath = await this.CreateAndPublishTestProjectAsync($"WinTest_{runtimeIdentifier}", runtimeIdentifier);
 
             this.AssertWindowsDllsPresent(publishPath, runtimeIdentifier);
         }
@@ -97,8 +95,7 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
         [TestMethod]
         public async Task Publish_WithoutRuntimeIdentifier_CopiesWindowsDlls()
         {
-            string projectPath = this.CreateTestProject("NoRidTest");
-            string publishPath = await this.PublishProjectAsync(projectPath, runtimeIdentifier: null);
+            string publishPath = await this.CreateAndPublishTestProjectAsync("NoRidTest", runtimeIdentifier: null);
 
             this.AssertWindowsDllsPresent(publishPath, "no RuntimeIdentifier");
         }
@@ -120,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
             localNugetPackagePath = packOutputDir;
         }
 
-        private string CreateTestProject(string projectName)
+        private async Task<string> CreateAndPublishTestProjectAsync(string projectName, string runtimeIdentifier)
         {
             string projectDir = Path.Combine(testProjectsRoot, projectName);
             Directory.CreateDirectory(projectDir);
@@ -156,14 +153,8 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
             // Create a minimal Program.cs
             File.WriteAllText(programFile, @"System.Console.WriteLine(""Test app for verifying Cosmos SDK package behavior"");");
 
-            return projectFile;
-        }
-
-        private async Task<string> PublishProjectAsync(string projectFile, string runtimeIdentifier)
-        {
-            string projectDir = Path.GetDirectoryName(projectFile);
+            // Publish the project
             string publishDir = Path.Combine(projectDir, "bin", "publish", runtimeIdentifier ?? "no-rid");
-
             string ridArgument = runtimeIdentifier != null ? $"-r {runtimeIdentifier} --self-contained false" : string.Empty;
             await RunDotnetCommandAsync(
                 $"publish \"{projectFile}\" -c Release -o \"{publishDir}\" {ridArgument}".Trim(),
