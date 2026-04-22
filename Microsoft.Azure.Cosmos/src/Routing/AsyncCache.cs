@@ -198,27 +198,6 @@ namespace Microsoft.Azure.Cosmos.Common
             }
         }
 
-        /// <summary>
-        /// Attempts to get a value from the cache without triggering any async operations.
-        /// Returns true only if the value is already cached and completed successfully.
-        /// </summary>
-        public bool TryGetCachedValue(TKey key, out TValue value)
-        {
-            value = default;
-            if (this.values.TryGetValue(key, out AsyncLazy<TValue> lazyValue)
-                && lazyValue.IsValueCreated
-                && lazyValue.Value.IsCompleted
-                && lazyValue.Value.Status == TaskStatus.RanToCompletion)
-            {
-#pragma warning disable VSTHRD002 // Safe: task is already completed successfully
-                value = lazyValue.Value.Result;
-#pragma warning restore VSTHRD002
-                return true;
-            }
-
-            return false;
-        }
-
         public bool TryRemoveIfCompleted(TKey key)
         {
             AsyncLazy<TValue> initialLazyValue;

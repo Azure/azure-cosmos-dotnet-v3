@@ -271,21 +271,6 @@ namespace Microsoft.Azure.Cosmos.Common
                 cancellationToken);
         }
 
-        /// <summary>
-        /// Attempts to retrieve cached container properties from in-memory cache only.
-        /// Does not trigger any HTTP calls or async initialization.
-        /// Returns true if the properties are already cached and available.
-        /// </summary>
-        internal bool TryGetCachedContainerProperties(
-            string apiVersion,
-            string resourceAddress,
-            out ContainerProperties containerProperties)
-        {
-            string resourceFullName = PathsHelper.GetCollectionPath(resourceAddress);
-            InternalCache cache = this.GetCache(apiVersion);
-            return cache.collectionInfoByName.TryGetCachedValue(resourceFullName, out containerProperties);
-        }
-
         internal virtual async Task<ContainerProperties> ResolveByNameAsync(
             string apiVersion,
             string resourceAddress,

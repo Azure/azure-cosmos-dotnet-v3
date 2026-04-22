@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos
     {
         private const int DefaultStreamBufferSize = 4096;
 
-        internal static Task<PartitionKey?> EnsureIdGetAppendedToPartitionKeyIfNeededAsync(
+        internal static async Task<PartitionKey?> EnsureIdGetAppendedToPartitionKeyIfNeededAsync(
             this ContainerInternal container,
             PartitionKey? partitionKey,
             string itemId,
@@ -27,20 +27,27 @@ namespace Microsoft.Azure.Cosmos
         {
             if (container == null)
             {
-                return Task.FromResult(partitionKey);
+                return partitionKey;
             }
 
-            // Only use container properties that are already cached in memory.
-            // This avoids triggering client initialization (EnsureValidClientAsync)
-            // or making HTTP calls (ResolveByNameAsync) before the handler pipeline
-            // has had a chance to initialize the client.
-            // On subsequent requests, the cache will be populated by the normal
-            // request pipeline and this optimization will take effect.
-            if (!container.TryGetCachedContainerPropertiesFromMemory(out ContainerProperties containerProperties)
-                || containerProperties == null
-                || !containerProperties.IsLastPartitionKeyPathId)
+            ContainerProperties containerProperties;
+            try
             {
-                return Task.FromResult(partitionKey);
+                containerProperties = await container.GetCachedContainerPropertiesAsync(
+                    forceRefresh: false,
+                    trace: NoOpTrace.Singleton,
+                    cancellationToken: cancellationToken);
+            }
+            catch (Exception)
+            {
+                // Container may not exist yet (e.g. operations on non-existent containers).
+                // Swallow the exception and let the actual operation surface the proper error.
+                return partitionKey;
+            }
+
+            if (containerProperties == null || !containerProperties.IsLastPartitionKeyPathId)
+            {
+                return partitionKey;
             }
 
             if (string.IsNullOrEmpty(itemId))
@@ -56,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
 
                 if (existingComponents.Count != partitionKeyPaths.Count - 1)
                 {
-                    return Task.FromResult(partitionKey);
+                    return partitionKey;
                 }
             }
 
@@ -86,7 +93,7 @@ namespace Microsoft.Azure.Cosmos
 
             Documents.Routing.PartitionKeyInternal partitionKeyInternal = new Documents.Routing.PartitionKeyInternal(allComponentsList);
 
-            return Task.FromResult<PartitionKey?>(new PartitionKey(partitionKeyInternal));
+            return new PartitionKey(partitionKeyInternal);
         }
 
         internal static async Task<(string, Stream)> GetItemIdFromStreamIfRequiredAsync(

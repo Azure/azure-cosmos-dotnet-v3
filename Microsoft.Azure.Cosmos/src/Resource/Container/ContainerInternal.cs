@@ -55,17 +55,6 @@ namespace Microsoft.Azure.Cosmos
             ITrace trace,
             CancellationToken cancellationToken);
 
-        /// <summary>
-        /// Attempts to retrieve container properties from in-memory cache only.
-        /// Does not trigger client initialization or make HTTP calls.
-        /// Returns false if the cache is not populated.
-        /// </summary>
-        internal virtual bool TryGetCachedContainerPropertiesFromMemory(out ContainerProperties containerProperties)
-        {
-            containerProperties = null;
-            return false;
-        }
-
         public abstract Task<IReadOnlyList<IReadOnlyList<string>>> GetPartitionKeyPathTokensAsync(
             ITrace trace,
             CancellationToken cancellationToken = default);
