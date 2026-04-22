@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
     /// </summary>
     [TestClass]
     [TestCategory("LongRunning")]
-    public class CosmosTargetsPublishTests
+    public class CosmosTargetsInteropPublishTests
     {
         private static string testProjectsRoot;
         private static string localNugetPackagePath;
