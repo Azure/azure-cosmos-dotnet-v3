@@ -599,7 +599,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 rawBytes,
                 CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized);
 #pragma warning restore CS0618
-            return new InMemoryRawDek(key, TimeSpan.FromHours(1), nowUtc);
+            // nowUtc is retained in the signature for readability but InMemoryRawDek no longer
+            // accepts an injected clock — the only production call path uses DateTime.UtcNow,
+            // so an injected value would be dead. The test's usage is unaffected.
+            _ = nowUtc;
+            return new InMemoryRawDek(key, TimeSpan.FromHours(1));
         }
 
         private static bool ContainsSubsequence(byte[] haystack, byte[] needle)

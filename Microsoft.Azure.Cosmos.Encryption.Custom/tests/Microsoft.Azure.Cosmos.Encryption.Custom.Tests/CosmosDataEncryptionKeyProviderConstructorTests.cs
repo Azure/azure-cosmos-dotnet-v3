@@ -113,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 wrapProvider,
                 dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
                 distributedCache: distributedCache,
-                proactiveRefreshThreshold: TimeSpan.FromMinutes(5),
+                refreshBeforeExpiry: TimeSpan.FromMinutes(5),
                 distributedCacheKeyPrefix: "test-dek");
 
             Assert.IsNotNull(provider.DekCache);
@@ -133,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 wrapProvider,
                 dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
                 distributedCache: null,
-                proactiveRefreshThreshold: null);
+                refreshBeforeExpiry: null);
 
             Assert.IsNotNull(withoutDC.DekCache);
             Assert.IsNotNull(withNullDC.DekCache);
@@ -236,7 +236,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 storeProvider,
                 dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
                 distributedCache: distributedCache,
-                proactiveRefreshThreshold: TimeSpan.FromMinutes(5),
+                refreshBeforeExpiry: TimeSpan.FromMinutes(5),
                 distributedCacheKeyPrefix: "test-dek");
 
             Assert.IsNotNull(provider.DekCache);
@@ -255,7 +255,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 storeProvider,
                 dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
                 distributedCache: null,
-                proactiveRefreshThreshold: null);
+                refreshBeforeExpiry: null);
 
             Assert.IsNotNull(withoutDC.DekCache);
             Assert.IsNotNull(withNullDC.DekCache);
@@ -407,7 +407,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 storeProvider,
                 dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
                 distributedCache: distributedCache,
-                proactiveRefreshThreshold: TimeSpan.FromMinutes(5),
+                refreshBeforeExpiry: TimeSpan.FromMinutes(5),
                 distributedCacheKeyPrefix: "test-dek");
 
             Assert.IsNotNull(provider.DekCache);
@@ -429,7 +429,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 storeProvider,
                 dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
                 distributedCache: null,
-                proactiveRefreshThreshold: null);
+                refreshBeforeExpiry: null);
 
             Assert.IsNotNull(withoutDC.DekCache);
             Assert.IsNotNull(withNullDC.DekCache);
@@ -439,7 +439,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
         #endregion
 
-        #region Cross-constructor validation - proactiveRefreshThreshold
+        #region Cross-constructor validation - refreshBeforeExpiry
 
         [TestMethod]
         public void StoreProviderWithDistributedCache_NegativeRefreshThreshold_Throws()
@@ -451,7 +451,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                     storeProvider,
                     dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
                     distributedCache: null,
-                    proactiveRefreshThreshold: TimeSpan.FromMinutes(-5)));
+                    refreshBeforeExpiry: TimeSpan.FromMinutes(-5)));
         }
 
         [TestMethod]
@@ -464,7 +464,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                     storeProvider,
                     dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
                     distributedCache: null,
-                    proactiveRefreshThreshold: TimeSpan.FromMinutes(30)));
+                    refreshBeforeExpiry: TimeSpan.FromMinutes(30)));
         }
 
         [TestMethod]
@@ -477,7 +477,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                     storeProvider,
                     dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
                     distributedCache: null,
-                    proactiveRefreshThreshold: TimeSpan.FromMinutes(60)));
+                    refreshBeforeExpiry: TimeSpan.FromMinutes(60)));
         }
 
 #pragma warning disable CS0618 // Type or member is obsolete
@@ -492,7 +492,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                     wrapProvider,
                     dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
                     distributedCache: null,
-                    proactiveRefreshThreshold: TimeSpan.FromMinutes(-5)));
+                    refreshBeforeExpiry: TimeSpan.FromMinutes(-5)));
         }
 
         [TestMethod]
@@ -507,7 +507,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                     storeProvider,
                     dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
                     distributedCache: null,
-                    proactiveRefreshThreshold: TimeSpan.FromMinutes(-5)));
+                    refreshBeforeExpiry: TimeSpan.FromMinutes(-5)));
         }
 
         [TestMethod]
@@ -522,7 +522,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                     storeProvider,
                     dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
                     distributedCache: null,
-                    proactiveRefreshThreshold: TimeSpan.FromMinutes(30)));
+                    refreshBeforeExpiry: TimeSpan.FromMinutes(30)));
         }
 
 #pragma warning restore CS0618 // Type or member is obsolete

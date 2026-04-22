@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         private readonly TimeSpan dekPropertiesTimeToLive;
         private readonly TimeSpan distributedCacheEntryLifetime;
-        private readonly TimeSpan? proactiveRefreshThreshold;
+        private readonly TimeSpan? refreshBeforeExpiry;
         private readonly IDistributedCache distributedCache;
         private readonly string cacheKeyPrefix;
         private readonly Func<DateTime> utcNow;
@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         public DekCache(
             TimeSpan? dekPropertiesTimeToLive = null,
             IDistributedCache distributedCache = null,
-            TimeSpan? proactiveRefreshThreshold = null,
+            TimeSpan? refreshBeforeExpiry = null,
             string cacheKeyPrefix = null,
             Func<DateTime> utcNow = null,
             TimeSpan? distributedCacheEntryLifetime = null)
@@ -74,15 +74,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 ArgumentValidation.ThrowIfNullOrWhiteSpace(cacheKeyPrefix, nameof(cacheKeyPrefix));
             }
 
-            // Validate proactiveRefreshThreshold
-            if (proactiveRefreshThreshold.HasValue)
+            // Validate refreshBeforeExpiry
+            if (refreshBeforeExpiry.HasValue)
             {
-                ArgumentValidation.ThrowIfNegative(proactiveRefreshThreshold.Value, nameof(proactiveRefreshThreshold));
-                ArgumentValidation.ThrowIfGreaterThanOrEqual(proactiveRefreshThreshold.Value, this.dekPropertiesTimeToLive, nameof(proactiveRefreshThreshold));
+                ArgumentValidation.ThrowIfNegative(refreshBeforeExpiry.Value, nameof(refreshBeforeExpiry));
+                ArgumentValidation.ThrowIfGreaterThanOrEqual(refreshBeforeExpiry.Value, this.dekPropertiesTimeToLive, nameof(refreshBeforeExpiry));
             }
 
             this.distributedCache = distributedCache;
-            this.proactiveRefreshThreshold = proactiveRefreshThreshold;
+            this.refreshBeforeExpiry = refreshBeforeExpiry;
             this.cacheKeyPrefix = cacheKeyPrefix;
             this.utcNow = utcNow ?? (() => DateTime.UtcNow);
         }
@@ -447,12 +447,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         private bool ShouldProactivelyRefresh(CachedDekProperties cached)
         {
-            if (!this.proactiveRefreshThreshold.HasValue)
+            if (!this.refreshBeforeExpiry.HasValue)
             {
                 return false;
             }
 
-            DateTime refreshThreshold = cached.ServerPropertiesExpiryUtc - this.proactiveRefreshThreshold.Value;
+            DateTime refreshThreshold = cached.ServerPropertiesExpiryUtc - this.refreshBeforeExpiry.Value;
             return this.utcNow() >= refreshThreshold;
         }
 

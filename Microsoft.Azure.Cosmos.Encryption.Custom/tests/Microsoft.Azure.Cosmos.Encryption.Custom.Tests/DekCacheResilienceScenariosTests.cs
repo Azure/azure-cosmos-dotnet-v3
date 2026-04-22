@@ -333,7 +333,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             DekCache cache = new DekCache(
                 dekPropertiesTimeToLive: DefaultTtl,
                 distributedCache: l2,
-                proactiveRefreshThreshold: TimeSpan.FromMinutes(5),
+                refreshBeforeExpiry: TimeSpan.FromMinutes(5),
                 utcNow: () => now,
                 cacheKeyPrefix: DefaultCachePrefix);
 
@@ -378,7 +378,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             DekCache cache = new DekCache(
                 dekPropertiesTimeToLive: DefaultTtl,
                 distributedCache: l2,
-                proactiveRefreshThreshold: TimeSpan.FromMinutes(5),
+                refreshBeforeExpiry: TimeSpan.FromMinutes(5),
                 utcNow: () => now,
                 cacheKeyPrefix: DefaultCachePrefix);
 
@@ -426,7 +426,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             DekCache cache = new DekCache(
                 dekPropertiesTimeToLive: DefaultTtl,
                 distributedCache: l2,
-                proactiveRefreshThreshold: TimeSpan.FromMinutes(5),
+                refreshBeforeExpiry: TimeSpan.FromMinutes(5),
                 utcNow: () => now,
                 cacheKeyPrefix: DefaultCachePrefix);
 
@@ -739,7 +739,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
     //    code path calls FetchFromSourceAndUpdateCachesAsync directly, bypassing L2. This is
     //    already expressed by DekCacheResilienceTests.ExpiredL1_* and is not duplicated here.
     //
-    // 4. Proactive-refresh window lower bound — behavior when proactiveRefreshThreshold is
+    // 4. Proactive-refresh window lower bound — behavior when refreshBeforeExpiry is
     //    exactly equal to remaining TTL (i.e. utcNow() == refreshThreshold). DekCache.cs:412
     //    uses ">=" so the boundary is included, but no external doc pins this; skipped
     //    pending a source.

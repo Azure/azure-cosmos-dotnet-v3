@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             DekCache cache = new DekCache(
                 dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
                 distributedCache: distributedCache,
-                proactiveRefreshThreshold: TimeSpan.FromMinutes(25), // Refresh when 5 minutes left
+                refreshBeforeExpiry: TimeSpan.FromMinutes(25), // Refresh when 5 minutes left
                 utcNow: () => fakeNow,
                 cacheKeyPrefix: "test-dek");
 
@@ -219,10 +219,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 DekCache cache = new DekCache(
                     dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
                     distributedCache: null,
-                    proactiveRefreshThreshold: TimeSpan.FromMinutes(-5));
+                    refreshBeforeExpiry: TimeSpan.FromMinutes(-5));
             });
 
-            Assert.AreEqual("proactiveRefreshThreshold", ex.ParamName);
+            Assert.AreEqual("refreshBeforeExpiry", ex.ParamName);
         }
 
         [TestMethod]
@@ -234,10 +234,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 DekCache cache = new DekCache(
                     dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
                     distributedCache: null,
-                    proactiveRefreshThreshold: TimeSpan.FromMinutes(30));
+                    refreshBeforeExpiry: TimeSpan.FromMinutes(30));
             });
 
-            Assert.AreEqual("proactiveRefreshThreshold", ex.ParamName);
+            Assert.AreEqual("refreshBeforeExpiry", ex.ParamName);
         }
 
         [TestMethod]
@@ -249,10 +249,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 DekCache cache = new DekCache(
                     dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
                     distributedCache: null,
-                    proactiveRefreshThreshold: TimeSpan.FromMinutes(60));
+                    refreshBeforeExpiry: TimeSpan.FromMinutes(60));
             });
 
-            Assert.AreEqual("proactiveRefreshThreshold", ex.ParamName);
+            Assert.AreEqual("refreshBeforeExpiry", ex.ParamName);
         }
 
         [TestMethod]
@@ -262,7 +262,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             DekCache cache = new DekCache(
                 dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
                 distributedCache: null,
-                proactiveRefreshThreshold: TimeSpan.FromMinutes(25));
+                refreshBeforeExpiry: TimeSpan.FromMinutes(25));
 
             Assert.IsNotNull(cache);
         }
@@ -274,7 +274,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             DekCache cache = new DekCache(
                 dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
                 distributedCache: null,
-                proactiveRefreshThreshold: null);
+                refreshBeforeExpiry: null);
 
             Assert.IsNotNull(cache);
         }
@@ -288,7 +288,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             DekCache validCache = new DekCache(
                 dekPropertiesTimeToLive: null, // Uses default 120 minutes
                 distributedCache: null,
-                proactiveRefreshThreshold: TimeSpan.FromMinutes(119));
+                refreshBeforeExpiry: TimeSpan.FromMinutes(119));
 
             Assert.IsNotNull(validCache);
 
@@ -298,10 +298,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 DekCache cache = new DekCache(
                     dekPropertiesTimeToLive: null, // Uses default 120 minutes
                     distributedCache: null,
-                    proactiveRefreshThreshold: TimeSpan.FromMinutes(120));
+                    refreshBeforeExpiry: TimeSpan.FromMinutes(120));
             });
 
-            Assert.AreEqual("proactiveRefreshThreshold", ex.ParamName);
+            Assert.AreEqual("refreshBeforeExpiry", ex.ParamName);
         }
 
         // NOTE: The former DekCache_DefaultCacheKeyPrefix_UsesDekPrefix test has been deleted.

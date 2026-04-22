@@ -48,16 +48,16 @@
     <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="16.0.102" PrivateAssets="All" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="3.1.7" />
-    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="3.1.7" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'net46'">
-    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="1.1.2" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
+  <ItemGroup>
+    <!--
+      Microsoft.Extensions.Caching.Memory / .Abstractions are pinned to the 8.0.x LTS line.
+      3.1.7 reached end-of-life in December 2022 and would flag SCA advisories; 6.0.x is also
+      unsupported. ALE (the primary consumer) ships 8.0.1 of the same packages, so aligning
+      here avoids forcing a higher unification at consumer restore time.
+      Both 8.0.0 (Abstractions) and 8.0.1 (Memory) target netstandard2.0, so a single
+      ItemGroup covers both the netstandard2.0 and net8.0 TFMs emitted by TargetFrameworks.
+    -->
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="8.0.0" />
   </ItemGroup>
 

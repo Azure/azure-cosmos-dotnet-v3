@@ -428,7 +428,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             DekCache cache = new DekCache(
                 dekPropertiesTimeToLive: DefaultTtl,
                 distributedCache: l2,
-                proactiveRefreshThreshold: TimeSpan.FromMinutes(5),
+                refreshBeforeExpiry: TimeSpan.FromMinutes(5),
                 cacheKeyPrefix: DefaultCachePrefix,
                 utcNow: () => now);
 

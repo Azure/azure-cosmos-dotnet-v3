@@ -816,19 +816,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests.Utils
         [TestMethod]
         public void ThrowIfGreaterThanOrEqual_TimeSpan_RealWorldScenario_ProactiveRefreshValidation()
         {
-            // Simulate real-world scenario: proactiveRefreshThreshold < dekPropertiesTimeToLive
+            // Simulate real-world scenario: refreshBeforeExpiry < dekPropertiesTimeToLive
             TimeSpan dekTtl = TimeSpan.FromMinutes(120);
 
             // Valid: 119 minutes < 120 minutes
-            ArgumentValidation.ThrowIfGreaterThanOrEqual(TimeSpan.FromMinutes(119), dekTtl, "proactiveRefreshThreshold");
+            ArgumentValidation.ThrowIfGreaterThanOrEqual(TimeSpan.FromMinutes(119), dekTtl, "refreshBeforeExpiry");
 
             // Invalid: 120 minutes >= 120 minutes
             Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
-                ArgumentValidation.ThrowIfGreaterThanOrEqual(TimeSpan.FromMinutes(120), dekTtl, "proactiveRefreshThreshold"));
+                ArgumentValidation.ThrowIfGreaterThanOrEqual(TimeSpan.FromMinutes(120), dekTtl, "refreshBeforeExpiry"));
 
             // Invalid: 121 minutes >= 120 minutes
             Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
-                ArgumentValidation.ThrowIfGreaterThanOrEqual(TimeSpan.FromMinutes(121), dekTtl, "proactiveRefreshThreshold"));
+                ArgumentValidation.ThrowIfGreaterThanOrEqual(TimeSpan.FromMinutes(121), dekTtl, "refreshBeforeExpiry"));
         }
 
         [TestMethod]
