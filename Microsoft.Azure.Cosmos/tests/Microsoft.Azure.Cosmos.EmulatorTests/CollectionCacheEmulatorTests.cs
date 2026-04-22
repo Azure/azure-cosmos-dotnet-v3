@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -200,20 +201,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         /// <summary>
-        /// Mirrors the static <c>CollectionCache.IsCollectionRid</c> helper so tests
-        /// can assert on whether a given ResourceId is a collection RID without
-        /// depending on the private SDK method.
+        /// Delegates to <see cref="CollectionCache.IsCollectionRid"/> which is now
+        /// <c>internal</c>, so tests in this assembly can use it directly.
         /// </summary>
         private static bool IsCollectionRid(string resourceId)
-        {
-            if (string.IsNullOrWhiteSpace(resourceId) ||
-                !ResourceId.TryParse(resourceId, out ResourceId resourceIdParsed))
-            {
-                return false;
-            }
-
-            string collectionRid = resourceIdParsed.DocumentCollectionId.ToString();
-            return StringComparer.Ordinal.Equals(collectionRid, resourceId);
-        }
+            => CollectionCache.IsCollectionRid(resourceId);
     }
 }

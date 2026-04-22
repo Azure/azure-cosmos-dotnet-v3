@@ -377,7 +377,7 @@ namespace Microsoft.Azure.Cosmos.Common
             return this.cacheByApiList[0];
         }
 
-        private static bool IsCollectionRid(string resourceId)
+        internal static bool IsCollectionRid(string resourceId)
         {
             if (string.IsNullOrWhiteSpace(resourceId) ||
                 !ResourceId.TryParse(resourceId, out ResourceId resourceIdParsed))
