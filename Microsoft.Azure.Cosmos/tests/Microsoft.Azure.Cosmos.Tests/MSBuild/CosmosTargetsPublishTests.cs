@@ -256,6 +256,7 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
         private void AssertWindowsDllsNotPresent(string publishPath, string runtimeIdentifier)
         {
             Assert.IsTrue(Directory.Exists(publishPath), $"Publish directory does not exist: {publishPath}");
+            this.AssertPublishOutputIsValid(publishPath, runtimeIdentifier);
 
             foreach (string dll in WindowsNativeDlls)
             {
@@ -268,6 +269,7 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
         private void AssertWindowsDllsPresent(string publishPath, string runtimeIdentifier)
         {
             Assert.IsTrue(Directory.Exists(publishPath), $"Publish directory does not exist: {publishPath}");
+            this.AssertPublishOutputIsValid(publishPath, runtimeIdentifier);
 
             foreach (string dll in WindowsNativeDlls)
             {
@@ -275,6 +277,18 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
                 Assert.IsTrue(File.Exists(dllPath),
                     $"Windows native DLL '{dll}' SHOULD be present when publishing for {runtimeIdentifier}, but was NOT found at: {dllPath}");
             }
+        }
+
+        private void AssertPublishOutputIsValid(string publishPath, string runtimeIdentifier)
+        {
+            string[] publishedFiles = Directory.GetFiles(publishPath);
+            Assert.IsTrue(publishedFiles.Length > 0,
+                $"Publish directory is empty for {runtimeIdentifier}. Publish may have silently failed: {publishPath}");
+
+            string sdkDllPath = Path.Combine(publishPath, "Microsoft.Azure.Cosmos.Client.dll");
+            Assert.IsTrue(File.Exists(sdkDllPath),
+                $"Microsoft.Azure.Cosmos.Client.dll not found in publish output for {runtimeIdentifier}. " +
+                $"Publish may not have included the SDK package correctly: {publishPath}");
         }
 
         private static string GetRepositoryRoot()
