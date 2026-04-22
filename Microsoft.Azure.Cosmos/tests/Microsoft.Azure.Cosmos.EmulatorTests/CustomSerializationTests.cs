@@ -330,7 +330,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             client.EnsureValidClientAsync(NoOpTrace.Singleton).Wait();
 
-            // Create a simple stored procedure
+            // Create a Simple stored procedure
             string scriptId = "bulkImportScript";
             StoredProcedure sproc = new StoredProcedure
             {
