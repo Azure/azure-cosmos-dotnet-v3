@@ -54,17 +54,6 @@ internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
             return (input, null);
         }
 
-        // Write decrypt output through a pooled IBufferWriter and expose it as a
-        // read-only Stream. This avoids the double-buffering that
-        // Utf8JsonWriter(Stream) performs on .NET 8 (it eagerly creates a GC-heap-
-        // backed ArrayBufferWriter<byte> that doubles from 256 bytes, producing
-        // hundreds of KB of garbage per operation for medium documents).
-        //
-        // The streamProcessor's IBufferWriter overload always returns a non-null
-        // DecryptionContext (it either completes normally or throws), so only the
-        // exception path needs to clean up the rented buffer. On success, ownership
-        // transfers to ReadOnlyBufferWriterStream which disposes the writer (and
-        // returns the rented buffer to the pool) when the caller disposes the Stream.
         RentArrayBufferWriter bufferWriter = new (PooledStreamConfiguration.Current.StreamInitialCapacity);
         try
         {
@@ -73,7 +62,6 @@ internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
         }
         catch
         {
-            // CRITICAL: Dispose bufferWriter on exception to prevent memory leak
             bufferWriter.Dispose();
             throw;
         }
@@ -92,25 +80,16 @@ internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
             return null;
         }
 
-        // The streamProcessor Stream-overload always returns a non-null DecryptionContext
-        // (it either completes normally or throws), so no defensive null-check is required
-        // around its result.
         DecryptionContext context = await this.streamProcessor.DecryptStreamAsync(input, output, encryptor, properties, diagnosticsContext, cancellationToken);
         await input.DisposeAsync();
         return context;
     }
 
     /// <summary>
-    /// Reads encryption properties from the stream using a streaming <see cref="Utf8JsonReader"/>
-    /// scan. Returns null if no encryption properties are found.
-    /// Throws NotSupportedException if legacy encryption algorithm is detected.
+    /// Reads encryption properties via <see cref="EncryptionPropertiesStreamReader"/>.
+    /// Returns null when no <c>_ei</c> property is present. Throws
+    /// <see cref="NotSupportedException"/> if the document uses a non-MDE algorithm.
     /// </summary>
-    /// <remarks>
-    /// Uses <see cref="EncryptionPropertiesStreamReader"/> so that documents without
-    /// unusually large root-level values stay within a small pooled buffer and never
-    /// grow into the LOH bucket that a full-document <c>JsonSerializer.DeserializeAsync</c>
-    /// forces on medium-size payloads.
-    /// </remarks>
     private static async Task<EncryptionProperties> ReadMdeEncryptionPropertiesStreamingAsync(Stream input, CancellationToken cancellationToken)
     {
         EncryptionProperties encryptionProperties = await EncryptionPropertiesStreamReader.ReadAsync(input, PooledJsonSerializer.SerializerOptions, cancellationToken).ConfigureAwait(false);

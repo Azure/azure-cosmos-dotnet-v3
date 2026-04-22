@@ -62,8 +62,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         [TestMethod]
         public async Task ReadAsync_WhenDocumentHasLargeValueBeforeEi_GrowsBufferAndReturnsProperties()
         {
-            // A property value that is larger than the 4 KB initial buffer forces the reader
-            // to double the buffer before it can TrySkip past the value.
             string largeValue = new ('y', 20_000);
             string json = /*lang=json,strict*/ "{\"big\":\"" + largeValue + "\",\"_ei\":{\"_ef\":3,\"_ea\":\"AEAD_AES_256_CBC_HMAC_SHA256_RANDOMIZED\",\"_en\":\"k2\",\"_ep\":[]}}";
             await using MemoryStream stream = new (Encoding.UTF8.GetBytes(json));
@@ -77,8 +75,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         [TestMethod]
         public async Task ReadAsync_WhenEiIsLastAndVeryLarge_Succeeds()
         {
-            // _ei that itself spans more than the initial buffer size must still
-            // materialize correctly via the grow path.
             System.Collections.Generic.List<string> paths = new ();
             for (int i = 0; i < 500; i++)
             {
@@ -104,8 +100,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
 
             EncryptionProperties result = await EncryptionPropertiesStreamReader.ReadAsync(stream, Options, CancellationToken.None);
 
-            // _ei:null is a "found but no properties" signal and must map to null to avoid
-            // NullReferenceExceptions downstream.
             Assert.IsNull(result);
         }
 
@@ -129,11 +123,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         [TestMethod]
         public async Task ReadAsync_WhenStreamIsEmpty_ThrowsJsonException()
         {
-            // Utf8JsonReader with isFinalBlock:true on an empty span rejects the input with
-            // a JsonReaderException ("The input does not contain any JSON tokens") which
-            // derives from JsonException. This matches the behaviour of
-            // System.Text.Json.JsonSerializer.DeserializeAsync on an empty stream,
-            // preserving pre-existing contract.
             await using MemoryStream stream = new (Array.Empty<byte>());
 
             await ExpectJsonExceptionAsync(async () =>
@@ -143,8 +132,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         [TestMethod]
         public async Task ReadAsync_WhenStreamIsOpenBraceOnly_ThrowsJsonException()
         {
-            // A truncated JSON (just `{`) hits isFinalBlock:true with an incomplete object
-            // and throws. Confirms we do not silently return null on malformed input.
             await using MemoryStream stream = new (Encoding.UTF8.GetBytes("{"));
 
             await ExpectJsonExceptionAsync(async () =>
@@ -160,18 +147,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             }
             catch (System.Text.Json.JsonException)
             {
-                // Utf8JsonReader throws JsonReaderException (internal sealed) which derives
-                // from JsonException; accept any JsonException subtype.
+                // JsonReaderException is internal-sealed so catch the public base.
             }
         }
 
         [TestMethod]
         public async Task ReadAsync_WhenRootIsArray_ReturnsNull()
         {
-            // A valid JSON document whose root is an array (not an object) is syntactically
-            // well-formed but has no `_ei` property and no root-level `EndObject` token.
-            // The scanner's loop exits cleanly on isFinalBlock:true and falls through to
-            // the post-loop return-null path.
             await using MemoryStream stream = new (Encoding.UTF8.GetBytes("[1,2,3]"));
 
             EncryptionProperties result = await EncryptionPropertiesStreamReader.ReadAsync(stream, Options, CancellationToken.None);
@@ -183,7 +165,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         [TestMethod]
         public async Task ReadAsync_WhenRootIsNumber_ReturnsNull()
         {
-            // Same as above but with a primitive root.
             await using MemoryStream stream = new (Encoding.UTF8.GetBytes("123"));
 
             EncryptionProperties result = await EncryptionPropertiesStreamReader.ReadAsync(stream, Options, CancellationToken.None);
@@ -204,9 +185,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         [TestMethod]
         public async Task ReadAsync_WhenInputIsNonSeekable_ThrowsArgumentException()
         {
-            // The reader rewinds the input so the downstream decrypt loop can re-read the
-            // document from the start. A non-seekable stream cannot support that contract;
-            // the reader fails fast rather than silently producing partial output.
             string json = @"{""_ei"":{""_ef"":3,""_ea"":""AEAD_AES_256_CBC_HMAC_SHA256_RANDOMIZED"",""_en"":""k"",""_ep"":[]},""id"":""x""}";
             await using Stream stream = new NonSeekableReadOnlyStream(Encoding.UTF8.GetBytes(json));
 
@@ -217,10 +195,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         [TestMethod]
         public async Task ReadAsync_WhenCancelled_PropagatesCancellation()
         {
-            // The reader does ReadAsync on the input stream inside a loop. A pre-cancelled
-            // token must propagate out (TaskCanceledException derives from
-            // OperationCanceledException) rather than completing with partial data.
-            // TrickleReadStream honours the token so ReadAsync returns FromCanceled.
             byte[] payload = Encoding.UTF8.GetBytes(@"{""id"":""a"",""_ei"":{""_ef"":3,""_ea"":""AEAD_AES_256_CBC_HMAC_SHA256_RANDOMIZED"",""_en"":""k"",""_ep"":[]}}");
             await using TrickleReadStream stream = new (payload);
             using CancellationTokenSource cts = new ();
@@ -270,10 +244,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         [TestMethod]
         public async Task ReadAsync_WhenStreamTricklesBytes_DoesNotGrowBufferPathologically()
         {
-            // Guard against regressions to partial-read handling: a stream that returns one
-            // byte at a time must not cause exponential buffer growth. A 10 KB document with
-            // no individual value over 4 KB should resolve without ever growing the initial
-            // 4 KB rent.
+            // Regression guard: 1-byte-per-read must not drive exponential buffer growth.
             System.Text.StringBuilder sb = new ();
             sb.Append("{\"filler\":\"");
             sb.Append('x', 500);

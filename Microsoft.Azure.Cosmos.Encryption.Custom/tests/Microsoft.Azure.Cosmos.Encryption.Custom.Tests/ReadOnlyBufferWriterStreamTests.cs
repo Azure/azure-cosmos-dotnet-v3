@@ -13,12 +13,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     using Microsoft.Azure.Cosmos.Encryption.Custom;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-    /// <summary>
-    /// Exhaustive behavioural tests for <see cref="ReadOnlyBufferWriterStream"/>. The wrapper
-    /// is on the hot decrypt return path, so every Stream override — including ones that the
-    /// production call site does not exercise — is covered here so that future callers can
-    /// rely on the full Stream contract.
-    /// </summary>
     [TestClass]
     public class ReadOnlyBufferWriterStreamTests
     {

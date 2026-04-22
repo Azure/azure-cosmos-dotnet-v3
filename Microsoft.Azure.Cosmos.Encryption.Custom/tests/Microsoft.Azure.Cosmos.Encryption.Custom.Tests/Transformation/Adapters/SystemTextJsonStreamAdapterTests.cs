@@ -181,9 +181,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
         [TestMethod]
         public async Task DecryptAsync_WhenStreamProcessorThrows_DisposesBufferWriterAndRethrows()
         {
-            // Covers the catch-path in SystemTextJsonStreamAdapter.DecryptAsync(Stream input, ...)
-            // where the RentArrayBufferWriter must be disposed before re-throwing so the
-            // rented ArrayPool buffer doesn't leak.
             SystemTextJsonStreamAdapter adapter = new (new StreamProcessor());
             Stream encrypted = await CreateEncryptedPayloadAsync(adapter);
 
@@ -202,9 +199,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
         [TestMethod]
         public async Task DecryptAsync_OutputStream_WhenStreamProcessorThrows_Rethrows()
         {
-            // Covers the caller-provided-output overload's exception path. The underlying
-            // RentArrayBufferWriter in the Stream-overload-of-StreamProcessor is scoped via
-            // `using` so it must be disposed even when decrypt throws.
             SystemTextJsonStreamAdapter adapter = new (new StreamProcessor());
             Stream encrypted = await CreateEncryptedPayloadAsync(adapter);
 
@@ -226,12 +220,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
         [TestCategory("MemoryLeak")]
         public async Task DecryptAsync_NewOutputOverload_RepeatedCalls_NoMemoryLeak()
         {
-            // Stress test for the new (Stream, DecryptionContext)-returning overload. The
-            // returned Stream is a ReadOnlyBufferWriterStream that owns a RentArrayBufferWriter
-            // rented from ArrayPool<byte>.Shared. If disposal of the returned Stream fails
-            // to return the rented buffer, ArrayPool would exhaust after a few hundred
-            // iterations and the Rent call would allocate fresh arrays. We mirror the
-            // existing leak-stress test for the provided-output overload.
             SystemTextJsonStreamAdapter adapter = new (new StreamProcessor());
 
             for (int i = 0; i < 1000; i++)
@@ -245,7 +233,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
                 Assert.IsNotNull(context, $"Iteration {i}: Context should not be null");
                 using (decrypted)
                 {
-                    // Touch the result so reads are actually exercised across iterations.
                     byte[] scratch = new byte[1];
                     Assert.AreNotEqual(0, decrypted.Length, $"Iteration {i}: decrypted length");
                     decrypted.Position = 0;
@@ -258,8 +245,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
         [TestMethod]
         public async Task DecryptAsync_NewOutput_ReturnedStream_ReadAsync_ProducesSameBytesAsEncrypted()
         {
-            // End-to-end round-trip asserting that the new (Stream, DecryptionContext)-returning
-            // adapter path produces a stream whose bytes decrypt back to the original plaintext.
             SystemTextJsonStreamAdapter adapter = new (new StreamProcessor());
 
             object original = new { id = "1", Sensitive = "secret-value", NonSensitive = 42 };
@@ -282,11 +267,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
         [TestMethod]
         public async Task DecryptAsync_NewOutput_OnNonSeekableStream_ThrowsArgumentException()
         {
-            // The decrypt path reads the input forward to locate _ei, then restarts reading
-            // from byte 0 for the decrypt loop. A non-seekable stream cannot satisfy that
-            // contract, so the _ei reader fails fast. This preserves the pre-change
-            // behaviour of throwing on non-seekable input (the old DeserializeAsync call
-            // threw NotSupportedException from input.Position = 0).
             SystemTextJsonStreamAdapter adapter = new (new StreamProcessor());
             using Stream input = new NonSeekableReadOnlyStream(Encoding.UTF8.GetBytes("{\"id\":\"1\"}"));
             CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContext();

@@ -34,16 +34,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            // Route the caller-provided-stream path through the same IBufferWriter-based
-            // core used by the new-output-stream overload, then copy out to the user stream
-            // at the end. This avoids constructing a Utf8JsonWriter over a Stream (which on
-            // .NET 8 eagerly creates a GC-heap-backed ArrayBufferWriter<byte> that doubles
-            // from 256 bytes and produces hundreds of KB of garbage per op for medium
-            // documents), at the cost of one pooled-to-caller memcpy on completion.
-            //
-            // The IBufferWriter overload below always returns a non-null DecryptionContext
-            // (it either completes normally or throws), so no defensive null-check is needed
-            // around its result.
             using RentArrayBufferWriter bufferWriter = new (PooledStreamConfiguration.Current.StreamInitialCapacity);
             DecryptionContext context = await this.DecryptStreamAsync(inputStream, bufferWriter, encryptor, properties, diagnosticsContext, cancellationToken);
             await bufferWriter.CopyToAsync(outputStream, cancellationToken).ConfigureAwait(false);
@@ -70,18 +60,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 throw new NotSupportedException($"Unknown encryption format version: {properties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
             }
 
-            // Pre-size the rent-tracking list to cover ~2 rents per encrypted property plus
-            // the structural streaming-buffer rents. Avoids the List<byte[]> grow chain.
             int encryptedPathCount = properties.EncryptedPaths is ICollection<string> ec ? ec.Count : properties.EncryptedPaths.Count();
             using ArrayPoolManager arrayPoolManager = new (initialRentCapacity: (encryptedPathCount * 2) + 4);
 
             DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(properties.DataEncryptionKeyId, properties.EncryptionAlgorithm, cancellationToken);
 
             List<string> pathsDecrypted = new (encryptedPathCount);
-
-            // Write through an IBufferWriter instead of a Stream. Utf8JsonWriter(IBufferWriter)
-            // stores the reference and writes directly — no internal ArrayBufferWriter<byte>,
-            // no GC-heap doubling chain, no per-flush memcpy.
             using Utf8JsonWriter writer = new (outputBufferWriter);
 
             byte[] buffer = arrayPoolManager.Rent(PooledStreamConfiguration.Current.StreamProcessorBufferSize);

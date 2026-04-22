@@ -47,10 +47,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         private static readonly JsonSerializerOptions DefaultOptions = CreateDefaultOptions();
 
         /// <summary>
-        /// Gets the shared default <see cref="JsonSerializerOptions"/> used by the streaming
-        /// encryption path. Exposed internally so low-level readers (e.g.
-        /// <c>EncryptionPropertiesStreamReader</c>) can reuse the same instance without
-        /// triggering a per-call <see cref="JsonSerializerOptions.MakeReadOnly(bool)"/>.
+        /// Gets the shared default <see cref="JsonSerializerOptions"/> instance used by the
+        /// streaming encryption path.
         /// </summary>
         public static JsonSerializerOptions SerializerOptions => DefaultOptions;
 

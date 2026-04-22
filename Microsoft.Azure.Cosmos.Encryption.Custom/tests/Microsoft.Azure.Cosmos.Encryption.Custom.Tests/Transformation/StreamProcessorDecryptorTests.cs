@@ -687,10 +687,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         [TestMethod]
         public async Task DecryptStreamAsync_IBufferWriterOverload_WritesDirectlyToBufferWriter()
         {
-            // Direct test of the new (Stream, IBufferWriter<byte>, ...) overload that E1
-            // introduced. Previously exercised only transitively via the Stream overload;
-            // asserting here that a caller-supplied IBufferWriter receives the decrypted
-            // bytes directly, with no intermediate Stream copy.
             var doc = new { id = "1", SensitiveStr = "secret" };
             string[] paths = new[] { "/SensitiveStr" };
             EncryptionOptions options = CreateOptions(paths);
@@ -711,7 +707,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         [TestMethod]
         public async Task DecryptStreamAsync_IBufferWriterOverload_ThrowsOnNullArguments()
         {
-            // Argument-null guards on the new overload fire before any I/O or crypto.
             using MemoryStream input = new ();
             using RentArrayBufferWriter bw = new ();
             CosmosDiagnosticsContext diag = new ();
