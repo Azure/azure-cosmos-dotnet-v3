@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             TimeSpan? dekPropertiesTimeToLive = null,
             IDistributedCache distributedCache = null,
             TimeSpan? proactiveRefreshThreshold = null,
-            string cacheKeyPrefix = "dek",
+            string cacheKeyPrefix = null,
             Func<DateTime> utcNow = null,
             TimeSpan? distributedCacheEntryLifetime = null)
         {
@@ -53,8 +53,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     "distributedCacheEntryLifetime must be strictly greater than dekPropertiesTimeToLive so that L2 entries outlive L1 expiry.");
             }
 
-            // Validate cacheKeyPrefix
-            ArgumentValidation.ThrowIfNullOrWhiteSpace(cacheKeyPrefix, nameof(cacheKeyPrefix));
+            // A distributed cache without a caller-supplied prefix is ambiguous: multiple
+            // providers sharing a single cache would silently collide on identical dekIds. A
+            // prefix is required whenever distributed caching is enabled so the caller must
+            // consciously partition the keyspace (e.g. by container id, tenant id, etc.).
+            if (distributedCache != null)
+            {
+                ArgumentValidation.ThrowIfNullOrWhiteSpace(cacheKeyPrefix, nameof(cacheKeyPrefix));
+            }
+            else if (cacheKeyPrefix != null)
+            {
+                // Without a distributed cache the prefix is meaningless; still validate so the
+                // argument shape is consistent with the distributed-cache ctor.
+                ArgumentValidation.ThrowIfNullOrWhiteSpace(cacheKeyPrefix, nameof(cacheKeyPrefix));
+            }
 
             // Validate proactiveRefreshThreshold
             if (proactiveRefreshThreshold.HasValue)
@@ -440,7 +452,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         private string GetDistributedCacheKey(string dekId)
         {
-            return $"{this.cacheKeyPrefix}:{dekId}";
+            // dekId is escaped so that a colon (or any other delimiter-sensitive character
+            // that DataEncryptionKeyProperties happens to allow in an Id) cannot alias with a
+            // differently-prefixed provider's cache key. Example of the ambiguity that escaping
+            // prevents: (prefix="a", dekId="b:c") and (prefix="a:b", dekId="c") previously both
+            // produced the key "a:b:c" and aliased each other's entries.
+            return $"{this.cacheKeyPrefix}:{Uri.EscapeDataString(dekId)}";
         }
 
         private static readonly JsonSerializerSettings CacheSerializerSettings = new JsonSerializerSettings
@@ -472,6 +489,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             if (dto == null || dto.ServerProperties == null)
             {
                 throw new InvalidOperationException("Failed to deserialize cached DEK properties or properties are null.");
+            }
+
+            // Newtonsoft deserialises DataEncryptionKeyProperties via its protected parameterless
+            // ctor and sets fields through internal setters, bypassing the validating public ctor.
+            // A partial payload (missing wrapped-key bytes or wrap metadata) would otherwise pass
+            // through and only blow up later in the unwrap pipeline with a confusing NRE. Reject
+            // incomplete entries here so the caller falls back to the authoritative source (Cosmos).
+            DataEncryptionKeyProperties props = dto.ServerProperties;
+            if (string.IsNullOrEmpty(props.Id)
+                || props.WrappedDataEncryptionKey == null
+                || props.EncryptionKeyWrapMetadata == null
+                || string.IsNullOrEmpty(props.EncryptionAlgorithm))
+            {
+                throw new InvalidOperationException("Cached DEK properties are incomplete.");
             }
 
             if (dto.Version != 1)

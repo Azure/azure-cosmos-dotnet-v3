@@ -65,7 +65,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             InMemoryDistributedCache distributedCache = new InMemoryDistributedCache();
             DekCache peerA = new DekCache(
                 dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: distributedCache);
+                distributedCache: distributedCache,
+                cacheKeyPrefix: "test-dek");
 
             int peerAFetchCount = 0;
 
@@ -93,7 +94,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             // different process / a process that just restarted and has an empty L1).
             DekCache peerB = new DekCache(
                 dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: distributedCache);
+                distributedCache: distributedCache,
+                cacheKeyPrefix: "test-dek");
 
             int peerBFetchCount = 0;
             DataEncryptionKeyProperties peerBResult = await peerB.GetOrAddDekPropertiesAsync(
@@ -120,7 +122,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
                 distributedCache: distributedCache,
                 proactiveRefreshThreshold: TimeSpan.FromMinutes(25), // Refresh when 5 minutes left
-                utcNow: () => fakeNow);
+                utcNow: () => fakeNow,
+                cacheKeyPrefix: "test-dek");
 
             int fetchCount = 0;
             SemaphoreSlim fetchSignal = new SemaphoreSlim(0, 10);
@@ -183,7 +186,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
             DekCache cache = new DekCache(
                 dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: mockCache.Object);
+                distributedCache: mockCache.Object,
+                cacheKeyPrefix: "test-dek");
 
             DataEncryptionKeyProperties CreateDekProperties(string id)
             {
@@ -341,7 +345,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             // A cache sharing the same L2 but using the DEFAULT prefix must not see the entry.
             DekCache defaultPrefixCache = new DekCache(
                 dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: distributedCache);
+                distributedCache: distributedCache,
+                cacheKeyPrefix: "test-dek");
 
             int defaultFetchCount = 0;
             await defaultPrefixCache.GetOrAddDekPropertiesAsync(
@@ -450,19 +455,35 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         }
 
         [TestMethod]
-        [ExpectedException(typeof(ArgumentNullException))]
-        public void DekCache_NullCacheKeyPrefix_ThrowsArgumentException()
+        public void DekCache_NullCacheKeyPrefix_WithoutDistributedCache_IsAccepted()
         {
-            // Act & Assert
+            // A null prefix is meaningless when no distributed cache is configured; the ctor
+            // accepts it without error. The prefix is only REQUIRED when a distributed cache
+            // is provided (see DekCache_NullCacheKeyPrefix_WithDistributedCache_Throws).
             _ = new DekCache(cacheKeyPrefix: null);
         }
 
         [TestMethod]
-        [ExpectedException(typeof(ArgumentException))]
-        public void DekCache_EmptyCacheKeyPrefix_ThrowsArgumentException()
+        public void DekCache_NullCacheKeyPrefix_WithDistributedCache_Throws()
         {
-            // Act & Assert
-            _ = new DekCache(cacheKeyPrefix: string.Empty);
+            // REQ: When the distributed cache is configured, a cacheKeyPrefix is REQUIRED so
+            //      that multiple providers sharing one cache cannot silently collide on
+            //      identical DEK ids. Null is rejected via ArgumentNullException; whitespace is
+            //      rejected via ArgumentException. We assert the base ArgumentException to
+            //      tolerate either derived type while still pinning the parameter name.
+            ArgumentException ex = Assert.ThrowsException<ArgumentNullException>(
+                () => new DekCache(
+                    distributedCache: new InMemoryDistributedCache(),
+                    cacheKeyPrefix: null));
+            Assert.AreEqual("cacheKeyPrefix", ex.ParamName);
+        }
+
+        [TestMethod]
+        public void DekCache_EmptyCacheKeyPrefix_Throws()
+        {
+            // Empty / whitespace is rejected regardless of distributed-cache presence so the
+            // argument shape remains predictable.
+            Assert.ThrowsException<ArgumentException>(() => new DekCache(cacheKeyPrefix: string.Empty));
         }
 
         [TestMethod]
@@ -472,7 +493,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             InMemoryDistributedCache distributedCache = new InMemoryDistributedCache();
             DekCache cache = new DekCache(
                 dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: distributedCache);
+                distributedCache: distributedCache,
+                cacheKeyPrefix: "test-dek");
 
             DataEncryptionKeyProperties dekProps = new DataEncryptionKeyProperties(
                 "dek1",
@@ -488,7 +510,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             await cache.LastDistributedCacheWriteTask;
 
             // Assert
-            Assert.IsTrue(distributedCache.ContainsKey("dek:dek1"), "Distributed cache should contain the key after SetDekProperties");
+            Assert.IsTrue(distributedCache.ContainsKey("test-dek:dek1"), "Distributed cache should contain the key after SetDekProperties");
         }
 
         [TestMethod]
@@ -505,7 +527,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
             DekCache cache = new DekCache(
                 dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: mockCache.Object);
+                distributedCache: mockCache.Object,
+                cacheKeyPrefix: "test-dek");
 
             DataEncryptionKeyProperties dekProps = new DataEncryptionKeyProperties(
                 "dek1",
@@ -536,7 +559,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             InMemoryDistributedCache distributedCache = new InMemoryDistributedCache();
             DekCache cache = new DekCache(
                 dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: distributedCache);
+                distributedCache: distributedCache,
+                cacheKeyPrefix: "test-dek");
 
             int fetchCount = 0;
             await cache.GetOrAddDekPropertiesAsync(
@@ -554,13 +578,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 CosmosDiagnosticsContext.Create(null),
                 CancellationToken.None);
 
-            Assert.IsTrue(distributedCache.ContainsKey("dek:dek1"), "Precondition: distributed cache should contain the key");
+            Assert.IsTrue(distributedCache.ContainsKey("test-dek:dek1"), "Precondition: distributed cache should contain the key");
 
             // Act
             await cache.RemoveAsync("dek1");
 
             // Assert
-            Assert.IsFalse(distributedCache.ContainsKey("dek:dek1"), "Distributed cache should be cleared after RemoveAsync");
+            Assert.IsFalse(distributedCache.ContainsKey("test-dek:dek1"), "Distributed cache should be cleared after RemoveAsync");
         }
 
         [TestMethod]
@@ -570,7 +594,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             InMemoryDistributedCache distributedCache = new InMemoryDistributedCache();
             DekCache cache1 = new DekCache(
                 dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: distributedCache);
+                distributedCache: distributedCache,
+                cacheKeyPrefix: "test-dek");
 
             await cache1.GetOrAddDekPropertiesAsync(
                 "dek1",
@@ -583,18 +608,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 CosmosDiagnosticsContext.Create(null),
                 CancellationToken.None);
 
-            Assert.IsTrue(distributedCache.ContainsKey("dek:dek1"), "Precondition: distributed cache populated");
+            Assert.IsTrue(distributedCache.ContainsKey("test-dek:dek1"), "Precondition: distributed cache populated");
 
             // Create a fresh instance (simulates process restart) - memory cache is empty
             DekCache cache2 = new DekCache(
                 dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: distributedCache);
+                distributedCache: distributedCache,
+                cacheKeyPrefix: "test-dek");
 
             // Act - RemoveAsync from a fresh instance with empty memory cache
             await cache2.RemoveAsync("dek1");
 
             // Assert - distributed cache should STILL be cleared (BUG-1 fix verification)
-            Assert.IsFalse(distributedCache.ContainsKey("dek:dek1"),
+            Assert.IsFalse(distributedCache.ContainsKey("test-dek:dek1"),
                 "Distributed cache should be cleared even when memory cache doesn't have the entry");
         }
 
@@ -610,7 +636,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
             DekCache cache = new DekCache(
                 dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: mockCache.Object);
+                distributedCache: mockCache.Object,
+                cacheKeyPrefix: "test-dek");
 
             // Act & Assert - should not throw even though distributed cache fails
             await cache.RemoveAsync("dek1");
@@ -632,7 +659,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
             DekCache cache = new DekCache(
                 dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: mockCache.Object);
+                distributedCache: mockCache.Object,
+                cacheKeyPrefix: "test-dek");
 
             int fetchCount = 0;
 
@@ -659,11 +687,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         }
 
         [TestMethod]
-        [ExpectedException(typeof(ArgumentException))]
-        public void DekCache_WhitespaceCacheKeyPrefix_ThrowsArgumentException()
+        public void DekCache_WhitespaceCacheKeyPrefix_Throws()
         {
-            // Act & Assert
-            _ = new DekCache(cacheKeyPrefix: "   ");
+            // A whitespace-only prefix is treated as not provided and rejected; this prevents
+            // a caller from believing they supplied a discriminator when they effectively did not.
+            Assert.ThrowsException<ArgumentException>(() => new DekCache(cacheKeyPrefix: "   "));
         }
 
         // NOTE: DekCache_DistributedCacheEntry_WithMismatchedVersion_FallsBackToSource has been

@@ -67,7 +67,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             CosmosDataEncryptionKeyProvider provider = new CosmosDataEncryptionKeyProvider(
                 wrapProvider,
                 dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: distributedCache);
+                distributedCache: distributedCache,
+                distributedCacheKeyPrefix: "test-dek");
 
             Assert.AreSame(wrapProvider, provider.EncryptionKeyWrapProvider);
             Assert.IsNull(provider.EncryptionKeyStoreProvider);
@@ -83,7 +84,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 new CosmosDataEncryptionKeyProvider(
                     encryptionKeyWrapProvider: (EncryptionKeyWrapProvider)null,
                     dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                    distributedCache: distributedCache));
+                    distributedCache: distributedCache,
+                    distributedCacheKeyPrefix: "test-dek"));
 
             Assert.AreEqual("encryptionKeyWrapProvider", ex.ParamName);
         }
@@ -111,7 +113,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 wrapProvider,
                 dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
                 distributedCache: distributedCache,
-                proactiveRefreshThreshold: TimeSpan.FromMinutes(5));
+                proactiveRefreshThreshold: TimeSpan.FromMinutes(5),
+                distributedCacheKeyPrefix: "test-dek");
 
             Assert.IsNotNull(provider.DekCache);
         }
@@ -187,7 +190,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             CosmosDataEncryptionKeyProvider provider = new CosmosDataEncryptionKeyProvider(
                 storeProvider,
                 dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: distributedCache);
+                distributedCache: distributedCache,
+                distributedCacheKeyPrefix: "test-dek");
 
             Assert.AreSame(storeProvider, provider.EncryptionKeyStoreProvider);
             Assert.IsNotNull(provider.MdeKeyWrapProvider);
@@ -203,7 +207,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 new CosmosDataEncryptionKeyProvider(
                     encryptionKeyStoreProvider: null,
                     dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                    distributedCache: distributedCache));
+                    distributedCache: distributedCache,
+                    distributedCacheKeyPrefix: "test-dek"));
 
             Assert.AreEqual("encryptionKeyStoreProvider", ex.ParamName);
         }
@@ -231,7 +236,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 storeProvider,
                 dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
                 distributedCache: distributedCache,
-                proactiveRefreshThreshold: TimeSpan.FromMinutes(5));
+                proactiveRefreshThreshold: TimeSpan.FromMinutes(5),
+                distributedCacheKeyPrefix: "test-dek");
 
             Assert.IsNotNull(provider.DekCache);
         }
@@ -331,7 +337,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 wrapProvider,
                 storeProvider,
                 dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: distributedCache);
+                distributedCache: distributedCache,
+                distributedCacheKeyPrefix: "test-dek");
 
             Assert.AreSame(wrapProvider, provider.EncryptionKeyWrapProvider);
             Assert.AreSame(storeProvider, provider.EncryptionKeyStoreProvider);
@@ -350,7 +357,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                     encryptionKeyWrapProvider: null,
                     encryptionKeyStoreProvider: storeProvider,
                     dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                    distributedCache: distributedCache));
+                    distributedCache: distributedCache,
+                    distributedCacheKeyPrefix: "test-dek"));
 
             Assert.AreEqual("encryptionKeyWrapProvider", ex.ParamName);
         }
@@ -366,7 +374,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                     wrapProvider,
                     encryptionKeyStoreProvider: null,
                     dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                    distributedCache: distributedCache));
+                    distributedCache: distributedCache,
+                    distributedCacheKeyPrefix: "test-dek"));
 
             Assert.AreEqual("encryptionKeyStoreProvider", ex.ParamName);
         }
@@ -398,7 +407,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 storeProvider,
                 dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
                 distributedCache: distributedCache,
-                proactiveRefreshThreshold: TimeSpan.FromMinutes(5));
+                proactiveRefreshThreshold: TimeSpan.FromMinutes(5),
+                distributedCacheKeyPrefix: "test-dek");
 
             Assert.IsNotNull(provider.DekCache);
         }
@@ -537,7 +547,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             CosmosDataEncryptionKeyProvider provider = new CosmosDataEncryptionKeyProvider(
                 storeProvider,
                 dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: distributedCache);
+                distributedCache: distributedCache,
+                distributedCacheKeyPrefix: "test-dek");
 
             int fetchCount = 0;
             DataEncryptionKeyProperties props = await provider.DekCache.GetOrAddDekPropertiesAsync(
@@ -556,7 +567,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             // read the populated entry without invoking its fetcher.
             DekCache peerCache = new DekCache(
                 dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: distributedCache);
+                distributedCache: distributedCache,
+                cacheKeyPrefix: "test-dek");
             int peerFetchCount = 0;
             DataEncryptionKeyProperties peerProps = await peerCache.GetOrAddDekPropertiesAsync(
                 "dek1",
@@ -586,7 +598,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             CosmosDataEncryptionKeyProvider provider = new CosmosDataEncryptionKeyProvider(
                 wrapProvider,
                 dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: distributedCache);
+                distributedCache: distributedCache,
+                distributedCacheKeyPrefix: "test-dek");
 
             int fetchCount = 0;
             DataEncryptionKeyProperties props = await provider.DekCache.GetOrAddDekPropertiesAsync(
@@ -603,7 +616,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
             DekCache peerCache = new DekCache(
                 dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: distributedCache);
+                distributedCache: distributedCache,
+                cacheKeyPrefix: "test-dek");
             int peerFetchCount = 0;
             DataEncryptionKeyProperties peerProps = await peerCache.GetOrAddDekPropertiesAsync(
                 "dek1",
@@ -632,7 +646,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 wrapProvider,
                 storeProvider,
                 dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: distributedCache);
+                distributedCache: distributedCache,
+                distributedCacheKeyPrefix: "test-dek");
 
             int fetchCount = 0;
             DataEncryptionKeyProperties props = await provider.DekCache.GetOrAddDekPropertiesAsync(
@@ -649,7 +664,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
             DekCache peerCache = new DekCache(
                 dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: distributedCache);
+                distributedCache: distributedCache,
+                cacheKeyPrefix: "test-dek");
             int peerFetchCount = 0;
             DataEncryptionKeyProperties peerProps = await peerCache.GetOrAddDekPropertiesAsync(
                 "dek1",
@@ -762,7 +778,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 wrapProvider,
                 storeProvider,
                 dekPropertiesTimeToLive: TimeSpan.FromMinutes(30),
-                distributedCache: mockCache.Object);
+                distributedCache: mockCache.Object,
+                distributedCacheKeyPrefix: "test-dek");
 
             // Should not throw even though distributed cache fails
             DataEncryptionKeyProperties result = await provider.DekCache.GetOrAddDekPropertiesAsync(

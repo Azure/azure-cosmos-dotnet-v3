@@ -75,6 +75,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             return Task.CompletedTask;
         }
 
+        public System.Collections.Generic.IEnumerable<string> DumpKeys() => this.cache.Keys;
+
         public bool ContainsKey(string key)
         {
             return this.cache.ContainsKey(key);

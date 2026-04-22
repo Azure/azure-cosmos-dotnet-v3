@@ -382,38 +382,28 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         }
 
         /// <summary>
-        /// Two providers that point at different DEK containers must not collide on the
-        /// same default cache key prefix. The cache key must be scoped so distinct providers
-        /// never read each other's entries.
+        /// Two providers pointing at different DEK containers that share one distributed cache
+        /// must not collide on identical DEK ids. The feature accomplishes this by REQUIRING a
+        /// distinct cacheKeyPrefix from every caller that enables the distributed cache; the
+        /// API must refuse to construct without one so the collision cannot silently occur.
+        /// Positive proof that distinct prefixes do isolate entries is covered by
+        /// DekCacheDistributedCacheTests.DekCache_MultiTenantScenario_IsolatesCacheEntriesByPrefix.
         /// </summary>
         [TestMethod]
-        public async Task TwoProvidersWithDefaults_DoNotCollideOnSameDekId()
+        public void TwoProvidersWithDefaults_ConstructionRequiresExplicitPrefix()
         {
-            DateTime now = NewClock();
-            ClockControlledDistributedCache l2 = new ClockControlledDistributedCache(() => now);
+            ClockControlledDistributedCache l2 = new ClockControlledDistributedCache(() => DateTime.UtcNow);
 
-            DekCache providerA = NewCache(DefaultTtl, l2, () => now);
-            DekCache providerB = NewCache(DefaultTtl, l2, () => now);
-
-            DataEncryptionKeyProperties a = await providerA.GetOrAddDekPropertiesAsync(
-                DekId,
-                (id, ctx, ct) => Task.FromResult(MakeDekProperties(id, wrappedKey: new byte[] { 0xAA })),
-                CosmosDiagnosticsContext.Create(null),
-                CancellationToken.None);
-
-            int providerBCosmosCalls = 0;
-            DataEncryptionKeyProperties b = await providerB.GetOrAddDekPropertiesAsync(
-                DekId,
-                (id, ctx, ct) => { providerBCosmosCalls++; return Task.FromResult(MakeDekProperties(id, wrappedKey: new byte[] { 0xBB })); },
-                CosmosDiagnosticsContext.Create(null),
-                CancellationToken.None);
-
-            CollectionAssert.AreEqual(new byte[] { 0xAA }, a.WrappedDataEncryptionKey);
-            CollectionAssert.AreEqual(
-                new byte[] { 0xBB },
-                b.WrappedDataEncryptionKey,
-                "Provider B must not read Provider A's entry; its own fetcher must be invoked.");
-            Assert.AreEqual(1, providerBCosmosCalls, "Provider B must fetch independently; its L2 slot must be distinct.");
+            // Attempting to construct a DekCache that participates in a distributed cache without
+            // supplying a cacheKeyPrefix must fail loudly. This forces callers to partition the
+            // keyspace explicitly (e.g. by container RID) rather than inheriting a collision-prone
+            // default. Null is rejected with ArgumentNullException.
+            ArgumentException ex = Assert.ThrowsException<ArgumentNullException>(
+                () => new DekCache(
+                    dekPropertiesTimeToLive: DefaultTtl,
+                    distributedCache: l2,
+                    cacheKeyPrefix: null));
+            Assert.AreEqual("cacheKeyPrefix", ex.ParamName);
         }
 
         // ------------------------------------------------------------
@@ -434,6 +424,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 dekPropertiesTimeToLive: DefaultTtl,
                 distributedCache: l2,
                 proactiveRefreshThreshold: TimeSpan.FromMinutes(5),
+                cacheKeyPrefix: DefaultCachePrefix,
                 utcNow: () => now);
 
             await cache.GetOrAddDekPropertiesAsync(
@@ -490,6 +481,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             return new DekCache(
                 dekPropertiesTimeToLive: ttl,
                 distributedCache: l2,
+                cacheKeyPrefix: DefaultCachePrefix,
                 utcNow: utcNow);
         }
 

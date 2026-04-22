@@ -458,7 +458,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             return new DekCache(
                 dekPropertiesTimeToLive: ttl,
                 distributedCache: l2,
-                utcNow: utcNow);
+                utcNow: utcNow,
+                cacheKeyPrefix: DefaultCachePrefix);
         }
 
         private static DataEncryptionKeyProperties MakeDekProperties(string id)

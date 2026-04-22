@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         public CosmosDataEncryptionKeyProvider(
             EncryptionKeyWrapProvider encryptionKeyWrapProvider,
             TimeSpan? dekPropertiesTimeToLive = null)
-            : this(encryptionKeyWrapProvider, dekPropertiesTimeToLive, distributedCache: null, proactiveRefreshThreshold: null)
+            : this(encryptionKeyWrapProvider, dekPropertiesTimeToLive, distributedCache: null, proactiveRefreshThreshold: null, distributedCacheKeyPrefix: null)
         {
         }
 
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <param name="dekPropertiesTimeToLive">Time to live for DEK properties before having to refresh.</param>
         /// <param name="distributedCache">Optional distributed cache implementation for cross-process/cross-instance caching of DEK properties.</param>
         /// <param name="proactiveRefreshThreshold">Optional time window before expiry to trigger proactive background refresh. For example, TimeSpan.FromMinutes(10) will refresh DEKs 10 minutes before they expire.</param>
-        /// <param name="distributedCacheKeyPrefix">Prefix for distributed cache keys to avoid collisions when multiple providers share the same cache instance. Defaults to "dek".</param>
+        /// <param name="distributedCacheKeyPrefix">Required prefix for distributed cache keys. Must be unique per DEK container scope (for example, derived from account/database/container identifiers) so that multiple providers sharing the same cache instance do not collide on identical DEK ids.</param>
         /// <remarks>
         /// When using a distributed cache, ensure the cache infrastructure is configured with encryption in transit (TLS)
         /// and encryption at rest. The cache stores wrapped (encrypted) DEK properties including key metadata.
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             TimeSpan? dekPropertiesTimeToLive,
             Microsoft.Extensions.Caching.Distributed.IDistributedCache distributedCache,
             TimeSpan? proactiveRefreshThreshold = null,
-            string distributedCacheKeyPrefix = "dek")
+            string distributedCacheKeyPrefix = null)
         {
             this.EncryptionKeyWrapProvider = encryptionKeyWrapProvider ?? throw new ArgumentNullException(nameof(encryptionKeyWrapProvider));
             this.dataEncryptionKeyContainerCore = new DataEncryptionKeyContainerCore(this);
@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         public CosmosDataEncryptionKeyProvider(
             EncryptionKeyStoreProvider encryptionKeyStoreProvider,
             TimeSpan? dekPropertiesTimeToLive = null)
-            : this(encryptionKeyStoreProvider, dekPropertiesTimeToLive, distributedCache: null, proactiveRefreshThreshold: null)
+            : this(encryptionKeyStoreProvider, dekPropertiesTimeToLive, distributedCache: null, proactiveRefreshThreshold: null, distributedCacheKeyPrefix: null)
         {
         }
 
@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <param name="dekPropertiesTimeToLive">Time to live for DEK properties before having to refresh.</param>
         /// <param name="distributedCache">Optional distributed cache implementation for cross-process/cross-instance caching of DEK properties.</param>
         /// <param name="proactiveRefreshThreshold">Optional time window before expiry to trigger proactive background refresh. For example, TimeSpan.FromMinutes(10) will refresh DEKs 10 minutes before they expire.</param>
-        /// <param name="distributedCacheKeyPrefix">Prefix for distributed cache keys to avoid collisions when multiple providers share the same cache instance. Defaults to "dek".</param>
+        /// <param name="distributedCacheKeyPrefix">Required prefix for distributed cache keys. Must be unique per DEK container scope (for example, derived from account/database/container identifiers) so that multiple providers sharing the same cache instance do not collide on identical DEK ids.</param>
         /// <remarks>
         /// When using a distributed cache, ensure the cache infrastructure is configured with encryption in transit (TLS)
         /// and encryption at rest. The cache stores wrapped (encrypted) DEK properties including key metadata.
@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             TimeSpan? dekPropertiesTimeToLive,
             Microsoft.Extensions.Caching.Distributed.IDistributedCache distributedCache,
             TimeSpan? proactiveRefreshThreshold = null,
-            string distributedCacheKeyPrefix = "dek")
+            string distributedCacheKeyPrefix = null)
         {
             this.EncryptionKeyStoreProvider = encryptionKeyStoreProvider ?? throw new ArgumentNullException(nameof(encryptionKeyStoreProvider));
             this.MdeKeyWrapProvider = new MdeKeyWrapProvider(encryptionKeyStoreProvider);
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             EncryptionKeyWrapProvider encryptionKeyWrapProvider,
             EncryptionKeyStoreProvider encryptionKeyStoreProvider,
             TimeSpan? dekPropertiesTimeToLive = null)
-            : this(encryptionKeyWrapProvider, encryptionKeyStoreProvider, dekPropertiesTimeToLive, distributedCache: null, proactiveRefreshThreshold: null)
+            : this(encryptionKeyWrapProvider, encryptionKeyStoreProvider, dekPropertiesTimeToLive, distributedCache: null, proactiveRefreshThreshold: null, distributedCacheKeyPrefix: null)
         {
         }
 
@@ -168,7 +168,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <param name="dekPropertiesTimeToLive">Time to live for DEK properties before having to refresh.</param>
         /// <param name="distributedCache">Optional distributed cache implementation for cross-process/cross-instance caching of DEK properties.</param>
         /// <param name="proactiveRefreshThreshold">Optional time window before expiry to trigger proactive background refresh. For example, TimeSpan.FromMinutes(10) will refresh DEKs 10 minutes before they expire.</param>
-        /// <param name="distributedCacheKeyPrefix">Prefix for distributed cache keys to avoid collisions when multiple providers share the same cache instance. Defaults to "dek".</param>
+        /// <param name="distributedCacheKeyPrefix">Required prefix for distributed cache keys. Must be unique per DEK container scope (for example, derived from account/database/container identifiers) so that multiple providers sharing the same cache instance do not collide on identical DEK ids.</param>
         /// <remarks>
         /// When using a distributed cache, ensure the cache infrastructure is configured with encryption in transit (TLS)
         /// and encryption at rest. The cache stores wrapped (encrypted) DEK properties including key metadata.
@@ -180,7 +180,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             TimeSpan? dekPropertiesTimeToLive,
             Microsoft.Extensions.Caching.Distributed.IDistributedCache distributedCache,
             TimeSpan? proactiveRefreshThreshold = null,
-            string distributedCacheKeyPrefix = "dek")
+            string distributedCacheKeyPrefix = null)
         {
             this.EncryptionKeyWrapProvider = encryptionKeyWrapProvider ?? throw new ArgumentNullException(nameof(encryptionKeyWrapProvider));
             this.EncryptionKeyStoreProvider = encryptionKeyStoreProvider ?? throw new ArgumentNullException(nameof(encryptionKeyStoreProvider));

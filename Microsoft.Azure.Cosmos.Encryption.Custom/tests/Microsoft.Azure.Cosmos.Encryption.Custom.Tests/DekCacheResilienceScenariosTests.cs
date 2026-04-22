@@ -334,7 +334,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 dekPropertiesTimeToLive: DefaultTtl,
                 distributedCache: l2,
                 proactiveRefreshThreshold: TimeSpan.FromMinutes(5),
-                utcNow: () => now);
+                utcNow: () => now,
+                cacheKeyPrefix: DefaultCachePrefix);
 
             // Warm.
             await cache.GetOrAddDekPropertiesAsync(
@@ -378,7 +379,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 dekPropertiesTimeToLive: DefaultTtl,
                 distributedCache: l2,
                 proactiveRefreshThreshold: TimeSpan.FromMinutes(5),
-                utcNow: () => now);
+                utcNow: () => now,
+                cacheKeyPrefix: DefaultCachePrefix);
 
             await cache.GetOrAddDekPropertiesAsync(
                 DekId, HealthyFetcher, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
@@ -425,7 +427,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 dekPropertiesTimeToLive: DefaultTtl,
                 distributedCache: l2,
                 proactiveRefreshThreshold: TimeSpan.FromMinutes(5),
-                utcNow: () => now);
+                utcNow: () => now,
+                cacheKeyPrefix: DefaultCachePrefix);
 
             // Warm with wrappedKey v1.
             await cache.GetOrAddDekPropertiesAsync(
@@ -598,7 +601,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             return new DekCache(
                 dekPropertiesTimeToLive: ttl,
                 distributedCache: l2,
-                utcNow: utcNow);
+                utcNow: utcNow,
+                cacheKeyPrefix: DefaultCachePrefix);
         }
 
         private static DataEncryptionKeyProperties MakeDekProperties(string id, byte[] wrappedKey = null)
