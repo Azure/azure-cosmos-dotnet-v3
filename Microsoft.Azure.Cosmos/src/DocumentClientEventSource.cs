@@ -315,6 +315,39 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        // SECURITY: The Authorization header contains a live credential (master-key HMAC
+        // signature, resource token, or AAD Bearer access token). It must never be written
+        // to the ETW event payload where any listener subscribing to the "DocumentDBClient"
+        // EventSource at Verbose level (e.g., Geneva MonitoringAgent, PerfView, dotnet-trace)
+        // would capture it. Replace the value with a fixed placeholder while preserving the
+        // 33-field ETW manifest so existing consumers remain compatible. The IsNullOrEmpty
+        // guard preserves the existing "" semantics for requests that never had an
+        // Authorization header attached (e.g. internal plumbing); we only overwrite when a
+        // real value is present. Factored out as an internal helper so the redaction logic
+        // can be unit-tested directly without relying on ETW listener wiring (which is
+        // inherently racy under parallel test execution).
+        internal static void RedactSensitiveHeaderValues(string[] headerValues)
+        {
+            if (headerValues == null)
+            {
+                return;
+            }
+
+            // AuthorizationHeaderIndex is computed once at class initialization (see field
+            // above); the Debug.Assert catches any future refactor that removes Authorization
+            // from RequestHeaderKeysToExtract.
+            System.Diagnostics.Debug.Assert(
+                AuthorizationHeaderIndex >= 0,
+                "Authorization must be present in RequestHeaderKeysToExtract so the redaction below takes effect.");
+
+            if (AuthorizationHeaderIndex >= 0
+                && headerValues.Length > AuthorizationHeaderIndex
+                && !string.IsNullOrEmpty(headerValues[AuthorizationHeaderIndex]))
+            {
+                headerValues[AuthorizationHeaderIndex] = "REDACTED";
+            }
+        }
+
         [NonEvent]
         public void Request(Guid activityId, Guid localId, string uri, string resourceType, HttpRequestHeaders requestHeaders)
         {
@@ -322,25 +355,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 string[] headerValues = Helpers.ExtractValuesFromHTTPHeaders(requestHeaders, RequestHeaderKeysToExtract);
 
-                // SECURITY: The Authorization header contains a live credential
-                // (master-key HMAC signature, resource token, or AAD Bearer access token).
-                // It must never be written to the ETW event payload where any listener
-                // subscribing to the "DocumentDBClient" EventSource at Verbose level
-                // (e.g., Geneva MonitoringAgent, PerfView, dotnet-trace) would capture it.
-                // Replace the value with a fixed placeholder while preserving the 33-field
-                // ETW manifest so existing consumers remain compatible. The IsNullOrEmpty
-                // guard preserves the existing "" semantics for requests that never had an
-                // Authorization header attached (e.g. internal plumbing); we only overwrite
-                // when a real value is present. AuthorizationHeaderIndex is computed once at
-                // class initialization (see field above); the Debug.Assert catches any future
-                // refactor that removes Authorization from RequestHeaderKeysToExtract.
-                System.Diagnostics.Debug.Assert(
-                    AuthorizationHeaderIndex >= 0,
-                    "Authorization must be present in RequestHeaderKeysToExtract so the redaction below takes effect.");
-                if (!string.IsNullOrEmpty(headerValues[AuthorizationHeaderIndex]))
-                {
-                    headerValues[AuthorizationHeaderIndex] = "REDACTED";
-                }
+                RedactSensitiveHeaderValues(headerValues);
 
                 this.Request(activityId, localId, uri, resourceType, headerValues[0], headerValues[1], headerValues[2], headerValues[3], headerValues[4],
                     headerValues[5], headerValues[6], headerValues[7], headerValues[8], headerValues[9], headerValues[10], headerValues[11], headerValues[12],
