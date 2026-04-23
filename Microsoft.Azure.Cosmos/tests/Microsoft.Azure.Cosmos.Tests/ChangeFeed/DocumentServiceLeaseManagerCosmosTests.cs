@@ -175,158 +175,36 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             }
         }
 
-        [TestMethod]
-        public async Task CreatesPartitionKeyBasedLeaseWithDeterministicPartitionKeyByDefault()
+        /// <summary>
+        /// Verifies partition key behavior for both overloads and both env-var states:
+        /// default (deterministic PK = lease id) and opt-out (legacy GUID PK).
+        /// </summary>
+        [DataTestMethod]
+        [DataRow("PKRange", null, true, DisplayName = "PKRange: deterministic PK by default")]
+        [DataRow("PKRange", "false", false, DisplayName = "PKRange: legacy GUID PK when opted out")]
+        [DataRow("EPK", null, true, DisplayName = "EPK: deterministic PK by default")]
+        [DataRow("EPK", "false", false, DisplayName = "EPK: legacy GUID PK when opted out")]
+        public async Task CreateLeaseIfNotExistAsync_PartitionKeyBehavior(string overloadType, string envVarValue, bool expectDeterministic)
         {
-            PartitionKey? capturedPartitionKey = null;
-            RequestOptionsFactory requestOptionsFactory = new PartitionedByPartitionKeyCollectionRequestOptionsFactory();
-            string continuation = Guid.NewGuid().ToString();
-            DocumentServiceLeaseStoreManagerOptions options = new DocumentServiceLeaseStoreManagerOptions
-            {
-                HostName = Guid.NewGuid().ToString()
-            };
-
-            Documents.PartitionKeyRange partitionKeyRange = new Documents.PartitionKeyRange()
-            {
-                Id = "0",
-                MinInclusive = "",
-                MaxExclusive = "FF"
-            };
-
-            Mock<ContainerInternal> mockedContainer = new Mock<ContainerInternal>();
-            mockedContainer.Setup(c => c.CreateItemStreamAsync(
-                It.IsAny<Stream>(),
-                It.IsAny<PartitionKey>(),
-                It.IsAny<ItemRequestOptions>(),
-                It.IsAny<CancellationToken>())).Callback((Stream stream, PartitionKey partitionKey, ItemRequestOptions itemRequestOptions, CancellationToken token) => capturedPartitionKey = partitionKey)
-                .ReturnsAsync((Stream stream, PartitionKey partitionKey, ItemRequestOptions itemRequestOptions, CancellationToken token) => new ResponseMessage(System.Net.HttpStatusCode.OK) { Content = stream });
-
-            DocumentServiceLeaseManagerCosmos documentServiceLeaseManagerCosmos = new DocumentServiceLeaseManagerCosmos(
-                Mock.Of<ContainerInternal>(),
-                mockedContainer.Object,
-                Mock.Of<DocumentServiceLeaseUpdater>(),
-                options,
-                requestOptionsFactory);
-
-            DocumentServiceLease lease = await documentServiceLeaseManagerCosmos.CreateLeaseIfNotExistAsync(partitionKeyRange, continuation);
-
-            Assert.IsTrue(capturedPartitionKey.HasValue);
-            Assert.AreEqual(new PartitionKey(lease.Id), capturedPartitionKey.Value);
-            Assert.AreEqual(lease.Id, lease.PartitionKey);
-        }
-
-        [TestMethod]
-        public async Task CreatesEPKBasedLeaseWithLegacyGuidPartitionKeyWhenOptedOut()
-        {
-            Environment.SetEnvironmentVariable(ConfigurationManager.ChangeFeedLeaseIdAsPartitionKeyEnabled, "false");
+            Environment.SetEnvironmentVariable(ConfigurationManager.ChangeFeedLeaseIdAsPartitionKeyEnabled, envVarValue);
 
             PartitionKey? capturedPartitionKey = null;
-            RequestOptionsFactory requestOptionsFactory = new PartitionedByPartitionKeyCollectionRequestOptionsFactory();
-            string continuation = Guid.NewGuid().ToString();
-            DocumentServiceLeaseStoreManagerOptions options = new DocumentServiceLeaseStoreManagerOptions
-            {
-                HostName = Guid.NewGuid().ToString()
-            };
+            Mock<ContainerInternal> mockedContainer = CreatePkCapturingMockContainer(pk => capturedPartitionKey = pk);
+            DocumentServiceLeaseManagerCosmos manager = CreateLeaseManager(mockedContainer.Object, new PartitionedByPartitionKeyCollectionRequestOptionsFactory());
 
-            FeedRangeEpk feedRangeEpk = new FeedRangeEpk(new Documents.Routing.Range<string>("AA", "BB", true, false));
-
-            Mock<ContainerInternal> mockedContainer = new Mock<ContainerInternal>();
-            mockedContainer.Setup(c => c.CreateItemStreamAsync(
-                It.IsAny<Stream>(),
-                It.IsAny<PartitionKey>(),
-                It.IsAny<ItemRequestOptions>(),
-                It.IsAny<CancellationToken>())).Callback((Stream stream, PartitionKey partitionKey, ItemRequestOptions itemRequestOptions, CancellationToken token) => capturedPartitionKey = partitionKey)
-                .ReturnsAsync((Stream stream, PartitionKey partitionKey, ItemRequestOptions itemRequestOptions, CancellationToken token) => new ResponseMessage(System.Net.HttpStatusCode.OK) { Content = stream });
-
-            DocumentServiceLeaseManagerCosmos documentServiceLeaseManagerCosmos = new DocumentServiceLeaseManagerCosmos(
-                Mock.Of<ContainerInternal>(),
-                mockedContainer.Object,
-                Mock.Of<DocumentServiceLeaseUpdater>(),
-                options,
-                requestOptionsFactory);
-
-            DocumentServiceLease lease = await documentServiceLeaseManagerCosmos.CreateLeaseIfNotExistAsync(feedRangeEpk, continuation);
+            DocumentServiceLease lease = await CreateLeaseAsync(manager, overloadType, Guid.NewGuid().ToString());
 
             Assert.IsTrue(capturedPartitionKey.HasValue);
-            Assert.AreNotEqual(new PartitionKey(lease.Id), capturedPartitionKey.Value);
-            Assert.IsTrue(Guid.TryParse(lease.PartitionKey, out _));
-        }
-
-        [TestMethod]
-        public async Task CreatesEPKBasedLeaseWithDeterministicPartitionKeyByDefault()
-        {
-            PartitionKey? capturedPartitionKey = null;
-            RequestOptionsFactory requestOptionsFactory = new PartitionedByPartitionKeyCollectionRequestOptionsFactory();
-            string continuation = Guid.NewGuid().ToString();
-            DocumentServiceLeaseStoreManagerOptions options = new DocumentServiceLeaseStoreManagerOptions
+            if (expectDeterministic)
             {
-                HostName = Guid.NewGuid().ToString()
-            };
-
-            FeedRangeEpk feedRangeEpk = new FeedRangeEpk(new Documents.Routing.Range<string>("AA", "BB", true, false));
-
-            Mock<ContainerInternal> mockedContainer = new Mock<ContainerInternal>();
-            mockedContainer.Setup(c => c.CreateItemStreamAsync(
-                It.IsAny<Stream>(),
-                It.IsAny<PartitionKey>(),
-                It.IsAny<ItemRequestOptions>(),
-                It.IsAny<CancellationToken>())).Callback((Stream stream, PartitionKey partitionKey, ItemRequestOptions itemRequestOptions, CancellationToken token) => capturedPartitionKey = partitionKey)
-                .ReturnsAsync((Stream stream, PartitionKey partitionKey, ItemRequestOptions itemRequestOptions, CancellationToken token) => new ResponseMessage(System.Net.HttpStatusCode.OK) { Content = stream });
-
-            DocumentServiceLeaseManagerCosmos documentServiceLeaseManagerCosmos = new DocumentServiceLeaseManagerCosmos(
-                Mock.Of<ContainerInternal>(),
-                mockedContainer.Object,
-                Mock.Of<DocumentServiceLeaseUpdater>(),
-                options,
-                requestOptionsFactory);
-
-            DocumentServiceLease lease = await documentServiceLeaseManagerCosmos.CreateLeaseIfNotExistAsync(feedRangeEpk, continuation);
-
-            Assert.IsTrue(capturedPartitionKey.HasValue);
-            Assert.AreEqual(new PartitionKey(lease.Id), capturedPartitionKey.Value);
-            Assert.AreEqual(lease.Id, lease.PartitionKey);
-        }
-
-        [TestMethod]
-        public async Task CreatesPartitionKeyBasedLeaseWithLegacyGuidPartitionKeyWhenOptedOut()
-        {
-            Environment.SetEnvironmentVariable(ConfigurationManager.ChangeFeedLeaseIdAsPartitionKeyEnabled, "false");
-
-            PartitionKey? capturedPartitionKey = null;
-            RequestOptionsFactory requestOptionsFactory = new PartitionedByPartitionKeyCollectionRequestOptionsFactory();
-            string continuation = Guid.NewGuid().ToString();
-            DocumentServiceLeaseStoreManagerOptions options = new DocumentServiceLeaseStoreManagerOptions
+                Assert.AreEqual(new PartitionKey(lease.Id), capturedPartitionKey.Value);
+                Assert.AreEqual(lease.Id, lease.PartitionKey);
+            }
+            else
             {
-                HostName = Guid.NewGuid().ToString()
-            };
-
-            Documents.PartitionKeyRange partitionKeyRange = new Documents.PartitionKeyRange()
-            {
-                Id = "0",
-                MinInclusive = "",
-                MaxExclusive = "FF"
-            };
-
-            Mock<ContainerInternal> mockedContainer = new Mock<ContainerInternal>();
-            mockedContainer.Setup(c => c.CreateItemStreamAsync(
-                It.IsAny<Stream>(),
-                It.IsAny<PartitionKey>(),
-                It.IsAny<ItemRequestOptions>(),
-                It.IsAny<CancellationToken>())).Callback((Stream stream, PartitionKey partitionKey, ItemRequestOptions itemRequestOptions, CancellationToken token) => capturedPartitionKey = partitionKey)
-                .ReturnsAsync((Stream stream, PartitionKey partitionKey, ItemRequestOptions itemRequestOptions, CancellationToken token) => new ResponseMessage(System.Net.HttpStatusCode.OK) { Content = stream });
-
-            DocumentServiceLeaseManagerCosmos documentServiceLeaseManagerCosmos = new DocumentServiceLeaseManagerCosmos(
-                Mock.Of<ContainerInternal>(),
-                mockedContainer.Object,
-                Mock.Of<DocumentServiceLeaseUpdater>(),
-                options,
-                requestOptionsFactory);
-
-            DocumentServiceLease lease = await documentServiceLeaseManagerCosmos.CreateLeaseIfNotExistAsync(partitionKeyRange, continuation);
-
-            Assert.IsTrue(capturedPartitionKey.HasValue);
-            Assert.AreNotEqual(new PartitionKey(lease.Id), capturedPartitionKey.Value);
-            Assert.IsTrue(Guid.TryParse(lease.PartitionKey, out _));
+                Assert.AreNotEqual(new PartitionKey(lease.Id), capturedPartitionKey.Value);
+                Assert.IsTrue(Guid.TryParse(lease.PartitionKey, out _));
+            }
         }
 
         /// <summary>
@@ -335,143 +213,33 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         /// This proves the deterministic PK value ensures both creates land in the same logical
         /// partition and trigger the id-uniqueness conflict.
         /// </summary>
-        [TestMethod]
-        public async Task CreateLeaseIfNotExistAsync_FirstSucceeds_SecondReturns409_PKRange()
+        [DataTestMethod]
+        [DataRow("PKRange", DisplayName = "PKRange: dedup via (PK, id) uniqueness")]
+        [DataRow("EPK", DisplayName = "EPK: dedup via (PK, id) uniqueness")]
+        public async Task CreateLeaseIfNotExistAsync_DuplicatePkId_Returns409(string overloadType)
         {
-            RequestOptionsFactory requestOptionsFactory = new PartitionedByPartitionKeyCollectionRequestOptionsFactory();
+            Mock<ContainerInternal> mockedContainer = CreateDedupSimulatingMockContainer();
+            DocumentServiceLeaseManagerCosmos manager = CreateLeaseManager(mockedContainer.Object, new PartitionedByPartitionKeyCollectionRequestOptionsFactory());
             string continuation = Guid.NewGuid().ToString();
-            DocumentServiceLeaseStoreManagerOptions options = new DocumentServiceLeaseStoreManagerOptions
-            {
-                HostName = Guid.NewGuid().ToString()
-            };
 
-            Documents.PartitionKeyRange partitionKeyRange = new Documents.PartitionKeyRange()
-            {
-                Id = "0",
-                MinInclusive = "",
-                MaxExclusive = "FF"
-            };
-
-            // Track created (PartitionKey, id) pairs to simulate Cosmos DB's per-logical-partition id uniqueness.
-            ConcurrentDictionary<string, byte> createdPkIdPairs = new ConcurrentDictionary<string, byte>();
-            Mock<ContainerInternal> mockedContainer = new Mock<ContainerInternal>();
-            mockedContainer.Setup(c => c.CreateItemStreamAsync(
-                It.IsAny<Stream>(),
-                It.IsAny<PartitionKey>(),
-                It.IsAny<ItemRequestOptions>(),
-                It.IsAny<CancellationToken>()))
-                .ReturnsAsync((Stream stream, PartitionKey partitionKey, ItemRequestOptions opts, CancellationToken token) =>
-                {
-                    // Read the lease id from the stream to form the composite key
-                    stream.Position = 0;
-                    using StreamReader reader = new StreamReader(stream, leaveOpen: true);
-                    string json = reader.ReadToEnd();
-                    stream.Position = 0;
-                    string leaseId = Newtonsoft.Json.Linq.JObject.Parse(json)["id"].ToString();
-
-                    string compositeKey = $"{partitionKey}:{leaseId}";
-                    if (createdPkIdPairs.TryAdd(compositeKey, 0))
-                    {
-                        return new ResponseMessage(HttpStatusCode.OK) { Content = stream };
-                    }
-
-                    return new ResponseMessage(HttpStatusCode.Conflict);
-                });
-
-            DocumentServiceLeaseManagerCosmos leaseManager = new DocumentServiceLeaseManagerCosmos(
-                Mock.Of<ContainerInternal>(),
-                mockedContainer.Object,
-                Mock.Of<DocumentServiceLeaseUpdater>(),
-                options,
-                requestOptionsFactory);
-
-            // First call: host A creates the lease successfully
-            DocumentServiceLease firstResult = await leaseManager.CreateLeaseIfNotExistAsync(partitionKeyRange, continuation);
+            DocumentServiceLease firstResult = await CreateLeaseAsync(manager, overloadType, continuation);
             Assert.IsNotNull(firstResult, "First create should succeed with 200.");
 
-            // Second call: host B races for the same lease token — same (PK, id) triggers 409
-            DocumentServiceLease secondResult = await leaseManager.CreateLeaseIfNotExistAsync(partitionKeyRange, continuation);
-            Assert.IsNull(secondResult, "Second create should return null due to 409 Conflict (same PK + id dedup).");
-        }
-
-        [TestMethod]
-        public async Task CreateLeaseIfNotExistAsync_FirstSucceeds_SecondReturns409_EPK()
-        {
-            RequestOptionsFactory requestOptionsFactory = new PartitionedByPartitionKeyCollectionRequestOptionsFactory();
-            string continuation = Guid.NewGuid().ToString();
-            DocumentServiceLeaseStoreManagerOptions options = new DocumentServiceLeaseStoreManagerOptions
-            {
-                HostName = Guid.NewGuid().ToString()
-            };
-
-            FeedRangeEpk feedRangeEpk = new FeedRangeEpk(new Documents.Routing.Range<string>("AA", "BB", true, false));
-
-            // Track created (PartitionKey, id) pairs to simulate Cosmos DB's per-logical-partition id uniqueness.
-            ConcurrentDictionary<string, byte> createdPkIdPairs = new ConcurrentDictionary<string, byte>();
-            Mock<ContainerInternal> mockedContainer = new Mock<ContainerInternal>();
-            mockedContainer.Setup(c => c.CreateItemStreamAsync(
-                It.IsAny<Stream>(),
-                It.IsAny<PartitionKey>(),
-                It.IsAny<ItemRequestOptions>(),
-                It.IsAny<CancellationToken>()))
-                .ReturnsAsync((Stream stream, PartitionKey partitionKey, ItemRequestOptions opts, CancellationToken token) =>
-                {
-                    stream.Position = 0;
-                    using StreamReader reader = new StreamReader(stream, leaveOpen: true);
-                    string json = reader.ReadToEnd();
-                    stream.Position = 0;
-                    string leaseId = Newtonsoft.Json.Linq.JObject.Parse(json)["id"].ToString();
-
-                    string compositeKey = $"{partitionKey}:{leaseId}";
-                    if (createdPkIdPairs.TryAdd(compositeKey, 0))
-                    {
-                        return new ResponseMessage(HttpStatusCode.OK) { Content = stream };
-                    }
-
-                    return new ResponseMessage(HttpStatusCode.Conflict);
-                });
-
-            DocumentServiceLeaseManagerCosmos leaseManager = new DocumentServiceLeaseManagerCosmos(
-                Mock.Of<ContainerInternal>(),
-                mockedContainer.Object,
-                Mock.Of<DocumentServiceLeaseUpdater>(),
-                options,
-                requestOptionsFactory);
-
-            // First call: host A creates the lease successfully
-            DocumentServiceLease firstResult = await leaseManager.CreateLeaseIfNotExistAsync(feedRangeEpk, continuation);
-            Assert.IsNotNull(firstResult, "First create should succeed with 200.");
-
-            // Second call: host B races for the same lease token — same (PK, id) triggers 409
-            DocumentServiceLease secondResult = await leaseManager.CreateLeaseIfNotExistAsync(feedRangeEpk, continuation);
+            DocumentServiceLease secondResult = await CreateLeaseAsync(manager, overloadType, continuation);
             Assert.IsNull(secondResult, "Second create should return null due to 409 Conflict (same PK + id dedup).");
         }
 
         /// <summary>
         /// Verifies back-compatibility: a pre-existing lease with a random GUID partition key
-        /// (created before the deterministic PK fix) can still be read, acquired, renewed, and released
-        /// because all downstream operations use the stored lease.PartitionKey value.
+        /// (created before the deterministic PK fix) can still be acquired because
+        /// downstream operations use the stored lease.PartitionKey value.
         /// </summary>
         [TestMethod]
         public async Task AcquireCompletes_WithPreExistingGuidPartitionKey()
         {
-            string guidPartitionKey = Guid.NewGuid().ToString();
-            DocumentServiceLeaseStoreManagerOptions options = new DocumentServiceLeaseStoreManagerOptions
-            {
-                HostName = Guid.NewGuid().ToString()
-            };
-
-            DocumentServiceLeaseCore lease = new DocumentServiceLeaseCore()
-            {
-                LeaseId = "some-prefix..0",
-                LeaseToken = "0",
-                Owner = Guid.NewGuid().ToString(),
-                LeasePartitionKey = guidPartitionKey,
-                FeedRange = new FeedRangePartitionKeyRange("0")
-            };
+            DocumentServiceLeaseCore lease = CreatePreExistingGuidPkLease(out string guidPartitionKey, out DocumentServiceLeaseStoreManagerOptions options);
 
             Mock<DocumentServiceLeaseUpdater> mockUpdater = new Mock<DocumentServiceLeaseUpdater>();
-
             mockUpdater.Setup(c => c.UpdateLeaseAsync(
                 It.IsAny<DocumentServiceLease>(),
                 It.Is<string>(id => id == lease.LeaseId),
@@ -492,24 +260,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Assert.AreEqual(guidPartitionKey, afterAcquire.PartitionKey, "Old GUID partition key must be preserved through acquire.");
         }
 
+        /// <summary>
+        /// Verifies back-compatibility: a pre-existing lease with a random GUID partition key
+        /// (created before the deterministic PK fix) can still be renewed because
+        /// downstream operations use the stored lease.PartitionKey value.
+        /// </summary>
         [TestMethod]
         public async Task RenewCompletes_WithPreExistingGuidPartitionKey()
         {
-            string guidPartitionKey = Guid.NewGuid().ToString();
-            string hostName = Guid.NewGuid().ToString();
-            DocumentServiceLeaseStoreManagerOptions options = new DocumentServiceLeaseStoreManagerOptions
-            {
-                HostName = hostName
-            };
-
-            DocumentServiceLeaseCore lease = new DocumentServiceLeaseCore()
-            {
-                LeaseId = "some-prefix..0",
-                LeaseToken = "0",
-                Owner = hostName,
-                LeasePartitionKey = guidPartitionKey,
-                FeedRange = new FeedRangePartitionKeyRange("0")
-            };
+            DocumentServiceLeaseCore lease = CreatePreExistingGuidPkLease(out string guidPartitionKey, out DocumentServiceLeaseStoreManagerOptions options);
 
             ResponseMessage leaseResponse = new ResponseMessage(HttpStatusCode.OK)
             {
@@ -1003,6 +762,89 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 1 => new PartitionedByIdCollectionRequestOptionsFactory(),
                 2 => new PartitionedByPartitionKeyCollectionRequestOptionsFactory(),
                 _ => throw new Exception($"Unkown value for FactoryType: {factoryType}."),
+            };
+        }
+
+        private static Mock<ContainerInternal> CreatePkCapturingMockContainer(Action<PartitionKey> onCapture)
+        {
+            Mock<ContainerInternal> mockedContainer = new Mock<ContainerInternal>();
+            mockedContainer.Setup(c => c.CreateItemStreamAsync(
+                It.IsAny<Stream>(),
+                It.IsAny<PartitionKey>(),
+                It.IsAny<ItemRequestOptions>(),
+                It.IsAny<CancellationToken>()))
+                .Callback((Stream stream, PartitionKey partitionKey, ItemRequestOptions opts, CancellationToken token) => onCapture(partitionKey))
+                .ReturnsAsync((Stream stream, PartitionKey partitionKey, ItemRequestOptions opts, CancellationToken token)
+                    => new ResponseMessage(HttpStatusCode.OK) { Content = stream });
+            return mockedContainer;
+        }
+
+        private static Mock<ContainerInternal> CreateDedupSimulatingMockContainer()
+        {
+            ConcurrentDictionary<string, byte> createdPkIdPairs = new ConcurrentDictionary<string, byte>();
+            Mock<ContainerInternal> mockedContainer = new Mock<ContainerInternal>();
+            mockedContainer.Setup(c => c.CreateItemStreamAsync(
+                It.IsAny<Stream>(),
+                It.IsAny<PartitionKey>(),
+                It.IsAny<ItemRequestOptions>(),
+                It.IsAny<CancellationToken>()))
+                .ReturnsAsync((Stream stream, PartitionKey partitionKey, ItemRequestOptions opts, CancellationToken token) =>
+                {
+                    stream.Position = 0;
+                    using StreamReader reader = new StreamReader(stream, leaveOpen: true);
+                    string json = reader.ReadToEnd();
+                    stream.Position = 0;
+                    string leaseId = Newtonsoft.Json.Linq.JObject.Parse(json)["id"].ToString();
+
+                    string compositeKey = $"{partitionKey}:{leaseId}";
+                    return createdPkIdPairs.TryAdd(compositeKey, 0)
+                        ? new ResponseMessage(HttpStatusCode.OK) { Content = stream }
+                        : new ResponseMessage(HttpStatusCode.Conflict);
+                });
+            return mockedContainer;
+        }
+
+        private static DocumentServiceLeaseManagerCosmos CreateLeaseManager(
+            ContainerInternal leaseContainer,
+            RequestOptionsFactory requestOptionsFactory,
+            DocumentServiceLeaseUpdater updater = null)
+        {
+            return new DocumentServiceLeaseManagerCosmos(
+                Mock.Of<ContainerInternal>(),
+                leaseContainer,
+                updater ?? Mock.Of<DocumentServiceLeaseUpdater>(),
+                new DocumentServiceLeaseStoreManagerOptions { HostName = Guid.NewGuid().ToString() },
+                requestOptionsFactory);
+        }
+
+        private static Task<DocumentServiceLease> CreateLeaseAsync(
+            DocumentServiceLeaseManagerCosmos manager,
+            string overloadType,
+            string continuation)
+        {
+            return overloadType == "PKRange"
+                ? manager.CreateLeaseIfNotExistAsync(
+                    new Documents.PartitionKeyRange { Id = "0", MinInclusive = "", MaxExclusive = "FF" },
+                    continuation)
+                : manager.CreateLeaseIfNotExistAsync(
+                    new FeedRangeEpk(new Documents.Routing.Range<string>("AA", "BB", true, false)),
+                    continuation);
+        }
+
+        private static DocumentServiceLeaseCore CreatePreExistingGuidPkLease(
+            out string guidPartitionKey,
+            out DocumentServiceLeaseStoreManagerOptions options)
+        {
+            guidPartitionKey = Guid.NewGuid().ToString();
+            string hostName = Guid.NewGuid().ToString();
+            options = new DocumentServiceLeaseStoreManagerOptions { HostName = hostName };
+            return new DocumentServiceLeaseCore
+            {
+                LeaseId = "some-prefix..0",
+                LeaseToken = "0",
+                Owner = hostName,
+                LeasePartitionKey = guidPartitionKey,
+                FeedRange = new FeedRangePartitionKeyRange("0")
             };
         }
 
