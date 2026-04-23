@@ -27,6 +27,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         private readonly List<PartitionKeyRange> orderedPartitionKeyRanges;
         private readonly List<Range<string>> orderedRanges;
+        private readonly string[] sortedMinBoundaries;
         private readonly HashSet<string> goneRanges;
         private readonly static int InvalidPkRangeId = -1;
 
@@ -50,6 +51,12 @@ namespace Microsoft.Azure.Cosmos.Routing
                         range.MaxExclusive,
                         true,
                         false)).ToList();
+
+            this.sortedMinBoundaries = new string[orderedPartitionKeyRanges.Count];
+            for (int i = 0; i < orderedPartitionKeyRanges.Count; i++)
+            {
+                this.sortedMinBoundaries[i] = this.orderedRanges[i].Min;
+            }
 
             this.CollectionUniqueId = collectionUniqueId;
             this.ChangeFeedNextIfNoneMatch = changeFeedNextIfNoneMatch;
@@ -174,9 +181,10 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return this.orderedPartitionKeyRanges[0];
             }
 
-            int index = this.orderedRanges.BinarySearch(
-                new Range<string>(effectivePartitionKeyValue, effectivePartitionKeyValue, true, true),
-                Range<string>.MinComparer.Instance);
+            int index = Array.BinarySearch(
+                this.sortedMinBoundaries,
+                effectivePartitionKeyValue,
+                StringComparer.Ordinal);
 
             if (index < 0)
             {
