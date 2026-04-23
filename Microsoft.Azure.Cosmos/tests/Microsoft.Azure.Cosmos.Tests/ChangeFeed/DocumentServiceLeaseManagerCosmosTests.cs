@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
     [TestClass]
     [TestCategory("ChangeFeed")]
+    [DoNotParallelize]
     public class DocumentServiceLeaseManagerCosmosTests
     {
         [TestInitialize]

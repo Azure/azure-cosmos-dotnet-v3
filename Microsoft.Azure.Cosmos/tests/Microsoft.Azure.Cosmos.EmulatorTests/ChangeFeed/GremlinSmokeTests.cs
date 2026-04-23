@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
     [TestClass]
     [TestCategory("ChangeFeed")]
+    [DoNotParallelize]
     public class GremlinSmokeTests : BaseChangeFeedClientHelper
     {
         private Container Container;
