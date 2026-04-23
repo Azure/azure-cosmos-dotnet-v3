@@ -102,6 +102,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                         continue;
                     }
 
+                    Assert.AreEqual((string)lease.id, (string)lease.partitionKey, "Lease partition key must equal lease id for dedup invariant.");
+
                     Assert.IsNotNull(lease.LeaseToken);
                     Assert.IsNull(lease.PartitionId);
                 }

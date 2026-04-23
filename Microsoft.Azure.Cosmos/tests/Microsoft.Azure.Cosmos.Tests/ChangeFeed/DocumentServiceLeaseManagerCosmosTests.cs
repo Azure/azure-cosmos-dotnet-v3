@@ -328,6 +328,177 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         }
 
         /// <summary>
+        /// Verifies that when CreateItemStreamAsync returns 409 Conflict (another host created the lease first),
+        /// the dedup chain returns null, proving the deterministic PK ensures conflict detection works.
+        /// Tests both PKRange and EPK overloads.
+        /// </summary>
+        [TestMethod]
+        public async Task CreateLeaseIfNotExistAsync_Returns409Conflict_ReturnsNull_PKRange()
+        {
+            RequestOptionsFactory requestOptionsFactory = new PartitionedByPartitionKeyCollectionRequestOptionsFactory();
+            string continuation = Guid.NewGuid().ToString();
+            DocumentServiceLeaseStoreManagerOptions options = new DocumentServiceLeaseStoreManagerOptions
+            {
+                HostName = Guid.NewGuid().ToString()
+            };
+
+            Documents.PartitionKeyRange partitionKeyRange = new Documents.PartitionKeyRange()
+            {
+                Id = "0",
+                MinInclusive = "",
+                MaxExclusive = "FF"
+            };
+
+            Mock<ContainerInternal> mockedContainer = new Mock<ContainerInternal>();
+            mockedContainer.Setup(c => c.CreateItemStreamAsync(
+                It.IsAny<Stream>(),
+                It.IsAny<PartitionKey>(),
+                It.IsAny<ItemRequestOptions>(),
+                It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ResponseMessage(HttpStatusCode.Conflict));
+
+            DocumentServiceLeaseManagerCosmos documentServiceLeaseManagerCosmos = new DocumentServiceLeaseManagerCosmos(
+                Mock.Of<ContainerInternal>(),
+                mockedContainer.Object,
+                Mock.Of<DocumentServiceLeaseUpdater>(),
+                options,
+                requestOptionsFactory);
+
+            DocumentServiceLease result = await documentServiceLeaseManagerCosmos.CreateLeaseIfNotExistAsync(partitionKeyRange, continuation);
+
+            Assert.IsNull(result, "When 409 Conflict is returned, CreateLeaseIfNotExistAsync should return null (dedup).");
+        }
+
+        [TestMethod]
+        public async Task CreateLeaseIfNotExistAsync_Returns409Conflict_ReturnsNull_EPK()
+        {
+            RequestOptionsFactory requestOptionsFactory = new PartitionedByPartitionKeyCollectionRequestOptionsFactory();
+            string continuation = Guid.NewGuid().ToString();
+            DocumentServiceLeaseStoreManagerOptions options = new DocumentServiceLeaseStoreManagerOptions
+            {
+                HostName = Guid.NewGuid().ToString()
+            };
+
+            FeedRangeEpk feedRangeEpk = new FeedRangeEpk(new Documents.Routing.Range<string>("AA", "BB", true, false));
+
+            Mock<ContainerInternal> mockedContainer = new Mock<ContainerInternal>();
+            mockedContainer.Setup(c => c.CreateItemStreamAsync(
+                It.IsAny<Stream>(),
+                It.IsAny<PartitionKey>(),
+                It.IsAny<ItemRequestOptions>(),
+                It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ResponseMessage(HttpStatusCode.Conflict));
+
+            DocumentServiceLeaseManagerCosmos documentServiceLeaseManagerCosmos = new DocumentServiceLeaseManagerCosmos(
+                Mock.Of<ContainerInternal>(),
+                mockedContainer.Object,
+                Mock.Of<DocumentServiceLeaseUpdater>(),
+                options,
+                requestOptionsFactory);
+
+            DocumentServiceLease result = await documentServiceLeaseManagerCosmos.CreateLeaseIfNotExistAsync(feedRangeEpk, continuation);
+
+            Assert.IsNull(result, "When 409 Conflict is returned, CreateLeaseIfNotExistAsync should return null (dedup).");
+        }
+
+        /// <summary>
+        /// Verifies back-compatibility: a pre-existing lease with a random GUID partition key
+        /// (created before the deterministic PK fix) can still be read, acquired, renewed, and released
+        /// because all downstream operations use the stored lease.PartitionKey value.
+        /// </summary>
+        [TestMethod]
+        public async Task AcquireCompletes_WithPreExistingGuidPartitionKey()
+        {
+            string guidPartitionKey = Guid.NewGuid().ToString();
+            DocumentServiceLeaseStoreManagerOptions options = new DocumentServiceLeaseStoreManagerOptions
+            {
+                HostName = Guid.NewGuid().ToString()
+            };
+
+            DocumentServiceLeaseCore lease = new DocumentServiceLeaseCore()
+            {
+                LeaseId = "some-prefix..0",
+                LeaseToken = "0",
+                Owner = Guid.NewGuid().ToString(),
+                LeasePartitionKey = guidPartitionKey,
+                FeedRange = new FeedRangePartitionKeyRange("0")
+            };
+
+            Mock<DocumentServiceLeaseUpdater> mockUpdater = new Mock<DocumentServiceLeaseUpdater>();
+
+            mockUpdater.Setup(c => c.UpdateLeaseAsync(
+                It.IsAny<DocumentServiceLease>(),
+                It.Is<string>(id => id == lease.LeaseId),
+                It.Is<PartitionKey>(pk => pk == new PartitionKey(guidPartitionKey)),
+                It.IsAny<Func<DocumentServiceLease, DocumentServiceLease>>()))
+                .ReturnsAsync(lease);
+
+            DocumentServiceLeaseManagerCosmos documentServiceLeaseManagerCosmos = new DocumentServiceLeaseManagerCosmos(
+                Mock.Of<ContainerInternal>(),
+                Mock.Of<ContainerInternal>(),
+                mockUpdater.Object,
+                options,
+                new PartitionedByPartitionKeyCollectionRequestOptionsFactory());
+
+            DocumentServiceLease afterAcquire = await documentServiceLeaseManagerCosmos.AcquireAsync(lease);
+
+            Assert.IsNotNull(afterAcquire);
+            Assert.AreEqual(guidPartitionKey, afterAcquire.PartitionKey, "Old GUID partition key must be preserved through acquire.");
+        }
+
+        [TestMethod]
+        public async Task RenewCompletes_WithPreExistingGuidPartitionKey()
+        {
+            string guidPartitionKey = Guid.NewGuid().ToString();
+            string hostName = Guid.NewGuid().ToString();
+            DocumentServiceLeaseStoreManagerOptions options = new DocumentServiceLeaseStoreManagerOptions
+            {
+                HostName = hostName
+            };
+
+            DocumentServiceLeaseCore lease = new DocumentServiceLeaseCore()
+            {
+                LeaseId = "some-prefix..0",
+                LeaseToken = "0",
+                Owner = hostName,
+                LeasePartitionKey = guidPartitionKey,
+                FeedRange = new FeedRangePartitionKeyRange("0")
+            };
+
+            ResponseMessage leaseResponse = new ResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new CosmosJsonDotNetSerializer().ToStream(lease)
+            };
+
+            Mock<ContainerInternal> mockedContainer = new Mock<ContainerInternal>();
+            mockedContainer.Setup(c => c.ReadItemStreamAsync(
+                It.Is<string>(id => id == lease.LeaseId),
+                It.Is<PartitionKey>(pk => pk == new PartitionKey(guidPartitionKey)),
+                It.IsAny<ItemRequestOptions>(),
+                It.IsAny<CancellationToken>())).ReturnsAsync(leaseResponse);
+
+            Mock<DocumentServiceLeaseUpdater> mockUpdater = new Mock<DocumentServiceLeaseUpdater>();
+            mockUpdater.Setup(c => c.UpdateLeaseAsync(
+                It.IsAny<DocumentServiceLease>(),
+                It.Is<string>(id => id == lease.LeaseId),
+                It.Is<PartitionKey>(pk => pk == new PartitionKey(guidPartitionKey)),
+                It.IsAny<Func<DocumentServiceLease, DocumentServiceLease>>()))
+                .ReturnsAsync(lease);
+
+            DocumentServiceLeaseManagerCosmos documentServiceLeaseManagerCosmos = new DocumentServiceLeaseManagerCosmos(
+                Mock.Of<ContainerInternal>(),
+                mockedContainer.Object,
+                mockUpdater.Object,
+                options,
+                new PartitionedByPartitionKeyCollectionRequestOptionsFactory());
+
+            DocumentServiceLease afterRenew = await documentServiceLeaseManagerCosmos.RenewAsync(lease);
+
+            Assert.IsNotNull(afterRenew);
+            Assert.AreEqual(guidPartitionKey, afterRenew.PartitionKey, "Old GUID partition key must be preserved through renew.");
+        }
+
+        /// <summary>
         /// Verifies a Release sets the owner on null
         /// </summary>
         [TestMethod]

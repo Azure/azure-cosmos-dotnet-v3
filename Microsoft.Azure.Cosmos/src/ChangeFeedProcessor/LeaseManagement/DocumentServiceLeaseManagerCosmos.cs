@@ -130,10 +130,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 Mode = this.GetChangeFeedMode()
             };
 
-            string partitionKeyValue = this.useDeterministicPartitionKey
-                ? documentServiceLease.LeaseId
-                : Guid.NewGuid().ToString();
-            this.requestOptionsFactory.AddPartitionKeyIfNeeded((string pk) => documentServiceLease.LeasePartitionKey = pk, partitionKeyValue);
+            this.requestOptionsFactory.AddPartitionKeyIfNeeded(
+                (string pk) => documentServiceLease.LeasePartitionKey = pk,
+                this.GetLeasePartitionKeyValue(documentServiceLease.LeaseId));
 
             return this.TryCreateDocumentServiceLeaseAsync(documentServiceLease);
         }
@@ -158,12 +157,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 Mode = this.GetChangeFeedMode()
             };
 
-            string partitionKeyValue = this.useDeterministicPartitionKey
-                ? documentServiceLease.LeaseId
-                : Guid.NewGuid().ToString();
-            this.requestOptionsFactory.AddPartitionKeyIfNeeded((string pk) => documentServiceLease.LeasePartitionKey = pk, partitionKeyValue);
+            this.requestOptionsFactory.AddPartitionKeyIfNeeded(
+                (string pk) => documentServiceLease.LeasePartitionKey = pk,
+                this.GetLeasePartitionKeyValue(documentServiceLease.LeaseId));
 
             return this.TryCreateDocumentServiceLeaseAsync(documentServiceLease);
+        }
+
+        private string GetLeasePartitionKeyValue(string leaseId)
+        {
+            return this.useDeterministicPartitionKey
+                ? leaseId
+                : Guid.NewGuid().ToString();
         }
 
         private string GetChangeFeedMode()
