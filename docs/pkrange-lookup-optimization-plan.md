@@ -4,6 +4,16 @@
 
 `CollectionRoutingMap` uses `List<Range<string>>.BinarySearch` with ordinal string comparison for partition key range lookups. At 50K ranges with 128-bit hex EPKs (32 chars), this means ~16 string comparisons per lookup and ~35-40 MB memory per cached collection. We want to optimize for high-partition-count collections while preserving correctness for all EPK formats.
 
+## Scope: Single-Document CRUD Priority
+
+The primary optimization target is the **single-document CRUD hot path**:
+```
+Request → AddressResolver.ResolvePartitionKeyRangeIdentity()
+        → routingMap.GetRangeByEffectivePartitionKey(epk)
+```
+
+This means `GetRangeByEffectivePartitionKey` is the critical method. `GetOverlappingRanges` (used by queries, change feed, feed ranges) is a secondary concern.
+
 ## Design Approach: Layered Optimization (String-First, Numeric Fast-Path)
 
 The hex string approach must remain the **primary representation** because:
@@ -277,40 +287,61 @@ public IReadOnlyList<PartitionKeyRange> GetOverlappingRanges(IReadOnlyList<Range
 
 ### Summary of Phase 1 changes
 
-| Task | Allocations eliminated per call | CPU improvement | Lines changed |
-|------|-------------------------------|----------------|---------------|
-| pre-extracted-string-array | — (prep) | — | +5 (new field + init) |
-| zero-alloc-point-lookup | 1 heap object (`Range<string>`) | Removes IComparer dispatch | ~5 lines in method |
-| reduce-overlapping-allocs (single) | 3 objects (array, SortedList, ReadOnlyCollection) | Removes SortedList O(k log k) → O(k) | New single-range overload |
-| reduce-overlapping-allocs (multi) | 2 objects (SortedList, ReadOnlyCollection) | SortedList → List + index tracking | Rewrite multi-range method |
+| Task | Allocations eliminated per call | CPU improvement | Lines changed | Status |
+|------|-------------------------------|----------------|---------------|--------|
+| pre-extracted-string-array | — (prep) | — | +5 (new field + init) | ✅ Done |
+| zero-alloc-point-lookup | 1 heap object (`Range<string>`) | Removes IComparer dispatch | ~5 lines in method | ✅ Done |
+| reduce-overlapping-allocs (single) | 3 objects (array, SortedList, ReadOnlyCollection) | Removes SortedList O(k log k) → O(k) | New single-range overload | Pending (query/CF path only) |
+| reduce-overlapping-allocs (multi) | 2 objects (SortedList, ReadOnlyCollection) | SortedList → List + index tracking | Rewrite multi-range method | Pending (query/CF path only) |
+
+**Benchmark results (Phase 1, completed tasks)**:
+| Partitions | NEW (ns/op) | OLD (ns/op) | Speedup | Alloc reduction |
+|-----------|------------|------------|---------|-----------------|
+| 100 | 35.0 | 67.8 | 1.94× | 40 B → 0 B |
+| 1,000 | 81.4 | 123.5 | 1.52× | 40 B → 0 B |
+| 10,000 | 123.1 | 181.1 | 1.47× | 40 B → 0 B |
+| 50,000 | 180.2 | 247.4 | 1.37× | 40 B → 0 B |
 
 **Total risk**: Low. All changes are internal to `CollectionRoutingMap`, preserve the same API signatures and semantics, and can be validated by existing unit tests (`CollectionRoutingMapTest.cs`).
 
-### Phase 2: Benchmark Infrastructure
+---
 
-4. **extend-benchmark-to-50k** — Extend `CollectionRoutingMapBenchmark` to include `[Params(10, 100, 1000, 10000, 50000)]`. Add memory footprint measurement for the full `CollectionRoutingMap` at each scale. Add construction time benchmark. This establishes baseline numbers before deeper changes.
+## Prioritized Roadmap (Single-Document CRUD Focus)
 
-### Phase 3: Numeric Fast-Path (Conditional)
+The single-doc CRUD hot path is `AddressResolver → GetRangeByEffectivePartitionKey`. Tasks are re-prioritized by their impact on this path:
 
-5. **uint128-boundary-index** — Add an optional parallel `UInt128[]` boundary array that is populated **only** when all EPK strings are valid 128-bit hex (detected at construction time). Point lookups check this array first when available, falling back to string binary search otherwise. Keeps string arrays as source of truth.
+### Next: Phase 2 — Numeric Fast-Path for Point Lookup (High Impact)
+
+These directly speed up `GetRangeByEffectivePartitionKey`:
+
+5. **uint128-boundary-index** — Add an optional parallel `UInt128[]` boundary array that is populated **only** when all EPK strings are valid 128-bit hex (detected at construction time). Point lookups use numeric comparison first, falling back to string binary search otherwise. Keeps string arrays as source of truth.
 
 6. **two-level-bucket-index** — For the UInt128 fast path, add a 256-entry lookup table indexed by the first byte of the hash. Narrows binary search window from 50K to ~195 entries (8 comparisons instead of 16). Only activated alongside the UInt128 path.
 
-### Phase 4: Construction & Memory
+### Then: Phase 3 — Construction & Cache Refresh (Medium Impact)
 
-7. **lazy-pkrange-deserialization** — Separate the compact routing index (boundaries + IDs) from full `PartitionKeyRange` objects. Only deserialize the full PKR when needed for request routing. Reduces steady-state memory from ~35 MB to ~5 MB for 50K ranges.
+Affects single-doc CRUD indirectly — faster cache refresh means less latency on partition splits and failovers:
 
-8. **incremental-combine-optimization** — In `TryCombine`, avoid full re-sort of all ranges. Instead, merge-insert the delta ranges into the existing sorted array. O(delta × log N) instead of O(N log N) for small deltas (typical changefeed updates).
+7. **incremental-combine-optimization** — In `TryCombine`, avoid full re-sort of all ranges. Instead, merge-insert the delta ranges into the existing sorted array. O(delta × log N) instead of O(N log N) for small deltas (typical changefeed updates).
 
-### Phase 5: Batch Path Optimization
+8. **lazy-pkrange-deserialization** — Separate the compact routing index (boundaries + IDs) from full `PartitionKeyRange` objects. Only deserialize the full PKR when needed for request routing. Reduces steady-state memory from ~35 MB to ~5 MB for 50K ranges.
 
-9. **batch-epk-resolution** — In `ReadManyQueryHelper.CreatePartitionKeyRangeItemListMapAsync`, sort all EPKs first, then sweep-merge against the boundary array. O(N log N + K) instead of O(N × log K). Benefits ReadMany and bulk operations with many items.
+### Lower Priority: Query/ChangeFeed/Batch Path
+
+These do NOT affect single-doc CRUD. Implement when query or bulk perf is the focus:
+
+3. **reduce-overlapping-allocs** — Optimize `GetOverlappingRanges` allocations (query, change feed, feed range path only).
+
+4. **extend-benchmark-to-50k** — Extend `CollectionRoutingMapBenchmark` with 50K params and memory/construction benchmarks.
+
+9. **batch-epk-resolution** — Batch EPK resolution for ReadMany/bulk operations.
 
 ## Dependencies
 
-- Phase 2 (benchmarks) should run before and after each Phase 1 change to measure impact
-- Phase 3 depends on Phase 1 (clean binary search code to layer onto)
-- Phase 4 and 5 are independent of each other but both benefit from Phase 3
+- Phase 2 (numeric fast-path) depends on Phase 1 ✅ (completed)
+- `two-level-bucket-index` depends on `uint128-boundary-index`
+- `lazy-pkrange-deser` depends on `uint128-boundary-index`
+- All other tasks are independent
 
 ## Notes
 
