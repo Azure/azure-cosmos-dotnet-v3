@@ -134,6 +134,19 @@ namespace Microsoft.Azure.Cosmos
         internal static readonly string TcpDnsDotSuffixEnabled = "AZURE_COSMOS_TCP_DNS_DOT_SUFFIX_ENABLED";
 
         /// <summary>
+        /// Environment variable to override the HTTP/2 PING keep-alive delay (in seconds).
+        /// After this many seconds of inactivity on an HTTP/2 connection, a PING frame is sent
+        /// to detect broken connections in the pool. Default: 1 second.
+        /// </summary>
+        internal static readonly string Http2KeepAlivePingDelayInSeconds = "AZURE_COSMOS_HTTP2_KEEPALIVE_PING_DELAY_IN_SECONDS";
+
+        /// <summary>
+        /// Environment variable to override the HTTP/2 PING keep-alive timeout (in seconds).
+        /// If no PONG response is received within this time, the connection is marked dead. Default: 2 seconds.
+        /// </summary>
+        internal static readonly string Http2KeepAlivePingTimeoutInSeconds = "AZURE_COSMOS_HTTP2_KEEPALIVE_PING_TIMEOUT_IN_SECONDS";
+
+        /// <summary>
         /// Environment variable name to enable deterministic lease-id partition key values for Change Feed lease creation.
         /// </summary>
         internal static readonly string ChangeFeedLeaseIdAsPartitionKeyEnabled = "AZURE_COSMOS_CHANGE_FEED_LEASE_ID_AS_PARTITION_KEY_ENABLED";
