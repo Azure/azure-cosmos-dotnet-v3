@@ -25,13 +25,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [TestInitialize]
         public void TestInitialize()
         {
-            Environment.SetEnvironmentVariable(ConfigurationManager.ChangeFeedLeaseIdAsPartitionKeyEnabled, null);
+            DocumentServiceLeaseManagerCosmos.IsChangeFeedLeaseIdAsPartitionKeyEnabled = true;
         }
 
         [TestCleanup]
         public void TestCleanup()
         {
-            Environment.SetEnvironmentVariable(ConfigurationManager.ChangeFeedLeaseIdAsPartitionKeyEnabled, null);
+            DocumentServiceLeaseManagerCosmos.IsChangeFeedLeaseIdAsPartitionKeyEnabled = true;
         }
 
         /// <summary>
@@ -176,17 +176,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         }
 
         /// <summary>
-        /// Verifies partition key behavior for both overloads and both env-var states:
+        /// Verifies partition key behavior for both overloads and both flag states:
         /// default (deterministic PK = lease id) and opt-out (legacy GUID PK).
         /// </summary>
         [DataTestMethod]
-        [DataRow("PKRange", null, true, DisplayName = "PKRange: deterministic PK by default")]
-        [DataRow("PKRange", "false", false, DisplayName = "PKRange: legacy GUID PK when opted out")]
-        [DataRow("EPK", null, true, DisplayName = "EPK: deterministic PK by default")]
-        [DataRow("EPK", "false", false, DisplayName = "EPK: legacy GUID PK when opted out")]
-        public async Task CreateLeaseIfNotExistAsync_PartitionKeyBehavior(string overloadType, string envVarValue, bool expectDeterministic)
+        [DataRow("PKRange", true, true, DisplayName = "PKRange: deterministic PK by default")]
+        [DataRow("PKRange", false, false, DisplayName = "PKRange: legacy GUID PK when opted out")]
+        [DataRow("EPK", true, true, DisplayName = "EPK: deterministic PK by default")]
+        [DataRow("EPK", false, false, DisplayName = "EPK: legacy GUID PK when opted out")]
+        public async Task CreateLeaseIfNotExistAsync_PartitionKeyBehavior(string overloadType, bool flagValue, bool expectDeterministic)
         {
-            Environment.SetEnvironmentVariable(ConfigurationManager.ChangeFeedLeaseIdAsPartitionKeyEnabled, envVarValue);
+            DocumentServiceLeaseManagerCosmos.IsChangeFeedLeaseIdAsPartitionKeyEnabled = flagValue;
 
             PartitionKey? capturedPartitionKey = null;
             Mock<ContainerInternal> mockedContainer = CreatePkCapturingMockContainer(pk => capturedPartitionKey = pk);

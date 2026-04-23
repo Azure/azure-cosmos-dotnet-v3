@@ -29,8 +29,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         private readonly DocumentServiceLeaseStoreManagerOptions options;
         private readonly RequestOptionsFactory requestOptionsFactory;
         private readonly AsyncLazy<TryCatch<string>> lazyContainerRid;
-        private readonly bool isChangeFeedLeaseIdAsPartitionKeyEnabled;
         private PartitionKeyRangeCache partitionKeyRangeCache;
+
+        internal static bool IsChangeFeedLeaseIdAsPartitionKeyEnabled = ConfigurationManager.IsChangeFeedLeaseIdAsPartitionKeyEnabled();
 
         public DocumentServiceLeaseManagerCosmos(
             ContainerInternal monitoredContainer,
@@ -45,7 +46,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             this.options = options;
             this.requestOptionsFactory = requestOptionsFactory;
             this.lazyContainerRid = new AsyncLazy<TryCatch<string>>(valueFactory: (trace, innerCancellationToken) => this.TryInitializeContainerRIdAsync(innerCancellationToken));
-            this.isChangeFeedLeaseIdAsPartitionKeyEnabled = ConfigurationManager.IsChangeFeedLeaseIdAsPartitionKeyEnabled();
         }
 
         public override async Task<DocumentServiceLease> AcquireAsync(DocumentServiceLease lease)
@@ -132,7 +132,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
             this.requestOptionsFactory.AddPartitionKeyIfNeeded(
                 (string pk) => documentServiceLease.LeasePartitionKey = pk,
-                GetLeasePartitionKeyValue(this.isChangeFeedLeaseIdAsPartitionKeyEnabled, documentServiceLease.LeaseId));
+                GetLeasePartitionKeyValue(IsChangeFeedLeaseIdAsPartitionKeyEnabled, documentServiceLease.LeaseId));
 
             return this.TryCreateDocumentServiceLeaseAsync(documentServiceLease);
         }
@@ -159,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
             this.requestOptionsFactory.AddPartitionKeyIfNeeded(
                 (string pk) => documentServiceLease.LeasePartitionKey = pk,
-                GetLeasePartitionKeyValue(this.isChangeFeedLeaseIdAsPartitionKeyEnabled, documentServiceLease.LeaseId));
+                GetLeasePartitionKeyValue(IsChangeFeedLeaseIdAsPartitionKeyEnabled, documentServiceLease.LeaseId));
 
             return this.TryCreateDocumentServiceLeaseAsync(documentServiceLease);
         }
