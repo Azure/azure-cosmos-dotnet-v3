@@ -980,8 +980,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             for (int i = 0; i < operationCount; i++)
             {
                 string body = i < itemJsonBodies.Length ? itemJsonBodies[i] : "{}";
-                string base64Body = Convert.ToBase64String(Encoding.UTF8.GetBytes(body));
-                results.Add($@"{{""index"":{i},""statusCode"":200,""etag"":""\""etag-{i}\"""",""resourcebody"":""{base64Body}""}}");
+                results.Add($@"{{""index"":{i},""statusCode"":200,""etag"":""\""etag-{i}\"""",""resourceBody"":{body}}}");
             }
 
             return $@"{{""operationResponses"":[{string.Join(",", results)}]}}";
