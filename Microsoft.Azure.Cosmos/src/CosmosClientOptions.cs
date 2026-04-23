@@ -244,11 +244,19 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <remarks>
         /// This setting is only applicable in Gateway mode.
-        /// The SDK sets EnableMultipleHttp2Connections = true on the underlying SocketsHttpHandler,
-        /// allowing additional HTTP/2 TCP connections to be opened when the maximum concurrent streams
-        /// limit on an existing connection is reached. This property controls the upper bound on the
-        /// total number of connections per server endpoint.
-        /// When using a custom <see cref="HttpClientFactory"/>, set EnableMultipleHttp2Connections
+        /// The SDK sets the following on the underlying SocketsHttpHandler:
+        /// <list type="bullet">
+        /// <item><description>EnableMultipleHttp2Connections = true — allows additional HTTP/2 TCP connections
+        /// to be opened when the maximum concurrent streams limit on an existing connection is reached.</description></item>
+        /// <item><description>KeepAlivePingDelay = 1 second — sends HTTP/2 PING frames after 1 second
+        /// of inactivity to detect broken connections in the pool.</description></item>
+        /// <item><description>KeepAlivePingTimeout = 2 seconds — marks a connection as dead if no PONG
+        /// response is received within 2 seconds.</description></item>
+        /// <item><description>KeepAlivePingPolicy = Always — sends pings even for idle connections, which
+        /// is critical for detecting broken connections that remain in the pool.</description></item>
+        /// </list>
+        /// This property controls the upper bound on the total number of connections per server endpoint.
+        /// When using a custom <see cref="HttpClientFactory"/>, configure these properties
         /// directly on your SocketsHttpHandler for equivalent behavior.
         /// </remarks>
         /// <example>
@@ -268,7 +276,10 @@ namespace Microsoft.Azure.Cosmos
         /// SocketsHttpHandler handler = new SocketsHttpHandler
         /// {
         ///     MaxConnectionsPerServer = 100,
-        ///     EnableMultipleHttp2Connections = true
+        ///     EnableMultipleHttp2Connections = true,
+        ///     KeepAlivePingDelay = TimeSpan.FromSeconds(1),
+        ///     KeepAlivePingTimeout = TimeSpan.FromSeconds(2),
+        ///     KeepAlivePingPolicy = HttpKeepAlivePingPolicy.Always
         /// };
         /// CosmosClientOptions options = new CosmosClientOptions()
         /// {
@@ -305,6 +316,24 @@ namespace Microsoft.Azure.Cosmos
         /// <value>Default value is 6 seconds.</value>
         /// <seealso cref="CosmosClientBuilder.WithRequestTimeout(TimeSpan)"/>
         public TimeSpan RequestTimeout { get; set; }
+
+        /// <summary>
+        /// Gets or sets the request timeout for inference service operations (e.g., semantic reranking).
+        /// The number specifies the time to wait for a response from the inference service before the request is cancelled.
+        /// This is a single-attempt timeout with no retries.
+        /// </summary>
+        /// <value>Default value is 5 seconds.</value>
+        /// <remarks>
+        /// This timeout is specific to inference service operations and is separate from the standard <see cref="RequestTimeout"/>.
+        /// If the request does not complete within the specified duration, a <see cref="CosmosException"/> with status 408 (Request Timeout) is thrown.
+        /// No retries are attempted on timeout.
+        /// </remarks>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        TimeSpan InferenceRequestTimeout { get; set; } = InferenceService.DefaultInferenceRequestTimeout;
 
         /// <summary>
         /// The SDK does a background refresh based on the time interval set to refresh the token credentials.
