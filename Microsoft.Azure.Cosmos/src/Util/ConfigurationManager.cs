@@ -126,6 +126,18 @@ namespace Microsoft.Azure.Cosmos
         internal static readonly string UseLengthAwareRangeComparator = "AZURE_COSMOS_USE_LENGTH_AWARE_RANGE_COMPARATOR";
 
         /// <summary>
+        /// Environment variable name for overriding the default diagnostics verbosity.
+        /// Accepts "Summary" or "Detailed" (case-insensitive).
+        /// </summary>
+        internal static readonly string DiagnosticsVerbosityVariable = "AZURE_COSMOS_DIAGNOSTICS_VERBOSITY";
+
+        /// <summary>
+        /// Environment variable name for overriding the maximum summary diagnostics size in bytes.
+        /// Must be an integer >= 4096.
+        /// </summary>
+        internal static readonly string DiagnosticsMaxSummarySizeVariable = "AZURE_COSMOS_DIAGNOSTICS_MAX_SUMMARY_SIZE";
+
+        /// <summary>
         /// Environment variable name to enable DNS dot-suffix (FQDN trailing dot) for
         /// Direct mode TCP connections. When enabled, appends a trailing '.' to hostnames
         /// before DNS resolution to bypass Kubernetes ndots search-domain expansion.

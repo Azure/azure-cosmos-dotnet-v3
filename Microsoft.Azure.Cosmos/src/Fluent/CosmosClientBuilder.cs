@@ -869,5 +869,30 @@ namespace Microsoft.Azure.Cosmos.Fluent
             this.clientOptions.ReadConsistencyStrategy = readConsistencyStrategy;
             return this;
         }
+
+        /// <summary>
+        /// Sets the preferred <see cref="DiagnosticsVerbosity"/> for diagnostics serialization.
+        /// </summary>
+        /// <param name="verbosity">The verbosity level to use when calling
+        /// <see cref="CosmosDiagnostics.ToString(DiagnosticsVerbosity)"/>.</param>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
+        /// <seealso cref="CosmosClientOptions.DiagnosticsVerbosity"/>
+        public CosmosClientBuilder WithDiagnosticsVerbosity(DiagnosticsVerbosity verbosity)
+        {
+            this.clientOptions.DiagnosticsVerbosity = verbosity;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the maximum size in bytes for Summary mode diagnostic output.
+        /// </summary>
+        /// <param name="maxSizeBytes">Maximum size in bytes (minimum 4096).</param>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
+        /// <seealso cref="CosmosClientOptions.MaxDiagnosticsSummarySizeBytes"/>
+        public CosmosClientBuilder WithMaxDiagnosticsSummarySizeBytes(int maxSizeBytes)
+        {
+            this.clientOptions.MaxDiagnosticsSummarySizeBytes = maxSizeBytes;
+            return this;
+        }
     }
 }

@@ -184,12 +184,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
         private static readonly Func<Type, FeedResponse<ChangeFeedProcessorState>> ChangefeedResponseFunc = (Type type) =>
         {
             ConstructorInfo constructorInfo = type
-                                    .GetConstructor(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, null, new Type[] { typeof(ITrace), typeof(ReadOnlyCollection<ChangeFeedProcessorState>), typeof(double) }, null);
+                                    .GetConstructor(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, null, new Type[] { typeof(ITrace), typeof(ReadOnlyCollection<ChangeFeedProcessorState>), typeof(double), typeof(int) }, null);
             if (constructorInfo != null)
             {
                 return (FeedResponse<ChangeFeedProcessorState>)constructorInfo.Invoke(
                     new object[] {
-                NoOpTrace.Singleton, new List<ChangeFeedProcessorState>().AsReadOnly(), 10 });
+                NoOpTrace.Singleton, new List<ChangeFeedProcessorState>().AsReadOnly(), 10, CosmosClientOptions.DefaultMaxDiagnosticsSummarySizeBytes });
             }
 
             return null;
@@ -198,12 +198,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
         private static readonly Func<Type, FeedResponse<ChangeFeedProcessorState>> ChangeFeedEstimatorEmptyFeedResponseFunc = (Type type) =>
         {
             ConstructorInfo constructorInfo = type
-                                    .GetConstructor(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, null, new Type[] { typeof(ITrace) }, null);
+                                    .GetConstructor(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, null, new Type[] { typeof(ITrace), typeof(int) }, null);
             if (constructorInfo != null)
             {
                 return (FeedResponse<ChangeFeedProcessorState>)constructorInfo.Invoke(
                     new object[] {
-                NoOpTrace.Singleton});
+                NoOpTrace.Singleton, CosmosClientOptions.DefaultMaxDiagnosticsSummarySizeBytes });
             }
 
             return null;

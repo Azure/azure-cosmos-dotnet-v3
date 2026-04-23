@@ -2866,6 +2866,16 @@
           "Attributes": [],
           "MethodInfo": "Int32 get_GatewayModeMaxConnectionLimit();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Int32 get_MaxDiagnosticsSummarySizeBytes()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Int32 get_MaxDiagnosticsSummarySizeBytes();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Int32 MaxDiagnosticsSummarySizeBytes": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Int32 MaxDiagnosticsSummarySizeBytes;CanRead:True;CanWrite:True;Int32 get_MaxDiagnosticsSummarySizeBytes();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_MaxDiagnosticsSummarySizeBytes(Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Microsoft.Azure.Cosmos.AvailabilityStrategy AvailabilityStrategy": {
           "Type": "Property",
           "Attributes": [],
@@ -2921,6 +2931,18 @@
             "JsonConverterAttribute"
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.CosmosSerializer Serializer;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.CosmosSerializer get_Serializer();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_Serializer(Microsoft.Azure.Cosmos.CosmosSerializer);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.DiagnosticsVerbosity DiagnosticsVerbosity": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.DiagnosticsVerbosity DiagnosticsVerbosity;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.DiagnosticsVerbosity get_DiagnosticsVerbosity();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DiagnosticsVerbosity(Microsoft.Azure.Cosmos.DiagnosticsVerbosity);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.DiagnosticsVerbosity get_DiagnosticsVerbosity()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.DiagnosticsVerbosity get_DiagnosticsVerbosity();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.FaultInjection.IFaultInjector FaultInjector": {
           "Type": "Property",
@@ -3236,6 +3258,13 @@
           ],
           "MethodInfo": "Void set_CosmosClientTelemetryOptions(Microsoft.Azure.Cosmos.CosmosClientTelemetryOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Void set_DiagnosticsVerbosity(Microsoft.Azure.Cosmos.DiagnosticsVerbosity)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_DiagnosticsVerbosity(Microsoft.Azure.Cosmos.DiagnosticsVerbosity);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Void set_EnableContentResponseOnWrite(System.Nullable`1[System.Boolean])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -3276,6 +3305,11 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_LimitToEndpoint(Boolean);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_MaxDiagnosticsSummarySizeBytes(Int32)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_MaxDiagnosticsSummarySizeBytes(Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_MaxRequestsPerTcpConnection(System.Nullable`1[System.Int32])": {
           "Type": "Method",
@@ -3476,6 +3510,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.String ToString();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String ToString(Microsoft.Azure.Cosmos.DiagnosticsVerbosity)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.String ToString(Microsoft.Azure.Cosmos.DiagnosticsVerbosity);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.TimeSpan GetClientElapsedTime()": {
           "Type": "Method",
@@ -4431,6 +4470,27 @@
       },
       "NestedTypes": {}
     },
+    "Microsoft.Azure.Cosmos.DiagnosticsVerbosity;System.Enum;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:True;IsClass:False;IsValueType:True;IsNested:False;IsGenericType:False;IsSerializable:True": {
+      "Subclasses": {},
+      "Members": {
+        "Int32 value__": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Int32 value__;IsInitOnly:False;IsStatic:False;"
+        },
+        "Microsoft.Azure.Cosmos.DiagnosticsVerbosity Detailed": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.DiagnosticsVerbosity Detailed;IsInitOnly:False;IsStatic:True;"
+        },
+        "Microsoft.Azure.Cosmos.DiagnosticsVerbosity Summary": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.DiagnosticsVerbosity Summary;IsInitOnly:False;IsStatic:True;"
+        }
+      },
+      "NestedTypes": {}
+    },
     "Microsoft.Azure.Cosmos.DistanceFunction;System.Enum;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:True;IsClass:False;IsValueType:True;IsNested:False;IsGenericType:False;IsSerializable:True": {
       "Subclasses": {},
       "Members": {
@@ -5110,6 +5170,11 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithContentResponseOnWrite(Boolean);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithDiagnosticsVerbosity(Microsoft.Azure.Cosmos.DiagnosticsVerbosity)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithDiagnosticsVerbosity(Microsoft.Azure.Cosmos.DiagnosticsVerbosity);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithCustomAccountEndpoints(System.Collections.Generic.IEnumerable`1[System.Uri])": {
           "Type": "Method",
           "Attributes": [],
@@ -5134,6 +5199,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithLimitToEndpoint(Boolean);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithMaxDiagnosticsSummarySizeBytes(Int32)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithMaxDiagnosticsSummarySizeBytes(Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithPriorityLevel(Microsoft.Azure.Cosmos.PriorityLevel)": {
           "Type": "Method",
