@@ -727,6 +727,42 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void GetSerializedConfiguration_WithSTJSerializerOptions_DoesNotThrow()
+        {
+            System.Text.Json.JsonSerializerOptions jsonSerializerOptions = new System.Text.Json.JsonSerializerOptions()
+            {
+                PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+            };
+
+            // Set a TypeInfoResolver via reflection to reproduce the circular reference
+            // scenario from the bug report (TypeInfoResolver → Options → TypeInfoResolver).
+            // TypeInfoResolver was introduced in .NET 7 and is not available at compile time
+            // with the STJ 6.0 package reference, but is available at runtime on .NET 7+.
+            PropertyInfo typeInfoResolverProp = typeof(System.Text.Json.JsonSerializerOptions)
+                .GetProperty("TypeInfoResolver");
+
+            if (typeInfoResolverProp != null)
+            {
+                Type defaultResolverType = typeof(System.Text.Json.JsonSerializerOptions).Assembly
+                    .GetType("System.Text.Json.Serialization.Metadata.DefaultJsonTypeInfoResolver");
+
+                if (defaultResolverType != null)
+                {
+                    typeInfoResolverProp.SetValue(jsonSerializerOptions, Activator.CreateInstance(defaultResolverType));
+                }
+            }
+
+            CosmosClientOptions options = new CosmosClientOptions()
+            {
+                UseSystemTextJsonSerializerWithOptions = jsonSerializerOptions,
+            };
+
+            string serializedConfig = options.GetSerializedConfiguration();
+            Assert.IsNotNull(serializedConfig);
+            Assert.IsTrue(serializedConfig.Contains("System.Text.Json.JsonSerializerOptions"));
+        }
+
+        [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
         public void ThrowOnNullTokenCredential()
         {
