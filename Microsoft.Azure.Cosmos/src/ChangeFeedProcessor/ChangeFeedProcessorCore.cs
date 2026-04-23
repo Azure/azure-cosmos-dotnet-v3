@@ -78,28 +78,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         public override async Task StopAsync()
         {
             DefaultTrace.TraceInformation("Stopping processor...");
-            try
-            {
-                await this.partitionManager.StopAsync().ConfigureAwait(false);
-            }
-            finally
-            {
-                // Persist in-memory lease state even if partitionManager.StopAsync() throws,
-                // so that progress is not silently lost.
-                try
-                {
-                    await this.documentServiceLeaseStoreManager
-                        .LeaseContainer
-                        .ShutdownAsync()
-                        .ConfigureAwait(false);
-                }
-                catch (Exception shutdownException)
-                {
-                    Cosmos.Extensions.TraceException(shutdownException);
-                    DefaultTrace.TraceWarning(
-                        "Failed to persist in-memory lease state during shutdown.");
-                }
-            }
+            await this.partitionManager.StopAsync().ConfigureAwait(false);
+
+            // ShutdownAsync persists in-memory lease state. Runs outside finally
+            // because: (a) partitionManager.StopAsync() rarely fails, and when it
+            // does the caller already receives that exception; (b) letting
+            // ShutdownAsync exceptions propagate ensures callers know if
+            // persistence failed — silently swallowing defeats the feature's
+            // guarantee.
+            await this.documentServiceLeaseStoreManager
+                .LeaseContainer
+                .ShutdownAsync()
+                .ConfigureAwait(false);
 
             DefaultTrace.TraceInformation("Processor stopped.");
         }
