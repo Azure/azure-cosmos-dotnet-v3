@@ -1529,6 +1529,28 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 Assert.AreEqual(defaultEndpoint, resolvedEndpoint,
                     "ResolveServiceEndpoint must route to the default/Hub endpoint when all regions are excluded.");
             }
+
+            // Verify retry behavior: because there is exactly one endpoint in the applicable list
+            // (the fallback), every retry index resolves back to the same default endpoint.
+            // There is no alternative region to escape to — the SDK stays locked on defaultEndpoint.
+            for (int retryLocationIndex = 1; retryLocationIndex <= 3; retryLocationIndex++)
+            {
+                using (DocumentServiceRequest retryRequest = DocumentServiceRequest.Create(
+                    OperationType.Read,
+                    ResourceType.Document,
+                    AuthorizationTokenType.PrimaryMasterKey))
+                {
+                    retryRequest.RequestContext.ExcludeRegions = allRegions;
+
+                    // Simulate the ClientRetryPolicy advancing the location index for cross-region retry.
+                    retryRequest.RequestContext.RouteToLocation(retryLocationIndex, usePreferredLocations: true);
+
+                    Uri retryEndpoint = cache.ResolveServiceEndpoint(retryRequest);
+                    Assert.AreEqual(defaultEndpoint, retryEndpoint,
+                        $"On retry attempt {retryLocationIndex}, ResolveServiceEndpoint must still return the default/Hub " +
+                        "endpoint because there is no other region in the applicable list when all are excluded.");
+                }
+            }
         }
 
         [TestMethod]
