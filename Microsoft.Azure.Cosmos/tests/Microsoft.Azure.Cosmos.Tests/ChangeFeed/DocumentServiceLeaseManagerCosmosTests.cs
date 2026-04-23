@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 {
     using System;
+    using System.Collections.Concurrent;
     using System.IO;
     using System.Net;
     using System.Threading;
@@ -329,9 +330,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         }
 
         /// <summary>
-        /// Verifies the full 409 dedup chain: first call succeeds (200), second concurrent call for the
-        /// same lease token gets 409 Conflict and returns null. This proves the deterministic PK value
-        /// ensures both creates land in the same logical partition, triggering the id-uniqueness conflict.
+        /// Verifies the 409 dedup chain by simulating Cosmos DB's uniqueness constraint:
+        /// a duplicate (PartitionKey, id) combination returns 409 Conflict regardless of call order.
+        /// This proves the deterministic PK value ensures both creates land in the same logical
+        /// partition and trigger the id-uniqueness conflict.
         /// </summary>
         [TestMethod]
         public async Task CreateLeaseIfNotExistAsync_FirstSucceeds_SecondReturns409_PKRange()
@@ -350,7 +352,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 MaxExclusive = "FF"
             };
 
-            int callCount = 0;
+            // Track created (PartitionKey, id) pairs to simulate Cosmos DB's per-logical-partition id uniqueness.
+            ConcurrentDictionary<string, byte> createdPkIdPairs = new ConcurrentDictionary<string, byte>();
             Mock<ContainerInternal> mockedContainer = new Mock<ContainerInternal>();
             mockedContainer.Setup(c => c.CreateItemStreamAsync(
                 It.IsAny<Stream>(),
@@ -359,9 +362,20 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<CancellationToken>()))
                 .ReturnsAsync((Stream stream, PartitionKey partitionKey, ItemRequestOptions opts, CancellationToken token) =>
                 {
-                    return Interlocked.Increment(ref callCount) == 1
-                        ? new ResponseMessage(HttpStatusCode.OK) { Content = stream }
-                        : new ResponseMessage(HttpStatusCode.Conflict);
+                    // Read the lease id from the stream to form the composite key
+                    stream.Position = 0;
+                    using StreamReader reader = new StreamReader(stream, leaveOpen: true);
+                    string json = reader.ReadToEnd();
+                    stream.Position = 0;
+                    string leaseId = Newtonsoft.Json.Linq.JObject.Parse(json)["id"].ToString();
+
+                    string compositeKey = $"{partitionKey}:{leaseId}";
+                    if (createdPkIdPairs.TryAdd(compositeKey, 0))
+                    {
+                        return new ResponseMessage(HttpStatusCode.OK) { Content = stream };
+                    }
+
+                    return new ResponseMessage(HttpStatusCode.Conflict);
                 });
 
             DocumentServiceLeaseManagerCosmos leaseManager = new DocumentServiceLeaseManagerCosmos(
@@ -375,9 +389,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             DocumentServiceLease firstResult = await leaseManager.CreateLeaseIfNotExistAsync(partitionKeyRange, continuation);
             Assert.IsNotNull(firstResult, "First create should succeed with 200.");
 
-            // Second call: host B races for the same lease token, gets 409 (dedup)
+            // Second call: host B races for the same lease token — same (PK, id) triggers 409
             DocumentServiceLease secondResult = await leaseManager.CreateLeaseIfNotExistAsync(partitionKeyRange, continuation);
-            Assert.IsNull(secondResult, "Second create should return null due to 409 Conflict (dedup).");
+            Assert.IsNull(secondResult, "Second create should return null due to 409 Conflict (same PK + id dedup).");
         }
 
         [TestMethod]
@@ -392,7 +406,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             FeedRangeEpk feedRangeEpk = new FeedRangeEpk(new Documents.Routing.Range<string>("AA", "BB", true, false));
 
-            int callCount = 0;
+            // Track created (PartitionKey, id) pairs to simulate Cosmos DB's per-logical-partition id uniqueness.
+            ConcurrentDictionary<string, byte> createdPkIdPairs = new ConcurrentDictionary<string, byte>();
             Mock<ContainerInternal> mockedContainer = new Mock<ContainerInternal>();
             mockedContainer.Setup(c => c.CreateItemStreamAsync(
                 It.IsAny<Stream>(),
@@ -401,9 +416,19 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<CancellationToken>()))
                 .ReturnsAsync((Stream stream, PartitionKey partitionKey, ItemRequestOptions opts, CancellationToken token) =>
                 {
-                    return Interlocked.Increment(ref callCount) == 1
-                        ? new ResponseMessage(HttpStatusCode.OK) { Content = stream }
-                        : new ResponseMessage(HttpStatusCode.Conflict);
+                    stream.Position = 0;
+                    using StreamReader reader = new StreamReader(stream, leaveOpen: true);
+                    string json = reader.ReadToEnd();
+                    stream.Position = 0;
+                    string leaseId = Newtonsoft.Json.Linq.JObject.Parse(json)["id"].ToString();
+
+                    string compositeKey = $"{partitionKey}:{leaseId}";
+                    if (createdPkIdPairs.TryAdd(compositeKey, 0))
+                    {
+                        return new ResponseMessage(HttpStatusCode.OK) { Content = stream };
+                    }
+
+                    return new ResponseMessage(HttpStatusCode.Conflict);
                 });
 
             DocumentServiceLeaseManagerCosmos leaseManager = new DocumentServiceLeaseManagerCosmos(
@@ -417,9 +442,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             DocumentServiceLease firstResult = await leaseManager.CreateLeaseIfNotExistAsync(feedRangeEpk, continuation);
             Assert.IsNotNull(firstResult, "First create should succeed with 200.");
 
-            // Second call: host B races for the same lease token, gets 409 (dedup)
+            // Second call: host B races for the same lease token — same (PK, id) triggers 409
             DocumentServiceLease secondResult = await leaseManager.CreateLeaseIfNotExistAsync(feedRangeEpk, continuation);
-            Assert.IsNull(secondResult, "Second create should return null due to 409 Conflict (dedup).");
+            Assert.IsNull(secondResult, "Second create should return null due to 409 Conflict (same PK + id dedup).");
         }
 
         /// <summary>
