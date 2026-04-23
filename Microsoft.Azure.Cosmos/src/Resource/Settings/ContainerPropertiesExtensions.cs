@@ -38,14 +38,13 @@ namespace Microsoft.Azure.Cosmos
                     trace: NoOpTrace.Singleton,
                     cancellationToken: cancellationToken);
             }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
-            catch (Exception)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 // Container may not exist yet (e.g. operations on non-existent containers).
                 // Swallow the exception and let the actual operation surface the proper error.
+                DefaultTrace.TraceWarning(
+                    "EnsureIdGetAppendedToPartitionKeyIfNeededAsync: failed to resolve container properties; continuing without HPK id-append. Exception: {0}",
+                    ex.Message);
                 return partitionKey;
             }
 
@@ -119,14 +118,13 @@ namespace Microsoft.Azure.Cosmos
                     trace: NoOpTrace.Singleton,
                     cancellationToken: cancellationToken);
             }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
-            catch (Exception)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 // Container may not exist yet (e.g. operations on non-existent containers).
                 // Swallow the exception and let the actual operation surface the proper error.
+                DefaultTrace.TraceWarning(
+                    "EnsureIdGetAppendedToPartitionKeyIfNeededAsync (stream): failed to resolve container properties; continuing without HPK id-append. Exception: {0}",
+                    ex.Message);
                 return (itemId, streamPayload);
             }
 
