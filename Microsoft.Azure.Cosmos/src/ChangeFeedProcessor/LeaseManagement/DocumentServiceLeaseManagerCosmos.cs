@@ -132,7 +132,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
             this.requestOptionsFactory.AddPartitionKeyIfNeeded(
                 (string pk) => documentServiceLease.LeasePartitionKey = pk,
-                GetLeasePartitionKeyValue(IsChangeFeedLeaseIdAsPartitionKeyEnabled, documentServiceLease.LeaseId));
+                DocumentServiceLeaseManagerCosmos.GetLeasePartitionKeyValue(documentServiceLease.LeaseId));
 
             return this.TryCreateDocumentServiceLeaseAsync(documentServiceLease);
         }
@@ -159,14 +159,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
             this.requestOptionsFactory.AddPartitionKeyIfNeeded(
                 (string pk) => documentServiceLease.LeasePartitionKey = pk,
-                GetLeasePartitionKeyValue(IsChangeFeedLeaseIdAsPartitionKeyEnabled, documentServiceLease.LeaseId));
+                DocumentServiceLeaseManagerCosmos.GetLeasePartitionKeyValue(documentServiceLease.LeaseId));
 
             return this.TryCreateDocumentServiceLeaseAsync(documentServiceLease);
         }
 
-        private static string GetLeasePartitionKeyValue(bool isLeaseIdAsPartitionKeyEnabled, string leaseId)
+        private static string GetLeasePartitionKeyValue(string leaseId)
         {
-            return isLeaseIdAsPartitionKeyEnabled
+            return DocumentServiceLeaseManagerCosmos.IsChangeFeedLeaseIdAsPartitionKeyEnabled
                 ? leaseId
                 : Guid.NewGuid().ToString();
         }
