@@ -28,6 +28,13 @@ namespace Microsoft.Azure.Cosmos
     /// The grace window is intentionally short — the goal is best-effort availability,
     /// not unbounded timeout extension. If the retry attempt does not complete within
     /// the grace window, the original exception is rethrown.
+    ///
+    /// Note on the grace bound: the grace <see cref="CancellationTokenSource"/> controls
+    /// when the grace attempt may START (via <c>ThrowIfCancellationRequested</c> and
+    /// propagation into the operation lambda). If the underlying operation does not
+    /// observe the grace token (e.g. the store model ignores cancellation), the in-flight
+    /// call may exceed the grace window. Callers relying on a strict upper bound should
+    /// ensure the operation honors its <see cref="CancellationToken"/>.
     /// </summary>
     internal static class MetadataRetryHelper
     {
@@ -37,7 +44,16 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal static readonly TimeSpan DefaultCrossRegionRetryGrace = TimeSpan.FromSeconds(10);
 
-        public static Task<T> ExecuteAsync<T>(
+        /// <summary>
+        /// Defensive upper bound on the number of attempts the helper makes within a single
+        /// <see cref="ExecuteAsync{T}(Func{CancellationToken, Task{T}}, IDocumentClientRetryPolicy, TimeSpan, CancellationToken)"/>
+        /// invocation. <see cref="ClientRetryPolicy"/> and peers already bound their own retry
+        /// counts, but a misconfigured policy that always returns <c>ShouldRetry=true</c> would
+        /// otherwise spin this loop indefinitely.
+        /// </summary>
+        private const int MaxAttemptsHardCap = 20;
+
+        internal static Task<T> ExecuteAsync<T>(
             Func<CancellationToken, Task<T>> operation,
             IDocumentClientRetryPolicy retryPolicy,
             CancellationToken cancellationToken)
@@ -45,7 +61,7 @@ namespace Microsoft.Azure.Cosmos
             return ExecuteAsync(operation, retryPolicy, DefaultCrossRegionRetryGrace, cancellationToken);
         }
 
-        public static async Task<T> ExecuteAsync<T>(
+        internal static async Task<T> ExecuteAsync<T>(
             Func<CancellationToken, Task<T>> operation,
             IDocumentClientRetryPolicy retryPolicy,
             TimeSpan crossRegionRetryGrace,
@@ -73,9 +89,20 @@ namespace Microsoft.Azure.Cosmos
             // this will be a fresh, bounded-lifetime token decoupled from the caller's
             // (already cancelled) token. Closing over the outer token re-introduces the
             // defect this helper is designed to fix.
-            bool graceTokenUsed = false;
+            bool graceAttempted = false;
+            int attemptCount = 0;
             while (true)
             {
+                if (++attemptCount > MaxAttemptsHardCap)
+                {
+                    DefaultTrace.TraceError(
+                        "MetadataRetryHelper: exceeded hard attempt cap ({0}). Surfacing last exception.",
+                        MaxAttemptsHardCap);
+                    throw new InvalidOperationException(
+                        $"MetadataRetryHelper exceeded the defensive attempt cap of {MaxAttemptsHardCap}. " +
+                        "This indicates a misconfigured retry policy that returns ShouldRetry=true indefinitely.");
+                }
+
                 ExceptionDispatchInfo capturedException;
                 try
                 {
@@ -110,6 +137,13 @@ namespace Microsoft.Azure.Cosmos
 
                 if (shouldRetry == null || !shouldRetry.ShouldRetry)
                 {
+                    // Honor ShouldRetryResult.ExceptionToThrow if the policy has specified a
+                    // wrapper/translated exception (matches BackoffRetryUtility.ThrowIfDoneTrying).
+                    if (shouldRetry?.ExceptionToThrow != null)
+                    {
+                        throw shouldRetry.ExceptionToThrow;
+                    }
+
                     capturedException.Throw();
                 }
 
@@ -141,14 +175,14 @@ namespace Microsoft.Azure.Cosmos
                 // the underlying HTTP call is not itself preempted by the caller's
                 // already-cancelled token. Subsequent cancellations collapse to the
                 // original exception so we do not extend the caller's timeout unbounded.
-                if (graceTokenUsed || crossRegionRetryGrace <= TimeSpan.Zero)
+                if (graceAttempted || crossRegionRetryGrace <= TimeSpan.Zero)
                 {
                     DefaultTrace.TraceInformation(
                         "MetadataRetryHelper: caller token cancelled; cross-region retry grace already used or disabled. Surfacing original exception.");
                     capturedException.Throw();
                 }
 
-                graceTokenUsed = true;
+                graceAttempted = true;
                 DefaultTrace.TraceInformation(
                     "MetadataRetryHelper: caller token cancelled; granting {0}ms grace for one cross-region metadata retry.",
                     (int)crossRegionRetryGrace.TotalMilliseconds);
@@ -166,13 +200,20 @@ namespace Microsoft.Azure.Cosmos
                     {
                         // Grace window expired before the cross-region attempt completed.
                         // Surface the original failure rather than the grace-timeout.
+                        DefaultTrace.TraceWarning(
+                            "MetadataRetryHelper: grace window ({0}ms) expired during cross-region retry. Surfacing original exception.",
+                            (int)crossRegionRetryGrace.TotalMilliseconds);
                         capturedException.Throw();
                         throw; // unreachable
                     }
-                    catch (Exception)
+                    catch (Exception graceException)
                     {
                         // Cross-region attempt itself failed. Surface the ORIGINAL exception so
                         // callers see the pre-failover failure mode, not the grace-region failure.
+                        DefaultTrace.TraceWarning(
+                            "MetadataRetryHelper: grace-region retry failed with {0}: {1}. Surfacing original exception.",
+                            graceException.GetType().Name,
+                            graceException.Message);
                         capturedException.Throw();
                         throw; // unreachable
                     }

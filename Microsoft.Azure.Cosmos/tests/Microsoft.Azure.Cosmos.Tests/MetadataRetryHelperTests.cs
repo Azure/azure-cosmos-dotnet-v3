@@ -60,9 +60,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             Mock<IDocumentClientRetryPolicy> policy = new Mock<IDocumentClientRetryPolicy>();
             policy
-                .SetupSequence(p => p.ShouldRetryAsync(It.IsAny<Exception>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(ShouldRetryResult.RetryAfter(TimeSpan.Zero))
-                .ReturnsAsync(ShouldRetryResult.NoRetry());
+                .Setup(p => p.ShouldRetryAsync(It.IsAny<Exception>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(ShouldRetryResult.RetryAfter(TimeSpan.Zero));
 
             int attempts = 0;
 
@@ -113,9 +112,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             cts.Cancel();
 
             int attempts = 0;
+            CancellationToken secondAttemptToken = default;
 
             int result = await MetadataRetryHelper.ExecuteAsync<int>(
-                (_) =>
+                (ct) =>
                 {
                     attempts++;
                     if (attempts == 1)
@@ -126,6 +126,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                             SubStatusCodes.Unknown);
                     }
 
+                    // Capture the token observed by the grace attempt so the detached-token
+                    // contract can be asserted below.
+                    secondAttemptToken = ct;
                     return Task.FromResult(100);
                 },
                 policy.Object,
@@ -134,6 +137,18 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Assert.AreEqual(100, result, "Cross-region retry should have executed despite cancelled caller token.");
             Assert.AreEqual(2, attempts, "Exactly one cross-region retry attempt should run on the grace token.");
+
+            // Pin the detached-grace-token contract: the grace attempt MUST NOT receive the
+            // caller's already-cancelled token. A future refactor that accidentally passes
+            // cancellationToken (instead of graceCts.Token) would silently reintroduce the
+            // defect this helper was built to fix — this assertion catches that regression.
+            Assert.IsFalse(
+                secondAttemptToken.IsCancellationRequested,
+                "Grace attempt must receive a fresh, non-cancelled token decoupled from the caller's cancelled token.");
+            Assert.AreNotEqual(
+                cts.Token,
+                secondAttemptToken,
+                "Grace attempt token must not be the caller's cancellation token.");
         }
 
         /// <summary>
@@ -278,9 +293,15 @@ namespace Microsoft.Azure.Cosmos.Tests
                                 SubStatusCodes.Unknown);
                         }
 
-                        // Second attempt: observes the grace token and will throw OCE when it expires.
-                        await Task.Delay(TimeSpan.FromSeconds(30), ct);
-                        return 0;
+                        // Second attempt: observes the grace token and completes deterministically
+                        // only when the grace CTS fires. Using TaskCompletionSource + ct.Register
+                        // avoids the long Task.Delay worst-case on slow CI runners.
+                        TaskCompletionSource<int> tcs = new TaskCompletionSource<int>(
+                            TaskCreationOptions.RunContinuationsAsynchronously);
+                        using (ct.Register(() => tcs.TrySetCanceled(ct)))
+                        {
+                            return await tcs.Task.ConfigureAwait(false);
+                        }
                     },
                     policy.Object,
                     TimeSpan.FromMilliseconds(100),
@@ -380,6 +401,47 @@ namespace Microsoft.Azure.Cosmos.Tests
                 p => p.ShouldRetryAsync(It.IsAny<Exception>(), It.IsAny<CancellationToken>()),
                 Times.AtLeastOnce,
                 "Retry policy must be consulted even on first-attempt OCE. If not, the helper's core invariant is broken.");
+        }
+
+        /// <summary>
+        /// Regression guard for finding #5: when <see cref="ShouldRetryResult.NoRetry(Exception)"/>
+        /// is invoked with a policy-specified translated exception, the helper must surface
+        /// THAT exception (matching <c>BackoffRetryUtility.ThrowIfDoneTrying</c>), not the
+        /// original captured exception. If this invariant is broken, retry policies that rewrite
+        /// error types (e.g. <c>NonRetriableInvalidPartitionExceptionRetryPolicy</c> translating
+        /// a gone/invalid-partition into a <c>NotFoundException</c>) would silently diverge in
+        /// behavior when wired through <see cref="MetadataRetryHelper"/>.
+        /// </summary>
+        [TestMethod]
+        [Owner("ntripician")]
+        public async Task ExecuteAsync_PolicySpecifiesExceptionToThrow_SurfacesTranslatedException()
+        {
+            InvalidOperationException translated = new InvalidOperationException("policy-translated");
+            Mock<IDocumentClientRetryPolicy> policy = new Mock<IDocumentClientRetryPolicy>();
+            policy
+                .Setup(p => p.ShouldRetryAsync(It.IsAny<Exception>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(ShouldRetryResult.NoRetry(translated));
+
+            int attempts = 0;
+
+            InvalidOperationException thrown = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => MetadataRetryHelper.ExecuteAsync<int>(
+                    (_) =>
+                    {
+                        attempts++;
+                        throw new DocumentClientException(
+                            "original 503",
+                            HttpStatusCode.ServiceUnavailable,
+                            SubStatusCodes.Unknown);
+                    },
+                    policy.Object,
+                    CancellationToken.None));
+
+            Assert.AreEqual(1, attempts);
+            Assert.AreSame(
+                translated,
+                thrown,
+                "Helper must surface ShouldRetryResult.ExceptionToThrow (policy-translated), not the original exception.");
         }
 
         /// <summary>
