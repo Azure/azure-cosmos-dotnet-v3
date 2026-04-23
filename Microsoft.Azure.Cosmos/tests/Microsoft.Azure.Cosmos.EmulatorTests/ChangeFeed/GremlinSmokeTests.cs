@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -77,13 +78,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         }
 
         [DataTestMethod]
-        [DataRow(null, true, DisplayName = "Default (deterministic PK): partition key equals lease id")]
-        [DataRow("false", false, DisplayName = "Opt-out (legacy GUID PK): partition key differs from lease id")]
-        public async Task Schema_DefaultsToHavingPartitionKey(string envVarValue, bool expectDeterministicPk)
+        [DataRow(true, DisplayName = "Default (deterministic PK): partition key equals lease id")]
+        [DataRow(false, DisplayName = "Opt-out (legacy GUID PK): partition key differs from lease id")]
+        public async Task Schema_DefaultsToHavingPartitionKey(bool isChangeFeedLeaseIdAsPartitionKeyEnabled)
         {
-            System.Environment.SetEnvironmentVariable(
-                ConfigurationManager.ChangeFeedLeaseIdAsPartitionKeyEnabled,
-                envVarValue);
+            DocumentServiceLeaseManagerCosmos.IsChangeFeedLeaseIdAsPartitionKeyEnabled = isChangeFeedLeaseIdAsPartitionKeyEnabled;
 
             try
             {
@@ -111,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                             continue;
                         }
 
-                        if (expectDeterministicPk)
+                        if (isChangeFeedLeaseIdAsPartitionKeyEnabled)
                         {
                             Assert.AreEqual((string)lease.id, (string)lease.partitionKey,
                                 "Deterministic mode: lease partition key must equal lease id for dedup invariant.");
@@ -133,9 +132,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             }
             finally
             {
-                System.Environment.SetEnvironmentVariable(
-                    ConfigurationManager.ChangeFeedLeaseIdAsPartitionKeyEnabled,
-                    null);
+                DocumentServiceLeaseManagerCosmos.IsChangeFeedLeaseIdAsPartitionKeyEnabled =
+                    ConfigurationManager.IsChangeFeedLeaseIdAsPartitionKeyEnabled();
             }
         }
 
