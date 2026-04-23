@@ -432,7 +432,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public void WithInMemoryLeaseContainerWithCorruptedStreamThrows()
         {
             byte[] garbage = System.Text.Encoding.UTF8.GetBytes("not valid json {{{");
-            MemoryStream corruptedStream = new MemoryStream(garbage);
+            MemoryStream corruptedStream = new MemoryStream();
+            corruptedStream.Write(garbage, 0, garbage.Length);
+            corruptedStream.Position = 0;
 
             ChangeFeedProcessorBuilder builder = new ChangeFeedProcessorBuilder("workflowName",
                 ChangeFeedProcessorBuilderTests.GetMockedContainer(),
@@ -446,7 +448,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public async Task WithInMemoryLeaseContainerWithEmptyArrayStreamInitializesEmptyStore()
         {
             byte[] emptyArray = System.Text.Encoding.UTF8.GetBytes("[]");
-            MemoryStream stream = new MemoryStream(emptyArray);
+            MemoryStream stream = new MemoryStream();
+            stream.Write(emptyArray, 0, emptyArray.Length);
+            stream.Position = 0;
 
             DocumentServiceLeaseStoreManager capturedManager = null;
 
@@ -483,7 +487,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public void WithInMemoryLeaseContainerWithNullLeaseEntryThrows()
         {
             byte[] nullEntry = System.Text.Encoding.UTF8.GetBytes("[null]");
-            MemoryStream stream = new MemoryStream(nullEntry);
+            MemoryStream stream = new MemoryStream();
+            stream.Write(nullEntry, 0, nullEntry.Length);
+            stream.Position = 0;
 
             ChangeFeedProcessorBuilder builder = new ChangeFeedProcessorBuilder("workflowName",
                 ChangeFeedProcessorBuilderTests.GetMockedContainer(),
@@ -498,7 +504,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public void WithInMemoryLeaseContainerWithEmptyLeaseIdThrows()
         {
             byte[] emptyId = System.Text.Encoding.UTF8.GetBytes("[{\"id\":\"\"}]");
-            MemoryStream stream = new MemoryStream(emptyId);
+            MemoryStream stream = new MemoryStream();
+            stream.Write(emptyId, 0, emptyId.Length);
+            stream.Position = 0;
 
             ChangeFeedProcessorBuilder builder = new ChangeFeedProcessorBuilder("workflowName",
                 ChangeFeedProcessorBuilderTests.GetMockedContainer(),
@@ -541,6 +549,24 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Assert.IsTrue(ex.Message.Contains("Failed to deserialize lease state"));
             Assert.IsNotNull(ex.InnerException);
+        }
+
+        [TestMethod]
+        public void WithInMemoryLeaseContainerWithNonResizableStreamThrows()
+        {
+            // new MemoryStream(byte[]) creates a writable but non-expandable stream
+            byte[] data = System.Text.Encoding.UTF8.GetBytes("[]");
+            MemoryStream nonResizableStream = new MemoryStream(data);
+
+            ChangeFeedProcessorBuilder builder = new ChangeFeedProcessorBuilder("workflowName",
+                ChangeFeedProcessorBuilderTests.GetMockedContainer(),
+                ChangeFeedProcessorBuilderTests.GetMockedProcessor(),
+                ChangeFeedProcessorBuilderTests.GetEmptyInitialization());
+
+            ArgumentException ex = Assert.ThrowsException<ArgumentException>(
+                () => builder.WithInMemoryLeaseContainer(nonResizableStream));
+
+            Assert.IsTrue(ex.Message.Contains("resizable"));
         }
 
         #endregion
