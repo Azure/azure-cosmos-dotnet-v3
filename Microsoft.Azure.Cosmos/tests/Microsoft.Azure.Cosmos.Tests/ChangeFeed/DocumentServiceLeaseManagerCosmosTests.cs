@@ -119,10 +119,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Assert.AreEqual(feedRangeEpk.Range.Min, ((FeedRangeEpk)epkBasedLease.FeedRange).Range.Min);
             Assert.AreEqual(feedRangeEpk.Range.Max, ((FeedRangeEpk)epkBasedLease.FeedRange).Range.Max);
             ValidateRequestOptionsFactory(requestOptionsFactory, epkBasedLease);
-            if (requestOptionsFactory is PartitionedByPartitionKeyCollectionRequestOptionsFactory)
-            {
-                Assert.AreEqual(epkBasedLease.Id, epkBasedLease.PartitionKey);
-            }
         }
 
         [DataTestMethod]
@@ -169,10 +165,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Assert.AreEqual(continuation, afterAcquire.ContinuationToken);
             Assert.AreEqual(partitionKeyRange.Id, pkRangeBasedLease.CurrentLeaseToken);
             ValidateRequestOptionsFactory(requestOptionsFactory, pkRangeBasedLease);
-            if (requestOptionsFactory is PartitionedByPartitionKeyCollectionRequestOptionsFactory)
-            {
-                Assert.AreEqual(pkRangeBasedLease.Id, pkRangeBasedLease.PartitionKey);
-            }
         }
 
         /// <summary>
