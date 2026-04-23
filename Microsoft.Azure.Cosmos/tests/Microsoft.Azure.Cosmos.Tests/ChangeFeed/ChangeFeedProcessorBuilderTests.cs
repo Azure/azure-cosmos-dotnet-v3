@@ -551,24 +551,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Assert.IsNotNull(ex.InnerException);
         }
 
-        [TestMethod]
-        public void WithInMemoryLeaseContainerWithNonResizableStreamThrows()
-        {
-            // new MemoryStream(byte[]) creates a writable but non-expandable stream
-            byte[] data = System.Text.Encoding.UTF8.GetBytes("[]");
-            MemoryStream nonResizableStream = new MemoryStream(data);
-
-            ChangeFeedProcessorBuilder builder = new ChangeFeedProcessorBuilder("workflowName",
-                ChangeFeedProcessorBuilderTests.GetMockedContainer(),
-                ChangeFeedProcessorBuilderTests.GetMockedProcessor(),
-                ChangeFeedProcessorBuilderTests.GetEmptyInitialization());
-
-            ArgumentException ex = Assert.ThrowsException<ArgumentException>(
-                () => builder.WithInMemoryLeaseContainer(nonResizableStream));
-
-            Assert.IsTrue(ex.Message.Contains("resizable"));
-        }
-
         #endregion
 
         private static ContainerInternal GetMockedContainer(string containerName = null)

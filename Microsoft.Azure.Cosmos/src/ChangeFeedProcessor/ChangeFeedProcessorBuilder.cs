@@ -258,27 +258,12 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(leaseState));
             }
 
+            this.ValidateNoLeaseContainerConfigured();
+
             if (!leaseState.CanWrite)
             {
                 throw new ArgumentException("The lease state stream must be writable so that state can be persisted on shutdown.", nameof(leaseState));
             }
-
-            // Verify the stream is expandable. A MemoryStream created via
-            // new MemoryStream(byte[]) is writable but not expandable and will
-            // throw NotSupportedException when ShutdownAsync tries to resize it.
-            try
-            {
-                leaseState.SetLength(leaseState.Length);
-            }
-            catch (NotSupportedException)
-            {
-                throw new ArgumentException(
-                    "The lease state stream must be resizable. Use 'new MemoryStream()' and write bytes into it "
-                    + "instead of 'new MemoryStream(byte[])' to create a resizable stream.",
-                    nameof(leaseState));
-            }
-
-            this.ValidateNoLeaseContainerConfigured();
 
             if (string.IsNullOrEmpty(this.InstanceName))
             {
