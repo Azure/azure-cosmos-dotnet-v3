@@ -3155,9 +3155,11 @@
           "Attributes": [],
           "MethodInfo": "System.Text.Json.JsonSerializerOptions get_UseSystemTextJsonSerializerWithOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Text.Json.JsonSerializerOptions UseSystemTextJsonSerializerWithOptions": {
+        "System.Text.Json.JsonSerializerOptions UseSystemTextJsonSerializerWithOptions[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Cosmos.CosmosClientOptions+ClientOptionJsonConverter))]": {
           "Type": "Property",
-          "Attributes": [],
+          "Attributes": [
+            "JsonConverterAttribute"
+          ],
           "MethodInfo": "System.Text.Json.JsonSerializerOptions UseSystemTextJsonSerializerWithOptions;CanRead:True;CanWrite:True;System.Text.Json.JsonSerializerOptions get_UseSystemTextJsonSerializerWithOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_UseSystemTextJsonSerializerWithOptions(System.Text.Json.JsonSerializerOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.TimeSpan get_RequestTimeout()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -8193,6 +8195,11 @@
           "Attributes": [],
           "MethodInfo": "System.String QatarCentral;IsInitOnly:False;IsStatic:True;"
         },
+        "System.String SaudiArabiaEast": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String SaudiArabiaEast;IsInitOnly:False;IsStatic:True;"
+        },
         "System.String SingaporeCentral": {
           "Type": "Field",
           "Attributes": [],
@@ -8227,6 +8234,11 @@
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "System.String SoutheastAsia;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String SoutheastAsia3": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String SoutheastAsia3;IsInitOnly:False;IsStatic:True;"
         },
         "System.String SoutheastUS": {
           "Type": "Field",
@@ -8362,6 +8374,11 @@
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "System.String WestCentralUS;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String WestCentralUSFRE": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String WestCentralUSFRE;IsInitOnly:False;IsStatic:True;"
         },
         "System.String WestEurope": {
           "Type": "Field",
