@@ -466,6 +466,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(gatewayLimit, socketsHandler.MaxConnectionsPerServer);
             Assert.IsTrue(socketsHandler.EnableMultipleHttp2Connections, "EnableMultipleHttp2Connections should be true for HTTP/2 thin client support");
 
+            // HTTP/2 PING keep-alive: detects broken connections lingering in the pool
+            Assert.AreEqual(TimeSpan.FromSeconds(1), socketsHandler.KeepAlivePingDelay, "KeepAlivePingDelay should be 1 second for HTTP/2 connection health monitoring");
+            Assert.AreEqual(TimeSpan.FromSeconds(2), socketsHandler.KeepAlivePingTimeout, "KeepAlivePingTimeout should be 2 seconds");
+            Assert.AreEqual(HttpKeepAlivePingPolicy.Always, socketsHandler.KeepAlivePingPolicy, "KeepAlivePingPolicy should be Always to detect broken idle connections");
+
             //Create cert for test
             X509Certificate2 x509Certificate2 = new CertificateRequest("cn=www.test", ECDsa.Create(), HashAlgorithmName.SHA256).CreateSelfSigned(DateTime.Now, DateTime.Now.AddYears(1));
             X509Chain x509Chain = new X509Chain();
@@ -493,6 +498,46 @@ namespace Microsoft.Azure.Cosmos.Tests
             X509Chain x509Chain = new X509Chain();
             SslPolicyErrors sslPolicyErrors = new SslPolicyErrors();
             Assert.IsFalse(clientHandler.ServerCertificateCustomValidationCallback.Invoke(new HttpRequestMessage(), x509Certificate2, x509Chain, sslPolicyErrors));
+        }
+
+        [TestMethod]
+        public void CreateSocketsHttpHandlerRespectsEnvironmentVariableOverrides()
+        {
+            int customPingDelay = 60;
+            int customPingTimeout = 10;
+
+            try
+            {
+                Environment.SetEnvironmentVariable(
+                    ConfigurationManager.Http2KeepAlivePingDelayInSeconds,
+                    customPingDelay.ToString());
+                Environment.SetEnvironmentVariable(
+                    ConfigurationManager.Http2KeepAlivePingTimeoutInSeconds,
+                    customPingTimeout.ToString());
+
+                HttpMessageHandler handler = CosmosHttpClientCore.CreateSocketsHttpHandlerHelper(
+                    gatewayModeMaxConnectionLimit: 10,
+                    webProxy: null,
+                    serverCertificateCustomValidationCallback: null);
+
+                SocketsHttpHandler socketsHandler = (SocketsHttpHandler)handler;
+
+                Assert.AreEqual(TimeSpan.FromSeconds(customPingDelay), socketsHandler.KeepAlivePingDelay,
+                    "KeepAlivePingDelay should respect environment variable override");
+                Assert.AreEqual(TimeSpan.FromSeconds(customPingTimeout), socketsHandler.KeepAlivePingTimeout,
+                    "KeepAlivePingTimeout should respect environment variable override");
+                Assert.AreEqual(HttpKeepAlivePingPolicy.Always, socketsHandler.KeepAlivePingPolicy,
+                    "KeepAlivePingPolicy should always be Always regardless of environment variables");
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(
+                    ConfigurationManager.Http2KeepAlivePingDelayInSeconds,
+                    null);
+                Environment.SetEnvironmentVariable(
+                    ConfigurationManager.Http2KeepAlivePingTimeoutInSeconds,
+                    null);
+            }
         }
 
         [TestMethod]
