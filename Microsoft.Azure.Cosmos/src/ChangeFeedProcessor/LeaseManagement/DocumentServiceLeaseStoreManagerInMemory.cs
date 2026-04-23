@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     using System;
     using System.Collections.Concurrent;
     using System.IO;
+    using System.Threading.Tasks;
 
     /// <summary>
     /// Lease manager that is using In-Memory as lease storage.
@@ -16,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         private readonly DocumentServiceLeaseStore leaseStore;
         private readonly DocumentServiceLeaseManager leaseManager;
         private readonly DocumentServiceLeaseCheckpointer leaseCheckpointer;
-        private readonly DocumentServiceLeaseContainer leaseContainer;
+        private readonly DocumentServiceLeaseContainerInMemory leaseContainer;
 
         public DocumentServiceLeaseStoreManagerInMemory()
             : this(new ConcurrentDictionary<string, DocumentServiceLease>())
@@ -66,5 +67,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         public override DocumentServiceLeaseCheckpointer LeaseCheckpointer => this.leaseCheckpointer;
 
         public override DocumentServiceLeaseContainer LeaseContainer => this.leaseContainer;
+
+        public override Task ShutdownAsync()
+        {
+            return this.leaseContainer.ShutdownAsync();
+        }
     }
 }

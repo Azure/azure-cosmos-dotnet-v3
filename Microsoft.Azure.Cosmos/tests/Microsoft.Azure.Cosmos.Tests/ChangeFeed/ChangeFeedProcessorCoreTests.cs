@@ -362,13 +362,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<DocumentServiceLeaseContainer> leaseContainer = new Mock<DocumentServiceLeaseContainer>();
             leaseContainer.Setup(l => l.GetOwnedLeasesAsync()).Returns(Task.FromResult(Enumerable.Empty<DocumentServiceLease>()));
             leaseContainer.Setup(l => l.GetAllLeasesAsync()).ReturnsAsync(new List<DocumentServiceLease>());
-            leaseContainer.Setup(l => l.ShutdownAsync()).Returns(Task.CompletedTask);
 
             Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
             leaseStoreManager.Setup(l => l.LeaseContainer).Returns(leaseContainer.Object);
             leaseStoreManager.Setup(l => l.LeaseManager).Returns(Mock.Of<DocumentServiceLeaseManager>);
             leaseStoreManager.Setup(l => l.LeaseStore).Returns(leaseStore.Object);
             leaseStoreManager.Setup(l => l.LeaseCheckpointer).Returns(Mock.Of<DocumentServiceLeaseCheckpointer>);
+            leaseStoreManager.Setup(l => l.ShutdownAsync()).Returns(Task.CompletedTask);
             ChangeFeedProcessorCore processor = ChangeFeedProcessorCoreTests.CreateProcessor(out Mock<ChangeFeedObserverFactory> factory, out Mock<ChangeFeedObserver> observer);
             processor.ApplyBuildConfiguration(
                 leaseStoreManager.Object,
@@ -381,7 +381,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             await processor.StartAsync();
             await processor.StopAsync();
 
-            Mock.Get(leaseContainer.Object)
+            leaseStoreManager
                 .Verify(store => store.ShutdownAsync(), Times.Once);
         }
 
@@ -394,13 +394,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<DocumentServiceLeaseContainer> leaseContainer = new Mock<DocumentServiceLeaseContainer>();
             leaseContainer.Setup(l => l.GetOwnedLeasesAsync()).Returns(Task.FromResult(Enumerable.Empty<DocumentServiceLease>()));
             leaseContainer.Setup(l => l.GetAllLeasesAsync()).ReturnsAsync(new List<DocumentServiceLease>());
-            leaseContainer.Setup(l => l.ShutdownAsync()).Returns(Task.CompletedTask);
 
             Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
             leaseStoreManager.Setup(l => l.LeaseContainer).Returns(leaseContainer.Object);
             leaseStoreManager.Setup(l => l.LeaseManager).Returns(Mock.Of<DocumentServiceLeaseManager>);
             leaseStoreManager.Setup(l => l.LeaseStore).Returns(leaseStore.Object);
             leaseStoreManager.Setup(l => l.LeaseCheckpointer).Returns(Mock.Of<DocumentServiceLeaseCheckpointer>);
+            leaseStoreManager.Setup(l => l.ShutdownAsync()).Returns(Task.CompletedTask);
 
             ChangeFeedProcessorCore processor = ChangeFeedProcessorCoreTests.CreateProcessor(out _, out _);
             processor.ApplyBuildConfiguration(
@@ -418,12 +418,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Mock.Get(leaseContainer.Object)
                 .Verify(store => store.GetOwnedLeasesAsync(), Times.Exactly(2));
-            Mock.Get(leaseContainer.Object)
+            leaseStoreManager
                 .Verify(store => store.ShutdownAsync(), Times.Once);
 
             await processor.StopAsync();
 
-            Mock.Get(leaseContainer.Object)
+            leaseStoreManager
                 .Verify(store => store.ShutdownAsync(), Times.Exactly(2));
         }
 
@@ -489,13 +489,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<DocumentServiceLeaseContainer> leaseContainer = new Mock<DocumentServiceLeaseContainer>();
             leaseContainer.Setup(l => l.GetOwnedLeasesAsync()).Returns(Task.FromResult(Enumerable.Empty<DocumentServiceLease>()));
             leaseContainer.Setup(l => l.GetAllLeasesAsync()).ReturnsAsync(new List<DocumentServiceLease>());
-            leaseContainer.Setup(l => l.ShutdownAsync()).Returns(Task.CompletedTask);
 
             Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
             leaseStoreManager.Setup(l => l.LeaseContainer).Returns(leaseContainer.Object);
             leaseStoreManager.Setup(l => l.LeaseManager).Returns(Mock.Of<DocumentServiceLeaseManager>);
             leaseStoreManager.Setup(l => l.LeaseStore).Returns(leaseStore.Object);
             leaseStoreManager.Setup(l => l.LeaseCheckpointer).Returns(Mock.Of<DocumentServiceLeaseCheckpointer>);
+            leaseStoreManager.Setup(l => l.ShutdownAsync()).Returns(Task.CompletedTask);
 
             ChangeFeedProcessorCore processor = ChangeFeedProcessorCoreTests.CreateProcessor(out _, out _);
             processor.ApplyBuildConfiguration(
@@ -518,12 +518,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             // Act & Assert — even if stop throws, ShutdownAsync should still be called
             await processor.StopAsync();
 
-            Mock.Get(leaseContainer.Object)
+            leaseStoreManager
                 .Verify(store => store.ShutdownAsync(), Times.Exactly(2));
         }
 
         [TestMethod]
-        public async Task StopAsync_WhenShutdownAsyncThrows_OriginalExceptionPreserved()
+        public async Task StopAsync_WhenShutdownAsyncThrows_ExceptionPropagates()
         {
             // Arrange — set up a processor where ShutdownAsync throws
             Mock<DocumentServiceLeaseStore> leaseStore = new Mock<DocumentServiceLeaseStore>();
@@ -532,13 +532,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<DocumentServiceLeaseContainer> leaseContainer = new Mock<DocumentServiceLeaseContainer>();
             leaseContainer.Setup(l => l.GetOwnedLeasesAsync()).Returns(Task.FromResult(Enumerable.Empty<DocumentServiceLease>()));
             leaseContainer.Setup(l => l.GetAllLeasesAsync()).ReturnsAsync(new List<DocumentServiceLease>());
-            leaseContainer.Setup(l => l.ShutdownAsync()).ThrowsAsync(new InvalidOperationException("Shutdown failed"));
 
             Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
             leaseStoreManager.Setup(l => l.LeaseContainer).Returns(leaseContainer.Object);
             leaseStoreManager.Setup(l => l.LeaseManager).Returns(Mock.Of<DocumentServiceLeaseManager>);
             leaseStoreManager.Setup(l => l.LeaseStore).Returns(leaseStore.Object);
             leaseStoreManager.Setup(l => l.LeaseCheckpointer).Returns(Mock.Of<DocumentServiceLeaseCheckpointer>);
+            leaseStoreManager.Setup(l => l.ShutdownAsync()).ThrowsAsync(new InvalidOperationException("Shutdown failed"));
 
             ChangeFeedProcessorCore processor = ChangeFeedProcessorCoreTests.CreateProcessor(out _, out _);
             processor.ApplyBuildConfiguration(
@@ -551,12 +551,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             await processor.StartAsync();
 
-            // Act — StopAsync should complete without throwing even though ShutdownAsync throws.
-            // The ShutdownAsync exception is caught and traced, not propagated.
-            await processor.StopAsync();
+            // Act & Assert — StopAsync propagates ShutdownAsync exceptions so callers
+            // know persistence failed.
+            InvalidOperationException ex = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => processor.StopAsync());
+            Assert.AreEqual("Shutdown failed", ex.Message);
 
             // Assert — ShutdownAsync was still invoked
-            leaseContainer.Verify(l => l.ShutdownAsync(), Times.Once);
+            leaseStoreManager.Verify(l => l.ShutdownAsync(), Times.Once);
         }
 
         private static ChangeFeedProcessorCore CreateProcessor(

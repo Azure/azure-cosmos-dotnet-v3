@@ -4,6 +4,8 @@
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 {
+    using System.Threading.Tasks;
+
     /// <summary>
     /// The DocumentServiceLeaseStoreManager defines a way to perform operations with <see cref="DocumentServiceLease"/>.
     /// </summary>
@@ -29,5 +31,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         /// for particular monitoring collection and lease container prefix.
         /// </summary>
         public abstract DocumentServiceLeaseStore LeaseStore { get; }
+
+        /// <summary>
+        /// Called when the processor is stopping. Allows implementations to perform
+        /// cleanup or state persistence (e.g., exporting in-memory lease state).
+        /// </summary>
+        public virtual Task ShutdownAsync()
+        {
+            return Task.CompletedTask;
+        }
     }
 }

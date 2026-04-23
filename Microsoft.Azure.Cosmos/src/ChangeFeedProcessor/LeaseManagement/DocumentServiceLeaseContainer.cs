@@ -23,11 +23,5 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         /// </summary>
         /// <returns>Enumerable of all leases owned by the current host</returns>
         public abstract Task<IEnumerable<DocumentServiceLease>> GetOwnedLeasesAsync();
-
-        /// <summary>
-        /// Called when the processor is stopping. Allows implementations to perform
-        /// cleanup or state persistence.
-        /// </summary>
-        public abstract Task ShutdownAsync();
     }
 }

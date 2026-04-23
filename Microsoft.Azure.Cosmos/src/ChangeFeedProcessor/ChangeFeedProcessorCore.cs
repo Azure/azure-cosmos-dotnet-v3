@@ -87,7 +87,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             // persistence failed — silently swallowing defeats the feature's
             // guarantee.
             await this.documentServiceLeaseStoreManager
-                .LeaseContainer
                 .ShutdownAsync()
                 .ConfigureAwait(false);
 

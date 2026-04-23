@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         /// Exports all processor leases from current in-memory lease container.
         /// </summary>
         /// <returns>A task that represents the asynchronous shutdown operation.</returns>
-        public override Task ShutdownAsync()
+        public Task ShutdownAsync()
         {
             if (this.leaseStateStream == null)
             {

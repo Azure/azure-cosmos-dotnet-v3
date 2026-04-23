@@ -403,7 +403,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Assert.AreEqual("original-continuation", restoredLeases[0].ContinuationToken);
 
             // Simulate stop — persist state back to the same stream
-            await capturedManager.LeaseContainer.ShutdownAsync();
+            await capturedManager.ShutdownAsync();
 
             // Assert — stream is still usable and contains valid serialized state
             Assert.IsTrue(leaseState.CanRead, "Stream should still be readable after ShutdownAsync");
