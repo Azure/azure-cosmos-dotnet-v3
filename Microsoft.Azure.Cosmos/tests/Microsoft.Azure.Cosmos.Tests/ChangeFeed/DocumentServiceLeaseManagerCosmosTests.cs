@@ -25,13 +25,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [TestInitialize]
         public void TestInitialize()
         {
-            DocumentServiceLeaseManagerCosmos.IsChangeFeedLeaseIdAsPartitionKeyEnabled = true;
+            DocumentServiceLeaseManagerCosmos.IsChangeFeedLeaseIdAsPartitionKeyEnabled = ConfigurationManager.IsChangeFeedLeaseIdAsPartitionKeyEnabled();
         }
 
         [TestCleanup]
         public void TestCleanup()
         {
-            DocumentServiceLeaseManagerCosmos.IsChangeFeedLeaseIdAsPartitionKeyEnabled = true;
+            DocumentServiceLeaseManagerCosmos.IsChangeFeedLeaseIdAsPartitionKeyEnabled = ConfigurationManager.IsChangeFeedLeaseIdAsPartitionKeyEnabled();
         }
 
         /// <summary>
