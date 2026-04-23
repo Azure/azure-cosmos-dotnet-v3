@@ -208,6 +208,51 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
         /// <inheritdoc/>
+        public override bool TrySetPartitionLevelLocationOverrideForSuccessfulHedge(
+            DocumentServiceRequest request,
+            Uri primaryEndpoint,
+            Uri successfulEndpoint)
+        {
+            if (!this.IsRequestEligibleForPartitionFailover(
+                request,
+                shouldValidateFailedLocation: false,
+                out PartitionKeyRange? partitionKeyRange,
+                out Uri? _))
+            {
+                return false;
+            }
+
+            if (partitionKeyRange == null
+                || primaryEndpoint == null
+                || successfulEndpoint == null)
+            {
+                return false;
+            }
+
+            if (!this.IsRequestEligibleForPerPartitionAutomaticFailover(request))
+            {
+                return false;
+            }
+
+            PartitionKeyRangeFailoverInfo partitionFailover = this.PartitionKeyRangeToLocationForWrite.Value.GetOrAdd(
+                partitionKeyRange,
+                (_) => new PartitionKeyRangeFailoverInfo(
+                    request.RequestContext.ResolvedCollectionRid,
+                    primaryEndpoint));
+
+            partitionFailover.SetLocationOnSuccess(primaryEndpoint, successfulEndpoint);
+
+            DefaultTrace.TraceInformation(
+                "Partition level override set directly to successful hedge region for {0}. PartitionKeyRange: {1}, primaryEndpoint: {2}, successfulEndpoint: {3}",
+                request.OperationType,
+                partitionKeyRange,
+                primaryEndpoint,
+                successfulEndpoint);
+
+            return true;
+        }
+
+        /// <inheritdoc/>
         public override bool IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(
             DocumentServiceRequest request)
         {
@@ -702,6 +747,20 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
 
                 return false;
+            }
+
+            /// <summary>
+            /// Directly sets the current failover location to a known successful endpoint.
+            /// Marks the primary endpoint as failed so sequential failover logic won't
+            /// circle back to it. Used when a hedged write succeeds at a specific region.
+            /// </summary>
+            public void SetLocationOnSuccess(Uri failedLocation, Uri successfulLocation)
+            {
+                lock (this.FailedLocations)
+                {
+                    this.FailedLocations[failedLocation] = DateTime.UtcNow;
+                    this.Current = successfulLocation;
+                }
             }
 
             public bool CanCircuitBreakerTriggerPartitionFailOver(

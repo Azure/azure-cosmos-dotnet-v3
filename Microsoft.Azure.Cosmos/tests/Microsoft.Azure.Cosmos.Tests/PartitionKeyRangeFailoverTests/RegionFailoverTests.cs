@@ -352,9 +352,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                     }
 
                     traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
+                    traceDiagnostic.Value.Data.TryGetValue("Hedge Config", out object hedgeConfig);
 
                     if (enablePartitionLevelFailover)
                     {
+                        Assert.IsNotNull(hedgeConfig);
                         // When PPAF is enabled, the primary request handles failover internally
                         // (retrying to another region). No cross-region hedging occurs, so
                         // HedgeContext should be absent. The failover is visible in the
