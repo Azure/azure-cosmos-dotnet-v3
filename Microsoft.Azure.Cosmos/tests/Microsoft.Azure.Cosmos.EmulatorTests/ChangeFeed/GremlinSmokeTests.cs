@@ -75,41 +75,67 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
         }
 
-        [TestMethod]
-        public async Task Schema_DefaultsToHavingPartitionKey()
+        [DataTestMethod]
+        [DataRow(null, true, DisplayName = "Default (deterministic PK): partition key equals lease id")]
+        [DataRow("false", false, DisplayName = "Opt-out (legacy GUID PK): partition key differs from lease id")]
+        public async Task Schema_DefaultsToHavingPartitionKey(string envVarValue, bool expectDeterministicPk)
         {
-            ChangeFeedProcessor processor = this.Container
-                .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<TestClass> docs, CancellationToken token) => Task.CompletedTask)
-                .WithInstanceName("random")
-                .WithLeaseContainer(this.LeaseContainer).Build();
+            System.Environment.SetEnvironmentVariable(
+                ConfigurationManager.ChangeFeedLeaseIdAsPartitionKeyEnabled,
+                envVarValue);
 
-            await processor.StartAsync();
-            // Letting processor initialize
-            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
-
-            // Verify that leases have the partitionKey attribute
-            using FeedIterator<dynamic> iterator = this.LeaseContainer.GetItemQueryIterator<dynamic>();
-            while (iterator.HasMoreResults)
+            try
             {
-                FeedResponse<dynamic> page = await iterator.ReadNextAsync();
-                foreach (dynamic lease in page)
+                ChangeFeedProcessor processor = this.Container
+                    .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<TestClass> docs, CancellationToken token) => Task.CompletedTask)
+                    .WithInstanceName("random")
+                    .WithLeaseContainer(this.LeaseContainer).Build();
+
+                await processor.StartAsync();
+                // Letting processor initialize
+                await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+
+                // Verify that leases have the partitionKey attribute
+                using FeedIterator<dynamic> iterator = this.LeaseContainer.GetItemQueryIterator<dynamic>();
+                while (iterator.HasMoreResults)
                 {
-                    string leaseId = lease.id;
-                    Assert.IsNotNull(lease.partitionKey);
-                    if (leaseId.Contains(".info") || leaseId.Contains(".lock"))
+                    FeedResponse<dynamic> page = await iterator.ReadNextAsync();
+                    foreach (dynamic lease in page)
                     {
-                        // These are the store initialization marks
-                        continue;
+                        string leaseId = lease.id;
+                        Assert.IsNotNull(lease.partitionKey);
+                        if (leaseId.Contains(".info") || leaseId.Contains(".lock"))
+                        {
+                            // These are the store initialization marks
+                            continue;
+                        }
+
+                        if (expectDeterministicPk)
+                        {
+                            Assert.AreEqual((string)lease.id, (string)lease.partitionKey,
+                                "Deterministic mode: lease partition key must equal lease id for dedup invariant.");
+                        }
+                        else
+                        {
+                            Assert.AreNotEqual((string)lease.id, (string)lease.partitionKey,
+                                "Legacy mode: lease partition key should be a random GUID, not the lease id.");
+                            Assert.IsTrue(System.Guid.TryParse((string)lease.partitionKey, out _),
+                                "Legacy mode: partition key should be a valid GUID.");
+                        }
+
+                        Assert.IsNotNull(lease.LeaseToken);
+                        Assert.IsNull(lease.PartitionId);
                     }
-
-                    Assert.AreEqual((string)lease.id, (string)lease.partitionKey, "Lease partition key must equal lease id for dedup invariant.");
-
-                    Assert.IsNotNull(lease.LeaseToken);
-                    Assert.IsNull(lease.PartitionId);
                 }
-            }
 
-            await processor.StopAsync();
+                await processor.StopAsync();
+            }
+            finally
+            {
+                System.Environment.SetEnvironmentVariable(
+                    ConfigurationManager.ChangeFeedLeaseIdAsPartitionKeyEnabled,
+                    null);
+            }
         }
 
         public class TestClass

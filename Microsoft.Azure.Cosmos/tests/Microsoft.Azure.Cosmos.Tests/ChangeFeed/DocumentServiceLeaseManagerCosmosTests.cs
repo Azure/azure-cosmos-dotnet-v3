@@ -328,12 +328,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         }
 
         /// <summary>
-        /// Verifies that when CreateItemStreamAsync returns 409 Conflict (another host created the lease first),
-        /// the dedup chain returns null, proving the deterministic PK ensures conflict detection works.
-        /// Tests both PKRange and EPK overloads.
+        /// Verifies the full 409 dedup chain: first call succeeds (200), second concurrent call for the
+        /// same lease token gets 409 Conflict and returns null. This proves the deterministic PK value
+        /// ensures both creates land in the same logical partition, triggering the id-uniqueness conflict.
         /// </summary>
         [TestMethod]
-        public async Task CreateLeaseIfNotExistAsync_Returns409Conflict_ReturnsNull_PKRange()
+        public async Task CreateLeaseIfNotExistAsync_FirstSucceeds_SecondReturns409_PKRange()
         {
             RequestOptionsFactory requestOptionsFactory = new PartitionedByPartitionKeyCollectionRequestOptionsFactory();
             string continuation = Guid.NewGuid().ToString();
@@ -349,28 +349,38 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 MaxExclusive = "FF"
             };
 
+            int callCount = 0;
             Mock<ContainerInternal> mockedContainer = new Mock<ContainerInternal>();
             mockedContainer.Setup(c => c.CreateItemStreamAsync(
                 It.IsAny<Stream>(),
                 It.IsAny<PartitionKey>(),
                 It.IsAny<ItemRequestOptions>(),
                 It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new ResponseMessage(HttpStatusCode.Conflict));
+                .ReturnsAsync((Stream stream, PartitionKey partitionKey, ItemRequestOptions opts, CancellationToken token) =>
+                {
+                    return Interlocked.Increment(ref callCount) == 1
+                        ? new ResponseMessage(HttpStatusCode.OK) { Content = stream }
+                        : new ResponseMessage(HttpStatusCode.Conflict);
+                });
 
-            DocumentServiceLeaseManagerCosmos documentServiceLeaseManagerCosmos = new DocumentServiceLeaseManagerCosmos(
+            DocumentServiceLeaseManagerCosmos leaseManager = new DocumentServiceLeaseManagerCosmos(
                 Mock.Of<ContainerInternal>(),
                 mockedContainer.Object,
                 Mock.Of<DocumentServiceLeaseUpdater>(),
                 options,
                 requestOptionsFactory);
 
-            DocumentServiceLease result = await documentServiceLeaseManagerCosmos.CreateLeaseIfNotExistAsync(partitionKeyRange, continuation);
+            // First call: host A creates the lease successfully
+            DocumentServiceLease firstResult = await leaseManager.CreateLeaseIfNotExistAsync(partitionKeyRange, continuation);
+            Assert.IsNotNull(firstResult, "First create should succeed with 200.");
 
-            Assert.IsNull(result, "When 409 Conflict is returned, CreateLeaseIfNotExistAsync should return null (dedup).");
+            // Second call: host B races for the same lease token, gets 409 (dedup)
+            DocumentServiceLease secondResult = await leaseManager.CreateLeaseIfNotExistAsync(partitionKeyRange, continuation);
+            Assert.IsNull(secondResult, "Second create should return null due to 409 Conflict (dedup).");
         }
 
         [TestMethod]
-        public async Task CreateLeaseIfNotExistAsync_Returns409Conflict_ReturnsNull_EPK()
+        public async Task CreateLeaseIfNotExistAsync_FirstSucceeds_SecondReturns409_EPK()
         {
             RequestOptionsFactory requestOptionsFactory = new PartitionedByPartitionKeyCollectionRequestOptionsFactory();
             string continuation = Guid.NewGuid().ToString();
@@ -381,24 +391,34 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             FeedRangeEpk feedRangeEpk = new FeedRangeEpk(new Documents.Routing.Range<string>("AA", "BB", true, false));
 
+            int callCount = 0;
             Mock<ContainerInternal> mockedContainer = new Mock<ContainerInternal>();
             mockedContainer.Setup(c => c.CreateItemStreamAsync(
                 It.IsAny<Stream>(),
                 It.IsAny<PartitionKey>(),
                 It.IsAny<ItemRequestOptions>(),
                 It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new ResponseMessage(HttpStatusCode.Conflict));
+                .ReturnsAsync((Stream stream, PartitionKey partitionKey, ItemRequestOptions opts, CancellationToken token) =>
+                {
+                    return Interlocked.Increment(ref callCount) == 1
+                        ? new ResponseMessage(HttpStatusCode.OK) { Content = stream }
+                        : new ResponseMessage(HttpStatusCode.Conflict);
+                });
 
-            DocumentServiceLeaseManagerCosmos documentServiceLeaseManagerCosmos = new DocumentServiceLeaseManagerCosmos(
+            DocumentServiceLeaseManagerCosmos leaseManager = new DocumentServiceLeaseManagerCosmos(
                 Mock.Of<ContainerInternal>(),
                 mockedContainer.Object,
                 Mock.Of<DocumentServiceLeaseUpdater>(),
                 options,
                 requestOptionsFactory);
 
-            DocumentServiceLease result = await documentServiceLeaseManagerCosmos.CreateLeaseIfNotExistAsync(feedRangeEpk, continuation);
+            // First call: host A creates the lease successfully
+            DocumentServiceLease firstResult = await leaseManager.CreateLeaseIfNotExistAsync(feedRangeEpk, continuation);
+            Assert.IsNotNull(firstResult, "First create should succeed with 200.");
 
-            Assert.IsNull(result, "When 409 Conflict is returned, CreateLeaseIfNotExistAsync should return null (dedup).");
+            // Second call: host B races for the same lease token, gets 409 (dedup)
+            DocumentServiceLease secondResult = await leaseManager.CreateLeaseIfNotExistAsync(feedRangeEpk, continuation);
+            Assert.IsNull(secondResult, "Second create should return null due to 409 Conflict (dedup).");
         }
 
         /// <summary>
