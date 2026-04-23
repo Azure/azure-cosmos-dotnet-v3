@@ -5,12 +5,9 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections.Concurrent;
-    using System.Collections.Generic;
     using System.IO;
     using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
-    using Newtonsoft.Json;
     using static Microsoft.Azure.Cosmos.Container;
 
     /// <summary>
@@ -288,45 +285,9 @@ namespace Microsoft.Azure.Cosmos
                 this.InstanceName = ChangeFeedProcessorBuilder.InMemoryDefaultHostName;
             }
 
-            ConcurrentDictionary<string, DocumentServiceLease> container =
-                new ConcurrentDictionary<string, DocumentServiceLease>();
-
-            if (leaseState.Length > 0)
-            {
-                leaseState.Position = 0;
-
-                List<DocumentServiceLease> leases;
-                try
-                {
-                    using (StreamReader sr = new StreamReader(leaseState, encoding: System.Text.Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
-                    using (JsonTextReader jsonReader = new JsonTextReader(sr))
-                    {
-                        JsonSerializer serializer = JsonSerializer.Create();
-                        leases = serializer.Deserialize<List<DocumentServiceLease>>(jsonReader);
-                    }
-                }
-                catch (JsonException ex)
-                {
-                    throw new InvalidOperationException(
-                        "Failed to deserialize lease state from the provided MemoryStream. Ensure the stream contains valid lease state JSON previously persisted by the ChangeFeedProcessor.",
-                        ex);
-                }
-
-                if (leases != null)
-                {
-                    foreach (DocumentServiceLease lease in leases)
-                    {
-                        if (string.IsNullOrEmpty(lease?.Id))
-                        {
-                            throw new InvalidOperationException("Lease state contains a null or invalid lease entry.");
-                        }
-
-                        container[lease.Id] = lease;
-                    }
-                }
-            }
-
-            this.LeaseStoreManager = new DocumentServiceLeaseStoreManagerInMemory(container, leaseState);
+            // Deserialization of lease state (if any) is handled inside the manager
+            // so that serialization and deserialization are co-located in the same layer.
+            this.LeaseStoreManager = new DocumentServiceLeaseStoreManagerInMemory(leaseState);
             return this;
         }
 
