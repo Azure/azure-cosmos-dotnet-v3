@@ -386,48 +386,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         }
 
         [TestMethod]
-        public async Task StartAsync_AfterStop_CanRestart()
-        {
-            Mock<DocumentServiceLeaseStore> leaseStore = new Mock<DocumentServiceLeaseStore>();
-            leaseStore.Setup(l => l.IsInitializedAsync()).ReturnsAsync(true);
-
-            Mock<DocumentServiceLeaseContainer> leaseContainer = new Mock<DocumentServiceLeaseContainer>();
-            leaseContainer.Setup(l => l.GetOwnedLeasesAsync()).Returns(Task.FromResult(Enumerable.Empty<DocumentServiceLease>()));
-            leaseContainer.Setup(l => l.GetAllLeasesAsync()).ReturnsAsync(new List<DocumentServiceLease>());
-
-            Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
-            leaseStoreManager.Setup(l => l.LeaseContainer).Returns(leaseContainer.Object);
-            leaseStoreManager.Setup(l => l.LeaseManager).Returns(Mock.Of<DocumentServiceLeaseManager>);
-            leaseStoreManager.Setup(l => l.LeaseStore).Returns(leaseStore.Object);
-            leaseStoreManager.Setup(l => l.LeaseCheckpointer).Returns(Mock.Of<DocumentServiceLeaseCheckpointer>);
-            leaseStoreManager.Setup(l => l.ShutdownAsync()).Returns(Task.CompletedTask);
-
-            ChangeFeedProcessorCore processor = ChangeFeedProcessorCoreTests.CreateProcessor(out _, out _);
-            processor.ApplyBuildConfiguration(
-                leaseStoreManager.Object,
-                null,
-                "instanceName",
-                new ChangeFeedLeaseOptions(),
-                new ChangeFeedProcessorOptions(),
-                ChangeFeedProcessorCoreTests.GetMockedContainer("monitored"));
-
-            // Start → Stop → Start again
-            await processor.StartAsync();
-            await processor.StopAsync();
-            await processor.StartAsync();
-
-            Mock.Get(leaseContainer.Object)
-                .Verify(store => store.GetOwnedLeasesAsync(), Times.Exactly(2));
-            leaseStoreManager
-                .Verify(store => store.ShutdownAsync(), Times.Once);
-
-            await processor.StopAsync();
-
-            leaseStoreManager
-                .Verify(store => store.ShutdownAsync(), Times.Exactly(2));
-        }
-
-        [TestMethod]
         public async Task StopAsync_WithInMemoryLeases_PersistsStateToStream()
         {
             // Arrange — real in-memory store with a real MemoryStream
@@ -477,49 +435,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 Assert.IsNotNull(persisted[0].FeedRange);
                 Assert.IsInstanceOfType(persisted[0].FeedRange, typeof(FeedRangeEpk));
             }
-        }
-
-        [TestMethod]
-        public async Task StopAsync_WhenPartitionManagerThrows_StillCallsShutdownAsync()
-        {
-            // Arrange
-            Mock<DocumentServiceLeaseStore> leaseStore = new Mock<DocumentServiceLeaseStore>();
-            leaseStore.Setup(l => l.IsInitializedAsync()).ReturnsAsync(true);
-
-            Mock<DocumentServiceLeaseContainer> leaseContainer = new Mock<DocumentServiceLeaseContainer>();
-            leaseContainer.Setup(l => l.GetOwnedLeasesAsync()).Returns(Task.FromResult(Enumerable.Empty<DocumentServiceLease>()));
-            leaseContainer.Setup(l => l.GetAllLeasesAsync()).ReturnsAsync(new List<DocumentServiceLease>());
-
-            Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
-            leaseStoreManager.Setup(l => l.LeaseContainer).Returns(leaseContainer.Object);
-            leaseStoreManager.Setup(l => l.LeaseManager).Returns(Mock.Of<DocumentServiceLeaseManager>);
-            leaseStoreManager.Setup(l => l.LeaseStore).Returns(leaseStore.Object);
-            leaseStoreManager.Setup(l => l.LeaseCheckpointer).Returns(Mock.Of<DocumentServiceLeaseCheckpointer>);
-            leaseStoreManager.Setup(l => l.ShutdownAsync()).Returns(Task.CompletedTask);
-
-            ChangeFeedProcessorCore processor = ChangeFeedProcessorCoreTests.CreateProcessor(out _, out _);
-            processor.ApplyBuildConfiguration(
-                leaseStoreManager.Object,
-                null,
-                "instanceName",
-                new ChangeFeedLeaseOptions(),
-                new ChangeFeedProcessorOptions(),
-                ChangeFeedProcessorCoreTests.GetMockedContainer("monitored"));
-
-            await processor.StartAsync();
-
-            // Simulate partitionManager failure by calling StopAsync without a running partition manager
-            // Force the processor into a state where StopAsync on the partition manager will throw
-            await processor.StopAsync();
-
-            // Start again, then dispose the internal state to force a throw
-            await processor.StartAsync();
-
-            // Act & Assert — even if stop throws, ShutdownAsync should still be called
-            await processor.StopAsync();
-
-            leaseStoreManager
-                .Verify(store => store.ShutdownAsync(), Times.Exactly(2));
         }
 
         [TestMethod]

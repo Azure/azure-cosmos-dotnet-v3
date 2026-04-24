@@ -107,6 +107,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public async Task PersistThenDeserialize_RoundTrip_PreservesData()
         {
             // Arrange
+            DateTime originalTimestamp = new DateTime(2023, 6, 15, 12, 34, 56, DateTimeKind.Utc);
             DocumentServiceLeaseCoreEpk originalLease = new DocumentServiceLeaseCoreEpk
             {
                 LeaseId = "roundtrip-lease",
@@ -114,8 +115,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 Owner = "original-owner",
                 ContinuationToken = "original-token",
                 Mode = "IncrementalFeed",
-                Properties = new Dictionary<string, string> { { "custom", "value" } },
-                FeedRange = new FeedRangeEpk(new Range<string>("", "FF", true, false))
+                Properties = new Dictionary<string, string>
+                {
+                    { "custom", "value" },
+                    { "unicode", "日本語" },
+                },
+                FeedRange = new FeedRangeEpk(new Range<string>("AA", "BB", true, false)),
+                Timestamp = originalTimestamp,
             };
 
             ConcurrentDictionary<string, DocumentServiceLease> sourceContainer = new ConcurrentDictionary<string, DocumentServiceLease>();
@@ -124,22 +130,43 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             MemoryStream stream = new MemoryStream();
             DocumentServiceLeaseContainerInMemory source = new DocumentServiceLeaseContainerInMemory(sourceContainer, stream);
 
-            // Act — persist then deserialize
+            // Act — persist then deserialize through the StoreManager so we exercise the
+            // same code path that customers hit via WithInMemoryLeaseContainer(stream).
             await source.ShutdownAsync();
 
-            stream.Position = 0;
-            List<DocumentServiceLease> deserialized = DeserializeLeasesFromStream(stream);
-            Assert.AreEqual(1, deserialized.Count);
+            DocumentServiceLeaseStoreManagerInMemory restoredManager = new DocumentServiceLeaseStoreManagerInMemory(stream);
+            IReadOnlyList<DocumentServiceLease> restored = await restoredManager.LeaseContainer.GetAllLeasesAsync();
+            Assert.AreEqual(1, restored.Count);
 
-            DocumentServiceLease importedLease = deserialized[0];
+            DocumentServiceLease importedLease = restored[0];
 
-            // Assert
+            // Assert — scalar fields are preserved verbatim.
             Assert.IsNotNull(importedLease);
             Assert.AreEqual("roundtrip-lease", importedLease.Id);
             Assert.AreEqual("0", importedLease.CurrentLeaseToken);
             Assert.AreEqual("original-token", importedLease.ContinuationToken);
             Assert.AreEqual("IncrementalFeed", importedLease.Mode);
             Assert.AreEqual("original-owner", importedLease.Owner);
+
+            // Properties (including non-ASCII values) round-trip.
+            Assert.IsNotNull(importedLease.Properties);
+            Assert.AreEqual(2, importedLease.Properties.Count);
+            Assert.AreEqual("value", importedLease.Properties["custom"]);
+            Assert.AreEqual("日本語", importedLease.Properties["unicode"]);
+
+            // FeedRange shape and values round-trip.
+            Assert.IsInstanceOfType(importedLease.FeedRange, typeof(FeedRangeEpk));
+            FeedRangeEpk importedFeedRange = (FeedRangeEpk)importedLease.FeedRange;
+            Assert.AreEqual("AA", importedFeedRange.Range.Min);
+            Assert.AreEqual("BB", importedFeedRange.Range.Max);
+            Assert.IsTrue(importedFeedRange.Range.IsMinInclusive);
+            Assert.IsFalse(importedFeedRange.Range.IsMaxInclusive);
+
+            // Timestamp is preserved verbatim (confirms H3 no-mutation behavior).
+            Assert.AreEqual(originalTimestamp, importedLease.Timestamp.ToUniversalTime());
+
+            // After restore, the stream is rewound to 0 so callers can re-read it.
+            Assert.AreEqual(0, stream.Position);
         }
 
         [TestMethod]
@@ -181,6 +208,50 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             }
         }
 
+        #region Deserialize Tests
+
+        [TestMethod]
+        public void Deserialize_DuplicateIds_Throws()
+        {
+            // Arrange — hand-crafted JSON with two leases sharing the same id.
+            string duplicateJson =
+                "[" +
+                "{\"id\":\"dup\",\"Owner\":\"o1\",\"LeaseToken\":\"0\",\"ContinuationToken\":\"c1\"}," +
+                "{\"id\":\"dup\",\"Owner\":\"o2\",\"LeaseToken\":\"1\",\"ContinuationToken\":\"c2\"}" +
+                "]";
+
+            MemoryStream stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(duplicateJson));
+
+            // Act & Assert — restore should fail fast, not silently overwrite.
+            InvalidOperationException ex = Assert.ThrowsException<InvalidOperationException>(
+                () => new DocumentServiceLeaseStoreManagerInMemory(stream));
+
+            Assert.IsTrue(ex.Message.Contains("duplicate lease id"), $"Unexpected message: {ex.Message}");
+            Assert.IsTrue(ex.Message.Contains("dup"), $"Unexpected message: {ex.Message}");
+        }
+
+        [TestMethod]
+        public async Task Deserialize_LeavesStreamPositionAtZero()
+        {
+            // Arrange — serialize some leases first.
+            ConcurrentDictionary<string, DocumentServiceLease> container = new ConcurrentDictionary<string, DocumentServiceLease>();
+            container.TryAdd("l0", new DocumentServiceLeaseCoreEpk { LeaseId = "l0", LeaseToken = "0", FeedRange = new FeedRangeEpk(new Range<string>("", "FF", true, false)) });
+
+            MemoryStream stream = new MemoryStream();
+            await new DocumentServiceLeaseContainerInMemory(container, stream).ShutdownAsync();
+
+            // Seek to end to simulate a stream reused across multiple operations.
+            stream.Position = stream.Length;
+
+            // Act — deserialization should rewind the stream.
+            _ = new DocumentServiceLeaseStoreManagerInMemory(stream);
+
+            // Assert — stream is at position 0, ready to be re-read by the caller.
+            Assert.AreEqual(0, stream.Position);
+        }
+
+        #endregion
+
         #region Edge Case Tests
 
         [TestMethod]
@@ -215,7 +286,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             stream.Dispose();
 
-            await Assert.ThrowsExceptionAsync<ObjectDisposedException>(
+            // Disposed MemoryStream reports CanWrite=false, so SetLength throws NotSupportedException
+            // which the container surfaces as a descriptive InvalidOperationException (same shape
+            // as the non-resizable-stream-too-small path).
+            await Assert.ThrowsExceptionAsync<InvalidOperationException>(
                 () => inMemoryContainer.ShutdownAsync());
         }
 
