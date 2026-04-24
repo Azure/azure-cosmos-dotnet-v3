@@ -34,6 +34,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             bool verifyFactory = argsList.Remove("--verify-pkrange-factory");
             bool verifySpike = argsList.Remove("--verify-spike");
             bool verifyStage3 = argsList.Remove("--verify-stage3");
+            bool verifyStage4 = argsList.Remove("--verify-stage4");
             string[] updatedArgs = argsList.ToArray();
 
             if (verifyFactory)
@@ -49,6 +50,11 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             if (verifyStage3)
             {
                 return VerifyStage3().GetAwaiter().GetResult();
+            }
+
+            if (verifyStage4)
+            {
+                return VerifyStage4().GetAwaiter().GetResult();
             }
 
             using TracerProvider tracebuilder = Sdk.CreateTracerProviderBuilder()
@@ -337,6 +343,131 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             {
                 Console.Error.WriteLine($"FAIL: {ex.GetType().Name}: {ex.Message}");
                 Console.Error.WriteLine($"handler hits: account={handler.AccountHits} database={handler.DatabaseHits} container={handler.ContainerHits} pkranges200={handler.PkRangesHits200} pkranges304={handler.PkRangesHits304} addresses={handler.AddressesHits} unknown={handler.UnknownUrls.Count}");
+                if (handler.UnknownUrls.Count > 0)
+                {
+                    foreach (string u in handler.UnknownUrls) Console.Error.WriteLine("  unknown: " + u);
+                }
+                Console.Error.WriteLine(ex.ToString());
+                return 1;
+            }
+        }
+        private static async System.Threading.Tasks.Task<int> VerifyStage4()
+        {
+            string exeDir = System.IO.Path.GetDirectoryName(typeof(Program).Assembly.Location);
+            if (!string.IsNullOrEmpty(exeDir))
+            {
+                System.IO.Directory.SetCurrentDirectory(exeDir);
+            }
+            Environment.SetEnvironmentVariable("COSMOS_DISABLE_IMDS_ACCESS", "true");
+
+            const string accountName = "stage4";
+            const string regionEndpoint = "https://stage4-eastus.documents.azure.com";
+            const string databaseName = "bench-db";
+            const string databaseRid = "ccZ1AA==";
+            const string containerName = "bench-coll";
+            const string containerRid = "ccZ1ANCszwk=";
+            const string tsvPath = "Data/shared_conversations_pkranges.tsv";
+            const int pkPoolSize = 1024;
+            const int pkSeed = 42;
+            const string canned200Id = "lets-benchmark";
+
+            IReadOnlyList<PartitionKeyRange> ranges = PkRangeRoutingFactory.LoadFromTsv(tsvPath);
+            string[] pkPool = PkRangeRoutingFactory.GenerateRandomPartitionKeyStrings(pkPoolSize, pkSeed);
+            Console.WriteLine($"loaded {ranges.Count} PKRanges, generated {pkPool.Length} random PKs (seed={pkSeed}).");
+
+            Microsoft.Azure.Cosmos.Performance.Tests.Mocks.PkRangeMetadataHandler handler =
+                new Microsoft.Azure.Cosmos.Performance.Tests.Mocks.PkRangeMetadataHandler(
+                    accountName, regionEndpoint, databaseName, databaseRid, containerName, containerRid, ranges);
+            Microsoft.Azure.Cosmos.Performance.Tests.Mocks.DirectStubTransport transport =
+                new Microsoft.Azure.Cosmos.Performance.Tests.Mocks.DirectStubTransport();
+
+            string fakeKey = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(Guid.NewGuid().ToString()));
+            CosmosClientOptions options = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                ConsistencyLevel = Cosmos.ConsistencyLevel.Session,
+                HttpClientFactory = () => new System.Net.Http.HttpClient(handler, disposeHandler: false),
+                TransportClientHandlerFactory = _ => transport,
+            };
+
+            int rc = 0;
+            try
+            {
+                using CosmosClient client = new CosmosClient(regionEndpoint + "/", fakeKey, options);
+                Container container = client.GetContainer(databaseName, containerName);
+
+                // Cold-start one read to populate the routing-map + container caches once.
+                using (await container.ReadItemStreamAsync(canned200Id, new Cosmos.PartitionKey(pkPool[0])))
+                {
+                }
+
+                // Pre-warm: read each PK once so the address cache picks up the resolved PKR.
+                System.Diagnostics.Stopwatch warmSw = System.Diagnostics.Stopwatch.StartNew();
+                for (int i = 0; i < pkPool.Length; i++)
+                {
+                    using ResponseMessage warm = await container.ReadItemStreamAsync(canned200Id, new Cosmos.PartitionKey(pkPool[i]));
+                    if (warm.StatusCode != System.Net.HttpStatusCode.OK)
+                    {
+                        Console.Error.WriteLine($"FAIL: prewarm read of PK index {i} returned {warm.StatusCode}.");
+                        return 1;
+                    }
+                }
+                warmSw.Stop();
+                Console.WriteLine($"prewarm: {pkPool.Length} reads in {warmSw.ElapsedMilliseconds} ms.");
+                Console.WriteLine($"prewarm handler hits: account={handler.AccountHits} container={handler.ContainerHits} pkranges200={handler.PkRangesHits200} pkranges304={handler.PkRangesHits304} addresses={handler.AddressesHits} unknown={handler.UnknownUrls.Count}");
+                Console.WriteLine($"prewarm transport InvokeStoreAsync calls: {transport.InvokeCount}");
+                int prewarmAddresses = handler.AddressesHits;
+
+                // Reset counters and verify steady-state issues zero gateway HTTP and exactly pkPoolSize transport calls.
+                handler.ResetCounters();
+                transport.ResetCounters();
+
+                System.Diagnostics.Stopwatch hotSw = System.Diagnostics.Stopwatch.StartNew();
+                for (int i = 0; i < pkPool.Length; i++)
+                {
+                    using ResponseMessage hot = await container.ReadItemStreamAsync(canned200Id, new Cosmos.PartitionKey(pkPool[i]));
+                    if (hot.StatusCode != System.Net.HttpStatusCode.OK)
+                    {
+                        Console.Error.WriteLine($"FAIL: steady-state read of PK index {i} returned {hot.StatusCode}.");
+                        return 1;
+                    }
+                }
+                hotSw.Stop();
+
+                Console.WriteLine($"steady-state: {pkPool.Length} reads in {hotSw.ElapsedMilliseconds} ms ({(double)hotSw.ElapsedMilliseconds * 1000 / pkPool.Length:F2} us/op).");
+                Console.WriteLine($"steady handler hits: account={handler.AccountHits} container={handler.ContainerHits} pkranges200={handler.PkRangesHits200} pkranges304={handler.PkRangesHits304} addresses={handler.AddressesHits} unknown={handler.UnknownUrls.Count}");
+                Console.WriteLine($"steady transport InvokeStoreAsync calls: {transport.InvokeCount}");
+
+                if (handler.UnknownUrls.Count > 0)
+                {
+                    Console.Error.WriteLine("FAIL: steady-state hit unknown URLs:");
+                    foreach (string u in handler.UnknownUrls) Console.Error.WriteLine("  " + u);
+                    rc = 1;
+                }
+                if (handler.AccountHits != 0 || handler.ContainerHits != 0 || handler.PkRangesHits200 != 0
+                    || handler.AddressesHits != 0)
+                {
+                    Console.Error.WriteLine("FAIL: steady-state issued gateway HTTP traffic (expected zero, except possibly /pkranges 304 revalidation).");
+                    rc = 1;
+                }
+                if (transport.InvokeCount != pkPool.Length)
+                {
+                    Console.Error.WriteLine($"FAIL: expected exactly {pkPool.Length} transport invocations, got {transport.InvokeCount}.");
+                    rc = 1;
+                }
+                if (prewarmAddresses < 1 || prewarmAddresses > pkPool.Length)
+                {
+                    Console.Error.WriteLine($"FAIL: prewarm addresses count {prewarmAddresses} outside [1, {pkPool.Length}] (one per unique PKR).");
+                    rc = 1;
+                }
+
+                if (rc == 0) Console.WriteLine($"OK: stage 4 verification succeeded. prewarmed {prewarmAddresses} unique PKR address sets.");
+                return rc;
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"FAIL: {ex.GetType().Name}: {ex.Message}");
+                Console.Error.WriteLine($"handler hits: account={handler.AccountHits} container={handler.ContainerHits} pkranges200={handler.PkRangesHits200} pkranges304={handler.PkRangesHits304} addresses={handler.AddressesHits} unknown={handler.UnknownUrls.Count}");
                 if (handler.UnknownUrls.Count > 0)
                 {
                     foreach (string u in handler.UnknownUrls) Console.Error.WriteLine("  unknown: " + u);

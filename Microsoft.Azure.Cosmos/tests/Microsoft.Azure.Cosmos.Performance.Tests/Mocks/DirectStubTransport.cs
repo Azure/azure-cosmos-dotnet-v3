@@ -21,6 +21,13 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Mocks
         public OperationType LastOperationType;
         public int? LastReturnedStatus;
 
+        public void ResetCounters()
+        {
+            this.InvokeCount = 0;
+            this.LastResourceAddress = null;
+            this.LastReturnedStatus = null;
+        }
+
         internal override Task<StoreResponse> InvokeStoreAsync(
             Uri physicalAddress,
             ResourceOperation resourceOperation,

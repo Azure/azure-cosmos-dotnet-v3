@@ -58,6 +58,20 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Mocks
         public int AddressesHits;
         public readonly List<string> UnknownUrls = new List<string>();
 
+        public void ResetCounters()
+        {
+            this.AccountHits = 0;
+            this.DatabaseHits = 0;
+            this.ContainerHits = 0;
+            this.PkRangesHits200 = 0;
+            this.PkRangesHits304 = 0;
+            this.AddressesHits = 0;
+            lock (this.UnknownUrls)
+            {
+                this.UnknownUrls.Clear();
+            }
+        }
+
         public PkRangeMetadataHandler(
             string accountName,
             string regionEndpoint,
