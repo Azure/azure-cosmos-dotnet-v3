@@ -3160,9 +3160,11 @@
           "Attributes": [],
           "MethodInfo": "System.Text.Json.JsonSerializerOptions get_UseSystemTextJsonSerializerWithOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Text.Json.JsonSerializerOptions UseSystemTextJsonSerializerWithOptions": {
+        "System.Text.Json.JsonSerializerOptions UseSystemTextJsonSerializerWithOptions[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Cosmos.CosmosClientOptions+ClientOptionJsonConverter))]": {
           "Type": "Property",
-          "Attributes": [],
+          "Attributes": [
+            "JsonConverterAttribute"
+          ],
           "MethodInfo": "System.Text.Json.JsonSerializerOptions UseSystemTextJsonSerializerWithOptions;CanRead:True;CanWrite:True;System.Text.Json.JsonSerializerOptions get_UseSystemTextJsonSerializerWithOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_UseSystemTextJsonSerializerWithOptions(System.Text.Json.JsonSerializerOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.TimeSpan get_RequestTimeout()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
