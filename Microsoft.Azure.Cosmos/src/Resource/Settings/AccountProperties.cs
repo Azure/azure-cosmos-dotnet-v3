@@ -28,6 +28,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.ThinClientWritableLocationsInternal = new Collection<AccountRegion>();
             this.ThinClientReadableLocationsInternal = new Collection<AccountRegion>();
+            this.RegionProximityInternal = new Collection<string>();
 
             this.QueryEngineConfigurationInternal = new Lazy<IDictionary<string, object>>(() => this.QueryStringToDictConverter());
         }
@@ -139,6 +140,13 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         [JsonIgnore]
         internal Collection<AccountRegion> ThinClientReadableLocationsInternal { get; set; }
+
+        /// <summary>
+        /// Gets or sets the region proximity list parsed from AdditionalProperties.
+        /// This contains regions ordered by proximity to the account's location.
+        /// </summary>
+        [JsonIgnore]
+        internal Collection<string> RegionProximityInternal { get; set; }
 
         /// <summary>
         /// Gets the storage quota for media storage in the databaseAccount from the Azure Cosmos DB service.
