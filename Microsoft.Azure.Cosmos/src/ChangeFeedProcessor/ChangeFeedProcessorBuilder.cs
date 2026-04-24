@@ -241,6 +241,13 @@ namespace Microsoft.Azure.Cosmos
         /// 
         /// Using an in-memory container restricts the scaling capability to just the instance running the current processor.
         /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <see cref="ChangeFeedProcessor.StopAsync"/> must not be invoked concurrently from multiple threads; the
+        /// in-memory container expects a single shutdown call and does not synchronize concurrent writers to
+        /// <paramref name="leaseState"/>.
+        /// </para>
+        /// </remarks>
         /// <param name="leaseState">
         /// A <see cref="MemoryStream"/> that serves as both input and output for lease state.
         /// If the stream contains data, leases are deserialized and used to initialize the container.
@@ -248,6 +255,11 @@ namespace Microsoft.Azure.Cosmos
         /// The stream must be writable and expandable (for example, created via <c>new MemoryStream()</c>).
         /// A fixed-size stream such as <c>new MemoryStream(byte[])</c> will fail at shutdown if the
         /// serialized lease state exceeds the original buffer capacity.
+        /// A <see cref="MemoryStream"/> is required (rather than the base <see cref="System.IO.Stream"/> type) so that
+        /// the lease state can be trimmed via <see cref="MemoryStream.SetLength(long)"/> when a new snapshot is smaller
+        /// than the previously persisted one. To integrate with <see cref="System.IO.Stream"/>-based persistence
+        /// (e.g., a file or blob), call <see cref="MemoryStream.ToArray"/> after <see cref="ChangeFeedProcessor.StopAsync"/>
+        /// and rehydrate by passing a new <see cref="MemoryStream"/> seeded with those bytes on restore.
         /// </param>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="leaseState"/> is null.</exception>

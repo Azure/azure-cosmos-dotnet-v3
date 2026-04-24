@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     using System.IO;
     using System.Linq;
     using System.Threading.Tasks;
-    using Newtonsoft.Json;
 
     internal sealed class DocumentServiceLeaseContainerInMemory : DocumentServiceLeaseContainer
     {
@@ -41,10 +40,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         }
 
         /// <summary>
-        /// Initiates shutdown of in-memory lease container. 
-        /// Exports all processor leases from current in-memory lease container.
+        /// Persists the current in-memory lease state into the user-supplied <see cref="MemoryStream"/>.
         /// </summary>
-        /// <returns>A task that represents the asynchronous shutdown operation.</returns>
+        /// <remarks>
+        /// Must only be invoked from the single <c>ChangeFeedProcessor.StopAsync</c> call path;
+        /// concurrent invocation is not supported and may corrupt the stream.
+        /// </remarks>
+        /// <returns>A completed task once the stream has been populated, or a no-op if no stream was supplied.</returns>
         public Task ShutdownAsync()
         {
             if (this.leaseStateStream == null)
@@ -52,37 +54,28 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 return Task.CompletedTask;
             }
 
-            // Serialize to a temporary stream first to avoid data loss if serialization fails
-            byte[] serializedBytes;
-            using (MemoryStream temp = new MemoryStream())
-            {
-                using (StreamWriter writer = new StreamWriter(temp, encoding: System.Text.Encoding.UTF8, bufferSize: 1024, leaveOpen: true))
-                using (JsonTextWriter jsonWriter = new JsonTextWriter(writer))
-                {
-                    JsonSerializer serializer = JsonSerializer.Create();
-                    serializer.Serialize(jsonWriter, this.container.Values.ToList());
-                }
+            byte[] serializedBytes = InMemoryLeaseJsonFormat.Serialize(this.container.Values.ToList());
 
-                serializedBytes = temp.ToArray();
-            }
-
-            // Write serialized state to the user's stream. Write first, then trim
-            // excess via SetLength so that a failed Write leaves prior data intact
-            // rather than an empty stream.
+            // Resize the target stream BEFORE writing. If the stream is not expandable and
+            // cannot hold the new payload, SetLength throws NotSupportedException and the
+            // user's stream is left untouched (no partial-write corruption). If SetLength
+            // succeeds, the subsequent Write is guaranteed to fit.
             try
             {
-                this.leaseStateStream.Position = 0;
-                this.leaseStateStream.Write(serializedBytes, 0, serializedBytes.Length);
                 this.leaseStateStream.SetLength(serializedBytes.Length);
-                this.leaseStateStream.Position = 0;
             }
             catch (NotSupportedException ex)
             {
                 throw new InvalidOperationException(
-                    "Failed to persist lease state because the MemoryStream is not expandable. "
-                    + "Use 'new MemoryStream()' instead of 'new MemoryStream(byte[])' to create a resizable stream.",
+                    "Failed to persist lease state because the MemoryStream is not expandable and the serialized "
+                    + "state exceeds its capacity. Use 'new MemoryStream()' or a MemoryStream with sufficient "
+                    + "capacity instead of 'new MemoryStream(byte[])' to create a resizable stream.",
                     ex);
             }
+
+            this.leaseStateStream.Position = 0;
+            this.leaseStateStream.Write(serializedBytes, 0, serializedBytes.Length);
+            this.leaseStateStream.Position = 0;
 
             return Task.CompletedTask;
         }

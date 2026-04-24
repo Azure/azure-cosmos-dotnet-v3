@@ -33,8 +33,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         public abstract DocumentServiceLeaseStore LeaseStore { get; }
 
         /// <summary>
-        /// Called when the processor is stopping. Allows implementations to perform
-        /// cleanup or state persistence (e.g., exporting in-memory lease state).
+        /// Called when the processor is stopping. Implementations may override to perform
+        /// cleanup or state persistence. The default implementation (for Cosmos-backed
+        /// lease stores) is a no-op. Exceptions thrown from this method propagate to the
+        /// caller of <see cref="ChangeFeedProcessor.StopAsync"/>.
         /// </summary>
         public abstract Task ShutdownAsync();
     }

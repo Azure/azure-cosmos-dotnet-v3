@@ -102,22 +102,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 return container;
             }
 
-            leaseStateStream.Position = 0;
-
             List<DocumentServiceLease> leases;
             try
             {
-                using (StreamReader sr = new StreamReader(
-                    leaseStateStream,
-                    encoding: System.Text.Encoding.UTF8,
-                    detectEncodingFromByteOrderMarks: true,
-                    bufferSize: 1024,
-                    leaveOpen: true))
-                using (JsonTextReader jsonReader = new JsonTextReader(sr))
-                {
-                    JsonSerializer serializer = JsonSerializer.Create();
-                    leases = serializer.Deserialize<List<DocumentServiceLease>>(jsonReader);
-                }
+                leases = InMemoryLeaseJsonFormat.Deserialize(leaseStateStream);
             }
             catch (JsonException ex)
             {
@@ -127,18 +115,24 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                     ex);
             }
 
-            if (leases != null)
+            foreach (DocumentServiceLease lease in leases)
             {
-                foreach (DocumentServiceLease lease in leases)
+                if (string.IsNullOrEmpty(lease?.Id))
                 {
-                    if (string.IsNullOrEmpty(lease?.Id))
-                    {
-                        throw new InvalidOperationException("Lease state contains a null or invalid lease entry.");
-                    }
+                    throw new InvalidOperationException("Lease state contains a null or invalid lease entry.");
+                }
 
-                    container[lease.Id] = lease;
+                if (!container.TryAdd(lease.Id, lease))
+                {
+                    throw new InvalidOperationException(
+                        $"Lease state contains duplicate lease id '{lease.Id}'. The persisted stream is corrupt.");
                 }
             }
+
+            // Leave the caller's stream positioned at the start so it is symmetric with
+            // the state produced by ShutdownAsync and the stream remains immediately
+            // re-readable by the caller (e.g., to persist it elsewhere).
+            leaseStateStream.Position = 0;
 
             return container;
         }
