@@ -59,6 +59,9 @@
     <None Update="samplefeedpayload.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="Data\shared_conversations_pkranges.tsv">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\**\*.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>TestJsons\%(RecursiveDir)%(Filename)%(Extension)</Link>
