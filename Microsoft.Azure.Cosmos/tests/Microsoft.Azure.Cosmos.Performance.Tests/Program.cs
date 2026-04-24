@@ -32,11 +32,17 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             List<string> argsList = args != null ? new List<string>(args) : new List<string>();
             bool validateBaseline = argsList.Remove("--BaselineValidation");
             bool verifyFactory = argsList.Remove("--verify-pkrange-factory");
+            bool verifySpike = argsList.Remove("--verify-spike");
             string[] updatedArgs = argsList.ToArray();
 
             if (verifyFactory)
             {
                 return VerifyPkRangeFactory();
+            }
+
+            if (verifySpike)
+            {
+                return VerifySpike().GetAwaiter().GetResult();
             }
 
             using TracerProvider tracebuilder = Sdk.CreateTracerProviderBuilder()
@@ -129,6 +135,103 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             {
                 Console.Error.WriteLine($"FAIL: {ex.GetType().Name}: {ex.Message}");
                 Console.Error.WriteLine(ex.StackTrace);
+                return 1;
+            }
+        }
+        private static async System.Threading.Tasks.Task<int> VerifySpike()
+        {
+            // MockRequestHelper's static ctor reads samplepayload.json from CWD. Make sure CWD == output dir.
+            string exeDir = System.IO.Path.GetDirectoryName(typeof(Program).Assembly.Location);
+            if (!string.IsNullOrEmpty(exeDir))
+            {
+                System.IO.Directory.SetCurrentDirectory(exeDir);
+            }
+
+            // Suppress the VM-metadata IMDS probe — simpler than teaching the handler about 169.254.169.254.
+            Environment.SetEnvironmentVariable("COSMOS_DISABLE_IMDS_ACCESS", "true");
+
+            const string accountName = "spike";
+            const string regionEndpoint = "https://spike-eastus.documents.azure.com";
+            const string databaseName = "bench-db";
+            const string containerName = "bench-coll";
+            const string containerRid = "ccZ1ANCszwk=";
+
+            // Small 3-range routing map — spike only needs to prove the mechanism.
+            List<PartitionKeyRange> ranges = new List<PartitionKeyRange>()
+            {
+                new PartitionKeyRange() { Id = "0", MinInclusive = "", MaxExclusive = "05C1DFFFFFFFFC", ResourceId = "ccZ1ANCszwkDAAAAAAAAUA==" },
+                new PartitionKeyRange() { Id = "1", MinInclusive = "05C1DFFFFFFFFC", MaxExclusive = "AA", ResourceId = "ccZ1ANCszwkDAAAAAAAAUA==" },
+                new PartitionKeyRange() { Id = "2", MinInclusive = "AA", MaxExclusive = "FF", ResourceId = "ccZ1ANCszwkDAAAAAAAAUA==" }
+            };
+
+            Microsoft.Azure.Cosmos.Performance.Tests.Mocks.SpikeHttpHandler handler =
+                new Microsoft.Azure.Cosmos.Performance.Tests.Mocks.SpikeHttpHandler(
+                    accountName, regionEndpoint, databaseName, containerName, containerRid, ranges);
+            Microsoft.Azure.Cosmos.Performance.Tests.Mocks.SpikeStubTransport transport =
+                new Microsoft.Azure.Cosmos.Performance.Tests.Mocks.SpikeStubTransport();
+
+            string fakeKey = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(Guid.NewGuid().ToString()));
+
+            CosmosClientOptions options = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                ConsistencyLevel = Cosmos.ConsistencyLevel.Session,
+                HttpClientFactory = () => new System.Net.Http.HttpClient(handler, disposeHandler: false),
+                TransportClientHandlerFactory = _ => transport,
+            };
+
+            try
+            {
+                using CosmosClient client = new CosmosClient(regionEndpoint + "/", fakeKey, options);
+                Container container = client.GetContainer(databaseName, containerName);
+
+                // "lets-benchmark" is the well-known id that MockRequestHelper.GetStoreResponse maps to 200 OK.
+                using ResponseMessage response = await container.ReadItemStreamAsync(
+                    id: "lets-benchmark",
+                    partitionKey: new Cosmos.PartitionKey("lets-benchmark"));
+
+                Console.WriteLine($"ReadItemStreamAsync -> {(int)response.StatusCode} {response.StatusCode}");
+                Console.WriteLine($"handler hits: account={handler.AccountHits} container={handler.ContainerHits} pkranges200={handler.PkRangesHits200} pkranges304={handler.PkRangesHits304} addresses={handler.AddressesHits} unknown={handler.UnknownUrls.Count}");
+                Console.WriteLine($"transport InvokeStoreAsync calls: {transport.InvokeCount}");
+                Console.WriteLine($"last transport: op={transport.LastOperationType} address='{transport.LastResourceAddress}' status={transport.LastReturnedStatus}");
+
+                if (handler.UnknownUrls.Count > 0)
+                {
+                    Console.Error.WriteLine("FAIL: handler saw unexpected URLs:");
+                    foreach (string u in handler.UnknownUrls) Console.Error.WriteLine("  " + u);
+                    return 1;
+                }
+
+                if (response.StatusCode != System.Net.HttpStatusCode.OK)
+                {
+                    Console.Error.WriteLine($"FAIL: expected 200 OK, got {response.StatusCode}.");
+                    return 1;
+                }
+
+                if (handler.PkRangesHits200 != 1)
+                {
+                    Console.Error.WriteLine($"FAIL: expected exactly one 200 on /pkranges, got {handler.PkRangesHits200}.");
+                    return 1;
+                }
+
+                if (transport.InvokeCount < 1)
+                {
+                    Console.Error.WriteLine("FAIL: transport stub was never invoked — SDK short-circuited before reaching RNTBD.");
+                    return 1;
+                }
+
+                Console.WriteLine("OK: spike succeeded.");
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"FAIL: {ex.GetType().Name}: {ex.Message}");
+                Console.Error.WriteLine($"handler hits: account={handler.AccountHits} container={handler.ContainerHits} pkranges200={handler.PkRangesHits200} pkranges304={handler.PkRangesHits304} addresses={handler.AddressesHits} unknown={handler.UnknownUrls.Count}");
+                if (handler.UnknownUrls.Count > 0)
+                {
+                    foreach (string u in handler.UnknownUrls) Console.Error.WriteLine("  unknown: " + u);
+                }
+                Console.Error.WriteLine(ex.ToString());
                 return 1;
             }
         }
