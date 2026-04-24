@@ -141,6 +141,15 @@ namespace Microsoft.Azure.Cosmos
                     // wrapper/translated exception (matches BackoffRetryUtility.ThrowIfDoneTrying).
                     if (shouldRetry?.ExceptionToThrow != null)
                     {
+                        // Preserve the original stack trace when the policy returns the same
+                        // exception object it caught (mirrors ThrowIfDoneTrying's ReferenceEquals guard).
+#pragma warning disable CDX1000 // DontConvertExceptionToObject
+                        if (object.ReferenceEquals(shouldRetry.ExceptionToThrow, capturedException.SourceException))
+#pragma warning restore CDX1000 // DontConvertExceptionToObject
+                        {
+                            capturedException.Throw();
+                        }
+
                         throw shouldRetry.ExceptionToThrow;
                     }
 

@@ -445,6 +445,69 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         /// <summary>
+        /// Regression guard: if a retry policy always returns <c>ShouldRetry=true</c>, the
+        /// defensive hard cap (<c>MaxAttemptsHardCap</c> = 20) must fire and surface an
+        /// <see cref="InvalidOperationException"/> rather than spinning indefinitely.
+        /// </summary>
+        [TestMethod]
+        [Owner("ntripician")]
+        public async Task ExecuteAsync_ExceedsMaxAttemptsHardCap_ThrowsInvalidOperationException()
+        {
+            Mock<IDocumentClientRetryPolicy> policy = new Mock<IDocumentClientRetryPolicy>();
+            policy
+                .Setup(p => p.ShouldRetryAsync(It.IsAny<Exception>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(ShouldRetryResult.RetryAfter(TimeSpan.Zero));
+
+            int attempts = 0;
+
+            InvalidOperationException thrown = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => MetadataRetryHelper.ExecuteAsync<int>(
+                    (_) =>
+                    {
+                        attempts++;
+                        throw new Exception("always fail");
+                    },
+                    policy.Object,
+                    CancellationToken.None));
+
+            Assert.AreEqual(20, attempts);
+            StringAssert.Contains(thrown.Message, "defensive attempt cap");
+        }
+
+        /// <summary>
+        /// Regression guard: when <c>ShouldRetryAsync</c> itself throws (e.g. a bug in the
+        /// retry policy), the helper must surface the ORIGINAL operation exception rather than
+        /// the policy's internal exception. The policy error is traced but not propagated.
+        /// </summary>
+        [TestMethod]
+        [Owner("ntripician")]
+        public async Task ExecuteAsync_PolicyThrowsDuringShouldRetry_SurfacesOriginalException()
+        {
+            Mock<IDocumentClientRetryPolicy> policy = new Mock<IDocumentClientRetryPolicy>();
+            policy
+                .Setup(p => p.ShouldRetryAsync(It.IsAny<Exception>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new InvalidOperationException("policy internal error"));
+
+            int attempts = 0;
+
+            DocumentClientException thrown = await Assert.ThrowsExceptionAsync<DocumentClientException>(
+                () => MetadataRetryHelper.ExecuteAsync<int>(
+                    (_) =>
+                    {
+                        attempts++;
+                        throw new DocumentClientException(
+                            "original 503",
+                            HttpStatusCode.ServiceUnavailable,
+                            SubStatusCodes.Unknown);
+                    },
+                    policy.Object,
+                    CancellationToken.None));
+
+            Assert.AreEqual(1, attempts);
+            StringAssert.Contains(thrown.Message, "original 503");
+        }
+
+        /// <summary>
         /// Negative grace windows are invalid and must be rejected at the API boundary rather
         /// than silently collapsed to "disabled". This prevents subtle misuse.
         /// </summary>
