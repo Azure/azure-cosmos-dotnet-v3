@@ -33,6 +33,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             bool validateBaseline = argsList.Remove("--BaselineValidation");
             bool verifyFactory = argsList.Remove("--verify-pkrange-factory");
             bool verifySpike = argsList.Remove("--verify-spike");
+            bool verifyStage3 = argsList.Remove("--verify-stage3");
             string[] updatedArgs = argsList.ToArray();
 
             if (verifyFactory)
@@ -43,6 +44,11 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             if (verifySpike)
             {
                 return VerifySpike().GetAwaiter().GetResult();
+            }
+
+            if (verifyStage3)
+            {
+                return VerifyStage3().GetAwaiter().GetResult();
             }
 
             using TracerProvider tracebuilder = Sdk.CreateTracerProviderBuilder()
@@ -164,11 +170,11 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 new PartitionKeyRange() { Id = "2", MinInclusive = "AA", MaxExclusive = "FF", ResourceId = "ccZ1ANCszwkDAAAAAAAAUA==" }
             };
 
-            Microsoft.Azure.Cosmos.Performance.Tests.Mocks.SpikeHttpHandler handler =
-                new Microsoft.Azure.Cosmos.Performance.Tests.Mocks.SpikeHttpHandler(
-                    accountName, regionEndpoint, databaseName, containerName, containerRid, ranges);
-            Microsoft.Azure.Cosmos.Performance.Tests.Mocks.SpikeStubTransport transport =
-                new Microsoft.Azure.Cosmos.Performance.Tests.Mocks.SpikeStubTransport();
+            Microsoft.Azure.Cosmos.Performance.Tests.Mocks.PkRangeMetadataHandler handler =
+                new Microsoft.Azure.Cosmos.Performance.Tests.Mocks.PkRangeMetadataHandler(
+                    accountName, regionEndpoint, databaseName, "ccZ1AA==", containerName, containerRid, ranges);
+            Microsoft.Azure.Cosmos.Performance.Tests.Mocks.DirectStubTransport transport =
+                new Microsoft.Azure.Cosmos.Performance.Tests.Mocks.DirectStubTransport();
 
             string fakeKey = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(Guid.NewGuid().ToString()));
 
@@ -227,6 +233,110 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             {
                 Console.Error.WriteLine($"FAIL: {ex.GetType().Name}: {ex.Message}");
                 Console.Error.WriteLine($"handler hits: account={handler.AccountHits} container={handler.ContainerHits} pkranges200={handler.PkRangesHits200} pkranges304={handler.PkRangesHits304} addresses={handler.AddressesHits} unknown={handler.UnknownUrls.Count}");
+                if (handler.UnknownUrls.Count > 0)
+                {
+                    foreach (string u in handler.UnknownUrls) Console.Error.WriteLine("  unknown: " + u);
+                }
+                Console.Error.WriteLine(ex.ToString());
+                return 1;
+            }
+        }
+
+        private static async System.Threading.Tasks.Task<int> VerifyStage3()
+        {
+            string exeDir = System.IO.Path.GetDirectoryName(typeof(Program).Assembly.Location);
+            if (!string.IsNullOrEmpty(exeDir))
+            {
+                System.IO.Directory.SetCurrentDirectory(exeDir);
+            }
+            Environment.SetEnvironmentVariable("COSMOS_DISABLE_IMDS_ACCESS", "true");
+
+            const string accountName = "stage3";
+            const string regionEndpoint = "https://stage3-eastus.documents.azure.com";
+            const string databaseName = "bench-db";
+            const string databaseRid = "ccZ1AA==";
+            const string containerName = "bench-coll";
+            const string containerRid = "ccZ1ANCszwk=";
+            const string tsvPath = "Data/shared_conversations_pkranges.tsv";
+
+            IReadOnlyList<PartitionKeyRange> ranges = PkRangeRoutingFactory.LoadFromTsv(tsvPath);
+            Console.WriteLine($"loaded {ranges.Count} PKRanges from {tsvPath}");
+
+            Microsoft.Azure.Cosmos.Performance.Tests.Mocks.PkRangeMetadataHandler handler =
+                new Microsoft.Azure.Cosmos.Performance.Tests.Mocks.PkRangeMetadataHandler(
+                    accountName, regionEndpoint, databaseName, databaseRid, containerName, containerRid, ranges);
+            Microsoft.Azure.Cosmos.Performance.Tests.Mocks.DirectStubTransport transport =
+                new Microsoft.Azure.Cosmos.Performance.Tests.Mocks.DirectStubTransport();
+
+            string fakeKey = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(Guid.NewGuid().ToString()));
+            CosmosClientOptions options = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                ConsistencyLevel = Cosmos.ConsistencyLevel.Session,
+                HttpClientFactory = () => new System.Net.Http.HttpClient(handler, disposeHandler: false),
+                TransportClientHandlerFactory = _ => transport,
+            };
+
+            int rc = 0;
+            try
+            {
+                using CosmosClient client = new CosmosClient(regionEndpoint + "/", fakeKey, options);
+
+                AccountProperties account = await client.ReadAccountAsync();
+                Console.WriteLine($"ReadAccountAsync -> id={account.Id}");
+
+                Container container = client.GetContainer(databaseName, containerName);
+
+                IReadOnlyList<FeedRange> feedRanges = await container.GetFeedRangesAsync();
+                Console.WriteLine($"GetFeedRangesAsync -> {feedRanges.Count} ranges");
+
+                using ResponseMessage response = await container.ReadItemStreamAsync(
+                    id: "lets-benchmark",
+                    partitionKey: new Cosmos.PartitionKey("lets-benchmark"));
+                Console.WriteLine($"ReadItemStreamAsync -> {(int)response.StatusCode} {response.StatusCode}");
+
+                Console.WriteLine($"handler hits: account={handler.AccountHits} database={handler.DatabaseHits} container={handler.ContainerHits} pkranges200={handler.PkRangesHits200} pkranges304={handler.PkRangesHits304} addresses={handler.AddressesHits} unknown={handler.UnknownUrls.Count}");
+                Console.WriteLine($"transport InvokeStoreAsync calls: {transport.InvokeCount}");
+
+                if (handler.UnknownUrls.Count > 0)
+                {
+                    Console.Error.WriteLine("FAIL: handler saw unexpected URLs:");
+                    foreach (string u in handler.UnknownUrls) Console.Error.WriteLine("  " + u);
+                    rc = 1;
+                }
+                if (response.StatusCode != System.Net.HttpStatusCode.OK)
+                {
+                    Console.Error.WriteLine($"FAIL: ReadItemStreamAsync expected 200, got {response.StatusCode}");
+                    rc = 1;
+                }
+                if (feedRanges.Count != ranges.Count)
+                {
+                    Console.Error.WriteLine($"FAIL: GetFeedRangesAsync returned {feedRanges.Count}, expected {ranges.Count}.");
+                    rc = 1;
+                }
+                if (handler.PkRangesHits200 != 1)
+                {
+                    Console.Error.WriteLine($"FAIL: expected exactly one 200 on /pkranges, got {handler.PkRangesHits200}");
+                    rc = 1;
+                }
+                if (handler.AddressesHits != 1)
+                {
+                    Console.Error.WriteLine($"FAIL: expected exactly one /addresses hit (single PK routes to one PKR), got {handler.AddressesHits}");
+                    rc = 1;
+                }
+                if (transport.InvokeCount != 1)
+                {
+                    Console.Error.WriteLine($"FAIL: expected exactly one transport invocation, got {transport.InvokeCount}.");
+                    rc = 1;
+                }
+
+                if (rc == 0) Console.WriteLine("OK: stage 3 verification succeeded.");
+                return rc;
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"FAIL: {ex.GetType().Name}: {ex.Message}");
+                Console.Error.WriteLine($"handler hits: account={handler.AccountHits} database={handler.DatabaseHits} container={handler.ContainerHits} pkranges200={handler.PkRangesHits200} pkranges304={handler.PkRangesHits304} addresses={handler.AddressesHits} unknown={handler.UnknownUrls.Count}");
                 if (handler.UnknownUrls.Count > 0)
                 {
                     foreach (string u in handler.UnknownUrls) Console.Error.WriteLine("  unknown: " + u);

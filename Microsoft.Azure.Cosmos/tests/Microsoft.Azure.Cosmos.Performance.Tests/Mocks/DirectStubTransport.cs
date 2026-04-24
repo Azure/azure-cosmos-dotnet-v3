@@ -9,12 +9,12 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Mocks
     using Microsoft.Azure.Documents;
 
     /// <summary>
-    /// Stage 2 spike: minimal <see cref="TransportClient"/> that returns a canned success
-    /// <see cref="StoreResponse"/> for every RNTBD call. Delegates to the existing
-    /// <see cref="MockRequestHelper.GetStoreResponse"/>, which is the same canned-response
-    /// source that <c>MockedItemStreamBenchmark</c> already relies on.
+    /// Minimal <see cref="TransportClient"/> for the Direct-mode end-to-end benchmark harness
+    /// that returns a canned <see cref="StoreResponse"/> for every RNTBD call by delegating to
+    /// <see cref="MockRequestHelper.GetStoreResponse"/> (the same canned-response source used
+    /// by <c>MockedItemStreamBenchmark</c>). No socket / TCP / RNTBD frames involved.
     /// </summary>
-    internal sealed class SpikeStubTransport : TransportClient
+    internal sealed class DirectStubTransport : TransportClient
     {
         public int InvokeCount;
         public string LastResourceAddress;
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Mocks
             if (response == null)
             {
                 throw new InvalidOperationException(
-                    $"SpikeStubTransport: no canned response for {request.OperationType} {request.ResourceType} ({request.ResourceAddress})");
+                    $"DirectStubTransport: no canned response for {request.OperationType} {request.ResourceType} ({request.ResourceAddress})");
             }
 
             return Task.FromResult(response);

@@ -20,45 +20,49 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Mocks
     using Newtonsoft.Json.Linq;
 
     /// <summary>
-    /// Stage 2 spike: intercepts every HTTP request the SDK issues during cold start
-    /// and answers it locally with the same JSON shapes that
-    /// <c>Microsoft.Azure.Cosmos.Tests.MockSetupsHelper</c> uses for its existing
-    /// "real-CosmosClient with faked gateway" tests. No pattern matching on hosts —
-    /// we dispatch by path so the same handler serves the global endpoint, the
-    /// regional endpoints, and the addresses endpoint.
+    /// HTTP handler for the Direct-mode end-to-end benchmark harness. Intercepts every gateway
+    /// request the SDK issues during cold start and serves it locally, using the same JSON shapes
+    /// that <c>Microsoft.Azure.Cosmos.Tests.MockSetupsHelper</c> uses for its production-shaped
+    /// "real-CosmosClient with faked gateway" tests. Dispatches by request path so one handler
+    /// instance serves the global endpoint, the regional endpoints, and the addresses endpoint.
     ///
-    /// Supported routes (fail fast on anything else):
-    ///   GET /                                                → AccountProperties
-    ///   GET /dbs/{dbName}/colls/{collName}                   → ContainerProperties
-    ///   GET /dbs/{dbRid}/colls/{collRid}/pkranges            → feed (200 → 304 → 304 …)
-    ///   GET /addresses?...&$partitionKeyRangeIds={csv}       → echo
+    /// Supported routes (any other route triggers <see cref="InvalidOperationException"/>):
+    ///   GET /                                                 → <see cref="AccountProperties"/>
+    ///   GET /dbs/{dbName}                                     → <see cref="DatabaseProperties"/>
+    ///   GET /dbs/{dbName}/colls/{collName}                    → <see cref="ContainerProperties"/>  (also matches RID)
+    ///   GET /dbs/{dbRid}/colls/{collRid}/pkranges             → /pkranges feed (200 → 304 …)
+    ///   GET //addresses/?$resolveFor=…&$partitionKeyRangeIds= → addresses feed
     /// </summary>
-    internal sealed class SpikeHttpHandler : HttpMessageHandler
+    internal sealed class PkRangeMetadataHandler : HttpMessageHandler
     {
         internal const string PkRangeFeedEtag = "pkr-v1";
 
         private readonly string accountName;
         private readonly string regionEndpoint;
         private readonly string databaseName;
+        private readonly string databaseRid;
         private readonly string containerName;
         private readonly string containerRid;
         private readonly ResourceId containerResourceId;
         private readonly IReadOnlyList<PartitionKeyRange> ranges;
         private readonly string accountJson;
+        private readonly string databaseJson;
         private readonly string containerJson;
         private readonly string pkRangesJson;
 
         public int AccountHits;
+        public int DatabaseHits;
         public int ContainerHits;
         public int PkRangesHits200;
         public int PkRangesHits304;
         public int AddressesHits;
         public readonly List<string> UnknownUrls = new List<string>();
 
-        public SpikeHttpHandler(
+        public PkRangeMetadataHandler(
             string accountName,
             string regionEndpoint,
             string databaseName,
+            string databaseRid,
             string containerName,
             string containerRid,
             IReadOnlyList<PartitionKeyRange> ranges)
@@ -66,12 +70,14 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Mocks
             this.accountName = accountName;
             this.regionEndpoint = regionEndpoint.TrimEnd('/');
             this.databaseName = databaseName;
+            this.databaseRid = databaseRid;
             this.containerName = containerName;
             this.containerRid = containerRid;
             this.containerResourceId = ResourceId.Parse(containerRid);
             this.ranges = ranges;
 
             this.accountJson = BuildAccountJson(accountName, this.regionEndpoint);
+            this.databaseJson = BuildDatabaseJson(databaseRid, databaseName);
             this.containerJson = BuildContainerJson(containerRid, containerName);
             this.pkRangesJson = BuildPkRangesJson(this.containerResourceId, ranges);
         }
@@ -88,8 +94,12 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Mocks
                 return Task.FromResult(Ok(this.accountJson));
             }
 
-            // 2) Addresses: path contains /addresses
-            if (path.IndexOf("/addresses", StringComparison.OrdinalIgnoreCase) >= 0)
+            // 2) Addresses: path contains "addresses" AND query has $resolveFor.
+            //    The SDK emits a leading double-slash (//addresses/), so a strict segment-count
+            //    check would mis-match; instead we require both a path token and the resolveFor
+            //    query parameter to avoid colliding with future container/document routes.
+            if (path.IndexOf("addresses", StringComparison.OrdinalIgnoreCase) >= 0
+                && query.IndexOf("$resolveFor", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 Interlocked.Increment(ref this.AddressesHits);
                 return Task.FromResult(Ok(this.BuildAddressesResponse(query)));
@@ -113,11 +123,18 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Mocks
                 return Task.FromResult(ok);
             }
 
-            // 4) Container metadata: /dbs/{x}/colls/{y}  (no trailing /pkranges, /docs, etc.)
+            // 4) Container metadata: /dbs/{x}/colls/{y}
             if (IsContainerPath(path))
             {
                 Interlocked.Increment(ref this.ContainerHits);
                 return Task.FromResult(Ok(this.containerJson));
+            }
+
+            // 5) Database metadata: /dbs/{x}
+            if (IsDatabasePath(path))
+            {
+                Interlocked.Increment(ref this.DatabaseHits);
+                return Task.FromResult(Ok(this.databaseJson));
             }
 
             // Unknown — capture and fail.
@@ -127,16 +144,22 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Mocks
             }
 
             throw new InvalidOperationException(
-                $"SpikeHttpHandler: unexpected URL {request.Method} {request.RequestUri}");
+                $"PkRangeMetadataHandler: unexpected URL {request.Method} {request.RequestUri}");
         }
 
         private static bool IsContainerPath(string absolutePath)
         {
-            // /dbs/{db}/colls/{coll}   (4 segments after leading slash) — no /docs or /pkranges
             string[] parts = absolutePath.Trim('/').Split('/');
             return parts.Length == 4
                 && string.Equals(parts[0], "dbs", StringComparison.OrdinalIgnoreCase)
                 && string.Equals(parts[2], "colls", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsDatabasePath(string absolutePath)
+        {
+            string[] parts = absolutePath.Trim('/').Split('/');
+            return parts.Length == 2
+                && string.Equals(parts[0], "dbs", StringComparison.OrdinalIgnoreCase);
         }
 
         private static HttpResponseMessage Ok(string json)
@@ -152,7 +175,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Mocks
             NameValueCollection qs = System.Web.HttpUtility.ParseQueryString(rawQuery ?? string.Empty);
             string csv = qs["$partitionKeyRangeIds"] ?? string.Empty;
             string[] rangeIds = csv.Length == 0
-                ? Array.Empty<string>()
+                ? new[] { "M" } // master partition: SDK didn't ask for specific PKRs
                 : csv.Split(',');
 
             List<Address> addresses = new List<Address>();
@@ -216,6 +239,21 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Mocks
                 }
             };
             return JsonConvert.SerializeObject(account);
+        }
+
+        private static string BuildDatabaseJson(string databaseRid, string databaseName)
+        {
+            JObject db = new JObject
+            {
+                { "id", databaseName },
+                { "_rid", databaseRid },
+                { "_self", $"dbs/{databaseRid}/" },
+                { "_etag", "\"00000000-0000-0000-0000-000000000000\"" },
+                { "_colls", "colls/" },
+                { "_users", "users/" },
+                { "_ts", 0 },
+            };
+            return db.ToString(Formatting.None);
         }
 
         private static string BuildContainerJson(string containerRid, string containerName)
