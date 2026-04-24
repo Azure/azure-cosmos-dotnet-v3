@@ -259,7 +259,9 @@ namespace Microsoft.Azure.Cosmos
         /// the lease state can be trimmed via <see cref="MemoryStream.SetLength(long)"/> when a new snapshot is smaller
         /// than the previously persisted one. To integrate with <see cref="System.IO.Stream"/>-based persistence
         /// (e.g., a file or blob), call <see cref="MemoryStream.ToArray"/> after <see cref="ChangeFeedProcessor.StopAsync"/>
-        /// and rehydrate by passing a new <see cref="MemoryStream"/> seeded with those bytes on restore.
+        /// to obtain the persisted bytes; create an expandable
+        /// <see cref="MemoryStream"/> (<c>new MemoryStream()</c>), write the bytes into it, set
+        /// <see cref="System.IO.Stream.Position"/> back to 0, and pass it to this method.
         /// </param>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="leaseState"/> is null.</exception>
