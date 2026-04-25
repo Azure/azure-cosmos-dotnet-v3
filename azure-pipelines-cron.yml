@@ -8,6 +8,7 @@ schedules:
   displayName: Cosmos Cron
   branches:
     include: 
+    - main
     - master
   always: true # Run always irrespective of changes
 
