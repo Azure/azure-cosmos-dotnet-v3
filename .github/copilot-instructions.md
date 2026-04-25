@@ -40,7 +40,7 @@ Purpose: quick, actionable context so an AI coding assistant can be immediately 
   - `Microsoft.Azure.Cosmos.Samples/` — minimal runnable samples for usage patterns
 
 - **How AI should produce code/changes here**:
-  - **🚫 HARD RULE: NEVER push directly to `master` — NO EXCEPTIONS.** Always create a feature branch and submit a pull request. This rule cannot be overridden.
+  - **🚫 HARD RULE: NEVER push directly to `main` — NO EXCEPTIONS.** Always create a feature branch and submit a pull request. This rule cannot be overridden.
   - **Branch naming**: Always use the format `users/<user-name>/feature-name` (e.g. `users/ntripician/fix-retry-logic`). Do not use other conventions like `feature/`, `fix/`, or `dev/`.
   - **PR title format**: All pull request titles **must** match the CI lint regex: `(\[Internal\]|\[v4\] )?.{3}.+: (Adds|Fixes|Refactors|Removes) .{3}.+`. The format is `[Optional Prefix] Category: Verb Description` where the verb is one of `Adds`, `Fixes`, `Refactors`, or `Removes`. Optional prefixes are `[Internal]` (for PRs with no customer impact) or `[v4]` (for v4-specific changes). Examples:
     - `Diagnostics: Adds GetElapsedClientLatency to CosmosDiagnostics`
@@ -64,8 +64,8 @@ Purpose: quick, actionable context so an AI coding assistant can be immediately 
   - Three modes: **Minor Mode** (full GA + Preview release), **Hotfix Mode** (cherry-pick patch release on any previous version), and **Add Missed PRs** (add PRs that were missed in a previous changelog).
   - In VS Code Copilot Chat: `@ReleaseCopilotAgent start minor`, `@ReleaseCopilotAgent start hotfix`, or `@ReleaseCopilotAgent add missed PRs`.
   - In the Copilot CLI: describe the task naturally (e.g., "I want to start a minor release", "start hotfix", or "I need to add missed PRs to a release"). The agent instructions are loaded automatically via this file.
-  - **MsdataDirectSyncAgent** (`.github/agents/msdata-direct-sync-agent.agent.md`) — Orchestrates syncing the msdata/direct branch with the latest v3 master and msdata direct codebase.
+  - **MsdataDirectSyncAgent** (`.github/agents/msdata-direct-sync-agent.agent.md`) — Orchestrates syncing the msdata/direct branch with the latest v3 main and msdata direct codebase.
   - In VS Code Copilot Chat: `@MsdataDirectSyncAgent sync msdata/direct`.
-  - In the Copilot CLI: describe the task naturally (e.g., "sync the msdata/direct branch with master").
+  - In the Copilot CLI: describe the task naturally (e.g., "sync the msdata/direct branch with main").
 
 If anything here is unclear or you want the file to include additional examples (specific files, common refactor targets, or typical PR reviewers), tell me what to add and I will iterate.
