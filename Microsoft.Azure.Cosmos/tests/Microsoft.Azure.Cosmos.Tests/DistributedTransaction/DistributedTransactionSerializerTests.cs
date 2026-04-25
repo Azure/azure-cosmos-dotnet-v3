@@ -324,6 +324,59 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "UpsertItemStream operation must include a 'resourceBody' field.");
         }
 
+        // IfNoneMatchEtag for ReadItem
+
+        [TestMethod]
+        [Description("ReadItem with IfNoneMatchEtag set must serialize an 'etag' field in the operation JSON.")]
+        public async Task ReadItem_WithIfNoneMatchEtag_SerializesEtagField()
+        {
+            const string etag = "\"test-etag\"";
+            const string itemId = "etag-read-id";
+
+            string capturedJson = await this.CaptureReadCommitBodyAsync(tx =>
+                tx.ReadItem(Database, Container, new PartitionKey("pk"), itemId,
+                    new DistributedTransactionRequestOptions { IfNoneMatchEtag = etag }));
+
+            using JsonDocument doc = JsonDocument.Parse(capturedJson);
+            JsonElement op = doc.RootElement.GetProperty("operations")[0];
+
+            Assert.IsTrue(op.TryGetProperty("etag", out JsonElement etagElement),
+                "Read operation with IfNoneMatchEtag must include an 'etag' field.");
+            Assert.AreEqual(etag, etagElement.GetString());
+        }
+
+        [TestMethod]
+        [Description("ReadItem without any etag option must not include an 'etag' field in the serialized JSON.")]
+        public async Task ReadItem_WithoutEtag_DoesNotIncludeEtagField()
+        {
+            string capturedJson = await this.CaptureReadCommitBodyAsync(tx =>
+                tx.ReadItem(Database, Container, new PartitionKey("pk"), "read-no-etag"));
+
+            using JsonDocument doc = JsonDocument.Parse(capturedJson);
+            JsonElement op = doc.RootElement.GetProperty("operations")[0];
+
+            Assert.IsFalse(op.TryGetProperty("etag", out _),
+                "Read operation without etag options must NOT include an 'etag' field.");
+        }
+
+        [TestMethod]
+        [Description("ReadItem with IfMatchEtag (write-side etag) must NOT serialize an 'etag' field; reads use IfNoneMatchEtag only.")]
+        public async Task ReadItem_WithIfMatchEtag_DoesNotSerializeEtagField()
+        {
+            const string etag = "\"write-etag\"";
+            const string itemId = "read-ifmatch-id";
+
+            string capturedJson = await this.CaptureReadCommitBodyAsync(tx =>
+                tx.ReadItem(Database, Container, new PartitionKey("pk"), itemId,
+                    new DistributedTransactionRequestOptions { IfMatchEtag = etag }));
+
+            using JsonDocument doc = JsonDocument.Parse(capturedJson);
+            JsonElement op = doc.RootElement.GetProperty("operations")[0];
+
+            Assert.IsFalse(op.TryGetProperty("etag", out _),
+                "Read operation must not use IfMatchEtag; only IfNoneMatchEtag is serialized for reads.");
+        }
+
         // IfMatchEtag
 
         [TestMethod]
@@ -483,6 +536,43 @@ namespace Microsoft.Azure.Cosmos.Tests
             return capturedJson;
         }
 
+        private async Task<string> CaptureReadCommitBodyAsync(
+            Func<DistributedReadTransaction, DistributedReadTransaction> buildTransaction,
+            int expectedResultCount = 1)
+        {
+            string capturedJson = null;
+
+            Mock<CosmosClientContext> contextMock = this.BuildContextSetup();
+            contextMock
+                .Setup(c => c.ProcessResourceOperationStreamAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerInternal>(),
+                    It.IsAny<PartitionKey?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns<string, ResourceType, OperationType, RequestOptions, ContainerInternal, PartitionKey?, string, Stream, Action<RequestMessage>, ITrace, CancellationToken>(
+                    (uri, resType, opType, opts, container, pk, itemId, stream, enricher, trace, ct) =>
+                    {
+                        using MemoryStream ms = new MemoryStream();
+                        stream.CopyTo(ms);
+                        capturedJson = Encoding.UTF8.GetString(ms.ToArray());
+                        return Task.FromResult(this.BuildSuccessResponse(expectedResultCount));
+                    });
+
+            DistributedReadTransaction tx = new DistributedReadTransactionCore(contextMock.Object);
+            await buildTransaction(tx).CommitTransactionAsync(CancellationToken.None);
+
+            Assert.IsNotNull(capturedJson, "The commit body was not captured — the mock was not invoked.");
+            return capturedJson;
+        }
+
+        
         private Mock<CosmosClientContext> BuildContextSetup()
         {
             ContainerProperties containerProps = ContainerProperties.CreateWithResourceId("ccZ1ANCszwk=");
