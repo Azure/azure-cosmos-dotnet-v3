@@ -67,6 +67,14 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly Lazy<ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>> PartitionKeyRangeToLocationForReadAndWrite = new (
             () => new ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>());
 
+#if !INTERNAL
+        /// <summary>
+        /// A boolean flag indicating whether hub region processing is enabled. Read once from the
+        /// environment variable at initialization time to avoid repeated env var lookups per request.
+        /// </summary>
+        private readonly bool isHubRegionProcessingEnabled;
+#endif
+
         /// <summary>
         /// An integer indicating how many times the dispose was invoked.
         /// </summary>
@@ -109,6 +117,9 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.isPartitionLevelCircuitBreakerEnabled = isPartitionLevelCircuitBreakerEnabled ? 1 : 0;
             this.isThinClientEnabled = isThinClientEnabled;
             this.globalEndpointManager = globalEndpointManager ?? throw new ArgumentNullException(nameof(globalEndpointManager));
+#if !INTERNAL
+            this.isHubRegionProcessingEnabled = ConfigurationManager.IsHubRegionProcessingEnabled();
+#endif
             this.InitializeAndStartCircuitBreakerFailbackBackgroundRefresh();
         }
 
@@ -121,11 +132,13 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         /// <inheritdoc/>
         public override bool TryAddPartitionLevelLocationOverride(
-            DocumentServiceRequest request)
+            DocumentServiceRequest request,
+            bool checkHubRegionOverrideInCache = false)
         {
-            if (!this.IsRequestEligibleForPartitionFailover(
+            if (!this.IsRequestEligibleForPartitionOrHubRegionFailover(
                 request,
                 shouldValidateFailedLocation: false,
+                checkHubRegionOverrideInCache,
                 out PartitionKeyRange? partitionKeyRange,
                 out Uri? _))
             {
@@ -137,19 +150,21 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return false;
             }
 
-            if (this.IsRequestEligibleForPartitionLevelCircuitBreaker(request))
+            if (checkHubRegionOverrideInCache || this.IsRequestEligibleForPerPartitionAutomaticFailover(request))
             {
                 return this.TryRouteRequestForPartitionLevelOverride(
                     partitionKeyRange,
                     request,
-                    this.PartitionKeyRangeToLocationForReadAndWrite);
-            }
-            else if (this.IsRequestEligibleForPerPartitionAutomaticFailover(request))
-            {
-                return this.TryRouteRequestForPartitionLevelOverride(
-                    partitionKeyRange,
-                    request,
+                    isHubRegionDiscoveryActive: checkHubRegionOverrideInCache,
                     this.PartitionKeyRangeToLocationForWrite);
+            }
+            else if (this.IsRequestEligibleForPartitionLevelCircuitBreaker(request))
+            {
+                return this.TryRouteRequestForPartitionLevelOverride(
+                    partitionKeyRange,
+                    request,
+                    isHubRegionDiscoveryActive: false,
+                    this.PartitionKeyRangeToLocationForReadAndWrite);
             }
 
             return false;
@@ -159,9 +174,11 @@ namespace Microsoft.Azure.Cosmos.Routing
         public override bool TryMarkEndpointUnavailableForPartitionKeyRange(
             DocumentServiceRequest request)
         {
-            if (!this.IsRequestEligibleForPartitionFailover(
+            bool isHubRegionDiscoveryActive = GlobalPartitionEndpointManagerCore.IsHubRegionRoutingActive(request);
+            if (!this.IsRequestEligibleForPartitionOrHubRegionFailover(
                 request,
                 shouldValidateFailedLocation: true,
+                checkHubRegionOverrideInCache: isHubRegionDiscoveryActive,
                 out PartitionKeyRange? partitionKeyRange,
                 out Uri? failedLocation))
             {
@@ -186,9 +203,10 @@ namespace Microsoft.Azure.Cosmos.Routing
                     failedLocation,
                     nextLocations,
                     request,
-                    this.PartitionKeyRangeToLocationForReadAndWrite);
+                    this.PartitionKeyRangeToLocationForReadAndWrite,
+                    isHubRegionDiscoveryActive);
             }
-            else if (this.IsRequestEligibleForPerPartitionAutomaticFailover(request))
+            else if (isHubRegionDiscoveryActive || this.IsRequestEligibleForPerPartitionAutomaticFailover(request))
             {
                 // For any single master write accounts, the next locations to fail over will be the read regions configured at the account level.
                 ReadOnlyCollection<Uri> nextLocations = this.isThinClientEnabled && GatewayStoreModel.IsOperationSupportedByThinClient(request)
@@ -200,7 +218,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                     failedLocation,
                     nextLocations,
                     request,
-                    this.PartitionKeyRangeToLocationForWrite);
+                    this.PartitionKeyRangeToLocationForWrite,
+                    isHubRegionDiscoveryActive);
             }
 
             DefaultTrace.TraceInformation("Partition level override was skipped since the request did not met the minimum requirements.");
@@ -211,9 +230,10 @@ namespace Microsoft.Azure.Cosmos.Routing
         public override bool IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(
             DocumentServiceRequest request)
         {
-            if (!this.IsRequestEligibleForPartitionFailover(
+            if (!this.IsRequestEligibleForPartitionOrHubRegionFailover(
                 request,
                 shouldValidateFailedLocation: true,
+                checkHubRegionOverrideInCache: false,
                 out PartitionKeyRange? partitionKeyRange,
                 out Uri? failedLocation))
             {
@@ -268,7 +288,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         /// <summary>
         /// Determines if a request is eligible for partition-level circuit breaker.
-        /// This method checks if the request is a read-only request, if partition-level circuit breaker is enabled,
+        /// This method checks if the request is a read-only request, if partition-level circuit breaker is enabled, hub region routing is not active
         /// and if the partition key range location cache indicates that the partition can fail over based on the number of request failures.
         /// </summary>
         /// <returns>
@@ -278,6 +298,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             DocumentServiceRequest request)
         {
             return this.isPartitionLevelCircuitBreakerEnabled == 1
+                && !GlobalPartitionEndpointManagerCore.IsHubRegionRoutingActive(request)
                 && (request.IsReadOnlyRequest
                 || (!request.IsReadOnlyRequest && this.globalEndpointManager.CanSupportMultipleWriteLocations(request.ResourceType, request.OperationType)));
         }
@@ -308,6 +329,14 @@ namespace Microsoft.Azure.Cosmos.Routing
             return this.isPartitionLevelCircuitBreakerEnabled == 1;
         }
 
+#if !INTERNAL
+        /// <inheritdoc/>
+        public override bool IsHubRegionProcessingEnabled()
+        {
+            return this.isHubRegionProcessingEnabled;
+        }
+#endif
+
         /// <summary>
         /// Disposes the <see cref="GlobalPartitionEndpointManagerCore"/> class.
         /// Usage of the disposeCounter was used to make the operation atomic.
@@ -326,13 +355,15 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// </summary>
         /// <param name="request">An instance of the <see cref="DocumentServiceRequest"/>.</param>
         /// <param name="shouldValidateFailedLocation">A boolean flag indicating whether to validate the failed location.</param>
+        /// <param name="checkHubRegionOverrideInCache">A boolean flag indicating whether to check the hub region override in the cache.</param>
         /// <param name="partitionKeyRange">The resolved <see cref="PartitionKeyRange"/> for the request.</param>
         /// <param name="failedLocation">The failed location <see cref="Uri"/>, if applicable.</param>
         /// <returns>True if the request is valid for partition failover, otherwise false.</returns>
         /// <exception cref="ArgumentNullException">Thrown when the request is null.</exception>
-        private bool IsRequestEligibleForPartitionFailover(
+        private bool IsRequestEligibleForPartitionOrHubRegionFailover(
             DocumentServiceRequest request,
             bool shouldValidateFailedLocation,
+            bool checkHubRegionOverrideInCache,
             out PartitionKeyRange? partitionKeyRange,
             out Uri? failedLocation)
         {
@@ -340,7 +371,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             failedLocation = default;
 
             if (!this.IsPartitionLevelAutomaticFailoverEnabled()
-                && !this.IsPartitionLevelCircuitBreakerEnabled())
+               && !this.IsPartitionLevelCircuitBreakerEnabled()
+               && !checkHubRegionOverrideInCache)
             {
                 return false;
             }
@@ -543,11 +575,13 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// </summary>
         /// <param name="partitionKeyRange">The partition key range for which the request is being routed.</param>
         /// <param name="request">The document service request to be routed.</param>
+        /// <param name="isHubRegionDiscoveryActive">A boolean flag indicating whether hub region discovery is active.</param>
         /// <param name="partitionKeyRangeToLocationMapping">The mapping of partition key ranges to their failover locations.</param>
         /// <returns>True if the request was successfully routed to a partition level override location, otherwise false.</returns>
         private bool TryRouteRequestForPartitionLevelOverride(
             PartitionKeyRange partitionKeyRange,
             DocumentServiceRequest request,
+            bool isHubRegionDiscoveryActive,
             Lazy<ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>> partitionKeyRangeToLocationMapping)
         {
             if (partitionKeyRangeToLocationMapping.IsValueCreated
@@ -555,13 +589,14 @@ namespace Microsoft.Azure.Cosmos.Routing
                     partitionKeyRange,
                     out PartitionKeyRangeFailoverInfo partitionKeyRangeFailover))
             {
-                if (this.IsRequestEligibleForPartitionLevelCircuitBreaker(request)
+                if (!isHubRegionDiscoveryActive
+                    && this.IsRequestEligibleForPartitionLevelCircuitBreaker(request)
                     && !partitionKeyRangeFailover.CanCircuitBreakerTriggerPartitionFailOver(request.IsReadOnlyRequest))
                 {
                     return false;
                 }
 
-                string triggeredBy = this.isPartitionLevelAutomaticFailoverEnabled == 1 ? "Automatic Failover" : "Circuit Breaker";
+                string triggeredBy = isHubRegionDiscoveryActive ? "Hub Region Discovery" : this.isPartitionLevelAutomaticFailoverEnabled == 1 ? "Automatic Failover" : "Circuit Breaker";
                 DefaultTrace.TraceInformation("Attempting to route request for partition level override triggered by {0}, for operation type: {1}. URI: {2}, PartitionKeyRange: {3}",
                     triggeredBy,
                     request.OperationType,
@@ -586,15 +621,17 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <param name="nextLocations">A read-only collection of URIs representing the next available locations.</param>
         /// <param name="request">The document service request being routed.</param>
         /// <param name="partitionKeyRangeToLocationMapping">The mapping of partition key ranges to their failover information.</param>
+        /// <param name="isHubRegionDiscoveryActive">Indicates whether the hub region discovery is active.</param>
         /// <returns>True if the failover information was successfully updated and the request was routed to a new location, otherwise false.</returns>
         private bool TryAddOrUpdatePartitionFailoverInfoAndMoveToNextLocation(
             PartitionKeyRange partitionKeyRange,
             Uri failedLocation,
             ReadOnlyCollection<Uri> nextLocations,
             DocumentServiceRequest request,
-            Lazy<ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>> partitionKeyRangeToLocationMapping)
+            Lazy<ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>> partitionKeyRangeToLocationMapping,
+            bool isHubRegionDiscoveryActive)
         {
-            string triggeredBy = this.isPartitionLevelAutomaticFailoverEnabled == 1 ? "Automatic Failover" : "Circuit Breaker";
+            string triggeredBy = isHubRegionDiscoveryActive ? "Hub Region Discovery" : this.isPartitionLevelAutomaticFailoverEnabled == 1 ? "Automatic Failover" : "Circuit Breaker";
             PartitionKeyRangeFailoverInfo partionFailover = partitionKeyRangeToLocationMapping.Value.GetOrAdd(
                 partitionKeyRange,
                 (_) => new PartitionKeyRangeFailoverInfo(
@@ -625,6 +662,20 @@ namespace Microsoft.Azure.Cosmos.Routing
             partitionKeyRangeToLocationMapping.Value.TryRemove(partitionKeyRange, out PartitionKeyRangeFailoverInfo _);
 
             return false;
+        }
+
+        /// <summary>
+        /// Checks whether the request has the hub region processing header,
+        /// indicating it is in the hub region discovery flow (after 2× 404/1002).
+        /// </summary>
+        public static bool IsHubRegionRoutingActive(
+            DocumentServiceRequest request)
+        {
+            return request.IsReadOnlyRequest
+                && string.Equals(
+                    request?.Headers?[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion],
+                    bool.TrueString,
+                    StringComparison.OrdinalIgnoreCase);
         }
 
         internal sealed class PartitionKeyRangeFailoverInfo
