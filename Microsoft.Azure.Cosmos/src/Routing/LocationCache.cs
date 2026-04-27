@@ -168,20 +168,15 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// For the defaultEndPoint, we will return the first available write location.
         /// Returns null, in other cases.
         /// </summary>
-        /// <remarks>
-        /// Today we return null for defaultEndPoint if multiple write locations can be used.
-        /// This needs to be modifed to figure out proper location in such case.
-        /// </remarks>
         public string GetLocation(Uri endpoint)
         {
             string location = this.locationInfo.AvailableWriteEndpointByLocation.FirstOrDefault(uri => uri.Value == endpoint).Key ?? this.locationInfo.AvailableReadEndpointByLocation.FirstOrDefault(uri => uri.Value == endpoint).Key;
 
-            if (location == null && endpoint == this.defaultEndpoint && !this.CanUseMultipleWriteLocations())
+            if (location == null
+                && endpoint == this.defaultEndpoint
+                && this.locationInfo.AvailableWriteLocations.Count > 0)
             {
-                if (this.locationInfo.AvailableWriteEndpointByLocation.Any())
-                {
-                    return this.locationInfo.AvailableWriteEndpointByLocation.First().Key;
-                }
+                return this.locationInfo.AvailableWriteLocations[0];
             }
 
             return location;
@@ -189,7 +184,8 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         /// <summary>
         /// Set region name for a location if present in the locationcache otherwise set region name as null.
-        /// If endpoint's hostname is same as default endpoint hostname, set regionName as null.
+        /// For multi-master accounts, if endpoint's hostname is same as default endpoint hostname,
+        /// set regionName to the first available write region.
         /// </summary>
         /// <param name="endpoint"></param>
         /// <param name="regionName"></param>
@@ -203,12 +199,17 @@ namespace Microsoft.Azure.Cosmos.Routing
                     UriFormat.SafeUnescaped, 
                     StringComparison.OrdinalIgnoreCase) == 0)
             {
-                regionName = null;
-                return false;
+                // Use account-level enableMultipleWriteLocations (not CanUseMultipleWriteLocations which also
+                // requires client opt-in) because diagnostics should resolve the region regardless of whether
+                // the client uses multi-write. The default endpoint routes to the first write region server-side.
+                regionName = this.enableMultipleWriteLocations
+                    ? this.GetLocation(this.defaultEndpoint)
+                    : null;
+                return regionName != null;
             }
 
             regionName = this.GetLocation(endpoint);
-            return true;
+            return regionName != null;
         }
 
         /// <summary>
