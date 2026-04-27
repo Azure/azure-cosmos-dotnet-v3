@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             TransactionalBatchOperationResult result = await executor.AddAsync(itemBatchOperation, NoOpTrace.Singleton);
 
             Mock.Get(mockContainer.Object)
-                .Verify(x => x.GetCachedContainerPropertiesAsync(It.IsAny<bool>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+                .Verify(x => x.GetRoutingMapAsync(It.IsAny<CancellationToken>()), Times.Exactly(2));
             Mock.Get(mockedContext.Object)
                 .Verify(c => c.ProcessResourceOperationStreamAsync(
                     It.IsAny<string>(),
@@ -126,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             TransactionalBatchOperationResult result = await executor.AddAsync(itemBatchOperation, NoOpTrace.Singleton);
 
             Mock.Get(mockContainer.Object)
-                .Verify(x => x.GetCachedContainerPropertiesAsync(It.IsAny<bool>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+                .Verify(x => x.GetRoutingMapAsync(It.IsAny<CancellationToken>()), Times.Exactly(2));
             Mock.Get(mockedContext.Object)
                 .Verify(c => c.ProcessResourceOperationStreamAsync(
                     It.IsAny<string>(),
@@ -184,7 +184,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             TransactionalBatchOperationResult result = await executor.AddAsync(itemBatchOperation, NoOpTrace.Singleton);
 
             Mock.Get(mockContainer.Object)
-                .Verify(x => x.GetCachedContainerPropertiesAsync(It.IsAny<bool>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+                .Verify(x => x.GetRoutingMapAsync(It.IsAny<CancellationToken>()), Times.Exactly(2));
             Mock.Get(mockedContext.Object)
                 .Verify(c => c.ProcessResourceOperationStreamAsync(
                     It.IsAny<string>(),
@@ -241,7 +241,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             TransactionalBatchOperationResult result = await executor.AddAsync(itemBatchOperation, NoOpTrace.Singleton);
 
             Mock.Get(mockContainer.Object)
-                .Verify(x => x.GetCachedContainerPropertiesAsync(It.IsAny<bool>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()), Times.Once);
+                .Verify(x => x.GetRoutingMapAsync(It.IsAny<CancellationToken>()), Times.Once);
             Mock.Get(mockedContext.Object)
                 .Verify(c => c.ProcessResourceOperationStreamAsync(
                     It.IsAny<string>(),

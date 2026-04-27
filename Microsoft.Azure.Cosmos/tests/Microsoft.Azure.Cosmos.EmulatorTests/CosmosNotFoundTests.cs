@@ -99,13 +99,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         /// <summary>
         /// Validates that 404 with substatus 0 is returned when an item doesn't exist,
-        /// and 404 with substatus 1003 is returned when the container doesn't exist (Direct mode only).
+        /// and 404 with substatus 1003 is returned when the container doesn't exist.
         /// This allows disambiguation between item not found vs owner resource (container/database) not found.
         /// 
         /// This test uses streaming APIs (ReadItemStreamAsync).
         /// 
-        /// Note: Gateway mode has a known limitation where it cannot always distinguish between 
-        /// item-not-found and container-not-found scenarios. Direct mode properly sets substatus 1003.
+        /// Both Gateway and Direct mode properly return substatus 1003 when container doesn't exist.
         /// </summary>
         [TestMethod]
         [DataRow(true, DisplayName = "Gateway mode")]
@@ -130,8 +129,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 "SubStatusCode should be 0 when item doesn't exist in an existing container");
 
             // Test 2: Container doesn't exist
-            // Direct mode: should return 404 with substatus 1003
-            // Gateway mode: returns 404 with substatus 0 (known limitation)
+            // Both Direct and Gateway mode should return 404 with substatus 1003
             Container nonExistentContainer = db.GetContainer(DoesNotExist);
             response = await nonExistentContainer.ReadItemStreamAsync(
                 partitionKey: new Cosmos.PartitionKey(DoesNotExist), 
@@ -139,19 +137,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             
             Assert.IsNotNull(response);
             Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
-            
-            if (!useGateway)
-            {
-                // Direct mode can distinguish container-not-found from item-not-found
-                Assert.AreEqual(1003, (int)response.Headers.SubStatusCode, 
-                    "SubStatusCode should be 1003 when container doesn't exist (owner resource not found)");
-            }
-            else
-            {
-                // Gateway mode limitation: Cannot always distinguish, returns substatus 0
-                Assert.AreEqual(0, (int)response.Headers.SubStatusCode, 
-                    "Gateway mode returns substatus 0 (known limitation - cannot distinguish container-not-found from item-not-found)");
-            }
+            Assert.AreEqual(1003, (int)response.Headers.SubStatusCode, 
+                "SubStatusCode should be 1003 when container doesn't exist (owner resource not found)");
 
             // Test 3: Database doesn't exist
             // Both Direct and Gateway mode should return 404 with substatus 1003 
@@ -177,8 +164,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// 
         /// This test uses non-streaming/typed APIs (ReadItemAsync).
         /// 
-        /// Note: Gateway mode has a known limitation where it cannot always distinguish between 
-        /// item-not-found and container-not-found scenarios. Direct mode properly sets substatus 1003.
+        /// Both Gateway and Direct mode properly return substatus 1003 when container doesn't exist.
         /// </summary>
         [TestMethod]
         [DataRow(true, DisplayName = "Gateway mode")]
@@ -207,8 +193,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             // Test 2: Container doesn't exist
-            // Direct mode: CosmosException should have substatus 1003
-            // Gateway mode: CosmosException has substatus 0 (known limitation)
+            // Both Direct and Gateway mode should return substatus 1003
             Container nonExistentContainer = db.GetContainer(DoesNotExist);
             try
             {
@@ -219,18 +204,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
             {
-                if (!useGateway)
-                {
-                    // Direct mode can distinguish container-not-found from item-not-found
-                    Assert.AreEqual(1003, ex.SubStatusCode, 
-                        "SubStatusCode should be 1003 when container doesn't exist (owner resource not found)");
-                }
-                else
-                {
-                    // Gateway mode limitation: Cannot always distinguish, returns substatus 0
-                    Assert.AreEqual(0, ex.SubStatusCode, 
-                        "Gateway mode returns substatus 0 (known limitation - cannot distinguish container-not-found from item-not-found)");
-                }
+                Assert.AreEqual(1003, ex.SubStatusCode, 
+                    "SubStatusCode should be 1003 when container doesn't exist (owner resource not found)");
             }
 
             // Test 3: Database doesn't exist
