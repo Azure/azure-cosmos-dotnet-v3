@@ -139,8 +139,16 @@ namespace Microsoft.Azure.Cosmos
                 {
                     // Honor ShouldRetryResult.ExceptionToThrow if the policy has specified a
                     // wrapper/translated exception (matches BackoffRetryUtility.ThrowIfDoneTrying).
+                    // When the policy hands back the same reference as the original exception,
+                    // rethrow via the captured ExceptionDispatchInfo so the original stack trace
+                    // is preserved (mirrors ShouldRetryResult.ThrowIfDoneTrying).
                     if (shouldRetry?.ExceptionToThrow != null)
                     {
+                        if (shouldRetry.ExceptionToThrow == capturedException.SourceException)
+                        {
+                            capturedException.Throw();
+                        }
+
                         throw shouldRetry.ExceptionToThrow;
                     }
 

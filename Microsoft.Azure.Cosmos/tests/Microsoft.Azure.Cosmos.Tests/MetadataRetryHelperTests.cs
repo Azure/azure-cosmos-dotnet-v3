@@ -461,6 +461,79 @@ namespace Microsoft.Azure.Cosmos.Tests
                     TimeSpan.FromSeconds(-1),
                     CancellationToken.None));
         }
+
+        /// <summary>
+        /// Regression guard for the defensive <c>MaxAttemptsHardCap</c>. A misconfigured retry
+        /// policy that always returns <see cref="ShouldRetryResult.RetryAfter"/> would otherwise
+        /// spin indefinitely. The helper must terminate with an <see cref="InvalidOperationException"/>
+        /// after the hard cap (20) is exceeded.
+        /// </summary>
+        [TestMethod]
+        [Owner("ntripician")]
+        public async Task ExecuteAsync_ExceedsMaxAttemptsHardCap_ThrowsInvalidOperationException()
+        {
+            Mock<IDocumentClientRetryPolicy> policy = new Mock<IDocumentClientRetryPolicy>();
+            policy
+                .Setup(p => p.ShouldRetryAsync(It.IsAny<Exception>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(ShouldRetryResult.RetryAfter(TimeSpan.Zero));
+
+            int attempts = 0;
+
+            InvalidOperationException thrown = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => MetadataRetryHelper.ExecuteAsync<int>(
+                    (_) =>
+                    {
+                        attempts++;
+                        throw new DocumentClientException(
+                            "always fail",
+                            HttpStatusCode.ServiceUnavailable,
+                            SubStatusCodes.Unknown);
+                    },
+                    policy.Object,
+                    CancellationToken.None));
+
+            Assert.AreEqual(20, attempts, "Helper must stop at the defensive attempt cap of 20.");
+            StringAssert.Contains(thrown.Message, "defensive attempt cap");
+        }
+
+        /// <summary>
+        /// Regression guard: when the retry policy itself throws while evaluating
+        /// <c>ShouldRetryAsync</c>, the helper must surface the ORIGINAL operation
+        /// exception (with its stack trace preserved) rather than the policy's
+        /// internal failure. The policy error is logged but should not be visible
+        /// to callers — diagnosing a metadata read failure should never be
+        /// distorted by a buggy retry policy.
+        /// </summary>
+        [TestMethod]
+        [Owner("ntripician")]
+        public async Task ExecuteAsync_PolicyThrowsDuringShouldRetry_SurfacesOriginalException()
+        {
+            Mock<IDocumentClientRetryPolicy> policy = new Mock<IDocumentClientRetryPolicy>();
+            policy
+                .Setup(p => p.ShouldRetryAsync(It.IsAny<Exception>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new InvalidOperationException("policy internal error"));
+
+            int attempts = 0;
+
+            DocumentClientException thrown = await Assert.ThrowsExceptionAsync<DocumentClientException>(
+                () => MetadataRetryHelper.ExecuteAsync<int>(
+                    (_) =>
+                    {
+                        attempts++;
+                        throw new DocumentClientException(
+                            "original 503",
+                            HttpStatusCode.ServiceUnavailable,
+                            SubStatusCodes.Unknown);
+                    },
+                    policy.Object,
+                    CancellationToken.None));
+
+            Assert.AreEqual(1, attempts);
+            StringAssert.Contains(
+                thrown.Message,
+                "original 503",
+                "Helper must surface the ORIGINAL operation exception, not the policy's internal failure.");
+        }
     }
 }
 
