@@ -163,6 +163,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.TaskStartedCount = 0;
                 Interlocked.Exchange(ref httpCallCount, 0);
                 Interlocked.Exchange(ref metadataCallCount, 0);
+                // Reset the VmMetadataApiHandler static state so the next iteration triggers a fresh
+                // metadata fetch, matching the assertion that exactly one VM metadata call happens
+                // per iteration. Without this reset, isInitialized stays true across loops and
+                // metadataCallCount remains 0 from the second iteration onward.
+                isInitializedField.SetValue(null, false);
+                azMetadataField.SetValue(null, null);
                 // Drain in-place: the RequestCallBack closure captured this specific bag instance,
                 // so we cannot swap the reference without the handler writing into a stale bag.
                 while (httpRequestUris.TryTake(out _))

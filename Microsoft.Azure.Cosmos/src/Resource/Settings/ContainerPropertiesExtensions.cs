@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos
     {
         private const int DefaultStreamBufferSize = 4096;
 
-        internal static async Task<PartitionKey?> EnsureIdGetAppendedToPartitionKeyIfNeededAsync(
+        internal static Task<PartitionKey?> EnsureIdGetAppendedToPartitionKeyIfNeededAsync(
             this ContainerInternal container,
             PartitionKey? partitionKey,
             string itemId,
@@ -27,30 +27,20 @@ namespace Microsoft.Azure.Cosmos
         {
             if (container == null)
             {
-                return partitionKey;
+                return Task.FromResult(partitionKey);
             }
 
-            ContainerProperties containerProperties;
-            try
+            // Only use container properties that are already cached in memory.
+            // This avoids triggering client initialization (EnsureValidClientAsync)
+            // or making HTTP calls (ResolveByNameAsync) before the handler pipeline
+            // has had a chance to initialize the client.
+            // On subsequent requests, the cache will be populated by the normal
+            // request pipeline and this optimization will take effect.
+            if (!container.TryGetCachedContainerPropertiesFromMemory(out ContainerProperties containerProperties)
+                || containerProperties == null
+                || !containerProperties.IsLastPartitionKeyPathId)
             {
-                containerProperties = await container.GetCachedContainerPropertiesAsync(
-                    forceRefresh: false,
-                    trace: NoOpTrace.Singleton,
-                    cancellationToken: cancellationToken);
-            }
-            catch (Exception ex) when (ex is not OperationCanceledException)
-            {
-                // Container may not exist yet (e.g. operations on non-existent containers).
-                // Swallow the exception and let the actual operation surface the proper error.
-                DefaultTrace.TraceWarning(
-                    "EnsureIdGetAppendedToPartitionKeyIfNeededAsync: failed to resolve container properties; continuing without HPK id-append. Exception: {0}",
-                    ex.Message);
-                return partitionKey;
-            }
-
-            if (containerProperties == null || !containerProperties.IsLastPartitionKeyPathId)
-            {
-                return partitionKey;
+                return Task.FromResult(partitionKey);
             }
 
             if (string.IsNullOrEmpty(itemId))
@@ -66,7 +56,7 @@ namespace Microsoft.Azure.Cosmos
 
                 if (existingComponents.Count != partitionKeyPaths.Count - 1)
                 {
-                    return partitionKey;
+                    return Task.FromResult(partitionKey);
                 }
             }
 
@@ -96,7 +86,7 @@ namespace Microsoft.Azure.Cosmos
 
             Documents.Routing.PartitionKeyInternal partitionKeyInternal = new Documents.Routing.PartitionKeyInternal(allComponentsList);
 
-            return new PartitionKey(partitionKeyInternal);
+            return Task.FromResult<PartitionKey?>(new PartitionKey(partitionKeyInternal));
         }
 
         internal static async Task<(string, Stream)> GetItemIdFromStreamIfRequiredAsync(
@@ -118,17 +108,14 @@ namespace Microsoft.Azure.Cosmos
                     trace: NoOpTrace.Singleton,
                     cancellationToken: cancellationToken);
             }
-            catch (Exception ex) when (ex is not OperationCanceledException)
+            catch (Exception)
             {
                 // Container may not exist yet (e.g. operations on non-existent containers).
                 // Swallow the exception and let the actual operation surface the proper error.
-                DefaultTrace.TraceWarning(
-                    "EnsureIdGetAppendedToPartitionKeyIfNeededAsync (stream): failed to resolve container properties; continuing without HPK id-append. Exception: {0}",
-                    ex.Message);
                 return (itemId, streamPayload);
             }
 
-            if (containerProperties != null && containerProperties.IsLastPartitionKeyPathId)
+            if (containerProperties.IsLastPartitionKeyPathId)
             {
                 return await ContainerPropertiesExtensions.GetIdFromStreamPayloadAsync(streamPayload);
             }
