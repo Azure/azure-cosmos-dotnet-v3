@@ -5,7 +5,9 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
@@ -351,6 +353,128 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 .Verify(store => store.GetAllLeasesAsync(), Times.Exactly(2));
         }
 
+        [TestMethod]
+        public async Task StopAsync_CallsShutdownAsync()
+        {
+            Mock<DocumentServiceLeaseStore> leaseStore = new Mock<DocumentServiceLeaseStore>();
+            leaseStore.Setup(l => l.IsInitializedAsync()).ReturnsAsync(true);
+
+            Mock<DocumentServiceLeaseContainer> leaseContainer = new Mock<DocumentServiceLeaseContainer>();
+            leaseContainer.Setup(l => l.GetOwnedLeasesAsync()).Returns(Task.FromResult(Enumerable.Empty<DocumentServiceLease>()));
+            leaseContainer.Setup(l => l.GetAllLeasesAsync()).ReturnsAsync(new List<DocumentServiceLease>());
+
+            Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
+            leaseStoreManager.Setup(l => l.LeaseContainer).Returns(leaseContainer.Object);
+            leaseStoreManager.Setup(l => l.LeaseManager).Returns(Mock.Of<DocumentServiceLeaseManager>);
+            leaseStoreManager.Setup(l => l.LeaseStore).Returns(leaseStore.Object);
+            leaseStoreManager.Setup(l => l.LeaseCheckpointer).Returns(Mock.Of<DocumentServiceLeaseCheckpointer>);
+            leaseStoreManager.Setup(l => l.ShutdownAsync()).Returns(Task.CompletedTask);
+            ChangeFeedProcessorCore processor = ChangeFeedProcessorCoreTests.CreateProcessor(out Mock<ChangeFeedObserverFactory> factory, out Mock<ChangeFeedObserver> observer);
+            processor.ApplyBuildConfiguration(
+                leaseStoreManager.Object,
+                null,
+                "instanceName",
+                new ChangeFeedLeaseOptions(),
+                new ChangeFeedProcessorOptions(),
+                ChangeFeedProcessorCoreTests.GetMockedContainer("monitored"));
+
+            await processor.StartAsync();
+            await processor.StopAsync();
+
+            leaseStoreManager
+                .Verify(store => store.ShutdownAsync(), Times.Once);
+        }
+
+        [TestMethod]
+        public async Task StopAsync_WithInMemoryLeases_PersistsStateToStream()
+        {
+            // Arrange — real in-memory store with a real MemoryStream
+            DocumentServiceLeaseCoreEpk lease = new DocumentServiceLeaseCoreEpk
+            {
+                LeaseId = "e2e-lease",
+                LeaseToken = "0",
+                ContinuationToken = "e2e-continuation",
+                Owner = "e2e-owner",
+                FeedRange = new FeedRangeEpk(new Documents.Routing.Range<string>("", "FF", true, false))
+            };
+
+            ConcurrentDictionary<string, DocumentServiceLease> container = new ConcurrentDictionary<string, DocumentServiceLease>();
+            container.TryAdd(lease.Id, lease);
+
+            MemoryStream leaseState = new MemoryStream();
+            DocumentServiceLeaseStoreManagerInMemory storeManager = new DocumentServiceLeaseStoreManagerInMemory(container, leaseState);
+
+            ChangeFeedProcessorCore processor = ChangeFeedProcessorCoreTests.CreateProcessor(out _, out _);
+            processor.ApplyBuildConfiguration(
+                storeManager,
+                null,
+                "instanceName",
+                new ChangeFeedLeaseOptions(),
+                new ChangeFeedProcessorOptions(),
+                ChangeFeedProcessorCoreTests.GetMockedContainer("monitored"));
+
+            // Act — full lifecycle: start → stop (which triggers ShutdownAsync → persist)
+            await processor.StartAsync();
+            await processor.StopAsync();
+
+            // Assert — stream is usable and contains valid serialized lease state
+            Assert.IsTrue(leaseState.CanRead, "Stream should still be readable after StopAsync");
+            Assert.IsTrue(leaseState.Length > 0, "Stream should contain serialized lease data");
+
+            // Verify the persisted data deserializes correctly
+            leaseState.Position = 0;
+            using (StreamReader sr = new StreamReader(leaseState, leaveOpen: true))
+            using (Newtonsoft.Json.JsonTextReader jsonReader = new Newtonsoft.Json.JsonTextReader(sr))
+            {
+                List<DocumentServiceLease> persisted = Newtonsoft.Json.JsonSerializer.Create()
+                    .Deserialize<List<DocumentServiceLease>>(jsonReader);
+
+                Assert.AreEqual(1, persisted.Count);
+                Assert.AreEqual("e2e-lease", persisted[0].Id);
+                Assert.AreEqual("e2e-continuation", persisted[0].ContinuationToken);
+                Assert.IsNotNull(persisted[0].FeedRange);
+                Assert.IsInstanceOfType(persisted[0].FeedRange, typeof(FeedRangeEpk));
+            }
+        }
+
+        [TestMethod]
+        public async Task StopAsync_WhenShutdownAsyncThrows_ExceptionPropagates()
+        {
+            // Arrange — set up a processor where ShutdownAsync throws
+            Mock<DocumentServiceLeaseStore> leaseStore = new Mock<DocumentServiceLeaseStore>();
+            leaseStore.Setup(l => l.IsInitializedAsync()).ReturnsAsync(true);
+
+            Mock<DocumentServiceLeaseContainer> leaseContainer = new Mock<DocumentServiceLeaseContainer>();
+            leaseContainer.Setup(l => l.GetOwnedLeasesAsync()).Returns(Task.FromResult(Enumerable.Empty<DocumentServiceLease>()));
+            leaseContainer.Setup(l => l.GetAllLeasesAsync()).ReturnsAsync(new List<DocumentServiceLease>());
+
+            Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
+            leaseStoreManager.Setup(l => l.LeaseContainer).Returns(leaseContainer.Object);
+            leaseStoreManager.Setup(l => l.LeaseManager).Returns(Mock.Of<DocumentServiceLeaseManager>);
+            leaseStoreManager.Setup(l => l.LeaseStore).Returns(leaseStore.Object);
+            leaseStoreManager.Setup(l => l.LeaseCheckpointer).Returns(Mock.Of<DocumentServiceLeaseCheckpointer>);
+            leaseStoreManager.Setup(l => l.ShutdownAsync()).ThrowsAsync(new InvalidOperationException("Shutdown failed"));
+
+            ChangeFeedProcessorCore processor = ChangeFeedProcessorCoreTests.CreateProcessor(out _, out _);
+            processor.ApplyBuildConfiguration(
+                leaseStoreManager.Object,
+                null,
+                "instanceName",
+                new ChangeFeedLeaseOptions(),
+                new ChangeFeedProcessorOptions(),
+                ChangeFeedProcessorCoreTests.GetMockedContainer("monitored"));
+
+            await processor.StartAsync();
+
+            // Act & Assert — StopAsync propagates ShutdownAsync exceptions so callers
+            // know persistence failed.
+            InvalidOperationException ex = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => processor.StopAsync());
+            Assert.AreEqual("Shutdown failed", ex.Message);
+
+            // Assert — ShutdownAsync was still invoked
+            leaseStoreManager.Verify(l => l.ShutdownAsync(), Times.Once);
+        }
 
         private static ChangeFeedProcessorCore CreateProcessor(
             out Mock<ChangeFeedObserverFactory> factory,
