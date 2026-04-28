@@ -14,13 +14,51 @@ jobs:
   - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
     clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
 
+  # Build using the Microsoft.Azure.Cosmos NuGet reference declared in the .csproj.
+  # This matches what customers consume and guards against regressions on the
+  # released SDK surface (the default release pipeline build path).
   - task: DotNetCoreCLI@2
-    displayName: Build Microsoft.Azure.Cosmos.Encryption.Custom
+    displayName: Build Microsoft.Azure.Cosmos.Encryption.Custom (NuGet SDK reference)
     inputs: 
       command: build
       nugetConfigPath: NuGet.config
       projects: Microsoft.Azure.Cosmos.Encryption.Custom/src/Microsoft.Azure.Cosmos.Encryption.Custom.csproj
       arguments: '-p:Optimize=true --configuration Release'
+      versioningScheme: OFF
+
+  # Build using a ProjectReference to the Microsoft.Azure.Cosmos source in this
+  # repo (SdkProjectRef=True / SDKPROJECTREF) with IsPreview=true so the SDK
+  # source compiles with the same preview surface that the Encryption.Custom
+  # package references via NuGet. This catches mismatches between the
+  # Encryption.Custom package and the latest SDK surface in master (for
+  # example, new abstract members on Container) that would otherwise only
+  # surface at customer runtime as TypeLoadException once a newer SDK NuGet is
+  # released. See PR #5783 for a concrete example (SemanticRerankAsync).
+  - task: DotNetCoreCLI@2
+    displayName: Build Microsoft.Azure.Cosmos.Encryption.Custom (SDKREF - master SDK source)
+    inputs: 
+      command: build
+      nugetConfigPath: NuGet.config
+      projects: Microsoft.Azure.Cosmos.Encryption.Custom/src/Microsoft.Azure.Cosmos.Encryption.Custom.csproj
+      arguments: '-p:Optimize=true -p:IsPreview=true -p:SdkProjectRef=true --configuration Release'
+      versioningScheme: OFF
+
+  # Parity check: build against master SDK source WITHOUT defining SDKPROJECTREF.
+  # This matches the exact preprocessor surface the shipped NuGet package is
+  # built with (PREVIEW on, SDKPROJECTREF off, so SDKPROJECTREF-gated overrides
+  # in EncryptionContainer are stripped) while still linking against the latest
+  # SDK abstractions from master. Any new abstract member on Container under
+  # #if PREVIEW that lacks an unconditional override in EncryptionContainer
+  # will produce a CS0534 compile error here instead of a runtime
+  # TypeLoadException for customers after a future SDK NuGet release. This is
+  # the exact class of defect addressed by PR #5783 (SemanticRerankAsync).
+  - task: DotNetCoreCLI@2
+    displayName: Build Microsoft.Azure.Cosmos.Encryption.Custom (NuGet-surface parity vs master SDK source)
+    inputs: 
+      command: build
+      nugetConfigPath: NuGet.config
+      projects: Microsoft.Azure.Cosmos.Encryption.Custom/src/Microsoft.Azure.Cosmos.Encryption.Custom.csproj
+      arguments: '-p:Optimize=true -p:IsPreview=true -p:SdkProjectRef=true -p:DefineSdkProjectRefSymbol=false --configuration Release'
       versioningScheme: OFF
 
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@4
