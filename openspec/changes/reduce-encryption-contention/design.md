@@ -96,6 +96,16 @@ this.DataEncryptionKeyCacheTimeToLive = TimeSpan.FromHours(2);
 
 Client Encryption Key rewrap (the only runtime rotation) changes the wrapped key bytes → different `encryptedKey.ToHexString()` → different cache key → cache miss → fresh Key Vault call. The plaintext Data Encryption Key bytes are unchanged, so the result is correct. No cache coherence issue.
 
+#### KEK revocation detection
+
+Enabling the Data Encryption Key byte cache introduces a conflict with KEK (Key Encryption Key) revocation detection. The existing error-handling path in `BuildEncryptionAlgorithmForSettingAsync` catches `RequestFailedException(403)` from `UnwrapKey` and triggers a force-refresh flow that fetches the latest Client Encryption Key properties from the backend. With the byte cache enabled, `UnwrapKey` → `GetOrCreateDataEncryptionKey` returns cached unwrapped bytes on a cache hit **without ever calling the key resolver**. The 403 is never thrown. KEK revocation becomes undetectable for the lifetime of the cache entry.
+
+This is not a theoretical concern — the `VerifyKekRevokeHandling` emulator test explicitly validates this flow: cache a DEK, revoke the KEK, verify that subsequent operations fail with the "needs to be rewrapped" error. With a naïve cache enable (`TimeSpan.Zero` → `TimeSpan.FromHours(2)`), this test fails because the cached bytes mask the revocation.
+
+Simple eviction doesn't work either — evicting the byte cache entry before every `BuildProtectedDataEncryptionKeyAsync` call renders the cache useless, since that's the only code path that reads it. This is functionally equivalent to `DataEncryptionKeyCacheTimeToLive = TimeSpan.Zero`.
+
+**This is resolved by the custom cache in Approach B** — see Decision 2 for the `revalidationInterval` design that separates the performance and security time scales.
+
 #### Summary of Approach A limitations
 
 | Scenario | Approach A behavior |
@@ -105,6 +115,7 @@ Client Encryption Key rewrap (the only runtime rotation) changes the wrapped key
 | **Cold start** (first-ever call, no prior cache entry) | Key Vault I/O under semaphore — but at cold start there’s no concurrent load, so no thundering herd |
 | **Reducing Resolve calls** | On a true cache miss, still calls `Resolve()` + `UnwrapKey()` (2 Key Vault calls). Does not cache the resolved `IKeyEncryptionKey` |
 | **Proactive refresh before expiry** | No proactive refresh — relies on the next access to populate |
+| **KEK revocation detection** | Not supported by simple byte cache — cached bytes mask revocation. Resolved by Approach B’s `revalidationInterval` (see Decision 2). |
 
 ### Approach B: Async Prefetch with Background Refresh (Recommended)
 
@@ -146,6 +157,43 @@ The full Approach B design (decisions, risks, migration plan) is retained below.
 **Chosen**: `ConcurrentDictionary<string, byte[]>` with manual time-to-live tracking (expiry stored alongside value).
 
 **Rationale**: The Microsoft Data Encryption library's `LocalCache.GetOrCreate` is get-or-create only — no `Set`, `Remove`, or `Evict` API. `MemoryCache` adds a dependency and has its own concurrency model. `ConcurrentDictionary` is simple, lock-free reads, and we control time-to-live ourselves.
+
+#### KEK revocation via revalidation interval
+
+The custom cache also resolves the KEK revocation detection problem described in Approach A's "KEK revocation detection" section. The fundamental tension is between two goals that both go through the same `UnwrapKey` → resolver path:
+1. **Performance**: skip the resolver call (avoid Key Vault HTTP I/O under the semaphore)
+2. **Security**: call the resolver (detect KEK revocation)
+
+These are contradictory on any single call. The custom cache resolves this by tracking a `lastValidated` timestamp per entry and introducing a `revalidationInterval`:
+
+```
+CacheEntry {
+    byte[] UnwrappedBytes     // the cached unwrapped DEK bytes
+    DateTime LastValidated    // when we last confirmed KEK access via the resolver
+}
+```
+
+Lookup behavior:
+
+| Cache state | Action |
+|---|---|
+| **Cache miss** | Call resolver (`UnwrapKeyCore`), populate entry with `LastValidated = UtcNow` |
+| **Cache hit, within `revalidationInterval`** | Return cached bytes immediately — no resolver call |
+| **Cache hit, past `revalidationInterval`** | Call resolver to re-validate KEK access. **Succeeds**: update `LastValidated`, return bytes. **Fails (403)**: evict entry, rethrow — existing force-refresh path handles recovery |
+
+**Key parameters**:
+
+- `cacheTtl` (overall entry lifetime): 2 hours — same as the current `DataEncryptionKeyCacheTimeToLive` intent. Controls how long unwrapped bytes are retained at all.
+- `revalidationInterval` (KEK access re-check frequency): recommended default matching `ProtectedDataEncryptionKey` time-to-live (1 hour). This is the maximum window during which KEK revocation goes undetected.
+
+This **separates the time scales**: ~99% of `UnwrapKey` calls (within `revalidationInterval`) are pure cache hits for performance, while periodic calls (at revalidation boundaries) contact the resolver for security validation. KEK revocation is detected within `revalidationInterval` — not immediately, but within a bounded and configurable window. The existing `BuildEncryptionAlgorithmForSettingAsync` 403 → force-refresh flow is unchanged.
+
+**Test compatibility**: The `VerifyKekRevokeHandling` test sets `ProtectedDataEncryptionKey.TimeToLive = TimeSpan.Zero`, meaning every operation rebuilds the PDEK and calls `UnwrapKey`. With `revalidationInterval` derived from the PDEK time-to-live (zero → every call validates), the test passes — every `UnwrapKey` call contacts the resolver and detects revocation immediately.
+
+**Implementation notes**:
+- Override `GetOrCreateDataEncryptionKey` in `EncryptionKeyStoreProviderImpl` (or the `CachingEncryptionKeyStoreProviderImpl` subclass) — the base class method is `protected virtual`
+- Set `DataEncryptionKeyCacheTimeToLive = TimeSpan.Zero` on the base class to disable its simple cache; the override handles all caching with revalidation
+- Derive `revalidationInterval` from `ProtectedDataEncryptionKey.TimeToLive`: if PDEK time-to-live is zero (no caching), revalidation is zero (every call validates); if PDEK time-to-live is 1 hour, revalidation is 1 hour (one validation per PDEK rebuild cycle)
 
 ### Decision 3: Proactive refresh via `Task.Run`, not `Timer`
 
