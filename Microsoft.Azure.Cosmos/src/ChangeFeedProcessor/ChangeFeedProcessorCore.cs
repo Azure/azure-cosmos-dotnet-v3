@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
-    using System.Collections.Generic;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping;
     using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
@@ -79,7 +78,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         public override async Task StopAsync()
         {
             DefaultTrace.TraceInformation("Stopping processor...");
+
+            // Persist in-memory lease state before stopping the partition manager so that
+            // a subsequent partition-manager shutdown failure cannot prevent recovery of the
+            // lease snapshot. No-op for Cosmos-backed leases.
+            await this.documentServiceLeaseStoreManager.ShutdownAsync().ConfigureAwait(false);
+
             await this.partitionManager.StopAsync().ConfigureAwait(false);
+
             DefaultTrace.TraceInformation("Processor stopped.");
         }
 
