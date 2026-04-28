@@ -332,14 +332,6 @@ namespace Microsoft.Azure.Cosmos
 
             if (statusCode == HttpStatusCode.NotFound && subStatusCode == SubStatusCodes.ReadSessionNotAvailable)
             {
-#if !INTERNAL
-                // Only set the hub region processing header for single master accounts
-                // Set header only after the first retry attempt fails with 404/1002
-                if (!this.canUseMultipleWriteLocations && this.sessionTokenRetryCount >= 1)
-                {
-                    this.addHubRegionProcessingOnlyHeader = true;
-                }
-#endif
                 return this.ShouldRetryOnSessionNotAvailable(this.documentServiceRequest);
             }
 
@@ -457,6 +449,15 @@ namespace Microsoft.Azure.Cosmos
                 }
                 else
                 {
+#if !INTERNAL
+                    // Only set the hub region processing header for single master accounts.
+                    // Set header after the second consecutive 404/1002 (count >= 2 means both
+                    // the initial request and the first retry to the write region have failed).
+                    if (this.sessionTokenRetryCount >= MaxSessionTokenRetryCount)
+                    {
+                        this.addHubRegionProcessingOnlyHeader = true;
+                    }
+#endif
                     if (this.sessionTokenRetryCount > MaxSessionTokenRetryCount)
                     {
                         // When cannot use multiple write locations, then don't retry the request if
