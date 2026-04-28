@@ -1,0 +1,26 @@
+# Dockerfile for running Microsoft.Azure.Cosmos.EmulatorTests on Linux
+# against a live Cosmos DB endpoint. See scripts/run-linux-tests.sh.
+FROM mcr.microsoft.com/dotnet/sdk:8.0
+
+# The EmulatorTests project currently targets net6.0, so we need the
+# .NET 6 SDK alongside the .NET 8 SDK that the base image provides.
+# We use Microsoft's dotnet-install.sh so the extra SDK is side-loaded
+# into /usr/share/dotnet and auto-discovered by `dotnet --list-sdks`.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl ca-certificates \
+    && curl -sSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh \
+    && chmod +x /tmp/dotnet-install.sh \
+    && /tmp/dotnet-install.sh --channel 6.0 --install-dir /usr/share/dotnet --no-path \
+    && rm /tmp/dotnet-install.sh \
+    && rm -rf /var/lib/apt/lists/*
+
+# No global.json pinning here — we rely on the project's own TargetFramework.
+ENV DOTNET_NOLOGO=1 \
+    DOTNET_CLI_TELEMETRY_OPTOUT=1 \
+    DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
+
+WORKDIR /repo
+
+# Entry point is provided by run-linux-tests.sh via `docker run`.
+# Defaulting to bash so interactive debugging works if needed.
+CMD ["/bin/bash"]

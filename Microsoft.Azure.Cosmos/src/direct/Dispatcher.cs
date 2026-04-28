@@ -522,8 +522,12 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
-        private void OnIdleTimer(Task precedentTask)
+        private async Task OnIdleTimerAsync(Task precedentTask)
         {
+            DefaultTrace.TraceInformation(
+                "[RNTBD Dispatcher {0}][{1}] Idle timer fired.",
+                this.ConnectionCorrelationId, this);
+
             Task receiveTaskCopy = null;
 
             Debug.Assert(!Monitor.IsEntered(this.connectionLock));
@@ -572,7 +576,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                 receiveTaskCopy = this.CloseConnection();
             }
 
-            this.WaitTask(receiveTaskCopy, "receive loop");
+            await this.WaitTaskAsync(receiveTaskCopy, "receive loop")
+                .ConfigureAwait(false);
         }
 
         // this.connectionLock must be held.
@@ -580,7 +585,16 @@ namespace Microsoft.Azure.Documents.Rntbd
         {
             Debug.Assert(Monitor.IsEntered(this.connectionLock));
             this.idleTimer = this.idleTimerPool.GetPooledTimer((int)timeToIdle.TotalSeconds);
-            this.idleTimerTask = this.idleTimer.StartTimerAsync().ContinueWith(this.OnIdleTimer, TaskContinuationOptions.OnlyOnRanToCompletion);
+            // IMPORTANT: .Unwrap() is essential here. Without it, idleTimerTask
+            // would be Task<Task> and would complete when OnIdleTimerAsync
+            // returns its inner Task (at the first await), not when it
+            // finishes. StopIdleTimer() waits on idleTimerTask during
+            // shutdown; if idleTimerTask completes early, shutdown proceeds
+            // while OnIdleTimerAsync is still running, causing
+            // use-after-dispose on the connection. Do not remove .Unwrap().
+            this.idleTimerTask = this.idleTimer.StartTimerAsync()
+                .ContinueWith(this.OnIdleTimerAsync, TaskContinuationOptions.OnlyOnRanToCompletion)
+                .Unwrap();
             this.idleTimerTask.ContinueWith(
                 failedTask =>
                 {
@@ -676,6 +690,30 @@ namespace Microsoft.Azure.Documents.Rntbd
                 DefaultTrace.TraceWarning(
                     "[RNTBD Dispatcher {0}][{1}] Parallel task failed: {2}. Exception: {3}",
                     this.ConnectionCorrelationId, this, description, e.Message);
+                // Intentionally swallowing the exception. The caller can't
+                // do anything useful with it.
+            }
+        }
+
+        private async Task WaitTaskAsync(Task t, string description)
+        {
+            if (t == null)
+            {
+                return;
+            }
+            try
+            {
+                Debug.Assert(!Monitor.IsEntered(this.callLock));
+                Debug.Assert(!Monitor.IsEntered(this.connectionLock));
+                await t.ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                DefaultTrace.TraceWarning(
+                    "[RNTBD Dispatcher {0}][{1}] Parallel task failed: {2}. " +
+                    "Exception: {3}: {4}",
+                    this.ConnectionCorrelationId, this, description,
+                    e.GetType().Name, e.Message);
                 // Intentionally swallowing the exception. The caller can't
                 // do anything useful with it.
             }

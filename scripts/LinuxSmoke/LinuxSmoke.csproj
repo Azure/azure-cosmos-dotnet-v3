@@ -1,0 +1,57 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Minimal test project used by scripts/run-linux-tests.sh to run the
+    RNTBD idle-timer starvation tests from a Linux container without
+    pulling in the full Microsoft.Azure.Cosmos.EmulatorTests project
+    (which transitively depends on the FaultInjection project and
+    fails to build against msdata/direct's Cosmos.Client assembly
+    because of duplicate Direct types).
+
+    The canonical test source lives under
+    Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests
+    so Windows CI can pick it up via globbing. This project only
+    links it in so the Linux pipeline can compile and run it in
+    isolation.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <LangVersion>10.0</LangVersion>
+    <RootNamespace>Microsoft.Azure.Cosmos.SDK.EmulatorTests</RootNamespace>
+    <AssemblyName>Microsoft.Azure.Cosmos.LinuxSmoke</AssemblyName>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <EnableNETAnalyzers>false</EnableNETAnalyzers>
+    <RunAnalyzers>false</RunAnalyzers>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.EmulatorTests\RntbdIdleTimerStarvationTests.cs"
+             Link="RntbdIdleTimerStarvationTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="MSTest.TestAdapter" Version="3.6.3" />
+    <PackageReference Include="MSTest.TestFramework" Version="3.6.3" />
+    <!--
+      Cosmos.csproj marks Microsoft.Azure.Cosmos.Direct and Microsoft.HybridRow
+      with PrivateAssets="All" so the native/managed side-assemblies
+      (Microsoft.Azure.Cosmos.Direct.dll, Microsoft.Azure.Cosmos.Core.dll,
+      Microsoft.Azure.Cosmos.Serialization.HybridRow.dll) do not flow
+      transitively through a ProjectReference. Re-reference them here so
+      they land in the test output dir and CosmosClient can load them at
+      runtime in the container.
+    -->
+    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="3.41.3" />
+    <PackageReference Include="Microsoft.HybridRow" Version="1.1.0-preview3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj" />
+  </ItemGroup>
+
+</Project>
