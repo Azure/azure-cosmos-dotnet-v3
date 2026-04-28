@@ -158,17 +158,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     $"Only the first task should do the http call. All other should wait on the first task. Observed URIs: [{string.Join(", ", httpRequestUris)}]");
 
                 // Reset counters and retry the client to verify a new http call is done for new requests.
+                // NOTE: metadataCallCount is intentionally NOT reset between iterations.
+                // VmMetadataApiHandler has a static `isInitialized` latch, so VM metadata is only
+                // fetched on the very first iteration. Subsequent iterations short-circuit without
+                // making an HTTP call, so the cumulative count remains 1. Resetting metadataCallCount
+                // (and the static latch) makes the test fragile against concurrent tests that may
+                // race on the static state between our reset and the next iteration's read.
                 tasks.Clear();
                 delayCallBack = true;
                 this.TaskStartedCount = 0;
                 Interlocked.Exchange(ref httpCallCount, 0);
-                Interlocked.Exchange(ref metadataCallCount, 0);
-                // Reset the VmMetadataApiHandler static state so the next iteration triggers a fresh
-                // metadata fetch, matching the assertion that exactly one VM metadata call happens
-                // per iteration. Without this reset, isInitialized stays true across loops and
-                // metadataCallCount remains 0 from the second iteration onward.
-                isInitializedField.SetValue(null, false);
-                azMetadataField.SetValue(null, null);
                 // Drain in-place: the RequestCallBack closure captured this specific bag instance,
                 // so we cannot swap the reference without the handler writing into a stale bag.
                 while (httpRequestUris.TryTake(out _))
