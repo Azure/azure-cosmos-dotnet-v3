@@ -23,6 +23,7 @@ namespace Microsoft.Azure.Cosmos
         private const int RetryIntervalInMS = 1000; // Once we detect failover wait for 1 second before retrying request.
         private const int MaxRetryCount = 120;
         private const int MaxServiceUnavailableRetryCount = 1;
+        private const int MaxSessionTokenRetryCount = 2;
 
         private readonly IDocumentClientRetryPolicy throttlingRetry;
         private readonly GlobalEndpointManager globalEndpointManager;
@@ -456,10 +457,13 @@ namespace Microsoft.Azure.Cosmos
                 }
                 else
                 {
-                    if (this.sessionTokenRetryCount > 1)
+                    if (this.sessionTokenRetryCount > MaxSessionTokenRetryCount)
                     {
-                        // When cannot use multiple write locations, then don't retry the request if 
-                        // we have already tried this request on the write location
+                        // When cannot use multiple write locations, then don't retry the request if
+                        // we have already tried this request on the write location.
+                        // The count threshold is 2 (not 1) because the hub region processing header
+                        // is set after the first retry fails (count=2) and the request must be retried
+                        // once more with that header before giving up.
                         return ShouldRetryResult.NoRetry();
                     }
                     else
