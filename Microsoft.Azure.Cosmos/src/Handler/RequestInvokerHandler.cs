@@ -529,6 +529,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 requestMessage.Headers.Set(
                     HttpConstants.HttpHeaders.ReadConsistencyStrategy,
                     readConsistencyStrategy.Value.ToString());
+
+                requestMessage.Headers.Set(
+                    HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion,
+                    bool.TrueString);
             }
 
             return Task.CompletedTask;

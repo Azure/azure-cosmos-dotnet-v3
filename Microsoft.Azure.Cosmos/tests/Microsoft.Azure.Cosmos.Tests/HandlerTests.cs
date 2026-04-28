@@ -837,6 +837,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.AreEqual(strategy.ToString(), request.Headers[HttpConstants.HttpHeaders.ReadConsistencyStrategy]);
                 Assert.IsNull(request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel],
                     "ConsistencyLevel header should not be set when ReadConsistencyStrategy is used");
+                Assert.AreEqual(bool.TrueString, request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion],
+                    "Hub region header should be set when ReadConsistencyStrategy is used");
                 return TestHandler.ReturnSuccess();
             });
 
@@ -876,6 +878,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     request.Headers[HttpConstants.HttpHeaders.ReadConsistencyStrategy]);
                 Assert.IsNull(request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel],
                     "ConsistencyLevel header should not be set when ReadConsistencyStrategy is used");
+                Assert.AreEqual(bool.TrueString, request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion],
+                    "Hub region header should be set when client-level ReadConsistencyStrategy is used");
                 return TestHandler.ReturnSuccess();
             });
 
@@ -916,6 +920,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     Cosmos.ConsistencyLevel.Eventual.ToString(),
                     request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel],
                     "ConsistencyLevel header should also be set");
+                Assert.AreEqual(bool.TrueString, request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion],
+                    "Hub region header should be set when ReadConsistencyStrategy is used");
                 return TestHandler.ReturnSuccess();
             });
 
@@ -960,6 +966,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     request.Headers[HttpConstants.HttpHeaders.ReadConsistencyStrategy]);
                 Assert.IsNull(request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel],
                     "ConsistencyLevel header should not be set when no ConsistencyLevel was specified");
+                Assert.AreEqual(bool.TrueString, request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion],
+                    "Hub region header should be set when ReadConsistencyStrategy is used");
                 return TestHandler.ReturnSuccess();
             });
 
@@ -980,6 +988,41 @@ namespace Microsoft.Azure.Cosmos.Tests
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
             requestMessage.OperationType = OperationType.Read;
             requestMessage.RequestOptions = new ItemRequestOptions { ReadConsistencyStrategy = Cosmos.ReadConsistencyStrategy.Session };
+
+            await invoker.SendAsync(requestMessage, new CancellationToken());
+        }
+
+        [TestMethod]
+        public async Task NoReadConsistencyStrategy_HubRegionHeaderNotSet()
+        {
+            // Verify hub region header is NOT set when ReadConsistencyStrategy is not specified.
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(accountConsistencyLevel: Cosmos.ConsistencyLevel.Session);
+
+            TestHandler testHandler = new TestHandler((request, cancellationToken) =>
+            {
+                Assert.IsNull(request.Headers[HttpConstants.HttpHeaders.ReadConsistencyStrategy],
+                    "ReadConsistencyStrategy header should not be set");
+                Assert.IsNull(request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion],
+                    "Hub region header should not be set when ReadConsistencyStrategy is not used");
+                return TestHandler.ReturnSuccess();
+            });
+
+            RequestInvokerHandler invoker = new RequestInvokerHandler(
+                client,
+                requestedClientConsistencyLevel: Cosmos.ConsistencyLevel.Session,
+                requestedClientReadConsistencyStrategy: null,
+                requestedClientPriorityLevel: null,
+                requestedClientThroughputBucket: null)
+            {
+                InnerHandler = testHandler
+            };
+
+            RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"))
+            {
+                ResourceType = ResourceType.Document
+            };
+            requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
+            requestMessage.OperationType = OperationType.Read;
 
             await invoker.SendAsync(requestMessage, new CancellationToken());
         }
