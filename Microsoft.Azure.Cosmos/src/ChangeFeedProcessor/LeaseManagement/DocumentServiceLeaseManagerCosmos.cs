@@ -31,6 +31,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         private readonly AsyncLazy<TryCatch<string>> lazyContainerRid;
         private PartitionKeyRangeCache partitionKeyRangeCache;
 
+        internal static bool IsChangeFeedLeaseIdAsPartitionKeyEnabled = ConfigurationManager.IsChangeFeedLeaseIdAsPartitionKeyEnabled();
+
         public DocumentServiceLeaseManagerCosmos(
             ContainerInternal monitoredContainer,
             ContainerInternal leaseContainer,
@@ -128,7 +130,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 Mode = this.GetChangeFeedMode()
             };
 
-            this.requestOptionsFactory.AddPartitionKeyIfNeeded((string pk) => documentServiceLease.LeasePartitionKey = pk, Guid.NewGuid().ToString());
+            this.requestOptionsFactory.AddPartitionKeyIfNeeded(
+                (string pk) => documentServiceLease.LeasePartitionKey = pk,
+                DocumentServiceLeaseManagerCosmos.GetLeasePartitionKeyValue(documentServiceLease.LeaseId));
 
             return this.TryCreateDocumentServiceLeaseAsync(documentServiceLease);
         }
@@ -153,9 +157,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 Mode = this.GetChangeFeedMode()
             };
 
-            this.requestOptionsFactory.AddPartitionKeyIfNeeded((string pk) => documentServiceLease.LeasePartitionKey = pk, Guid.NewGuid().ToString());
+            this.requestOptionsFactory.AddPartitionKeyIfNeeded(
+                (string pk) => documentServiceLease.LeasePartitionKey = pk,
+                DocumentServiceLeaseManagerCosmos.GetLeasePartitionKeyValue(documentServiceLease.LeaseId));
 
             return this.TryCreateDocumentServiceLeaseAsync(documentServiceLease);
+        }
+
+        private static string GetLeasePartitionKeyValue(string leaseId)
+        {
+            return DocumentServiceLeaseManagerCosmos.IsChangeFeedLeaseIdAsPartitionKeyEnabled
+                ? leaseId
+                : Guid.NewGuid().ToString();
         }
 
         private string GetChangeFeedMode()

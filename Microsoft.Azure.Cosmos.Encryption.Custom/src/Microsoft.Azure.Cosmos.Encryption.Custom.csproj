@@ -71,6 +71,10 @@
   </PropertyGroup>
   
   <PropertyGroup Condition=" '$(SdkProjectRef)' == 'True' ">
+    <DefineSdkProjectRefSymbol Condition=" '$(DefineSdkProjectRefSymbol)' == '' ">true</DefineSdkProjectRefSymbol>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(DefineSdkProjectRefSymbol)' == 'true' ">
     <DefineConstants>$(DefineConstants);SDKPROJECTREF</DefineConstants>
   </PropertyGroup>
 </Project>
