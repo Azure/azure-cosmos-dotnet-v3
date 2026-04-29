@@ -457,16 +457,21 @@ namespace Microsoft.Azure.Cosmos
                     {
                         this.addHubRegionProcessingOnlyHeader = true;
                     }
-#endif
+
                     if (this.sessionTokenRetryCount > MaxSessionTokenRetryCount)
+                    {
+                        // Hub region header was set at count == MaxSessionTokenRetryCount and the
+                        // request was retried with it. If the hub still returns 404/1002, stop.
+                        return ShouldRetryResult.NoRetry();
+                    }
+#else
+                    if (this.sessionTokenRetryCount > 1)
                     {
                         // When cannot use multiple write locations, then don't retry the request if
                         // we have already tried this request on the write location.
-                        // The count threshold is 2 (not 1) because the hub region processing header
-                        // is set after the first retry fails (count=2) and the request must be retried
-                        // once more with that header before giving up.
                         return ShouldRetryResult.NoRetry();
                     }
+#endif
                     else
                     {
                         this.retryContext = new RetryContext
