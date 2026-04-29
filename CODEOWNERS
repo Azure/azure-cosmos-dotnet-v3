@@ -5,7 +5,7 @@
 # the repo. Unless a later match takes precedence,
 # @global-owner1 and @global-owner2 will be requested for
 # review when someone opens a pull request.
-*       @kirankumarkolli @FabianMeiswinkel @sboshra @Pilchie @kushagraThapar
+*       @kirankumarkolli @FabianMeiswinkel @sboshra @Pilchie @kushagraThapar @jeet1995 @kundadebdatta @xinlian12
 Microsoft.Azure.Cosmos/src/Json @adityasa @neildsh @kirankumarkolli @sboshra @kushagraThapar
 Microsoft.Azure.Cosmos/src/Query @adityasa @neildsh @kirankumarkolli @sboshra @kushagraThapar
 Microsoft.Azure.Cosmos/src/CosmosElements @adityasa @neildsh @kirankumarkolli @sboshra @kushagraThapar
