@@ -164,9 +164,14 @@ namespace Microsoft.Azure.Cosmos.Routing
         public ReadOnlyCollection<string> EffectivePreferredLocations => this.locationInfo.EffectivePreferredLocations;
 
         /// <summary>
-        /// Returns the location corresponding to the endpoint if location specific endpoint is provided.
-        /// For the defaultEndPoint, we will return the first available write location.
-        /// Returns null, in other cases.
+        /// Returns the region name corresponding to the given endpoint.
+        /// - If the endpoint matches a known write or read regional endpoint, returns that region name.
+        /// - If the endpoint is the account's default (global) endpoint and at least one write
+        ///   location is known, returns the first entry of the available write locations list.
+        ///   This applies to both single-master and multi-master accounts. Note that for multi-master
+        ///   accounts the first write location is simply the first region in the configured list,
+        ///   not necessarily the hub/primary write region.
+        /// - Otherwise, returns null.
         /// </summary>
         public string GetLocation(Uri endpoint)
         {
