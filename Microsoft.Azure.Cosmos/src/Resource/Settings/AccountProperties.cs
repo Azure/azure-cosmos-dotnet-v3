@@ -7,8 +7,6 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Text;
-    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -269,5 +267,7 @@ namespace Microsoft.Azure.Cosmos
         [JsonExtensionData]
         internal IDictionary<string, JToken> AdditionalProperties { get; set; }
 
+        [JsonProperty(PropertyName = Constants.Properties.EnableNRegionSynchronousCommit, NullValueHandling = NullValueHandling.Ignore)]
+        internal bool EnableNRegionSynchronousCommit { get; set; }
     }
 }

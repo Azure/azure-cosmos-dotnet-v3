@@ -7,7 +7,6 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <ServerGarbageCollection>true</ServerGarbageCollection>
-    <DefineConstants Condition=" '$(IsPreview)' == 'True' ">$(DefineConstants);ENCRYPTION_CUSTOM_PREVIEW</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,12 +17,9 @@
 
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" Version="0.13.3" />
+    <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="3.0.1" />
     <PackageReference Include="Moq" Version="4.13.1" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(IsPreview)' == 'True' ">
-    <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="3.0.1" />
   </ItemGroup>
 
   <ItemGroup>

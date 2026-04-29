@@ -5,7 +5,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System.Collections;
     using System.Collections.Generic;
-    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// The user contract for the various feed responses that serialized the responses to a type.

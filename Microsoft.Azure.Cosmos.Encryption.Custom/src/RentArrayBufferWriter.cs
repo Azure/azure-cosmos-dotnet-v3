@@ -104,7 +104,7 @@ internal class RentArrayBufferWriter : IBufferWriter<byte>, IDisposable
     {
         this.CheckIfDisposed();
 
-        ArgumentNullException.ThrowIfNull(stream);
+        ArgumentValidation.ThrowIfNull(stream);
 
         await stream.WriteAsync(new Memory<byte>(this.rentedBuffer, 0, this.written), cancellationToken).ConfigureAwait(false);
         this.committed += this.written;
@@ -116,7 +116,7 @@ internal class RentArrayBufferWriter : IBufferWriter<byte>, IDisposable
     {
         this.CheckIfDisposed();
 
-        ArgumentNullException.ThrowIfNull(stream);
+        ArgumentValidation.ThrowIfNull(stream);
 
         stream.Write(this.rentedBuffer, 0, this.written);
         this.committed += this.written;

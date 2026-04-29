@@ -253,6 +253,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         cancellationToken));
 
                 DateTime dateTime = new DateTime(2019, 05, 15, 12, 1, 2, 3, DateTimeKind.Utc);
+                DateTimeOffset dateTimeOffset = new DateTimeOffset(2019, 05, 15, 12, 1, 2, 3, TimeSpan.Zero);
                 Guid guid = Guid.NewGuid();
 
                 //Test supported types
@@ -273,6 +274,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     new { pk = char.MaxValue },
                     new { pk = "test" },
                     new { pk = dateTime },
+                    new { pk = dateTimeOffset},
                     new { pk = guid },
                 };
 
@@ -305,6 +307,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                     else if (pk is string stringValue)
                     {
                         if (poco.pk is DateTime)
+                        {
+                            Assert.AreEqual(poco.pk.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"), stringValue);
+                        }
+                        else if (poco.pk is DateTimeOffset)
                         {
                             Assert.AreEqual(poco.pk.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"), stringValue);
                         }

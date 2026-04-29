@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
+    using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.IO;
     using System.Linq;
@@ -13,12 +14,15 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using Newtonsoft.Json;
 
     [TestClass]
     public class ThinClientStoreClientTests
@@ -55,10 +59,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosHttpClient cosmosHttpClient = MockCosmosUtil.CreateMockCosmosHttpClientFromFunc(
                 _ => Task.FromResult(mockResponse));
 
+            Cosmos.UserAgentContainer userAgentContainer = new Microsoft.Azure.Cosmos.UserAgentContainer(0, "TestFeature", "TestRegion", "TestSuffix");
+
             ThinClientStoreClient thinClientStoreClient = new ThinClientStoreClient(
                 httpClient: cosmosHttpClient,
                 eventSource: null,
-                serializerSettings: null);
+                userAgentContainer: userAgentContainer,
+                serializerSettings: null,
+                globalPartitionEndpointManager: GlobalPartitionEndpointManagerNoOp.Instance);
 
             DocumentServiceRequest request = DocumentServiceRequest.Create(
                 operationType: OperationType.Read,
@@ -116,10 +124,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosHttpClient cosmosHttpClient = MockCosmosUtil.CreateMockCosmosHttpClientFromFunc(
                 _ => Task.FromResult(successResponse));
 
+            Cosmos.UserAgentContainer userAgentContainer = new Microsoft.Azure.Cosmos.UserAgentContainer(0, "TestFeature", "TestRegion", "TestSuffix");
+
             ThinClientStoreClient thinClientStoreClient = new ThinClientStoreClient(
                 httpClient: cosmosHttpClient,
                 eventSource: null,
-                serializerSettings: null);
+                userAgentContainer: userAgentContainer,
+                serializerSettings: null,
+                globalPartitionEndpointManager: GlobalPartitionEndpointManagerNoOp.Instance);
 
             DocumentServiceRequest request = DocumentServiceRequest.Create(
                 operationType: OperationType.Read,
@@ -170,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task InvokeAsync_ShouldAddRequiredProxyHeaders()
+        public async Task InvokeAsync_ShouldOnlyAddUserAgentAndActivityIdHeadersToProxyRequest()
         {
             HttpResponseMessage successResponse = new HttpResponseMessage(HttpStatusCode.Created)
             {
@@ -191,10 +203,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                         capturedRequest = await requestFactory())
                 .ReturnsAsync(successResponse);
 
+            Cosmos.UserAgentContainer userAgentContainer = new Microsoft.Azure.Cosmos.UserAgentContainer(0, "TestFeature", "TestRegion", "TestSuffix");
+
             ThinClientStoreClient thinClientStoreClient = new ThinClientStoreClient(
                 httpClient: mockCosmosHttpClient.Object,
                 eventSource: null,
-                serializerSettings: null);
+                userAgentContainer: userAgentContainer,
+                serializerSettings: null,
+                globalPartitionEndpointManager: GlobalPartitionEndpointManagerNoOp.Instance);
 
             DocumentServiceRequest request = DocumentServiceRequest.Create(
                 operationType: OperationType.Read,
@@ -258,21 +274,15 @@ namespace Microsoft.Azure.Cosmos.Tests
             // Assert
             Assert.IsNotNull(capturedRequest, "The request was not captured");
 
-            // Get all request headers for verification
             System.Collections.Generic.Dictionary<string, string> requestHeaders = capturedRequest.Headers.ToDictionary(h => h.Key, h => h.Value.FirstOrDefault());
 
-            // Verify the required proxy headers
-            Assert.IsTrue(requestHeaders.ContainsKey(ThinClientConstants.ProxyStartEpk), "ProxyStartEpk header is missing");
-            Assert.AreEqual(mockPartitionKeyRange.MinInclusive, requestHeaders[ThinClientConstants.ProxyStartEpk]);
+            // Only UserAgent and ActivityId should be present
+            Assert.AreEqual(2, requestHeaders.Count, "Only UserAgent and ActivityId headers should be present");
+            Assert.IsTrue(requestHeaders.ContainsKey(ThinClientConstants.UserAgent), "UserAgent header is missing");
+            Assert.IsTrue(requestHeaders.ContainsKey(HttpConstants.HttpHeaders.ActivityId), "ActivityId header is missing");
 
-            Assert.IsTrue(requestHeaders.ContainsKey(ThinClientConstants.ProxyEndEpk), "ProxyEndEpk header is missing");
-            Assert.AreEqual(mockPartitionKeyRange.MaxExclusive, requestHeaders[ThinClientConstants.ProxyEndEpk]);
-
-            Assert.IsTrue(requestHeaders.ContainsKey(ThinClientConstants.ProxyOperationType), "ProxyOperationType header is missing");
-            Assert.AreEqual(request.OperationType.ToOperationTypeString(), requestHeaders[ThinClientConstants.ProxyOperationType]);
-
-            Assert.IsTrue(requestHeaders.ContainsKey(ThinClientConstants.ProxyResourceType), "ProxyResourceType header is missing");
-            Assert.AreEqual(request.ResourceType.ToResourceTypeString(), requestHeaders[ThinClientConstants.ProxyResourceType]);
+            Assert.IsFalse(requestHeaders.ContainsKey(ThinClientConstants.ProxyStartEpk), "ProxyStartEpk header should NOT be present");
+            Assert.IsFalse(requestHeaders.ContainsKey(ThinClientConstants.ProxyEndEpk), "ProxyEndEpk header should NOT be present");
         }
 
         [TestMethod]
@@ -297,10 +307,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                         capturedRequest = await requestFactory())
                 .ReturnsAsync(successResponse);
 
+            Cosmos.UserAgentContainer userAgentContainer = new Microsoft.Azure.Cosmos.UserAgentContainer(0, "TestFeature", "TestRegion", "TestSuffix");
+
             ThinClientStoreClient thinClientStoreClient = new ThinClientStoreClient(
                 httpClient: mockCosmosHttpClient.Object,
                 eventSource: null,
-                serializerSettings: null);
+                userAgentContainer: userAgentContainer,
+                serializerSettings: null,
+                globalPartitionEndpointManager: GlobalPartitionEndpointManagerNoOp.Instance);
 
             DocumentServiceRequest request = DocumentServiceRequest.Create(
                 operationType: OperationType.Read,
@@ -359,6 +373,154 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsFalse(headers.ContainsKey(ThinClientConstants.ProxyStartEpk), "ProxyStartEpk should not be added when PKRange is null");
             Assert.IsFalse(headers.ContainsKey(ThinClientConstants.ProxyEndEpk), "ProxyEndEpk should not be added when PKRange is null");
         }
+
+        [TestMethod]
+        public void Constructor_ShouldThrowArgumentNullException_WhenUserAgentContainerIsNull()
+        {
+            // Arrange
+            Mock<CosmosHttpClient> mockHttpClient = new Mock<CosmosHttpClient>();
+            ICommunicationEventSource mockEventSource = Mock.Of<ICommunicationEventSource>();
+
+            // Act & Assert
+            ArgumentNullException ex = Assert.ThrowsException<ArgumentNullException>(() =>
+                new ThinClientStoreClient(
+                    httpClient: mockHttpClient.Object,
+                    userAgentContainer: null,
+                    eventSource: mockEventSource,
+                    globalPartitionEndpointManager: GlobalPartitionEndpointManagerNoOp.Instance,
+                    serializerSettings: null)
+            );
+
+            Assert.AreEqual("userAgentContainer", ex.ParamName);
+            StringAssert.Contains(ex.Message, "UserAgentContainer cannot be null");
+        }
+
+        #region ThinClientQueryPlanHelper Tests
+
+        private static readonly PartitionKeyDefinition HashPartitionKeyDefinition = new PartitionKeyDefinition()
+        {
+            Paths = new Collection<string>() { "/id" },
+            Kind = PartitionKind.Hash,
+        };
+
+        [TestMethod]
+        [DynamicData(nameof(GetQueryPlanJsonTestCases), DynamicDataSourceType.Method)]
+        public void DeserializeQueryPlanResponse_ConsistentWithQueryPartitionProvider(string queryPlanJson, string description)
+        {
+            // Deserialize via ThinClientQueryPlanHelper (stream-based, as used in thin client mode)
+            PartitionedQueryExecutionInfo thinClientResult;
+            using (Stream stream = new MemoryStream(Encoding.UTF8.GetBytes(queryPlanJson)))
+            {
+                thinClientResult = ThinClientQueryPlanHelper.DeserializeQueryPlanResponse(
+                    stream,
+                    HashPartitionKeyDefinition);
+            }
+
+            // Deserialize via QueryPartitionProvider (string-based, as used in gateway/service-interop mode)
+            QueryPartitionProvider queryPartitionProvider = new QueryPartitionProvider(
+                new Dictionary<string, object>() { { "maxSqlQueryInputLength", 524288 } });
+
+            PartitionedQueryExecutionInfoInternal queryInfoInternal =
+                JsonConvert.DeserializeObject<PartitionedQueryExecutionInfoInternal>(
+                    queryPlanJson,
+                    new JsonSerializerSettings { DateParseHandling = DateParseHandling.None, MaxDepth = 64 });
+
+            PartitionedQueryExecutionInfo providerResult = queryPartitionProvider.ConvertPartitionedQueryExecutionInfo(
+                queryInfoInternal,
+                HashPartitionKeyDefinition);
+
+            // Assert: Both paths must produce identical EPK ranges
+            Assert.AreEqual(providerResult.QueryRanges.Count, thinClientResult.QueryRanges.Count, description);
+            for (int i = 0; i < providerResult.QueryRanges.Count; i++)
+            {
+                Assert.AreEqual(providerResult.QueryRanges[i].Min, thinClientResult.QueryRanges[i].Min, $"{description} - range[{i}].Min");
+                Assert.AreEqual(providerResult.QueryRanges[i].Max, thinClientResult.QueryRanges[i].Max, $"{description} - range[{i}].Max");
+                Assert.AreEqual(providerResult.QueryRanges[i].IsMinInclusive, thinClientResult.QueryRanges[i].IsMinInclusive, $"{description} - range[{i}].IsMinInclusive");
+                Assert.AreEqual(providerResult.QueryRanges[i].IsMaxInclusive, thinClientResult.QueryRanges[i].IsMaxInclusive, $"{description} - range[{i}].IsMaxInclusive");
+            }
+        }
+
+        private static IEnumerable<object[]> GetQueryPlanJsonTestCases()
+        {
+            // Full range (cross-partition query)
+            yield return new object[]
+            {
+                @"{""queryInfo"":{""distinctType"":""None"",""top"":null,""offset"":null,""limit"":null,""orderBy"":[],""orderByExpressions"":[],""groupByExpressions"":[],""groupByAliases"":[],""aggregates"":[""CountIf""],""groupByAliasToAggregateType"":{},""rewrittenQuery"":""SELECT VALUE [{\""item\"": COUNTIF(c.valid)}]\nFROM c"",""hasSelectValue"":true,""dCountInfo"":null,""hasNonStreamingOrderBy"":false},""queryRanges"":[{""min"":[],""max"":""Infinity"",""isMinInclusive"":true,""isMaxInclusive"":false}]}",
+                "Full range with aggregate"
+            };
+
+            // Point query (single partition key)
+            yield return new object[]
+            {
+                @"{""queryInfo"":{""distinctType"":""None"",""top"":null,""offset"":null,""limit"":null,""orderBy"":[""Descending""],""orderByExpressions"":[],""groupByExpressions"":[],""groupByAliases"":[],""aggregates"":[],""groupByAliasToAggregateType"":{},""rewrittenQuery"":"""",""hasSelectValue"":false,""dCountInfo"":null,""hasNonStreamingOrderBy"":false},""queryRanges"":[{""min"":[""testValue""],""max"":[""testValue""],""isMinInclusive"":true,""isMaxInclusive"":true}]}",
+                "Point query with ORDER BY"
+            };
+
+            // HybridSearchQueryInfo
+            yield return new object[]
+            {
+                @"{""hybridSearchQueryInfo"":{""globalStatisticsQuery"":""SELECT COUNT(1) AS documentCount, [] AS fullTextStatistics\nFROM c"",""componentQueryInfos"":[],""componentWithoutPayloadQueryInfos"":[],""projectionQueryInfo"":null,""componentWeights"":null,""skip"":null,""take"":10,""requiresGlobalStatistics"":false},""queryRanges"":[{""min"":[],""max"":""Infinity"",""isMinInclusive"":true,""isMaxInclusive"":false}]}",
+                "HybridSearchQueryInfo"
+            };
+        }
+
+        [TestMethod]
+        public void DeserializeQueryPlanResponse_MultipleRanges_SortsOutput()
+        {
+            // Multiple ranges in deliberate reverse order to verify sorting
+            string queryPlanJson = @"{""queryInfo"":{""distinctType"":""None"",""top"":null,""offset"":null,""limit"":null,""orderBy"":[],""orderByExpressions"":[],""groupByExpressions"":[],""groupByAliases"":[],""aggregates"":[],""groupByAliasToAggregateType"":{},""rewrittenQuery"":"""",""hasSelectValue"":false,""dCountInfo"":null,""hasNonStreamingOrderBy"":false},""queryRanges"":[{""min"":[""zzz""],""max"":[""zzz""],""isMinInclusive"":true,""isMaxInclusive"":true},{""min"":[""aaa""],""max"":[""aaa""],""isMinInclusive"":true,""isMaxInclusive"":true},{""min"":[""mmm""],""max"":[""mmm""],""isMinInclusive"":true,""isMaxInclusive"":true}]}";
+
+            using Stream stream = new MemoryStream(Encoding.UTF8.GetBytes(queryPlanJson));
+
+            PartitionedQueryExecutionInfo result = ThinClientQueryPlanHelper.DeserializeQueryPlanResponse(
+                stream,
+                HashPartitionKeyDefinition);
+
+            Assert.AreEqual(3, result.QueryRanges.Count);
+            for (int i = 0; i < result.QueryRanges.Count - 1; i++)
+            {
+                Assert.IsTrue(
+                    string.Compare(result.QueryRanges[i].Min, result.QueryRanges[i + 1].Min, StringComparison.Ordinal) <= 0,
+                    $"Ranges should be sorted: range[{i}].Min='{result.QueryRanges[i].Min}' should be <= range[{i + 1}].Min='{result.QueryRanges[i + 1].Min}'");
+            }
+        }
+
+        [TestMethod]
+        public void DeserializeQueryPlanResponse_InvalidInputs_FailsFast()
+        {
+            Assert.ThrowsException<ArgumentNullException>(
+                () => ThinClientQueryPlanHelper.DeserializeQueryPlanResponse(null, HashPartitionKeyDefinition),
+                "Null stream should throw");
+
+            using (Stream validStream = new MemoryStream(Encoding.UTF8.GetBytes("{}")))
+            {
+                Assert.ThrowsException<ArgumentNullException>(
+                    () => ThinClientQueryPlanHelper.DeserializeQueryPlanResponse(validStream, null),
+                    "Null partitionKeyDefinition should throw");
+            }
+
+            using (Stream badJson = new MemoryStream(Encoding.UTF8.GetBytes("not valid json {{{")))
+            {
+                try
+                {
+                    ThinClientQueryPlanHelper.DeserializeQueryPlanResponse(badJson, HashPartitionKeyDefinition);
+                    Assert.Fail("Malformed JSON should throw");
+                }
+                catch (System.Text.Json.JsonException)
+                {
+                    // Expected - System.Text.Json throws JsonException or a derived type for malformed JSON
+                }
+            }
+
+            using (Stream nullJson = new MemoryStream(Encoding.UTF8.GetBytes("null")))
+            {
+                Assert.ThrowsException<FormatException>(
+                    () => ThinClientQueryPlanHelper.DeserializeQueryPlanResponse(nullJson, HashPartitionKeyDefinition),
+                    "JSON null should throw FormatException");
+            }
+        }
+
+        #endregion
 
         private ContainerProperties GetMockContainerProperties()
         {

@@ -135,8 +135,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public static HttpMessageHandler CreateSocketsHttpHandlerHelper(
-            int gatewayModeMaxConnectionLimit, 
-            IWebProxy webProxy, 
+            int gatewayModeMaxConnectionLimit,
+            IWebProxy webProxy,
             Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback)
         {
             // TODO: Remove Reflection when multitargetting is possible
@@ -162,11 +162,61 @@ namespace Microsoft.Azure.Cosmos
             try
             {
                 PropertyInfo maxConnectionsPerServerInfo = socketHandlerType.GetProperty("MaxConnectionsPerServer");
-                maxConnectionsPerServerInfo.SetValue(socketHttpHandler, gatewayModeMaxConnectionLimit);              
+                maxConnectionsPerServerInfo.SetValue(socketHttpHandler, gatewayModeMaxConnectionLimit);
             }
             // MaxConnectionsPerServer is not supported on some platforms.
             catch (PlatformNotSupportedException)
             {
+            }
+
+            // Enable multiple HTTP/2 connections to the same server.
+            // This allows the HttpClient to open additional TCP connections when
+            // the maximum concurrent streams limit on an existing connection is reached,
+            // improving throughput for thin client mode which uses HTTP/2.
+            try
+            {
+                PropertyInfo enableMultipleHttp2ConnectionsInfo = socketHandlerType.GetProperty("EnableMultipleHttp2Connections");
+                enableMultipleHttp2ConnectionsInfo?.SetValue(socketHttpHandler, true);
+            }
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceWarning("Failed to set EnableMultipleHttp2Connections on SocketsHttpHandler: {0}", ex.Message);
+            }
+
+            // Enable HTTP/2 PING keep-alive to detect broken connections.
+            // Without this, a broken HTTP/2 connection (e.g. after a network blip or load balancer
+            // reset) can remain in the pool indefinitely, causing persistent request failures
+            // that only resolve after application restart.
+            // KeepAlivePingDelay/Timeout/Policy are available on SocketsHttpHandler in .NET 5.0+.
+            try
+            {
+                int pingDelayInSeconds = ConfigurationManager.GetEnvironmentVariable<int>(
+                    ConfigurationManager.Http2KeepAlivePingDelayInSeconds,
+                    defaultValue: 1);
+
+                int pingTimeoutInSeconds = ConfigurationManager.GetEnvironmentVariable<int>(
+                    ConfigurationManager.Http2KeepAlivePingTimeoutInSeconds,
+                    defaultValue: 2);
+
+                PropertyInfo keepAlivePingDelayInfo = socketHandlerType.GetProperty("KeepAlivePingDelay");
+                keepAlivePingDelayInfo?.SetValue(socketHttpHandler, TimeSpan.FromSeconds(pingDelayInSeconds));
+
+                PropertyInfo keepAlivePingTimeoutInfo = socketHandlerType.GetProperty("KeepAlivePingTimeout");
+                keepAlivePingTimeoutInfo?.SetValue(socketHttpHandler, TimeSpan.FromSeconds(pingTimeoutInSeconds));
+
+                // HttpKeepAlivePingPolicy.Always = 1: send pings even for idle connections,
+                // which is critical for detecting broken connections lingering in the pool.
+                PropertyInfo keepAlivePingPolicyInfo = socketHandlerType.GetProperty("KeepAlivePingPolicy");
+                if (keepAlivePingPolicyInfo != null)
+                {
+                    Type pingPolicyType = keepAlivePingPolicyInfo.PropertyType;
+                    object alwaysValue = Enum.ToObject(pingPolicyType, 1);
+                    keepAlivePingPolicyInfo.SetValue(socketHttpHandler, alwaysValue);
+                }
+            }
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceWarning("Failed to configure HTTP/2 keep-alive ping on SocketsHttpHandler: {0}", ex.Message);
             }
 
             if (serverCertificateCustomValidationCallback != null)
@@ -388,7 +438,7 @@ namespace Microsoft.Azure.Cosmos
                             return responseMessage;
                         }
 
-                        bool isOutOfRetries = CosmosHttpClientCore.IsOutOfRetries(timeoutPolicy, startDateTimeUtc, timeoutEnumerator);
+                        bool isOutOfRetries = CosmosHttpClientCore.IsOutOfRetries(timeoutEnumerator);
                         if (isOutOfRetries)
                         {
                             return responseMessage;
@@ -402,7 +452,7 @@ namespace Microsoft.Azure.Cosmos
                             datum.RecordHttpException(requestMessage, e, resourceType, requestStartTime);
                             trace = datum.Trace;
                         }
-                        bool isOutOfRetries = CosmosHttpClientCore.IsOutOfRetries(timeoutPolicy, startDateTimeUtc, timeoutEnumerator);
+                        bool isOutOfRetries = CosmosHttpClientCore.IsOutOfRetries(timeoutEnumerator);
 
                         switch (e)
                         {
@@ -415,7 +465,7 @@ namespace Microsoft.Azure.Cosmos
 
                                 // Convert OperationCanceledException to 408 when the HTTP client throws it. This makes it clear that the 
                                 // the request timed out and was not user canceled operation.
-                                if (isOutOfRetries || !timeoutPolicy.IsSafeToRetry(requestMessage.Method))
+                                if (isOutOfRetries || !CosmosHttpClientCore.IsSafeToRetry(documentServiceRequest))
                                 {
                                     // throw current exception (caught in transport handler)
                                     string message =
@@ -440,14 +490,14 @@ namespace Microsoft.Azure.Cosmos
 
                                 break;
                             case WebException webException:
-                                if (isOutOfRetries || (!timeoutPolicy.IsSafeToRetry(requestMessage.Method) && !WebExceptionUtility.IsWebExceptionRetriable(webException)))
+                                if (isOutOfRetries || (!CosmosHttpClientCore.IsSafeToRetry(documentServiceRequest) && !WebExceptionUtility.IsWebExceptionRetriable(webException)))
                                 {
                                     throw;
                                 }
 
                                 break;
                             case HttpRequestException httpRequestException:
-                                if (isOutOfRetries || !timeoutPolicy.IsSafeToRetry(requestMessage.Method))
+                                if (isOutOfRetries || !CosmosHttpClientCore.IsSafeToRetry(documentServiceRequest))
                                 {
                                     throw;
                                 }
@@ -493,11 +543,22 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private static bool IsOutOfRetries(
-            HttpTimeoutPolicy timeoutPolicy,
-            DateTime startDateTimeUtc,
             IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> timeoutEnumerator)
         {
             return !timeoutEnumerator.MoveNext(); // No more retries are configured
+        }
+
+        private static bool IsSafeToRetry(DocumentServiceRequest documentServiceRequest)
+        {
+            // Three scenarios are safely retriable:
+            // 1) If request is null since they are originated from GetAsync calls
+            // 2) If request is read-only
+            // 3) If request is an address request.
+            if (documentServiceRequest == null)
+            {
+                return true;
+            }
+            return documentServiceRequest.IsReadOnlyRequest || documentServiceRequest.ResourceType == ResourceType.Address;
         }
 
         private async Task<HttpResponseMessage> ExecuteHttpHelperAsync(

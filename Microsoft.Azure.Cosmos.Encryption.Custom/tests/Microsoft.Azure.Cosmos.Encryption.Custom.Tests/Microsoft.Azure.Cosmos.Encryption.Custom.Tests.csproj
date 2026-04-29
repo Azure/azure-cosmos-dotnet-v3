@@ -9,11 +9,11 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <RootNamespace>Microsoft.Azure.Cosmos.Encryption.Tests</RootNamespace>
     <LangVersion>$(LangVersion)</LangVersion>
-    <DefineConstants Condition=" '$(IsPreview)' == 'True' ">$(DefineConstants);ENCRYPTION_CUSTOM_PREVIEW</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="..\..\..\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\Contracts\ContractEnforcement.cs" Link="Contracts\ContractEnforcement.cs" />
+    <Compile Include="..\..\..\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\Contracts\ContractType.cs" Link="Contracts\ContractType.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -22,10 +22,12 @@
     <PackageReference Include="MSTest.TestAdapter" Version="1.2.0" />
     <PackageReference Include="MSTest.TestFramework" Version="1.2.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="coverlet.collector" Version="6.0.0" />
+    <PackageReference Include="coverlet.msbuild" Version="6.0.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="Contracts\DotNetSDKEncryptionCustomAPI.json">
+    <None Include="Contracts\DotNetSDKEncryptionCustomAPI*.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>

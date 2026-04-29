@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     public class CosmosClientOptionsUnitTests
     {
         public const string AccountEndpoint = "https://localhost:8081/";
-        public const string ConnectionString = "AccountEndpoint=https://localtestcosmos.documents.azure.com:443/;AccountKey=425Mcv8CXQqzRNCgFNjIhT424GK99CKJvASowTnq15Vt8LeahXTcN5wt3342vQ==;";
+        public const string ConnectionString = "AccountEndpoint=https://example.documents.azure.com:443/;AccountKey=NotRealKey==;";
         public Func<HttpClient> HttpClientFactoryDelegate = () => new HttpClient();
 
         [TestMethod]
@@ -86,6 +86,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(clientOptions.EnableTcpConnectionEndpointRediscovery);
             Assert.IsNull(clientOptions.HttpClientFactory);
             Assert.AreNotEqual(consistencyLevel, clientOptions.ConsistencyLevel);
+            Assert.IsNull(clientOptions.ReadConsistencyStrategy);
             Assert.AreNotEqual(priorityLevel, clientOptions.PriorityLevel);
             Assert.IsFalse(clientOptions.EnablePartitionLevelCircuitBreaker);
             Assert.IsFalse(clientOptions.EnableAdvancedReplicaSelectionForTcp.HasValue);
@@ -148,6 +149,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(object.ReferenceEquals(webProxy, clientOptions.WebProxy));
             Assert.IsTrue(clientOptions.AllowBulkExecution);
             Assert.AreEqual(consistencyLevel, clientOptions.ConsistencyLevel);
+            Assert.IsNull(clientOptions.ReadConsistencyStrategy);
             Assert.AreEqual(priorityLevel, clientOptions.PriorityLevel);
             Assert.IsFalse(clientOptions.EnablePartitionLevelCircuitBreaker);
             Assert.IsTrue(clientOptions.EnableAdvancedReplicaSelectionForTcp.HasValue && clientOptions.EnableAdvancedReplicaSelectionForTcp.Value);
@@ -223,6 +225,57 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(policy.EnableTcpConnectionEndpointRediscovery);
             CollectionAssert.AreEqual(preferredLocations.ToArray(), policy.PreferredLocations.ToArray());
             CollectionAssert.AreEqual(regionalEndpoints.ToArray(), policy.AccountInitializationCustomEndpoints.ToArray());
+        }
+
+        [TestMethod]
+        public void VerifyReadConsistencyStrategyBuilderProperties()
+        {
+            string endpoint = AccountEndpoint;
+            string key = MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey;
+
+            // Verify default is null
+            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
+                accountEndpoint: endpoint,
+                authKeyOrResourceToken: key);
+
+            CosmosClient cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
+            CosmosClientOptions clientOptions = cosmosClient.ClientOptions;
+
+            Assert.IsNull(clientOptions.ReadConsistencyStrategy);
+            Assert.IsNull(clientOptions.ConsistencyLevel);
+
+            // Verify WithReadConsistencyStrategy sets the property and does not affect ConsistencyLevel
+            cosmosClientBuilder = new CosmosClientBuilder(
+                accountEndpoint: endpoint,
+                authKeyOrResourceToken: key);
+
+            cosmosClientBuilder
+                .WithReadConsistencyStrategy(Cosmos.ReadConsistencyStrategy.LatestCommitted);
+
+            cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
+            clientOptions = cosmosClient.ClientOptions;
+
+            Assert.AreEqual(Cosmos.ReadConsistencyStrategy.LatestCommitted, clientOptions.ReadConsistencyStrategy);
+            Assert.IsNull(clientOptions.ConsistencyLevel);
+            Assert.IsNull(clientOptions.GetDocumentsConsistencyLevel());
+
+            // Verify each enum value round-trips through the builder
+            foreach (Cosmos.ReadConsistencyStrategy strategy in Enum.GetValues(typeof(Cosmos.ReadConsistencyStrategy)))
+            {
+                cosmosClientBuilder = new CosmosClientBuilder(
+                    accountEndpoint: endpoint,
+                    authKeyOrResourceToken: key);
+
+                cosmosClientBuilder.WithReadConsistencyStrategy(strategy);
+
+                cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
+                clientOptions = cosmosClient.ClientOptions;
+
+                Assert.AreEqual(strategy, clientOptions.ReadConsistencyStrategy,
+                    $"ReadConsistencyStrategy {strategy} did not round-trip through builder");
+                Assert.IsNull(clientOptions.ConsistencyLevel,
+                    $"ConsistencyLevel should remain null when ReadConsistencyStrategy is set to {strategy}");
+            }
         }
 
         /// <summary>
@@ -494,75 +547,100 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         [TestMethod]
         [Owner("ntripician")]
-        [DataRow(true, false, true, "F2", DisplayName = "With PPCB and ApplicationName")]
-        [DataRow(true, true, true, "F3", DisplayName = "With PPAF and ApplicationName")]
-        [DataRow(false, false, true, "F2", DisplayName = "With PPCB and Without ApplicationName")]
-        [DataRow(false, false, false, "", DisplayName = "Without Any Features and ApplicationName")]
+        [DataRow(true, false, true, false, false, "F2", DisplayName = "With PPCB and ApplicationName")]
+        [DataRow(true, true, true, false, false, "F3", DisplayName = "With PPAF and ApplicationName")]
+        [DataRow(false, false, true, false, false, "F2", DisplayName = "With PPCB and Without ApplicationName")]
+        [DataRow(true, false, false, false, true, "F4", DisplayName = "With Thin Client and ApplicationName")]
+        [DataRow(true, false, false, true, false, "F8", DisplayName = "With Binary Encoding and ApplicationName")]
+        [DataRow(true, false, false, true, true, "FC", DisplayName = "With Thin Client, Binary Encoding and ApplicationName")]
+        [DataRow(true, false, true, true, true, "FE", DisplayName = "With PPCB, Thin Client, Binary Encoding and ApplicationName")]
+        [DataRow(true, true, true, true, true, "FF", DisplayName = "With PPAF, PPCB, Thin Client, Binary Encoding and ApplicationName")]
+        [DataRow(false, false, false, false, false, "", DisplayName = "Without Any Features and ApplicationName")]
         public void UserAgentContainsPPAFInformation(
             bool appName,
             bool ppaf, 
             bool ppcb,
+            bool binaryEncoding,
+            bool thinClient,
             string expectedHexStringPostFix)
         {
-            EnvironmentInformation environmentInformation = new EnvironmentInformation();
-            string expectedValue = "cosmos-netstandard-sdk/" + environmentInformation.ClientVersion;
-            string userAgentSuffix = "testSuffix";
-
-            string endpoint = AccountEndpoint;
-            string key = MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey;
-
-            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
-                accountEndpoint: endpoint,
-                authKeyOrResourceToken: key);
-
-            if (appName)
+            try
             {
-                cosmosClientBuilder.WithApplicationName(userAgentSuffix);
+                if (binaryEncoding)
+                {
+                    Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, "True");
+                }
+
+                if (thinClient)
+                {
+                    Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
+                }
+
+                EnvironmentInformation environmentInformation = new EnvironmentInformation();
+                string expectedValue = "cosmos-netstandard-sdk/" + environmentInformation.ClientVersion;
+                string userAgentSuffix = "testSuffix";
+
+                string endpoint = AccountEndpoint;
+                string key = MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey;
+
+                CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
+                    accountEndpoint: endpoint,
+                    authKeyOrResourceToken: key);
+
+                if (appName)
+                {
+                    cosmosClientBuilder.WithApplicationName(userAgentSuffix);
+                }
+
+                ConnectionPolicy policy = new ConnectionPolicy()
+                {
+                    EnablePartitionLevelCircuitBreaker = ppcb,
+                    EnablePartitionLevelFailover = ppaf
+                };
+
+                CosmosClient cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient(policy, thinClient));
+
+                CosmosClientOptions cosmosClientOptions = cosmosClient.ClientOptions;
+
+                if (appName)
+                {
+                    Assert.AreEqual(userAgentSuffix, cosmosClientOptions.ApplicationName);
+                    cosmosClient.DocumentClient.ConnectionPolicy.UserAgentContainer.AppendFeatures(cosmosClientOptions.ApplicationName);
+                }
+                else
+                {
+                    Assert.IsNull(cosmosClientOptions.ApplicationName);
+                }
+
+                cosmosClient.DocumentClient.ConnectionPolicy.UserAgentContainer.AppendFeatures(cosmosClient.DocumentClient.GetUserAgentFeatures());
+
+                string userAgent = cosmosClient.DocumentClient.ConnectionPolicy.UserAgentContainer.UserAgent;
+                Console.WriteLine(userAgent);
+                if (appName)
+                {
+                    Assert.IsTrue(userAgent.EndsWith(userAgentSuffix));
+                }
+                else
+                {
+                    Assert.IsTrue(userAgent.EndsWith(expectedHexStringPostFix));
+                }
+
+                Assert.IsTrue(userAgent.StartsWith(expectedValue));
+                Assert.IsTrue(userAgent.Contains(expectedHexStringPostFix));
+
+                if (appName)
+                {
+                    Assert.IsTrue(userAgent.EndsWith(userAgentSuffix));
+                }
+                else
+                {
+                    Assert.IsTrue(userAgent.EndsWith(expectedHexStringPostFix));
+                }
             }
-
-            ConnectionPolicy policy = new ConnectionPolicy()
+            finally
             {
-                EnablePartitionLevelCircuitBreaker = ppcb,
-                EnablePartitionLevelFailover = ppaf
-            };
-
-            CosmosClient cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient(policy));
-
-            CosmosClientOptions cosmosClientOptions = cosmosClient.ClientOptions;
-            
-            if (appName)
-            {
-                Assert.AreEqual(userAgentSuffix, cosmosClientOptions.ApplicationName);
-                cosmosClient.DocumentClient.ConnectionPolicy.UserAgentContainer.AppendFeatures(cosmosClientOptions.ApplicationName);
-            }
-            else
-            {
-                Assert.IsNull(cosmosClientOptions.ApplicationName);
-            }
-
-            cosmosClient.DocumentClient.ConnectionPolicy.UserAgentContainer.AppendFeatures(cosmosClient.DocumentClient.GetUserAgentFeatures());
-
-            string userAgent = cosmosClient.DocumentClient.ConnectionPolicy.UserAgentContainer.UserAgent;
-            Console.WriteLine(userAgent);
-            if (appName)
-            {
-                Assert.IsTrue(userAgent.EndsWith(userAgentSuffix));
-            }
-            else
-            {
-                Assert.IsTrue(userAgent.EndsWith(expectedHexStringPostFix));
-            }
-
-            Assert.IsTrue(userAgent.StartsWith(expectedValue));
-            Assert.IsTrue(userAgent.Contains(expectedHexStringPostFix));
-
-            if (appName)
-            {
-                Assert.IsTrue(userAgent.EndsWith(userAgentSuffix));
-            }
-            else
-            {
-                Assert.IsTrue(userAgent.EndsWith(expectedHexStringPostFix));
+                Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, null);
+                Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, null);
             }
         }
 
@@ -649,6 +727,42 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void GetSerializedConfiguration_WithSTJSerializerOptions_DoesNotThrow()
+        {
+            System.Text.Json.JsonSerializerOptions jsonSerializerOptions = new System.Text.Json.JsonSerializerOptions()
+            {
+                PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+            };
+
+            // Set a TypeInfoResolver via reflection to reproduce the circular reference
+            // scenario from the bug report (TypeInfoResolver → Options → TypeInfoResolver).
+            // TypeInfoResolver was introduced in .NET 7 and is not available at compile time
+            // with the STJ 6.0 package reference, but is available at runtime on .NET 7+.
+            PropertyInfo typeInfoResolverProp = typeof(System.Text.Json.JsonSerializerOptions)
+                .GetProperty("TypeInfoResolver");
+
+            if (typeInfoResolverProp != null)
+            {
+                Type defaultResolverType = typeof(System.Text.Json.JsonSerializerOptions).Assembly
+                    .GetType("System.Text.Json.Serialization.Metadata.DefaultJsonTypeInfoResolver");
+
+                if (defaultResolverType != null)
+                {
+                    typeInfoResolverProp.SetValue(jsonSerializerOptions, Activator.CreateInstance(defaultResolverType));
+                }
+            }
+
+            CosmosClientOptions options = new CosmosClientOptions()
+            {
+                UseSystemTextJsonSerializerWithOptions = jsonSerializerOptions,
+            };
+
+            string serializedConfig = options.GetSerializedConfiguration();
+            Assert.IsNotNull(serializedConfig);
+            Assert.IsTrue(serializedConfig.Contains("System.Text.Json.JsonSerializerOptions"));
+        }
+
+        [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
         public void ThrowOnNullTokenCredential()
         {
@@ -682,7 +796,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [ExpectedException(typeof(ArgumentException))]
         public void ThrowOnMissingAccountKeyInConnectionString()
         {
-            string invalidConnectionString = "AccountEndpoint=https://localtestcosmos.documents.azure.com:443/;";
+            string invalidConnectionString = "AccountEndpoint=https://example.documents.azure.com:443/;";
             new CosmosClientBuilder(invalidConnectionString);
         }
 
@@ -690,7 +804,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [ExpectedException(typeof(ArgumentException))]
         public void ThrowOnMissingAccountEndpointInConnectionString()
         {
-            string invalidConnectionString = "AccountKey=425Mcv8CXQqzRNCgFNjIhT424GK99CKJvASowTnq15Vt8LeahXTcN5wt3342vQ==;";
+            string invalidConnectionString = "AccountKey=NotRealKey==;";
             new CosmosClientBuilder(invalidConnectionString);
         }
 
@@ -735,7 +849,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void VerifyHttpClientHandlerIsSet()
         {
             string endpoint = AccountEndpoint;
-            string key = "425Mcv8CXQqzRNCgFNjIhT424GK99CKJvASowTnq15Vt8LeahXTcN5wt3342vQ==";
+            string key = "NotRealKey==";
 
             IWebProxy webProxy = new TestWebProxy();
 
@@ -751,6 +865,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             SocketsHttpHandler handler = (SocketsHttpHandler)cosmosHttpClient.HttpMessageHandler;
 
             Assert.IsTrue(object.ReferenceEquals(webProxy, handler.Proxy));
+            Assert.IsTrue(handler.EnableMultipleHttp2Connections, "EnableMultipleHttp2Connections should be set through the builder pipeline");
+            Assert.AreEqual(TimeSpan.FromSeconds(1), handler.KeepAlivePingDelay, "KeepAlivePingDelay should be set through the builder pipeline");
+            Assert.AreEqual(TimeSpan.FromSeconds(2), handler.KeepAlivePingTimeout, "KeepAlivePingTimeout should be set through the builder pipeline");
+            Assert.AreEqual(HttpKeepAlivePingPolicy.Always, handler.KeepAlivePingPolicy, "KeepAlivePingPolicy should be set through the builder pipeline");
         }
 
         [TestMethod]

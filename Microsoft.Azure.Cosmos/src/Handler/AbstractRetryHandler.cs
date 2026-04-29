@@ -53,6 +53,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                 throw;
             }
+            catch (OperationCanceledException ex)
+            {
+                throw new CosmosOperationCanceledException(ex, request.Trace);
+            }
             finally
             {
                 request.OnBeforeSendRequestActions -= retryPolicyInstance.OnBeforeSendRequest;

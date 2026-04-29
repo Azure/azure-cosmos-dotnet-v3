@@ -71,32 +71,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
         public override int Read(char[] buffer, int index, int count)
         {
-#if NET8_0_OR_GREATER
-            ArgumentNullException.ThrowIfNull(buffer);
-            ArgumentOutOfRangeException.ThrowIfNegative(index);
-            ArgumentOutOfRangeException.ThrowIfNegative(count);
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - index);
-#else
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
-
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-
-            if (buffer.Length - index < count)
-            {
-                throw new ArgumentOutOfRangeException();
-            }
-#endif
+            ArgumentValidation.ThrowIfNull(buffer);
+            ArgumentValidation.ThrowIfNegative(index);
+            ArgumentValidation.ThrowIfNegative(count);
+            ArgumentValidation.ThrowIfGreaterThan(count, buffer.Length - index);
 
             if (this.closed)
             {
@@ -125,12 +103,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 throw new InvalidOperationException("Reader is closed");
             }
 
+            int start = this.pos;
+            int count = this.length - start;
             this.pos = this.length;
-#if NET8_0_OR_GREATER
-            return new string(this.chars[this.pos..this.length].Span);
-#else
-            return new string(this.chars.Slice(this.pos, this.length - this.pos).ToArray());
-#endif
+            if (count == 0)
+            {
+                return string.Empty;
+            }
+
+            return this.chars.Span.Slice(start, count).ToString();
         }
 
         public override string ReadLine()
@@ -146,11 +127,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 char ch = this.chars.Span[i];
                 if (ch == '\r' || ch == '\n')
                 {
-#if NET8_0_OR_GREATER
-                    string result = new (this.chars[this.pos..i].Span);
-#else
                     string result = new (this.chars.Slice(this.pos, i - this.pos).ToArray());
-#endif
                     this.pos = i + 1;
                     if (ch == '\r' && this.pos < this.length && this.chars.Span[this.pos] == '\n')
                     {
@@ -165,11 +142,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             if (i > this.pos)
             {
-#if NET8_0_OR_GREATER
-                string result = new (this.chars[this.pos..i].Span);
-#else
                 string result = new (this.chars.Slice(this.pos, i - this.pos).ToArray());
-#endif
                 this.pos = i;
                 return result;
             }
