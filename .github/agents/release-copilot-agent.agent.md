@@ -50,6 +50,7 @@ I need to add missed PRs to a release
 8. Create a release PR with API diff in the description
 9. Ensure that a full test suite passes, including contract enforcement tests.
 10. Guide through post-merge pipeline queuing and NuGet publish
+11. Update the `azure-docs-sdk-dotnet` metadata file with the new version (fork/sync, worktree clone, PR)
 
 ---
 
@@ -333,10 +334,92 @@ After the PR is approved and merged:
    - Body: Copy changelog notes
    - For preview: Check "This is a pre-release"
 
-3. **Metadata XML update:**
-   - Fork `azure-docs-sdk-dotnet` repo
-   - Update version in the metadata file
-   - Submit PR
+3. **Metadata update — `azure-docs-sdk-dotnet`:**
+
+   > **Prerequisite:** Only perform this step after the release PR has been **approved and merged**, and the SDK package has been **published to NuGet**. Verify both conditions before proceeding:
+   > ```powershell
+   > # Verify the release PR is merged
+   > $prState = gh pr view <PR_NUMBER> --repo Azure/azure-cosmos-dotnet-v3 --json state,mergedAt --jq '.state'
+   > if ($prState -ne 'MERGED') { Write-Error "Release PR is not yet merged. Aborting metadata update."; return }
+   >
+   > # Verify the NuGet package is available
+   > $nugetUrl = "https://api.nuget.org/v3-flatcontainer/microsoft.azure.cosmos/X.Y.Z/microsoft.azure.cosmos.X.Y.Z.nupkg"
+   > $nugetStatus = (Invoke-WebRequest -Uri $nugetUrl -Method Head -UseBasicParsing -ErrorAction SilentlyContinue).StatusCode
+   > if ($nugetStatus -ne 200) { Write-Error "NuGet package X.Y.Z is not yet available. Wait for the publish pipeline to complete."; return }
+   > ```
+
+   Update the Cosmos DB metadata file in `MicrosoftDocs/azure-docs-sdk-dotnet` so the documentation site reflects the new release version. This work is done in a **separate worktree** to avoid disrupting the SDK repository.
+
+   **3a. Get GitHub username:**
+   ```powershell
+   $ghUser = gh api user --jq '.login'
+   ```
+
+   **3b. Check for existing fork and fork/sync:**
+   ```powershell
+   # Check if user already has a fork
+   $forkExists = gh repo view "$ghUser/azure-docs-sdk-dotnet" --json name 2>$null
+
+   if ($forkExists) {
+       # Sync existing fork with upstream
+       gh repo sync "$ghUser/azure-docs-sdk-dotnet" --branch main
+   } else {
+       # Fork the repo (no local clone yet)
+       gh repo fork MicrosoftDocs/azure-docs-sdk-dotnet --clone=false
+   }
+   ```
+
+   **3c. Clone fork into a separate worktree and create working branch:**
+   ```powershell
+   # Clone the fork into a sibling directory (worktree)
+   git clone "https://github.com/$ghUser/azure-docs-sdk-dotnet.git" ../azure-docs-sdk-dotnet-worktree
+   cd ../azure-docs-sdk-dotnet-worktree
+
+   # Add upstream remote and fetch
+   git remote add upstream https://github.com/MicrosoftDocs/azure-docs-sdk-dotnet.git
+   git fetch upstream
+
+   # Create working branch from upstream main
+   git checkout -b update-cosmos-version upstream/main
+   ```
+
+   **3d. Update `metadata/latest/Microsoft.Azure.Cosmos.json`:**
+
+   Update **two fields** in the file to reflect the new GA version (`X.Y.Z`):
+
+   | Field | Old Value | New Value |
+   |-------|-----------|-----------|
+   | `Version` | `PREV_VERSION` | `X.Y.Z` |
+   | `ServiceDirectory` | `https://github.com/Azure/azure-cosmos-dotnet-v3/tree/PREV_VERSION/Microsoft.Azure.Cosmos` | `https://github.com/Azure/azure-cosmos-dotnet-v3/tree/X.Y.Z/Microsoft.Azure.Cosmos` |
+
+   Use the edit tool or `sed`/PowerShell string replacement to make these changes.
+
+   **3e. Commit, push, and create PR:**
+   ```powershell
+   git add metadata/latest/Microsoft.Azure.Cosmos.json
+   git commit -m "Update Microsoft.Azure.Cosmos.json"
+   git push origin update-cosmos-version
+   ```
+
+   Create the PR targeting the **upstream** repo:
+   ```powershell
+   gh pr create --repo MicrosoftDocs/azure-docs-sdk-dotnet `
+     --base main `
+     --head "${ghUser}:update-cosmos-version" `
+     --title "Update Microsoft.Azure.Cosmos.json" `
+     --body "-  update ``Microsoft.Azure.Cosmos`` minor version to match with the latest release ``X.Y.Z``."
+   ```
+
+   > **Reference:** See [PR #2526](https://github.com/MicrosoftDocs/azure-docs-sdk-dotnet/pull/2526) for the expected format.
+
+   **3f. Clean up worktree:**
+   ```powershell
+   # Return to the SDK repo
+   cd $sdkRepoRoot   # or cd ../azure-cosmos-dotnet-v3
+
+   # Remove the worktree clone
+   Remove-Item -Recurse -Force ../azure-docs-sdk-dotnet-worktree
+   ```
 
 ---
 
@@ -555,6 +638,75 @@ After the hotfix PR is merged:
 1. **Create GitHub Release:**
    - Tag: `X.Y.Z+1`, Target: `releases/X.Y.Z+1`
    - Body: Copy changelog notes
+
+2. **Metadata update — `azure-docs-sdk-dotnet`:**
+
+   > **Prerequisite:** Only perform this step after the hotfix PR has been **approved and merged**, and the SDK package has been **published to NuGet**. Verify both conditions before proceeding:
+   > ```powershell
+   > # Verify the hotfix PR is merged
+   > $prState = gh pr view <PR_NUMBER> --repo Azure/azure-cosmos-dotnet-v3 --json state,mergedAt --jq '.state'
+   > if ($prState -ne 'MERGED') { Write-Error "Hotfix PR is not yet merged. Aborting metadata update."; return }
+   >
+   > # Verify the NuGet package is available
+   > $nugetUrl = "https://api.nuget.org/v3-flatcontainer/microsoft.azure.cosmos/X.Y.Z+1/microsoft.azure.cosmos.X.Y.Z+1.nupkg"
+   > $nugetStatus = (Invoke-WebRequest -Uri $nugetUrl -Method Head -UseBasicParsing -ErrorAction SilentlyContinue).StatusCode
+   > if ($nugetStatus -ne 200) { Write-Error "NuGet package X.Y.Z+1 is not yet available. Wait for the publish pipeline to complete."; return }
+   > ```
+
+   Update the Cosmos DB metadata file so the documentation site reflects the hotfix version. This follows the same workflow as Minor Mode §2.8 step 3.
+
+   **2a. Get GitHub username:**
+   ```powershell
+   $ghUser = gh api user --jq '.login'
+   ```
+
+   **2b. Check for existing fork and fork/sync:**
+   ```powershell
+   $forkExists = gh repo view "$ghUser/azure-docs-sdk-dotnet" --json name 2>$null
+
+   if ($forkExists) {
+       gh repo sync "$ghUser/azure-docs-sdk-dotnet" --branch main
+   } else {
+       gh repo fork MicrosoftDocs/azure-docs-sdk-dotnet --clone=false
+   }
+   ```
+
+   **2c. Clone fork into a separate worktree and create working branch:**
+   ```powershell
+   git clone "https://github.com/$ghUser/azure-docs-sdk-dotnet.git" ../azure-docs-sdk-dotnet-worktree
+   cd ../azure-docs-sdk-dotnet-worktree
+   git remote add upstream https://github.com/MicrosoftDocs/azure-docs-sdk-dotnet.git
+   git fetch upstream
+   git checkout -b update-cosmos-version upstream/main
+   ```
+
+   **2d. Update `metadata/latest/Microsoft.Azure.Cosmos.json`:**
+
+   Update **two fields** to reflect the hotfix version (`X.Y.Z+1`):
+
+   | Field | Old Value | New Value |
+   |-------|-----------|-----------|
+   | `Version` | `PREV_VERSION` | `X.Y.Z+1` |
+   | `ServiceDirectory` | `https://github.com/Azure/azure-cosmos-dotnet-v3/tree/PREV_VERSION/Microsoft.Azure.Cosmos` | `https://github.com/Azure/azure-cosmos-dotnet-v3/tree/X.Y.Z+1/Microsoft.Azure.Cosmos` |
+
+   **2e. Commit, push, and create PR:**
+   ```powershell
+   git add metadata/latest/Microsoft.Azure.Cosmos.json
+   git commit -m "Update Microsoft.Azure.Cosmos.json"
+   git push origin update-cosmos-version
+
+   gh pr create --repo MicrosoftDocs/azure-docs-sdk-dotnet `
+     --base main `
+     --head "${ghUser}:update-cosmos-version" `
+     --title "Update Microsoft.Azure.Cosmos.json" `
+     --body "-  update ``Microsoft.Azure.Cosmos`` minor version to match with the latest release ``X.Y.Z+1``."
+   ```
+
+   **2f. Clean up worktree:**
+   ```powershell
+   cd $sdkRepoRoot
+   Remove-Item -Recurse -Force ../azure-docs-sdk-dotnet-worktree
+   ```
 
 ---
 

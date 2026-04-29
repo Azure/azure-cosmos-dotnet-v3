@@ -323,7 +323,8 @@ namespace Microsoft.Azure.Cosmos
                     new AuthorizationTokenProviderTokenCredential(
                         tokenCredential,
                         new Uri(accountEndpoint),
-                        clientOptions?.TokenCredentialBackgroundRefreshInterval),
+                        clientOptions?.TokenCredentialBackgroundRefreshInterval,
+                        AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature),
                     clientOptions)
         {
         }
@@ -1174,6 +1175,20 @@ namespace Microsoft.Azure.Cosmos
         virtual DistributedWriteTransaction CreateDistributedWriteTransaction()
         {
             return new DistributedWriteTransactionCore(this.ClientContext);
+        }
+
+        /// <summary>
+        /// Creates a new instance of a distributed read transaction.
+        /// </summary>
+        /// <returns>An instance of <see cref="DistributedReadTransaction"/>.</returns>
+#if INTERNAL
+        public
+#else
+        internal
+#endif
+        virtual DistributedReadTransaction CreateDistributedReadTransaction()
+        {
+            return new DistributedReadTransactionCore(this.ClientContext);
         }
 
         /// <summary>
