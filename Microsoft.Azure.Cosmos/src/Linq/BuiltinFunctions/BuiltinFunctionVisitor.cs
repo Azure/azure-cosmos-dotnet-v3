@@ -122,13 +122,12 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         /// <summary>
-        /// Checks if the method is from MemoryExtensions class (e.g., Contains on ReadOnlySpan).
-        /// In .NET 10+, array.Contains() resolves to MemoryExtensions.Contains(ReadOnlySpan, T).
+        /// Checks if the method is MemoryExtensions.Contains (used by .NET 10+ for array.Contains()).
         /// </summary>
         private static bool IsMemoryExtensionsMethod(MethodCallExpression methodCallExpression)
         {
-            Type declaringType = methodCallExpression.Method.DeclaringType;
-            return declaringType != null && declaringType.FullName == "System.MemoryExtensions";
+            return methodCallExpression.Method.DeclaringType == typeof(MemoryExtensions)
+                && methodCallExpression.Method.Name == "Contains";
         }
 
         protected abstract SqlScalarExpression VisitExplicit(MethodCallExpression methodCallExpression, TranslationContext context);
