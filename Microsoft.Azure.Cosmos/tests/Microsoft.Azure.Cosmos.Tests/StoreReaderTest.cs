@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
         /// Tests for <see cref="IAddressResolver"/>
         /// </summary>
         [TestMethod]
-        public void AddressCacheMockTest()
+        public async Task AddressCacheMockTest()
         {
             // create a real document service request
             DocumentServiceRequest entity = DocumentServiceRequest.Create(OperationType.Read, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey);
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos
                     .ReturnsAsync(new PartitionAddressInformation(addressInformation));
 
             // validate that the mock works
-            PartitionAddressInformation addressInfo = mockAddressCache.Object.ResolveAsync(entity, false, new CancellationToken()).Result;
+            PartitionAddressInformation addressInfo = await mockAddressCache.Object.ResolveAsync(entity, false, new CancellationToken());
             Assert.IsTrue(addressInfo.AllAddresses[0] == addressInformation[0]);
         }
 
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
         /// Tests for <see cref="TransportClient"/>
         /// </summary>
         [TestMethod]
-        public void TransportClientMockTest()
+        public async Task TransportClientMockTest()
         {
             // create a real document service request
             DocumentServiceRequest entity = DocumentServiceRequest.Create(OperationType.Read, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey);
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos
 
             TransportClient mockTransportClientObject = mockTransportClient.Object;
             // get response from mock object
-            StoreResponse response = mockTransportClientObject.InvokeResourceOperationAsync(new TransportAddressUri(new Uri(addressInformation[0].PhysicalUri)), entity).Result;
+            StoreResponse response = await mockTransportClientObject.InvokeResourceOperationAsync(new TransportAddressUri(new Uri(addressInformation[0].PhysicalUri)), entity);
 
             // validate that the LSN matches
             Assert.IsTrue(response.LSN == 50);
@@ -465,7 +465,7 @@ namespace Microsoft.Azure.Cosmos
         /// Tests for <see cref="StoreReader"/>
         /// </summary>
         [TestMethod]
-        public void StoreReaderBarrierTest()
+        public async Task StoreReaderBarrierTest()
         {
             // create a real document service request
             DocumentServiceRequest entity = DocumentServiceRequest.Create(OperationType.Read, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey);
@@ -490,13 +490,13 @@ namespace Microsoft.Azure.Cosmos
             Mock<IAddressResolver> mockAddressCache = this.GetMockAddressCache(addressInformation);
 
             // validate that the mock works
-            PartitionAddressInformation partitionAddressInformation = mockAddressCache.Object.ResolveAsync(entity, false, new CancellationToken()).Result;
+            PartitionAddressInformation partitionAddressInformation = await mockAddressCache.Object.ResolveAsync(entity, false, new CancellationToken());
             IReadOnlyList<AddressInformation> addressInfo = partitionAddressInformation.AllAddresses;
 
             Assert.IsTrue(addressInfo[0] == addressInformation[0]);
 
             AddressSelector addressSelector = new AddressSelector(mockAddressCache.Object, Protocol.Tcp);
-            Uri primaryAddress = addressSelector.ResolvePrimaryTransportAddressUriAsync(entity, false /*forceAddressRefresh*/).Result.Uri;
+            Uri primaryAddress = (await addressSelector.ResolvePrimaryTransportAddressUriAsync(entity, false /*forceAddressRefresh*/)).Uri;
 
             // check if the address return from Address Selector matches the original address info
             Assert.IsTrue(primaryAddress.Equals(addressInformation[0].PhysicalUri));
@@ -505,7 +505,7 @@ namespace Microsoft.Azure.Cosmos
             TransportClient mockTransportClient = this.GetMockTransportClientDuringUpgrade(addressInformation);
 
             // get response from mock object
-            StoreResponse response = mockTransportClient.InvokeResourceOperationAsync(new TransportAddressUri(new Uri(addressInformation[0].PhysicalUri)), entity).Result;
+            StoreResponse response = await mockTransportClient.InvokeResourceOperationAsync(new TransportAddressUri(new Uri(addressInformation[0].PhysicalUri)), entity);
 
             // validate that the LSN matches
             Assert.IsTrue(response.LSN == 50);
@@ -529,13 +529,13 @@ namespace Microsoft.Azure.Cosmos
             // reads always go to read quorum (2) replicas
             int replicaCountToRead = 2;
 
-            IList<ReferenceCountedDisposable<StoreResult>> result = storeReader.ReadMultipleReplicaAsync(
+            IList<ReferenceCountedDisposable<StoreResult>> result = await storeReader.ReadMultipleReplicaAsync(
                     entity,
                     false /*includePrimary*/,
                     replicaCountToRead,
                     true /*requiresValidLSN*/ ,
                     false /*useSessionToken*/,
-                    ReadMode.Strong).Result;
+                    ReadMode.Strong);
 
             // make sure we got 2 responses from the store reader
             Assert.IsTrue(result.Count == 2);
@@ -545,7 +545,7 @@ namespace Microsoft.Azure.Cosmos
         /// test consistency writer for global strong
         /// </summary>
         [TestMethod]
-        public void GlobalStrongConsistentWriteMockTest()
+        public async Task GlobalStrongConsistentWriteMockTest()
         {
             // create a real document service request (with auth token level = god)
             DocumentServiceRequest entity = DocumentServiceRequest.Create(OperationType.Create, ResourceType.Document, AuthorizationTokenType.SystemAll);
@@ -575,13 +575,13 @@ namespace Microsoft.Azure.Cosmos
             Mock<IAddressResolver> mockAddressCache = this.GetMockAddressCache(addressInformation);
 
             // validate that the mock works
-            PartitionAddressInformation partitionAddressInformation = mockAddressCache.Object.ResolveAsync(entity, false, new CancellationToken()).Result;
+            PartitionAddressInformation partitionAddressInformation = await mockAddressCache.Object.ResolveAsync(entity, false, new CancellationToken());
             IReadOnlyList<AddressInformation> addressInfo = partitionAddressInformation.AllAddresses;
 
             Assert.IsTrue(addressInfo[0] == addressInformation[0]);
 
             AddressSelector addressSelector = new AddressSelector(mockAddressCache.Object, Protocol.Tcp);
-            Uri primaryAddress = addressSelector.ResolvePrimaryTransportAddressUriAsync(entity, false /*forceAddressRefresh*/).Result.Uri;
+            Uri primaryAddress = (await addressSelector.ResolvePrimaryTransportAddressUriAsync(entity, false /*forceAddressRefresh*/)).Uri;
 
             // check if the address return from Address Selector matches the original address info
             Assert.IsTrue(primaryAddress.Equals(addressInformation[0].PhysicalUri));
@@ -600,16 +600,16 @@ namespace Microsoft.Azure.Cosmos
             {
                 TransportClient mockTransportClient = this.GetMockTransportClientForGlobalStrongWrites(addressInformation, i, false, false, false);
                 StoreReader storeReader = new StoreReader(mockTransportClient, addressSelector, new AddressEnumerator(), sessionContainer, false);
-                ConsistencyWriter consistencyWriter = new ConsistencyWriter(addressSelector, sessionContainer, mockTransportClient, mockServiceConfigReader.Object, mockAuthorizationTokenProvider.Object, false, false, accountConfigurationProperties: null);
-                StoreResponse response = consistencyWriter.WriteAsync(entity, new TimeoutHelper(TimeSpan.FromSeconds(30)), false).Result;
+                ConsistencyWriter consistencyWriter = new ConsistencyWriter(addressSelector, sessionContainer, mockTransportClient, mockServiceConfigReader.Object, mockAuthorizationTokenProvider.Object, false, false);
+                StoreResponse response = await consistencyWriter.WriteAsync(entity, new TimeoutHelper(TimeSpan.FromSeconds(30)), false);
                 Assert.AreEqual(100, response.LSN);
 
                 //globalCommittedLsn never catches up in this case
                 mockTransportClient = this.GetMockTransportClientForGlobalStrongWrites(addressInformation, i, true, false, false);
-                consistencyWriter = new ConsistencyWriter(addressSelector, sessionContainer, mockTransportClient, mockServiceConfigReader.Object, mockAuthorizationTokenProvider.Object, false, false, accountConfigurationProperties: null);
+                consistencyWriter = new ConsistencyWriter(addressSelector, sessionContainer, mockTransportClient, mockServiceConfigReader.Object, mockAuthorizationTokenProvider.Object, false, false);
                 try
                 {
-                    response = consistencyWriter.WriteAsync(entity, new TimeoutHelper(TimeSpan.FromSeconds(30)), false).Result;
+                    response = await consistencyWriter.WriteAsync(entity, new TimeoutHelper(TimeSpan.FromSeconds(30)), false);
                     Assert.Fail();
                 }
                 catch (Exception)
@@ -617,18 +617,18 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 mockTransportClient = this.GetMockTransportClientForGlobalStrongWrites(addressInformation, i, false, true, false);
-                consistencyWriter = new ConsistencyWriter(addressSelector, sessionContainer, mockTransportClient, mockServiceConfigReader.Object, mockAuthorizationTokenProvider.Object, false, false, accountConfigurationProperties: null);
-                response = consistencyWriter.WriteAsync(entity, new TimeoutHelper(TimeSpan.FromSeconds(30)), false).Result;
+                consistencyWriter = new ConsistencyWriter(addressSelector, sessionContainer, mockTransportClient, mockServiceConfigReader.Object, mockAuthorizationTokenProvider.Object, false, false);
+                response = await consistencyWriter.WriteAsync(entity, new TimeoutHelper(TimeSpan.FromSeconds(30)), false);
                 Assert.AreEqual(100, response.LSN);
 
                 mockTransportClient = this.GetMockTransportClientForGlobalStrongWrites(addressInformation, i, false, true, true);
-                consistencyWriter = new ConsistencyWriter(addressSelector, sessionContainer, mockTransportClient, mockServiceConfigReader.Object, mockAuthorizationTokenProvider.Object, false, false, accountConfigurationProperties: null);
-                response = consistencyWriter.WriteAsync(entity, new TimeoutHelper(TimeSpan.FromSeconds(30)), false).Result;
+                consistencyWriter = new ConsistencyWriter(addressSelector, sessionContainer, mockTransportClient, mockServiceConfigReader.Object, mockAuthorizationTokenProvider.Object, false, false);
+                response = await consistencyWriter.WriteAsync(entity, new TimeoutHelper(TimeSpan.FromSeconds(30)), false);
                 Assert.AreEqual(100, response.LSN);
 
                 mockTransportClient = this.GetMockTransportClientForGlobalStrongWrites(addressInformation, i, false, false, true);
-                consistencyWriter = new ConsistencyWriter(addressSelector, sessionContainer, mockTransportClient, mockServiceConfigReader.Object, mockAuthorizationTokenProvider.Object, false, false, accountConfigurationProperties: null);
-                response = consistencyWriter.WriteAsync(entity, new TimeoutHelper(TimeSpan.FromSeconds(30)), false).Result;
+                consistencyWriter = new ConsistencyWriter(addressSelector, sessionContainer, mockTransportClient, mockServiceConfigReader.Object, mockAuthorizationTokenProvider.Object, false, false);
+                response = await consistencyWriter.WriteAsync(entity, new TimeoutHelper(TimeSpan.FromSeconds(30)), false);
                 Assert.AreEqual(100, response.LSN);
             }
         }
@@ -637,7 +637,7 @@ namespace Microsoft.Azure.Cosmos
         /// Mocking Consistency
         /// </summary>
         [TestMethod]
-        public void GlobalStrongConsistencyMockTest()
+        public async Task GlobalStrongConsistencyMockTest()
         {
             // create a real document service request (with auth token level = god)
             DocumentServiceRequest entity = DocumentServiceRequest.Create(OperationType.Read, ResourceType.Document, AuthorizationTokenType.SystemAll);
@@ -667,13 +667,13 @@ namespace Microsoft.Azure.Cosmos
             Mock<IAddressResolver> mockAddressCache = this.GetMockAddressCache(addressInformation);
 
             // validate that the mock works
-            PartitionAddressInformation partitionAddressInformation = mockAddressCache.Object.ResolveAsync(entity, false, new CancellationToken()).Result;
+            PartitionAddressInformation partitionAddressInformation = await mockAddressCache.Object.ResolveAsync(entity, false, new CancellationToken());
             IReadOnlyList<AddressInformation> addressInfo = partitionAddressInformation.AllAddresses;
 
             Assert.IsTrue(addressInfo[0] == addressInformation[0]);
 
             AddressSelector addressSelector = new AddressSelector(mockAddressCache.Object, Protocol.Tcp);
-            Uri primaryAddress = addressSelector.ResolvePrimaryTransportAddressUriAsync(entity, false /*forceAddressRefresh*/).Result.Uri;
+            Uri primaryAddress = (await addressSelector.ResolvePrimaryTransportAddressUriAsync(entity, false /*forceAddressRefresh*/)).Uri;
 
             // check if the address return from Address Selector matches the original address info
             Assert.IsTrue(primaryAddress.Equals(addressInformation[0].PhysicalUri));
@@ -713,7 +713,7 @@ namespace Microsoft.Azure.Cosmos
                 entity.RequestContext.OriginalRequestConsistencyLevel = Documents.ConsistencyLevel.Strong;
                 entity.RequestContext.ClientRequestStatistics = new ClientSideRequestStatistics();
 
-                StoreResponse result = reader.ReadStrongAsync(entity, 2, ReadMode.Strong).Result;
+                StoreResponse result = await reader.ReadStrongAsync(entity, 2, ReadMode.Strong);
                 Assert.IsTrue(result.LSN == 100);
 
                 result.TryGetHeaderValue(WFConstants.BackendHeaders.GlobalCommittedLSN, out string globalCommitedLSN);
@@ -760,15 +760,12 @@ namespace Microsoft.Azure.Cosmos
                 entity.RequestContext.GlobalCommittedSelectedLSN = -1;
                 try
                 {
-                    StoreResponse result = reader.ReadStrongAsync(entity, 2, ReadMode.Strong).Result;
+                    StoreResponse result = await reader.ReadStrongAsync(entity, 2, ReadMode.Strong);
                     Assert.IsTrue(false);
                 }
-                catch (AggregateException ex)
+                catch (GoneException)
                 {
-                    if (ex.InnerException is GoneException)
-                    {
-                        DefaultTrace.TraceInformation("Gone exception expected!");
-                    }
+                    DefaultTrace.TraceInformation("Gone exception expected!");
                 }
 
                 Assert.IsTrue(entity.RequestContext.QuorumSelectedLSN == 100);
@@ -811,7 +808,7 @@ namespace Microsoft.Azure.Cosmos
                 entity.RequestContext.OriginalRequestConsistencyLevel = Documents.ConsistencyLevel.Strong;
                 entity.RequestContext.ClientRequestStatistics = new ClientSideRequestStatistics();
 
-                StoreResponse result = reader.ReadStrongAsync(entity, 2, ReadMode.Strong).Result;
+                StoreResponse result = await reader.ReadStrongAsync(entity, 2, ReadMode.Strong);
                 Assert.IsTrue(result.LSN == 100);
 
                 result.TryGetHeaderValue(WFConstants.BackendHeaders.GlobalCommittedLSN, out string globalCommitedLSN);
@@ -917,7 +914,7 @@ namespace Microsoft.Azure.Cosmos
         </summary>
         **/
         [TestMethod]
-        public void TestWhenNRegionSynchronousCommitEnabledThenDoBarrierHead()
+        public async Task TestWhenNRegionSynchronousCommitEnabledThenDoBarrierHead()
         {
             // create a real document service request (with auth token level = god)
             DocumentServiceRequest entity = DocumentServiceRequest.Create(OperationType.Create, ResourceType.Document, AuthorizationTokenType.SystemAll);
@@ -947,21 +944,22 @@ namespace Microsoft.Azure.Cosmos
             Mock<IAddressResolver> mockAddressCache = this.GetMockAddressCache(addressInformation);
 
             // validate that the mock works
-            PartitionAddressInformation partitionAddressInformation = mockAddressCache.Object.ResolveAsync(entity, false, new CancellationToken()).Result;
+            PartitionAddressInformation partitionAddressInformation = await mockAddressCache.Object.ResolveAsync(entity, false, new CancellationToken());
             IReadOnlyList<AddressInformation> addressInfo = partitionAddressInformation.AllAddresses;
 
             Assert.IsTrue(addressInfo[0] == addressInformation[0]);
 
             AddressSelector addressSelector = new AddressSelector(mockAddressCache.Object, Protocol.Tcp);
-            Uri primaryAddress = addressSelector.ResolvePrimaryTransportAddressUriAsync(entity, false /*forceAddressRefresh*/).Result.Uri;
+            Uri primaryAddress = (await addressSelector.ResolvePrimaryTransportAddressUriAsync(entity, false /*forceAddressRefresh*/)).Uri;
 
             // check if the address return from Address Selector matches the original address info
             Assert.IsTrue(primaryAddress.Equals(addressInformation[0].PhysicalUri));
 
             ISessionContainer sessionContainer = new SessionContainer(string.Empty);
 
-            Mock<IServiceConfigurationReader> mockServiceConfigReader = new Mock<IServiceConfigurationReader>();
+            Mock<IServiceConfigurationReaderVnext> mockServiceConfigReader = new Mock<IServiceConfigurationReaderVnext>();
             mockServiceConfigReader.Setup(reader => reader.DefaultConsistencyLevel).Returns(Documents.ConsistencyLevel.Session);
+            mockServiceConfigReader.Setup(reader => reader.EnableNRegionSynchronousCommit).Returns(true);
 
             Mock<IAuthorizationTokenProvider> mockAuthorizationTokenProvider = new Mock<IAuthorizationTokenProvider>();
             mockAuthorizationTokenProvider.Setup(provider => provider.AddSystemAuthorizationHeaderAsync(
@@ -971,10 +969,9 @@ namespace Microsoft.Azure.Cosmos
             TransportClient mockTransportClient = this.GetMockTransportClientForNRegionSynchronousWrites(addressInformation, false);
             StoreReader storeReader = new StoreReader(mockTransportClient, addressSelector, new AddressEnumerator(), sessionContainer, false);
 
-            AccountConfigurationProperties accountConfigurationProperties = new AccountConfigurationProperties(true);
 
-            ConsistencyWriter consistencyWriter = new ConsistencyWriter(addressSelector, sessionContainer, mockTransportClient, mockServiceConfigReader.Object, mockAuthorizationTokenProvider.Object, false, false, accountConfigurationProperties: accountConfigurationProperties);
-            StoreResponse response = consistencyWriter.WriteAsync(entity, new TimeoutHelper(TimeSpan.FromSeconds(3000)), false).Result;
+            ConsistencyWriter consistencyWriter = new ConsistencyWriter(addressSelector, sessionContainer, mockTransportClient, mockServiceConfigReader.Object, mockAuthorizationTokenProvider.Object, false, false);
+            StoreResponse response = await consistencyWriter.WriteAsync(entity, new TimeoutHelper(TimeSpan.FromSeconds(3000)), false);
             Assert.AreEqual(100, response.LSN);
 
 
@@ -983,17 +980,14 @@ namespace Microsoft.Azure.Cosmos
                 mockTransportClient = this.GetMockTransportClientForNRegionSynchronousWrites(addressInformation, true);
                 storeReader = new StoreReader(mockTransportClient, addressSelector, new AddressEnumerator(), sessionContainer, false);
 
-                consistencyWriter = new ConsistencyWriter(addressSelector, sessionContainer, mockTransportClient, mockServiceConfigReader.Object, mockAuthorizationTokenProvider.Object, false, false, accountConfigurationProperties: accountConfigurationProperties);
-                response = consistencyWriter.WriteAsync(entity, new TimeoutHelper(TimeSpan.FromSeconds(3000)), false).Result;
+                consistencyWriter = new ConsistencyWriter(addressSelector, sessionContainer, mockTransportClient, mockServiceConfigReader.Object, mockAuthorizationTokenProvider.Object, false, false);
+                response = await consistencyWriter.WriteAsync(entity, new TimeoutHelper(TimeSpan.FromSeconds(3000)), false);
                 Assert.Fail();
             }
-            catch (AggregateException ex)
+            catch (DocumentClientException goneEx)
             {
-                if (ex.InnerException is DocumentClientException goneEx)
-                {
-                    DefaultTrace.TraceInformation("Gone exception expected!");
-                    Assert.AreEqual(SubStatusCodes.Server_NRegionCommitWriteBarrierNotMet, goneEx.GetSubStatusCode());
-                }
+                DefaultTrace.TraceInformation("Gone exception expected!");
+                Assert.AreEqual(SubStatusCodes.Server_NRegionCommitWriteBarrierNotMet, goneEx.GetSubStatusCode());
             }
         }
     }

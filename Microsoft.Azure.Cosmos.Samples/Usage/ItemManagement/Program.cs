@@ -640,9 +640,9 @@
         {
             using (stream)
             {
-                if (typeof(Stream).IsAssignableFrom(typeof(T)))
+                if (typeof(Stream).IsAssignableFrom(typeof(T)) && stream is T typedStream)
                 {
-                    return (T)(object)stream;
+                    return typedStream;
                 }
 
                 using (StreamReader sr = new StreamReader(stream))

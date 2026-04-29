@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "0DCEB8CE51C6BFE84F4BD9409F69B9BBFF", 
                 true, false));
 
-            RequestInvokerHandler invoker = new RequestInvokerHandler(client, null, null, null)
+            RequestInvokerHandler invoker = new RequestInvokerHandler(client, null, null, null, null)
             {
                 InnerHandler = new TestHandler((request, token) => TestHandler.ReturnSuccess())
             };
@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             private readonly IReadOnlyList<PartitionKeyRange> overlappingRanges;
 
             public TestPartitionKeyRangeCache(IReadOnlyList<PartitionKeyRange> overlappingRanges)
-                : base(null, null, null, null) // Pass nulls or mocks as needed for base constructor
+                : base(null, null, null, null, false, false) // Pass nulls or mocks as needed for base constructor
             {
                 this.overlappingRanges = overlappingRanges;
             }
@@ -175,6 +175,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             RequestInvokerHandler invoker = new RequestInvokerHandler(
                 client,
                 requestedClientConsistencyLevel: null,
+                requestedClientReadConsistencyStrategy: null,
                 requestedClientPriorityLevel: null,
                 requestedClientThroughputBucket: null)
             {
@@ -212,6 +213,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             RequestInvokerHandler invoker = new RequestInvokerHandler(
                 client,
                 requestedClientConsistencyLevel: null,
+                requestedClientReadConsistencyStrategy: null,
                 requestedClientPriorityLevel: null,
                 requestedClientThroughputBucket: null)
             {
@@ -249,6 +251,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             RequestInvokerHandler invoker = new RequestInvokerHandler(
                 client,
                 requestedClientConsistencyLevel: null,
+                requestedClientReadConsistencyStrategy: null,
                 requestedClientPriorityLevel: null,
                 requestedClientThroughputBucket: null)
             {
@@ -298,6 +301,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             RequestInvokerHandler invoker = new RequestInvokerHandler(
                 client,
                 requestedClientConsistencyLevel: null,
+                requestedClientReadConsistencyStrategy: null,
                 requestedClientPriorityLevel: null,
                 requestedClientThroughputBucket: null)
             {
@@ -361,6 +365,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             RequestInvokerHandler invoker = new RequestInvokerHandler(
                 client,
                 requestedClientConsistencyLevel: null,
+                requestedClientReadConsistencyStrategy: null,
                 requestedClientPriorityLevel: null,
                 requestedClientThroughputBucket: null)
             {
@@ -394,6 +399,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             RequestInvokerHandler invoker = new RequestInvokerHandler(
                 client,
                 requestedClientConsistencyLevel: null,
+                requestedClientReadConsistencyStrategy: null,
                 requestedClientPriorityLevel: null,
                 requestedClientThroughputBucket: null)
             {
@@ -431,6 +437,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             RequestInvokerHandler invoker = new RequestInvokerHandler(
                 client,
                 requestedClientConsistencyLevel: null,
+                requestedClientReadConsistencyStrategy: null,
                 requestedClientPriorityLevel: null,
                 requestedClientThroughputBucket: null)
             {

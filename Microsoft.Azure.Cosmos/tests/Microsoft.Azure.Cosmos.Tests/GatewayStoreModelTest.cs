@@ -290,7 +290,7 @@ namespace Microsoft.Azure.Cosmos
                            dsr,
                            ConsistencyLevel.Session,
                            new Mock<ISessionContainer>().Object,
-                           partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false).Object,
+                           partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false, false).Object,
                            clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), gatewayStoreModel, null, null, null, false).Object,
                            globalEndpointManager: Mock.Of<IGlobalEndpointManager>());
 
@@ -317,7 +317,7 @@ namespace Microsoft.Azure.Cosmos
                     dsrQueryPlan,
                     ConsistencyLevel.Session,
                     new Mock<ISessionContainer>().Object,
-                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false).Object,
+                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false, false).Object,
                     clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), gatewayStoreModel, null, null, null, false).Object,
                     globalEndpointManager: Mock.Of<IGlobalEndpointManager>());
 
@@ -371,7 +371,7 @@ namespace Microsoft.Azure.Cosmos
                                 dsr,
                                 ConsistencyLevel.Session,
                                 new Mock<ISessionContainer>().Object,
-                                partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false).Object,
+                                partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false, false).Object,
                                 clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), gatewayStoreModel, null, null, null, false).Object,
                                 globalEndpointManager: Mock.Of<IGlobalEndpointManager>());
 
@@ -401,7 +401,7 @@ namespace Microsoft.Azure.Cosmos
                                 dsrNoSessionToken,
                                 ConsistencyLevel.Session,
                                 sessionContainer,
-                                partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false).Object,
+                                partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false, false).Object,
                                 clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), gatewayStoreModel, null, null, null, false).Object,
                                 globalEndpointManager: globalEndpointManager.Object);
 
@@ -442,7 +442,7 @@ namespace Microsoft.Azure.Cosmos
                             It.IsAny<CancellationToken>(),
                             NoOpTrace.Singleton)).Returns(Task.FromResult(containerProperties));
 
-                        Mock<PartitionKeyRangeCache> mockPartitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(MockBehavior.Strict, null, null, null, null, false);
+                        Mock<PartitionKeyRangeCache> mockPartitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(MockBehavior.Strict, null, null, null, null, false, false);
                         mockPartitionKeyRangeCache.Setup(x => x.TryGetPartitionKeyRangeByIdAsync(
                             containerProperties.ResourceId,
                             partitionKeyRangeId,
@@ -489,7 +489,7 @@ namespace Microsoft.Azure.Cosmos
                     dsrSprocExecute,
                     ConsistencyLevel.Session,
                     new Mock<ISessionContainer>().Object,
-                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false).Object,
+                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false, false).Object,
                     clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), gatewayStoreModel, null, null, null, false).Object,
                     globalEndpointManager: Mock.Of<IGlobalEndpointManager>());
 
@@ -528,7 +528,7 @@ namespace Microsoft.Azure.Cosmos
                     dsrNoSessionToken,
                     ConsistencyLevel.Session,
                     sessionContainer,
-                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false).Object,
+                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false, false).Object,
                     clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), gatewayStoreModel, null, null, null, false).Object,
                     globalEndpointManager: globalEndpointManager.Object);
 
@@ -1005,7 +1005,7 @@ namespace Microsoft.Azure.Cosmos
                 isThinClientEnabled: false);
 
             Mock<ClientCollectionCache> clientCollectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), storeModel, null, null, null, false);
-            Mock<PartitionKeyRangeCache> partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, storeModel, clientCollectionCache.Object, endpointManager, false);
+            Mock<PartitionKeyRangeCache> partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, storeModel, clientCollectionCache.Object, endpointManager, false, false);
 
             sessionContainer.SetSessionToken(
                     ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString(),
@@ -1103,7 +1103,7 @@ namespace Microsoft.Azure.Cosmos
 
             Mock<ClientCollectionCache> clientCollectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), storeModel, null, null, null, false);
 
-            Mock<PartitionKeyRangeCache> partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, storeModel, clientCollectionCache.Object, endpointManager, false);
+            Mock<PartitionKeyRangeCache> partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, storeModel, clientCollectionCache.Object, endpointManager, false, false);
             storeModel.SetCaches(partitionKeyRangeCache.Object, clientCollectionCache.Object);
 
             INameValueCollection headers = new RequestNameValueCollection();
@@ -1171,7 +1171,7 @@ namespace Microsoft.Azure.Cosmos
                     documentServiceRequestToChild,
                     ConsistencyLevel.Session,
                     sessionContainer,
-                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false).Object,
+                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false, false).Object,
                     clientCollectionCache: new Mock<ClientCollectionCache>(sessionContainer, gatewayStoreModel, null, null, null, false).Object,
                     globalEndpointManager: globalEndpointManager.Object);
 
@@ -1237,7 +1237,7 @@ namespace Microsoft.Azure.Cosmos
                     documentServiceRequestToChild,
                     ConsistencyLevel.Session,
                     sessionContainer,
-                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false).Object,
+                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null, null, false, false).Object,
                     clientCollectionCache: new Mock<ClientCollectionCache>(sessionContainer, gatewayStoreModel, null, null, null, false).Object,
                     globalEndpointManager: globalEndpointManager.Object);
 
@@ -1297,7 +1297,7 @@ namespace Microsoft.Azure.Cosmos
                 storeModel,
                 clientCollectionCache,
                 endpointManager,
-                false).Object;
+                false, false).Object;
 
             storeModel.SetCaches(partitionKeyRangeCache, clientCollectionCache);
 
@@ -1332,8 +1332,10 @@ namespace Microsoft.Azure.Cosmos
                 It.IsAny<DocumentServiceRequest>()))
                 .ReturnsAsync(successResponse);
 
+            // Plain ReadFeed without an A-IM header is a realistic unsupported operation
+            // (document enumeration, not a change feed).
             DocumentServiceRequest request = DocumentServiceRequest.Create(
-                operationType: OperationType.QueryPlan,
+                operationType: OperationType.ReadFeed,
                 resourceType: ResourceType.Document,
                 resourceId: "NH1uAJ6ANm0=",
                 body: null,
@@ -1378,7 +1380,7 @@ namespace Microsoft.Azure.Cosmos
                 storeModel,
                 clientCollectionCache,
                 multiEndpointMgr,
-                false).Object;
+                false, false).Object;
 
             storeModel.SetCaches(partitionKeyRangeCache, clientCollectionCache);
 
@@ -1388,6 +1390,218 @@ namespace Microsoft.Azure.Cosmos
             // Assert
             Assert.IsNotNull(response);
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [TestMethod]
+        [Owner("aavasthy")]
+        public async Task ThinClient_ProcessMessageAsync_WithLatestVersionChangeFeed_ShouldRouteToThinClient()
+        {
+            // Arrange
+            bool thinClientInvoked = false;
+            MockThinClientStoreClient thinClientStoreClient = new MockThinClientStoreClient(
+                (request, resourceType, uri, endpoint, globalDatabaseAccountName, clientCollectionCache, cancellationToken) =>
+                {
+                    thinClientInvoked = true;
+                    INameValueCollection headers = new StoreResponseNameValueCollection();
+                    return Task.FromResult(new DocumentServiceResponse(Stream.Null, headers, HttpStatusCode.OK));
+                });
+
+            Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
+            mockDocumentClient.Setup(c => c.ServiceEndpoint).Returns(new Uri("https://mock.proxy.com"));
+            mockDocumentClient
+                .Setup(c => c.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new AccountProperties());
+
+            UserAgentContainer userAgentContainer = new UserAgentContainer(0, "TestFeature", "TestRegion", "TestSuffix");
+            GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+
+            GatewayStoreModel storeModel = new GatewayStoreModel(
+                endpointManager,
+                sessionContainer,
+                ConsistencyLevel.Session,
+                new DocumentClientEventSource(),
+                null,
+                null,
+                GlobalPartitionEndpointManagerNoOp.Instance,
+                isThinClientEnabled: true,
+                userAgentContainer);
+
+            ClientCollectionCache clientCollectionCache = new Mock<ClientCollectionCache>(
+                sessionContainer,
+                storeModel,
+                null,
+                null,
+                null,
+                false).Object;
+
+            PartitionKeyRangeCache partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(
+                null,
+                storeModel,
+                clientCollectionCache,
+                endpointManager,
+                false, false).Object;
+
+            storeModel.SetCaches(partitionKeyRangeCache, clientCollectionCache);
+            ReplaceThinClientStoreClientField(storeModel, thinClientStoreClient);
+
+            // Create a ReadFeed request with A-IM: Incremental feed (LatestVersion change feed)
+            DocumentServiceRequest request = DocumentServiceRequest.Create(
+               operationType: OperationType.ReadFeed,
+               resourceType: ResourceType.Document,
+               resourceId: "NH1uAJ6ANm0=",
+               body: null,
+               authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
+            request.Headers[HttpConstants.HttpHeaders.A_IM] = HttpConstants.A_IMHeaderValues.IncrementalFeed;
+
+            // Act
+            DocumentServiceResponse response = await storeModel.ProcessMessageAsync(request);
+
+            // Assert
+            Assert.IsNotNull(response);
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.IsTrue(thinClientInvoked, "LatestVersion change feed should be routed to ThinClient");
+        }
+
+        [TestMethod]
+        [Owner("aavasthy")]
+        public async Task ThinClient_ProcessMessageAsync_WithFullFidelityChangeFeed_ShouldFallbackToGateway()
+        {
+            // Arrange
+            bool thinClientInvoked = false;
+            MockThinClientStoreClient thinClientStoreClient = new MockThinClientStoreClient(
+                (request, resourceType, uri, endpoint, globalDatabaseAccountName, clientCollectionCache, cancellationToken) =>
+                {
+                    thinClientInvoked = true;
+                    INameValueCollection headers = new StoreResponseNameValueCollection();
+                    return Task.FromResult(new DocumentServiceResponse(Stream.Null, headers, HttpStatusCode.OK));
+                });
+
+            HttpResponseMessage successResponse = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("Response") };
+            Mock<CosmosHttpClient> mockCosmosHttpClient = new Mock<CosmosHttpClient>();
+            mockCosmosHttpClient.Setup(client => client.SendHttpAsync(
+                It.IsAny<Func<ValueTask<HttpRequestMessage>>>(),
+                It.IsAny<ResourceType>(),
+                It.IsAny<HttpTimeoutPolicy>(),
+                It.IsAny<IClientSideRequestStatistics>(),
+                It.IsAny<CancellationToken>(),
+                It.IsAny<DocumentServiceRequest>()))
+                .ReturnsAsync(successResponse);
+
+            Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
+            mockDocumentClient.Setup(c => c.ServiceEndpoint).Returns(new Uri("https://mock.proxy.com"));
+            mockDocumentClient
+                .Setup(c => c.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new AccountProperties());
+
+            UserAgentContainer userAgentContainer = new UserAgentContainer(0, "TestFeature", "TestRegion", "TestSuffix");
+            GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+
+            GatewayStoreModel storeModel = new GatewayStoreModel(
+                endpointManager,
+                sessionContainer,
+                ConsistencyLevel.Session,
+                new DocumentClientEventSource(),
+                null,
+                httpClient: mockCosmosHttpClient.Object,
+                globalPartitionEndpointManager: GlobalPartitionEndpointManagerNoOp.Instance,
+                isThinClientEnabled: true,
+                userAgentContainer: userAgentContainer);
+
+            ClientCollectionCache clientCollectionCache = new Mock<ClientCollectionCache>(
+                sessionContainer,
+                storeModel,
+                null,
+                null,
+                null,
+                false).Object;
+
+            PartitionKeyRangeCache partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(
+                null,
+                storeModel,
+                clientCollectionCache,
+                endpointManager,
+                false, false).Object;
+
+            storeModel.SetCaches(partitionKeyRangeCache, clientCollectionCache);
+            ReplaceThinClientStoreClientField(storeModel, thinClientStoreClient);
+
+            // Create a ReadFeed request with A-IM: Full-Fidelity Feed (AllVersionsAndDeletes change feed)
+            DocumentServiceRequest request = DocumentServiceRequest.Create(
+               operationType: OperationType.ReadFeed,
+               resourceType: ResourceType.Document,
+               resourceId: "NH1uAJ6ANm0=",
+               body: null,
+               authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
+            request.Headers[HttpConstants.HttpHeaders.A_IM] = HttpConstants.A_IMHeaderValues.FullFidelityFeed;
+
+            // Act
+            DocumentServiceResponse response = await storeModel.ProcessMessageAsync(request);
+
+            // Assert
+            Assert.IsNotNull(response);
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.IsFalse(thinClientInvoked, "AllVersionsAndDeletes change feed should NOT be routed to ThinClient");
+        }
+
+        [TestMethod]
+        [Owner("aavasthy")]
+        public void IsOperationSupportedByThinClient_WithChangeFeedModes_ReturnsCorrectResults()
+        {
+            // LatestVersion (Incremental) change feed should be supported
+            DocumentServiceRequest incrementalRequest = DocumentServiceRequest.Create(
+               operationType: OperationType.ReadFeed,
+               resourceType: ResourceType.Document,
+               resourceId: "NH1uAJ6ANm0=",
+               body: null,
+               authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
+            incrementalRequest.Headers[HttpConstants.HttpHeaders.A_IM] = HttpConstants.A_IMHeaderValues.IncrementalFeed;
+            Assert.IsTrue(GatewayStoreModel.IsOperationSupportedByThinClient(incrementalRequest),
+                "LatestVersion (Incremental) change feed should be supported by ThinClient");
+
+            // AllVersionsAndDeletes (FullFidelity) change feed should NOT be supported
+            DocumentServiceRequest fullFidelityRequest = DocumentServiceRequest.Create(
+               operationType: OperationType.ReadFeed,
+               resourceType: ResourceType.Document,
+               resourceId: "NH1uAJ6ANm0=",
+               body: null,
+               authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
+            fullFidelityRequest.Headers[HttpConstants.HttpHeaders.A_IM] = HttpConstants.A_IMHeaderValues.FullFidelityFeed;
+            Assert.IsFalse(GatewayStoreModel.IsOperationSupportedByThinClient(fullFidelityRequest),
+                "AllVersionsAndDeletes (FullFidelity) change feed should NOT be supported by ThinClient");
+
+            // Plain ReadFeed (no A-IM header) should NOT be supported
+            DocumentServiceRequest plainReadFeedRequest = DocumentServiceRequest.Create(
+               operationType: OperationType.ReadFeed,
+               resourceType: ResourceType.Document,
+               resourceId: "NH1uAJ6ANm0=",
+               body: null,
+               authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
+            Assert.IsFalse(GatewayStoreModel.IsOperationSupportedByThinClient(plainReadFeedRequest),
+                "Plain ReadFeed (non-change-feed) should NOT be supported by ThinClient");
+
+            // ReadFeed on non-Document resource should NOT be supported
+            DocumentServiceRequest nonDocumentRequest = DocumentServiceRequest.Create(
+               operationType: OperationType.ReadFeed,
+               resourceType: ResourceType.Collection,
+               resourceId: "NH1uAJ6ANm0=",
+               body: null,
+               authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
+            nonDocumentRequest.Headers[HttpConstants.HttpHeaders.A_IM] = HttpConstants.A_IMHeaderValues.IncrementalFeed;
+            Assert.IsFalse(GatewayStoreModel.IsOperationSupportedByThinClient(nonDocumentRequest),
+                "ReadFeed on non-Document resource should NOT be supported by ThinClient");
+
+            // Unknown A-IM header value should NOT be supported (fail-safe for future feed modes)
+            DocumentServiceRequest unknownAImRequest = DocumentServiceRequest.Create(
+               operationType: OperationType.ReadFeed,
+               resourceType: ResourceType.Document,
+               resourceId: "NH1uAJ6ANm0=",
+               body: null,
+               authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
+            unknownAImRequest.Headers[HttpConstants.HttpHeaders.A_IM] = "Unknown-Feed";
+            Assert.IsFalse(GatewayStoreModel.IsOperationSupportedByThinClient(unknownAImRequest),
+                "Unknown A-IM values should NOT be supported by ThinClient");
         }
 
         [TestMethod]
@@ -1469,7 +1683,7 @@ namespace Microsoft.Azure.Cosmos
                 storeModel,
                 clientCollectionCache,
                 endpointManager,
-                false).Object;
+                false, false).Object;
 
             storeModel.SetCaches(partitionKeyRangeCache, clientCollectionCache);
 
@@ -1553,12 +1767,12 @@ namespace Microsoft.Azure.Cosmos
                 storeModel,
                 mockCollectionCache.Object,
                 endpointManager,
-                false);
+                false, false);
 
             PartitionKeyRange pkRange = new PartitionKeyRange { Id = "0", MinInclusive = "", MaxExclusive = "FF" };
             List<PartitionKeyRange> pkRanges = new List<PartitionKeyRange> { pkRange };
             IEnumerable<Tuple<PartitionKeyRange, ServiceIdentity>> rangeTuples = pkRanges.Select(r => Tuple.Create(r, (ServiceIdentity)null));
-            CollectionRoutingMap routingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(rangeTuples, "testCollectionRid");
+            CollectionRoutingMap routingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(rangeTuples, "testCollectionRid", false);
 
             mockPartitionKeyRangeCache
                 .Setup(c => c.TryLookupAsync(It.IsAny<string>(), It.IsAny<CollectionRoutingMap>(), It.IsAny<DocumentServiceRequest>(), It.IsAny<ITrace>()))
@@ -1725,7 +1939,7 @@ namespace Microsoft.Azure.Cosmos
                 isThinClientEnabled: false);
 
             ClientCollectionCache clientCollectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), storeModel, null, null, null, false).Object;
-            PartitionKeyRangeCache partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, storeModel, clientCollectionCache, endpointManager, false).Object;
+            PartitionKeyRangeCache partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, storeModel, clientCollectionCache, endpointManager, false, false).Object;
             storeModel.SetCaches(partitionKeyRangeCache, clientCollectionCache);
 
             await executeWithGatewayStoreModel(storeModel);
