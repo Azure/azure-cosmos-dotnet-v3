@@ -1046,7 +1046,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         /// <summary>
-        /// Test class with Dictionary property for OBJECTTOARRAY test.
+        /// Test class with Dictionary property for OBJECTTOARRAY tests.
         /// </summary>
         private class ItemWithDictionary
         {
@@ -1054,6 +1054,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             public string pk { get; set; }
             public string Name { get; set; }
             public Dictionary<string, object> AdditionalData { get; set; }
+            public IDictionary<string, object> MetaData { get; set; }
+            public IReadOnlyDictionary<string, object> ReadOnlyTags { get; set; }
+            public NestedItemWithDictionary Nested { get; set; }
+        }
+
+        private class NestedItemWithDictionary
+        {
+            public Dictionary<string, string> Properties { get; set; }
         }
 
         /// <summary>
@@ -1069,77 +1077,180 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task LinqDictionaryAnyWithObjectToArrayTest()
         {
             // Arrange: Create items with Dictionary<string, object> properties
+            string partitionKey = "dictTestPk-" + Guid.NewGuid().ToString("N")[..8];
             ItemWithDictionary item1 = new ItemWithDictionary
             {
                 id = Guid.NewGuid().ToString(),
-                pk = "testPk",
+                pk = partitionKey,
                 Name = "Item1",
                 AdditionalData = new Dictionary<string, object>
                 {
                     { "color", "red" },
                     { "size", 10 }
+                },
+                MetaData = new Dictionary<string, object>
+                {
+                    { "color", "red" },
+                    { "priority", 1 }
+                },
+                ReadOnlyTags = new Dictionary<string, object>
+                {
+                    { "env", "production" },
+                    { "version", "1.0" }
+                },
+                Nested = new NestedItemWithDictionary
+                {
+                    Properties = new Dictionary<string, string>
+                    {
+                        { "shape", "circle" }
+                    }
                 }
             };
 
             ItemWithDictionary item2 = new ItemWithDictionary
             {
                 id = Guid.NewGuid().ToString(),
-                pk = "testPk",
+                pk = partitionKey,
                 Name = "Item2",
                 AdditionalData = new Dictionary<string, object>
                 {
                     { "color", "blue" },
                     { "weight", 5.5 }
+                },
+                MetaData = new Dictionary<string, object>
+                {
+                    { "color", "blue" },
+                    { "priority", 2 }
+                },
+                ReadOnlyTags = new Dictionary<string, object>
+                {
+                    { "env", "staging" },
+                    { "version", "1.1" }
+                },
+                Nested = new NestedItemWithDictionary
+                {
+                    Properties = new Dictionary<string, string>
+                    {
+                        { "shape", "square" }
+                    }
                 }
             };
 
             ItemWithDictionary item3 = new ItemWithDictionary
             {
                 id = Guid.NewGuid().ToString(),
-                pk = "testPk",
+                pk = partitionKey,
                 Name = "Item3",
-                AdditionalData = new Dictionary<string, object>() // Empty dictionary
+                AdditionalData = new Dictionary<string, object>(), // Empty dictionary
+                MetaData = new Dictionary<string, object>(),
+                ReadOnlyTags = new Dictionary<string, object>(),
+                Nested = new NestedItemWithDictionary
+                {
+                    Properties = new Dictionary<string, string>()
+                }
             };
 
             await this.Container.CreateItemAsync(item1);
             await this.Container.CreateItemAsync(item2);
             await this.Container.CreateItemAsync(item3);
 
-            // Act: Query using Dictionary.Any() - should use OBJECTTOARRAY
-            // OBJECTTOARRAY returns array of {"k": key, "v": value} pairs
-            string searchValue = "red";
             IOrderedQueryable<ItemWithDictionary> linqQueryable = this.Container.GetItemLinqQueryable<ItemWithDictionary>(
-                allowSynchronousQueryExecution: true);
+                allowSynchronousQueryExecution: true,
+                requestOptions: new QueryRequestOptions { PartitionKey = new Cosmos.PartitionKey(partitionKey) });
 
-            // Test 1: Verify the generated SQL contains OBJECTTOARRAY
-            QueryDefinition queryDefinition = linqQueryable
-                .Where(x => x.AdditionalData.Any(kvp => kvp.Value.ToString() == searchValue))
-                .ToQueryDefinition();
+            // Test 1: Any() with value predicate - uses OBJECTTOARRAY, finds items where value == "red"
+            string searchValue = "red";
+            IQueryable<ItemWithDictionary> queryByValue = linqQueryable
+                .Where(x => x.AdditionalData.Any(kvp => kvp.Value.ToString() == searchValue));
 
-            string sqlQuery = queryDefinition.ToSqlQuerySpec().QueryText;
+            string sqlByValue = queryByValue.ToQueryDefinition().ToSqlQuerySpec().QueryText;
             Assert.IsTrue(
-                sqlQuery.Contains("ObjectToArray", StringComparison.OrdinalIgnoreCase),
-                $"Expected SQL to contain OBJECTTOARRAY. Actual SQL: {sqlQuery}");
+                sqlByValue.Contains("ObjectToArray", StringComparison.OrdinalIgnoreCase),
+                $"Expected SQL to contain OBJECTTOARRAY. Actual SQL: {sqlByValue}");
 
-            // Test 2: Any() without predicate (checks if dictionary has any entries)
-            // This verifies OBJECTTOARRAY is used for iteration
+            List<ItemWithDictionary> resultsByValue = queryByValue.ToList();
+            Assert.AreEqual(1, resultsByValue.Count, $"Expected 1 item with value 'red'. SQL: {sqlByValue}");
+            Assert.AreEqual("Item1", resultsByValue[0].Name, "Expected Item1 to be returned for value 'red'");
+
+            // Test 2: Any() with key predicate - finds items where key == "color"
+            string searchKey = "color";
+            IQueryable<ItemWithDictionary> queryByKey = linqQueryable
+                .Where(x => x.AdditionalData.Any(kvp => kvp.Key == searchKey));
+
+            string sqlByKey = queryByKey.ToQueryDefinition().ToSqlQuerySpec().QueryText;
+            Assert.IsTrue(
+                sqlByKey.Contains("ObjectToArray", StringComparison.OrdinalIgnoreCase),
+                $"Expected SQL to contain OBJECTTOARRAY. Actual SQL: {sqlByKey}");
+
+            List<ItemWithDictionary> resultsByKey = queryByKey.ToList();
+            Assert.AreEqual(2, resultsByKey.Count, $"Expected 2 items with key 'color'. SQL: {sqlByKey}");
+            CollectionAssert.AreEquivalent(
+                new[] { "Item1", "Item2" },
+                resultsByKey.Select(x => x.Name).ToArray());
+
+            // Test 3: Any() without predicate - checks if dictionary has any entries
             IQueryable<ItemWithDictionary> queryHasAny = linqQueryable
                 .Where(x => x.AdditionalData.Any());
 
-            List<ItemWithDictionary> resultsWithAny = queryHasAny.ToList();
+            string sqlHasAny = queryHasAny.ToQueryDefinition().ToSqlQuerySpec().QueryText;
+            Assert.IsTrue(
+                sqlHasAny.Contains("ObjectToArray", StringComparison.OrdinalIgnoreCase),
+                $"Expected Any() SQL to contain OBJECTTOARRAY. Actual SQL: {sqlHasAny}");
 
-            // Assert: Should find item1 and item2 (both have entries), but not item3 (empty)
-            Assert.AreEqual(2, resultsWithAny.Count, "Expected 2 items with non-empty AdditionalData");
+            List<ItemWithDictionary> resultsHasAny = queryHasAny.ToList();
+            Assert.AreEqual(2, resultsHasAny.Count, "Expected 2 items with non-empty AdditionalData");
             CollectionAssert.AreEquivalent(
                 new[] { "Item1", "Item2" },
-                resultsWithAny.Select(x => x.Name).ToArray());
+                resultsHasAny.Select(x => x.Name).ToArray());
 
-            // Verify that the Any() query also uses OBJECTTOARRAY
-            QueryDefinition anyQueryDefinition = queryHasAny.ToQueryDefinition();
-            string anySqlQuery = anyQueryDefinition.ToSqlQuerySpec().QueryText;
-            Assert.IsTrue(
-                anySqlQuery.Contains("ObjectToArray", StringComparison.OrdinalIgnoreCase),
-                $"Expected Any() SQL to contain OBJECTTOARRAY. Actual SQL: {anySqlQuery}");
+            // Test 4: IDictionary<string, object> - same behavior as Dictionary
+            IQueryable<ItemWithDictionary> queryIDictionary = linqQueryable
+                .Where(x => x.MetaData.Any(kvp => kvp.Key == searchKey));
+
+            List<ItemWithDictionary> resultsIDictionary = queryIDictionary.ToList();
+            Assert.AreEqual(2, resultsIDictionary.Count, "Expected 2 items with 'color' key in MetaData");
+            CollectionAssert.AreEquivalent(
+                new[] { "Item1", "Item2" },
+                resultsIDictionary.Select(x => x.Name).ToArray());
+
+            // Test 5: IReadOnlyDictionary<string, object> - same behavior as Dictionary
+            IQueryable<ItemWithDictionary> queryReadOnly = linqQueryable
+                .Where(x => x.ReadOnlyTags.Any());
+
+            List<ItemWithDictionary> resultsReadOnly = queryReadOnly.ToList();
+            Assert.AreEqual(2, resultsReadOnly.Count, "Expected 2 items with non-empty ReadOnlyTags");
+            CollectionAssert.AreEquivalent(
+                new[] { "Item1", "Item2" },
+                resultsReadOnly.Select(x => x.Name).ToArray());
+
+            // Test 6: Nested dictionary - Dictionary inside an object
+            string searchShape = "circle";
+            IQueryable<ItemWithDictionary> queryNested = linqQueryable
+                .Where(x => x.Nested.Properties.Any(kvp => kvp.Value == searchShape));
+
+            List<ItemWithDictionary> resultsNested = queryNested.ToList();
+            Assert.AreEqual(1, resultsNested.Count, $"Expected 1 item with nested shape 'circle'");
+            Assert.AreEqual("Item1", resultsNested[0].Name, "Expected Item1 for nested shape 'circle'");
+
+            // Test 7: Select with OrderBy (project and order items by entry count)
+            List<ItemWithDictionary> orderedResults = linqQueryable
+                .OrderBy(x => x.Name)
+                .Take(3)
+                .ToList();
+            Assert.AreEqual(3, orderedResults.Count, "Expected all 3 items in ordered query");
+            Assert.AreEqual("Item1", orderedResults[0].Name);
+            Assert.AreEqual("Item2", orderedResults[1].Name);
+            Assert.AreEqual("Item3", orderedResults[2].Name);
+
+            // Test 8: Skip and Take with dictionary filter
+            List<ItemWithDictionary> pagedResults = linqQueryable
+                .Where(x => x.AdditionalData.Any())
+                .OrderBy(x => x.Name)
+                .Skip(1)
+                .Take(1)
+                .ToList();
+            Assert.AreEqual(1, pagedResults.Count, "Expected 1 item after Skip(1).Take(1)");
+            Assert.AreEqual("Item2", pagedResults[0].Name, "Expected Item2 after skipping Item1");
         }
     }
 }

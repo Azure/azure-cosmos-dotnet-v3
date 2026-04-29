@@ -804,6 +804,16 @@ namespace Microsoft.Azure.Cosmos.Linq
                 }
             }
 
+            // For KeyValuePair<K,V>, map .Key → "k" and .Value → "v" to match OBJECTTOARRAY output format.
+            // OBJECTTOARRAY converts a JSON object to [{k: key, v: value}] pairs.
+            Type containingType = inputExpression.Expression?.Type;
+            if (containingType != null && containingType.IsGenericType() && containingType.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
+            {
+                string originalMemberName = inputExpression.Member.Name;
+                if (originalMemberName == "Key") memberName = "k";
+                else if (originalMemberName == "Value") memberName = "v";
+            }
+
             if (usePropertyRef)
             {
                 SqlIdentifier propertyIdentifier = SqlIdentifier.Create(memberName);

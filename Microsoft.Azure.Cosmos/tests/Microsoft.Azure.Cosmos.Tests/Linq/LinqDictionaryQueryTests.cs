@@ -30,6 +30,10 @@ namespace Microsoft.Azure.Cosmos.Linq
             Assert.IsTrue(typeof(IDictionary<string, object>).IsDictionary());
             Assert.IsTrue(typeof(IDictionary<int, string>).IsDictionary());
             
+            // Test IReadOnlyDictionary<,>
+            Assert.IsTrue(typeof(IReadOnlyDictionary<string, object>).IsDictionary());
+            Assert.IsTrue(typeof(IReadOnlyDictionary<int, string>).IsDictionary());
+            
             // Test types that implement IDictionary<,>
             Assert.IsTrue(typeof(SortedDictionary<string, object>).IsDictionary());
         }

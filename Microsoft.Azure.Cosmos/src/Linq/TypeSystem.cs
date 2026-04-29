@@ -128,7 +128,9 @@ namespace Microsoft.Azure.Cosmos.Linq
             if (type.IsGenericType())
             {
                 Type genericTypeDefinition = type.GetGenericTypeDefinition();
-                if (genericTypeDefinition == typeof(Dictionary<,>) || genericTypeDefinition == typeof(IDictionary<,>))
+                if (genericTypeDefinition == typeof(Dictionary<,>) ||
+                    genericTypeDefinition == typeof(IDictionary<,>) ||
+                    genericTypeDefinition == typeof(IReadOnlyDictionary<,>))
                 {
                     return true;
                 }
@@ -136,7 +138,8 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             return type.GetInterfaces().Any(interfaceType =>
                 interfaceType.IsGenericType() &&
-                interfaceType.GetGenericTypeDefinition() == typeof(IDictionary<,>));
+                (interfaceType.GetGenericTypeDefinition() == typeof(IDictionary<,>) ||
+                 interfaceType.GetGenericTypeDefinition() == typeof(IReadOnlyDictionary<,>)));
         }
 
         public static Type NullableUnderlyingType(this Type type)
