@@ -802,16 +802,16 @@
 
             ResponseMessage response = new ResponseMessage(HttpStatusCode.RequestTimeout);
 
-            // Exhaust the full DTX retry budget (MaxDtxRetryCount = 10).
-            for (int i = 0; i < 10; i++)
+            // Exhaust the full DTX retry budget (MaxDtxRetryCount = 100).
+            for (int i = 0; i < 100; i++)
             {
                 ShouldRetryResult retryResult = await policy.ShouldRetryAsync(response, CancellationToken.None);
-                Assert.IsTrue(retryResult.ShouldRetry, $"DTX 408 retry {i + 1} of 10 should be allowed.");
+                Assert.IsTrue(retryResult.ShouldRetry, $"DTX 408 retry {i + 1} of 100 should be allowed.");
             }
 
-            // The 11th call must be denied.
+            // The 101st call must be denied.
             ShouldRetryResult finalResult = await policy.ShouldRetryAsync(response, CancellationToken.None);
-            Assert.IsFalse(finalResult.ShouldRetry, "DTX retry budget is exhausted after 10 retries; the 11th must be denied.");
+            Assert.IsFalse(finalResult.ShouldRetry, "DTX retry budget is exhausted after 100 retries; the 101st must be denied.");
         }
 
         private static DocumentServiceRequest CreateDtxRequest()
