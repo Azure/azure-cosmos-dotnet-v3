@@ -48,6 +48,13 @@ namespace Microsoft.Azure.Cosmos
         /// Quorum read with GCLSN barrier - returns the latest version across all regions.
         /// Only valid for accounts configured with Strong consistency.
         /// </summary>
-        GlobalStrong = 4
+        GlobalStrong = 4,
+
+        /// <summary>
+        /// When set, the SDK automatically adds the hub region processing header so that
+        /// the backend directs the request to the hub region. Non-hub regions respond with
+        /// 403/3 (WriteForbidden), which the SDK retries transparently.
+        /// </summary>
+        LastCommittedWriteRegion = 5
     }
 }

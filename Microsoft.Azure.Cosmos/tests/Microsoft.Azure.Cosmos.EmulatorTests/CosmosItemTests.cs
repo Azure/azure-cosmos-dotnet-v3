@@ -4423,26 +4423,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         /// <summary>
-        /// Verifies that when ReadConsistencyStrategy is set on ItemRequestOptions,
-        /// both the hub region header and the ReadConsistencyStrategy header are present
-        /// from the very first request and persist through all 403/3 retries.
-        /// Parameterized over strategy values and 403/3 counts to cover:
-        ///   - Each strategy triggers the correct headers (Session, Eventual, LatestCommitted)
-        ///   - Single 403/3 retry (non-hub region rejects once, then reaches hub)
-        ///   - Multiple 403/3 retries (cycles through several non-hub regions before hub)
+        /// Verifies that when ReadConsistencyStrategy.LastCommittedWriteRegion is set on
+        /// ItemRequestOptions, the hub region header and ReadConsistencyStrategy header are
+        /// present from the very first request and persist through all 403/3 retries.
+        /// Only LastCommittedWriteRegion triggers the hub header on reads.
+        /// Parameterized over forbidden count to cover single and multiple 403/3 retries.
         /// </summary>
         [TestMethod]
         [Owner("aavasthy")]
-        [DataRow("Session", 1, DisplayName = "Request-level Session: single 403/3 → success")]
-        [DataRow("Eventual", 1, DisplayName = "Request-level Eventual: single 403/3 → success")]
-        [DataRow("LatestCommitted", 1, DisplayName = "Request-level LatestCommitted: single 403/3 → success")]
-        [DataRow("Session", 3, DisplayName = "Request-level Session: multiple 403/3 → success")]
-        [Description("Request-level ReadConsistencyStrategy with 403/3 retry flow.")]
-        public async Task ReadItemAsync_WithRequestLevelReadConsistencyStrategy_403_3_ThenSuccess(string strategyName, int forbiddenCount)
+        [DataRow(1, DisplayName = "LastCommittedWriteRegion request-level: single 403/3 → success")]
+        [DataRow(3, DisplayName = "LastCommittedWriteRegion request-level: multiple 403/3 → success")]
+        [Description("Request-level LastCommittedWriteRegion sets hub header on reads with 403/3 retry flow.")]
+        public async Task ReadItemAsync_WithLastCommittedWriteRegion_RequestLevel_403_3_ThenSuccess(int forbiddenCount)
         {
-            Cosmos.ReadConsistencyStrategy strategy =
-                (Cosmos.ReadConsistencyStrategy)Enum.Parse(typeof(Cosmos.ReadConsistencyStrategy), strategyName);
-
             int docReadRequestCount = 0;
             int return403Count = 0;
             List<bool> hubHeaderPerRequest = new List<bool>();
@@ -4469,7 +4462,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         }
                         rcsHeaderPerRequest.Add(rcsValue);
 
-                        // Return 403/3 to simulate non-hub region rejection
                         if (return403Count < forbiddenCount)
                         {
                             return403Count++;
@@ -4506,13 +4498,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
             await this.Container.CreateItemAsync(testItem, new Cosmos.PartitionKey(testItem.pk));
 
-            // Act: Read with ReadConsistencyStrategy set at request level
             ItemResponse<ToDoActivity> response = await customContainer.ReadItemAsync<ToDoActivity>(
                 testItem.id,
                 new Cosmos.PartitionKey(testItem.pk),
-                new ItemRequestOptions { ReadConsistencyStrategy = strategy });
+                new ItemRequestOptions { ReadConsistencyStrategy = Cosmos.ReadConsistencyStrategy.LastCommittedWriteRegion });
 
-            // Assert: Request succeeded after 403/3 retries
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
             Assert.IsNotNull(response.Resource);
             Assert.AreEqual(testItem.id, response.Resource.id);
@@ -4521,38 +4511,30 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(docReadRequestCount >= forbiddenCount + 1,
                 $"Expected at least {forbiddenCount + 1} requests ({forbiddenCount}x 403/3 + 1x success), got {docReadRequestCount}.");
 
-            // Verify both headers were present on EVERY request
             for (int i = 0; i < hubHeaderPerRequest.Count; i++)
             {
                 Assert.IsTrue(hubHeaderPerRequest[i],
-                    $"Hub region header MUST be present on request #{i + 1} when ReadConsistencyStrategy={strategyName} is set.");
-                Assert.AreEqual(strategyName, rcsHeaderPerRequest[i],
-                    $"ReadConsistencyStrategy header MUST be '{strategyName}' on request #{i + 1}.");
+                    $"Hub region header MUST be present on request #{i + 1} for LastCommittedWriteRegion read.");
+                Assert.AreEqual("LastCommittedWriteRegion", rcsHeaderPerRequest[i],
+                    $"ReadConsistencyStrategy header MUST be 'LastCommittedWriteRegion' on request #{i + 1}.");
             }
         }
 
         /// <summary>
-        /// Verifies that when ReadConsistencyStrategy is set at the CosmosClientOptions level,
-        /// the hub region header is present on the first request and the
-        /// 403/3 retry flow succeeds. Parameterized over strategies to ensure client-level
-        /// propagation works for all values.
+        /// Verifies that when ReadConsistencyStrategy.LastCommittedWriteRegion is set at the
+        /// CosmosClientOptions level, the hub region header is present on the first read request
+        /// and the 403/3 retry flow succeeds.
         /// </summary>
         [TestMethod]
         [Owner("aavasthy")]
-        [DataRow("Session", DisplayName = "Client-level Session strategy: 403/3 → success")]
-        [DataRow("Eventual", DisplayName = "Client-level Eventual strategy: 403/3 → success")]
-        [DataRow("LatestCommitted", DisplayName = "Client-level LatestCommitted strategy: 403/3 → success")]
-        [Description("Client-level ReadConsistencyStrategy causes hub header on first request with 403/3 then success.")]
-        public async Task ReadItemAsync_WithClientLevelReadConsistencyStrategy_403_3_ThenSuccess(string strategyName)
+        [Description("Client-level LastCommittedWriteRegion sets hub header on reads with 403/3 then success.")]
+        public async Task ReadItemAsync_WithLastCommittedWriteRegion_ClientLevel_403_3_ThenSuccess()
         {
-            Cosmos.ReadConsistencyStrategy strategy =
-                (Cosmos.ReadConsistencyStrategy)Enum.Parse(typeof(Cosmos.ReadConsistencyStrategy), strategyName);
-
             int docReadRequestCount = 0;
             int return403Count = 0;
             const int maxReturn403 = 1;
-            bool hubHeaderOnFirstRequest = false;
-            string readConsistencyStrategyHeaderValue = null;
+            List<bool> hubHeaderPerRequest = new List<bool>();
+            List<string> rcsHeaderPerRequest = new List<string>();
 
             HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper
             {
@@ -4566,16 +4548,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         bool hasHubHeader = request.Headers.TryGetValues(HubRegionHeader, out IEnumerable<string> values)
                             && values.Any();
+                        hubHeaderPerRequest.Add(hasHubHeader);
 
-                        if (docReadRequestCount == 1)
+                        string rcsValue = null;
+                        if (request.Headers.TryGetValues("x-ms-cosmos-read-consistency-strategy", out IEnumerable<string> rcsValues))
                         {
-                            hubHeaderOnFirstRequest = hasHubHeader;
-
-                            if (request.Headers.TryGetValues("x-ms-cosmos-read-consistency-strategy", out IEnumerable<string> rcsValues))
-                            {
-                                readConsistencyStrategyHeaderValue = rcsValues.FirstOrDefault();
-                            }
+                            rcsValue = rcsValues.FirstOrDefault();
                         }
+                        rcsHeaderPerRequest.Add(rcsValue);
 
                         if (return403Count < maxReturn403)
                         {
@@ -4605,7 +4585,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ConnectionMode = ConnectionMode.Gateway,
                 ConsistencyLevel = Cosmos.ConsistencyLevel.Session,
                 HttpClientFactory = () => new HttpClient(httpHandler),
-                ReadConsistencyStrategy = strategy
+                ReadConsistencyStrategy = Cosmos.ReadConsistencyStrategy.LastCommittedWriteRegion
             };
 
             using CosmosClient customClient = TestCommon.CreateCosmosClient(clientOptions);
@@ -4614,32 +4594,104 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
             await this.Container.CreateItemAsync(testItem, new Cosmos.PartitionKey(testItem.pk));
 
-            // Act: Read without per-request options — client-level strategy should take effect
+            // Read without per-request options — client-level strategy should take effect
             ItemResponse<ToDoActivity> response = await customContainer.ReadItemAsync<ToDoActivity>(
                 testItem.id,
                 new Cosmos.PartitionKey(testItem.pk));
 
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
             Assert.AreEqual(testItem.id, response.Resource.id);
-
-            Assert.IsTrue(hubHeaderOnFirstRequest,
-                $"Hub region header MUST be present on the first request when client-level ReadConsistencyStrategy={strategyName} is set.");
-            Assert.AreEqual(strategyName, readConsistencyStrategyHeaderValue,
-                $"ReadConsistencyStrategy header should be '{strategyName}'.");
             Assert.AreEqual(maxReturn403, return403Count, "Should have returned 403/3 exactly once.");
-            Assert.IsTrue(docReadRequestCount >= 2,
-                $"Expected at least 2 requests, got {docReadRequestCount}.");
+            Assert.IsTrue(docReadRequestCount >= 2, $"Expected at least 2 requests, got {docReadRequestCount}.");
+
+            for (int i = 0; i < hubHeaderPerRequest.Count; i++)
+            {
+                Assert.IsTrue(hubHeaderPerRequest[i],
+                    $"Hub region header MUST be present on request #{i + 1} for client-level LastCommittedWriteRegion.");
+                Assert.AreEqual("LastCommittedWriteRegion", rcsHeaderPerRequest[i],
+                    $"ReadConsistencyStrategy header MUST be 'LastCommittedWriteRegion' on request #{i + 1}.");
+            }
         }
 
         /// <summary>
-        /// Verifies that when ReadConsistencyStrategy is NOT set, the hub header is NOT present
-        /// on the initial request. This is the negative/control test confirming that the hub header
-        /// is only added when ReadConsistencyStrategy triggers it in RequestInvokerHandler.
+        /// Verifies that non-LastCommittedWriteRegion strategies (e.g. Session, Eventual)
+        /// set the ReadConsistencyStrategy header but do NOT set the hub region header.
+        /// This is the key behavioral distinction: only LastCommittedWriteRegion triggers
+        /// hub region routing.
         /// </summary>
         [TestMethod]
         [Owner("aavasthy")]
-        [Description("Without ReadConsistencyStrategy, hub header is NOT present on initial request.")]
-        public async Task ReadItemAsync_WithoutReadConsistencyStrategy_NoHubHeaderOnFirstRequest()
+        [DataRow("Session", DisplayName = "Session strategy: RCS header present, no hub header")]
+        [DataRow("Eventual", DisplayName = "Eventual strategy: RCS header present, no hub header")]
+        [DataRow("LatestCommitted", DisplayName = "LatestCommitted strategy: RCS header present, no hub header")]
+        [Description("Non-LastCommittedWriteRegion strategies set RCS header but NOT hub region header.")]
+        public async Task ReadItemAsync_WithNonLastCommittedWriteRegionStrategy_NoHubHeader(string strategyName)
+        {
+            Cosmos.ReadConsistencyStrategy strategy =
+                (Cosmos.ReadConsistencyStrategy)Enum.Parse(typeof(Cosmos.ReadConsistencyStrategy), strategyName);
+
+            bool hubHeaderOnFirstRequest = false;
+            string rcsHeaderValue = null;
+            bool interceptedFirstRequest = false;
+
+            HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper
+            {
+                RequestCallBack = (request, cancellationToken) =>
+                {
+                    if (!interceptedFirstRequest
+                        && request.Method == HttpMethod.Get
+                        && request.RequestUri != null
+                        && request.RequestUri.AbsolutePath.Contains("/docs/"))
+                    {
+                        interceptedFirstRequest = true;
+
+                        hubHeaderOnFirstRequest = request.Headers.TryGetValues(HubRegionHeader, out IEnumerable<string> values)
+                            && values.Any();
+
+                        if (request.Headers.TryGetValues("x-ms-cosmos-read-consistency-strategy", out IEnumerable<string> rcsValues))
+                        {
+                            rcsHeaderValue = rcsValues.FirstOrDefault();
+                        }
+                    }
+
+                    return Task.FromResult<HttpResponseMessage>(null);
+                }
+            };
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Gateway,
+                ConsistencyLevel = Cosmos.ConsistencyLevel.Session,
+                HttpClientFactory = () => new HttpClient(httpHandler),
+            };
+
+            using CosmosClient customClient = TestCommon.CreateCosmosClient(clientOptions);
+            Container customContainer = customClient.GetContainer(this.database.Id, this.Container.Id);
+
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+            await this.Container.CreateItemAsync(testItem, new Cosmos.PartitionKey(testItem.pk));
+
+            ItemResponse<ToDoActivity> response = await customContainer.ReadItemAsync<ToDoActivity>(
+                testItem.id,
+                new Cosmos.PartitionKey(testItem.pk),
+                new ItemRequestOptions { ReadConsistencyStrategy = strategy });
+
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.IsTrue(interceptedFirstRequest, "Should have intercepted at least one doc read request.");
+            Assert.IsFalse(hubHeaderOnFirstRequest,
+                $"Hub region header should NOT be present for {strategyName} strategy — only LastCommittedWriteRegion triggers it.");
+            Assert.AreEqual(strategyName, rcsHeaderValue,
+                $"ReadConsistencyStrategy header should be '{strategyName}'.");
+        }
+
+        /// <summary>
+        /// Verifies that when ReadConsistencyStrategy is NOT set at all, neither the hub header
+        /// nor the ReadConsistencyStrategy header is present on the request.
+        /// </summary>
+        [TestMethod]
+        [Owner("aavasthy")]
+        [Description("Without ReadConsistencyStrategy, neither hub header nor RCS header is present.")]
+        public async Task ReadItemAsync_WithoutReadConsistencyStrategy_NoHeaders()
         {
             bool hubHeaderOnFirstRequest = false;
             bool rcsHeaderOnFirstRequest = false;
@@ -4663,7 +4715,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             && rcsValues.Any();
                     }
 
-                    // Let all requests pass through to the emulator
                     return Task.FromResult<HttpResponseMessage>(null);
                 }
             };
@@ -4681,7 +4732,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
             await this.Container.CreateItemAsync(testItem, new Cosmos.PartitionKey(testItem.pk));
 
-            // Act: Read WITHOUT ReadConsistencyStrategy
             ItemResponse<ToDoActivity> response = await customContainer.ReadItemAsync<ToDoActivity>(
                 testItem.id,
                 new Cosmos.PartitionKey(testItem.pk));

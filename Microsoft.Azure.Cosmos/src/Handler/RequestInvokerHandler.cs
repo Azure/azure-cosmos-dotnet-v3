@@ -509,6 +509,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         /// <summary>
         /// Validate and set the ReadConsistencyStrategy header.
+        /// When the strategy is LastCommittedWriteRegion and the operation is a read,
+        /// also set the hub region processing header so the backend routes the request
+        /// to the hub (write) region.
         /// </summary>
         private Task ValidateAndSetReadConsistencyStrategyAsync(RequestMessage requestMessage)
         {
@@ -530,9 +533,13 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     HttpConstants.HttpHeaders.ReadConsistencyStrategy,
                     readConsistencyStrategy.Value.ToString());
 
-                requestMessage.Headers.Set(
-                    HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion,
-                    bool.TrueString);
+                if (readConsistencyStrategy.Value == Cosmos.ReadConsistencyStrategy.LastCommittedWriteRegion
+                    && OperationTypeExtensions.IsReadOperation(requestMessage.OperationType))
+                {
+                    requestMessage.Headers.Set(
+                        HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion,
+                        bool.TrueString);
+                }
             }
 
             return Task.CompletedTask;
