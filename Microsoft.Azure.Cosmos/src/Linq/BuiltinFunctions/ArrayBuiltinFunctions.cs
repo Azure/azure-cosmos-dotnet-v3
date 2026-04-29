@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Linq
 {
+    using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.Collections.Immutable;
@@ -65,6 +66,10 @@ namespace Microsoft.Azure.Cosmos.Linq
                     return null;
                 }
 
+                // In .NET 10+, the searchList may be wrapped in an op_Implicit conversion
+                // from T[] to ReadOnlySpan<T>. Unwrap it to get the underlying array constant.
+                searchList = UnwrapSpanImplicitConversion(searchList);
+
                 if (searchList.NodeType == ExpressionType.Constant)
                 {
                     return this.VisitIN(searchExpression, (ConstantExpression)searchList, context);
@@ -73,6 +78,29 @@ namespace Microsoft.Azure.Cosmos.Linq
                 SqlScalarExpression array = ExpressionToSql.VisitScalarExpression(searchList, context);
                 SqlScalarExpression expression = ExpressionToSql.VisitScalarExpression(searchExpression, context);
                 return SqlFunctionCallScalarExpression.CreateBuiltin("ARRAY_CONTAINS", array, expression);
+            }
+
+            /// <summary>
+            /// Unwraps an op_Implicit conversion from T[] to ReadOnlySpan&lt;T&gt; or Span&lt;T&gt;,
+            /// returning the inner array expression. Returns the original expression if not a Span conversion.
+            /// </summary>
+            private static Expression UnwrapSpanImplicitConversion(Expression expression)
+            {
+                if (expression is MethodCallExpression call
+                    && call.Method.Name == "op_Implicit"
+                    && call.Arguments.Count == 1)
+                {
+                    Type declaringType = call.Method.DeclaringType;
+                    if (declaringType != null
+                        && declaringType.IsGenericType
+                        && (declaringType.GetGenericTypeDefinition() == typeof(ReadOnlySpan<>)
+                            || declaringType.GetGenericTypeDefinition() == typeof(Span<>)))
+                    {
+                        return call.Arguments[0];
+                    }
+                }
+
+                return expression;
             }
 
             private SqlScalarExpression VisitIN(Expression expression, ConstantExpression constantExpressionList, TranslationContext context)
