@@ -188,32 +188,25 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         /// <summary>
-        /// Non-Span op_Implicit (e.g., numeric conversions) should still be evaluable.
+        /// Non-Span op_Implicit (e.g., Decimal from int) should still be evaluable.
         /// This ensures we don't over-block.
         /// </summary>
         [TestMethod]
         public void ConstantEvaluator_NonSpanOpImplicit_IsStillEvaluated()
         {
-            // int to double implicit conversion
-            MethodInfo opImplicit = typeof(double)
+            // Decimal.op_Implicit(int) - reliably available via reflection on all runtimes
+            MethodInfo opImplicit = typeof(decimal)
                 .GetMethods(BindingFlags.Public | BindingFlags.Static)
-                .FirstOrDefault(m => m.Name == "op_Implicit"
+                .First(m => m.Name == "op_Implicit"
                     && m.GetParameters().Length == 1
                     && m.GetParameters()[0].ParameterType == typeof(int));
-
-            if (opImplicit == null)
-            {
-                // Not all runtimes expose this as a method; skip if unavailable
-                Assert.Inconclusive("double.op_Implicit(int) not available as reflection method");
-                return;
-            }
 
             ConstantExpression intConst = Expression.Constant(42);
             MethodCallExpression implicitCall = Expression.Call(opImplicit, intConst);
 
             Expression result = ConstantEvaluator.PartialEval(implicitCall);
 
-            // This SHOULD be evaluated to a constant since double is not a ref struct
+            // This SHOULD be evaluated to a constant since decimal is not a ref struct
             Assert.IsInstanceOfType(result, typeof(ConstantExpression),
                 "Non-Span op_Implicit should be evaluated to a constant");
         }
@@ -414,7 +407,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 .Select(m => m.MakeGenericMethod(typeof(string)))
                 .FirstOrDefault(m =>
                 {
-                    var p = m.GetParameters();
+                    ParameterInfo[] p = m.GetParameters();
                     return p.Length == 2
                         && p[0].ParameterType == typeof(ReadOnlySpan<string>)
                         && p[1].ParameterType == typeof(ReadOnlySpan<string>);
