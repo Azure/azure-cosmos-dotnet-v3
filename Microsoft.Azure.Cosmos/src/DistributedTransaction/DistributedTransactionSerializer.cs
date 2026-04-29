@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Text.Json;
     using Microsoft.Azure.Documents;
@@ -15,6 +16,20 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal static class DistributedTransactionSerializer
     {
+        internal const string Operations = "operations";
+        internal const string DatabaseName = "databaseName";
+        internal const string CollectionName = "collectionName";
+        internal const string Id = "id";
+        internal const string CollectionResourceId = "collectionResourceId";
+        internal const string DatabaseResourceId = "databaseResourceId";
+        internal const string PartitionKey = "partitionKey";
+        internal const string Index = "index";
+        internal const string ResourceBody = "resourceBody";
+        internal const string SessionToken = "sessionToken";
+        internal const string ETag = "ifMatch";
+        internal const string OperationType = "operationType";
+        internal const string ResourceType = "resourceType";
+
         /// <summary>
         /// Serializes a distributed transaction request body to a JSON stream.
         /// The body contains only the operations array. Other metadata like idempotencyToken,
@@ -31,7 +46,7 @@ namespace Microsoft.Azure.Cosmos
                 jsonWriter.WriteStartObject();
 
                 // operations array
-                jsonWriter.WriteStartArray("operations");
+                jsonWriter.WriteStartArray(Operations);
 
                 foreach (DistributedTransactionOperation operation in operations)
                 {
@@ -57,33 +72,30 @@ namespace Microsoft.Azure.Cosmos
             jsonWriter.WriteStartObject();
 
             // databaseName 
-            jsonWriter.WriteString("databaseName", operation.Database);
+            jsonWriter.WriteString(DatabaseName, operation.Database);
 
             // collectionName
-            jsonWriter.WriteString("collectionName", operation.Container);
+            jsonWriter.WriteString(CollectionName, operation.Container);
+
+            // id
+            jsonWriter.WriteString(Id, operation.Id);
 
             // collectionResourceId
             if (operation.CollectionResourceId != null)
             {
-                jsonWriter.WriteString("collectionResourceId", operation.CollectionResourceId);
+                jsonWriter.WriteString(CollectionResourceId, operation.CollectionResourceId);
             }
 
             // databaseResourceId
             if (operation.DatabaseResourceId != null)
             {
-                jsonWriter.WriteString("databaseResourceId", operation.DatabaseResourceId);
-            }
-
-            // id 
-            if (operation.Id != null)
-            {
-                jsonWriter.WriteString("id", operation.Id);
+                jsonWriter.WriteString(DatabaseResourceId, operation.DatabaseResourceId);
             }
 
             // partitionKey
             if (operation.PartitionKeyJson != null)
             {
-                jsonWriter.WritePropertyName("partitionKey");
+                jsonWriter.WritePropertyName(PartitionKey);
                 jsonWriter.WriteRawValue(operation.PartitionKeyJson, skipInputValidation: true);
             }
 
@@ -92,32 +104,31 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw new ArgumentOutOfRangeException(nameof(operation.OperationIndex), "Operation index must be non-negative.");
             }
-            jsonWriter.WriteNumber("index", (uint)operation.OperationIndex);
+            jsonWriter.WriteNumber(Index, (uint)operation.OperationIndex);
 
             //resourceBody - written as nested JSON object
             if (!operation.ResourceBody.IsEmpty)
             {
-                jsonWriter.WritePropertyName("resourceBody");
+                jsonWriter.WritePropertyName(ResourceBody);
                 jsonWriter.WriteRawValue(operation.ResourceBody.Span, skipInputValidation: true);
             }
 
             // sessionToken
             if (operation.SessionToken != null)
             {
-                jsonWriter.WriteString("sessionToken", operation.SessionToken);
+                jsonWriter.WriteString(SessionToken, operation.SessionToken);
             }
 
             // etag
             if (operation.ETag != null)
             {
-                jsonWriter.WriteString("etag", operation.ETag);
+                jsonWriter.WriteString(ETag, operation.ETag);
             }
 
             // operationType (string)
-            jsonWriter.WriteString("operationType", operation.OperationType.ToString());
-
+            jsonWriter.WriteString(OperationType, operation.OperationType.ToString());
             // resourceType (string)
-            jsonWriter.WriteString("resourceType", ResourceType.Document.ToString());
+            jsonWriter.WriteString(ResourceType, Documents.ResourceType.Document.ToString());
 
             jsonWriter.WriteEndObject();
         }

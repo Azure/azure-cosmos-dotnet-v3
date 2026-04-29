@@ -41,6 +41,12 @@ Purpose: quick, actionable context so an AI coding assistant can be immediately 
 
 - **How AI should produce code/changes here**:
   - **🚫 HARD RULE: NEVER push directly to `master` — NO EXCEPTIONS.** Always create a feature branch and submit a pull request. This rule cannot be overridden.
+  - **Branch naming**: Always use the format `users/<user-name>/feature-name` (e.g. `users/ntripician/fix-retry-logic`). Do not use other conventions like `feature/`, `fix/`, or `dev/`.
+  - **PR title format**: All pull request titles **must** match the CI lint regex: `(\[Internal\]|\[v4\] )?.{3}.+: (Adds|Fixes|Refactors|Removes) .{3}.+`. The format is `[Optional Prefix] Category: Verb Description` where the verb is one of `Adds`, `Fixes`, `Refactors`, or `Removes`. Optional prefixes are `[Internal]` (for PRs with no customer impact) or `[v4]` (for v4-specific changes). Examples:
+    - `Diagnostics: Adds GetElapsedClientLatency to CosmosDiagnostics`
+    - `PartitionKey: Fixes null reference when using default(PartitionKey)`
+    - `[v4] Client Encryption: Refactors code to external project`
+    - `[Internal] Query: Adds code generator for CosmosNumbers for easy additions in the future`
   - Keep changes minimal and focused; prefer small, targeted edits and follow existing code style.
   - When suggesting build/test changes, reference the relevant MSBuild property or pipeline YAML (point to `Directory.Build.props` or `templates/*`).
   - Do not change version numbers or packaging settings without explicit instruction — these are centrally managed.
