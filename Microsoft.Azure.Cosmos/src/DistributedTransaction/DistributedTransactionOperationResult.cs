@@ -140,7 +140,7 @@ namespace Microsoft.Azure.Cosmos
         {
             DistributedTransactionOperationResult result = JsonSerializer.Deserialize<DistributedTransactionOperationResult>(json, DistributedTransactionOperationResult.CaseInsensitiveOptions);
 
-            if (json.TryGetProperty("resourceBody", out JsonElement resourceBody)
+            if (json.TryGetProperty(DistributedTransactionSerializer.ResourceBody, out JsonElement resourceBody)
                 && resourceBody.ValueKind != JsonValueKind.Undefined
                 && resourceBody.ValueKind != JsonValueKind.Null)
             {
