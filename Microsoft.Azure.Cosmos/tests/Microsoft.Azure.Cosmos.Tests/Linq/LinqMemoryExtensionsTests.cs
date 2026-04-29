@@ -5,374 +5,167 @@
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
-    using System.Collections.Generic;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>
-    /// Tests for MemoryExtensions compatibility in LINQ translation.
-    /// Issue #5518: In .NET 10+, array.Contains() resolves to MemoryExtensions.Contains(ReadOnlySpan).
+    /// Tests for .NET 10 MemoryExtensions.Contains LINQ translation (Issue #5518).
     ///
-    /// On .NET 10, the compiler generates an expression tree like:
-    ///   MemoryExtensions.Contains&lt;string&gt;(
-    ///       ReadOnlySpan&lt;string&gt;.op_Implicit(array),   // implicit cast
-    ///       item
-    ///   )
-    /// 
-    /// This differs from older .NET which generates:
-    ///   Enumerable.Contains&lt;string&gt;(array, item)
+    /// In .NET 10+, array.Contains(x) generates:
+    ///   MemoryExtensions.Contains&lt;T&gt;(ReadOnlySpan&lt;T&gt;.op_Implicit(array), x)
     ///
-    /// Two layers must handle this correctly:
-    /// 1. ConstantEvaluator - must NOT try to evaluate op_Implicit(array) as a constant
-    ///    because ReadOnlySpan is a ref struct and cannot be boxed.
-    /// 2. BuiltinFunctionVisitor - must recognize MemoryExtensions.Contains and route it
-    ///    to ArrayBuiltinFunctions for proper SQL translation.
+    /// These tests validate each condition in our fix:
+    /// 1. ConstantEvaluator: MemoryExtensions.Contains must not be evaluated as a constant
+    /// 2. ConstantEvaluator: op_Implicit on ReadOnlySpan/Span must not be evaluated
+    /// 3. BuiltinFunctionVisitor: MemoryExtensions.Contains must route to ArrayBuiltinFunctions
+    /// 4. Unsupported MemoryExtensions methods must throw DocumentQueryException
     /// </summary>
     [TestClass]
     public class LinqMemoryExtensionsTests
     {
-        /// <summary>
-        /// Helper: Gets MemoryExtensions.Contains&lt;string&gt;(ReadOnlySpan&lt;string&gt;, string)
-        /// </summary>
-        private static MethodInfo GetMemoryExtensionsContainsMethod()
+        #region Helpers
+
+        private static MethodInfo GetMemoryExtensionsContainsMethod<T>()
         {
             return typeof(MemoryExtensions)
                 .GetMethods(BindingFlags.Public | BindingFlags.Static)
                 .Where(m => m.Name == "Contains" && m.IsGenericMethod && m.GetParameters().Length == 2)
-                .Select(m => m.MakeGenericMethod(typeof(string)))
-                .FirstOrDefault(m => m.GetParameters()[0].ParameterType == typeof(ReadOnlySpan<string>));
+                .Select(m => m.MakeGenericMethod(typeof(T)))
+                .FirstOrDefault(m => m.GetParameters()[0].ParameterType == typeof(ReadOnlySpan<T>));
         }
 
-        /// <summary>
-        /// Helper: Gets ReadOnlySpan&lt;string&gt;.op_Implicit(string[]) method.
-        /// This is the implicit conversion the .NET 10 compiler inserts.
-        /// </summary>
-        private static MethodInfo GetOpImplicitMethod()
+        private static MethodInfo GetOpImplicitMethod<T>()
         {
-            return typeof(ReadOnlySpan<string>)
+            return typeof(ReadOnlySpan<T>)
                 .GetMethods(BindingFlags.Public | BindingFlags.Static)
                 .FirstOrDefault(m => m.Name == "op_Implicit"
                     && m.GetParameters().Length == 1
-                    && m.GetParameters()[0].ParameterType == typeof(string[]));
+                    && m.GetParameters()[0].ParameterType == typeof(T[]));
         }
 
         /// <summary>
-        /// Helper: Builds the expression tree that .NET 10 generates for array.Contains(item):
-        ///   MemoryExtensions.Contains(ReadOnlySpan.op_Implicit(array), item)
+        /// Builds the expression tree that .NET 10 generates for array.Contains(item):
+        ///   MemoryExtensions.Contains&lt;T&gt;(ReadOnlySpan&lt;T&gt;.op_Implicit(array), item)
         /// </summary>
-        private static MethodCallExpression BuildNet10ContainsExpression(
+        private static MethodCallExpression BuildNet10ContainsExpression<T>(
             Expression arrayExpression,
             Expression itemExpression)
         {
-            MethodInfo containsMethod = GetMemoryExtensionsContainsMethod();
-            MethodInfo opImplicit = GetOpImplicitMethod();
+            MethodInfo containsMethod = GetMemoryExtensionsContainsMethod<T>();
+            MethodInfo opImplicit = GetOpImplicitMethod<T>();
 
-            // Wrap the array in op_Implicit to create ReadOnlySpan<string>
             MethodCallExpression spanConversion = Expression.Call(opImplicit, arrayExpression);
-
-            // MemoryExtensions.Contains(span, item)
             return Expression.Call(containsMethod, spanConversion, itemExpression);
         }
 
         /// <summary>
-        /// Verifies that IsMemoryExtensionsMethod correctly identifies MemoryExtensions.Contains
-        /// and the expression shape is correct.
+        /// Gets an unsupported MemoryExtensions method (IndexOf) for negative testing.
         /// </summary>
-        [TestMethod]
-        public void TestMemoryExtensionsContainsDetection()
+        private static MethodInfo GetMemoryExtensionsIndexOfMethod()
         {
-            MethodInfo containsMethod = GetMemoryExtensionsContainsMethod();
-            Assert.IsNotNull(containsMethod, "MemoryExtensions.Contains<string>(ReadOnlySpan<string>, string) should exist");
-            Assert.AreEqual("System.MemoryExtensions", containsMethod.DeclaringType.FullName);
-        }
-
-        /// <summary>
-        /// Tests that array types are correctly identified as enumerable.
-        /// </summary>
-        [TestMethod]
-        public void TestArrayIsEnumerable()
-        {
-            Assert.IsTrue(typeof(string[]).IsEnumerable(), "string[] should be enumerable");
-            Assert.IsTrue(typeof(int[]).IsEnumerable(), "int[] should be enumerable");
-        }
-
-        /// <summary>
-        /// Verifies that Enumerable.Contains is NOT flagged as MemoryExtensions.
-        /// </summary>
-        [TestMethod]
-        public void TestEnumerableContainsNotDetectedAsMemoryExtensions()
-        {
-            MethodInfo enumerableContains = typeof(Enumerable)
+            return typeof(MemoryExtensions)
                 .GetMethods(BindingFlags.Public | BindingFlags.Static)
-                .Where(m => m.Name == "Contains" && m.IsGenericMethod)
+                .Where(m => m.Name == "IndexOf" && m.IsGenericMethod && m.GetParameters().Length == 2)
                 .Select(m => m.MakeGenericMethod(typeof(string)))
-                .FirstOrDefault(m => m.GetParameters().Length == 2);
-
-            Assert.IsNotNull(enumerableContains, "Should find Enumerable.Contains<string>");
-            Assert.AreNotEqual("System.MemoryExtensions", enumerableContains.DeclaringType.FullName);
+                .FirstOrDefault(m => m.GetParameters()[0].ParameterType == typeof(ReadOnlySpan<string>));
         }
 
+        #endregion
+
+        #region ConstantEvaluator — MemoryExtensions.Contains is not evaluated
+
         /// <summary>
-        /// CRITICAL TEST: Validates that ConstantEvaluator.PartialEval does NOT attempt to 
-        /// evaluate the op_Implicit(array) sub-expression when it's part of a 
-        /// MemoryExtensions.Contains call.
-        /// 
-        /// On .NET 10, the expression tree for `constantArray.Contains(param)` is:
-        ///   MemoryExtensions.Contains(ReadOnlySpan.op_Implicit(constantArray), param)
-        ///
-        /// Without a fix in ConstantEvaluator, it will try to evaluate op_Implicit(constantArray)
-        /// as a constant. This fails because:
-        ///   - ReadOnlySpan is a ref struct and cannot be boxed into object
-        ///   - Expression.Constant(..., typeof(ReadOnlySpan&lt;string&gt;)) throws
-        ///
-        /// This test verifies the current behavior: does the ConstantEvaluator blow up 
-        /// when encountering this expression pattern?
+        /// ConstantEvaluator must NOT evaluate MemoryExtensions.Contains — it must be preserved
+        /// in the expression tree for the SQL translator to process.
         /// </summary>
         [TestMethod]
-        public void TestConstantEvaluatorWithOpImplicitSpanConversion()
+        public void ConstantEvaluator_MemoryExtensionsContains_IsNotEvaluated()
         {
-            MethodInfo opImplicit = GetOpImplicitMethod();
+            MethodInfo opImplicit = GetOpImplicitMethod<string>();
             if (opImplicit == null)
             {
-                // On older runtimes without the op_Implicit, this test is not applicable
-                Assert.Inconclusive("ReadOnlySpan<string>.op_Implicit(string[]) not available on this runtime");
+                Assert.Inconclusive("ReadOnlySpan<string>.op_Implicit not available on this runtime");
                 return;
             }
 
-            // Simulate: MemoryExtensions.Contains(ReadOnlySpan.op_Implicit(new[]{"a","b"}), paramX)
             string[] testArray = new[] { "a", "b", "c" };
             ConstantExpression arrayConst = Expression.Constant(testArray);
             ParameterExpression paramX = Expression.Parameter(typeof(string), "x");
 
-            MethodCallExpression net10Contains = BuildNet10ContainsExpression(arrayConst, paramX);
+            MethodCallExpression net10Contains = BuildNet10ContainsExpression<string>(arrayConst, paramX);
+            Expression<Func<string, bool>> lambda = Expression.Lambda<Func<string, bool>>(net10Contains, paramX);
 
-            // The op_Implicit sub-expression: ReadOnlySpan<string>.op_Implicit(testArray)
-            MethodCallExpression opImplicitCall = (MethodCallExpression)net10Contains.Arguments[0];
+            // PartialEval must NOT throw — the fix prevents evaluation of the MemoryExtensions call
+            Expression result = ConstantEvaluator.PartialEval(lambda.Body);
 
-            // Verify: ConstantEvaluator.CanBeEvaluated would say TRUE for op_Implicit
-            // because its DeclaringType (ReadOnlySpan<string>) is not Enumerable/Queryable/CosmosLinq.
-            // This means PartialEval WILL try to evaluate it, which will fail for ref structs.
-            Type opImplicitDeclaringType = opImplicitCall.Method.DeclaringType;
-            Assert.AreNotEqual(typeof(Enumerable), opImplicitDeclaringType);
-            Assert.AreNotEqual(typeof(Queryable), opImplicitDeclaringType);
-            Assert.AreNotEqual(typeof(CosmosLinq), opImplicitDeclaringType);
-
-            // Now test: does ConstantEvaluator.PartialEval throw when processing this expression?
-            // We wrap in a lambda to give it a full expression tree shape
-            Expression<Func<string, bool>> lambda = Expression.Lambda<Func<string, bool>>(
-                net10Contains, paramX);
-
-            // This is the key assertion: PartialEval will try to evaluate op_Implicit(array)
-            // as a constant. Since ReadOnlySpan<T> is a ref struct, this should fail.
-            bool threwException = false;
-            string exceptionMessage = null;
-            try
-            {
-                Expression result = ConstantEvaluator.PartialEval(lambda.Body);
-            }
-            catch (Exception ex)
-            {
-                threwException = true;
-                exceptionMessage = ex.Message;
-            }
-
-            // Document current behavior: 
-            // If this DOES throw, it proves Kiran's fix alone is insufficient — 
-            // we also need the ConstantEvaluator fix from Minh's PR.
-            // If it does NOT throw, Kiran's fix may be sufficient on its own.
-            if (threwException)
-            {
-                Assert.Fail(
-                    $"ConstantEvaluator.PartialEval throws when encountering op_Implicit for ReadOnlySpan. " +
-                    $"This proves we need to fix ConstantEvaluator to exclude op_Implicit for Span types. " +
-                    $"Exception: {exceptionMessage}");
-            }
+            // The result should still be a MethodCallExpression (not collapsed to a constant)
+            Assert.IsInstanceOfType(result, typeof(MethodCallExpression),
+                "MemoryExtensions.Contains should be preserved as a method call, not evaluated to a constant");
         }
 
         /// <summary>
-        /// Tests the full translation pipeline with a MemoryExtensions.Contains expression 
-        /// where the array is a constant (the common case: `constantArray.Contains(x)`).
-        /// 
-        /// This simulates the end-to-end scenario: ConstantEvaluator → BuiltinFunctionVisitor → SQL.
-        /// If ConstantEvaluator incorrectly evaluates the op_Implicit, or if BuiltinFunctionVisitor
-        /// doesn't recognize the pattern, this test will fail.
+        /// ConstantEvaluator must NOT evaluate op_Implicit on ReadOnlySpan because ref structs
+        /// cannot be boxed into Expression.Constant.
         /// </summary>
         [TestMethod]
-        public void TestFullTranslationPipelineWithMemoryExtensionsContains()
+        public void ConstantEvaluator_OpImplicitOnReadOnlySpan_IsNotEvaluated()
         {
-            MethodInfo opImplicit = GetOpImplicitMethod();
+            MethodInfo opImplicit = GetOpImplicitMethod<string>();
             if (opImplicit == null)
             {
-                Assert.Inconclusive("ReadOnlySpan<string>.op_Implicit(string[]) not available on this runtime");
+                Assert.Inconclusive("ReadOnlySpan<string>.op_Implicit not available on this runtime");
                 return;
             }
 
-            MethodInfo containsMethod = GetMemoryExtensionsContainsMethod();
-            Assert.IsNotNull(containsMethod);
-
-            // Build the .NET 10 expression: MemoryExtensions.Contains(op_Implicit(["a","b","c"]), x)
-            string[] testArray = new[] { "a", "b", "c" };
-            ConstantExpression arrayConst = Expression.Constant(testArray);
-            ParameterExpression paramX = Expression.Parameter(typeof(string), "x");
-
-            MethodCallExpression net10Contains = BuildNet10ContainsExpression(arrayConst, paramX);
-
-            // Attempt full translation via SqlTranslator.TranslateExpression
-            // This exercises both ConstantEvaluator AND BuiltinFunctionVisitor
-            string translatedSql = null;
-            Exception translationException = null;
-            try
-            {
-                translatedSql = SqlTranslator.TranslateExpression(net10Contains);
-            }
-            catch (Exception ex)
-            {
-                translationException = ex;
-            }
-
-            if (translationException != null)
-            {
-                Assert.Fail(
-                    $"Full translation pipeline failed for MemoryExtensions.Contains expression. " +
-                    $"Exception type: {translationException.GetType().Name}, " +
-                    $"Message: {translationException.Message}. " +
-                    $"This indicates the fix is incomplete — both ConstantEvaluator and " +
-                    $"BuiltinFunctionVisitor need updates to handle the .NET 10 expression tree.");
-            }
-
-            // If translation succeeds, verify it produces the expected SQL (IN clause)
-            Assert.IsNotNull(translatedSql, "Translation should produce SQL output");
-            // Expected: x IN ("a", "b", "c") or similar
-            Assert.IsTrue(
-                translatedSql.Contains("IN") || translatedSql.Contains("ARRAY_CONTAINS"),
-                $"Expected IN or ARRAY_CONTAINS in SQL output but got: {translatedSql}");
-        }
-
-        /// <summary>
-        /// Tests that the BuiltinFunctionVisitor correctly handles a MemoryExtensions.Contains call
-        /// where the first argument is already a ConstantExpression (array pre-evaluated).
-        /// This is the simpler case where ConstantEvaluator has already collapsed the tree.
-        /// </summary>
-        [TestMethod]
-        public void TestBuiltinFunctionVisitorWithConstantArrayDirectly()
-        {
-            MethodInfo containsMethod = GetMemoryExtensionsContainsMethod();
-            Assert.IsNotNull(containsMethod);
-
-            // Directly pass array as constant (skipping op_Implicit) — 
-            // this tests whether ArrayBuiltinFunctions.ArrayContainsVisitor.VisitImplicit
-            // handles the 2-argument static method case correctly
-            string[] testArray = new[] { "x", "y" };
-            ConstantExpression arrayExpr = Expression.Constant(testArray);
-            ParameterExpression paramX = Expression.Parameter(typeof(string), "x");
-            MethodCallExpression methodCall = Expression.Call(containsMethod, arrayExpr, paramX);
-
-            // Attempt translation - this bypasses ConstantEvaluator
-            string translatedSql = null;
-            Exception translationException = null;
-            try
-            {
-                TranslationContext context = new TranslationContext(null);
-                // We can't easily call BuiltinFunctionVisitor.Visit directly since it's internal,
-                // but we can go through SqlTranslator.TranslateExpression which skips partial eval
-                // for expressions that are already in the right form
-                translatedSql = SqlTranslator.TranslateExpression(methodCall);
-            }
-            catch (Exception ex)
-            {
-                translationException = ex;
-            }
-
-            if (translationException != null)
-            {
-                Assert.Fail(
-                    $"BuiltinFunctionVisitor failed to translate MemoryExtensions.Contains with constant array. " +
-                    $"Exception: {translationException.GetType().Name}: {translationException.Message}. " +
-                    $"ArrayContainsVisitor.VisitImplicit may not handle the ReadOnlySpan parameter type.");
-            }
-
-            Assert.IsNotNull(translatedSql);
-        }
-
-        /// <summary>
-        /// Validates that ConstantEvaluator marks MemoryExtensions.Contains as non-evaluable
-        /// (because it's a query operation, not a constant).
-        /// 
-        /// Currently ConstantEvaluator only excludes Enumerable, Queryable, and CosmosLinq.
-        /// MemoryExtensions is NOT excluded, which means the entire Contains call could be
-        /// incorrectly evaluated as a constant if both arguments are constants.
-        /// </summary>
-        [TestMethod]
-        public void TestConstantEvaluatorBehaviorWithMemoryExtensionsContains()
-        {
-            MethodInfo containsMethod = GetMemoryExtensionsContainsMethod();
-            MethodInfo opImplicit = GetOpImplicitMethod();
-
-            if (containsMethod == null || opImplicit == null)
-            {
-                Assert.Inconclusive("Required methods not available on this runtime");
-                return;
-            }
-
-            // Build expression where BOTH arguments are constants:
-            // MemoryExtensions.Contains(op_Implicit(["a","b"]), "a")
-            // On .NET 10, this could be generated from: new[]{"a","b"}.Contains("a")
-            // where both the array and the search value are known at compile time.
             string[] testArray = new[] { "a", "b" };
             ConstantExpression arrayConst = Expression.Constant(testArray);
-            ConstantExpression searchConst = Expression.Constant("a");
             MethodCallExpression opImplicitCall = Expression.Call(opImplicit, arrayConst);
-            MethodCallExpression containsCall = Expression.Call(containsMethod, opImplicitCall, searchConst);
 
-            // Test: what does PartialEval do with this?
-            // If it tries to evaluate the whole thing, it would attempt DynamicInvoke
-            // on MemoryExtensions.Contains(ReadOnlySpan, "a") — but ReadOnlySpan is a ref struct
-            // so creating a Constant of that type will fail.
-            bool threwException = false;
-            Exception caughtException = null;
-            Expression result = null;
-            try
-            {
-                result = ConstantEvaluator.PartialEval(containsCall);
-            }
-            catch (Exception ex)
-            {
-                threwException = true;
-                caughtException = ex;
-            }
+            // PartialEval must NOT throw — if it tries to evaluate this, it will fail
+            // because ReadOnlySpan<T> is a ref struct that cannot be stored in Expression.Constant
+            Expression result = ConstantEvaluator.PartialEval(opImplicitCall);
 
-            if (threwException)
-            {
-                // This confirms ConstantEvaluator needs fixing for the Span scenario
-                Assert.Fail(
-                    $"ConstantEvaluator.PartialEval failed on MemoryExtensions.Contains with all-constant args. " +
-                    $"This proves Kiran's fix (BuiltinFunctionVisitor only) is INSUFFICIENT. " +
-                    $"The ConstantEvaluator also needs to exclude op_Implicit for Span/ReadOnlySpan types. " +
-                    $"Exception: {caughtException.GetType().Name}: {caughtException.Message}");
-            }
-            else
-            {
-                // If it doesn't throw, check what it produced
-                // It might have evaluated to a ConstantExpression(true) which would be wrong
-                // for query translation (we need the IN clause, not a literal bool)
-                if (result is ConstantExpression constResult && constResult.Value is bool)
-                {
-                    // This means the evaluator successfully ran the Contains at compile time.
-                    // While not an error per se, it means the query won't use IN clause for 
-                    // server-side filtering — it would just be a constant true/false.
-                    // In a real query with a parameter reference, this path wouldn't apply.
-                }
-            }
+            // The op_Implicit call should be preserved (not collapsed)
+            Assert.IsInstanceOfType(result, typeof(MethodCallExpression),
+                "op_Implicit on ReadOnlySpan should be preserved, not evaluated");
         }
 
         /// <summary>
-        /// Regression test: Enumerable.Contains with a constant array still produces correct SQL.
-        /// This ensures the fix doesn't break the existing (pre-.NET 10) behavior.
+        /// ConstantEvaluator must NOT evaluate op_Implicit on Span&lt;T&gt; either.
         /// </summary>
         [TestMethod]
-        public void TestEnumerableContainsStillWorks()
+        public void ConstantEvaluator_OpImplicitOnSpan_IsNotEvaluated()
+        {
+            MethodInfo opImplicit = typeof(Span<string>)
+                .GetMethods(BindingFlags.Public | BindingFlags.Static)
+                .FirstOrDefault(m => m.Name == "op_Implicit"
+                    && m.GetParameters().Length == 1
+                    && m.GetParameters()[0].ParameterType == typeof(string[]));
+
+            if (opImplicit == null)
+            {
+                Assert.Inconclusive("Span<string>.op_Implicit not available on this runtime");
+                return;
+            }
+
+            string[] testArray = new[] { "a", "b" };
+            ConstantExpression arrayConst = Expression.Constant(testArray);
+            MethodCallExpression opImplicitCall = Expression.Call(opImplicit, arrayConst);
+
+            Expression result = ConstantEvaluator.PartialEval(opImplicitCall);
+
+            Assert.IsInstanceOfType(result, typeof(MethodCallExpression),
+                "op_Implicit on Span should be preserved, not evaluated");
+        }
+
+        /// <summary>
+        /// Enumerable.Contains must continue to be excluded from evaluation (regression test).
+        /// </summary>
+        [TestMethod]
+        public void ConstantEvaluator_EnumerableContains_StillExcluded()
         {
             MethodInfo enumerableContains = typeof(Enumerable)
                 .GetMethods(BindingFlags.Public | BindingFlags.Static)
@@ -383,17 +176,296 @@ namespace Microsoft.Azure.Cosmos.Linq
             string[] testArray = new[] { "a", "b" };
             ConstantExpression arrayExpr = Expression.Constant(testArray);
             ParameterExpression paramX = Expression.Parameter(typeof(string), "x");
-
-            // Enumerable.Contains(array, x)
             MethodCallExpression containsCall = Expression.Call(enumerableContains, arrayExpr, paramX);
 
-            Expression<Func<string, bool>> lambda = Expression.Lambda<Func<string, bool>>(
-                containsCall, paramX);
+            Expression<Func<string, bool>> lambda = Expression.Lambda<Func<string, bool>>(containsCall, paramX);
 
-            // This should work and produce IN clause
-            string sql = SqlTranslator.TranslateExpression(lambda.Body);
+            Expression result = ConstantEvaluator.PartialEval(lambda.Body);
+
+            // Should be preserved as a method call for SQL translation
+            Assert.IsInstanceOfType(result, typeof(MethodCallExpression),
+                "Enumerable.Contains should be preserved for SQL translation");
+        }
+
+        /// <summary>
+        /// Non-Span op_Implicit (e.g., numeric conversions) should still be evaluable.
+        /// This ensures we don't over-block.
+        /// </summary>
+        [TestMethod]
+        public void ConstantEvaluator_NonSpanOpImplicit_IsStillEvaluated()
+        {
+            // int to double implicit conversion
+            MethodInfo opImplicit = typeof(double)
+                .GetMethods(BindingFlags.Public | BindingFlags.Static)
+                .FirstOrDefault(m => m.Name == "op_Implicit"
+                    && m.GetParameters().Length == 1
+                    && m.GetParameters()[0].ParameterType == typeof(int));
+
+            if (opImplicit == null)
+            {
+                // Not all runtimes expose this as a method; skip if unavailable
+                Assert.Inconclusive("double.op_Implicit(int) not available as reflection method");
+                return;
+            }
+
+            ConstantExpression intConst = Expression.Constant(42);
+            MethodCallExpression implicitCall = Expression.Call(opImplicit, intConst);
+
+            Expression result = ConstantEvaluator.PartialEval(implicitCall);
+
+            // This SHOULD be evaluated to a constant since double is not a ref struct
+            Assert.IsInstanceOfType(result, typeof(ConstantExpression),
+                "Non-Span op_Implicit should be evaluated to a constant");
+        }
+
+        #endregion
+
+        #region BuiltinFunctionVisitor — Supported method: MemoryExtensions.Contains → SQL IN
+
+        /// <summary>
+        /// End-to-end: MemoryExtensions.Contains with string[] produces correct SQL IN clause.
+        /// </summary>
+        [TestMethod]
+        public void Translate_MemoryExtensionsContains_StringArray_ProducesInClause()
+        {
+            MethodInfo opImplicit = GetOpImplicitMethod<string>();
+            if (opImplicit == null)
+            {
+                Assert.Inconclusive("ReadOnlySpan<string>.op_Implicit not available on this runtime");
+                return;
+            }
+
+            string[] testArray = new[] { "a", "b", "c" };
+            ConstantExpression arrayConst = Expression.Constant(testArray);
+            ParameterExpression paramX = Expression.Parameter(typeof(string), "x");
+            MethodCallExpression net10Contains = BuildNet10ContainsExpression<string>(arrayConst, paramX);
+
+            string sql = SqlTranslator.TranslateExpression(net10Contains);
+
             Assert.IsNotNull(sql);
             Assert.IsTrue(sql.Contains("IN"), $"Expected IN clause but got: {sql}");
+            Assert.IsTrue(sql.Contains("\"a\""), $"Expected array element 'a' in SQL: {sql}");
+            Assert.IsTrue(sql.Contains("\"b\""), $"Expected array element 'b' in SQL: {sql}");
+            Assert.IsTrue(sql.Contains("\"c\""), $"Expected array element 'c' in SQL: {sql}");
         }
+
+        /// <summary>
+        /// End-to-end: MemoryExtensions.Contains with int[] produces correct SQL IN clause.
+        /// </summary>
+        [TestMethod]
+        public void Translate_MemoryExtensionsContains_IntArray_ProducesInClause()
+        {
+            MethodInfo containsMethod = typeof(MemoryExtensions)
+                .GetMethods(BindingFlags.Public | BindingFlags.Static)
+                .Where(m => m.Name == "Contains" && m.IsGenericMethod && m.GetParameters().Length == 2)
+                .Select(m => m.MakeGenericMethod(typeof(int)))
+                .FirstOrDefault(m => m.GetParameters()[0].ParameterType == typeof(ReadOnlySpan<int>));
+
+            MethodInfo opImplicit = GetOpImplicitMethod<int>();
+
+            if (containsMethod == null || opImplicit == null)
+            {
+                Assert.Inconclusive("Required methods not available on this runtime");
+                return;
+            }
+
+            int[] testArray = new[] { 1, 2, 3 };
+            ConstantExpression arrayConst = Expression.Constant(testArray);
+            ParameterExpression paramX = Expression.Parameter(typeof(int), "x");
+            MethodCallExpression spanConversion = Expression.Call(opImplicit, arrayConst);
+            MethodCallExpression containsCall = Expression.Call(containsMethod, spanConversion, paramX);
+
+            string sql = SqlTranslator.TranslateExpression(containsCall);
+
+            Assert.IsNotNull(sql);
+            Assert.IsTrue(sql.Contains("IN"), $"Expected IN clause but got: {sql}");
+            Assert.IsTrue(sql.Contains("1"), $"Expected element '1' in SQL: {sql}");
+            Assert.IsTrue(sql.Contains("3"), $"Expected element '3' in SQL: {sql}");
+        }
+
+        /// <summary>
+        /// End-to-end: MemoryExtensions.Contains with Guid[] produces correct SQL IN clause.
+        /// </summary>
+        [TestMethod]
+        public void Translate_MemoryExtensionsContains_GuidArray_ProducesInClause()
+        {
+            MethodInfo containsMethod = typeof(MemoryExtensions)
+                .GetMethods(BindingFlags.Public | BindingFlags.Static)
+                .Where(m => m.Name == "Contains" && m.IsGenericMethod && m.GetParameters().Length == 2)
+                .Select(m => m.MakeGenericMethod(typeof(Guid)))
+                .FirstOrDefault(m => m.GetParameters()[0].ParameterType == typeof(ReadOnlySpan<Guid>));
+
+            MethodInfo opImplicit = GetOpImplicitMethod<Guid>();
+
+            if (containsMethod == null || opImplicit == null)
+            {
+                Assert.Inconclusive("Required methods not available on this runtime");
+                return;
+            }
+
+            Guid guid1 = Guid.Parse("11111111-1111-1111-1111-111111111111");
+            Guid guid2 = Guid.Parse("22222222-2222-2222-2222-222222222222");
+            Guid[] testArray = new[] { guid1, guid2 };
+            ConstantExpression arrayConst = Expression.Constant(testArray);
+            ParameterExpression paramX = Expression.Parameter(typeof(Guid), "x");
+            MethodCallExpression spanConversion = Expression.Call(opImplicit, arrayConst);
+            MethodCallExpression containsCall = Expression.Call(containsMethod, spanConversion, paramX);
+
+            string sql = SqlTranslator.TranslateExpression(containsCall);
+
+            Assert.IsNotNull(sql);
+            Assert.IsTrue(sql.Contains("IN"), $"Expected IN clause but got: {sql}");
+            Assert.IsTrue(sql.Contains("11111111-1111-1111-1111-111111111111"),
+                $"Expected guid1 in SQL: {sql}");
+        }
+
+        /// <summary>
+        /// Regression: Enumerable.Contains still produces correct SQL IN clause.
+        /// </summary>
+        [TestMethod]
+        public void Translate_EnumerableContains_StillProducesInClause()
+        {
+            MethodInfo enumerableContains = typeof(Enumerable)
+                .GetMethods(BindingFlags.Public | BindingFlags.Static)
+                .Where(m => m.Name == "Contains" && m.IsGenericMethod)
+                .Select(m => m.MakeGenericMethod(typeof(string)))
+                .First(m => m.GetParameters().Length == 2);
+
+            string[] testArray = new[] { "x", "y" };
+            ConstantExpression arrayExpr = Expression.Constant(testArray);
+            ParameterExpression paramX = Expression.Parameter(typeof(string), "x");
+            MethodCallExpression containsCall = Expression.Call(enumerableContains, arrayExpr, paramX);
+
+            Expression<Func<string, bool>> lambda = Expression.Lambda<Func<string, bool>>(containsCall, paramX);
+            string sql = SqlTranslator.TranslateExpression(lambda.Body);
+
+            Assert.IsNotNull(sql);
+            Assert.IsTrue(sql.Contains("IN"), $"Expected IN clause but got: {sql}");
+            Assert.IsTrue(sql.Contains("\"x\""), $"Expected 'x' in SQL: {sql}");
+            Assert.IsTrue(sql.Contains("\"y\""), $"Expected 'y' in SQL: {sql}");
+        }
+
+        #endregion
+
+        #region BuiltinFunctionVisitor — Unsupported MemoryExtensions methods throw
+
+        /// <summary>
+        /// MemoryExtensions.IndexOf is NOT supported and must throw DocumentQueryException.
+        /// This validates that we only support Contains — not arbitrary MemoryExtensions methods.
+        /// </summary>
+        [TestMethod]
+        public void Translate_MemoryExtensionsIndexOf_ThrowsDocumentQueryException()
+        {
+            MethodInfo indexOfMethod = GetMemoryExtensionsIndexOfMethod();
+            MethodInfo opImplicit = GetOpImplicitMethod<string>();
+
+            if (indexOfMethod == null || opImplicit == null)
+            {
+                Assert.Inconclusive("Required methods not available on this runtime");
+                return;
+            }
+
+            string[] testArray = new[] { "a", "b" };
+            ConstantExpression arrayConst = Expression.Constant(testArray);
+            ParameterExpression paramX = Expression.Parameter(typeof(string), "x");
+            MethodCallExpression spanConversion = Expression.Call(opImplicit, arrayConst);
+            MethodCallExpression indexOfCall = Expression.Call(indexOfMethod, spanConversion, paramX);
+
+            DocumentQueryException exception = Assert.ThrowsException<DocumentQueryException>(
+                () => SqlTranslator.TranslateExpression(indexOfCall),
+                "Unsupported MemoryExtensions methods should throw DocumentQueryException");
+
+            Assert.IsTrue(exception.Message.Contains("IndexOf"),
+                $"Error message should mention the unsupported method name. Got: {exception.Message}");
+        }
+
+        /// <summary>
+        /// MemoryExtensions.SequenceEqual is NOT supported and must throw DocumentQueryException.
+        /// </summary>
+        [TestMethod]
+        public void Translate_MemoryExtensionsSequenceEqual_ThrowsDocumentQueryException()
+        {
+            MethodInfo sequenceEqualMethod = typeof(MemoryExtensions)
+                .GetMethods(BindingFlags.Public | BindingFlags.Static)
+                .Where(m => m.Name == "SequenceEqual" && m.IsGenericMethod && m.GetParameters().Length == 2)
+                .Select(m => m.MakeGenericMethod(typeof(string)))
+                .FirstOrDefault();
+
+            MethodInfo opImplicit = GetOpImplicitMethod<string>();
+
+            if (sequenceEqualMethod == null || opImplicit == null)
+            {
+                Assert.Inconclusive("Required methods not available on this runtime");
+                return;
+            }
+
+            string[] testArray1 = new[] { "a", "b" };
+            string[] testArray2 = new[] { "a", "b" };
+            ConstantExpression arr1Const = Expression.Constant(testArray1);
+            ConstantExpression arr2Const = Expression.Constant(testArray2);
+            MethodCallExpression span1 = Expression.Call(opImplicit, arr1Const);
+            MethodCallExpression span2 = Expression.Call(opImplicit, arr2Const);
+
+            // SequenceEqual takes two ReadOnlySpan<T> args — may not match the method signature
+            // that takes (ReadOnlySpan<T>, ReadOnlySpan<T>). Find the right overload.
+            MethodInfo seqEqual2Spans = typeof(MemoryExtensions)
+                .GetMethods(BindingFlags.Public | BindingFlags.Static)
+                .Where(m => m.Name == "SequenceEqual" && m.IsGenericMethod)
+                .Select(m => m.MakeGenericMethod(typeof(string)))
+                .FirstOrDefault(m =>
+                {
+                    var p = m.GetParameters();
+                    return p.Length == 2
+                        && p[0].ParameterType == typeof(ReadOnlySpan<string>)
+                        && p[1].ParameterType == typeof(ReadOnlySpan<string>);
+                });
+
+            if (seqEqual2Spans == null)
+            {
+                Assert.Inconclusive("MemoryExtensions.SequenceEqual(ReadOnlySpan, ReadOnlySpan) not found");
+                return;
+            }
+
+            MethodCallExpression seqEqualCall = Expression.Call(seqEqual2Spans, span1, span2);
+
+            Assert.ThrowsException<DocumentQueryException>(
+                () => SqlTranslator.TranslateExpression(seqEqualCall),
+                "Unsupported MemoryExtensions.SequenceEqual should throw DocumentQueryException");
+        }
+
+        #endregion
+
+        #region ConstantEvaluator — Unsupported MemoryExtensions methods (non-Contains) are still evaluable
+
+        /// <summary>
+        /// MemoryExtensions methods other than Contains should NOT be blocked by ConstantEvaluator.
+        /// They are not our concern — if they reach the translator, they'll get an appropriate error.
+        /// If they can be evaluated (e.g., in a sub-expression), the evaluator should allow it.
+        /// 
+        /// Note: In practice, these will fail evaluation anyway due to the op_Implicit on Span,
+        /// but the ConstantEvaluator exclusion is specifically scoped to Contains only.
+        /// </summary>
+        [TestMethod]
+        public void ConstantEvaluator_MemoryExtensionsNonContains_NotExplicitlyExcluded()
+        {
+            MethodInfo indexOfMethod = GetMemoryExtensionsIndexOfMethod();
+            if (indexOfMethod == null)
+            {
+                Assert.Inconclusive("MemoryExtensions.IndexOf not available");
+                return;
+            }
+
+            // The MemoryExtensions.Contains check uses: type == typeof(MemoryExtensions) && Name == "Contains"
+            // IndexOf should NOT match this condition
+            Assert.AreEqual(typeof(MemoryExtensions), indexOfMethod.DeclaringType);
+            Assert.AreNotEqual("Contains", indexOfMethod.Name);
+
+            // The method is "not excluded" by our MemoryExtensions check.
+            // It will still be blocked by the op_Implicit check (since its argument is a Span),
+            // but the MemoryExtensions-specific exclusion doesn't cover it.
+            // This is intentional — we only explicitly support Contains.
+        }
+
+        #endregion
     }
 }
