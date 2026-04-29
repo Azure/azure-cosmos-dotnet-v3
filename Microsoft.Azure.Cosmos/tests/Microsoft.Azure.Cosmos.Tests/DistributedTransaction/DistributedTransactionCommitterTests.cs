@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             SessionContainer sessionContainer = new SessionContainer("testhost");
 
             string responseJson = BuildDtcResponseJson(
-                new[] { (statusCode: 201, sessionToken: sessionToken) });
+                new[] { (statusCode: 201, sessionToken) });
 
             Mock<CosmosClientContext> mockContext = this.CreateMockContext(
                 sessionContainer,
@@ -116,8 +116,10 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
             Mock<ISessionContainer> mockSessionContainer = new Mock<ISessionContainer>();
 
-            MockDocumentClient documentClient = new MockDocumentClient();
-            documentClient.sessionContainer = mockSessionContainer.Object;
+            MockDocumentClient documentClient = new MockDocumentClient
+            {
+                sessionContainer = mockSessionContainer.Object
+            };
 
             ContainerProperties containerProperties1 = ContainerProperties.CreateWithResourceId(collectionRid1);
             containerProperties1.PartitionKeyPath = "/pk";
@@ -138,14 +140,16 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                     It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(containerProperties2);
 
-            ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK);
-            responseMessage.Content = new MemoryStream(
-                Encoding.UTF8.GetBytes(BuildDtcResponseJson(
-                    new[]
-                    {
-                        (statusCode: 200, sessionToken: sessionToken),
-                        (statusCode: 200, sessionToken: sessionToken),
-                    })));
+            ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new MemoryStream(
+                    Encoding.UTF8.GetBytes(BuildDtcResponseJson(
+                        new[]
+                        {
+                            (statusCode: 200, sessionToken),
+                            (statusCode: 200, sessionToken),
+                        })))
+            };
             mockContext.Setup(c => c.ProcessResourceOperationStreamAsync(
                     It.IsAny<string>(),
                     ResourceType.DistributedTransactionBatch,
@@ -212,7 +216,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
             Mock<CosmosClientContext> mockContext = this.CreateMockContext(
                 sessionContainer,
-                responseContent: BuildDtcResponseJson(new[] { (statusCode: 404, subStatusCode: (int?)readSessionNotAvailableSubStatus, sessionToken: sessionToken) }),
+                responseContent: BuildDtcResponseJson(new[] { (statusCode: 404, subStatusCode: (int?)readSessionNotAvailableSubStatus, sessionToken) }),
                 statusCode: HttpStatusCode.NotFound);
 
             List<DistributedTransactionOperation> operations = new List<DistributedTransactionOperation>
@@ -247,7 +251,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
             Mock<CosmosClientContext> mockContext = this.CreateMockContext(
                 sessionContainer,
-                responseContent: BuildDtcResponseJson(new[] { (statusCode: 409, sessionToken: sessionToken) }),
+                responseContent: BuildDtcResponseJson(new[] { (statusCode: 409, sessionToken) }),
                 statusCode: HttpStatusCode.Conflict);
 
             List<DistributedTransactionOperation> operations = new List<DistributedTransactionOperation>
@@ -835,7 +839,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
                 if (operations[i].sessionToken != null)
                 {
-                    sb.Append($@",""sessionToken"":""{operations[i].sessionToken}""");
+                    sb.Append($@",""{DistributedTransactionSerializer.SessionToken}"":""{operations[i].sessionToken}""");
                 }
 
                 sb.Append('}');
@@ -850,8 +854,10 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             string responseContent,
             HttpStatusCode statusCode)
         {
-            MockDocumentClient documentClient = new MockDocumentClient();
-            documentClient.sessionContainer = sessionContainer;
+            MockDocumentClient documentClient = new MockDocumentClient
+            {
+                sessionContainer = sessionContainer
+            };
 
             ContainerProperties containerProperties = ContainerProperties.CreateWithResourceId(CollectionResourceId);
             containerProperties.Id = "TestContainerId";
