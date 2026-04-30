@@ -312,6 +312,75 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         /// <summary>
+        /// Exercises the mid-backoff cancellation → grace transition. The caller's token
+        /// is live at the start of the first attempt (so the outer <c>IsCancellationRequested</c>
+        /// check on the backoff path is false), then trips during <c>Task.Delay</c>. The
+        /// <c>OperationCanceledException</c> from the delay is caught and the inner
+        /// <c>IsCancellationRequested</c> check routes execution into the bounded grace
+        /// window — which then succeeds.
+        ///
+        /// This is the most realistic production trigger for the grace path (caller's
+        /// ~36s timeout fires while the helper waits out a retry backoff after a 503 from
+        /// an unhealthy region). All other cancellation tests use a pre-cancelled token,
+        /// which short-circuits the outer check and never exercises the catch block or
+        /// the second cancellation check. A refactor that drops either guard would
+        /// regress one of these branches without any other test catching it.
+        /// </summary>
+        [TestMethod]
+        [Owner("ntripician")]
+        public async Task ExecuteAsync_CancellationDuringBackoff_TransitionsToGraceRetry()
+        {
+            Mock<IDocumentClientRetryPolicy> policy = new Mock<IDocumentClientRetryPolicy>();
+            policy
+                .Setup(p => p.ShouldRetryAsync(It.IsAny<Exception>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(ShouldRetryResult.RetryAfter(TimeSpan.FromSeconds(5)));
+
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            int attempts = 0;
+            CancellationToken graceAttemptToken = default;
+
+            int result = await MetadataRetryHelper.ExecuteAsync<int>(
+                (ct) =>
+                {
+                    attempts++;
+                    if (attempts == 1)
+                    {
+                        // Token is live now (outer IsCancellationRequested check on the
+                        // backoff path will be false). Schedule a cancellation that fires
+                        // during Task.Delay(5s, cancellationToken) — this is the production
+                        // case where the caller's timeout trips mid-backoff.
+                        cts.CancelAfter(TimeSpan.FromMilliseconds(50));
+                        throw new DocumentClientException(
+                            "503 from unhealthy region",
+                            HttpStatusCode.ServiceUnavailable,
+                            SubStatusCodes.Unknown);
+                    }
+
+                    graceAttemptToken = ct;
+                    return Task.FromResult(99);
+                },
+                policy.Object,
+                MetadataRetryHelper.DefaultCrossRegionRetryGrace,
+                cts.Token);
+
+            Assert.AreEqual(99, result, "Mid-backoff cancellation must transition to grace retry, not surface OCE.");
+            Assert.AreEqual(2, attempts, "Exactly one grace-window retry should run after mid-backoff cancellation.");
+
+            // The grace attempt must receive a fresh token decoupled from the caller's
+            // already-cancelled token. Same contract pinned by
+            // ExecuteAsync_CrossRegionRetryExecutes_EvenWhenCallerTokenCancelled, but
+            // re-asserted here because this path reaches the grace branch via the
+            // OperationCanceledException catch rather than the pre-cancelled outer check.
+            Assert.IsFalse(
+                graceAttemptToken.IsCancellationRequested,
+                "Grace attempt must receive a fresh, non-cancelled token after mid-backoff cancellation.");
+            Assert.AreNotEqual(
+                cts.Token,
+                graceAttemptToken,
+                "Grace attempt token must not be the caller's cancellation token.");
+        }
+
+        /// <summary>
         /// COMPANION REPRO: exercises the legacy <c>TaskHelper.InlineIfPossible</c> +
         /// <c>BackoffRetryUtility</c> path that <c>ClientCollectionCache</c> used prior to the
         /// fix. It demonstrates that, under the same conditions where the fixed
