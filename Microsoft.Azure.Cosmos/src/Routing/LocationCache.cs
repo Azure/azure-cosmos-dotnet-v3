@@ -406,6 +406,60 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
         /// <summary>
+        /// Gets all account-level read regions for PPAF write hedging. Unlike <see cref="GetApplicableRegions(IEnumerable{string}, bool)"/>,
+        /// this method includes all account read regions even if they are not in the user's preferred locations.
+        /// Regions in the user's preferred locations are ordered first, followed by remaining account regions.
+        /// This is consistent with how <see cref="GlobalEndpointManager.AccountReadEndpoints"/> is used
+        /// for PPAF failover in <see cref="GlobalPartitionEndpointManagerCore"/>.
+        /// </summary>
+        public ReadOnlyCollection<string> GetApplicableAccountLevelReadRegions(IEnumerable<string> excludeRegions)
+        {
+            DatabaseAccountLocationsInfo snapshot = this.locationInfo;
+            ReadOnlyCollection<string> availableReadLocations = snapshot.AvailableReadLocations;
+            ReadOnlyCollection<string> effectivePreferredLocations = snapshot.EffectivePreferredLocations;
+
+            if (availableReadLocations == null || availableReadLocations.Count == 0)
+            {
+                return effectivePreferredLocations ?? new ReadOnlyCollection<string>(Array.Empty<string>());
+            }
+
+            HashSet<string> excludeSet = excludeRegions == null ? null : new HashSet<string>(excludeRegions);
+            List<string> result = new List<string>(availableReadLocations.Count);
+            HashSet<string> added = new HashSet<string>();
+
+            // First, add regions from preferred locations that exist in account read regions (preserves user ordering)
+            if (effectivePreferredLocations != null)
+            {
+                foreach (string region in effectivePreferredLocations)
+                {
+                    if (availableReadLocations.Contains(region)
+                        && (excludeSet == null || !excludeSet.Contains(region))
+                        && added.Add(region))
+                    {
+                        result.Add(region);
+                    }
+                }
+            }
+
+            // Then, add any remaining account-level read regions not already included
+            foreach (string region in availableReadLocations)
+            {
+                if ((excludeSet == null || !excludeSet.Contains(region))
+                    && added.Add(region))
+                {
+                    result.Add(region);
+                }
+            }
+
+            if (result.Count == 0 && availableReadLocations.Count > 0)
+            {
+                result.Add(availableReadLocations[0]);
+            }
+
+            return new ReadOnlyCollection<string>(result);
+        }
+
+        /// <summary>
         /// Gets applicable endpoints for a request, if there are no applicable endpoints, returns the fallback endpoint
         /// </summary>
         /// <param name="regionNameByEndpoint"></param>

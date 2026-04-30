@@ -1434,6 +1434,108 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         }
 
         [TestMethod]
+        [DataRow(true, DisplayName = "With preferred locations subset")]
+        [DataRow(false, DisplayName = "Without preferred locations")]
+        public void GetApplicableAccountLevelReadRegions_ReturnsAllReadRegions(bool usesPreferredLocationsSubset)
+        {
+            // Preferred locations only include location1 and location2, but the account has 4 read regions
+            ReadOnlyCollection<string> preferredLocations = usesPreferredLocationsSubset
+                ? new List<string> { "location1", "location2" }.AsReadOnly()
+                : new List<string>().AsReadOnly();
+
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: true,
+                isPreferredLocationsListEmpty: !usesPreferredLocationsSubset,
+                preferedRegionListOverride: usesPreferredLocationsSubset ? preferredLocations : null,
+                enforceSingleMasterSingleWriteLocation: true);
+
+            endpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(this.databaseAccount);
+
+            ReadOnlyCollection<string> regions = this.cache.GetApplicableAccountLevelReadRegions(excludeRegions: null);
+
+            // All 4 account read regions should be present regardless of preferred locations
+            Assert.AreEqual(4, regions.Count);
+            Assert.IsTrue(regions.Contains("location1"));
+            Assert.IsTrue(regions.Contains("location2"));
+            Assert.IsTrue(regions.Contains("location3"));
+            Assert.IsTrue(regions.Contains("location4"));
+
+            if (usesPreferredLocationsSubset)
+            {
+                // Preferred regions should appear first in order
+                Assert.AreEqual("location1", regions[0]);
+                Assert.AreEqual("location2", regions[1]);
+            }
+        }
+
+        [TestMethod]
+        public void GetApplicableAccountLevelReadRegions_RespectsExcludeRegions()
+        {
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: true,
+                isPreferredLocationsListEmpty: false,
+                preferedRegionListOverride: new List<string> { "location1", "location2" }.AsReadOnly(),
+                enforceSingleMasterSingleWriteLocation: true);
+
+            endpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(this.databaseAccount);
+
+            ReadOnlyCollection<string> regions = this.cache.GetApplicableAccountLevelReadRegions(
+                excludeRegions: new List<string> { "location1", "location3" });
+
+            Assert.AreEqual(2, regions.Count);
+            Assert.IsTrue(regions.Contains("location2"));
+            Assert.IsTrue(regions.Contains("location4"));
+            Assert.IsFalse(regions.Contains("location1"));
+            Assert.IsFalse(regions.Contains("location3"));
+        }
+
+        [TestMethod]
+        public void GetApplicableAccountLevelReadRegions_FallsBackWhenAllExcluded()
+        {
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: true,
+                isPreferredLocationsListEmpty: false,
+                preferedRegionListOverride: new List<string> { "location1", "location2" }.AsReadOnly(),
+                enforceSingleMasterSingleWriteLocation: true);
+
+            endpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(this.databaseAccount);
+
+            ReadOnlyCollection<string> regions = this.cache.GetApplicableAccountLevelReadRegions(
+                excludeRegions: new List<string> { "location1", "location2", "location3", "location4" });
+
+            // Falls back to first available read location when all are excluded
+            Assert.AreEqual(1, regions.Count);
+            Assert.AreEqual("location1", regions[0]);
+        }
+
+        [TestMethod]
+        public void GetApplicableAccountLevelReadRegions_PreferredRegionsOrderedFirst()
+        {
+            // Preferred locations are in a specific order that differs from account order
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: true,
+                isPreferredLocationsListEmpty: false,
+                preferedRegionListOverride: new List<string> { "location4", "location2" }.AsReadOnly(),
+                enforceSingleMasterSingleWriteLocation: true);
+
+            endpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(this.databaseAccount);
+
+            ReadOnlyCollection<string> regions = this.cache.GetApplicableAccountLevelReadRegions(excludeRegions: null);
+
+            // Preferred regions first in their specified order, then remaining account regions
+            Assert.AreEqual(4, regions.Count);
+            Assert.AreEqual("location4", regions[0]);
+            Assert.AreEqual("location2", regions[1]);
+            // Remaining regions (location1, location3) follow in account order
+            Assert.IsTrue(regions.Contains("location1"));
+            Assert.IsTrue(regions.Contains("location3"));
+        }
+
+        [TestMethod]
         public void ValidateThinClientReadFallbackToWriteEndpointTest()
         {
             // Arrange:
