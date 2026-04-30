@@ -49,12 +49,7 @@ namespace Microsoft.Azure.Cosmos
     /// </code>
     /// </example>
     /// <remarks><see cref="ChangeFeedItem{T}"/> is an optional helper class that uses Newtonsoft serialization libraries. Users are welcome to create their own custom helper class.</remarks>
-#if PREVIEW
-    public
-#else
-    internal
-#endif  
-        class ChangeFeedItem<T>
+    public class ChangeFeedItem<T>
     {
         /// <summary>
         /// The current version of the item for all versions and deletes change feed mode.
