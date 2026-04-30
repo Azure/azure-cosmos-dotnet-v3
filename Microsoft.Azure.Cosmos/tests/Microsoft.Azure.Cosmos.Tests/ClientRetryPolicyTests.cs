@@ -28,7 +28,6 @@
         private static Uri Location1Endpoint = new Uri("https://location1.documents.azure.com");
         private static Uri Location2Endpoint = new Uri("https://location2.documents.azure.com");
 
-        private const string HubRegionHeader = "x-ms-cosmos-hub-region-processing-only";
         private ReadOnlyCollection<string> preferredLocations;
         private AccountProperties databaseAccount;
         private GlobalPartitionEndpointManager partitionKeyRangeLocationCache;
@@ -434,7 +433,7 @@
 
             // First attempt - header should not exist
             retryPolicy.OnBeforeSendRequest(request);
-            Assert.IsNull(request.Headers.GetValues(HubRegionHeader), "Header should not exist on initial request before any 404/1002 error.");
+            Assert.IsNull(request.Headers.GetValues(HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion), "Header should not exist on initial request before any 404/1002 error.");
 
             // Simulate first 404/1002 error
             DocumentClientException sessionNotAvailableException = new DocumentClientException(
@@ -450,7 +449,7 @@
 
             // First retry attempt - header should NOT be present yet
             retryPolicy.OnBeforeSendRequest(request);
-            string[] headerValues = request.Headers.GetValues(HubRegionHeader);
+            string[] headerValues = request.Headers.GetValues(HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion);
             Assert.IsNull(headerValues, "Header should NOT be present on first retry attempt (before it fails).");
 
             // Simulate first retry also failing with 404/1002
@@ -498,7 +497,7 @@
                 {
                     // Now verify the header is present on this retry triggered by 503
                     retryPolicy.OnBeforeSendRequest(request);
-                    headerValues = request.Headers.GetValues(HubRegionHeader);
+                    headerValues = request.Headers.GetValues(HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion);
                     Assert.IsNotNull(headerValues, "Header should be present on retry after 404/1002 flag was set.");
                     Assert.AreEqual(1, headerValues.Length, "Header should have exactly one value.");
                     Assert.AreEqual(bool.TrueString, headerValues[0], "Header value should be 'True'.");
@@ -512,7 +511,7 @@
                     if (shouldRetry.ShouldRetry)
                     {
                         retryPolicy.OnBeforeSendRequest(request);
-                        headerValues = request.Headers.GetValues(HubRegionHeader);
+                        headerValues = request.Headers.GetValues(HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion);
                         Assert.IsNull(headerValues, $"Header should NOT be present on retry attempt {retryAttempt} for multi-master account.");
 
                         // Simulate another 404/1002 or 503 to continue retry loop

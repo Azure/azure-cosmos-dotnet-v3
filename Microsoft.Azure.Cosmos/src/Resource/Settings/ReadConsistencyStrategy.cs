@@ -51,9 +51,8 @@ namespace Microsoft.Azure.Cosmos
         GlobalStrong = 4,
 
         /// <summary>
-        /// When set, the SDK automatically adds the hub region processing header so that
-        /// the backend directs the request to the hub region. Non-hub regions respond with
-        /// 403/3 (WriteForbidden), which the SDK retries transparently.
+        /// Returns the latest committed version from the hub (write) region, ensuring reads
+        /// reflect the most recent writes regardless of which region the client is connected to.
         /// </summary>
         LastCommittedWriteRegion = 5
     }

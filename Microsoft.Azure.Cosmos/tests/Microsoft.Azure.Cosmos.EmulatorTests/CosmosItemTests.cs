@@ -41,7 +41,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private Container Container = null;
         private ContainerProperties containerSettings = null;
 
-        private const string HubRegionHeader = "x-ms-cosmos-hub-region-processing-only";
         private static readonly string nonPartitionItemId = "fixed-Container-Item";
         private static readonly string undefinedPartitionItemId = "undefined-partition-Item";
 
@@ -4340,7 +4339,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         // Header should NOT be present on first retry (2nd request)
                         if (requestCount == 2 &&
-                            request.Headers.TryGetValues(HubRegionHeader, out IEnumerable<string> firstRetryValues) &&
+                            request.Headers.TryGetValues(HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion, out IEnumerable<string> firstRetryValues) &&
                             firstRetryValues.Any())
                         {
                             Assert.Fail("Header should NOT be present on first retry attempt.");
@@ -4451,7 +4450,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         docReadRequestCount++;
 
-                        bool hasHubHeader = request.Headers.TryGetValues(HubRegionHeader, out IEnumerable<string> values)
+                        bool hasHubHeader = request.Headers.TryGetValues(HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion, out IEnumerable<string> values)
                             && values.Any();
                         hubHeaderPerRequest.Add(hasHubHeader);
 
@@ -4546,7 +4545,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         docReadRequestCount++;
 
-                        bool hasHubHeader = request.Headers.TryGetValues(HubRegionHeader, out IEnumerable<string> values)
+                        bool hasHubHeader = request.Headers.TryGetValues(HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion, out IEnumerable<string> values)
                             && values.Any();
                         hubHeaderPerRequest.Add(hasHubHeader);
 
@@ -4645,7 +4644,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         interceptedFirstRequest = true;
 
-                        hubHeaderOnFirstRequest = request.Headers.TryGetValues(HubRegionHeader, out IEnumerable<string> values)
+                        hubHeaderOnFirstRequest = request.Headers.TryGetValues(HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion, out IEnumerable<string> values)
                             && values.Any();
 
                         if (request.Headers.TryGetValues("x-ms-cosmos-read-consistency-strategy", out IEnumerable<string> rcsValues))
@@ -4708,7 +4707,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         interceptedFirstRequest = true;
 
-                        hubHeaderOnFirstRequest = request.Headers.TryGetValues(HubRegionHeader, out IEnumerable<string> values)
+                        hubHeaderOnFirstRequest = request.Headers.TryGetValues(HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion, out IEnumerable<string> values)
                             && values.Any();
 
                         rcsHeaderOnFirstRequest = request.Headers.TryGetValues("x-ms-cosmos-read-consistency-strategy", out IEnumerable<string> rcsValues)
