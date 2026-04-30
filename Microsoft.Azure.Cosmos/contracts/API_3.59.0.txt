@@ -44,10 +44,41 @@ namespace Microsoft.Azure.Cosmos
         public ChangeFeedEstimatorRequestOptions();
         public Nullable<int> MaxItemCount { get; set; }
     }
+    public class ChangeFeedItem<T>
+    {
+        public ChangeFeedItem();
+        public T Current { get; set; }
+        public ChangeFeedMetadata Metadata { get; set; }
+        public T Previous { get; set; }
+    }
+    public class ChangeFeedMetadata
+    {
+        public ChangeFeedMetadata();
+        public DateTime ConflictResolutionTimestamp { get; }
+        public string Id { get; }
+        public bool IsTimeToLiveExpired { get; }
+        public long Lsn { get; }
+        public ChangeFeedOperationType OperationType { get; }
+        public Dictionary<string, object> PartitionKey { get; }
+        public long PreviousLsn { get; }
+    }
     public abstract class ChangeFeedMode
     {
+        public static ChangeFeedMode AllVersionsAndDeletes { get; }
         public static ChangeFeedMode Incremental { get; }
         public static ChangeFeedMode LatestVersion { get; }
+    }
+    public enum ChangeFeedOperationType
+    {
+        Create = 0,
+        Delete = 2,
+        Replace = 1,
+    }
+    public sealed class ChangeFeedPolicy
+    {
+        public ChangeFeedPolicy();
+        public static TimeSpan FullFidelityNoRetention { get; }
+        public TimeSpan FullFidelityRetention { get; set; }
     }
     public abstract class ChangeFeedProcessor
     {
@@ -239,6 +270,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract ChangeFeedProcessorBuilder GetChangeFeedEstimatorBuilder(string processorName, Container.ChangesEstimationHandler estimationDelegate, Nullable<TimeSpan> estimationPeriod=default(Nullable<TimeSpan>));
         public abstract FeedIterator<T> GetChangeFeedIterator<T>(ChangeFeedStartFrom changeFeedStartFrom, ChangeFeedMode changeFeedMode, ChangeFeedRequestOptions changeFeedRequestOptions=null);
         public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder(string processorName, Container.ChangeFeedStreamHandler onChangesDelegate);
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(string processorName, Container.ChangeFeedHandler<ChangeFeedItem<T>> onChangesDelegate);
         public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint(string processorName, Container.ChangeFeedStreamHandlerWithManualCheckpoint onChangesDelegate);
         public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint<T>(string processorName, Container.ChangeFeedHandlerWithManualCheckpoint<T> onChangesDelegate);
         public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(string processorName, Container.ChangeFeedHandler<T> onChangesDelegate);
@@ -286,6 +318,7 @@ namespace Microsoft.Azure.Cosmos
         public ContainerProperties(string id, IReadOnlyList<string> partitionKeyPaths);
         public ContainerProperties(string id, string partitionKeyPath);
         public Nullable<int> AnalyticalStoreTimeToLiveInSeconds { get; set; }
+        public ChangeFeedPolicy ChangeFeedPolicy { get; set; }
         public ClientEncryptionPolicy ClientEncryptionPolicy { get; set; }
         public Collection<ComputedProperty> ComputedProperties { get; set; }
         public ConflictResolutionPolicy ConflictResolutionPolicy { get; set; }
@@ -1274,6 +1307,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 }
 namespace Microsoft.Azure.Cosmos.Fluent
 {
+    public class ChangeFeedPolicyDefinition
+    {
+        public ContainerBuilder Attach();
+    }
     public sealed class ClientEncryptionPolicyDefinition
     {
         public ContainerBuilder Attach();
@@ -1305,6 +1342,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         public Task<ContainerResponse> CreateAsync(Nullable<int> throughput=default(Nullable<int>), CancellationToken cancellationToken=default(CancellationToken));
         public Task<ContainerResponse> CreateIfNotExistsAsync(ThroughputProperties throughputProperties, CancellationToken cancellationToken=default(CancellationToken));
         public Task<ContainerResponse> CreateIfNotExistsAsync(Nullable<int> throughput=default(Nullable<int>), CancellationToken cancellationToken=default(CancellationToken));
+        public ChangeFeedPolicyDefinition WithChangeFeedPolicy(TimeSpan retention);
         public ClientEncryptionPolicyDefinition WithClientEncryptionPolicy();
         public ClientEncryptionPolicyDefinition WithClientEncryptionPolicy(int policyFormatVersion);
         public ConflictResolutionDefinition WithConflictResolution();
