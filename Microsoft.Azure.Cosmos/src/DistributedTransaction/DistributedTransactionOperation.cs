@@ -1,4 +1,4 @@
-﻿// ------------------------------------------------------------
+// ------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
@@ -57,7 +57,9 @@ namespace Microsoft.Azure.Cosmos
 
         internal string SessionToken { get; set; }
 
-        internal string ETag => this.RequestOptions?.IfMatchEtag;
+        internal string ETag => this.OperationType == OperationType.Read
+            ? this.RequestOptions?.IfNoneMatchEtag
+            : this.RequestOptions?.IfMatchEtag;
 
         internal Stream ResourceStream { get; set; }
 
@@ -78,19 +80,6 @@ namespace Microsoft.Azure.Cosmos
 
     internal class DistributedTransactionOperation<T> : DistributedTransactionOperation
     {
-        public DistributedTransactionOperation(
-            Documents.OperationType operationType,
-            int operationIndex,
-            string database,
-            string container,
-            PartitionKey partitionKey,
-            T resource,
-            DistributedTransactionRequestOptions requestOptions = null)
-            : base(operationType, operationIndex, database, container, partitionKey, id: null, requestOptions)
-        {
-            this.Resource = resource;
-        }
-
         public DistributedTransactionOperation(
             Documents.OperationType operationType,
             int operationIndex,
