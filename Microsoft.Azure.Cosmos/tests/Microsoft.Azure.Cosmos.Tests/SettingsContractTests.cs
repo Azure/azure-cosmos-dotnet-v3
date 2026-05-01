@@ -785,6 +785,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "ComputedProperties",
                 "ConflictResolutionPolicy",
                 "ChangeFeedPolicy",
+                "PreviousImageRetentionPolicy",
                 "ClientEncryptionPolicy",
                 "PartitionKeyPaths",
                 "VectorEmbeddingPolicy",
@@ -1110,6 +1111,94 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.ThrowsException<ArgumentOutOfRangeException>(() => new Cosmos.ChangeFeedPolicy() { FullFidelityRetention = TimeSpan.FromSeconds(10) });
             Assert.ThrowsException<ArgumentOutOfRangeException>(() => new Cosmos.ChangeFeedPolicy() { FullFidelityRetention = TimeSpan.FromMilliseconds(10) });
             Assert.ThrowsException<ArgumentOutOfRangeException>(() => new Cosmos.ChangeFeedPolicy() { FullFidelityRetention = TimeSpan.FromSeconds(-10) });
+        }
+
+        [TestMethod]
+        public void PreviousImageRetentionPolicySerialization()
+        {
+            ContainerProperties containerSettings = new ContainerProperties("TestContainer1", "/partitionKey");
+            string serialization = SettingsContractTests.CosmosSerialize(containerSettings);
+            Assert.IsFalse(serialization.Contains("previousImageRetentionPolicy"), "Previous Image Retention Policy should not be included by default");
+
+            containerSettings.PreviousImageRetentionPolicy = Cosmos.PreviousImageRetentionPolicy.EnabledForAllOperations;
+            string serializationWithValues = SettingsContractTests.CosmosSerialize(containerSettings);
+            Assert.IsTrue(serializationWithValues.Contains("previousImageRetentionPolicy"), "Previous Image Retention Policy should be included");
+
+            JObject parsed = JObject.Parse(serializationWithValues);
+            JToken policyValue = parsed["previousImageRetentionPolicy"];
+            Assert.AreEqual(JTokenType.Integer, policyValue.Type, "Previous Image Retention Policy serialized value should be an integer");
+            Assert.AreEqual((int)Cosmos.PreviousImageRetentionPolicy.EnabledForAllOperations, policyValue.Value<int>(), "Previous Image Retention Policy serialized value incorrect");
+        }
+
+        [TestMethod]
+        public void PreviousImageRetentionPolicySerialization_Disabled()
+        {
+            ContainerProperties containerSettings = new ContainerProperties("TestContainer2", "/partitionKey");
+            containerSettings.PreviousImageRetentionPolicy = Cosmos.PreviousImageRetentionPolicy.Disabled;
+            
+            string serializationWithValues = SettingsContractTests.CosmosSerialize(containerSettings);
+            Assert.IsTrue(serializationWithValues.Contains("previousImageRetentionPolicy"), "Previous Image Retention Policy should be included when explicitly set");
+
+            JObject parsed = JObject.Parse(serializationWithValues);
+            JToken policyValue = parsed["previousImageRetentionPolicy"];
+            Assert.AreEqual(JTokenType.Integer, policyValue.Type, "Previous Image Retention Policy serialized value should be an integer");
+            Assert.AreEqual(0, policyValue.Value<int>(), "Previous Image Retention Policy serialized value should be 0 for Disabled");
+        }
+
+        [TestMethod]
+        public void PreviousImageRetentionPolicySerialization_IndividualFlags()
+        {
+            // Test EnabledForReplaceOperation
+            ContainerProperties containerSettings = new ContainerProperties("TestContainer3", "/partitionKey");
+            containerSettings.PreviousImageRetentionPolicy = Cosmos.PreviousImageRetentionPolicy.EnabledForReplaceOperation;
+            
+            string serialization = SettingsContractTests.CosmosSerialize(containerSettings);
+            JObject parsed = JObject.Parse(serialization);
+            Assert.AreEqual(1, parsed["previousImageRetentionPolicy"].Value<int>(), "EnabledForReplaceOperation should serialize to 1");
+
+            // Test EnabledForDeleteOperation
+            containerSettings.PreviousImageRetentionPolicy = Cosmos.PreviousImageRetentionPolicy.EnabledForDeleteOperation;
+            
+            serialization = SettingsContractTests.CosmosSerialize(containerSettings);
+            parsed = JObject.Parse(serialization);
+            Assert.AreEqual(2, parsed["previousImageRetentionPolicy"].Value<int>(), "EnabledForDeleteOperation should serialize to 2");
+
+            // Test EnabledForAllOperations (combined flags)
+            containerSettings.PreviousImageRetentionPolicy = Cosmos.PreviousImageRetentionPolicy.EnabledForAllOperations;
+            
+            serialization = SettingsContractTests.CosmosSerialize(containerSettings);
+            parsed = JObject.Parse(serialization);
+            Assert.AreEqual(3, parsed["previousImageRetentionPolicy"].Value<int>(), "EnabledForAllOperations should serialize to 3");
+        }
+
+        [TestMethod]
+        public void PreviousImageRetentionPolicyDeserialization()
+        {
+            // Test deserialization of all enum values
+            string jsonWithDisabled = "{\"id\":\"TestContainer\",\"partitionKey\":{\"paths\":[\"/pk\"],\"kind\":\"Hash\"},\"previousImageRetentionPolicy\":0}";
+            ContainerProperties containerDisabled = SettingsContractTests.CosmosDeserialize<ContainerProperties>(jsonWithDisabled);
+            Assert.AreEqual(Cosmos.PreviousImageRetentionPolicy.Disabled, containerDisabled.PreviousImageRetentionPolicy);
+
+            string jsonWithReplace = "{\"id\":\"TestContainer\",\"partitionKey\":{\"paths\":[\"/pk\"],\"kind\":\"Hash\"},\"previousImageRetentionPolicy\":1}";
+            ContainerProperties containerReplace = SettingsContractTests.CosmosDeserialize<ContainerProperties>(jsonWithReplace);
+            Assert.AreEqual(Cosmos.PreviousImageRetentionPolicy.EnabledForReplaceOperation, containerReplace.PreviousImageRetentionPolicy);
+
+            string jsonWithDelete = "{\"id\":\"TestContainer\",\"partitionKey\":{\"paths\":[\"/pk\"],\"kind\":\"Hash\"},\"previousImageRetentionPolicy\":2}";
+            ContainerProperties containerDelete = SettingsContractTests.CosmosDeserialize<ContainerProperties>(jsonWithDelete);
+            Assert.AreEqual(Cosmos.PreviousImageRetentionPolicy.EnabledForDeleteOperation, containerDelete.PreviousImageRetentionPolicy);
+
+            string jsonWithAll = "{\"id\":\"TestContainer\",\"partitionKey\":{\"paths\":[\"/pk\"],\"kind\":\"Hash\"},\"previousImageRetentionPolicy\":3}";
+            ContainerProperties containerAll = SettingsContractTests.CosmosDeserialize<ContainerProperties>(jsonWithAll);
+            Assert.AreEqual(Cosmos.PreviousImageRetentionPolicy.EnabledForAllOperations, containerAll.PreviousImageRetentionPolicy);
+        }
+
+        [TestMethod]
+        public void PreviousImageRetentionPolicyDeserialization_MissingProperty()
+        {
+            // Test that containers without the property deserialize correctly (backwards compatibility)
+            string jsonWithoutPolicy = "{\"id\":\"TestContainer\",\"partitionKey\":{\"paths\":[\"/pk\"],\"kind\":\"Hash\"}}";
+            ContainerProperties container = SettingsContractTests.CosmosDeserialize<ContainerProperties>(jsonWithoutPolicy);
+            Assert.IsNull(container.PreviousImageRetentionPolicy, "PreviousImageRetentionPolicy should be null when not present in JSON");
         }
 
         [TestMethod]
