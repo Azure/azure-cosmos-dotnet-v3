@@ -248,27 +248,19 @@ namespace Microsoft.Azure.Cosmos.Linq
         [TestMethod]
         public void Translate_MemoryExtensionsContains_IntArray_ProducesInClause()
         {
-            MethodInfo containsMethod = typeof(MemoryExtensions)
-                .GetMethods(BindingFlags.Public | BindingFlags.Static)
-                .Where(m => m.Name == "Contains" && m.IsGenericMethod && m.GetParameters().Length == 2)
-                .Select(m => m.MakeGenericMethod(typeof(int)))
-                .FirstOrDefault(m => m.GetParameters()[0].ParameterType == typeof(ReadOnlySpan<int>));
-
             MethodInfo opImplicit = GetOpImplicitMethod<int>();
-
-            if (containsMethod == null || opImplicit == null)
+            if (opImplicit == null)
             {
-                Assert.Inconclusive("Required methods not available on this runtime");
+                Assert.Inconclusive("ReadOnlySpan<int>.op_Implicit not available on this runtime");
                 return;
             }
 
             int[] testArray = new[] { 1, 2, 3 };
             ConstantExpression arrayConst = Expression.Constant(testArray);
             ParameterExpression paramX = Expression.Parameter(typeof(int), "x");
-            MethodCallExpression spanConversion = Expression.Call(opImplicit, arrayConst);
-            MethodCallExpression containsCall = Expression.Call(containsMethod, spanConversion, paramX);
+            MethodCallExpression net10Contains = BuildNet10ContainsExpression<int>(arrayConst, paramX);
 
-            string sql = SqlTranslator.TranslateExpression(containsCall);
+            string sql = SqlTranslator.TranslateExpression(net10Contains);
 
             Assert.IsNotNull(sql);
             Assert.IsTrue(sql.Contains("IN"), $"Expected IN clause but got: {sql}");
@@ -282,17 +274,10 @@ namespace Microsoft.Azure.Cosmos.Linq
         [TestMethod]
         public void Translate_MemoryExtensionsContains_GuidArray_ProducesInClause()
         {
-            MethodInfo containsMethod = typeof(MemoryExtensions)
-                .GetMethods(BindingFlags.Public | BindingFlags.Static)
-                .Where(m => m.Name == "Contains" && m.IsGenericMethod && m.GetParameters().Length == 2)
-                .Select(m => m.MakeGenericMethod(typeof(Guid)))
-                .FirstOrDefault(m => m.GetParameters()[0].ParameterType == typeof(ReadOnlySpan<Guid>));
-
             MethodInfo opImplicit = GetOpImplicitMethod<Guid>();
-
-            if (containsMethod == null || opImplicit == null)
+            if (opImplicit == null)
             {
-                Assert.Inconclusive("Required methods not available on this runtime");
+                Assert.Inconclusive("ReadOnlySpan<Guid>.op_Implicit not available on this runtime");
                 return;
             }
 
@@ -301,10 +286,9 @@ namespace Microsoft.Azure.Cosmos.Linq
             Guid[] testArray = new[] { guid1, guid2 };
             ConstantExpression arrayConst = Expression.Constant(testArray);
             ParameterExpression paramX = Expression.Parameter(typeof(Guid), "x");
-            MethodCallExpression spanConversion = Expression.Call(opImplicit, arrayConst);
-            MethodCallExpression containsCall = Expression.Call(containsMethod, spanConversion, paramX);
+            MethodCallExpression net10Contains = BuildNet10ContainsExpression<Guid>(arrayConst, paramX);
 
-            string sql = SqlTranslator.TranslateExpression(containsCall);
+            string sql = SqlTranslator.TranslateExpression(net10Contains);
 
             Assert.IsNotNull(sql);
             Assert.IsTrue(sql.Contains("IN"), $"Expected IN clause but got: {sql}");
