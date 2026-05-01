@@ -804,6 +804,16 @@ namespace Microsoft.Azure.Cosmos.Linq
                 }
             }
 
+            // For KeyValuePair<K,V>, map .Key → "k" and .Value → "v" to match OBJECTTOARRAY output format.
+            // OBJECTTOARRAY converts a JSON object to [{k: key, v: value}] pairs.
+            Type containingType = inputExpression.Expression?.Type;
+            if (containingType != null && containingType.IsGenericType() && containingType.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
+            {
+                string originalMemberName = inputExpression.Member.Name;
+                if (originalMemberName == "Key") memberName = "k";
+                else if (originalMemberName == "Value") memberName = "v";
+            }
+
             if (usePropertyRef)
             {
                 SqlIdentifier propertyIdentifier = SqlIdentifier.Create(memberName);
@@ -1133,7 +1143,26 @@ namespace Microsoft.Azure.Cosmos.Linq
             SqlScalarExpression body = ExpressionToSql.VisitNonSubqueryScalarExpression(inputExpression, context);
             Type type = inputExpression.Type;
 
-            Collection collection = ExpressionToSql.ConvertToCollection(body);
+            Collection collection;
+            if (type.IsDictionary())
+            {
+                // For Dictionary types, wrap with OBJECTTOARRAY to convert the object to an iterable array
+                SqlScalarExpression objectToArrayCall = SqlFunctionCallScalarExpression.CreateBuiltin(
+                    SqlFunctionCallScalarExpression.Names.ObjectToArray,
+                    body);
+
+                // Create a subquery: SELECT VALUE OBJECTTOARRAY(...)
+                SqlSelectSpec selectSpec = SqlSelectValueSpec.Create(objectToArrayCall);
+                SqlSelectClause selectClause = SqlSelectClause.Create(selectSpec);
+                SqlQuery subquery = SqlQuery.Create(selectClause, fromClause: null, whereClause: null, groupByClause: null, orderByClause: null, offsetLimitClause: null);
+                SqlCollection subqueryCollection = SqlSubqueryCollection.Create(subquery);
+                collection = new Collection(subqueryCollection);
+            }
+            else
+            {
+                collection = ExpressionToSql.ConvertToCollection(body);
+            }
+
             context.PushCollection(collection);
             ParameterExpression parameter = context.GenerateFreshParameter(type, parameterName);
             context.PushParameter(parameter, context.CurrentSubqueryBinding.ShouldBeOnNewQuery);
