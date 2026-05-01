@@ -191,7 +191,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 graceAttempted = true;
-                DefaultTrace.TraceInformation(
+                DefaultTrace.TraceVerbose(
                     "MetadataRetryHelper: caller token cancelled; granting {0}ms grace for one cross-region metadata retry.",
                     (int)crossRegionRetryGrace.TotalMilliseconds);
 
