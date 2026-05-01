@@ -17,6 +17,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private readonly JObject encryptContent;
         private readonly JObject decryptContent;
         private readonly TimeSpan processingDuration;
+#if SDKPROJECTREF
+        private readonly Lazy<string> cachedSummaryDiagnostics;
+#endif
 
         public EncryptionCosmosDiagnostics(
             CosmosDiagnostics coreDiagnostics,
@@ -36,6 +39,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             this.processingDuration = processingDuration;
+
+#if SDKPROJECTREF
+            this.cachedSummaryDiagnostics = new Lazy<string>(() => this.BuildSummaryDiagnostics());
+#endif
         }
 
         public override IReadOnlyList<(string regionName, Uri uri)> GetContactedRegions()
@@ -88,6 +95,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
 #if SDKPROJECTREF
+        public override string ToString(DiagnosticsVerbosity verbosity)
+        {
+            return verbosity switch
+            {
+                DiagnosticsVerbosity.Summary => this.cachedSummaryDiagnostics.Value,
+                _ => this.ToString(),
+            };
+        }
+
         public override DateTime? GetStartTimeUtc()
         {
             return this.coreDiagnostics.GetStartTimeUtc();
@@ -96,6 +112,38 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public override int GetFailedRequestCount()
         {
             return this.coreDiagnostics.GetFailedRequestCount();
+        }
+
+        private string BuildSummaryDiagnostics()
+        {
+            StringBuilder stringBuilder = new StringBuilder();
+            StringWriter stringWriter = new StringWriter(stringBuilder);
+
+            using (JsonWriter writer = new JsonTextWriter(stringWriter))
+            {
+                writer.WriteStartObject();
+                writer.WritePropertyName(Constants.DiagnosticsCoreDiagnostics);
+                writer.WriteRawValue(this.coreDiagnostics.ToString(DiagnosticsVerbosity.Summary));
+                writer.WritePropertyName(Constants.DiagnosticsEncryptionDiagnostics);
+                writer.WriteStartObject();
+
+                if (this.encryptContent != null)
+                {
+                    writer.WritePropertyName(Constants.DiagnosticsEncryptOperation);
+                    writer.WriteRawValue(this.encryptContent.ToString());
+                }
+
+                if (this.decryptContent != null)
+                {
+                    writer.WritePropertyName(Constants.DiagnosticsDecryptOperation);
+                    writer.WriteRawValue(this.decryptContent.ToString());
+                }
+
+                writer.WriteEndObject();
+                writer.WriteEndObject();
+            }
+
+            return stringWriter.ToString();
         }
 #endif
 

@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Text;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Fluent;
+    using Microsoft.Azure.Cosmos.Util;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -1333,6 +1334,228 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }
 
                 return 1;
+            }
+        }
+
+        [TestMethod]
+        public void CosmosClientOptions_DiagnosticsVerbosity_DefaultIsDetailed()
+        {
+            CosmosClientOptions options = new CosmosClientOptions();
+            Assert.AreEqual(DiagnosticsVerbosity.Detailed, options.DiagnosticsVerbosity);
+        }
+
+        [TestMethod]
+        public void CosmosClientOptions_DiagnosticsVerbosity_CanSetToSummary()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                DiagnosticsVerbosity = DiagnosticsVerbosity.Summary
+            };
+
+            Assert.AreEqual(DiagnosticsVerbosity.Summary, options.DiagnosticsVerbosity);
+        }
+
+        [TestMethod]
+        public void CosmosClientOptions_MaxDiagnosticsSummarySizeBytes_DefaultIs8192()
+        {
+            CosmosClientOptions options = new CosmosClientOptions();
+            Assert.AreEqual(8192, options.MaxDiagnosticsSummarySizeBytes);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentOutOfRangeException))]
+        public void CosmosClientOptions_MaxDiagnosticsSummarySizeBytes_ThrowsBelowMinimum()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                MaxDiagnosticsSummarySizeBytes = 2048
+            };
+        }
+
+        [TestMethod]
+        public void CosmosClientOptions_MaxDiagnosticsSummarySizeBytes_AcceptsMinimum()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                MaxDiagnosticsSummarySizeBytes = 4096
+            };
+
+            Assert.AreEqual(4096, options.MaxDiagnosticsSummarySizeBytes);
+        }
+
+        [TestMethod]
+        public void CosmosClientOptions_MaxDiagnosticsSummarySizeBytes_AcceptsLargeValue()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                MaxDiagnosticsSummarySizeBytes = 65536
+            };
+
+            Assert.AreEqual(65536, options.MaxDiagnosticsSummarySizeBytes);
+        }
+
+        [TestMethod]
+        public void CosmosClientOptions_EnvVar_DiagnosticsVerbosity_Summary()
+        {
+            string original = Environment.GetEnvironmentVariable(ConfigurationManager.DiagnosticsVerbosityVariable);
+            try
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.DiagnosticsVerbosityVariable, "Summary");
+                CosmosClientOptions options = new CosmosClientOptions();
+                Assert.AreEqual(DiagnosticsVerbosity.Summary, options.DiagnosticsVerbosity);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.DiagnosticsVerbosityVariable, original);
+            }
+        }
+
+        [TestMethod]
+        public void CosmosClientOptions_EnvVar_DiagnosticsVerbosity_CaseInsensitive()
+        {
+            string original = Environment.GetEnvironmentVariable(ConfigurationManager.DiagnosticsVerbosityVariable);
+            try
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.DiagnosticsVerbosityVariable, "summary");
+                CosmosClientOptions options = new CosmosClientOptions();
+                Assert.AreEqual(DiagnosticsVerbosity.Summary, options.DiagnosticsVerbosity);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.DiagnosticsVerbosityVariable, original);
+            }
+        }
+
+        [TestMethod]
+        public void CosmosClientOptions_EnvVar_DiagnosticsVerbosity_InvalidIgnored()
+        {
+            string original = Environment.GetEnvironmentVariable(ConfigurationManager.DiagnosticsVerbosityVariable);
+            try
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.DiagnosticsVerbosityVariable, "InvalidValue");
+                CosmosClientOptions options = new CosmosClientOptions();
+                Assert.AreEqual(DiagnosticsVerbosity.Detailed, options.DiagnosticsVerbosity);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.DiagnosticsVerbosityVariable, original);
+            }
+        }
+
+        [TestMethod]
+        public void CosmosClientOptions_EnvVar_MaxSummarySize()
+        {
+            string original = Environment.GetEnvironmentVariable(ConfigurationManager.DiagnosticsMaxSummarySizeVariable);
+            try
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.DiagnosticsMaxSummarySizeVariable, "16384");
+                CosmosClientOptions options = new CosmosClientOptions();
+                Assert.AreEqual(16384, options.MaxDiagnosticsSummarySizeBytes);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.DiagnosticsMaxSummarySizeVariable, original);
+            }
+        }
+
+        [TestMethod]
+        public void CosmosClientOptions_EnvVar_MaxSummarySize_BelowMinimumIgnored()
+        {
+            string original = Environment.GetEnvironmentVariable(ConfigurationManager.DiagnosticsMaxSummarySizeVariable);
+            try
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.DiagnosticsMaxSummarySizeVariable, "1024");
+                CosmosClientOptions options = new CosmosClientOptions();
+                Assert.AreEqual(8192, options.MaxDiagnosticsSummarySizeBytes, "Below-minimum env var should be ignored");
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.DiagnosticsMaxSummarySizeVariable, original);
+            }
+        }
+
+        [TestMethod]
+        public void CosmosClientOptions_EnvVar_ExplicitPropertyOverridesEnvVar()
+        {
+            string original = Environment.GetEnvironmentVariable(ConfigurationManager.DiagnosticsVerbosityVariable);
+            try
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.DiagnosticsVerbosityVariable, "Summary");
+                CosmosClientOptions options = new CosmosClientOptions
+                {
+                    DiagnosticsVerbosity = DiagnosticsVerbosity.Detailed
+                };
+                Assert.AreEqual(DiagnosticsVerbosity.Detailed, options.DiagnosticsVerbosity);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.DiagnosticsVerbosityVariable, original);
+            }
+        }
+
+        [TestMethod]
+        public void CosmosClientBuilder_WithDiagnosticsVerbosity()
+        {
+            CosmosClientBuilder builder = new CosmosClientBuilder(CosmosClientOptionsUnitTests.AccountEndpoint, MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
+            builder.WithDiagnosticsVerbosity(DiagnosticsVerbosity.Summary);
+
+            CosmosClient client = builder.Build(new MockDocumentClient());
+            Assert.AreEqual(DiagnosticsVerbosity.Summary, client.ClientOptions.DiagnosticsVerbosity);
+        }
+
+        [TestMethod]
+        public void CosmosClientBuilder_WithMaxDiagnosticsSummarySizeBytes()
+        {
+            CosmosClientBuilder builder = new CosmosClientBuilder(CosmosClientOptionsUnitTests.AccountEndpoint, MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
+            builder.WithMaxDiagnosticsSummarySizeBytes(16384);
+
+            CosmosClient client = builder.Build(new MockDocumentClient());
+            Assert.AreEqual(16384, client.ClientOptions.MaxDiagnosticsSummarySizeBytes);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentOutOfRangeException))]
+        public void CosmosClientBuilder_WithMaxDiagnosticsSummarySizeBytes_TooSmallThrows()
+        {
+            CosmosClientBuilder builder = new CosmosClientBuilder(CosmosClientOptionsUnitTests.AccountEndpoint, MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
+            builder.WithMaxDiagnosticsSummarySizeBytes(2048);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentOutOfRangeException))]
+        public void CosmosClientOptions_MaxDiagnosticsSummarySizeBytes_ThrowsAboveMaximum()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                MaxDiagnosticsSummarySizeBytes = CosmosClientOptions.MaxAllowedDiagnosticsSummarySizeBytes + 1
+            };
+        }
+
+        [TestMethod]
+        public void CosmosClientOptions_MaxDiagnosticsSummarySizeBytes_AcceptsMaximum()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                MaxDiagnosticsSummarySizeBytes = CosmosClientOptions.MaxAllowedDiagnosticsSummarySizeBytes
+            };
+            Assert.AreEqual(CosmosClientOptions.MaxAllowedDiagnosticsSummarySizeBytes, options.MaxDiagnosticsSummarySizeBytes);
+        }
+
+        [TestMethod]
+        public void CosmosClientOptions_EnvVar_MaxSummarySize_AboveMaximumIgnored()
+        {
+            string original = Environment.GetEnvironmentVariable(ConfigurationManager.DiagnosticsMaxSummarySizeVariable);
+            try
+            {
+                Environment.SetEnvironmentVariable(
+                    ConfigurationManager.DiagnosticsMaxSummarySizeVariable,
+                    (CosmosClientOptions.MaxAllowedDiagnosticsSummarySizeBytes + 1).ToString());
+                CosmosClientOptions options = new CosmosClientOptions();
+                Assert.AreEqual(8192, options.MaxDiagnosticsSummarySizeBytes, "Above-maximum env var should be ignored");
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.DiagnosticsMaxSummarySizeVariable, original);
             }
         }
     }

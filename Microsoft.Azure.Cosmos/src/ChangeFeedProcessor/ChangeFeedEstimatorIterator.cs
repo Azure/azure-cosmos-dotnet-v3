@@ -174,7 +174,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             {
                 // Lease store is empty
                 this.hasMoreResults = false;
-                return new ChangeFeedEstimatorEmptyFeedResponse(trace);
+                return new ChangeFeedEstimatorEmptyFeedResponse(trace, this.monitoredContainer.ClientContext.ClientOptions.MaxDiagnosticsSummarySizeBytes);
             }
 
             IEnumerable<DocumentServiceLease> leasesForCurrentPage = this.lazyLeaseDocuments
@@ -202,7 +202,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             this.hasMoreResults = ++this.currentPage != this.maxPage;
 
-            return new ChangeFeedEstimatorFeedResponse(trace, estimations.AsReadOnly(), totalRUCost);
+            return new ChangeFeedEstimatorFeedResponse(trace, estimations.AsReadOnly(), totalRUCost, this.monitoredContainer.ClientContext.ClientOptions.MaxDiagnosticsSummarySizeBytes);
         }
 
         /// <summary>
@@ -368,14 +368,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         {
             private readonly ReadOnlyCollection<ChangeFeedProcessorState> remainingLeaseWorks;
             private readonly Headers headers;
+            private readonly int maxDiagnosticsSummarySizeBytes;
 
             public ChangeFeedEstimatorFeedResponse(
                 ITrace trace,
                 ReadOnlyCollection<ChangeFeedProcessorState> remainingLeaseWorks,
-                double ruCost)
+                double ruCost,
+                int maxDiagnosticsSummarySizeBytes)
             {
                 this.Trace = trace ?? throw new ArgumentNullException(nameof(trace));
                 this.remainingLeaseWorks = remainingLeaseWorks ?? throw new ArgumentNullException(nameof(remainingLeaseWorks));
+                this.maxDiagnosticsSummarySizeBytes = maxDiagnosticsSummarySizeBytes;
                 this.headers = new Headers
                 {
                     RequestCharge = ruCost
@@ -394,7 +397,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             public override HttpStatusCode StatusCode => HttpStatusCode.OK;
 
-            public override CosmosDiagnostics Diagnostics => new CosmosTraceDiagnostics(this.Trace);
+            public override CosmosDiagnostics Diagnostics => new CosmosTraceDiagnostics(this.Trace, this.maxDiagnosticsSummarySizeBytes);
 
             public override string IndexMetrics => null;
 
@@ -412,10 +415,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         {
             private readonly static IEnumerable<ChangeFeedProcessorState> remainingLeaseWorks = Enumerable.Empty<ChangeFeedProcessorState>();
             private readonly Headers headers;
+            private readonly int maxDiagnosticsSummarySizeBytes;
 
-            public ChangeFeedEstimatorEmptyFeedResponse(ITrace trace)
+            public ChangeFeedEstimatorEmptyFeedResponse(ITrace trace, int maxDiagnosticsSummarySizeBytes)
             {
                 this.Trace = trace ?? throw new ArgumentNullException(nameof(trace));
+                this.maxDiagnosticsSummarySizeBytes = maxDiagnosticsSummarySizeBytes;
                 this.headers = new Headers();
             }
 
@@ -431,7 +436,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             public override HttpStatusCode StatusCode => HttpStatusCode.OK;
 
-            public override CosmosDiagnostics Diagnostics => new CosmosTraceDiagnostics(this.Trace);
+            public override CosmosDiagnostics Diagnostics => new CosmosTraceDiagnostics(this.Trace, this.maxDiagnosticsSummarySizeBytes);
 
             public override string IndexMetrics => null;
 
