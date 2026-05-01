@@ -8,6 +8,7 @@ schedules:
   displayName: Cosmos Nightly 
   branches:
     include: 
+    - main
     - master
   always: true # whether to always run the pipeline or only if there have been source code changes since the last run. The default is false
 
