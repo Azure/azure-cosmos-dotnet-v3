@@ -31,7 +31,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             this.keyEncryptionKeyResolver = keyEncryptionKeyResolver;
             this.ProviderName = providerName;
-            this.DataEncryptionKeyCacheTimeToLive = TimeSpan.Zero;
+
+            // Enable the MDE library's built-in DEK byte cache. When ProtectedDataEncryptionKey cache
+            // expires (every 1–2 hours), the DEK byte cache still holds the unwrapped key bytes, so
+            // reconstruction avoids Key Vault HTTP calls. The 2-hour TTL outlives the default
+            // ProtectedDataEncryptionKey TTL (1 hour), covering most steady-state cache misses.
+            this.DataEncryptionKeyCacheTimeToLive = TimeSpan.FromHours(2);
         }
 
         public override string ProviderName { get; }
