@@ -29,6 +29,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly int connectionLimit;
         private readonly ConcurrentDictionary<Uri, LocationUnavailabilityInfo> locationUnavailablityInfoByEndpoint;
         private readonly RegionNameMapper regionNameMapper;
+        private readonly Func<bool> isPartitionLevelFailoverEnabled;
 
         private DatabaseAccountLocationsInfo locationInfo;
         private DateTime lastCacheUpdateTimestamp;
@@ -39,13 +40,15 @@ namespace Microsoft.Azure.Cosmos.Routing
             Uri defaultEndpoint,
             bool enableEndpointDiscovery,
             int connectionLimit,
-            bool useMultipleWriteLocations)
+            bool useMultipleWriteLocations,
+            Func<bool> isPartitionLevelFailoverEnabled = null)
         {
             this.locationInfo = new DatabaseAccountLocationsInfo(preferredLocations, defaultEndpoint);
             this.defaultEndpoint = defaultEndpoint;
             this.enableEndpointDiscovery = enableEndpointDiscovery;
             this.useMultipleWriteLocations = useMultipleWriteLocations;
             this.connectionLimit = connectionLimit;
+            this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
 
             this.lockObject = new object();
             this.locationUnavailablityInfoByEndpoint = new ConcurrentDictionary<Uri, LocationUnavailabilityInfo>();
@@ -386,10 +389,18 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             ReadOnlyCollection<string> effectivePreferredLocations = databaseAccountLocationsInfoSnapshot.EffectivePreferredLocations;
 
+            // For reads when PPAF is enabled, use WriteEndpoints[0] as fallback (dynamic,
+            // tracks current write region) instead of this.defaultEndpoint (static, region-agnostic,
+            // never updated after init). This aligns with UpdateLocationCache which already uses
+            // WriteEndpoints[0] as the ReadEndpoints fallback, and matches Java/Python SDK behavior.
+            Uri fallbackEndpoint = (isReadRequest && this.isPartitionLevelFailoverEnabled?.Invoke() == true)
+                ? databaseAccountLocationsInfoSnapshot.WriteEndpoints[0]
+                : this.defaultEndpoint;
+
             return GetApplicableEndpoints(
-                isReadRequest ? this.locationInfo.AvailableReadEndpointByLocation : this.locationInfo.AvailableWriteEndpointByLocation,
+                isReadRequest ? databaseAccountLocationsInfoSnapshot.AvailableReadEndpointByLocation : databaseAccountLocationsInfoSnapshot.AvailableWriteEndpointByLocation,
                 effectivePreferredLocations,
-                this.defaultEndpoint,
+                fallbackEndpoint,
                 request.RequestContext.ExcludeRegions);
         }
 

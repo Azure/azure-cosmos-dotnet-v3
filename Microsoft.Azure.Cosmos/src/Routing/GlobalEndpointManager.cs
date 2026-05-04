@@ -58,7 +58,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                 owner.ServiceEndpoint,
                 connectionPolicy.EnableEndpointDiscovery,
                 connectionPolicy.MaxConnectionLimit,
-                connectionPolicy.UseMultipleWriteLocations);
+                connectionPolicy.UseMultipleWriteLocations,
+                isPartitionLevelFailoverEnabled: () => connectionPolicy.EnablePartitionLevelFailover);
 
             this.owner = owner;
             this.defaultEndpoint = owner.ServiceEndpoint;

@@ -1530,6 +1530,283 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         }
 
         [TestMethod]
+        [Description("Validates that read fallback uses WriteEndpoints[0] when PPAF is enabled, and defaultEndpoint when PPAF is disabled. Regression test for issue #5821.")]
+        public void ValidateReadFallbackUsesWriteEndpointAfterHubSwitch()
+        {
+            // Arrange: Single-master account with two regions.
+            // Hub region (write) starts at "location1", read available at both "location1" and "location2".
+            Collection<AccountRegion> writeLocations = new Collection<AccountRegion>()
+            {
+                new AccountRegion { Name = "location1", Endpoint = LocationCacheTests.Location1Endpoint.ToString() },
+            };
+
+            Collection<AccountRegion> readLocations = new Collection<AccountRegion>()
+            {
+                new AccountRegion { Name = "location1", Endpoint = LocationCacheTests.Location1Endpoint.ToString() },
+                new AccountRegion { Name = "location2", Endpoint = LocationCacheTests.Location2Endpoint.ToString() },
+            };
+
+            AccountProperties initialAccount = new AccountProperties
+            {
+                ReadLocationsInternal = readLocations,
+                WriteLocationsInternal = writeLocations,
+                EnableMultipleWriteLocations = false,
+            };
+
+            // defaultEndpoint is region-agnostic (static, never updated)
+            Uri defaultEndpoint = new Uri("https://myaccount.documents.azure.com");
+
+            // PPAF enabled — read fallback should use WriteEndpoints[0]
+            LocationCache cache = new LocationCache(
+                preferredLocations: new List<string> { "location1" }.AsReadOnly(),
+                defaultEndpoint: defaultEndpoint,
+                enableEndpointDiscovery: true,
+                connectionLimit: 10,
+                useMultipleWriteLocations: false,
+                isPartitionLevelFailoverEnabled: () => true);
+
+            cache.OnDatabaseAccountRead(initialAccount);
+
+            // Act 1: Read with ExcludeRegions == preferred regions → all excluded → fallback to WriteEndpoints[0]
+            using (DocumentServiceRequest readRequest = DocumentServiceRequest.Create(
+                OperationType.Read,
+                ResourceType.Document,
+                AuthorizationTokenType.PrimaryMasterKey))
+            {
+                readRequest.RequestContext.ExcludeRegions = new List<string> { "location1" };
+                ReadOnlyCollection<Uri> endpoints = cache.GetApplicableEndpoints(readRequest, isReadRequest: true);
+
+                Assert.AreEqual(1, endpoints.Count);
+                Assert.AreEqual(
+                    LocationCacheTests.Location1Endpoint,
+                    endpoints[0],
+                    "With PPAF enabled, read fallback should use WriteEndpoints[0], not defaultEndpoint.");
+            }
+
+            // Act 2: Simulate hub switch — write region moves from location1 to location2
+            Collection<AccountRegion> newWriteLocations = new Collection<AccountRegion>()
+            {
+                new AccountRegion { Name = "location2", Endpoint = LocationCacheTests.Location2Endpoint.ToString() },
+            };
+
+            Collection<AccountRegion> newReadLocations = new Collection<AccountRegion>()
+            {
+                new AccountRegion { Name = "location2", Endpoint = LocationCacheTests.Location2Endpoint.ToString() },
+                new AccountRegion { Name = "location1", Endpoint = LocationCacheTests.Location1Endpoint.ToString() },
+            };
+
+            AccountProperties updatedAccount = new AccountProperties
+            {
+                ReadLocationsInternal = newReadLocations,
+                WriteLocationsInternal = newWriteLocations,
+                EnableMultipleWriteLocations = false,
+            };
+
+            cache.OnDatabaseAccountRead(updatedAccount);
+
+            // Act 3: Same read after hub switch — WriteEndpoints[0] should now be location2
+            using (DocumentServiceRequest readRequest2 = DocumentServiceRequest.Create(
+                OperationType.Read,
+                ResourceType.Document,
+                AuthorizationTokenType.PrimaryMasterKey))
+            {
+                readRequest2.RequestContext.ExcludeRegions = new List<string> { "location1" };
+                ReadOnlyCollection<Uri> endpoints = cache.GetApplicableEndpoints(readRequest2, isReadRequest: true);
+
+                Assert.AreEqual(1, endpoints.Count);
+                Assert.AreEqual(
+                    LocationCacheTests.Location2Endpoint,
+                    endpoints[0],
+                    "After hub switch, read fallback should track the new write region (location2).");
+            }
+
+            // Act 4: Verify write requests still use defaultEndpoint as fallback (unchanged)
+            using (DocumentServiceRequest writeRequest = DocumentServiceRequest.Create(
+                OperationType.Create,
+                ResourceType.Document,
+                AuthorizationTokenType.PrimaryMasterKey))
+            {
+                writeRequest.RequestContext.ExcludeRegions = new List<string> { "location1", "location2" };
+                ReadOnlyCollection<Uri> endpoints = cache.GetApplicableEndpoints(writeRequest, isReadRequest: false);
+
+                Assert.AreEqual(1, endpoints.Count);
+                Assert.AreEqual(
+                    defaultEndpoint,
+                    endpoints[0],
+                    "Write fallback should still use defaultEndpoint.");
+            }
+        }
+
+        [TestMethod]
+        [Description("Validates that when PPAF is disabled, read fallback uses defaultEndpoint (original behavior).")]
+        public void ValidateReadFallbackUsesDefaultEndpointWhenPpafDisabled()
+        {
+            Collection<AccountRegion> writeLocations = new Collection<AccountRegion>()
+            {
+                new AccountRegion { Name = "location1", Endpoint = LocationCacheTests.Location1Endpoint.ToString() },
+            };
+
+            Collection<AccountRegion> readLocations = new Collection<AccountRegion>()
+            {
+                new AccountRegion { Name = "location1", Endpoint = LocationCacheTests.Location1Endpoint.ToString() },
+                new AccountRegion { Name = "location2", Endpoint = LocationCacheTests.Location2Endpoint.ToString() },
+            };
+
+            AccountProperties account = new AccountProperties
+            {
+                ReadLocationsInternal = readLocations,
+                WriteLocationsInternal = writeLocations,
+                EnableMultipleWriteLocations = false,
+            };
+
+            Uri defaultEndpoint = new Uri("https://myaccount.documents.azure.com");
+
+            // PPAF disabled — read fallback should use defaultEndpoint (original behavior)
+            LocationCache cache = new LocationCache(
+                preferredLocations: new List<string> { "location1" }.AsReadOnly(),
+                defaultEndpoint: defaultEndpoint,
+                enableEndpointDiscovery: true,
+                connectionLimit: 10,
+                useMultipleWriteLocations: false,
+                isPartitionLevelFailoverEnabled: () => false);
+
+            cache.OnDatabaseAccountRead(account);
+
+            using (DocumentServiceRequest readRequest = DocumentServiceRequest.Create(
+                OperationType.Read,
+                ResourceType.Document,
+                AuthorizationTokenType.PrimaryMasterKey))
+            {
+                readRequest.RequestContext.ExcludeRegions = new List<string> { "location1" };
+                ReadOnlyCollection<Uri> endpoints = cache.GetApplicableEndpoints(readRequest, isReadRequest: true);
+
+                Assert.AreEqual(1, endpoints.Count);
+                Assert.AreEqual(
+                    defaultEndpoint,
+                    endpoints[0],
+                    "With PPAF disabled, read fallback should use defaultEndpoint.");
+            }
+        }
+
+        [TestMethod]
+        [Description("Validates dynamic PPAF toggle: behavior changes when PPAF is enabled/disabled at runtime.")]
+        public void ValidateReadFallbackReactsToDynamicPpafToggle()
+        {
+            Collection<AccountRegion> writeLocations = new Collection<AccountRegion>()
+            {
+                new AccountRegion { Name = "location1", Endpoint = LocationCacheTests.Location1Endpoint.ToString() },
+            };
+
+            Collection<AccountRegion> readLocations = new Collection<AccountRegion>()
+            {
+                new AccountRegion { Name = "location1", Endpoint = LocationCacheTests.Location1Endpoint.ToString() },
+                new AccountRegion { Name = "location2", Endpoint = LocationCacheTests.Location2Endpoint.ToString() },
+            };
+
+            AccountProperties account = new AccountProperties
+            {
+                ReadLocationsInternal = readLocations,
+                WriteLocationsInternal = writeLocations,
+                EnableMultipleWriteLocations = false,
+            };
+
+            Uri defaultEndpoint = new Uri("https://myaccount.documents.azure.com");
+
+            // Start with PPAF disabled, toggle dynamically
+            bool ppafEnabled = false;
+            LocationCache cache = new LocationCache(
+                preferredLocations: new List<string> { "location1" }.AsReadOnly(),
+                defaultEndpoint: defaultEndpoint,
+                enableEndpointDiscovery: true,
+                connectionLimit: 10,
+                useMultipleWriteLocations: false,
+                isPartitionLevelFailoverEnabled: () => ppafEnabled);
+
+            cache.OnDatabaseAccountRead(account);
+
+            // PPAF off → defaultEndpoint
+            using (DocumentServiceRequest req = DocumentServiceRequest.Create(
+                OperationType.Read, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey))
+            {
+                req.RequestContext.ExcludeRegions = new List<string> { "location1" };
+                ReadOnlyCollection<Uri> endpoints = cache.GetApplicableEndpoints(req, isReadRequest: true);
+                Assert.AreEqual(defaultEndpoint, endpoints[0], "PPAF off: should use defaultEndpoint.");
+            }
+
+            // Toggle PPAF on → WriteEndpoints[0]
+            ppafEnabled = true;
+            using (DocumentServiceRequest req = DocumentServiceRequest.Create(
+                OperationType.Read, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey))
+            {
+                req.RequestContext.ExcludeRegions = new List<string> { "location1" };
+                ReadOnlyCollection<Uri> endpoints = cache.GetApplicableEndpoints(req, isReadRequest: true);
+                Assert.AreEqual(LocationCacheTests.Location1Endpoint, endpoints[0], "PPAF on: should use WriteEndpoints[0].");
+            }
+        }
+
+        [TestMethod]
+        [Description("Validates that when a PPAF partition-level override (LocationEndpointToRoute) is set, " +
+            "ResolveServiceEndpoint returns it directly, bypassing ExcludeRegions filtering entirely.")]
+        public void ValidateResolveServiceEndpoint_PPAFOverride_WinsOverExcludeRegions()
+        {
+            // Arrange: PPAF enabled, single preferred region "location1"
+            Collection<AccountRegion> writeLocations = new Collection<AccountRegion>()
+            {
+                new AccountRegion { Name = "location1", Endpoint = LocationCacheTests.Location1Endpoint.ToString() },
+            };
+
+            Collection<AccountRegion> readLocations = new Collection<AccountRegion>()
+            {
+                new AccountRegion { Name = "location1", Endpoint = LocationCacheTests.Location1Endpoint.ToString() },
+                new AccountRegion { Name = "location2", Endpoint = LocationCacheTests.Location2Endpoint.ToString() },
+            };
+
+            AccountProperties account = new AccountProperties
+            {
+                ReadLocationsInternal = readLocations,
+                WriteLocationsInternal = writeLocations,
+                EnableMultipleWriteLocations = false,
+            };
+
+            Uri defaultEndpoint = new Uri("https://myaccount.documents.azure.com");
+
+            LocationCache cache = new LocationCache(
+                preferredLocations: new List<string> { "location1" }.AsReadOnly(),
+                defaultEndpoint: defaultEndpoint,
+                enableEndpointDiscovery: true,
+                connectionLimit: 10,
+                useMultipleWriteLocations: false,
+                isPartitionLevelFailoverEnabled: () => true);
+
+            cache.OnDatabaseAccountRead(account);
+
+            // Simulate PPAF partition-level override: partition failed over to location2
+            Uri ppafOverrideEndpoint = LocationCacheTests.Location2Endpoint;
+
+            using (DocumentServiceRequest readRequest = DocumentServiceRequest.Create(
+                OperationType.Read,
+                ResourceType.Document,
+                AuthorizationTokenType.PrimaryMasterKey))
+            {
+                // ExcludeRegions == PreferredRegions → would normally trigger fallback
+                readRequest.RequestContext.ExcludeRegions = new List<string> { "location1" };
+
+                // Set PPAF override (as GlobalPartitionEndpointManagerCore would do)
+                readRequest.RequestContext.RouteToLocation(ppafOverrideEndpoint);
+
+                // Act
+                Uri resolved = cache.ResolveServiceEndpoint(readRequest);
+
+                // Assert: PPAF override wins at L341 — ExcludeRegions is never evaluated
+                Assert.AreEqual(
+                    ppafOverrideEndpoint,
+                    resolved,
+                    "When a PPAF partition-level override (LocationEndpointToRoute) is present, " +
+                    "ResolveServiceEndpoint should short-circuit and return it, ignoring ExcludeRegions.");
+            }
+        }
+
+        [TestMethod]
         public void ValidateThinClientReadFallbackToWriteEndpointTest()
         {
             // Arrange:

@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// List of regions to be excluded routing the request to.
         /// This can be used to route a request to a specific region by excluding all other regions.
-        /// If all regions are excluded, then the request will be routed to the primary/hub region.
+        /// If all regions are excluded, the SDK will route the request on a best-effort basis to maintain availability.
         /// </summary>
         public List<string> ExcludeRegions { get; set; }
 
