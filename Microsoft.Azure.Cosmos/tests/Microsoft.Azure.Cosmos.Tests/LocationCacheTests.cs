@@ -1649,6 +1649,68 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         }
 
         [TestMethod]
+        [Description("Validates that when a PPAF partition-level override (LocationEndpointToRoute) is set, " +
+            "ResolveServiceEndpoint returns it directly, bypassing ExcludeRegions filtering entirely.")]
+        public void ValidateResolveServiceEndpoint_PPAFOverride_WinsOverExcludeRegions()
+        {
+            // Arrange: PPAF enabled, single preferred region "location1"
+            Collection<AccountRegion> writeLocations = new Collection<AccountRegion>()
+            {
+                new AccountRegion { Name = "location1", Endpoint = LocationCacheTests.Location1Endpoint.ToString() },
+            };
+
+            Collection<AccountRegion> readLocations = new Collection<AccountRegion>()
+            {
+                new AccountRegion { Name = "location1", Endpoint = LocationCacheTests.Location1Endpoint.ToString() },
+                new AccountRegion { Name = "location2", Endpoint = LocationCacheTests.Location2Endpoint.ToString() },
+            };
+
+            AccountProperties account = new AccountProperties
+            {
+                ReadLocationsInternal = readLocations,
+                WriteLocationsInternal = writeLocations,
+                EnableMultipleWriteLocations = false,
+            };
+
+            Uri defaultEndpoint = new Uri("https://myaccount.documents.azure.com");
+
+            LocationCache cache = new LocationCache(
+                preferredLocations: new List<string> { "location1" }.AsReadOnly(),
+                defaultEndpoint: defaultEndpoint,
+                enableEndpointDiscovery: true,
+                connectionLimit: 10,
+                useMultipleWriteLocations: false,
+                isPartitionLevelFailoverEnabled: () => true);
+
+            cache.OnDatabaseAccountRead(account);
+
+            // Simulate PPAF partition-level override: partition failed over to location2
+            Uri ppafOverrideEndpoint = LocationCacheTests.Location2Endpoint;
+
+            using (DocumentServiceRequest readRequest = DocumentServiceRequest.Create(
+                OperationType.Read,
+                ResourceType.Document,
+                AuthorizationTokenType.PrimaryMasterKey))
+            {
+                // ExcludeRegions == PreferredRegions → would normally trigger fallback
+                readRequest.RequestContext.ExcludeRegions = new List<string> { "location1" };
+
+                // Set PPAF override (as GlobalPartitionEndpointManagerCore would do)
+                readRequest.RequestContext.RouteToLocation(ppafOverrideEndpoint);
+
+                // Act
+                Uri resolved = cache.ResolveServiceEndpoint(readRequest);
+
+                // Assert: PPAF override wins at L341 — ExcludeRegions is never evaluated
+                Assert.AreEqual(
+                    ppafOverrideEndpoint,
+                    resolved,
+                    "When a PPAF partition-level override (LocationEndpointToRoute) is present, " +
+                    "ResolveServiceEndpoint should short-circuit and return it, ignoring ExcludeRegions.");
+            }
+        }
+
+        [TestMethod]
         public void ValidateThinClientReadFallbackToWriteEndpointTest()
         {
             // Arrange:
