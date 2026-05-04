@@ -53,6 +53,21 @@ namespace Microsoft.Azure.Cosmos.Linq
                 {
                     return false;
                 }
+
+                // In .NET 10+, array.Contains() resolves to MemoryExtensions.Contains(ReadOnlySpan<T>, T)
+                // which involves an op_Implicit conversion from T[] to ReadOnlySpan<T>.
+                // ReadOnlySpan<T> is a ref struct and cannot be boxed into Expression.Constant,
+                // so we must prevent evaluation of the op_Implicit argument.
+                // The Nominator processes bottom-up (children first), so blocking op_Implicit
+                // also prevents the parent MemoryExtensions.Contains from being nominated.
+                if (methodCallExpression.Method.Name == "op_Implicit"
+                    && type != null
+                    && type.IsGenericType
+                    && (type.GetGenericTypeDefinition() == typeof(ReadOnlySpan<>)
+                        || type.GetGenericTypeDefinition() == typeof(Span<>)))
+                {
+                    return false;
+                }
             }
 
             if (expression.NodeType == ExpressionType.Constant && expression.Type == typeof(object))
