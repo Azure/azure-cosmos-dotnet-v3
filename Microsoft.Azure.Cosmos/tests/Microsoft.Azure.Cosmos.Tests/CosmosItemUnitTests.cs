@@ -6,10 +6,13 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.IO;
+    using System.IO.Compression;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -1195,6 +1198,395 @@ namespace Microsoft.Azure.Cosmos.Tests
                 });
 
             return mockedExecutor;
+        }
+
+        private static Mock<ContainerInternal> CreateMockContainerWithProperties(ContainerProperties containerProperties)
+        {
+            Mock<ContainerInternal> mock = new Mock<ContainerInternal>();
+            mock.Setup(x => x.GetCachedContainerPropertiesAsync(
+                    It.IsAny<bool>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(containerProperties);
+            return mock;
+        }
+
+        [TestMethod]
+        public async Task EnsureIdGetAppended_NonMultiHashPartitionKey_ReturnsOriginalPartitionKey()
+        {
+            ContainerProperties containerProperties = new ContainerProperties("myContainer", "/pk");
+
+            Mock<ContainerInternal> mockContainer = CosmosItemUnitTests.CreateMockContainerWithProperties(containerProperties);
+
+            Cosmos.PartitionKey originalPk = new PartitionKeyBuilder().Add("pkValue").Build();
+
+            Cosmos.PartitionKey? result = await mockContainer.Object.EnsureIdGetAppendedToPartitionKeyIfNeededAsync(
+                originalPk,
+                "someItemId",
+                CancellationToken.None);
+
+            Assert.IsNotNull(result);
+            Assert.AreEqual(originalPk.ToString(), result.Value.ToString());
+        }
+
+        [TestMethod]
+        public async Task EnsureIdGetAppended_MultiHashWithoutIdAsLastPath_ReturnsOriginalPartitionKey()
+        {
+            ContainerProperties containerProperties = new ContainerProperties()
+            {
+                Id = "myContainer",
+                PartitionKey = new PartitionKeyDefinition()
+                {
+                    Paths = new Collection<string> { "/tenantId", "/userId" },
+                    Kind = PartitionKind.MultiHash
+                }
+            };
+
+            Mock<ContainerInternal> mockContainer = CosmosItemUnitTests.CreateMockContainerWithProperties(containerProperties);
+
+            Cosmos.PartitionKey originalPk = new PartitionKeyBuilder()
+                .Add("tenant1")
+                .Add("user1")
+                .Build();
+
+            Cosmos.PartitionKey? result = await mockContainer.Object.EnsureIdGetAppendedToPartitionKeyIfNeededAsync(
+                originalPk,
+                "someItemId",
+                CancellationToken.None);
+
+            Assert.IsNotNull(result);
+            Assert.AreEqual(originalPk.ToString(), result.Value.ToString());
+        }
+
+        [TestMethod]
+        public async Task EnsureIdGetAppended_NullItemId_ThrowsArgumentException()
+        {
+            ContainerProperties containerProperties = new ContainerProperties()
+            {
+                Id = "myContainer",
+                PartitionKey = new PartitionKeyDefinition()
+                {
+                    Paths = new Collection<string> { "/tenantId", "/id" },
+                    Kind = PartitionKind.MultiHash
+                }
+            };
+
+            Mock<ContainerInternal> mockContainer = CosmosItemUnitTests.CreateMockContainerWithProperties(containerProperties);
+
+            await Assert.ThrowsExceptionAsync<ArgumentException>(() =>
+                mockContainer.Object.EnsureIdGetAppendedToPartitionKeyIfNeededAsync(
+                    new PartitionKeyBuilder().Add("tenant1").Build(),
+                    null,
+                    CancellationToken.None));
+        }
+
+        [TestMethod]
+        public async Task EnsureIdGetAppended_EmptyItemId_ThrowsArgumentException()
+        {
+            ContainerProperties containerProperties = new ContainerProperties()
+            {
+                Id = "myContainer",
+                PartitionKey = new PartitionKeyDefinition()
+                {
+                    Paths = new Collection<string> { "/tenantId", "/id" },
+                    Kind = PartitionKind.MultiHash
+                }
+            };
+
+            Mock<ContainerInternal> mockContainer = CosmosItemUnitTests.CreateMockContainerWithProperties(containerProperties);
+
+            await Assert.ThrowsExceptionAsync<ArgumentException>(() =>
+                mockContainer.Object.EnsureIdGetAppendedToPartitionKeyIfNeededAsync(
+                    new PartitionKeyBuilder().Add("tenant1").Build(),
+                    string.Empty,
+                    CancellationToken.None));
+        }
+
+        [TestMethod]
+        public async Task EnsureIdGetAppended_PartitionKeyWithCorrectComponentCount_AppendsId()
+        {
+            ContainerProperties containerProperties = new ContainerProperties()
+            {
+                Id = "myContainer",
+                PartitionKey = new PartitionKeyDefinition()
+                {
+                    Paths = new Collection<string> { "/tenantId", "/id" },
+                    Kind = PartitionKind.MultiHash
+                }
+            };
+
+            Mock<ContainerInternal> mockContainer = CosmosItemUnitTests.CreateMockContainerWithProperties(containerProperties);
+
+            Cosmos.PartitionKey originalPk = new PartitionKeyBuilder().Add("tenant1").Build();
+
+            Cosmos.PartitionKey? result = await mockContainer.Object.EnsureIdGetAppendedToPartitionKeyIfNeededAsync(
+                originalPk,
+                "item123",
+                CancellationToken.None);
+
+            Assert.IsNotNull(result);
+
+            Cosmos.PartitionKey expected = new PartitionKeyBuilder()
+                .Add("tenant1")
+                .Add("item123")
+                .Build();
+            Assert.AreEqual(expected.ToString(), result.Value.ToString());
+        }
+
+        [TestMethod]
+        public async Task EnsureIdGetAppended_PartitionKeyWithWrongComponentCount_ReturnsOriginalPartitionKey()
+        {
+            ContainerProperties containerProperties = new ContainerProperties()
+            {
+                Id = "myContainer",
+                PartitionKey = new PartitionKeyDefinition()
+                {
+                    Paths = new Collection<string> { "/tenantId", "/category", "/id" },
+                    Kind = PartitionKind.MultiHash
+                }
+            };
+
+            Mock<ContainerInternal> mockContainer = CosmosItemUnitTests.CreateMockContainerWithProperties(containerProperties);
+
+            Cosmos.PartitionKey originalPk = new PartitionKeyBuilder().Add("tenant1").Build();
+
+            Cosmos.PartitionKey? result = await mockContainer.Object.EnsureIdGetAppendedToPartitionKeyIfNeededAsync(
+                originalPk,
+                "item123",
+                CancellationToken.None);
+
+            Assert.IsNotNull(result);
+            Assert.AreEqual(originalPk.ToString(), result.Value.ToString());
+        }
+
+        [TestMethod]
+        public async Task EnsureIdGetAppended_NullPartitionKey_CreatesPartitionKeyWithId()
+        {
+            ContainerProperties containerProperties = new ContainerProperties()
+            {
+                Id = "myContainer",
+                PartitionKey = new PartitionKeyDefinition()
+                {
+                    Paths = new Collection<string> { "/tenantId", "/id" },
+                    Kind = PartitionKind.MultiHash
+                }
+            };
+
+            Mock<ContainerInternal> mockContainer = CosmosItemUnitTests.CreateMockContainerWithProperties(containerProperties);
+
+            Cosmos.PartitionKey? result = await mockContainer.Object.EnsureIdGetAppendedToPartitionKeyIfNeededAsync(
+                null,
+                "item123",
+                CancellationToken.None);
+
+            Assert.IsNotNull(result);
+
+            Cosmos.PartitionKey expected = new PartitionKeyBuilder().AddNullValue().Add("item123").Build();
+            Assert.AreEqual(expected.ToString(), result.Value.ToString());
+        }
+
+        [TestMethod]
+        public async Task EnsureIdGetAppended_ThreeLevelHPK_AppendsIdCorrectly()
+        {
+            ContainerProperties containerProperties = new ContainerProperties()
+            {
+                Id = "myContainer",
+                PartitionKey = new PartitionKeyDefinition()
+                {
+                    Paths = new Collection<string> { "/tenantId", "/category", "/id" },
+                    Kind = PartitionKind.MultiHash
+                }
+            };
+
+            Mock<ContainerInternal> mockContainer = CosmosItemUnitTests.CreateMockContainerWithProperties(containerProperties);
+
+            Cosmos.PartitionKey originalPk = new PartitionKeyBuilder()
+                .Add("tenant1")
+                .Add("catA")
+                .Build();
+
+            Cosmos.PartitionKey? result = await mockContainer.Object.EnsureIdGetAppendedToPartitionKeyIfNeededAsync(
+                originalPk,
+                "item456",
+                CancellationToken.None);
+
+            Assert.IsNotNull(result);
+
+            Cosmos.PartitionKey expected = new PartitionKeyBuilder()
+                .Add("tenant1")
+                .Add("catA")
+                .Add("item456")
+                .Build();
+            Assert.AreEqual(expected.ToString(), result.Value.ToString());
+        }
+
+        [TestMethod]
+        public async Task EnsureIdGetAppended_PartitionKeyAlreadyHasAllComponents_ReturnsOriginalPartitionKey()
+        {
+            ContainerProperties containerProperties = new ContainerProperties()
+            {
+                Id = "myContainer",
+                PartitionKey = new PartitionKeyDefinition()
+                {
+                    Paths = new Collection<string> { "/tenantId", "/id" },
+                    Kind = PartitionKind.MultiHash
+                }
+            };
+
+            Mock<ContainerInternal> mockContainer = CosmosItemUnitTests.CreateMockContainerWithProperties(containerProperties);
+
+            Cosmos.PartitionKey originalPk = new PartitionKeyBuilder()
+                .Add("tenant1")
+                .Add("item123")
+                .Build();
+
+            Cosmos.PartitionKey? result = await mockContainer.Object.EnsureIdGetAppendedToPartitionKeyIfNeededAsync(
+                originalPk,
+                "item123",
+                CancellationToken.None);
+
+            Assert.IsNotNull(result);
+            Assert.AreEqual(originalPk.ToString(), result.Value.ToString());
+        }
+
+        [TestMethod]
+        public async Task GetItemIdFromStream_NullItemId_MultiHashWithIdPath_ExtractsIdFromSeekableStream()
+        {
+            ContainerProperties containerProperties = new ContainerProperties()
+            {
+                Id = "myContainer",
+                PartitionKey = new PartitionKeyDefinition()
+                {
+                    Paths = new Collection<string> { "/tenantId", "/id" },
+                    Kind = PartitionKind.MultiHash
+                }
+            };
+
+            Mock<ContainerInternal> mockContainer = CosmosItemUnitTests.CreateMockContainerWithProperties(containerProperties);
+
+            string json = JsonConvert.SerializeObject(new { id = "myItemId", tenantId = "tenant1" });
+            using Stream stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(json));
+            long originalPosition = stream.Position;
+
+            (string resultId, Stream resultStream) = await mockContainer.Object.GetItemIdFromStreamIfRequiredAsync(
+                null,
+                stream,
+                CancellationToken.None);
+
+            Assert.AreEqual("myItemId", resultId);
+            Assert.AreSame(stream, resultStream);
+            Assert.AreEqual(originalPosition, resultStream.Position, "Stream position should be restored after reading");
+        }
+
+        [TestMethod]
+        public async Task GetItemIdFromStream_NullItemId_MultiHashWithIdPath_ExtractsIdFromNonSeekableStream()
+        {
+            ContainerProperties containerProperties = new ContainerProperties()
+            {
+                Id = "myContainer",
+                PartitionKey = new PartitionKeyDefinition()
+                {
+                    Paths = new Collection<string> { "/tenantId", "/id" },
+                    Kind = PartitionKind.MultiHash
+                }
+            };
+
+            Mock<ContainerInternal> mockContainer = CosmosItemUnitTests.CreateMockContainerWithProperties(containerProperties);
+
+            string json = JsonConvert.SerializeObject(new { id = "myItemId", tenantId = "tenant1" });
+            byte[] jsonBytes = System.Text.Encoding.UTF8.GetBytes(json);
+
+            MemoryStream compressed = new MemoryStream();
+            using (GZipStream gzip = new GZipStream(compressed, CompressionMode.Compress, leaveOpen: true))
+            {
+                gzip.Write(jsonBytes, 0, jsonBytes.Length);
+            }
+            compressed.Position = 0;
+
+            using GZipStream nonSeekableStream = new GZipStream(compressed, CompressionMode.Decompress);
+            Assert.IsFalse(nonSeekableStream.CanSeek);
+
+            (string resultId, Stream resultStream) = await mockContainer.Object.GetItemIdFromStreamIfRequiredAsync(
+                null,
+                nonSeekableStream,
+                CancellationToken.None);
+
+            Assert.AreEqual("myItemId", resultId);
+            Assert.IsNotNull(resultStream);
+            Assert.IsTrue(resultStream.CanSeek, "Non-seekable stream should be replaced with a seekable MemoryStream");
+        }
+
+        [TestMethod]
+        public async Task GetItemIdFromStream_NonMultiHashPartitionKey_ReturnsOriginalItemIdAndStream()
+        {
+            ContainerProperties containerProperties = new ContainerProperties("myContainer", "/pk");
+
+            Mock<ContainerInternal> mockContainer = CosmosItemUnitTests.CreateMockContainerWithProperties(containerProperties);
+
+            string json = JsonConvert.SerializeObject(new { id = "myItemId", pk = "pkValue" });
+            using Stream stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(json));
+
+            (string resultId, Stream resultStream) = await mockContainer.Object.GetItemIdFromStreamIfRequiredAsync(
+                null,
+                stream,
+                CancellationToken.None);
+
+            Assert.IsNull(resultId);
+            Assert.AreSame(stream, resultStream);
+        }
+
+        [TestMethod]
+        public async Task GetItemIdFromStream_ItemIdAlreadyProvided_ReturnsProvidedIdWithoutReadingStream()
+        {
+            ContainerProperties containerProperties = new ContainerProperties()
+            {
+                Id = "myContainer",
+                PartitionKey = new PartitionKeyDefinition()
+                {
+                    Paths = new Collection<string> { "/tenantId", "/id" },
+                    Kind = PartitionKind.MultiHash
+                }
+            };
+
+            Mock<ContainerInternal> mockContainer = CosmosItemUnitTests.CreateMockContainerWithProperties(containerProperties);
+
+            string json = JsonConvert.SerializeObject(new { id = "streamId", tenantId = "tenant1" });
+            using Stream stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(json));
+
+            (string resultId, Stream resultStream) = await mockContainer.Object.GetItemIdFromStreamIfRequiredAsync(
+                "existingId",
+                stream,
+                CancellationToken.None);
+
+            Assert.AreEqual("existingId", resultId);
+            Assert.AreSame(stream, resultStream);
+        }
+
+        [TestMethod]
+        public async Task GetItemIdFromStream_StreamWithNoIdField_ReturnsNullId()
+        {
+            ContainerProperties containerProperties = new ContainerProperties()
+            {
+                Id = "myContainer",
+                PartitionKey = new PartitionKeyDefinition()
+                {
+                    Paths = new Collection<string> { "/tenantId", "/id" },
+                    Kind = PartitionKind.MultiHash
+                }
+            };
+
+            Mock<ContainerInternal> mockContainer = CosmosItemUnitTests.CreateMockContainerWithProperties(containerProperties);
+
+            string json = JsonConvert.SerializeObject(new { tenantId = "tenant1", name = "test" });
+            using Stream stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(json));
+
+            (string resultId, Stream resultStream) = await mockContainer.Object.GetItemIdFromStreamIfRequiredAsync(
+                null,
+                stream,
+                CancellationToken.None);
+
+            Assert.IsNull(resultId);
+            Assert.IsNotNull(resultStream);
         }
     }
 }

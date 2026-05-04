@@ -238,6 +238,10 @@ namespace Microsoft.Azure.Cosmos
                 trace: trace,
                 cancellationToken: cancellationToken);
             PartitionKeyDefinition partitionKeyDefinition = cachedContainerPropertiesAsync?.PartitionKey;
+
+            operation.PartitionKey = await this.cosmosContainer.EnsureIdGetAppendedToPartitionKeyIfNeededAsync(
+                operation.PartitionKey, operation.Id, cancellationToken);
+
             CollectionRoutingMap collectionRoutingMap = await this.cosmosContainer.GetRoutingMapAsync(cancellationToken);
 
             Debug.Assert(operation.RequestOptions?.Properties?.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKeyString, out object _) == null, "EPK is not supported");
