@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             IDocumentClientRetryPolicy retryPolicyInstance = new ClearingSessionContainerClientRetryPolicy(
                 this.sessionContainer, this.retryPolicy.GetRequestPolicy());
             return TaskHelper.RunInlineIfNeededAsync(
-                () => MetadataRetryHelper.ExecuteAsync(
+                () => MetadataDetachedExecutor.ExecuteAsync(
                       (ct) => this.ReadCollectionAsync(
                           PathsHelper.GeneratePath(ResourceType.Collection, collectionRid, false),
                           retryPolicyInstance,
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             IDocumentClientRetryPolicy retryPolicyInstance = new ClearingSessionContainerClientRetryPolicy(
                 this.sessionContainer, this.retryPolicy.GetRequestPolicy());
             return TaskHelper.RunInlineIfNeededAsync(
-                () => MetadataRetryHelper.ExecuteAsync(
+                () => MetadataDetachedExecutor.ExecuteAsync(
                     (ct) => this.ReadCollectionAsync(
                         resourceAddress, retryPolicyInstance, trace, clientSideRequestStatistics, ct),
                     retryPolicyInstance,
