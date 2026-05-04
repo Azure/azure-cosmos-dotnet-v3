@@ -575,6 +575,30 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
+        private static void ParseRegionProximityFromAdditionalProperties(AccountProperties databaseAccount)
+        {
+            if (databaseAccount?.AdditionalProperties != null
+                && databaseAccount.AdditionalProperties.TryGetValue("regionProximity", out JToken proximityToken)
+                && proximityToken is JArray proximityArray)
+            {
+                databaseAccount.RegionProximityInternal = ParseRegionProximityArray(proximityArray);
+            }
+        }
+
+        private static Collection<string> ParseRegionProximityArray(JArray array)
+        {
+            Collection<string> result = new Collection<string>();
+            foreach (JToken token in array)
+            {
+                string? region = token?.ToString();
+                if (!string.IsNullOrEmpty(region))
+                {
+                    result.Add(region!);
+                }
+            }
+            return result;
+        }
+
         private static Collection<AccountRegion> ParseAccountRegionArray(JArray array)
         {
             Collection<AccountRegion> result = new Collection<AccountRegion>();
@@ -613,6 +637,16 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
 
             GlobalEndpointManager.ParseThinClientLocationsFromAdditionalProperties(databaseAccount);
+            GlobalEndpointManager.ParseRegionProximityFromAdditionalProperties(databaseAccount);
+
+            this.connectionPolicy.SetRegionProximity(databaseAccount.RegionProximityInternal);
+
+            // Phase 2: override bootstrap PreferredLocations with server-provided proximity ordering
+            if (!string.IsNullOrEmpty(this.connectionPolicy.CurrentLocation)
+                && this.connectionPolicy.RegionProximity.Count > 0)
+            {
+                this.connectionPolicy.SetPreferredLocations(this.connectionPolicy.RegionProximity);
+            }
 
             this.locationCache.OnDatabaseAccountRead(databaseAccount);
 
@@ -723,6 +757,17 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         private Task<AccountProperties> GetDatabaseAccountAsync(Uri serviceEndpoint)
         {
+            if (!string.IsNullOrEmpty(this.connectionPolicy.CurrentLocation))
+            {
+                string sanitizedRegion = GatewayAccountReader.SanitizeRegionName(this.connectionPolicy.CurrentLocation);
+                if (!string.IsNullOrEmpty(sanitizedRegion))
+                {
+                    serviceEndpoint = GatewayAccountReader.AppendQueryParameter(
+                        serviceEndpoint,
+                        Constants.RegionProximity.SourceRegionQueryParam,
+                        sanitizedRegion);
+                }
+            }
             return this.owner.GetDatabaseAccountInternalAsync(serviceEndpoint, this.cancellationTokenSource.Token);
         }
 
@@ -777,6 +822,16 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
 
                 GlobalEndpointManager.ParseThinClientLocationsFromAdditionalProperties(accountProperties);
+                GlobalEndpointManager.ParseRegionProximityFromAdditionalProperties(accountProperties);
+
+                this.connectionPolicy.SetRegionProximity(accountProperties.RegionProximityInternal);
+
+                // Phase 2: override bootstrap PreferredLocations with server-provided proximity ordering
+                if (!string.IsNullOrEmpty(this.connectionPolicy.CurrentLocation)
+                    && this.connectionPolicy.RegionProximity.Count > 0)
+                {
+                    this.connectionPolicy.SetPreferredLocations(this.connectionPolicy.RegionProximity);
+                }
 
                 this.locationCache.OnDatabaseAccountRead(accountProperties);
 
