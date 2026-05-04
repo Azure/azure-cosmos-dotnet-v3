@@ -157,6 +157,11 @@ namespace Microsoft.Azure.Cosmos
 
                     HedgingResponse hedgeResponse = null;
 
+                    // Inject a shared CrossRegionAvailabilityContext into Properties before the clone loop.
+                    // RequestMessage.Clone() shallow-copies Properties, so all hedged clones share the same
+                    // context instance — enabling hub region header propagation across hedged requests.
+                    request.Properties[CrossRegionAvailabilityContext.PropertyKey] = new CrossRegionAvailabilityContext();
+
                     //Send out hedged requests
                     for (int requestNumber = 0; requestNumber < hedgeRegions.Count; requestNumber++)
                     {
@@ -406,5 +411,25 @@ namespace Microsoft.Azure.Cosmos
                 this.TargetRegionName = targetRegionName;
             }
         }
+    }
+
+    /// <summary>
+    /// Mutable, thread-safe context shared across hedged request clones via the Properties dictionary.
+    /// When the primary request's ClientRetryPolicy sets the hub region flag after 2x 404/1002,
+    /// hedged requests (with their own ClientRetryPolicy instances) pick up the flag immediately.
+    /// </summary>
+    internal sealed class CrossRegionAvailabilityContext
+    {
+        /// <summary>
+        /// Well-known key used to store/retrieve this context from Properties dictionary.
+        /// </summary>
+        internal const string PropertyKey = "CrossRegionAvailabilityContext";
+
+        /// <summary>
+        /// Thread-safe flag indicating that the hub region processing header should be added.
+        /// Written by the primary request's ClientRetryPolicy after 2x 404/1002,
+        /// read by hedged request ClientRetryPolicy instances in OnBeforeSendRequest.
+        /// </summary>
+        internal volatile bool ShouldAddHubRegionProcessingOnlyHeader;
     }
 }

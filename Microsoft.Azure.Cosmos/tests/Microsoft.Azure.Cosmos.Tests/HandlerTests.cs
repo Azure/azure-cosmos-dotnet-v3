@@ -1220,5 +1220,100 @@ namespace Microsoft.Azure.Cosmos.Tests
             await invoker.SendAsync(requestMessage, new CancellationToken());
         }
 
+        [TestMethod]
+        public async Task LastCommittedWriteRegion_ThrowsForMultiMasterAccount()
+        {
+            // LastCommittedWriteRegion is only valid for single-master accounts.
+            // Multi-master accounts have no single hub region, so the strategy must be rejected.
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(accountConsistencyLevel: Cosmos.ConsistencyLevel.Session);
+
+            // Use reflection to simulate a multi-master account (UseMultipleWriteLocations = true).
+            System.Reflection.PropertyInfo prop = typeof(DocumentClient).GetProperty(
+                "UseMultipleWriteLocations",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            prop.SetValue(client.DocumentClient, true);
+
+            TestHandler testHandler = new TestHandler((request, cancellationToken) =>
+            {
+                Assert.Fail("Request should not reach the handler — validation must throw before this.");
+                return TestHandler.ReturnSuccess();
+            });
+
+            RequestInvokerHandler invoker = new RequestInvokerHandler(
+                client,
+                requestedClientConsistencyLevel: null,
+                requestedClientReadConsistencyStrategy: null,
+                requestedClientPriorityLevel: null,
+                requestedClientThroughputBucket: null)
+            {
+                InnerHandler = testHandler
+            };
+
+            RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"))
+            {
+                ResourceType = ResourceType.Document
+            };
+            requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
+            requestMessage.OperationType = OperationType.Read;
+            requestMessage.RequestOptions = new ItemRequestOptions
+            {
+                ReadConsistencyStrategy = Cosmos.ReadConsistencyStrategy.LastCommittedWriteRegion
+            };
+
+            ArgumentException ex = await Assert.ThrowsExceptionAsync<ArgumentException>(
+                () => invoker.SendAsync(requestMessage, new CancellationToken()));
+
+            Assert.IsTrue(ex.Message.Contains("multi-master"),
+                $"Exception message should mention multi-master, got: {ex.Message}");
+            Assert.IsTrue(ex.Message.Contains("LastCommittedWriteRegion"),
+                $"Exception message should mention LastCommittedWriteRegion, got: {ex.Message}");
+        }
+
+        [TestMethod]
+        public async Task OtherStrategies_AllowedForMultiMasterAccount()
+        {
+            // Non-LastCommittedWriteRegion strategies should work fine with multi-master accounts.
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(accountConsistencyLevel: Cosmos.ConsistencyLevel.Session);
+
+            System.Reflection.PropertyInfo prop = typeof(DocumentClient).GetProperty(
+                "UseMultipleWriteLocations",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            prop.SetValue(client.DocumentClient, true);
+
+            TestHandler testHandler = new TestHandler((request, cancellationToken) =>
+            {
+                Assert.AreEqual(
+                    Cosmos.ReadConsistencyStrategy.Session.ToString(),
+                    request.Headers[HttpConstants.HttpHeaders.ReadConsistencyStrategy]);
+                Assert.IsNull(request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion],
+                    "Hub region header should not be set for Session strategy");
+                return TestHandler.ReturnSuccess();
+            });
+
+            RequestInvokerHandler invoker = new RequestInvokerHandler(
+                client,
+                requestedClientConsistencyLevel: null,
+                requestedClientReadConsistencyStrategy: null,
+                requestedClientPriorityLevel: null,
+                requestedClientThroughputBucket: null)
+            {
+                InnerHandler = testHandler
+            };
+
+            RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"))
+            {
+                ResourceType = ResourceType.Document
+            };
+            requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
+            requestMessage.OperationType = OperationType.Read;
+            requestMessage.RequestOptions = new ItemRequestOptions
+            {
+                ReadConsistencyStrategy = Cosmos.ReadConsistencyStrategy.Session
+            };
+
+            // Should NOT throw — Session strategy is fine for multi-master
+            await invoker.SendAsync(requestMessage, new CancellationToken());
+        }
+
     }
 }

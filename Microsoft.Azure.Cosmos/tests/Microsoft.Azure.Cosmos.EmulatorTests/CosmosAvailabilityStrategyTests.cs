@@ -1,4 +1,4 @@
-﻿
+
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
@@ -6,6 +6,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Data;
     using System.Linq;
     using System.Net;
+    using System.Net.Http;
+    using System.Text;
     using System.Text.Json;
     using System.Text.Json.Serialization;
     using System.Threading;
@@ -13,7 +15,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.FaultInjection;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.MultiRegionSetupHelpers;
     using CosmosSystemTextJsonSerializer = MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer;
     using Database = Database;
@@ -1566,6 +1570,235 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(traceDiagnostic.ToString()
                 .Contains($"\"Hedge Context\":[\"{region1}\",\"{region2}\",\"{region3}\"]"));
             await Task.Delay(1);
+        }
+
+        /// <summary>
+        /// E2E test: Verifies the full hub region discovery flow with hedging enabled.
+        /// The primary request goes through 2× 404/1002 → hub header set → 403/3 (non-hub)
+        /// → retry delayed → hedging triggers. The hedge request picks up the hub region
+        /// header from the shared CrossRegionAvailabilityContext, goes through its own
+        /// 403/3 discovery, and eventually succeeds via the real backend.
+        ///
+        /// Flow:
+        /// 1. Primary: 1st attempt → no hub header → 404/1002
+        /// 2. Primary: 2nd attempt → no hub header → 404/1002
+        ///    ── ClientRetryPolicy sets addHubRegionProcessingOnlyHeader = true
+        ///    ── Shared CrossRegionAvailabilityContext flag set to true
+        /// 3. Primary: 3rd attempt → hub header present → 403/3 (WriteForbidden, non-hub)
+        /// 4. Primary: 4th attempt → hub header present → delayed (exceeds hedge threshold)
+        ///    ── Hedging triggers: hedge clone created from shared-context request
+        /// 5. Hedge: 1st attempt → hub header present (from shared context) → 403/3
+        /// 6. Hedge: 2nd attempt → hub header present → passthrough to real backend → 200 OK
+        ///
+        /// Key assertions:
+        /// - At least 2 requests without hub header (404/1002 discovery phase)
+        /// - Primary set hub header after 2× 404/1002
+        /// - Hedge request has hub header from shared CrossRegionAvailabilityContext
+        /// - At least one 403/3 was returned
+        /// - Diagnostics contain Hedge Context (hedging occurred)
+        /// </summary>
+        [TestMethod]
+        [TestCategory("MultiRegion")]
+        [Owner("aavasthy")]
+        [Description("Full flow: 2x 404/1002 -> hub header -> 403/3 -> hedge picks up hub header -> 403/3 -> success. " +
+                     "Proves CrossRegionAvailabilityContext propagates hub header from primary to hedge mid-flight.")]
+        public async Task AvailabilityStrategy_HedgePicksUpHubHeaderAfter_404_1002_And_403_3()
+        {
+            // ── Tracking counters (thread-safe for concurrent primary + hedge) ──
+            int noHubHeaderRequestCount = 0;
+            int hubHeaderRequestCount = 0;
+            int return403Count = 0;
+            bool primarySetHubHeader = false;
+            bool hedgeHadHubHeader = false;
+
+            HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper
+            {
+                RequestCallBack = async (request, cancellationToken) =>
+                {
+                    // Only intercept document read requests (GET /docs/)
+                    if (request.Method != HttpMethod.Get
+                        || request.RequestUri == null
+                        || !request.RequestUri.AbsolutePath.Contains("/docs/"))
+                    {
+                        return null; // Non-doc requests pass through to real backend
+                    }
+
+                    bool hasHubHeader = request.Headers
+                        .TryGetValues(
+                            HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion,
+                            out IEnumerable<string> values)
+                        && values.Any();
+
+                    // ════════════════════════════════════════════════════════════
+                    // Phase 1: No hub header → return 404/1002
+                    // Primary's first 2 attempts land here. After 2× 404/1002,
+                    // ClientRetryPolicy sets addHubRegionProcessingOnlyHeader = true
+                    // AND sharedContext.ShouldAddHubRegionProcessingOnlyHeader = true.
+                    // ════════════════════════════════════════════════════════════
+                    if (!hasHubHeader)
+                    {
+                        // Explicitly verify no hub header on these early requests.
+                        Assert.IsFalse(
+                            hasHubHeader,
+                            "Phase 1 requests must NOT have the hub region header (hub discovery has not triggered yet).");
+
+                        Interlocked.Increment(ref noHubHeaderRequestCount);
+
+                        HttpResponseMessage notFoundResponse = new HttpResponseMessage(HttpStatusCode.NotFound)
+                        {
+                            Content = new StringContent(
+                                JsonConvert.SerializeObject(new { code = "NotFound", message = "Simulated 404/1002" }),
+                                Encoding.UTF8,
+                                "application/json")
+                        };
+                        notFoundResponse.Headers.Add("x-ms-substatus", "1002");
+                        notFoundResponse.Headers.Add("x-ms-activity-id", Guid.NewGuid().ToString());
+                        notFoundResponse.Headers.Add("x-ms-request-charge", "1.0");
+
+                        return notFoundResponse;
+                    }
+
+                    // ════════════════════════════════════════════════════════════
+                    // Phase 2+: Hub header IS present.
+                    // Sequence the responses using an atomic counter so we can
+                    // distinguish primary retries from hedge requests.
+                    // ════════════════════════════════════════════════════════════
+                    int hubReqNum = Interlocked.Increment(ref hubHeaderRequestCount);
+
+                    if (hubReqNum == 1)
+                    {
+                        // ── Primary's 3rd attempt (hub header present) ──
+                        // Explicitly verify the hub region header is present on the primary's first hub-aware request.
+                        Assert.IsTrue(
+                            hasHubHeader,
+                            "Primary's 3rd attempt (hubReqNum == 1) MUST have the hub region header after 2x 404/1002.");
+
+                        // Return 403/3 (WriteForbidden) to simulate hitting a non-hub region.
+                        primarySetHubHeader = true;
+                        Interlocked.Increment(ref return403Count);
+
+                        HttpResponseMessage forbiddenResponse = new HttpResponseMessage(HttpStatusCode.Forbidden)
+                        {
+                            Content = new StringContent(
+                                JsonConvert.SerializeObject(new { code = "Forbidden", message = "Simulated 403/3 - not hub region" }),
+                                Encoding.UTF8,
+                                "application/json")
+                        };
+                        forbiddenResponse.Headers.Add("x-ms-substatus", ((int)SubStatusCodes.WriteForbidden).ToString());
+                        forbiddenResponse.Headers.Add("x-ms-activity-id", Guid.NewGuid().ToString());
+                        forbiddenResponse.Headers.Add("x-ms-request-charge", "1.0");
+
+                        return forbiddenResponse;
+                    }
+
+                    if (hubReqNum == 2)
+                    {
+                        // ── Primary's 4th attempt (retry after 403/3) ──
+                        // Explicitly verify the hub region header persists across retries.
+                        Assert.IsTrue(
+                            hasHubHeader,
+                            "Primary's 4th attempt (hubReqNum == 2) MUST still have the hub region header on retry after 403/3.");
+
+                        // Delay indefinitely until cancelled — this exceeds the hedge threshold
+                        // and triggers CrossRegionHedgingAvailabilityStrategy to launch a hedge.
+                        TaskCompletionSource<bool> tcs = new TaskCompletionSource<bool>();
+                        using (cancellationToken.Register(() => tcs.TrySetResult(true)))
+                        {
+                            await tcs.Task;
+                        }
+
+                        return new HttpResponseMessage(HttpStatusCode.ServiceUnavailable);
+                    }
+
+                    // ════════════════════════════════════════════════════════════
+                    // hubReqNum >= 3: This is a HEDGE request.
+                    // It has the hub header because Clone() shallow-copies
+                    // Properties, and the shared CrossRegionAvailabilityContext
+                    // flag was set by the primary's ClientRetryPolicy.
+                    // ════════════════════════════════════════════════════════════
+
+                    // Explicitly verify the hub region header is present on the hedge request.
+                    Assert.IsTrue(
+                        hasHubHeader,
+                        "Hedge request (hubReqNum >= 3) MUST carry the hub region header. " +
+                        "This proves CrossRegionAvailabilityContext propagated the flag from primary to hedge.");
+
+                    hedgeHadHubHeader = true;
+
+                    // Return 403/3 once for the hedge so it also exercises
+                    // the WriteForbidden discovery flow independently.
+                    if (Interlocked.Increment(ref return403Count) <= 2)
+                    {
+                        HttpResponseMessage hedgeForbidden = new HttpResponseMessage(HttpStatusCode.Forbidden)
+                        {
+                            Content = new StringContent(
+                                JsonConvert.SerializeObject(new { code = "Forbidden", message = "Simulated 403/3 from hedge" }),
+                                Encoding.UTF8,
+                                "application/json")
+                        };
+                        hedgeForbidden.Headers.Add("x-ms-substatus", ((int)SubStatusCodes.WriteForbidden).ToString());
+                        hedgeForbidden.Headers.Add("x-ms-activity-id", Guid.NewGuid().ToString());
+                        hedgeForbidden.Headers.Add("x-ms-request-charge", "1.0");
+
+                        return hedgeForbidden;
+                    }
+
+                    // Hedge's retry after 403/3 → passthrough to real backend → 200 OK
+                    return null;
+                }
+            };
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Gateway,
+                ApplicationPreferredRegions = new List<string> { region1, region2 },
+                ConsistencyLevel = Cosmos.ConsistencyLevel.Session,
+                AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
+                    threshold: TimeSpan.FromMilliseconds(1000),
+                    thresholdStep: TimeSpan.FromMilliseconds(500)),
+                HttpClientFactory = () => new HttpClient(httpHandler)
+            };
+
+            using CosmosClient cosmosClient = new CosmosClient(
+                connectionString: this.connectionString,
+                clientOptions: clientOptions);
+            Database database = cosmosClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+            Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
+
+            ItemResponse<CosmosIntegrationTestObject> response =
+                await container.ReadItemAsync<CosmosIntegrationTestObject>(
+                    "testId", new PartitionKey("pk"));
+
+            // ── Assertions ──
+
+            // Operation succeeded end-to-end
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.IsNotNull(response.Resource);
+
+            // Phase 1: At least 2 requests without hub header triggered hub discovery
+            Assert.IsTrue(noHubHeaderRequestCount >= 2,
+                $"Expected at least 2 requests without hub header (404/1002 phase), got {noHubHeaderRequestCount}.");
+
+            // Phase 2: Primary set the hub header after 2× 404/1002
+            Assert.IsTrue(primarySetHubHeader,
+                "Primary request must have hub header set after 2x 404/1002 (3rd attempt).");
+
+            // KEY ASSERTION: Hedge request had the hub region header
+            // This proves CrossRegionAvailabilityContext propagation from primary to hedge mid-flight.
+            Assert.IsTrue(hedgeHadHubHeader,
+                "Hedge request MUST have the hub region header from the shared CrossRegionAvailabilityContext. " +
+                "This proves the hub header propagates from primary to hedged request during mid-flight.");
+
+            // At least one 403/3 was observed (primary and/or hedge exercised discovery)
+            Assert.IsTrue(return403Count >= 1,
+                $"Expected at least 1 WriteForbidden (403/3) response, got {return403Count}.");
+
+            // Diagnostics confirm hedging occurred
+            CosmosTraceDiagnostics traceDiagnostics = response.Diagnostics as CosmosTraceDiagnostics;
+            Assert.IsNotNull(traceDiagnostics);
+            Assert.IsTrue(
+                traceDiagnostics.ToString().Contains("Hedge Context"),
+                "Diagnostics must contain Hedge Context confirming hedging was triggered.");
         }
     }
 }

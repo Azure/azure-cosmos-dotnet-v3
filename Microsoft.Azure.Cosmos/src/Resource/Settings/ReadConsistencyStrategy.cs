@@ -51,6 +51,12 @@ namespace Microsoft.Azure.Cosmos
         GlobalStrong = 4,
 
         /// <summary>
+        /// This strategy is designed for single-master accounts only.
+        /// In single-master accounts, each physical partition has a designated hub (primary) replica
+        /// in the write region. When a read encounters a 404/1002 (ReadSessionNotAvailable), the SDK
+        /// retries by routing the request to the partition-set level hub region using the
+        /// <c>x-ms-cosmos-hub-region-processing-only</c> header. If the hub replica is in a different
+        /// region than expected (403/3 WriteForbidden), the SDK discovers and retries on the actual hub.
         /// Returns the latest committed version from the hub (write) region, ensuring reads
         /// reflect the most recent writes regardless of which region the client is connected to.
         /// </summary>
