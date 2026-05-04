@@ -35,9 +35,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 return Task.CompletedTask;
             }
 
+            Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
+            leaseStoreManager.Setup(l => l.LeaseContainer).Returns(Mock.Of<DocumentServiceLeaseContainer>);
+
             ChangeFeedEstimatorRunner estimator = ChangeFeedEstimatorRunnerTests.CreateEstimator(estimationDelegate, out Mock<ChangeFeedEstimator> remainingWorkEstimator);
             estimator.ApplyBuildConfiguration(
-                Mock.Of<DocumentServiceLeaseStoreManager>(),
+                leaseStoreManager.Object,
                 null,
                 "instanceName",
                 new ChangeFeedLeaseOptions(),
@@ -99,6 +102,28 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 new ChangeFeedLeaseOptions(),
                 new ChangeFeedProcessorOptions(),
                 null);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public void ApplyBuildConfiguration_ValidatesCustomStoreWithNullLeaseContainer()
+        {
+            static Task estimationDelegate(long estimation, CancellationToken token)
+            {
+                return Task.CompletedTask;
+            }
+
+            Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
+            leaseStoreManager.Setup(l => l.LeaseContainer).Returns((DocumentServiceLeaseContainer)null);
+
+            ChangeFeedEstimatorRunner estimator = ChangeFeedEstimatorRunnerTests.CreateEstimator(estimationDelegate, out Mock<ChangeFeedEstimator> remainingWorkEstimator);
+            estimator.ApplyBuildConfiguration(
+                leaseStoreManager.Object,
+                null,
+                "instanceName",
+                new ChangeFeedLeaseOptions(),
+                new ChangeFeedProcessorOptions(),
+                ChangeFeedEstimatorRunnerTests.GetMockedContainer("monitored"));
         }
 
         [TestMethod]
@@ -255,6 +280,45 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 {
                     await estimator.StopAsync();
                 }
+            }
+        }
+
+        [TestMethod]
+        public async Task StartAsync_WithInMemoryLeaseContainer_BuildsEstimatorSuccessfully()
+        {
+            static Task estimationDelegate(long estimation, CancellationToken token)
+            {
+                return Task.CompletedTask;
+            }
+
+            Mock<DocumentServiceLeaseContainer> mockLeaseContainer = new Mock<DocumentServiceLeaseContainer>();
+            mockLeaseContainer
+                .Setup(c => c.GetAllLeasesAsync())
+                .ReturnsAsync(new List<DocumentServiceLease>());
+
+            Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
+            leaseStoreManager.Setup(l => l.LeaseContainer).Returns(mockLeaseContainer.Object);
+            leaseStoreManager.Setup(l => l.LeaseManager).Returns(Mock.Of<DocumentServiceLeaseManager>);
+            leaseStoreManager.Setup(l => l.LeaseStore).Returns(Mock.Of<DocumentServiceLeaseStore>);
+            leaseStoreManager.Setup(l => l.LeaseCheckpointer).Returns(Mock.Of<DocumentServiceLeaseCheckpointer>);
+
+            // Create estimator WITHOUT pre-injected remainingWorkEstimator to exercise BuildFeedEstimatorRunner
+            ChangeFeedEstimatorRunner estimator = new ChangeFeedEstimatorRunner(estimationDelegate, TimeSpan.FromSeconds(5));
+            estimator.ApplyBuildConfiguration(
+                leaseStoreManager.Object,
+                null, // No physical lease container (in-memory scenario)
+                "instanceName",
+                new ChangeFeedLeaseOptions() { LeasePrefix = "estimatorTest" },
+                new ChangeFeedProcessorOptions(),
+                ChangeFeedEstimatorRunnerTests.GetMockedContainer("monitored"));
+
+            try
+            {
+                await estimator.StartAsync();
+            }
+            finally
+            {
+                await estimator.StopAsync();
             }
         }
 
