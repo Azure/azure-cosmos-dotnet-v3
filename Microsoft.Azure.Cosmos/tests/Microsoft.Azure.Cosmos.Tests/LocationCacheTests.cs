@@ -245,6 +245,13 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                                 Uri expectedEndpoint = new Uri(this.databaseAccount.WriteLocationsInternal[0].Endpoint);
                                 Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
                             }
+                            else if (retryCount == 2)
+                            {
+                                // Third request is the retry with the hub region header set.
+                                // It still routes to the write endpoint (index=0, preferred=false).
+                                Uri expectedEndpoint = new Uri(this.databaseAccount.WriteLocationsInternal[0].Endpoint);
+                                Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
+                            }
                             else
                             {
                                 Assert.Fail();
@@ -268,7 +275,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 catch (NotFoundException)
                 {
                     DefaultTrace.TraceInformation("Received expected notFoundException");
-                    Assert.AreEqual(2, retryCount);
+                    Assert.AreEqual(3, retryCount);
                 }
             }
         }
