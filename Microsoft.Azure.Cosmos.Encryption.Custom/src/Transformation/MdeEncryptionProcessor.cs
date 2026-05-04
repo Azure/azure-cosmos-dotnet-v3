@@ -153,6 +153,45 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             return input;
         }
+
+        public async Task<(Stream, DecryptionContext)> DecryptStreamAsync(
+            Stream input,
+            Encryptor encryptor,
+            EncryptionProperties properties,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            PooledMemoryStream ms = new ();
+            try
+            {
+                DecryptionContext context = await this.StreamProcessor.DecryptStreamAsync(input, ms, encryptor, properties, diagnosticsContext, cancellationToken);
+                if (context == null)
+                {
+                    // CRITICAL: Must dispose PooledMemoryStream to prevent memory leak
+                    await ms.DisposeAsync();
+                    return (input, null);
+                }
+
+                return (ms, context);  // Ownership transfers successfully
+            }
+            catch
+            {
+                // CRITICAL: Dispose PooledMemoryStream on exception to prevent memory leak
+                await ms.DisposeAsync();
+                throw;  // Rethrow to preserve original exception
+            }
+        }
+
+        public async Task<DecryptionContext> DecryptStreamAsync(
+            Stream input,
+            Stream output,
+            Encryptor encryptor,
+            EncryptionProperties properties,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            return await this.StreamProcessor.DecryptStreamAsync(input, output, encryptor, properties, diagnosticsContext, cancellationToken);
+        }
 #endif
 
         private JsonProcessor GetRequestedJsonProcessor(RequestOptions requestOptions)

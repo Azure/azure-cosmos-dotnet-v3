@@ -101,12 +101,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .CommitTransactionAsync(CancellationToken.None);
 
             using JsonDocument requestJson = JsonDocument.Parse(handler.CapturedRequestBody);
-            JsonElement ops = requestJson.RootElement.GetProperty("operations");
+            JsonElement ops = requestJson.RootElement.GetProperty(DistributedTransactionSerializer.Operations);
 
             Assert.AreEqual(3, ops.GetArrayLength());
-            Assert.AreEqual(OperationType.Create.ToString(), ops[0].GetProperty("operationType").GetString());
-            Assert.AreEqual(OperationType.Replace.ToString(), ops[1].GetProperty("operationType").GetString());
-            Assert.AreEqual(OperationType.Delete.ToString(), ops[2].GetProperty("operationType").GetString());
+            Assert.AreEqual(OperationType.Create.ToString(), ops[0].GetProperty(DistributedTransactionSerializer.OperationType).GetString());
+            Assert.AreEqual(OperationType.Replace.ToString(), ops[1].GetProperty(DistributedTransactionSerializer.OperationType).GetString());
+            Assert.AreEqual(OperationType.Delete.ToString(), ops[2].GetProperty(DistributedTransactionSerializer.OperationType).GetString());
         }
 
         [TestMethod]
@@ -127,10 +127,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .CommitTransactionAsync(CancellationToken.None);
 
             using JsonDocument requestJson = JsonDocument.Parse(handler.CapturedRequestBody);
-            JsonElement ops = requestJson.RootElement.GetProperty("operations");
+            JsonElement ops = requestJson.RootElement.GetProperty(DistributedTransactionSerializer.Operations);
 
             Assert.AreEqual(2, ops.GetArrayLength());
-            Assert.AreEqual(OperationType.Upsert.ToString(), ops[1].GetProperty("operationType").GetString());
+            Assert.AreEqual(OperationType.Upsert.ToString(), ops[1].GetProperty(DistributedTransactionSerializer.OperationType).GetString());
             Assert.AreEqual(2, response.Count);
 
             response.Dispose();
@@ -154,10 +154,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .CommitTransactionAsync(CancellationToken.None);
 
             using JsonDocument requestJson = JsonDocument.Parse(handler.CapturedRequestBody);
-            JsonElement ops = requestJson.RootElement.GetProperty("operations");
+            JsonElement ops = requestJson.RootElement.GetProperty(DistributedTransactionSerializer.Operations);
 
             Assert.AreEqual(2, ops.GetArrayLength());
-            Assert.AreEqual(OperationType.Patch.ToString(), ops[1].GetProperty("operationType").GetString());
+            Assert.AreEqual(OperationType.Patch.ToString(), ops[1].GetProperty(DistributedTransactionSerializer.OperationType).GetString());
         }
 
         [TestMethod]
@@ -184,12 +184,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .CommitTransactionAsync(CancellationToken.None);
 
             using JsonDocument requestJson = JsonDocument.Parse(handler.CapturedRequestBody);
-            JsonElement ops = requestJson.RootElement.GetProperty("operations");
+            JsonElement ops = requestJson.RootElement.GetProperty(DistributedTransactionSerializer.Operations);
 
             Assert.AreEqual(2, ops.GetArrayLength());
             Assert.AreNotEqual(
-                ops[0].GetProperty("collectionName").GetString(),
-                ops[1].GetProperty("collectionName").GetString(),
+                ops[0].GetProperty(DistributedTransactionSerializer.CollectionName).GetString(),
+                ops[1].GetProperty(DistributedTransactionSerializer.CollectionName).GetString(),
                 "Operations should reference different containers.");
             Assert.AreEqual(2, response.Count);
 
@@ -403,7 +403,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             using JsonDocument requestJson = JsonDocument.Parse(handler.CapturedRequestBody);
 
             Assert.AreEqual(JsonValueKind.Object, requestJson.RootElement.ValueKind, "Root element should be an object");
-            Assert.IsTrue(requestJson.RootElement.TryGetProperty("operations", out JsonElement operations), "operations property should exist");
+            Assert.IsTrue(requestJson.RootElement.TryGetProperty(DistributedTransactionSerializer.Operations, out JsonElement operations), "operations property should exist");
             Assert.AreEqual(JsonValueKind.Array, operations.ValueKind, "operations should be an array");
             Assert.AreEqual(3, operations.GetArrayLength(), "operations should have 3 elements");
 
@@ -414,14 +414,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 (string Property, JsonValueKind Kind)[] requiredFields =
                 {
-                    ("databaseName", JsonValueKind.String),
-                    ("collectionName", JsonValueKind.String),
-                    ("collectionResourceId", JsonValueKind.String),
-                    ("databaseResourceId", JsonValueKind.String),
-                    ("partitionKey", JsonValueKind.Array),
-                    ("index", JsonValueKind.Number),
-                    ("operationType", JsonValueKind.String),
-                    ("resourceType", JsonValueKind.String)
+                    (DistributedTransactionSerializer.DatabaseName, JsonValueKind.String),
+                    (DistributedTransactionSerializer.CollectionName, JsonValueKind.String),
+                    (DistributedTransactionSerializer.CollectionResourceId, JsonValueKind.String),
+                    (DistributedTransactionSerializer.DatabaseResourceId, JsonValueKind.String),
+                    (DistributedTransactionSerializer.PartitionKey, JsonValueKind.Array),
+                    (DistributedTransactionSerializer.Index, JsonValueKind.Number),
+                    (DistributedTransactionSerializer.OperationType, JsonValueKind.String),
+                    (DistributedTransactionSerializer.ResourceType, JsonValueKind.String)
                 };
 
                 foreach ((string property, JsonValueKind expectedKind) in requiredFields)
@@ -431,10 +431,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 (string Property, JsonValueKind Kind)[] optionalFields =
                 {
-                    ("id", JsonValueKind.String),
-                    ("resourceBody", JsonValueKind.Object),
-                    ("sessionToken", JsonValueKind.String),
-                    ("etag", JsonValueKind.String),
+                    (DistributedTransactionSerializer.Id, JsonValueKind.String),
+                    (DistributedTransactionSerializer.ResourceBody, JsonValueKind.Object),
+                    (DistributedTransactionSerializer.SessionToken, JsonValueKind.String),
+                    (DistributedTransactionSerializer.ETag, JsonValueKind.String),
                 };
 
                 foreach ((string property, JsonValueKind expectedKind) in optionalFields)
@@ -474,10 +474,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.IsTrue(response.IsSuccessStatusCode);
             using JsonDocument requestJson = JsonDocument.Parse(handler.CapturedRequestBody);
-            JsonElement operation = requestJson.RootElement.GetProperty("operations")[0];
-            Assert.IsTrue(operation.TryGetProperty("id", out JsonElement idElement), "id field should be present for replace operation");
+            JsonElement operation = requestJson.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
+            Assert.IsTrue(operation.TryGetProperty(DistributedTransactionSerializer.Id, out JsonElement idElement), "id field should be present for replace operation");
             Assert.AreEqual(doc.id, idElement.GetString());
-            Assert.IsTrue(operation.TryGetProperty("etag", out JsonElement etagElement), "etag field should be present when IfMatchEtag is set");
+            Assert.IsTrue(operation.TryGetProperty(DistributedTransactionSerializer.ETag, out JsonElement etagElement), "etag field should be present when IfMatchEtag is set");
             Assert.AreEqual(expectedEtag, etagElement.GetString());
 
             response.Dispose();
@@ -505,10 +505,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.IsTrue(response.IsSuccessStatusCode);
             using JsonDocument requestJson = JsonDocument.Parse(handler.CapturedRequestBody);
-            JsonElement operation = requestJson.RootElement.GetProperty("operations")[0];
-            Assert.IsTrue(operation.TryGetProperty("id", out JsonElement idElement), "id field should be present for delete operation");
+            JsonElement operation = requestJson.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
+            Assert.IsTrue(operation.TryGetProperty(DistributedTransactionSerializer.Id, out JsonElement idElement), "id field should be present for delete operation");
             Assert.AreEqual("delete-id", idElement.GetString());
-            Assert.IsTrue(operation.TryGetProperty("etag", out JsonElement etagElement), "etag field should be present when IfMatchEtag is set");
+            Assert.IsTrue(operation.TryGetProperty(DistributedTransactionSerializer.ETag, out JsonElement etagElement), "etag field should be present when IfMatchEtag is set");
             Assert.AreEqual(expectedEtag, etagElement.GetString());
 
             response.Dispose();
@@ -538,10 +538,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.IsTrue(response.IsSuccessStatusCode);
             using JsonDocument requestJson = JsonDocument.Parse(handler.CapturedRequestBody);
-            JsonElement operation = requestJson.RootElement.GetProperty("operations")[0];
-            Assert.IsTrue(operation.TryGetProperty("id", out JsonElement idElement), "id field should be present for patch operation");
+            JsonElement operation = requestJson.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
+            Assert.IsTrue(operation.TryGetProperty(DistributedTransactionSerializer.Id, out JsonElement idElement), "id field should be present for patch operation");
             Assert.AreEqual("patch-id", idElement.GetString());
-            Assert.IsTrue(operation.TryGetProperty("etag", out JsonElement etagElement), "etag field should be present when IfMatchEtag is set");
+            Assert.IsTrue(operation.TryGetProperty(DistributedTransactionSerializer.ETag, out JsonElement etagElement), "etag field should be present when IfMatchEtag is set");
             Assert.AreEqual(expectedEtag, etagElement.GetString());
 
             response.Dispose();
@@ -601,10 +601,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .CommitTransactionAsync(CancellationToken.None);
 
             using JsonDocument requestJson = JsonDocument.Parse(handler.CapturedRequestBody);
-            JsonElement ops = requestJson.RootElement.GetProperty("operations");
+            JsonElement ops = requestJson.RootElement.GetProperty(DistributedTransactionSerializer.Operations);
             foreach (JsonElement operation in ops.EnumerateArray())
             {
-                Assert.IsFalse(operation.TryGetProperty("etag", out _), "etag field should not be present when IfMatchEtag is not set");
+                Assert.IsFalse(operation.TryGetProperty(DistributedTransactionSerializer.ETag, out _), "etag field should not be present when IfMatchEtag is not set");
             }
 
             response.Dispose();
@@ -631,9 +631,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.IsTrue(response.IsSuccessStatusCode);
             using JsonDocument requestJson = JsonDocument.Parse(handler.CapturedRequestBody);
-            JsonElement operation = requestJson.RootElement.GetProperty("operations")[0];
-            Assert.AreEqual(OperationType.Create.ToString(), operation.GetProperty("operationType").GetString());
-            JsonElement resourceBody = operation.GetProperty("resourceBody");
+            JsonElement operation = requestJson.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
+            Assert.AreEqual(OperationType.Create.ToString(), operation.GetProperty(DistributedTransactionSerializer.OperationType).GetString());
+            JsonElement resourceBody = operation.GetProperty(DistributedTransactionSerializer.ResourceBody);
             Assert.AreEqual(JsonValueKind.Object, resourceBody.ValueKind);
             ToDoActivity actualDoc = JsonSerializer.Deserialize<ToDoActivity>(resourceBody.GetRawText());
             Assert.AreEqual(doc.id, actualDoc.id);
@@ -661,10 +661,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.IsTrue(response.IsSuccessStatusCode);
             using JsonDocument requestJson = JsonDocument.Parse(handler.CapturedRequestBody);
-            JsonElement operation = requestJson.RootElement.GetProperty("operations")[0];
-            Assert.AreEqual(OperationType.Replace.ToString(), operation.GetProperty("operationType").GetString());
-            Assert.AreEqual(doc.id, operation.GetProperty("id").GetString());
-            JsonElement resourceBody = operation.GetProperty("resourceBody");
+            JsonElement operation = requestJson.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
+            Assert.AreEqual(OperationType.Replace.ToString(), operation.GetProperty(DistributedTransactionSerializer.OperationType).GetString());
+            Assert.AreEqual(doc.id, operation.GetProperty(DistributedTransactionSerializer.Id).GetString());
+            JsonElement resourceBody = operation.GetProperty(DistributedTransactionSerializer.ResourceBody);
             Assert.AreEqual(JsonValueKind.Object, resourceBody.ValueKind);
             ToDoActivity actualDoc = JsonSerializer.Deserialize<ToDoActivity>(resourceBody.GetRawText());
             Assert.AreEqual(doc.id, actualDoc.id);
@@ -692,9 +692,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.IsTrue(response.IsSuccessStatusCode);
             using JsonDocument requestJson = JsonDocument.Parse(handler.CapturedRequestBody);
-            JsonElement operation = requestJson.RootElement.GetProperty("operations")[0];
-            Assert.AreEqual(OperationType.Patch.ToString(), operation.GetProperty("operationType").GetString());
-            Assert.AreEqual("patch-id", operation.GetProperty("id").GetString());
+            JsonElement operation = requestJson.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
+            Assert.AreEqual(OperationType.Patch.ToString(), operation.GetProperty(DistributedTransactionSerializer.OperationType).GetString());
+            Assert.AreEqual("patch-id", operation.GetProperty(DistributedTransactionSerializer.Id).GetString());
 
             response.Dispose();
         }
@@ -718,9 +718,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.IsTrue(response.IsSuccessStatusCode);
             using JsonDocument requestJson = JsonDocument.Parse(handler.CapturedRequestBody);
-            JsonElement operation = requestJson.RootElement.GetProperty("operations")[0];
-            Assert.AreEqual(OperationType.Upsert.ToString(), operation.GetProperty("operationType").GetString());
-            JsonElement resourceBody = operation.GetProperty("resourceBody");
+            JsonElement operation = requestJson.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
+            Assert.AreEqual(OperationType.Upsert.ToString(), operation.GetProperty(DistributedTransactionSerializer.OperationType).GetString());
+            JsonElement resourceBody = operation.GetProperty(DistributedTransactionSerializer.ResourceBody);
             Assert.AreEqual(JsonValueKind.Object, resourceBody.ValueKind);
             ToDoActivity actualDoc = JsonSerializer.Deserialize<ToDoActivity>(resourceBody.GetRawText());
             Assert.AreEqual(doc.id, actualDoc.id);
@@ -784,6 +784,153 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        // Read Transaction Tests
+
+        [TestMethod]
+        public async Task ValidateReadTransactionHappyPath()
+        {
+            // Arrange
+            ToDoActivity doc1 = ToDoActivity.CreateRandomToDoActivity();
+            ToDoActivity doc2 = ToDoActivity.CreateRandomToDoActivity();
+
+            DistributedTransactionMockHandler handler = new DistributedTransactionMockHandler(
+                request => Task.FromResult(this.BuildMockResponse(
+                    HttpStatusCode.OK,
+                    BuildReadSuccessResponseJson(2, JsonSerializer.Serialize(doc1), JsonSerializer.Serialize(doc2)))));
+
+            using CosmosClient client = this.CreateMockClient(handler);
+
+            // Act
+            DistributedTransactionResponse response = await client
+                .CreateDistributedReadTransaction()
+                .ReadItem(this.database.Id, this.container.Id, new PartitionKey(doc1.pk), doc1.id)
+                .ReadItem(this.database.Id, this.container.Id, new PartitionKey(doc2.pk), doc2.id)
+                .CommitTransactionAsync(CancellationToken.None);
+
+            // Assert
+            Assert.IsNotNull(handler.CapturedRequestBody);
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.IsTrue(response.IsSuccessStatusCode);
+            Assert.AreEqual(2, response.Count);
+
+            response.Dispose();
+        }
+
+        [TestMethod]
+        public async Task ValidateReadTransactionRequestStructure()
+        {
+            // Arrange
+            ToDoActivity doc = ToDoActivity.CreateRandomToDoActivity();
+
+            DistributedTransactionMockHandler handler = new DistributedTransactionMockHandler(
+                request => Task.FromResult(this.BuildMockResponse(
+                    HttpStatusCode.OK,
+                    BuildReadSuccessResponseJson(1, JsonSerializer.Serialize(doc)))));
+
+            using CosmosClient client = this.CreateMockClient(handler);
+
+            // Act
+            DistributedTransactionResponse response = await client
+                .CreateDistributedReadTransaction()
+                .ReadItem(this.database.Id, this.container.Id, new PartitionKey(doc.pk), doc.id)
+                .CommitTransactionAsync(CancellationToken.None);
+
+            // Assert – request structure
+            Assert.IsNotNull(handler.CapturedRequestBody);
+            using JsonDocument requestJson = JsonDocument.Parse(handler.CapturedRequestBody);
+            JsonElement operation = requestJson.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
+
+            Assert.AreEqual(OperationType.Read.ToString(), operation.GetProperty(DistributedTransactionSerializer.OperationType).GetString());
+            Assert.AreEqual(doc.id, operation.GetProperty(DistributedTransactionSerializer.Id).GetString());
+            Assert.IsTrue(operation.TryGetProperty(DistributedTransactionSerializer.DatabaseName, out _), "databaseName should be present");
+            Assert.IsTrue(operation.TryGetProperty(DistributedTransactionSerializer.CollectionName, out _), "collectionName should be present");
+            Assert.IsTrue(operation.TryGetProperty(DistributedTransactionSerializer.PartitionKey, out _), "partitionKey should be present");
+            Assert.IsFalse(operation.TryGetProperty(DistributedTransactionSerializer.ResourceBody, out _), "resourceBody must NOT be present for read operations");
+
+            response.Dispose();
+        }
+
+        [TestMethod]
+        public async Task ValidateReadTransactionResponseDeserialization()
+        {
+            // Arrange
+            ToDoActivity expectedDoc = ToDoActivity.CreateRandomToDoActivity();
+
+            DistributedTransactionMockHandler handler = new DistributedTransactionMockHandler(
+                request => Task.FromResult(this.BuildMockResponse(
+                    HttpStatusCode.OK,
+                    BuildReadSuccessResponseJson(1, JsonSerializer.Serialize(expectedDoc)))));
+
+            using CosmosClient client = this.CreateMockClient(handler);
+
+            // Act
+            DistributedTransactionResponse response = await client
+                .CreateDistributedReadTransaction()
+                .ReadItem(this.database.Id, this.container.Id, new PartitionKey(expectedDoc.pk), expectedDoc.id)
+                .CommitTransactionAsync(CancellationToken.None);
+
+            // Assert
+            Assert.IsTrue(response.IsSuccessStatusCode);
+            ToDoActivity actualDoc = JsonSerializer.Deserialize<ToDoActivity>(response[0].ResourceStream);
+            Assert.IsNotNull(actualDoc);
+            Assert.AreEqual(expectedDoc.id, actualDoc.id);
+            Assert.AreEqual(expectedDoc.pk, actualDoc.pk);
+            Assert.AreEqual(expectedDoc.taskNum, actualDoc.taskNum);
+
+            response.Dispose();
+        }
+
+        [TestMethod]
+        public async Task ValidateReadTransactionResourceStream()
+        {
+            // Arrange
+            ToDoActivity expectedDoc = ToDoActivity.CreateRandomToDoActivity();
+
+            DistributedTransactionMockHandler handler = new DistributedTransactionMockHandler(
+                request => Task.FromResult(this.BuildMockResponse(
+                    HttpStatusCode.OK,
+                    BuildReadSuccessResponseJson(1, JsonSerializer.Serialize(expectedDoc)))));
+
+            using CosmosClient client = this.CreateMockClient(handler);
+
+            // Act
+            DistributedTransactionResponse response = await client
+                .CreateDistributedReadTransaction()
+                .ReadItem(this.database.Id, this.container.Id, new PartitionKey(expectedDoc.pk), expectedDoc.id)
+                .CommitTransactionAsync(CancellationToken.None);
+
+            // Assert – raw stream access
+            Stream stream = response[0].ResourceStream;
+            Assert.IsNotNull(stream);
+            ToDoActivity actualDoc = JsonSerializer.Deserialize<ToDoActivity>(stream);
+            Assert.AreEqual(expectedDoc.id, actualDoc.id);
+            Assert.AreEqual(expectedDoc.pk, actualDoc.pk);
+
+            response.Dispose();
+        }
+
+        [TestMethod]
+        public void ValidateReadTransactionMissingIdThrows()
+        {
+            using CosmosClient client = this.CreateMockClient(new DistributedTransactionMockHandler(
+                request => Task.FromResult(this.BuildMockResponse(HttpStatusCode.OK, BuildSuccessResponseJson(1)))));
+
+            Assert.ThrowsException<ArgumentNullException>(() =>
+                client.CreateDistributedReadTransaction()
+                    .ReadItem(this.database.Id, this.container.Id, new PartitionKey("pk"), id: null));
+        }
+
+        [TestMethod]
+        public void ValidateReadTransactionMissingDatabaseThrows()
+        {
+            using CosmosClient client = this.CreateMockClient(new DistributedTransactionMockHandler(
+                request => Task.FromResult(this.BuildMockResponse(HttpStatusCode.OK, BuildSuccessResponseJson(1)))));
+
+            Assert.ThrowsException<ArgumentNullException>(() =>
+                client.CreateDistributedReadTransaction()
+                    .ReadItem(null, this.container.Id, new PartitionKey("pk"), "item-id"));
+        }
+
         // Helpers
 
         private void ValidateValueKind(JsonElement operation, string property, JsonValueKind expectedValueKind, int operationIndex, bool isRequired)
@@ -822,6 +969,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             for (int i = 0; i < operationCount; i++)
             {
                 results.Add($@"{{""index"":{i},""statusCode"":201,""etag"":""\""etag-{i}\""""}}");
+            }
+
+            return $@"{{""operationResponses"":[{string.Join(",", results)}]}}";
+        }
+
+        private static string BuildReadSuccessResponseJson(int operationCount, params string[] itemJsonBodies)
+        {
+            List<string> results = new List<string>();
+            for (int i = 0; i < operationCount; i++)
+            {
+                string body = i < itemJsonBodies.Length ? itemJsonBodies[i] : "{}";
+                results.Add($@"{{""index"":{i},""statusCode"":200,""etag"":""\""etag-{i}\"""",""resourceBody"":{body}}}");
             }
 
             return $@"{{""operationResponses"":[{string.Join(",", results)}]}}";

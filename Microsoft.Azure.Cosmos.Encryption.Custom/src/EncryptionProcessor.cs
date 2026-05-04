@@ -230,6 +230,54 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
         }
 
+#if NET8_0_OR_GREATER
+        public static async Task<(Stream, DecryptionContext)> DecryptStreamAsync(
+            Stream input,
+            Encryptor encryptor,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            if (input == null)
+            {
+                return (input, null);
+            }
+
+            Debug.Assert(input.CanSeek);
+            Debug.Assert(encryptor != null);
+            Debug.Assert(diagnosticsContext != null);
+            input.Position = 0;
+
+            EncryptionPropertiesWrapper properties = await PooledJsonSerializer.DeserializeFromStreamAsync<EncryptionPropertiesWrapper>(input, cancellationToken: cancellationToken);
+            input.Position = 0;
+            if (properties?.EncryptionProperties == null)
+            {
+                return (input, null);
+            }
+
+            PooledMemoryStream ms = new ();
+            try
+            {
+                DecryptionContext context = await MdeEncryptionProcessor.DecryptStreamAsync(input, ms, encryptor, properties.EncryptionProperties, diagnosticsContext, cancellationToken);
+                if (context == null)
+                {
+                    // CRITICAL: Must dispose PooledMemoryStream to prevent memory leak
+                    await ms.DisposeAsync();
+                    input.Position = 0;
+                    return (input, null);
+                }
+
+                await input.DisposeAsync();
+                return (ms, context);  // Ownership transfers successfully
+            }
+            catch
+            {
+                // CRITICAL: Dispose PooledMemoryStream on exception to prevent memory leak
+                await ms.DisposeAsync();
+                throw;  // Rethrow to preserve original exception
+            }
+        }
+#endif
+
         public static async Task<(JObject, DecryptionContext)> DecryptAsync(
             JObject document,
             Encryptor encryptor,
