@@ -11,26 +11,23 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     using System.Runtime.CompilerServices;
     using System.Text.Json;
     using System.Threading;
-    using Microsoft.IO;
 
     internal static class JsonArrayStreamSplitter
     {
         private const int DefaultBufferSize = 4096;
         private const int MaxBufferSize = 64 * 1024 * 1024;
 
-        private static readonly RecyclableMemoryStreamManager RecyclableMemoryStreamManager = new ();
-
         /// <summary>
-        /// Splits a JSON array stream into separate objects, returning each as a MemoryStream.
+        /// Splits a JSON array stream into separate objects, returning each as a Stream.
         /// </summary>
         /// <param name="jsonArrayStream">The input stream containing a Cosmos DB response object with a Documents array.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>An enumerable of MemoryStream objects, each containing a single JSON object.</returns>
+        /// <returns>An enumerable of Stream objects, each containing a single JSON object.</returns>
         /// <remarks>
-        /// Callers MUST dispose the returned MemoryStream instances once the payload is no longer needed.
+        /// Callers MUST dispose the returned Stream instances once the payload is no longer needed.
         /// </remarks>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "VSTHRD200:Use \"Async\" suffix for async methods", Justification = "The method returns IAsyncEnumerable.")]
-        public static async IAsyncEnumerable<MemoryStream> SplitIntoSubstreamsAsync(
+        public static async IAsyncEnumerable<Stream> SplitIntoSubstreamsAsync(
             Stream jsonArrayStream,
             [EnumeratorCancellation]
             CancellationToken cancellationToken = default)
@@ -41,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
 
             byte[] buffer = ArrayPool<byte>.Shared.Rent(DefaultBufferSize);
-            MemoryStream currentDocumentStream = null;
+            PooledMemoryStream currentDocumentStream = null;
 #if NETSTANDARD2_0
             byte[] pooledWriteBuffer = null;
 #endif
@@ -110,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     return;
                 }
 
-                currentDocumentStream ??= RecyclableMemoryStreamManager.GetStream(nameof(JsonArrayStreamSplitter));
+                currentDocumentStream ??= new PooledMemoryStream();
 #if NETSTANDARD2_0
                 if (pooledWriteBuffer == null || pooledWriteBuffer.Length < segment.Length)
                 {

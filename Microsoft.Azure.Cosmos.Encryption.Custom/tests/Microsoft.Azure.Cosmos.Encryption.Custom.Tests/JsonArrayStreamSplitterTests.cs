@@ -35,11 +35,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             byte[] jsonBytes = Encoding.UTF8.GetBytes(jsonArray);
             using MemoryStream inputStream = new (jsonBytes);
 
-            List<MemoryStream> results = new ();
+            List<Stream> results = new ();
 
             try
             {
-                await foreach (MemoryStream documentStream in JsonArrayStreamSplitter.SplitIntoSubstreamsAsync(inputStream, CancellationToken.None))
+                await foreach (Stream documentStream in JsonArrayStreamSplitter.SplitIntoSubstreamsAsync(inputStream, CancellationToken.None))
                 {
                     Assert.IsNotNull(documentStream);
                     results.Add(documentStream);
@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             }
             finally
             {
-                foreach (MemoryStream stream in results)
+                foreach (Stream stream in results)
                 {
                     stream?.Dispose();
                 }
@@ -97,11 +97,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             byte[] jsonBytes = Encoding.UTF8.GetBytes(jsonBuilder.ToString());
             using MemoryStream inputStream = new MemoryStream(jsonBytes);
 
-            List<MemoryStream> results = new ();
+            List<Stream> results = new ();
 
             try
             {
-                await foreach (MemoryStream documentStream in JsonArrayStreamSplitter.SplitIntoSubstreamsAsync(inputStream, CancellationToken.None))
+                await foreach (Stream documentStream in JsonArrayStreamSplitter.SplitIntoSubstreamsAsync(inputStream, CancellationToken.None))
                 {
                     Assert.IsNotNull(documentStream);
                     results.Add(documentStream);
@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             }
             finally
             {
-                foreach (MemoryStream stream in results)
+                foreach (Stream stream in results)
                 {
                     stream?.Dispose();
                 }
@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             using MemoryStream inputStream = new (Encoding.UTF8.GetBytes(jsonPayload));
 
             int documentCount = 0;
-            await foreach (MemoryStream documentStream in JsonArrayStreamSplitter.SplitIntoSubstreamsAsync(inputStream, CancellationToken.None))
+            await foreach (Stream documentStream in JsonArrayStreamSplitter.SplitIntoSubstreamsAsync(inputStream, CancellationToken.None))
             {
                 documentCount++;
                 documentStream.Dispose();
@@ -158,9 +158,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             using MemoryStream inputStream = new (Encoding.UTF8.GetBytes(jsonPayload));
             List<string> documentIds = new ();
 
-            await foreach (MemoryStream documentStream in JsonArrayStreamSplitter.SplitIntoSubstreamsAsync(inputStream, CancellationToken.None))
+            await foreach (Stream documentStream in JsonArrayStreamSplitter.SplitIntoSubstreamsAsync(inputStream, CancellationToken.None))
             {
-                using MemoryStream ownedStream = documentStream;
+                using Stream ownedStream = documentStream;
                 ownedStream.Position = 0;
                 using JsonDocument doc = JsonDocument.Parse(ownedStream);
                 documentIds.Add(doc.RootElement.GetProperty("id").GetString());
@@ -193,7 +193,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             InvalidOperationException ex = await Assert.ThrowsExceptionAsync<InvalidOperationException>(async () =>
             {
-                await foreach (MemoryStream _ in JsonArrayStreamSplitter.SplitIntoSubstreamsAsync(inputStream, CancellationToken.None))
+                await foreach (Stream _ in JsonArrayStreamSplitter.SplitIntoSubstreamsAsync(inputStream, CancellationToken.None))
                 {
                 }
             });

@@ -977,6 +977,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             Assert.IsFalse(parsed.RootElement.TryGetProperty(Constants.EncryptedInfo, out _));
         }
 
+        [TestMethod]
+        public async Task DecryptStreamAsync_IBufferWriterOverload_ThrowsOnNullArguments()
+        {
+            using MemoryStream input = new ();
+            using RentArrayBufferWriter bw = new ();
+            CosmosDiagnosticsContext diag = new ();
+            EncryptionProperties anyProps = new (EncryptionFormatVersion.Mde, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized, "k", null, System.Array.Empty<string>());
+
+            await Assert.ThrowsExceptionAsync<ArgumentNullException>(() => new StreamProcessor().DecryptStreamAsync(null, bw, mockEncryptor.Object, anyProps, diag, default));
+            await Assert.ThrowsExceptionAsync<ArgumentNullException>(() => new StreamProcessor().DecryptStreamAsync(input, (System.Buffers.IBufferWriter<byte>)null, mockEncryptor.Object, anyProps, diag, default));
+            await Assert.ThrowsExceptionAsync<ArgumentNullException>(() => new StreamProcessor().DecryptStreamAsync(input, bw, null, anyProps, diag, default));
+            await Assert.ThrowsExceptionAsync<ArgumentNullException>(() => new StreamProcessor().DecryptStreamAsync(input, bw, mockEncryptor.Object, null, diag, default));
+        }
     }
 
     /// <summary>

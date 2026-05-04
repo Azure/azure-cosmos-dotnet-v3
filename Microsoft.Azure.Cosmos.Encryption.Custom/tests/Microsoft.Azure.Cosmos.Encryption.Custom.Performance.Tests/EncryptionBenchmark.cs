@@ -8,10 +8,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Performance.Tests
     using BenchmarkDotNet.Attributes;
     using Microsoft.Azure.Cosmos.Encryption.Custom;
     using Microsoft.Data.Encryption.Cryptography;
-#if NET8_0_OR_GREATER
-    using Microsoft.IO;
-#endif
-
     using Moq;
 
     [MemoryDiagnoser]
@@ -46,10 +42,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Performance.Tests
                 CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
                 Enumerable.Range(0, 32).Select(static i => (byte)i).ToArray(),
                 new EncryptionKeyWrapMetadata("name", "value"), DateTime.UtcNow);
-
-#if NET8_0_OR_GREATER
-        private readonly RecyclableMemoryStreamManager recyclableMemoryStreamManager = new ();
-#endif
 
         private CosmosEncryptor? encryptor;
 
@@ -125,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Performance.Tests
         {
             for (int i = 0; i < OperationsPerInvoke; i++)
             {
-                using RecyclableMemoryStream rms = new (this.recyclableMemoryStreamManager);
+                using PooledMemoryStream rms = new ();
                 await EncryptionProcessor.EncryptAsync(
                     new MemoryStream(this.plaintext!),
                     rms,
@@ -158,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Performance.Tests
         {
             for (int i = 0; i < OperationsPerInvoke; i++)
             {
-                using RecyclableMemoryStream rms = new(this.recyclableMemoryStreamManager);
+                using PooledMemoryStream rms = new();
                 await EncryptionProcessor.DecryptAsync(
                     new MemoryStream(this.encryptedData!),
                     rms,
