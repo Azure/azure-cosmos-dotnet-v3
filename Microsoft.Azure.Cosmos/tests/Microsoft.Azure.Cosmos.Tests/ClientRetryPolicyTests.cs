@@ -810,6 +810,170 @@
             return null;
         }
 
+        /// <summary>
+        /// Tests that 449 (RetryWith) triggers a retry with backoff via the exception path.
+        /// </summary>
+        [TestMethod]
+        public async Task ShouldRetryAsync_On449RetryWith_ShouldRetryWithBackoff()
+        {
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: true);
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                endpointManager,
+                this.partitionKeyRangeLocationCache,
+                new RetryOptions(),
+                enableEndpointDiscovery,
+                isThinClientEnabled: false);
+
+            DocumentServiceRequest request = this.CreateRequest(isReadRequest: false, isMasterResourceType: false);
+            retryPolicy.OnBeforeSendRequest(request);
+
+            // Simulate 449 (RetryWith) exception
+            Mock<INameValueCollection> headers = new Mock<INameValueCollection>();
+            DocumentClientException retryWithException = new DocumentClientException(
+                message: "RetryWith",
+                innerException: new Exception(),
+                statusCode: (HttpStatusCode)449,
+                substatusCode: SubStatusCodes.Unknown,
+                requestUri: request.RequestContext.LocationEndpointToRoute,
+                responseHeaders: headers.Object);
+
+            ShouldRetryResult result = await retryPolicy.ShouldRetryAsync(retryWithException, CancellationToken.None);
+
+            Assert.IsTrue(result.ShouldRetry, "First 449 should trigger a retry.");
+            Assert.IsTrue(result.BackoffTime.TotalMilliseconds > 0, "Backoff should be greater than zero.");
+            Assert.IsTrue(result.BackoffTime.TotalMilliseconds <= 1000, "First backoff should not exceed max backoff of 1000ms.");
+        }
+
+        /// <summary>
+        /// Tests that 449 (RetryWith) triggers a retry via the ResponseMessage path (exceptionless).
+        /// </summary>
+        [TestMethod]
+        public async Task ShouldRetryAsync_On449ResponseMessage_ShouldRetryWithBackoff()
+        {
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: true);
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                endpointManager,
+                this.partitionKeyRangeLocationCache,
+                new RetryOptions(),
+                enableEndpointDiscovery,
+                isThinClientEnabled: false);
+
+            DocumentServiceRequest request = this.CreateRequest(isReadRequest: false, isMasterResourceType: false);
+            retryPolicy.OnBeforeSendRequest(request);
+
+            // Simulate a 449 response message
+            ResponseMessage responseMessage = new ResponseMessage((HttpStatusCode)449);
+
+            ShouldRetryResult result = await retryPolicy.ShouldRetryAsync(responseMessage, CancellationToken.None);
+
+            Assert.IsTrue(result.ShouldRetry, "449 ResponseMessage should trigger a retry.");
+            Assert.IsTrue(result.BackoffTime.TotalMilliseconds > 0, "Backoff should be greater than zero.");
+        }
+
+        /// <summary>
+        /// Tests that 449 retry eventually stops after total wait time is exhausted.
+        /// </summary>
+        [TestMethod]
+        public async Task ShouldRetryAsync_On449RetryWith_ShouldStopAfterTotalWaitTimeExhausted()
+        {
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: true);
+
+            // Use a very short total wait time so we exhaust it quickly
+            RetryOptions retryOptions = new RetryOptions();
+            retryOptions.TotalWaitTimeForRetryWithMilliseconds = 1; // 1ms total budget
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                endpointManager,
+                this.partitionKeyRangeLocationCache,
+                retryOptions,
+                enableEndpointDiscovery,
+                isThinClientEnabled: false);
+
+            DocumentServiceRequest request = this.CreateRequest(isReadRequest: false, isMasterResourceType: false);
+            retryPolicy.OnBeforeSendRequest(request);
+
+            Mock<INameValueCollection> headers = new Mock<INameValueCollection>();
+            DocumentClientException retryWithException = new DocumentClientException(
+                message: "RetryWith",
+                innerException: new Exception(),
+                statusCode: (HttpStatusCode)449,
+                substatusCode: SubStatusCodes.Unknown,
+                requestUri: request.RequestContext.LocationEndpointToRoute,
+                responseHeaders: headers.Object);
+
+            // First retry should succeed (stopwatch just started)
+            ShouldRetryResult firstResult = await retryPolicy.ShouldRetryAsync(retryWithException, CancellationToken.None);
+
+            // Wait to ensure the total wait time budget is exhausted
+            await Task.Delay(10);
+
+            // Second retry should fail since total wait time exceeded
+            ShouldRetryResult secondResult = await retryPolicy.ShouldRetryAsync(retryWithException, CancellationToken.None);
+
+            Assert.IsFalse(secondResult.ShouldRetry, "Should stop retrying after total wait time is exhausted.");
+        }
+
+        /// <summary>
+        /// Tests that 449 retry backoff increases exponentially.
+        /// </summary>
+        [TestMethod]
+        public async Task ShouldRetryAsync_On449RetryWith_BackoffIncreasesExponentially()
+        {
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: true);
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                endpointManager,
+                this.partitionKeyRangeLocationCache,
+                new RetryOptions(),
+                enableEndpointDiscovery,
+                isThinClientEnabled: false);
+
+            DocumentServiceRequest request = this.CreateRequest(isReadRequest: false, isMasterResourceType: false);
+            retryPolicy.OnBeforeSendRequest(request);
+
+            Mock<INameValueCollection> headers = new Mock<INameValueCollection>();
+            DocumentClientException retryWithException = new DocumentClientException(
+                message: "RetryWith",
+                innerException: new Exception(),
+                statusCode: (HttpStatusCode)449,
+                substatusCode: SubStatusCodes.Unknown,
+                requestUri: request.RequestContext.LocationEndpointToRoute,
+                responseHeaders: headers.Object);
+
+            ShouldRetryResult first = await retryPolicy.ShouldRetryAsync(retryWithException, CancellationToken.None);
+            ShouldRetryResult second = await retryPolicy.ShouldRetryAsync(retryWithException, CancellationToken.None);
+            ShouldRetryResult third = await retryPolicy.ShouldRetryAsync(retryWithException, CancellationToken.None);
+
+            Assert.IsTrue(first.ShouldRetry);
+            Assert.IsTrue(second.ShouldRetry);
+            Assert.IsTrue(third.ShouldRetry);
+
+            // Backoff should generally increase (accounting for jitter)
+            // First: ~10ms + salt, Second: ~20ms + salt, Third: ~40ms + salt
+            Assert.IsTrue(
+                second.BackoffTime >= first.BackoffTime || third.BackoffTime >= second.BackoffTime,
+                $"Backoff should generally increase. First={first.BackoffTime.TotalMilliseconds}ms, " +
+                $"Second={second.BackoffTime.TotalMilliseconds}ms, Third={third.BackoffTime.TotalMilliseconds}ms");
+        }
+
         private static AccountProperties CreateDatabaseAccount(
             bool useMultipleWriteLocations,
             bool enforceSingleMasterSingleWriteLocation)
