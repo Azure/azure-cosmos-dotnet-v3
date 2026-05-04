@@ -1798,6 +1798,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             FeedRange feedRange,
             CancellationToken cancellationToken = default);
+#endif
 
         /// <summary>
         /// Initializes a <see cref="GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes"/> for change feed processing with all versions and deletes.
@@ -1874,6 +1875,7 @@ namespace Microsoft.Azure.Cosmos
             string processorName,
             ChangeFeedHandler<ChangeFeedItem<T>> onChangesDelegate);
 
+#if PREVIEW
         /// <summary>
         /// Determines whether the given y feed range is a part of the specified x feed range.
         /// </summary>
