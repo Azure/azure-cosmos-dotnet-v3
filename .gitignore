@@ -331,3 +331,6 @@ ASALocalRun/
 
 # Visual Studio Code files
 .vscode/
+
+.coding-harness/
+
