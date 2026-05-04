@@ -60,6 +60,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             {
                 if (!this.changeFeedProcessorOptions.StartFromBeginning
                     && this.changeFeedProcessorOptions.StartTime == null
+                    && this.changeFeedProcessorOptions.Mode != ChangeFeedMode.AllVersionsAndDeletes
                     && string.IsNullOrEmpty(this.changeFeedProcessorOptions.StartContinuation))
                 {
                     // StartTime is serialized as RFC1123 (seconds precision) and interpreted as exclusive.
