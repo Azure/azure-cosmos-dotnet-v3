@@ -769,5 +769,48 @@
                 $"HedgeContext should contain 2+ regions when hedging occurred, but got {hedgeRegionsList.Count}. " +
                 "Multiple regions in HedgeContext confirms hedging was triggered.");
         }
+
+        /// <summary>
+        /// Verifies that CrossRegionAvailabilityContext propagates the hub region header flag
+        /// across hedged request clones via the shared Properties dictionary.
+        /// This tests the core mechanism: shallow-copy of Properties preserves reference identity,
+        /// so volatile writes by one clone are visible to all others.
+        /// </summary>
+        [TestMethod]
+        public void CrossRegionAvailabilityContext_PropagatesHubHeaderFlagToHedgedRequests()
+        {
+            // 1. Create shared context (injected by CrossRegionHedgingAvailabilityStrategy)
+            CrossRegionAvailabilityContext sharedContext = new CrossRegionAvailabilityContext();
+            Assert.IsFalse(sharedContext.ShouldAddHubRegionProcessingOnlyHeader,
+                "Flag must be false initially.");
+
+            // 2. Simulate original request Properties with the shared context
+            Dictionary<string, object> originalProperties = new Dictionary<string, object>
+            {
+                { CrossRegionAvailabilityContext.PropertyKey, sharedContext }
+            };
+
+            // 3. Simulate RequestMessage.Clone() — shallow copy of Properties
+            Dictionary<string, object> clonedProperties = new Dictionary<string, object>(originalProperties);
+
+            // 4. Verify both dictionaries reference the SAME context instance
+            Assert.IsTrue(clonedProperties.TryGetValue(CrossRegionAvailabilityContext.PropertyKey, out object clonedObj));
+            CrossRegionAvailabilityContext clonedContext = clonedObj as CrossRegionAvailabilityContext;
+            Assert.IsNotNull(clonedContext);
+            Assert.AreSame(sharedContext, clonedContext,
+                "Shallow copy must preserve reference identity — clones share the same context instance.");
+
+            // 5. Primary's ClientRetryPolicy sets the flag after 2x 404/1002
+            sharedContext.ShouldAddHubRegionProcessingOnlyHeader = true;
+
+            // 6. Hedge's ClientRetryPolicy reads the flag from its cloned Properties
+            Assert.IsTrue(clonedContext.ShouldAddHubRegionProcessingOnlyHeader,
+                "Hub region flag set by primary must be visible to hedge via shared context reference. " +
+                "This is the core hedging propagation mechanism (mirrors Java SDK's CrossRegionAvailabilityContext).");
+
+            // 7. Verify PropertyKey is the expected well-known key
+            Assert.AreEqual("CrossRegionAvailabilityContext",
+                CrossRegionAvailabilityContext.PropertyKey);
+        }
     }
 }

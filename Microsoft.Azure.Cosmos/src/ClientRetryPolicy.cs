@@ -42,6 +42,7 @@ namespace Microsoft.Azure.Cosmos
         private DocumentServiceRequest documentServiceRequest;
 #if !INTERNAL
         private volatile bool addHubRegionProcessingOnlyHeader;
+        private CrossRegionAvailabilityContext crossRegionAvailabilityContext;
 #endif
 
         public ClientRetryPolicy(
@@ -228,8 +229,21 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 #if !INTERNAL
-            // If previous attempt failed with 404/1002, add the hub-region-processing-only header to all subsequent retry attempts
-            if (this.addHubRegionProcessingOnlyHeader)
+            // Initialize CrossRegionAvailabilityContext from Properties if not already set.
+            // In hedging scenarios, Properties carries the shared context instance injected by
+            // CrossRegionHedgingAvailabilityStrategy before cloning.
+            if (this.crossRegionAvailabilityContext == null
+                && request.Properties != null
+                && request.Properties.TryGetValue(CrossRegionAvailabilityContext.PropertyKey, out object ctxObj)
+                && ctxObj is CrossRegionAvailabilityContext sharedCtx)
+            {
+                this.crossRegionAvailabilityContext = sharedCtx;
+            }
+
+            // If previous attempt failed with 404/1002, add the hub-region-processing-only header to all subsequent retry attempts.
+            // Also check the shared context — another hedged request may have already set the flag.
+            if (this.addHubRegionProcessingOnlyHeader
+                || this.crossRegionAvailabilityContext?.ShouldAddHubRegionProcessingOnlyHeader == true)
             {
                 request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion] = bool.TrueString;
             }
@@ -450,12 +464,21 @@ namespace Microsoft.Azure.Cosmos
                 else
                 {
 #if !INTERNAL
-                    // Only set the hub region processing header for single master accounts.
-                    // Set header after the second consecutive 404/1002 (count >= 2 means both
-                    // the initial request and the first retry to the write region have failed).
+                    // Hub region discovery: only for single-master accounts.
+                    // In single-master, after 2× 404/1002 (ReadSessionNotAvailable), attach the
+                    // x-ms-cosmos-hub-region-processing-only header so the backend routes the
+                    // next retry to the partition-set level hub (primary) replica in the write region.
                     if (this.sessionTokenRetryCount >= MaxSessionTokenRetryCount)
                     {
                         this.addHubRegionProcessingOnlyHeader = true;
+
+                        // Propagate to shared context so hedged requests
+                        // (running in parallel with their own ClientRetryPolicy)
+                        // pick up the hub region header immediately.
+                        if (this.crossRegionAvailabilityContext != null)
+                        {
+                            this.crossRegionAvailabilityContext.ShouldAddHubRegionProcessingOnlyHeader = true;
+                        }
                     }
 
                     if (this.sessionTokenRetryCount > MaxSessionTokenRetryCount)
