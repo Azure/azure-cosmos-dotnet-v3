@@ -167,23 +167,31 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [TestMethod]
         [TestCategory("Integration")]
         [TestCategory("PooledResources")]
-        [TestCategory("MemoryLeak")]
-        public async Task DecryptStreamAsync_WithNoEncryptionProperties_DisposesPooledMemoryStream()
+        public async Task DecryptStreamAsync_WithNoEncryptionProperties_ReturnsFreshCallerOwnedStream()
         {
-            // CRITICAL: Tests EncryptionProcessor.cs:260-263 disposal path
-            // When EncryptionProperties is null, the PooledMemoryStream created at line 257 MUST be disposed
-            // This test exposes a memory leak bug in the current implementation
-
             string plainJson = "{\"id\":\"test-123\",\"value\":\"no encryption\"}";
             using MemoryStream input = new(System.Text.Encoding.UTF8.GetBytes(plainJson));
             CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create(null);
 
-            // This triggers the null context path at line 260
             (Stream result, DecryptionContext context) = await EncryptionProcessor.DecryptStreamAsync(input, mockEncryptor.Object, diagnostics, CancellationToken.None);
 
-            Assert.IsNull(context, "Context should be null for non-encrypted payload");
-            Assert.AreSame(input, result, "Should return original input stream");
-            Assert.AreEqual(0, result.Position, "Input position should be reset to 0");
+            try
+            {
+                Assert.IsNull(context, "Context should be null for non-encrypted payload");
+                Assert.AreNotSame(input, result, "Caller should always receive a fresh stream");
+                Assert.AreEqual(0, result.Position, "Returned stream position should be 0");
+
+                Assert.IsTrue(input.CanRead, "Caller's input stream should not be disposed by the method");
+                Assert.AreEqual(0, input.Position, "Caller's input stream should be left at position 0");
+
+                using StreamReader reader = new(result, System.Text.Encoding.UTF8, detectEncodingFromByteOrderMarks: false, leaveOpen: true);
+                string roundTripped = await reader.ReadToEndAsync();
+                Assert.AreEqual(plainJson, roundTripped, "Returned stream should contain the original bytes");
+            }
+            finally
+            {
+                await result.DisposeAsync();
+            }
         }
 
         [TestMethod]
@@ -234,6 +242,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 using MemoryStream input = new(System.Text.Encoding.UTF8.GetBytes(plainJson));
                 (Stream result, DecryptionContext context) = await EncryptionProcessor.DecryptStreamAsync(input, mockEncryptor.Object, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
                 Assert.IsNull(context, $"Iteration {i}: Context should be null");
+                await result.DisposeAsync();
             }
 
             // If we got here without OutOfMemoryException, disposal is working

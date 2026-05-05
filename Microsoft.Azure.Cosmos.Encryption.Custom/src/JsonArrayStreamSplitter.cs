@@ -24,7 +24,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>An enumerable of Stream objects, each containing a single JSON object.</returns>
         /// <remarks>
-        /// Callers MUST dispose the returned Stream instances once the payload is no longer needed.
+        /// <para>
+        /// Callers MUST dispose every yielded <see cref="Stream"/> instance. Each yielded stream is a
+        /// <see cref="PooledMemoryStream"/> that holds a buffer rented from <see cref="System.Buffers.ArrayPool{T}"/>.
+        /// </para>
+        /// <para>
+        /// <strong>Security-relevant:</strong> downstream code typically decrypts each yielded stream's
+        /// contents in place. If the consumer abandons iteration without disposing yielded streams,
+        /// the rented buffers (which may contain plaintext) are never returned to the pool, never zeroed,
+        /// and remain reachable in the heap until GC reclaims them. The CLR does not zero freed memory
+        /// before reuse, so plaintext fragments can persist until that memory is overwritten.
+        /// </para>
+        /// <para>
+        /// Always wrap consumption in <c>using</c> / <c>await using</c> blocks, and ensure that any
+        /// wrapper objects (such as <c>StreamDecryptableItem</c>) are themselves disposed.
+        /// </para>
         /// </remarks>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "VSTHRD200:Use \"Async\" suffix for async methods", Justification = "The method returns IAsyncEnumerable.")]
         public static async IAsyncEnumerable<Stream> SplitIntoSubstreamsAsync(

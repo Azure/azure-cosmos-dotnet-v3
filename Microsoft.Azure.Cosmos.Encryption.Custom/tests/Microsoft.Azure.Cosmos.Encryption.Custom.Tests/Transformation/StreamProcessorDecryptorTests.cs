@@ -597,6 +597,33 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         // The switch case exists defensively; functional risk is negligible.
 
         [TestMethod]
+        public async Task DecryptJsonArrayStreamInPlaceAsync_PropagatesCancellation()
+        {
+            (CosmosEncryptor cosmosEncryptor, MemoryStream feedPayloadStream, _) =
+                await CreateBenchmarkFeedPayloadAsync(documentCount: 3, documentSizeInKb: 1).ConfigureAwait(false);
+
+            using (feedPayloadStream)
+            using (CancellationTokenSource cts = new ())
+            {
+                cts.Cancel();
+
+                StreamProcessor processor = new ();
+                CosmosDiagnosticsContext diagnostics = new ();
+
+                try
+                {
+                    await processor.DecryptJsonArrayStreamInPlaceAsync(
+                        feedPayloadStream, cosmosEncryptor, diagnostics, cts.Token).ConfigureAwait(false);
+                    Assert.Fail("Expected an OperationCanceledException-derived exception.");
+                }
+                catch (OperationCanceledException)
+                {
+                    // expected — TaskCanceledException is also acceptable since it derives from this.
+                }
+            }
+        }
+
+        [TestMethod]
         public async Task DecryptJsonArrayStreamInPlaceAsync_DecryptsFeedPayloadInPlace()
         {
             const int documentCount = 5;

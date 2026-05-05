@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 throw new NotSupportedException("Stream must support read, write, and seek operations for in-place decryption.");
             }
 
-            using PooledMemoryStream tempOutputStream = new ();
+            using PooledMemoryStream tempOutputStream = new (InitialBufferSize);
             byte[] buffer = ArrayPool<byte>.Shared.Rent(InitialBufferSize);
 
             try
@@ -297,6 +297,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
+            ArgumentNullException.ThrowIfNull(outputStream);
+            if (!outputStream.CanSeek)
+            {
+                throw new ArgumentException("Output stream must be seekable.", nameof(outputStream));
+            }
+
             using RentArrayBufferWriter bufferWriter = new (PooledStreamConfiguration.Current.StreamInitialCapacity);
             DecryptionContext context = await this.DecryptStreamAsync(inputStream, bufferWriter, encryptor, properties, diagnosticsContext, cancellationToken);
             await bufferWriter.CopyToAsync(outputStream, cancellationToken).ConfigureAwait(false);

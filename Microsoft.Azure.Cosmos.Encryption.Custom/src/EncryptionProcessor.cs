@@ -249,31 +249,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             EncryptionPropertiesWrapper properties = await PooledJsonSerializer.DeserializeFromStreamAsync<EncryptionPropertiesWrapper>(input, cancellationToken: cancellationToken);
             input.Position = 0;
-            if (properties?.EncryptionProperties == null)
-            {
-                return (input, null);
-            }
 
-            PooledMemoryStream ms = new ();
+            PooledMemoryStream output = new ();
             try
             {
-                DecryptionContext context = await MdeEncryptionProcessor.DecryptStreamAsync(input, ms, encryptor, properties.EncryptionProperties, diagnosticsContext, cancellationToken);
-                if (context == null)
+                if (properties?.EncryptionProperties == null)
                 {
-                    // CRITICAL: Must dispose PooledMemoryStream to prevent memory leak
-                    await ms.DisposeAsync();
+                    await input.CopyToAsync(output, cancellationToken).ConfigureAwait(false);
+                    output.Position = 0;
                     input.Position = 0;
-                    return (input, null);
+                    return (output, null);
                 }
 
-                await input.DisposeAsync();
-                return (ms, context);  // Ownership transfers successfully
+                DecryptionContext context = await MdeEncryptionProcessor.DecryptStreamAsync(input, output, encryptor, properties.EncryptionProperties, diagnosticsContext, cancellationToken);
+                input.Position = 0;
+                return (output, context);
             }
             catch
             {
-                // CRITICAL: Dispose PooledMemoryStream on exception to prevent memory leak
-                await ms.DisposeAsync();
-                throw;  // Rethrow to preserve original exception
+                await output.DisposeAsync();
+                throw;
             }
         }
 #endif
