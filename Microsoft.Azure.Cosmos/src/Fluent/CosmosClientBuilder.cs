@@ -869,5 +869,26 @@ namespace Microsoft.Azure.Cosmos.Fluent
             this.clientOptions.ReadConsistencyStrategy = readConsistencyStrategy;
             return this;
         }
+
+        /// <summary>
+        /// Sets the default <see cref="IEmbeddingGenerator"/> to use for hybrid and vector-search
+        /// queries that contain literal text to be embedded.
+        /// </summary>
+        /// <remarks>
+        /// This is the client-wide default. If <see cref="QueryRequestOptions.EmbeddingGenerator"/> is
+        /// also set on a specific request, the request-level value takes precedence.
+        /// </remarks>
+        /// <param name="embeddingGenerator">The embedding generator to use as the client-wide default.</param>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        CosmosClientBuilder WithEmbeddingGenerator(IEmbeddingGenerator embeddingGenerator)
+        {
+            this.clientOptions.EmbeddingGenerator = embeddingGenerator;
+            return this;
+        }
     }
 }

@@ -406,6 +406,23 @@ namespace Microsoft.Azure.Cosmos
         ReadConsistencyStrategy? ReadConsistencyStrategy { get; set; }
 
         /// <summary>
+        /// Gets or sets the default <see cref="IEmbeddingGenerator"/> to use for hybrid and vector-search
+        /// queries that contain literal text to be embedded.
+        /// </summary>
+        /// <remarks>
+        /// This is the client-wide default. If <see cref="QueryRequestOptions.EmbeddingGenerator"/> is
+        /// also set on a specific request, the request-level value takes precedence.
+        /// If the gateway returns a plan that requires embedding generation and neither the request-level
+        /// nor this property is set, the SDK throws an exception describing how to configure a generator.
+        /// </remarks>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        IEmbeddingGenerator EmbeddingGenerator { get; set; }
+
+        /// <summary>
         /// Sets the priority level for requests created using cosmos client.
         /// </summary>
         /// <remarks>
