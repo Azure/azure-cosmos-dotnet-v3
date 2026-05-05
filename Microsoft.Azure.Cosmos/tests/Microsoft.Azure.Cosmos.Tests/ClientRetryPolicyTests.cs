@@ -673,6 +673,182 @@
             Assert.AreEqual(bool.TrueString, headerValues[0], "Hub region header value should remain 'True'.");
         }
 
+        /// <summary>
+        /// When a hedge request's Properties contains a CrossRegionAvailabilityContext with
+        /// ShouldAddHubRegionProcessingOnlyHeader = true, OnBeforeSendRequest should set
+        /// the hub region header immediately (simulates hedge picking up primary's flag).
+        /// </summary>
+        [TestMethod]
+        public void ClientRetryPolicy_SharedContext_HedgePicksUpHubHeaderFromSharedFlag()
+        {
+            // Arrange: single-master account
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enforceSingleMasterSingleWriteLocation: true);
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                endpointManager,
+                this.partitionKeyRangeLocationCache,
+                new RetryOptions(),
+                enableEndpointDiscovery,
+                isThinClientEnabled: false);
+
+            DocumentServiceRequest request = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+
+            // Simulate the shared context that was injected by CrossRegionHedgingAvailabilityStrategy
+            // and has already been flagged by the primary's ClientRetryPolicy after 2x 404/1002.
+            CrossRegionAvailabilityContext sharedContext = new CrossRegionAvailabilityContext();
+            sharedContext.ShouldAddHubRegionProcessingOnlyHeader = true;
+
+            request.Properties = new Dictionary<string, object>
+            {
+                { CrossRegionAvailabilityContext.PropertyKey, sharedContext }
+            };
+
+            // Act: first call to OnBeforeSendRequest (hedge's very first attempt)
+            retryPolicy.OnBeforeSendRequest(request);
+
+            // Assert: hub region header should be set immediately
+            string[] headerValues = request.Headers.GetValues(HubRegionHeader);
+            Assert.IsNotNull(headerValues, "Hedge request should get hub header on first attempt when shared context flag is true.");
+            Assert.AreEqual(bool.TrueString, headerValues[0]);
+        }
+
+        /// <summary>
+        /// After 2× 404/1002 on a single-master account, the ClientRetryPolicy should
+        /// set the shared CrossRegionAvailabilityContext flag to true (propagating to hedges).
+        /// </summary>
+        [TestMethod]
+        public async Task ClientRetryPolicy_SharedContext_FlagSetAfterTwoSessionNotAvailable()
+        {
+            // Arrange: single-master account
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enforceSingleMasterSingleWriteLocation: true);
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                endpointManager,
+                this.partitionKeyRangeLocationCache,
+                new RetryOptions(),
+                enableEndpointDiscovery,
+                isThinClientEnabled: false);
+
+            DocumentServiceRequest request = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+
+            // Simulate the shared context injected by CrossRegionHedgingAvailabilityStrategy
+            CrossRegionAvailabilityContext sharedContext = new CrossRegionAvailabilityContext();
+            Assert.IsFalse(sharedContext.ShouldAddHubRegionProcessingOnlyHeader, "Flag should start as false.");
+
+            request.Properties = new Dictionary<string, object>
+            {
+                { CrossRegionAvailabilityContext.PropertyKey, sharedContext }
+            };
+
+            // First attempt
+            retryPolicy.OnBeforeSendRequest(request);
+            Assert.IsFalse(sharedContext.ShouldAddHubRegionProcessingOnlyHeader, "Flag should still be false after first attempt.");
+
+            // Simulate first 404/1002
+            DocumentClientException ex1 = new DocumentClientException(
+                message: "ReadSessionNotAvailable",
+                innerException: null,
+                statusCode: HttpStatusCode.NotFound,
+                substatusCode: SubStatusCodes.ReadSessionNotAvailable,
+                requestUri: request.RequestContext.LocationEndpointToRoute,
+                responseHeaders: new DictionaryNameValueCollection());
+
+            ShouldRetryResult result1 = await retryPolicy.ShouldRetryAsync(ex1, CancellationToken.None);
+            Assert.IsTrue(result1.ShouldRetry, "Should retry after first 404/1002.");
+            Assert.IsFalse(sharedContext.ShouldAddHubRegionProcessingOnlyHeader, "Flag should still be false after first 404/1002.");
+
+            // Second attempt
+            retryPolicy.OnBeforeSendRequest(request);
+
+            // Simulate second 404/1002
+            DocumentClientException ex2 = new DocumentClientException(
+                message: "ReadSessionNotAvailable",
+                innerException: null,
+                statusCode: HttpStatusCode.NotFound,
+                substatusCode: SubStatusCodes.ReadSessionNotAvailable,
+                requestUri: request.RequestContext.LocationEndpointToRoute,
+                responseHeaders: new DictionaryNameValueCollection());
+
+            ShouldRetryResult result2 = await retryPolicy.ShouldRetryAsync(ex2, CancellationToken.None);
+            Assert.IsTrue(result2.ShouldRetry, "Should retry once more after second 404/1002 (hub header retry).");
+
+            // Assert: shared context flag should now be true
+            Assert.IsTrue(sharedContext.ShouldAddHubRegionProcessingOnlyHeader,
+                "After 2× 404/1002 on single-master, shared context flag must be set to true for hedge propagation.");
+        }
+
+        /// <summary>
+        /// When CrossRegionAvailabilityContext is null (non-hedging path), the existing
+        /// local addHubRegionProcessingOnlyHeader behavior should be preserved unchanged.
+        /// </summary>
+        [TestMethod]
+        public async Task ClientRetryPolicy_NullSharedContext_LocalFlagStillWorks()
+        {
+            // Arrange: single-master, no shared context (Properties is null)
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enforceSingleMasterSingleWriteLocation: true);
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                endpointManager,
+                this.partitionKeyRangeLocationCache,
+                new RetryOptions(),
+                enableEndpointDiscovery,
+                isThinClientEnabled: false);
+
+            DocumentServiceRequest request = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+            // Properties is NOT set (non-hedging scenario)
+
+            // First attempt - no header
+            retryPolicy.OnBeforeSendRequest(request);
+            Assert.IsNull(request.Headers.GetValues(HubRegionHeader), "No header on initial attempt.");
+
+            // Simulate first 404/1002
+            DocumentClientException ex1 = new DocumentClientException(
+                message: "ReadSessionNotAvailable",
+                innerException: null,
+                statusCode: HttpStatusCode.NotFound,
+                substatusCode: SubStatusCodes.ReadSessionNotAvailable,
+                requestUri: request.RequestContext.LocationEndpointToRoute,
+                responseHeaders: new DictionaryNameValueCollection());
+
+            await retryPolicy.ShouldRetryAsync(ex1, CancellationToken.None);
+
+            // Second attempt - still no header
+            retryPolicy.OnBeforeSendRequest(request);
+            Assert.IsNull(request.Headers.GetValues(HubRegionHeader), "No header on first retry (before second 404/1002).");
+
+            // Simulate second 404/1002
+            DocumentClientException ex2 = new DocumentClientException(
+                message: "ReadSessionNotAvailable",
+                innerException: null,
+                statusCode: HttpStatusCode.NotFound,
+                substatusCode: SubStatusCodes.ReadSessionNotAvailable,
+                requestUri: request.RequestContext.LocationEndpointToRoute,
+                responseHeaders: new DictionaryNameValueCollection());
+
+            await retryPolicy.ShouldRetryAsync(ex2, CancellationToken.None);
+
+            // Third attempt - header should be set via local flag (not shared context)
+            retryPolicy.OnBeforeSendRequest(request);
+            string[] headerValues = request.Headers.GetValues(HubRegionHeader);
+            Assert.IsNotNull(headerValues, "Hub region header should be set via local flag on non-hedging path.");
+            Assert.AreEqual(bool.TrueString, headerValues[0]);
+        }
+
         private async Task ValidateConnectTimeoutTriggersClientRetryPolicyAsync(
             bool isReadRequest,
             bool useMultipleWriteLocations,

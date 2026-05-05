@@ -90,6 +90,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 return errorResponse;
             }
 
+            this.ValidateReadConsistencyStrategyAccountConstraints(request);
+
             await request.AssertPartitioningDetailsAsync(this.client, cancellationToken, request.Trace);
             this.FillMultiMasterContext(request);
 
@@ -514,9 +516,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
         /// to the hub (write) region.
         /// </summary>
         /// <remarks>
-        /// LastCommittedWriteRegion is only valid for single-master (single write region)
-        /// accounts. In multi-master accounts every region accepts writes and there is no
-        /// single hub region, so hub-region routing does not apply.
+        /// Note: The multi-master validation for LastCommittedWriteRegion is performed
+        /// separately in <see cref="ValidateReadConsistencyStrategyAccountConstraints"/>
+        /// which runs after client initialization (EnsureValidClientAsync) to ensure
+        /// UseMultipleWriteLocations is properly set from the account metadata.
         /// </remarks>
         private Task ValidateAndSetReadConsistencyStrategyAsync(RequestMessage requestMessage)
         {
@@ -534,19 +537,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             if (readConsistencyStrategy.HasValue)
             {
-                // LastCommittedWriteRegion relies on hub-region routing which only applies
-                // to single-master accounts. In multi-master accounts every region is a write
-                // region and there is no partition-set level hub, so reject early with a clear error.
-                if (readConsistencyStrategy.Value == Cosmos.ReadConsistencyStrategy.LastCommittedWriteRegion
-                    && this.client.DocumentClient.UseMultipleWriteLocations)
-                {
-                    throw new ArgumentException(
-                        $"{nameof(Cosmos.ReadConsistencyStrategy)}.{nameof(Cosmos.ReadConsistencyStrategy.LastCommittedWriteRegion)} " +
-                        "is not supported for multi-master (multiple write region) accounts. " +
-                        "In multi-master accounts every region accepts writes and there is no single hub region. " +
-                        "Use a different ReadConsistencyStrategy or configure the account with a single write region.");
-                }
-
                 requestMessage.Headers.Set(
                     HttpConstants.HttpHeaders.ReadConsistencyStrategy,
                     readConsistencyStrategy.Value.ToString());
@@ -561,6 +551,40 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// Validates that LastCommittedWriteRegion is not used with multi-master accounts.
+        /// This must run AFTER EnsureValidClientAsync so that UseMultipleWriteLocations
+        /// is properly initialized from the account metadata.
+        /// </summary>
+        private void ValidateReadConsistencyStrategyAccountConstraints(RequestMessage requestMessage)
+        {
+            Cosmos.ReadConsistencyStrategy? readConsistencyStrategy = null;
+            RequestOptions promotedRequestOptions = requestMessage.RequestOptions;
+
+            if (promotedRequestOptions?.BaseReadConsistencyStrategy.HasValue == true)
+            {
+                readConsistencyStrategy = promotedRequestOptions.BaseReadConsistencyStrategy;
+            }
+            else if (this.RequestedClientReadConsistencyStrategy.HasValue)
+            {
+                readConsistencyStrategy = this.RequestedClientReadConsistencyStrategy;
+            }
+
+            // LastCommittedWriteRegion relies on hub-region routing which only applies
+            // to single-master accounts. In multi-master accounts every region is a write
+            // region and there is no partition-set level hub, so reject with a clear error.
+            if (readConsistencyStrategy.HasValue
+                && readConsistencyStrategy.Value == Cosmos.ReadConsistencyStrategy.LastCommittedWriteRegion
+                && this.client.DocumentClient.UseMultipleWriteLocations)
+            {
+                throw new ArgumentException(
+                    $"{nameof(Cosmos.ReadConsistencyStrategy)}.{nameof(Cosmos.ReadConsistencyStrategy.LastCommittedWriteRegion)} " +
+                    "is not supported for multi-master (multiple write region) accounts. " +
+                    "In multi-master accounts every region accepts writes and there is no single hub region. " +
+                    "Use a different ReadConsistencyStrategy or configure the account with a single write region.");
+            }
         }
 
         /// <summary>
