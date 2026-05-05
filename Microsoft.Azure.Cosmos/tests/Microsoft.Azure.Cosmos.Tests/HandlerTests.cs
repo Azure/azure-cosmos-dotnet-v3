@@ -975,22 +975,37 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task ReadConsistencyStrategyAndConsistencyLevelBothSetAtRequestLevel()
+        [DataRow("Session", false, DisplayName = "Session + ConsistencyLevel = no hub header")]
+        [DataRow("LastCommittedWriteRegion", true, DisplayName = "LastCommittedWriteRegion + ConsistencyLevel = hub header set")]
+        public async Task ReadConsistencyStrategyAndConsistencyLevelBothSet(string strategyName, bool expectHubHeader)
         {
             // When both ConsistencyLevel and ReadConsistencyStrategy are set on the same request,
             // the SDK sets both headers and lets the service (ServerStoreModel) validate.
+            Cosmos.ReadConsistencyStrategy strategy = Enum.Parse<Cosmos.ReadConsistencyStrategy>(strategyName);
             using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(accountConsistencyLevel: Cosmos.ConsistencyLevel.Strong);
 
             TestHandler testHandler = new TestHandler((request, cancellationToken) =>
             {
                 Assert.AreEqual(
-                    Cosmos.ReadConsistencyStrategy.Session.ToString(),
+                    strategy.ToString(),
                     request.Headers[HttpConstants.HttpHeaders.ReadConsistencyStrategy],
                     "ReadConsistencyStrategy header should be set");
                 Assert.AreEqual(
                     Cosmos.ConsistencyLevel.Eventual.ToString(),
                     request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel],
                     "ConsistencyLevel header should also be set");
+
+                if (expectHubHeader)
+                {
+                    Assert.AreEqual(bool.TrueString, request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion],
+                        "Hub region header should be set for LastCommittedWriteRegion on a read");
+                }
+                else
+                {
+                    Assert.IsNull(request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion],
+                        $"Hub region header should NOT be set for {strategyName} strategy");
+                }
+
                 return TestHandler.ReturnSuccess();
             });
 
@@ -1013,28 +1028,44 @@ namespace Microsoft.Azure.Cosmos.Tests
             requestMessage.RequestOptions = new ItemRequestOptions
             {
                 ConsistencyLevel = Cosmos.ConsistencyLevel.Eventual,
-                ReadConsistencyStrategy = Cosmos.ReadConsistencyStrategy.Session
+                ReadConsistencyStrategy = strategy
             };
 
             await invoker.SendAsync(requestMessage, new CancellationToken());
         }
 
         [TestMethod]
-        public async Task ReadConsistencyStrategyRequestLevelOverridesClientLevel()
+        [DataRow("Session", "Eventual", false, DisplayName = "Session overrides Eventual client = no hub header")]
+        [DataRow("LastCommittedWriteRegion", "Eventual", true, DisplayName = "LastCommittedWriteRegion overrides Eventual client = hub header set")]
+        public async Task ReadConsistencyStrategyRequestLevelOverridesClientLevel(string requestStrategyName, string clientStrategyName, bool expectHubHeader)
         {
             // Request-level ReadConsistencyStrategy should override client-level.
+            Cosmos.ReadConsistencyStrategy requestStrategy = Enum.Parse<Cosmos.ReadConsistencyStrategy>(requestStrategyName);
+            Cosmos.ReadConsistencyStrategy clientStrategy = Enum.Parse<Cosmos.ReadConsistencyStrategy>(clientStrategyName);
+
             using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
                 accountConsistencyLevel: Cosmos.ConsistencyLevel.Strong,
-                customizeClientBuilder: builder => builder.WithReadConsistencyStrategy(Cosmos.ReadConsistencyStrategy.Eventual));
+                customizeClientBuilder: builder => builder.WithReadConsistencyStrategy(clientStrategy));
 
             TestHandler testHandler = new TestHandler((request, cancellationToken) =>
             {
-                // Request-level Session should override client-level Eventual
                 Assert.AreEqual(
-                    Cosmos.ReadConsistencyStrategy.Session.ToString(),
+                    requestStrategy.ToString(),
                     request.Headers[HttpConstants.HttpHeaders.ReadConsistencyStrategy]);
                 Assert.IsNull(request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel],
                     "ConsistencyLevel header should not be set when no ConsistencyLevel was specified");
+
+                if (expectHubHeader)
+                {
+                    Assert.AreEqual(bool.TrueString, request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion],
+                        "Hub region header should be set when request-level LastCommittedWriteRegion overrides client-level");
+                }
+                else
+                {
+                    Assert.IsNull(request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion],
+                        $"Hub region header should NOT be set for {requestStrategyName} strategy");
+                }
+
                 return TestHandler.ReturnSuccess();
             });
 
@@ -1054,7 +1085,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
             requestMessage.OperationType = OperationType.Read;
-            requestMessage.RequestOptions = new ItemRequestOptions { ReadConsistencyStrategy = Cosmos.ReadConsistencyStrategy.Session };
+            requestMessage.RequestOptions = new ItemRequestOptions { ReadConsistencyStrategy = requestStrategy };
 
             await invoker.SendAsync(requestMessage, new CancellationToken());
         }
@@ -1133,94 +1164,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task LastCommittedWriteRegionWithConsistencyLevel_BothHeadersAndHubRegionSet()
-        {
-            // When both ConsistencyLevel and LastCommittedWriteRegion are set,
-            // all three headers should be present on a read operation.
-            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(accountConsistencyLevel: Cosmos.ConsistencyLevel.Strong);
-
-            TestHandler testHandler = new TestHandler((request, cancellationToken) =>
-            {
-                Assert.AreEqual(
-                    Cosmos.ReadConsistencyStrategy.LastCommittedWriteRegion.ToString(),
-                    request.Headers[HttpConstants.HttpHeaders.ReadConsistencyStrategy],
-                    "ReadConsistencyStrategy header should be set");
-                Assert.AreEqual(
-                    Cosmos.ConsistencyLevel.Eventual.ToString(),
-                    request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel],
-                    "ConsistencyLevel header should also be set");
-                Assert.AreEqual(bool.TrueString, request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion],
-                    "Hub region header should be set for LastCommittedWriteRegion on a read");
-                return TestHandler.ReturnSuccess();
-            });
-
-            RequestInvokerHandler invoker = new RequestInvokerHandler(
-                client,
-                requestedClientConsistencyLevel: null,
-                requestedClientReadConsistencyStrategy: null,
-                requestedClientPriorityLevel: null,
-                requestedClientThroughputBucket: null)
-            {
-                InnerHandler = testHandler
-            };
-
-            RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"))
-            {
-                ResourceType = ResourceType.Document
-            };
-            requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
-            requestMessage.OperationType = OperationType.Read;
-            requestMessage.RequestOptions = new ItemRequestOptions
-            {
-                ConsistencyLevel = Cosmos.ConsistencyLevel.Eventual,
-                ReadConsistencyStrategy = Cosmos.ReadConsistencyStrategy.LastCommittedWriteRegion
-            };
-
-            await invoker.SendAsync(requestMessage, new CancellationToken());
-        }
-
-        [TestMethod]
-        public async Task LastCommittedWriteRegionRequestLevel_OverridesClientLevel_HubHeaderSet()
-        {
-            // Request-level LastCommittedWriteRegion should override client-level Eventual and set hub header.
-            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
-                accountConsistencyLevel: Cosmos.ConsistencyLevel.Strong,
-                customizeClientBuilder: builder => builder.WithReadConsistencyStrategy(Cosmos.ReadConsistencyStrategy.Eventual));
-
-            TestHandler testHandler = new TestHandler((request, cancellationToken) =>
-            {
-                Assert.AreEqual(
-                    Cosmos.ReadConsistencyStrategy.LastCommittedWriteRegion.ToString(),
-                    request.Headers[HttpConstants.HttpHeaders.ReadConsistencyStrategy]);
-                Assert.IsNull(request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel],
-                    "ConsistencyLevel header should not be set when no ConsistencyLevel was specified");
-                Assert.AreEqual(bool.TrueString, request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion],
-                    "Hub region header should be set when request-level LastCommittedWriteRegion overrides client-level");
-                return TestHandler.ReturnSuccess();
-            });
-
-            RequestInvokerHandler invoker = new RequestInvokerHandler(
-                client,
-                requestedClientConsistencyLevel: null,
-                requestedClientReadConsistencyStrategy: client.ClientOptions.ReadConsistencyStrategy,
-                requestedClientPriorityLevel: null,
-                requestedClientThroughputBucket: null)
-            {
-                InnerHandler = testHandler
-            };
-
-            RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"))
-            {
-                ResourceType = ResourceType.Document
-            };
-            requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
-            requestMessage.OperationType = OperationType.Read;
-            requestMessage.RequestOptions = new ItemRequestOptions { ReadConsistencyStrategy = Cosmos.ReadConsistencyStrategy.LastCommittedWriteRegion };
-
-            await invoker.SendAsync(requestMessage, new CancellationToken());
-        }
-
-        [TestMethod]
         public async Task LastCommittedWriteRegion_ThrowsForMultiMasterAccount()
         {
             // LastCommittedWriteRegion is only valid for single-master accounts.
@@ -1270,9 +1213,14 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task OtherStrategies_AllowedForMultiMasterAccount()
+        [DataRow("Session")]
+        [DataRow("Eventual")]
+        [DataRow("LatestCommitted")]
+        [DataRow("GlobalStrong")]
+        public async Task OtherStrategies_AllowedForMultiMasterAccount(string strategyName)
         {
             // Non-LastCommittedWriteRegion strategies should work fine with multi-master accounts.
+            Cosmos.ReadConsistencyStrategy strategy = Enum.Parse<Cosmos.ReadConsistencyStrategy>(strategyName);
             using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(accountConsistencyLevel: Cosmos.ConsistencyLevel.Session);
 
             System.Reflection.PropertyInfo prop = typeof(DocumentClient).GetProperty(
@@ -1283,10 +1231,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             TestHandler testHandler = new TestHandler((request, cancellationToken) =>
             {
                 Assert.AreEqual(
-                    Cosmos.ReadConsistencyStrategy.Session.ToString(),
+                    strategy.ToString(),
                     request.Headers[HttpConstants.HttpHeaders.ReadConsistencyStrategy]);
                 Assert.IsNull(request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion],
-                    "Hub region header should not be set for Session strategy");
+                    $"Hub region header should not be set for {strategyName} strategy on multi-master");
                 return TestHandler.ReturnSuccess();
             });
 
@@ -1308,10 +1256,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             requestMessage.OperationType = OperationType.Read;
             requestMessage.RequestOptions = new ItemRequestOptions
             {
-                ReadConsistencyStrategy = Cosmos.ReadConsistencyStrategy.Session
+                ReadConsistencyStrategy = strategy
             };
 
-            // Should NOT throw — Session strategy is fine for multi-master
+            // Should NOT throw
             await invoker.SendAsync(requestMessage, new CancellationToken());
         }
 
