@@ -248,6 +248,20 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = Constants.Properties.EnablePerPartitionFailoverBehavior)]
         internal bool? EnablePartitionLevelFailover { get; set; }
 
+        /// <summary>
+        /// Gets the gateway-controlled override that disables cross-regional hedging for this account.
+        /// </summary>
+        /// <remarks>
+        /// When this flag is <see langword="true"/>, the SDK disables all hedging (both SDK-default PPAF
+        /// hedging and any explicit customer-configured <see cref="Cosmos.AvailabilityStrategy"/>) regardless
+        /// of any other configuration. When the flag is <see langword="false"/> or <see langword="null"/>
+        /// (absent from the Gateway response), existing hedging behavior is preserved. The flag is only
+        /// honored for accounts with PPAF enabled and is intended as an operational escape hatch — it is
+        /// not exposed through any public SDK API surface.
+        /// </remarks>
+        [JsonProperty(PropertyName = "disableCrossRegionalHedging")]
+        internal bool? DisableCrossRegionalHedging { get; set; }
+
         private IDictionary<string, object> QueryStringToDictConverter()
         {
             if (!string.IsNullOrEmpty(this.QueryEngineConfigurationString))

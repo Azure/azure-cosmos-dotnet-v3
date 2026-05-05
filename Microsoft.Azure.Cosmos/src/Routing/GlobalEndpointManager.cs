@@ -43,10 +43,21 @@ namespace Microsoft.Azure.Cosmos.Routing
         private bool isBackgroundAccountRefreshActive = false;
         private DateTime LastBackgroundRefreshUtc = DateTime.MinValue;
 
+        // Last observed value of the account-level disableCrossRegionalHedging flag.
+        // Tracked separately so the change event fires when only this flag toggles.
+        private bool lastKnownDisableCrossRegionalHedging = false;
+
         /// <summary>
         /// Event that is raised when PPAF (Per Partition Automatic Failover) enablement status changes
+        /// or when the gateway-controlled disableCrossRegionalHedging flag toggles.
         /// </summary>
-        internal event Action<bool>? OnEnablePartitionLevelFailoverConfigChanged;
+        /// <remarks>
+        /// First argument is the latest <c>EnablePartitionLevelFailover</c> value observed from the
+        /// Gateway (falls back to the existing connection-policy value when the property is absent).
+        /// Second argument is the latest <c>disableCrossRegionalHedging</c> value (false when absent
+        /// from the Gateway response).
+        /// </remarks>
+        internal event Action<bool, bool>? OnEnablePartitionLevelFailoverConfigChanged;
 
         public GlobalEndpointManager(
             IDocumentClientInternal owner,
@@ -613,6 +624,10 @@ namespace Microsoft.Azure.Cosmos.Routing
                 this.connectionPolicy.EnablePartitionLevelFailover = databaseAccount.EnablePartitionLevelFailover.Value;
             }
 
+            // Capture initial disableCrossRegionalHedging baseline so the change-event only fires on
+            // subsequent transitions, not on the first observation.
+            this.lastKnownDisableCrossRegionalHedging = databaseAccount.DisableCrossRegionalHedging ?? false;
+
             GlobalEndpointManager.ParseThinClientLocationsFromAdditionalProperties(databaseAccount);
 
             this.locationCache.OnDatabaseAccountRead(databaseAccount);
@@ -770,11 +785,22 @@ namespace Microsoft.Azure.Cosmos.Routing
                 this.LastBackgroundRefreshUtc = DateTime.UtcNow;
                 AccountProperties accountProperties = await this.GetDatabaseAccountAsync(true);
 
-                if (!this.connectionPolicy.DisablePartitionLevelFailoverClientLevelOverride 
+                bool ignorePpafChanges = this.connectionPolicy.DisablePartitionLevelFailoverClientLevelOverride;
+
+                bool ppafEnablementChanged = !ignorePpafChanges
                     && accountProperties.EnablePartitionLevelFailover.HasValue
-                    && (this.connectionPolicy.EnablePartitionLevelFailover != accountProperties.EnablePartitionLevelFailover.Value))
+                    && (this.connectionPolicy.EnablePartitionLevelFailover != accountProperties.EnablePartitionLevelFailover.Value);
+
+                bool currentDisableHedgingFlag = accountProperties.DisableCrossRegionalHedging ?? false;
+                bool disableHedgingFlagChanged = !ignorePpafChanges
+                    && (currentDisableHedgingFlag != this.lastKnownDisableCrossRegionalHedging);
+
+                if (ppafEnablementChanged || disableHedgingFlagChanged)
                 {
-                    this.OnEnablePartitionLevelFailoverConfigChanged?.Invoke(accountProperties.EnablePartitionLevelFailover.Value);
+                    bool latestPpafEnabled = accountProperties.EnablePartitionLevelFailover
+                        ?? this.connectionPolicy.EnablePartitionLevelFailover;
+                    this.lastKnownDisableCrossRegionalHedging = currentDisableHedgingFlag;
+                    this.OnEnablePartitionLevelFailoverConfigChanged?.Invoke(latestPpafEnabled, currentDisableHedgingFlag);
                 }
 
                 GlobalEndpointManager.ParseThinClientLocationsFromAdditionalProperties(accountProperties);
