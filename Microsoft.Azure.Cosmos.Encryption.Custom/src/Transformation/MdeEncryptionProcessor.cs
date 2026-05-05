@@ -72,9 +72,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             ArgumentValidation.ThrowIfNull(diagnosticsContext);
 
             JsonProcessor jsonProcessor = this.GetRequestedJsonProcessor(requestOptions);
+
+            return await this.DecryptAsync(input, encryptor, jsonProcessor, diagnosticsContext, cancellationToken);
+        }
+
+        public async Task<(Stream, DecryptionContext)> DecryptAsync(
+            Stream input,
+            Encryptor encryptor,
+            JsonProcessor jsonProcessor,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
             using IDisposable selectionScope = diagnosticsContext.CreateScope(CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + jsonProcessor);
 
             IMdeJsonProcessorAdapter adapter = this.GetAdapter(jsonProcessor);
+
             return await adapter.DecryptAsync(input, encryptor, diagnosticsContext, cancellationToken);
         }
 
@@ -131,6 +143,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         }
 
 #if NET8_0_OR_GREATER
+        public async Task<Stream> DecryptJsonArrayStreamInPlaceAsync(
+            Stream input,
+            Encryptor encryptor,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            await this.StreamProcessor.DecryptJsonArrayStreamInPlaceAsync(input, encryptor, diagnosticsContext, cancellationToken);
+
+            return input;
+        }
+
         public async Task<(Stream, DecryptionContext)> DecryptStreamAsync(
             Stream input,
             Encryptor encryptor,

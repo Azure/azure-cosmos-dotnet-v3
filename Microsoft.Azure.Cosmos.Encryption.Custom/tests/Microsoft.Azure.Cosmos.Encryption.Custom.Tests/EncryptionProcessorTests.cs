@@ -109,7 +109,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         ActivitySource.AddActivityListener(listener);
         
         CosmosDiagnosticsContext diagEncrypt = CosmosDiagnosticsContext.Create(null);
-        Stream encrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, opts, JsonProcessor.Newtonsoft, diagEncrypt, CancellationToken.None);
+        EncryptionItemRequestOptions encryptRequest = RequestOptionsOverrideHelper.Create(opts, JsonProcessor.Newtonsoft);
+        Stream encrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, encryptRequest, diagEncrypt, CancellationToken.None);
 
         Assert.IsNotNull(encrypted);
         encrypted.Dispose();
@@ -145,7 +146,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             EncryptionOptions opts = CreateMdeOptions();
 
             // Encrypt document
-            Stream encrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, opts, JsonProcessor.Stream, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
+            Stream encrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, RequestOptionsOverrideHelper.Create(opts, JsonProcessor.Stream), CosmosDiagnosticsContext.Create(null), CancellationToken.None);
             encrypted.Position = 0;
 
             // Decrypt using internal DecryptStreamAsync (tests PooledMemoryStream usage)
@@ -197,7 +198,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             EncryptionOptions opts = CreateMdeOptions();
 
             // Test with small document
-            Stream encrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, opts, JsonProcessor.Stream, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
+            Stream encrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, RequestOptionsOverrideHelper.Create(opts, JsonProcessor.Stream), CosmosDiagnosticsContext.Create(null), CancellationToken.None);
             encrypted.Position = 0;
 
             (Stream decrypted, DecryptionContext context) = await EncryptionProcessor.DecryptStreamAsync(encrypted, mockEncryptor.Object, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
@@ -224,7 +225,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             for (int i = 0; i < 100; i++)
             {
                 // Test encrypted path (success)
-                Stream encrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, opts, JsonProcessor.Stream, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
+                Stream encrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, RequestOptionsOverrideHelper.Create(opts, JsonProcessor.Stream), CosmosDiagnosticsContext.Create(null), CancellationToken.None);
                 encrypted.Position = 0;
                 (Stream decrypted, _) = await EncryptionProcessor.DecryptStreamAsync(encrypted, mockEncryptor.Object, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
                 await decrypted.DisposeAsync();
@@ -253,7 +254,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 #pragma warning restore CS0618
                 PathsToEncrypt = TestDoc.PathsToEncrypt,
             };
-            Stream legacyEncrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, legacy, JsonProcessor.Newtonsoft, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
+            EncryptionItemRequestOptions legacyRequestOptions = RequestOptionsOverrideHelper.Create(legacy, JsonProcessor.Newtonsoft);
+            Stream legacyEncrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, legacyRequestOptions, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
             legacyEncrypted.Position = 0;
 
             ItemRequestOptions opts = new() { Properties = new Dictionary<string, object> { { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, "Stream" } } };
@@ -281,7 +283,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 #pragma warning restore CS0618
                 PathsToEncrypt = TestDoc.PathsToEncrypt,
             };
-            Stream legacyEncrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, legacy, JsonProcessor.Newtonsoft, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
+            EncryptionItemRequestOptions legacyRequestOptions = RequestOptionsOverrideHelper.Create(legacy, JsonProcessor.Newtonsoft);
+            Stream legacyEncrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, legacyRequestOptions, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
             legacyEncrypted.Position = 0;
 
             ItemRequestOptions opts = new() { Properties = new Dictionary<string, object> { { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, "Stream" } } };
