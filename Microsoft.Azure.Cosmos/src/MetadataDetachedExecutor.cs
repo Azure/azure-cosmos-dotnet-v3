@@ -64,6 +64,18 @@ namespace Microsoft.Azure.Cosmos
     /// </para>
     ///
     /// <para>
+    /// <b>Retry-policy invariant:</b> the supplied <see cref="IDocumentClientRetryPolicy"/>
+    /// MUST be a per-call instance. <c>ShouldRetryAsync</c> is intentionally NOT invoked
+    /// on either OCE termination path (deadline-trip during operation, deadline-trip during
+    /// backoff). A policy with cross-call state would therefore observe the operation as
+    /// "still in flight" after the executor returns. Today the only call sites
+    /// (<c>ClientCollectionCache.GetByRidAsync</c>, <c>GetByNameAsync</c>) construct a fresh
+    /// policy via <c>retryPolicyFactory.GetRequestPolicy()</c> per call, so this invariant
+    /// holds. A future refactor that caches policies must preserve it or move the OCE
+    /// termination paths through <c>ShouldRetryAsync</c>.
+    /// </para>
+    ///
+    /// <para>
     /// <b>Diagnostics caveat (known limitation):</b> the operation lambda captures the caller's
     /// <c>ITrace</c> and <c>ClientSideRequestStatistics</c> so that on the success path the
     /// caller observes a complete trace tree. After caller cancellation the detached task
@@ -250,6 +262,13 @@ namespace Microsoft.Azure.Cosmos
                     // see the failure mode that drove the retry, not a hard-deadline
                     // artifact. This preserves the design contract documented at the
                     // backoff catch below.
+                    //
+                    // Asymmetry note: when previousException is itself an OCE (i.e. the
+                    // first attempt also surfaced OCE bound to detachedToken), this filter
+                    // intentionally falls through to the general catch path below. There
+                    // is no diagnostic gain to swapping one OCE for another, and the
+                    // general path correctly funnels through the policy / hard-cap /
+                    // backoff-catch termination logic.
                     previousException.Throw();
                     throw; // unreachable
                 }

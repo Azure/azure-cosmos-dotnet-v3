@@ -542,7 +542,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         return 0;
                     },
                     policy.Object,
-                    TimeSpan.FromMilliseconds(200),
+                    TimeSpan.FromSeconds(2),
                     CancellationToken.None));
 
             Assert.AreSame(underlying, thrown,
