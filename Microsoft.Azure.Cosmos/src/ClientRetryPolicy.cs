@@ -32,6 +32,7 @@ namespace Microsoft.Azure.Cosmos
         private const int DefaultRetryWithTotalWaitTimeMilliseconds = 30000;
         private const int RetryWithBackoffMultiplier = 2;
 
+        private static readonly object RetryWithRandomLock = new object();
         private static readonly Random RetryWithRandom = new Random();
 
         private readonly IDocumentClientRetryPolicy throttlingRetry;
@@ -613,17 +614,20 @@ namespace Microsoft.Azure.Cosmos
             }
             else
             {
-                this.retryWithCurrentBackoffMilliseconds = Math.Min(
-                    this.retryWithCurrentBackoffMilliseconds.Value * ClientRetryPolicy.RetryWithBackoffMultiplier,
+                this.retryWithCurrentBackoffMilliseconds = (int)Math.Min(
+                    (long)this.retryWithCurrentBackoffMilliseconds.Value * ClientRetryPolicy.RetryWithBackoffMultiplier,
                     this.retryWithMaxBackoffMilliseconds);
             }
 
             int backoffMilliseconds = this.retryWithCurrentBackoffMilliseconds.Value;
 
-            // Add jitter
-            if (this.retryWithRandomSaltMilliseconds.HasValue && this.retryWithRandomSaltMilliseconds.Value > 0)
+            // Add jitter (lock required: Random is not thread-safe on netstandard2.0)
+            if (this.retryWithRandomSaltMilliseconds.HasValue && this.retryWithRandomSaltMilliseconds.Value > 1)
             {
-                backoffMilliseconds += ClientRetryPolicy.RetryWithRandom.Next(1, this.retryWithRandomSaltMilliseconds.Value);
+                lock (ClientRetryPolicy.RetryWithRandomLock)
+                {
+                    backoffMilliseconds += ClientRetryPolicy.RetryWithRandom.Next(1, this.retryWithRandomSaltMilliseconds.Value);
+                }
             }
 
             // Cap to remaining time and max backoff
