@@ -466,43 +466,16 @@
 
             if (isSingleMaster)
             {
-                // For single master, after one retry fails with 404/1002, it won't retry further
-                // But the header flag should be set for any potential future retries due to other errors
-                Assert.IsFalse(shouldRetry.ShouldRetry, "Single master should not retry again after first 404/1002 retry fails.");
+                // For single master, after the second 404/1002, the hub region header flag has been set
+                // and the retry policy should allow one more retry so the request can be sent with the header.
+                Assert.IsTrue(shouldRetry.ShouldRetry, "Single master should retry once more after second 404/1002 so the hub region header is sent.");
 
-                // The header flag should be set even though no more 404/1002 retries will happen
-                // This ensures if the request is retried for a different reason (e.g., 503), it will have the header
-            }
-            else
-            {
-                // Multi-master can retry across multiple regions
-                Assert.IsTrue(shouldRetry.ShouldRetry, "Multi-master should continue retrying on 404/1002.");
-            }
-
-            // For single master: Verify header would be added if request is retried for other reasons (e.g., 503)
-            // For multi-master: Verify header is NOT added even on subsequent retries
-            if (isSingleMaster)
-            {
-                // Simulate a 503 error to trigger another retry
-                DocumentClientException serviceUnavailableException = new DocumentClientException(
-                    message: "Simulated 503 ServiceUnavailable",
-                    innerException: null,
-                    statusCode: HttpStatusCode.ServiceUnavailable,
-                    substatusCode: SubStatusCodes.Unknown,
-                    requestUri: request.RequestContext.LocationEndpointToRoute,
-                    responseHeaders: new DictionaryNameValueCollection());
-
-                shouldRetry = await retryPolicy.ShouldRetryAsync(serviceUnavailableException, CancellationToken.None);
-
-                if (shouldRetry.ShouldRetry)
-                {
-                    // Now verify the header is present on this retry triggered by 503
-                    retryPolicy.OnBeforeSendRequest(request);
-                    headerValues = request.Headers.GetValues(HubRegionHeader);
-                    Assert.IsNotNull(headerValues, "Header should be present on retry after 404/1002 flag was set.");
-                    Assert.AreEqual(1, headerValues.Length, "Header should have exactly one value.");
-                    Assert.AreEqual(bool.TrueString, headerValues[0], "Header value should be 'True'.");
-                }
+                // Verify the header is now present on the retry
+                retryPolicy.OnBeforeSendRequest(request);
+                headerValues = request.Headers.GetValues(HubRegionHeader);
+                Assert.IsNotNull(headerValues, "Hub region header should be present on retry after second 404/1002.");
+                Assert.AreEqual(1, headerValues.Length, "Header should have exactly one value.");
+                Assert.AreEqual(bool.TrueString, headerValues[0], "Header value should be 'True'.");
             }
             else
             {
@@ -528,6 +501,176 @@
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// End-to-end test for the hub region discovery flow on a single-master account (Direct mode):
+        /// 1st request → 404/1002 (no hub header) → retry to write region
+        /// 2nd request → 404/1002 (no hub header) → hub header flag set, retry
+        /// 3rd request → assert hub header present → 403/3 from non-hub → retry
+        /// 4th request → assert hub header present → 200 success
+        /// </summary>
+        [TestMethod]
+        public async Task ClientRetryPolicy_HubRegionDiscovery_EndToEnd_DirectMode()
+        {
+            // Arrange: single-master, endpoint discovery enabled
+            const bool enableEndpointDiscovery = true;
+
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enforceSingleMasterSingleWriteLocation: true);
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                endpointManager,
+                this.partitionKeyRangeLocationCache,
+                new RetryOptions(),
+                enableEndpointDiscovery,
+                isThinClientEnabled: false);
+
+            DocumentServiceRequest request = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+
+            // ---- Step 1: First request attempt ----
+            retryPolicy.OnBeforeSendRequest(request);
+            Assert.IsNull(
+                request.Headers.GetValues(HubRegionHeader),
+                "Hub region header should NOT be present on the initial request.");
+
+            // Simulate 1st 404/1002
+            ShouldRetryResult shouldRetry = await retryPolicy.ShouldRetryAsync(
+                new DocumentClientException(
+                    message: "1st 404/1002",
+                    innerException: null,
+                    statusCode: HttpStatusCode.NotFound,
+                    substatusCode: SubStatusCodes.ReadSessionNotAvailable,
+                    requestUri: request.RequestContext.LocationEndpointToRoute,
+                    responseHeaders: new DictionaryNameValueCollection()),
+                CancellationToken.None);
+
+            Assert.IsTrue(shouldRetry.ShouldRetry, "Should retry after first 404/1002.");
+
+            // ---- Step 2: Retry routed to write region ----
+            retryPolicy.OnBeforeSendRequest(request);
+            Assert.IsNull(
+                request.Headers.GetValues(HubRegionHeader),
+                "Hub region header should NOT be present on the first retry (routed to write region).");
+
+            // Simulate 2nd 404/1002
+            shouldRetry = await retryPolicy.ShouldRetryAsync(
+                new DocumentClientException(
+                    message: "2nd 404/1002",
+                    innerException: null,
+                    statusCode: HttpStatusCode.NotFound,
+                    substatusCode: SubStatusCodes.ReadSessionNotAvailable,
+                    requestUri: request.RequestContext.LocationEndpointToRoute,
+                    responseHeaders: new DictionaryNameValueCollection()),
+                CancellationToken.None);
+
+            Assert.IsTrue(shouldRetry.ShouldRetry, "Should retry after second 404/1002 (hub header flag now set).");
+
+            // ---- Step 3: Retry with hub region header → gets 403/3 ----
+            retryPolicy.OnBeforeSendRequest(request);
+            string[] headerValues = request.Headers.GetValues(HubRegionHeader);
+            Assert.IsNotNull(headerValues, "Hub region header MUST be present on the retry after two consecutive 404/1002 errors.");
+            Assert.AreEqual(1, headerValues.Length, "Hub region header should have exactly one value.");
+            Assert.AreEqual(bool.TrueString, headerValues[0], "Hub region header value should be 'True'.");
+
+            // Simulate 403/3 (WriteForbidden) — this happens when the request reaches a non-hub region
+            shouldRetry = await retryPolicy.ShouldRetryAsync(
+                new DocumentClientException(
+                    message: "403/3 WriteForbidden from non-hub region",
+                    innerException: null,
+                    statusCode: HttpStatusCode.Forbidden,
+                    substatusCode: SubStatusCodes.WriteForbidden,
+                    requestUri: request.RequestContext.LocationEndpointToRoute,
+                    responseHeaders: new DictionaryNameValueCollection()),
+                CancellationToken.None);
+
+            Assert.IsTrue(shouldRetry.ShouldRetry, "Should retry after 403/3 to continue hub region discovery.");
+
+            // ---- Step 4: Retry still carries hub header → 200 success ----
+            retryPolicy.OnBeforeSendRequest(request);
+            headerValues = request.Headers.GetValues(HubRegionHeader);
+            Assert.IsNotNull(headerValues, "Hub region header MUST persist through 403/3 retries.");
+            Assert.AreEqual(bool.TrueString, headerValues[0], "Hub region header value should remain 'True'.");
+        }
+
+        /// <summary>
+        /// Verifies that once the hub region header is set (after two consecutive 404/1002),
+        /// it persists through subsequent retries triggered by other retriable errors
+        /// (503 ServiceUnavailable, 408 RequestTimeout) and that the normal preferred-region
+        /// cycling continues with the header attached.
+        /// </summary>
+        [TestMethod]
+        public async Task ClientRetryPolicy_HubRegionHeader_PersistsThroughRetriableErrors()
+        {
+            const bool enableEndpointDiscovery = true;
+
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enforceSingleMasterSingleWriteLocation: true);
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                endpointManager,
+                this.partitionKeyRangeLocationCache,
+                new RetryOptions(),
+                enableEndpointDiscovery,
+                isThinClientEnabled: false);
+
+            DocumentServiceRequest request = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
+
+            // ---- 1st 404/1002 ----
+            retryPolicy.OnBeforeSendRequest(request);
+            ShouldRetryResult shouldRetry = await retryPolicy.ShouldRetryAsync(
+                new DocumentClientException(
+                    message: "1st 404/1002",
+                    innerException: null,
+                    statusCode: HttpStatusCode.NotFound,
+                    substatusCode: SubStatusCodes.ReadSessionNotAvailable,
+                    requestUri: request.RequestContext.LocationEndpointToRoute,
+                    responseHeaders: new DictionaryNameValueCollection()),
+                CancellationToken.None);
+            Assert.IsTrue(shouldRetry.ShouldRetry);
+
+            // ---- 2nd 404/1002 → hub header flag gets set ----
+            retryPolicy.OnBeforeSendRequest(request);
+            shouldRetry = await retryPolicy.ShouldRetryAsync(
+                new DocumentClientException(
+                    message: "2nd 404/1002",
+                    innerException: null,
+                    statusCode: HttpStatusCode.NotFound,
+                    substatusCode: SubStatusCodes.ReadSessionNotAvailable,
+                    requestUri: request.RequestContext.LocationEndpointToRoute,
+                    responseHeaders: new DictionaryNameValueCollection()),
+                CancellationToken.None);
+            Assert.IsTrue(shouldRetry.ShouldRetry, "Should retry so the hub header can be sent.");
+
+            // ---- 3rd request: hub header should be present ----
+            retryPolicy.OnBeforeSendRequest(request);
+            string[] headerValues = request.Headers.GetValues(HubRegionHeader);
+            Assert.IsNotNull(headerValues, "Hub region header must be present after two 404/1002 failures.");
+            Assert.AreEqual(bool.TrueString, headerValues[0]);
+
+            // ---- Now simulate a retriable 503 ServiceUnavailable error ----
+            shouldRetry = await retryPolicy.ShouldRetryAsync(
+                new DocumentClientException(
+                    message: "503 ServiceUnavailable after hub header set",
+                    innerException: null,
+                    statusCode: HttpStatusCode.ServiceUnavailable,
+                    substatusCode: SubStatusCodes.Unknown,
+                    requestUri: request.RequestContext.LocationEndpointToRoute,
+                    responseHeaders: new DictionaryNameValueCollection()),
+                CancellationToken.None);
+            Assert.IsTrue(shouldRetry.ShouldRetry, "Should retry on 503 ServiceUnavailable.");
+
+            // ---- 4th request: hub header must STILL be present after 503 retry ----
+            retryPolicy.OnBeforeSendRequest(request);
+            headerValues = request.Headers.GetValues(HubRegionHeader);
+            Assert.IsNotNull(headerValues, "Hub region header must persist through 503 retry.");
+            Assert.AreEqual(bool.TrueString, headerValues[0], "Hub region header value should remain 'True'.");
         }
 
         private async Task ValidateConnectTimeoutTriggersClientRetryPolicyAsync(

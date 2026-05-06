@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }},
                 {HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,  new List<TimeSpan>()
                 {
-                    TimeSpan.FromSeconds(1),
+                    TimeSpan.FromSeconds(2),
                     TimeSpan.FromSeconds(6),
                     TimeSpan.FromSeconds(66)
                 }},
