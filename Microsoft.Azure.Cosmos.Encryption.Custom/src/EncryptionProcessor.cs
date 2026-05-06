@@ -230,49 +230,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
         }
 
-#if NET8_0_OR_GREATER
-        public static async Task<(Stream, DecryptionContext)> DecryptStreamAsync(
-            Stream input,
-            Encryptor encryptor,
-            CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken)
-        {
-            if (input == null)
-            {
-                return (input, null);
-            }
-
-            Debug.Assert(input.CanSeek);
-            Debug.Assert(encryptor != null);
-            Debug.Assert(diagnosticsContext != null);
-            input.Position = 0;
-
-            EncryptionPropertiesWrapper properties = await PooledJsonSerializer.DeserializeFromStreamAsync<EncryptionPropertiesWrapper>(input, cancellationToken: cancellationToken);
-            input.Position = 0;
-
-            PooledMemoryStream output = new ();
-            try
-            {
-                if (properties?.EncryptionProperties == null)
-                {
-                    await input.CopyToAsync(output, cancellationToken).ConfigureAwait(false);
-                    output.Position = 0;
-                    input.Position = 0;
-                    return (output, null);
-                }
-
-                DecryptionContext context = await MdeEncryptionProcessor.DecryptStreamAsync(input, output, encryptor, properties.EncryptionProperties, diagnosticsContext, cancellationToken);
-                input.Position = 0;
-                return (output, context);
-            }
-            catch
-            {
-                await output.DisposeAsync();
-                throw;
-            }
-        }
-#endif
-
         public static async Task<(JObject, DecryptionContext)> DecryptAsync(
             JObject document,
             Encryptor encryptor,

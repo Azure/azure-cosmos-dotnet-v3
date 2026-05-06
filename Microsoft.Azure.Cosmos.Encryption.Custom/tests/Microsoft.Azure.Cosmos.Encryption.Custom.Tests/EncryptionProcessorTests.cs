@@ -92,37 +92,37 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             }
         }
 
-    [TestMethod]
-    public async Task Encrypt_NewtonsoftProcessor_Works()
-    {
-        TestDoc doc = TestDoc.Create();
-        EncryptionOptions opts = CreateMdeOptions();
-        
-        // Capture activities to validate scopes are created
-        List<Activity> capturedActivities = new List<Activity>();
-        using ActivityListener listener = new ActivityListener
+        [TestMethod]
+        public async Task Encrypt_NewtonsoftProcessor_Works()
         {
-            ShouldListenTo = (activitySource) => activitySource.Name == "Microsoft.Azure.Cosmos.Encryption.Custom",
-            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
-            ActivityStarted = activity => { lock (capturedActivities) { capturedActivities.Add(activity); } }
-        };
-        ActivitySource.AddActivityListener(listener);
+            TestDoc doc = TestDoc.Create();
+            EncryptionOptions opts = CreateMdeOptions();
         
-        CosmosDiagnosticsContext diagEncrypt = CosmosDiagnosticsContext.Create(null);
-        EncryptionItemRequestOptions encryptRequest = RequestOptionsOverrideHelper.Create(opts, JsonProcessor.Newtonsoft);
-        Stream encrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, encryptRequest, diagEncrypt, CancellationToken.None);
+            // Capture activities to validate scopes are created
+            List<Activity> capturedActivities = new List<Activity>();
+            using ActivityListener listener = new ActivityListener
+            {
+                ShouldListenTo = (activitySource) => activitySource.Name == "Microsoft.Azure.Cosmos.Encryption.Custom",
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+                ActivityStarted = activity => { lock (capturedActivities) { capturedActivities.Add(activity); } }
+            };
+            ActivitySource.AddActivityListener(listener);
+        
+            CosmosDiagnosticsContext diagEncrypt = CosmosDiagnosticsContext.Create(null);
+            EncryptionItemRequestOptions encryptRequest = RequestOptionsOverrideHelper.Create(opts, JsonProcessor.Newtonsoft);
+            Stream encrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, encryptRequest, diagEncrypt, CancellationToken.None);
 
-        Assert.IsNotNull(encrypted);
-        encrypted.Dispose();
+            Assert.IsNotNull(encrypted);
+            encrypted.Dispose();
         
-        // Validate Newtonsoft encrypt scope was created
-        string expectedEncryptScope = CosmosDiagnosticsContext.ScopeEncryptModeSelectionPrefix + JsonProcessor.Newtonsoft;
-        lock (capturedActivities)
-        {
-            Assert.IsTrue(capturedActivities.Any(a => a.DisplayName == expectedEncryptScope),
-                $"Expected Newtonsoft encrypt scope '{expectedEncryptScope}' not found. Activities: {string.Join(", ", capturedActivities.Select(a => a.DisplayName))}");
+            // Validate Newtonsoft encrypt scope was created
+            string expectedEncryptScope = CosmosDiagnosticsContext.ScopeEncryptModeSelectionPrefix + JsonProcessor.Newtonsoft;
+            lock (capturedActivities)
+            {
+                Assert.IsTrue(capturedActivities.Any(a => a.DisplayName == expectedEncryptScope),
+                    $"Expected Newtonsoft encrypt scope '{expectedEncryptScope}' not found. Activities: {string.Join(", ", capturedActivities.Select(a => a.DisplayName))}");
+            }
         }
-    }
 
         [TestMethod]
         public async Task Decrypt_StreamSelection_FallbackWhenUnencrypted()
@@ -134,119 +134,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             (Stream result, DecryptionContext ctxDec) = await EncryptionProcessor.DecryptAsync(input, mockEncryptor.Object, ctxDiag, opts, CancellationToken.None);
             Assert.IsNull(ctxDec);
             Assert.AreEqual(0, result.Position);
-        }
-
-        [TestMethod]
-        [TestCategory("Integration")]
-        [TestCategory("PooledResources")]
-        public async Task DecryptStreamAsync_UsesPooledMemoryStream_DisposesCorrectly()
-        {
-            // Tests EncryptionProcessor.cs:257 - new PooledMemoryStream() disposal on success path
-            TestDoc doc = TestDoc.Create();
-            EncryptionOptions opts = CreateMdeOptions();
-
-            // Encrypt document
-            Stream encrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, RequestOptionsOverrideHelper.Create(opts, JsonProcessor.Stream), CosmosDiagnosticsContext.Create(null), CancellationToken.None);
-            encrypted.Position = 0;
-
-            // Decrypt using internal DecryptStreamAsync (tests PooledMemoryStream usage)
-            (Stream decrypted, DecryptionContext context) = await EncryptionProcessor.DecryptStreamAsync(encrypted, mockEncryptor.Object, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
-
-            Assert.IsNotNull(context, "Context should not be null for encrypted payload");
-            Assert.IsNotNull(decrypted, "Decrypted stream should not be null");
-
-            // Verify decrypted stream is readable
-            decrypted.Position = 0;
-            TestDoc result = TestCommon.FromStream<TestDoc>(decrypted);
-            Assert.AreEqual(doc.SensitiveStr, result.SensitiveStr);
-
-            // Cleanup
-            await decrypted.DisposeAsync();
-        }
-
-        [TestMethod]
-        [TestCategory("Integration")]
-        [TestCategory("PooledResources")]
-        public async Task DecryptStreamAsync_WithNoEncryptionProperties_ReturnsFreshCallerOwnedStream()
-        {
-            string plainJson = "{\"id\":\"test-123\",\"value\":\"no encryption\"}";
-            using MemoryStream input = new(System.Text.Encoding.UTF8.GetBytes(plainJson));
-            CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create(null);
-
-            (Stream result, DecryptionContext context) = await EncryptionProcessor.DecryptStreamAsync(input, mockEncryptor.Object, diagnostics, CancellationToken.None);
-
-            try
-            {
-                Assert.IsNull(context, "Context should be null for non-encrypted payload");
-                Assert.AreNotSame(input, result, "Caller should always receive a fresh stream");
-                Assert.AreEqual(0, result.Position, "Returned stream position should be 0");
-
-                Assert.IsTrue(input.CanRead, "Caller's input stream should not be disposed by the method");
-                Assert.AreEqual(0, input.Position, "Caller's input stream should be left at position 0");
-
-                using StreamReader reader = new(result, System.Text.Encoding.UTF8, detectEncodingFromByteOrderMarks: false, leaveOpen: true);
-                string roundTripped = await reader.ReadToEndAsync();
-                Assert.AreEqual(plainJson, roundTripped, "Returned stream should contain the original bytes");
-            }
-            finally
-            {
-                await result.DisposeAsync();
-            }
-        }
-
-        [TestMethod]
-        [TestCategory("Integration")]
-        [TestCategory("PooledResources")]
-        public async Task DecryptStreamAsync_UsesPooledJsonSerializer_DeserializesCorrectly()
-        {
-            // Tests EncryptionProcessor.cs:250 - PooledJsonSerializer.DeserializeFromStreamAsync
-            // Verify PooledJsonSerializer correctly deserializes encryption properties from various document sizes
-
-            TestDoc doc = TestDoc.Create();
-            EncryptionOptions opts = CreateMdeOptions();
-
-            // Test with small document
-            Stream encrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, RequestOptionsOverrideHelper.Create(opts, JsonProcessor.Stream), CosmosDiagnosticsContext.Create(null), CancellationToken.None);
-            encrypted.Position = 0;
-
-            (Stream decrypted, DecryptionContext context) = await EncryptionProcessor.DecryptStreamAsync(encrypted, mockEncryptor.Object, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
-
-            Assert.IsNotNull(context, "PooledJsonSerializer should successfully deserialize encryption properties");
-            Assert.AreEqual(DekId, context.DecryptionInfoList[0].DataEncryptionKeyId);
-
-            await decrypted.DisposeAsync();
-        }
-
-        [TestMethod]
-        [TestCategory("Integration")]
-        [TestCategory("PooledResources")]
-        [TestCategory("Stress")]
-        public async Task DecryptStreamAsync_RepeatedCalls_NoMemoryLeak()
-        {
-            // Stress test to verify PooledMemoryStream disposal in success and failure paths
-            // Run 100 iterations - if PooledMemoryStream not disposed, ArrayPool will exhaust
-
-            TestDoc doc = TestDoc.Create();
-            EncryptionOptions opts = CreateMdeOptions();
-            string plainJson = "{\"id\":\"test\"}";
-
-            for (int i = 0; i < 100; i++)
-            {
-                // Test encrypted path (success)
-                Stream encrypted = await EncryptionProcessor.EncryptAsync(doc.ToStream(), mockEncryptor.Object, RequestOptionsOverrideHelper.Create(opts, JsonProcessor.Stream), CosmosDiagnosticsContext.Create(null), CancellationToken.None);
-                encrypted.Position = 0;
-                (Stream decrypted, _) = await EncryptionProcessor.DecryptStreamAsync(encrypted, mockEncryptor.Object, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
-                await decrypted.DisposeAsync();
-
-                // Test non-encrypted path (null context)
-                using MemoryStream input = new(System.Text.Encoding.UTF8.GetBytes(plainJson));
-                (Stream result, DecryptionContext context) = await EncryptionProcessor.DecryptStreamAsync(input, mockEncryptor.Object, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
-                Assert.IsNull(context, $"Iteration {i}: Context should be null");
-                await result.DisposeAsync();
-            }
-
-            // If we got here without OutOfMemoryException, disposal is working
-            Assert.IsTrue(true, "100 iterations completed without memory leak");
         }
 #endif
 

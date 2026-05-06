@@ -75,30 +75,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             return (plainText, decryptedLength);
         }
 
-        internal virtual int Decrypt(DataEncryptionKey encryptionKey, byte[] cipherText, int cipherTextLength, byte[] plainText)
-        {
-            int plainTextLength = this.GetDecryptedByteCount(encryptionKey, cipherTextLength);
-
-            if (plainText.Length < plainTextLength)
-            {
-                throw new ArgumentException($"Plain text buffer length {plainText.Length} is less than required plain text length {plainTextLength}.");
-            }
-
-            int decryptedLength = encryptionKey.DecryptData(
-                cipherText,
-                cipherTextOffset: 1,
-                cipherTextLength: cipherTextLength - 1,
-                plainText,
-                outputOffset: 0);
-
-            if (decryptedLength < 0)
-            {
-                throw new InvalidOperationException($"{nameof(DataEncryptionKey)} returned null plainText from {nameof(DataEncryptionKey.DecryptData)}.");
-            }
-
-            return decryptedLength;
-        }
-
         internal virtual int GetDecryptedByteCount(DataEncryptionKey encryptionKey, int cipherTextLength)
         {
             return encryptionKey.GetDecryptByteCount(cipherTextLength - 1);
