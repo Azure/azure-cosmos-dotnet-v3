@@ -1,0 +1,504 @@
+//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+namespace Microsoft.Azure.Cosmos.Tests
+{
+    using System;
+    using System.Net;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.Documents;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
+
+    /// <summary>
+    /// Unit tests for <see cref="MetadataDetachedExecutor"/>.
+    ///
+    /// These tests pin the behavior of the detached-cancellation execution model used by
+    /// <c>ClientCollectionCache.GetByRidAsync</c> / <c>GetByNameAsync</c>. The executor
+    /// runs metadata reads on a detached <see cref="CancellationToken"/> and observes the
+    /// caller's token only on the response path so that <see cref="IDocumentClientRetryPolicy.ShouldRetryAsync"/>
+    /// (specifically <c>ClientRetryPolicy</c>'s cross-region failover decision) is never
+    /// preempted by caller-cancel.
+    /// </summary>
+    [TestClass]
+    public class MetadataDetachedExecutorTests
+    {
+        [TestMethod]
+        [Owner("ntripician")]
+        public async Task ExecuteAsync_SucceedsFirstAttempt_NoRetry()
+        {
+            Mock<IDocumentClientRetryPolicy> policy = new Mock<IDocumentClientRetryPolicy>();
+            int attempts = 0;
+
+            int result = await MetadataDetachedExecutor.ExecuteAsync<int>(
+                (_) =>
+                {
+                    attempts++;
+                    return Task.FromResult(42);
+                },
+                policy.Object,
+                CancellationToken.None);
+
+            Assert.AreEqual(42, result);
+            Assert.AreEqual(1, attempts);
+            policy.Verify(
+                p => p.ShouldRetryAsync(It.IsAny<Exception>(), It.IsAny<CancellationToken>()),
+                Times.Never);
+        }
+
+        [TestMethod]
+        [Owner("ntripician")]
+        public async Task ExecuteAsync_RetriesOnTransient_WhenPolicyAllows()
+        {
+            Mock<IDocumentClientRetryPolicy> policy = new Mock<IDocumentClientRetryPolicy>();
+            policy
+                .Setup(p => p.ShouldRetryAsync(It.IsAny<Exception>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(ShouldRetryResult.RetryAfter(TimeSpan.Zero));
+
+            int attempts = 0;
+            int result = await MetadataDetachedExecutor.ExecuteAsync<int>(
+                (_) =>
+                {
+                    attempts++;
+                    if (attempts == 1)
+                    {
+                        throw new DocumentClientException(
+                            "transient",
+                            HttpStatusCode.ServiceUnavailable,
+                            SubStatusCodes.Unknown);
+                    }
+
+                    return Task.FromResult(7);
+                },
+                policy.Object,
+                CancellationToken.None);
+
+            Assert.AreEqual(7, result);
+            Assert.AreEqual(2, attempts);
+        }
+
+        /// <summary>
+        /// PRIMARY FIX: when the caller's token trips MID-FLIGHT (during the first
+        /// attempt — analog of the control-plane HTTP timeout policy burning out
+        /// against the unhealthy region), the retry policy still drives a successful
+        /// cross-region failover because the operation runs on a detached token.
+        /// The caller observes OCE; the second attempt completes on the detached token.
+        /// </summary>
+        [TestMethod]
+        [Owner("ntripician")]
+        public async Task ExecuteAsync_CrossRegionRetryExecutes_EvenWhenCallerTokenCancelsMidFlight()
+        {
+            Mock<IDocumentClientRetryPolicy> policy = new Mock<IDocumentClientRetryPolicy>();
+            policy
+                .Setup(p => p.ShouldRetryAsync(It.IsAny<Exception>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(ShouldRetryResult.RetryAfter(TimeSpan.Zero));
+
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            int attempts = 0;
+            TaskCompletionSource<bool> firstAttemptStarted = new TaskCompletionSource<bool>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource<bool> firstAttemptCanFail = new TaskCompletionSource<bool>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource<int> secondAttemptResult = new TaskCompletionSource<int>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource<bool> secondAttemptStarted = new TaskCompletionSource<bool>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+
+            Task<int> caller = Task.Run(() => MetadataDetachedExecutor.ExecuteAsync<int>(
+                async (ct) =>
+                {
+                    int attempt = Interlocked.Increment(ref attempts);
+                    if (attempt == 1)
+                    {
+                        firstAttemptStarted.TrySetResult(true);
+                        await firstAttemptCanFail.Task.ConfigureAwait(false);
+                        Assert.IsFalse(ct.IsCancellationRequested,
+                            "operation must receive the detached token, not the caller token");
+                        throw new DocumentClientException(
+                            "primary region down",
+                            HttpStatusCode.ServiceUnavailable,
+                            SubStatusCodes.Unknown);
+                    }
+
+                    secondAttemptStarted.TrySetResult(true);
+                    Assert.IsFalse(ct.IsCancellationRequested,
+                        "second-attempt token must remain non-cancelled despite caller cancellation");
+                    int value = await secondAttemptResult.Task.ConfigureAwait(false);
+                    return value;
+                },
+                policy.Object,
+                cts.Token));
+
+            await firstAttemptStarted.Task.ConfigureAwait(false);
+
+            cts.Cancel();
+            firstAttemptCanFail.TrySetResult(true);
+
+            await Assert.ThrowsExceptionAsync<OperationCanceledException>(() => caller);
+
+            secondAttemptResult.TrySetResult(99);
+            Task winner = await Task.WhenAny(secondAttemptStarted.Task, Task.Delay(TimeSpan.FromSeconds(5)));
+            Assert.AreSame(secondAttemptStarted.Task, winner,
+                "the cross-region retry attempt must execute on the detached token after caller cancellation");
+            Assert.AreEqual(2, Interlocked.CompareExchange(ref attempts, 0, 0),
+                "the cross-region retry attempt must execute on the detached token after caller cancellation");
+        }
+
+        /// <summary>
+        /// If the caller's token trips while the detached attempt is mid-flight, the
+        /// caller surfaces OCE immediately. The detached task is allowed to keep running
+        /// (verified via TaskCompletionSource — the operation lambda is not signalled
+        /// via its token).
+        /// </summary>
+        [TestMethod]
+        [Owner("ntripician")]
+        public async Task ExecuteAsync_CallerCancelMidFlight_SurfacesOCE_DetachedTaskKeepsRunning()
+        {
+            Mock<IDocumentClientRetryPolicy> policy = new Mock<IDocumentClientRetryPolicy>();
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            TaskCompletionSource<int> operationGate = new TaskCompletionSource<int>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource<bool> operationStarted = new TaskCompletionSource<bool>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource<bool> operationCompletedOnDetachedToken = new TaskCompletionSource<bool>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+
+            Task<int> caller = MetadataDetachedExecutor.ExecuteAsync<int>(
+                async (ct) =>
+                {
+                    operationStarted.TrySetResult(true);
+                    int value = await operationGate.Task.ConfigureAwait(false);
+                    Assert.IsFalse(ct.IsCancellationRequested,
+                        "detached token must not flip when caller cancels");
+                    operationCompletedOnDetachedToken.TrySetResult(true);
+                    return value;
+                },
+                policy.Object,
+                cts.Token);
+
+            await operationStarted.Task.ConfigureAwait(false);
+            cts.Cancel();
+
+            await Assert.ThrowsExceptionAsync<OperationCanceledException>(() => caller);
+
+            operationGate.TrySetResult(123);
+
+            Task winner = await Task.WhenAny(operationCompletedOnDetachedToken.Task, Task.Delay(TimeSpan.FromSeconds(5)));
+            Assert.AreSame(operationCompletedOnDetachedToken.Task, winner,
+                "detached operation must run to completion after caller cancellation");
+        }
+
+        [TestMethod]
+        [Owner("ntripician")]
+        public async Task ExecuteAsync_AlreadyCancelledCallerToken_ThrowsBeforeAnyOperation()
+        {
+            Mock<IDocumentClientRetryPolicy> policy = new Mock<IDocumentClientRetryPolicy>();
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            int attempts = 0;
+            await Assert.ThrowsExceptionAsync<OperationCanceledException>(
+                () => MetadataDetachedExecutor.ExecuteAsync<int>(
+                    (_) =>
+                    {
+                        attempts++;
+                        return Task.FromResult(0);
+                    },
+                    policy.Object,
+                    cts.Token));
+
+            Assert.AreEqual(0, attempts, "operation must not be invoked when caller token is already cancelled");
+            policy.Verify(
+                p => p.ShouldRetryAsync(It.IsAny<Exception>(), It.IsAny<CancellationToken>()),
+                Times.Never);
+        }
+
+        [TestMethod]
+        [Owner("ntripician")]
+        public async Task ExecuteAsync_CancellationTokenNone_FastPath_NoCallerOcePropagation()
+        {
+            Mock<IDocumentClientRetryPolicy> policy = new Mock<IDocumentClientRetryPolicy>();
+
+            int result = await MetadataDetachedExecutor.ExecuteAsync<int>(
+                (ct) =>
+                {
+                    Assert.IsFalse(ct.CanBeCanceled || ct.IsCancellationRequested ? ct.IsCancellationRequested : false,
+                        "detached token must not be already-cancelled at entry");
+                    return Task.FromResult(11);
+                },
+                policy.Object,
+                CancellationToken.None);
+
+            Assert.AreEqual(11, result);
+        }
+
+        [TestMethod]
+        [Owner("ntripician")]
+        public async Task ExecuteAsync_PolicyDeniesRetry_SurfacesOriginalException()
+        {
+            Mock<IDocumentClientRetryPolicy> policy = new Mock<IDocumentClientRetryPolicy>();
+            policy
+                .Setup(p => p.ShouldRetryAsync(It.IsAny<Exception>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(ShouldRetryResult.NoRetry());
+
+            DocumentClientException original = new DocumentClientException(
+                "fatal",
+                HttpStatusCode.Forbidden,
+                SubStatusCodes.Unknown);
+
+            DocumentClientException thrown = await Assert.ThrowsExceptionAsync<DocumentClientException>(
+                () => MetadataDetachedExecutor.ExecuteAsync<int>(
+                    (_) => throw original,
+                    policy.Object,
+                    CancellationToken.None));
+
+            Assert.AreSame(original, thrown);
+        }
+
+        [TestMethod]
+        [Owner("ntripician")]
+        public async Task ExecuteAsync_HonorsExceptionToThrow_FromPolicy()
+        {
+            DocumentClientException wrapped = new DocumentClientException(
+                "wrapped",
+                HttpStatusCode.RequestTimeout,
+                SubStatusCodes.Unknown);
+
+            Mock<IDocumentClientRetryPolicy> policy = new Mock<IDocumentClientRetryPolicy>();
+            policy
+                .Setup(p => p.ShouldRetryAsync(It.IsAny<Exception>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(ShouldRetryResult.NoRetry(wrapped));
+
+            DocumentClientException thrown = await Assert.ThrowsExceptionAsync<DocumentClientException>(
+                () => MetadataDetachedExecutor.ExecuteAsync<int>(
+                    (_) => throw new DocumentClientException(
+                        "inner", HttpStatusCode.ServiceUnavailable, SubStatusCodes.Unknown),
+                    policy.Object,
+                    CancellationToken.None));
+
+            Assert.AreSame(wrapped, thrown);
+        }
+
+        [TestMethod]
+        [Owner("ntripician")]
+        public async Task ExecuteAsync_PolicyThrows_SurfacesOriginalException()
+        {
+            DocumentClientException original = new DocumentClientException(
+                "transient",
+                HttpStatusCode.ServiceUnavailable,
+                SubStatusCodes.Unknown);
+
+            Mock<IDocumentClientRetryPolicy> policy = new Mock<IDocumentClientRetryPolicy>();
+            policy
+                .Setup(p => p.ShouldRetryAsync(It.IsAny<Exception>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new InvalidOperationException("policy crashed"));
+
+            DocumentClientException thrown = await Assert.ThrowsExceptionAsync<DocumentClientException>(
+                () => MetadataDetachedExecutor.ExecuteAsync<int>(
+                    (_) => throw original,
+                    policy.Object,
+                    CancellationToken.None));
+
+            Assert.AreSame(original, thrown);
+        }
+
+        [TestMethod]
+        [Owner("ntripician")]
+        public async Task ExecuteAsync_InternalDeadline_BoundsDetachedAttempt()
+        {
+            Mock<IDocumentClientRetryPolicy> policy = new Mock<IDocumentClientRetryPolicy>();
+            policy
+                .Setup(p => p.ShouldRetryAsync(It.IsAny<Exception>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(ShouldRetryResult.RetryAfter(TimeSpan.FromSeconds(30)));
+
+            // Operation always fails. Backoff is 30s but deadline is 200ms — we expect
+            // the original exception to surface once the internal deadline trips during
+            // the backoff delay.
+            DocumentClientException firstFailure = new DocumentClientException(
+                "transient",
+                HttpStatusCode.ServiceUnavailable,
+                SubStatusCodes.Unknown);
+
+            DocumentClientException thrown = await Assert.ThrowsExceptionAsync<DocumentClientException>(
+                () => MetadataDetachedExecutor.ExecuteAsync<int>(
+                    (_) => throw firstFailure,
+                    policy.Object,
+                    TimeSpan.FromMilliseconds(200),
+                    CancellationToken.None));
+
+            Assert.AreSame(firstFailure, thrown);
+        }
+
+        [TestMethod]
+        [Owner("ntripician")]
+        public async Task ExecuteAsync_HardAttemptCap_PreventsInfiniteSpin()
+        {
+            Mock<IDocumentClientRetryPolicy> policy = new Mock<IDocumentClientRetryPolicy>();
+            policy
+                .Setup(p => p.ShouldRetryAsync(It.IsAny<Exception>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(ShouldRetryResult.RetryAfter(TimeSpan.Zero));
+
+            int attempts = 0;
+            await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => MetadataDetachedExecutor.ExecuteAsync<int>(
+                    (_) =>
+                    {
+                        Interlocked.Increment(ref attempts);
+                        throw new DocumentClientException(
+                            "always",
+                            HttpStatusCode.ServiceUnavailable,
+                            SubStatusCodes.Unknown);
+                    },
+                    policy.Object,
+                    CancellationToken.None));
+
+            int observed = Interlocked.CompareExchange(ref attempts, 0, 0);
+            Assert.AreEqual(MetadataDetachedExecutor.MaxAttemptsHardCap, observed,
+                $"expected exactly {MetadataDetachedExecutor.MaxAttemptsHardCap} attempts before cap, observed {observed}");
+        }
+
+        [TestMethod]
+        [Owner("ntripician")]
+        public async Task ExecuteAsync_FirstAttemptOCE_PolicyIsConsultedBeforeSurfacing()
+        {
+            Mock<IDocumentClientRetryPolicy> policy = new Mock<IDocumentClientRetryPolicy>();
+            policy
+                .Setup(p => p.ShouldRetryAsync(It.IsAny<Exception>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(ShouldRetryResult.NoRetry());
+
+            OperationCanceledException original = new OperationCanceledException("server-side cancel");
+
+            await Assert.ThrowsExceptionAsync<OperationCanceledException>(
+                () => MetadataDetachedExecutor.ExecuteAsync<int>(
+                    (_) => throw original,
+                    policy.Object,
+                    CancellationToken.None));
+
+            policy.Verify(
+                p => p.ShouldRetryAsync(It.IsAny<Exception>(), It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [TestMethod]
+        [Owner("ntripician")]
+        public async Task ExecuteAsync_NullOperation_Throws()
+        {
+            Mock<IDocumentClientRetryPolicy> policy = new Mock<IDocumentClientRetryPolicy>();
+
+            await Assert.ThrowsExceptionAsync<ArgumentNullException>(
+                () => MetadataDetachedExecutor.ExecuteAsync<int>(
+                    null,
+                    policy.Object,
+                    CancellationToken.None));
+        }
+
+        [TestMethod]
+        [Owner("ntripician")]
+        public async Task ExecuteAsync_NullRetryPolicy_Throws()
+        {
+            await Assert.ThrowsExceptionAsync<ArgumentNullException>(
+                () => MetadataDetachedExecutor.ExecuteAsync<int>(
+                    (_) => Task.FromResult(0),
+                    null,
+                    CancellationToken.None));
+        }
+
+        [TestMethod]
+        [Owner("ntripician")]
+        public async Task ExecuteAsync_NonPositiveDeadline_Throws()
+        {
+            Mock<IDocumentClientRetryPolicy> policy = new Mock<IDocumentClientRetryPolicy>();
+
+            await Assert.ThrowsExceptionAsync<ArgumentOutOfRangeException>(
+                () => MetadataDetachedExecutor.ExecuteAsync<int>(
+                    (_) => Task.FromResult(0),
+                    policy.Object,
+                    TimeSpan.Zero,
+                    CancellationToken.None));
+
+            await Assert.ThrowsExceptionAsync<ArgumentOutOfRangeException>(
+                () => MetadataDetachedExecutor.ExecuteAsync<int>(
+                    (_) => Task.FromResult(0),
+                    policy.Object,
+                    TimeSpan.FromSeconds(-1),
+                    CancellationToken.None));
+        }
+
+        [TestMethod]
+        [Owner("ntripician")]
+        public async Task ExecuteAsync_NonZeroBackoff_HonoredBetweenAttempts()
+        {
+            Mock<IDocumentClientRetryPolicy> policy = new Mock<IDocumentClientRetryPolicy>();
+            policy
+                .Setup(p => p.ShouldRetryAsync(It.IsAny<Exception>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(ShouldRetryResult.RetryAfter(TimeSpan.FromMilliseconds(150)));
+
+            int attempts = 0;
+            DateTime start = DateTime.UtcNow;
+            int result = await MetadataDetachedExecutor.ExecuteAsync<int>(
+                (_) =>
+                {
+                    attempts++;
+                    if (attempts < 3)
+                    {
+                        throw new DocumentClientException(
+                            "transient",
+                            HttpStatusCode.ServiceUnavailable,
+                            SubStatusCodes.Unknown);
+                    }
+
+                    return Task.FromResult(7);
+                },
+                policy.Object,
+                CancellationToken.None);
+
+            TimeSpan elapsed = DateTime.UtcNow - start;
+            Assert.AreEqual(7, result);
+            Assert.AreEqual(3, attempts);
+            // Two backoffs of ~150ms each → 300ms minimum (allow generous slack for CI).
+            Assert.IsTrue(elapsed >= TimeSpan.FromMilliseconds(250),
+                $"expected backoff to add ≥250ms, observed {elapsed.TotalMilliseconds}ms");
+        }
+
+        /// <summary>
+        /// Smoke test for the NETFX <see cref="SynchronizationContext"/> path: even when
+        /// running under a single-threaded synchronization context, the executor must
+        /// not deadlock and must surface the result. We exercise the inner
+        /// <c>ExecuteAsync</c> directly (callers in <c>ClientCollectionCache</c> route through
+        /// <c>TaskHelper.RunInlineIfNeededAsync</c> which Task.Run-wraps when SyncContext is
+        /// non-null).
+        /// </summary>
+        [TestMethod]
+        [Owner("ntripician")]
+        public async Task ExecuteAsync_UnderSynchronizationContext_DoesNotDeadlock()
+        {
+            Mock<IDocumentClientRetryPolicy> policy = new Mock<IDocumentClientRetryPolicy>();
+            SynchronizationContext previous = SynchronizationContext.Current;
+            try
+            {
+                SynchronizationContext.SetSynchronizationContext(new SingleThreadSynchronizationContext());
+
+                int result = await Task.Run(() => MetadataDetachedExecutor.ExecuteAsync<int>(
+                    (_) => Task.FromResult(33),
+                    policy.Object,
+                    CancellationToken.None));
+
+                Assert.AreEqual(33, result);
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(previous);
+            }
+        }
+
+        private sealed class SingleThreadSynchronizationContext : SynchronizationContext
+        {
+            public override void Post(SendOrPostCallback d, object state)
+            {
+                ThreadPool.QueueUserWorkItem(_ => d(state));
+            }
+        }
+    }
+}
