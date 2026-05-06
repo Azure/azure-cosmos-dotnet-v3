@@ -1,28 +1,28 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <AssemblyName>Microsoft.Azure.Cosmos.Embedding</AssemblyName>
-    <RootNamespace>Microsoft.Azure.Cosmos.Embedding</RootNamespace>
+    <AssemblyName>Microsoft.Azure.Cosmos.AI</AssemblyName>
+    <RootNamespace>Microsoft.Azure.Cosmos.AI</RootNamespace>
     <LangVersion>$(LangVersion)</LangVersion>
-    <EmbeddingVersion Condition=" '$(IsPreview)' != 'true' ">$(EmbeddingOfficialVersion)</EmbeddingVersion>
-    <EmbeddingVersion Condition=" '$(IsPreview)' == 'true' ">$(EmbeddingPreviewVersion)</EmbeddingVersion>
-    <EmbeddingVersionSuffix Condition=" '$(IsPreview)' == 'true' ">$(EmbeddingPreviewSuffixVersion)</EmbeddingVersionSuffix>
-    <Version Condition=" '$(EmbeddingVersionSuffix)' == '' ">$(EmbeddingVersion)</Version>
-    <Version Condition=" '$(EmbeddingVersionSuffix)' != '' ">$(EmbeddingVersion)-$(EmbeddingVersionSuffix)</Version>
+    <CosmosAIVersion Condition=" '$(IsPreview)' != 'true' ">$(CosmosAIOfficialVersion)</CosmosAIVersion>
+    <CosmosAIVersion Condition=" '$(IsPreview)' == 'true' ">$(CosmosAIPreviewVersion)</CosmosAIVersion>
+    <CosmosAIVersionSuffix Condition=" '$(IsPreview)' == 'true' ">$(CosmosAIPreviewSuffixVersion)</CosmosAIVersionSuffix>
+    <Version Condition=" '$(CosmosAIVersionSuffix)' == '' ">$(CosmosAIVersion)</Version>
+    <Version Condition=" '$(CosmosAIVersionSuffix)' != '' ">$(CosmosAIVersion)-$(CosmosAIVersionSuffix)</Version>
     <CurrentDate>$([System.DateTime]::Now.ToString(yyyyMMdd))</CurrentDate>
     <Company>Microsoft Corporation</Company>
     <Authors>Microsoft</Authors>
-    <Description>This library provides an embedding generation provider for Azure Cosmos DB for NoSQL, enabling automatic vector embedding generation for hybrid and vector search queries. For more information, refer to https://aka.ms/CosmosDB</Description>
+    <Description>AI extensions library for Azure Cosmos DB for NoSQL. Provides an Azure OpenAI / Foundry-backed embedding provider for automatic vector embedding generation in hybrid and vector search queries. Designed to be extensible for broader AI scenarios including semantic re-ranking, OCR, and model integrations. For more information, refer to https://aka.ms/CosmosDB</Description>
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
-    <Title>Microsoft Azure Cosmos DB embedding generation library</Title>
-    <PackageId>Microsoft.Azure.Cosmos.Embedding</PackageId>
+    <Title>Microsoft Azure Cosmos DB AI extensions library</Title>
+    <PackageId>Microsoft.Azure.Cosmos.AI</PackageId>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/Azure/azure-cosmos-dotnet-v3</PackageProjectUrl>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <PackageTags>microsoft;azure;cosmos;cosmosdb;documentdb;nosql;azureofficial;dotnetcore;netcore;netstandard;embedding;vector;openai;ai</PackageTags>
+    <PackageTags>microsoft;azure;cosmos;cosmosdb;documentdb;nosql;azureofficial;dotnetcore;netcore;netstandard;ai;embedding;vector;openai;semanticranking</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

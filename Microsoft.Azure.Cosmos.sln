@@ -39,11 +39,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FaultInjectionTests", "Micr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Azure.Cosmos.Encryption.Custom.Performance.Tests", "Microsoft.Azure.Cosmos.Encryption.Custom\tests\Microsoft.Azure.Cosmos.Encryption.Custom.Performance.Tests\Microsoft.Azure.Cosmos.Encryption.Custom.Performance.Tests.csproj", "{CE4D6DA8-148D-4A98-943B-D8C2D532E1DC}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Embedding", "Embedding", "{3C676A84-C0A7-463E-97DA-BA68C15723A8}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CosmosAI", "CosmosAI", "{3C676A84-C0A7-463E-97DA-BA68C15723A8}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.Embedding", "Microsoft.Azure.Cosmos.Embedding\src\Microsoft.Azure.Cosmos.Embedding.csproj", "{B7A9C13E-4995-4126-AAB9-C1B0A50CFA53}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.AI", "Microsoft.Azure.Cosmos.AI\src\Microsoft.Azure.Cosmos.AI.csproj", "{B7A9C13E-4995-4126-AAB9-C1B0A50CFA53}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.Embedding.Tests", "Microsoft.Azure.Cosmos.Embedding\tests\Microsoft.Azure.Cosmos.Embedding.Tests\Microsoft.Azure.Cosmos.Embedding.Tests.csproj", "{92870673-778E-4E41-98B6-819151A95BE0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.AI.Tests", "Microsoft.Azure.Cosmos.AI\tests\Microsoft.Azure.Cosmos.AI.Tests\Microsoft.Azure.Cosmos.AI.Tests.csproj", "{92870673-778E-4E41-98B6-819151A95BE0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

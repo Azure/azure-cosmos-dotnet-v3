@@ -7,7 +7,7 @@
     <TargetFramework>net6.0</TargetFramework>
     <IsPackable>false</IsPackable>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <RootNamespace>Microsoft.Azure.Cosmos.Embedding.Tests</RootNamespace>
+    <RootNamespace>Microsoft.Azure.Cosmos.AI.Tests</RootNamespace>
     <LangVersion>$(LangVersion)</LangVersion>
   </PropertyGroup>
 
@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Microsoft.Azure.Cosmos.Embedding.csproj" />
+    <ProjectReference Include="..\..\src\Microsoft.Azure.Cosmos.AI.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
