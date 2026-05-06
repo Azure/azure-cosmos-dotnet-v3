@@ -41,7 +41,8 @@ namespace Microsoft.Azure.Cosmos
     ///   task continues to completion. Side-effects of the retry policy (LocationCache region
     ///   marking, <c>ClearingSessionContainerClientRetryPolicy</c> session clearing, HTTP
     ///   connection-pool warming) accrue and benefit subsequent callers.</item>
-    ///   <item>A defensive hard deadline (default 5 minutes, configurable via
+    ///   <item>A defensive hard deadline (default
+    ///   <see cref="ConfigurationManager.DefaultMetadataDetachedHardDeadlineInSeconds"/> seconds, configurable via
     ///   <c>AZURE_COSMOS_METADATA_DETACHED_HARD_DEADLINE_SECONDS</c>) and a defensive attempt
     ///   cap of <see cref="MaxAttemptsHardCap"/> guarantee that a misbehaving
     ///   <see cref="IDocumentClientRetryPolicy"/> cannot leak background work indefinitely.</item>
@@ -191,16 +192,22 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken detachedToken)
         {
             int attemptCount = 0;
+            ExceptionDispatchInfo lastCapturedException = null;
             while (true)
             {
                 if (++attemptCount > MaxAttemptsHardCap)
                 {
+                    string lastExceptionType = lastCapturedException?.SourceException.GetType().Name ?? "<none>";
+                    string lastExceptionMessage = lastCapturedException?.SourceException.Message ?? "<none>";
                     DefaultTrace.TraceError(
-                        "MetadataDetachedExecutor: exceeded hard attempt cap ({0}). Surfacing InvalidOperationException.",
-                        MaxAttemptsHardCap);
+                        "MetadataDetachedExecutor: exceeded hard attempt cap ({0}). Last exception: {1}: {2}",
+                        MaxAttemptsHardCap,
+                        lastExceptionType,
+                        lastExceptionMessage);
                     throw new InvalidOperationException(
                         $"MetadataDetachedExecutor exceeded the defensive attempt cap of {MaxAttemptsHardCap}. " +
-                        "This indicates a misconfigured retry policy that returns ShouldRetry=true indefinitely.");
+                        "This indicates a misconfigured retry policy that returns ShouldRetry=true indefinitely.",
+                        lastCapturedException?.SourceException);
                 }
 
                 ExceptionDispatchInfo capturedException;
@@ -211,6 +218,7 @@ namespace Microsoft.Azure.Cosmos
                 catch (Exception ex)
                 {
                     capturedException = ExceptionDispatchInfo.Capture(ex);
+                    lastCapturedException = capturedException;
                 }
 
                 ShouldRetryResult shouldRetry;

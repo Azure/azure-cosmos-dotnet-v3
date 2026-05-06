@@ -175,6 +175,21 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal static readonly int MinMetadataDetachedHardDeadlineInSeconds = 30;
 
+        /// <summary>
+        /// Upper bound (in seconds) clamped onto user-supplied <see cref="MetadataDetachedHardDeadlineInSeconds"/>
+        /// values. Two reasons for this cap:
+        /// <list type="bullet">
+        ///   <item>The <c>CancellationTokenSource</c> constructor that takes a <see cref="TimeSpan"/>
+        ///   throws <see cref="ArgumentOutOfRangeException"/> when the delay exceeds <c>uint.MaxValue - 1</c>
+        ///   milliseconds (~49.7 days). An unbounded user value would break every metadata-cache read.</item>
+        ///   <item>No legitimate metadata-read budget exceeds 24 hours; a value larger than this
+        ///   indicates a misconfiguration that we should clamp and trace rather than honor.</item>
+        /// </list>
+        /// 86400 seconds (24 h) is ~288× the documented 300 s default and far beyond any realistic
+        /// cross-region failover sequence.
+        /// </summary>
+        internal static readonly int MaxMetadataDetachedHardDeadlineInSeconds = 86400;
+
         public static T GetEnvironmentVariable<T>(string variable, T defaultValue)
         {
             string value = Environment.GetEnvironmentVariable(variable);
@@ -258,8 +273,10 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Returns the SDK-internal hard deadline used by <see cref="MetadataDetachedExecutor"/> to bound
         /// detached metadata-read operations. Reads <see cref="MetadataDetachedHardDeadlineInSeconds"/>
-        /// from the environment, clamps to <see cref="MinMetadataDetachedHardDeadlineInSeconds"/>, and
-        /// falls back to <see cref="DefaultMetadataDetachedHardDeadlineInSeconds"/>.
+        /// from the environment and clamps it into the closed interval
+        /// [<see cref="MinMetadataDetachedHardDeadlineInSeconds"/>, <see cref="MaxMetadataDetachedHardDeadlineInSeconds"/>].
+        /// Falls back to <see cref="DefaultMetadataDetachedHardDeadlineInSeconds"/> when the environment
+        /// variable is unset.
         /// </summary>
         /// <returns>The hard deadline as a <see cref="TimeSpan"/>.</returns>
         public static TimeSpan GetMetadataDetachedHardDeadline()
@@ -268,7 +285,10 @@ namespace Microsoft.Azure.Cosmos
                 .GetEnvironmentVariable(
                     variable: MetadataDetachedHardDeadlineInSeconds,
                     defaultValue: DefaultMetadataDetachedHardDeadlineInSeconds);
-            return TimeSpan.FromSeconds(Math.Max(seconds, MinMetadataDetachedHardDeadlineInSeconds));
+            int clamped = Math.Min(
+                Math.Max(seconds, MinMetadataDetachedHardDeadlineInSeconds),
+                MaxMetadataDetachedHardDeadlineInSeconds);
+            return TimeSpan.FromSeconds(clamped);
         }
 
         /// <summary>

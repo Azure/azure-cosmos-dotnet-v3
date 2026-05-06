@@ -217,14 +217,20 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         [TestMethod]
         [Owner("ntripician")]
-        public async Task ExecuteAsync_CancellationTokenNone_FastPath_NoCallerOcePropagation()
+        public async Task ExecuteAsync_CancellationTokenNone_SucceedsAndOperationReceivesNonCanceledToken()
         {
+            // Note: the executor has a fast path for CancellationToken.None that skips the
+            // Task.WhenAny scaffolding. That micro-optimization is not directly observable
+            // from outside the type; this test pins the behavioral contract that
+            // (1) CancellationToken.None as caller token completes successfully end-to-end,
+            // and (2) the operation receives a token that is itself non-canceled at entry.
+            // Functional regressions of the fast path are caught by the broader test suite.
             Mock<IDocumentClientRetryPolicy> policy = new Mock<IDocumentClientRetryPolicy>();
 
             int result = await MetadataDetachedExecutor.ExecuteAsync<int>(
                 (ct) =>
                 {
-                    Assert.IsFalse(ct.CanBeCanceled || ct.IsCancellationRequested ? ct.IsCancellationRequested : false,
+                    Assert.IsFalse(ct.IsCancellationRequested,
                         "detached token must not be already-cancelled at entry");
                     return Task.FromResult(11);
                 },
@@ -490,6 +496,65 @@ namespace Microsoft.Azure.Cosmos.Tests
             finally
             {
                 SynchronizationContext.SetSynchronizationContext(previous);
+            }
+        }
+
+        /// <summary>
+        /// Regression test for the ConfigurationManager upper-clamp. Without this clamp, a
+        /// misconfigured AZURE_COSMOS_METADATA_DETACHED_HARD_DEADLINE_SECONDS value larger than
+        /// roughly 49.7 days (uint.MaxValue-1 ms) would make every metadata read throw
+        /// ArgumentOutOfRangeException from new CancellationTokenSource(TimeSpan), breaking the
+        /// whole metadata path. The clamp keeps the resulting TimeSpan inside
+        /// CancellationTokenSource's accepted domain.
+        /// </summary>
+        [TestMethod]
+        [Owner("ntripician")]
+        public void GetMetadataDetachedHardDeadline_ClampsAbsurdlyLargeEnvVarValue()
+        {
+            string variable = ConfigurationManager.MetadataDetachedHardDeadlineInSeconds;
+            string previous = Environment.GetEnvironmentVariable(variable);
+            try
+            {
+                // 60 days in seconds: well over the 24h ceiling, and large enough to
+                // exercise the CTS-overflow regime if the clamp were missing.
+                Environment.SetEnvironmentVariable(variable, (60L * 24 * 60 * 60).ToString());
+
+                TimeSpan deadline = ConfigurationManager.GetMetadataDetachedHardDeadline();
+
+                Assert.IsTrue(
+                    deadline <= TimeSpan.FromSeconds(ConfigurationManager.MaxMetadataDetachedHardDeadlineInSeconds),
+                    $"deadline {deadline} must be clamped to <= {ConfigurationManager.MaxMetadataDetachedHardDeadlineInSeconds}s");
+
+                // The clamped value must construct a CancellationTokenSource without throwing —
+                // this is the actual bug the clamp prevents.
+                using CancellationTokenSource cts = new CancellationTokenSource(deadline);
+                Assert.IsFalse(cts.Token.IsCancellationRequested);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(variable, previous);
+            }
+        }
+
+        [TestMethod]
+        [Owner("ntripician")]
+        public void GetMetadataDetachedHardDeadline_ClampsTooSmallEnvVarValue()
+        {
+            string variable = ConfigurationManager.MetadataDetachedHardDeadlineInSeconds;
+            string previous = Environment.GetEnvironmentVariable(variable);
+            try
+            {
+                Environment.SetEnvironmentVariable(variable, "1");
+
+                TimeSpan deadline = ConfigurationManager.GetMetadataDetachedHardDeadline();
+
+                Assert.AreEqual(
+                    TimeSpan.FromSeconds(ConfigurationManager.MinMetadataDetachedHardDeadlineInSeconds),
+                    deadline);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(variable, previous);
             }
         }
 
