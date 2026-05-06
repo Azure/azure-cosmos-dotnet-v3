@@ -151,6 +151,30 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal static readonly string ChangeFeedLeaseIdAsPartitionKeyEnabled = "AZURE_COSMOS_CHANGE_FEED_LEASE_ID_AS_PARTITION_KEY_ENABLED";
 
+        /// <summary>
+        /// Environment variable to override the SDK-internal hard deadline (in seconds) bounding the
+        /// detached metadata-read operation in <see cref="MetadataDetachedExecutor"/>. This is a defensive
+        /// upper bound on background work in the metadata-cache path; it is independent of the caller's
+        /// CancellationToken. Default is 300 seconds (5 minutes).
+        /// </summary>
+        internal static readonly string MetadataDetachedHardDeadlineInSeconds = "AZURE_COSMOS_METADATA_DETACHED_HARD_DEADLINE_SECONDS";
+
+        /// <summary>
+        /// Default hard deadline for the detached metadata-read executor. Derivation:
+        /// ClientRetryPolicy issues at most one cross-region attempt per preferred region.
+        /// With default <c>MaxNumberOfPreferredLocations=5</c> and the
+        /// <c>HttpTimeoutPolicyControlPlaneRetriableHotPath</c> ladder of ~36 s/region
+        /// (see PR #5816), worst-case runtime is ~5 × 36 ≈ 180 s plus in-region retries
+        /// and backoff slop ≈ 240 s. 300 s gives a 2× safety margin.
+        /// </summary>
+        internal static readonly int DefaultMetadataDetachedHardDeadlineInSeconds = 300;
+
+        /// <summary>
+        /// Lower bound (in seconds) clamped onto user-supplied <see cref="MetadataDetachedHardDeadlineInSeconds"/>
+        /// values to prevent pathologically short deadlines from defeating the cross-region failover.
+        /// </summary>
+        internal static readonly int MinMetadataDetachedHardDeadlineInSeconds = 30;
+
         public static T GetEnvironmentVariable<T>(string variable, T defaultValue)
         {
             string value = Environment.GetEnvironmentVariable(variable);
@@ -229,6 +253,22 @@ namespace Microsoft.Azure.Cosmos
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.ChangeFeedLeaseIdAsPartitionKeyEnabled,
                         defaultValue: true);
+        }
+
+        /// <summary>
+        /// Returns the SDK-internal hard deadline used by <see cref="MetadataDetachedExecutor"/> to bound
+        /// detached metadata-read operations. Reads <see cref="MetadataDetachedHardDeadlineInSeconds"/>
+        /// from the environment, clamps to <see cref="MinMetadataDetachedHardDeadlineInSeconds"/>, and
+        /// falls back to <see cref="DefaultMetadataDetachedHardDeadlineInSeconds"/>.
+        /// </summary>
+        /// <returns>The hard deadline as a <see cref="TimeSpan"/>.</returns>
+        public static TimeSpan GetMetadataDetachedHardDeadline()
+        {
+            int seconds = ConfigurationManager
+                .GetEnvironmentVariable(
+                    variable: MetadataDetachedHardDeadlineInSeconds,
+                    defaultValue: DefaultMetadataDetachedHardDeadlineInSeconds);
+            return TimeSpan.FromSeconds(Math.Max(seconds, MinMetadataDetachedHardDeadlineInSeconds));
         }
 
         /// <summary>
