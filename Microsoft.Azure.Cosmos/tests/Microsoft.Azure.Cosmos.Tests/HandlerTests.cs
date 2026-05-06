@@ -835,20 +835,24 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             TestHandler testHandler = new TestHandler((request, cancellationToken) =>
             {
-                Assert.AreEqual(strategy.ToString(), request.Headers[HttpConstants.HttpHeaders.ReadConsistencyStrategy]);
-                Assert.IsNull(request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel],
-                    "ConsistencyLevel header should not be set when ReadConsistencyStrategy is used");
-
                 if (strategy == Cosmos.ReadConsistencyStrategy.LastCommitedSingleWriteRegion)
                 {
+                    // LastCommitedSingleWriteRegion is client-side only — NOT sent as ReadConsistencyStrategy header.
+                    // Only the hub region header is sent.
+                    Assert.IsNull(request.Headers[HttpConstants.HttpHeaders.ReadConsistencyStrategy],
+                        "ReadConsistencyStrategy header should NOT be sent for LastCommitedSingleWriteRegion (not a backend-recognized value)");
                     Assert.AreEqual(bool.TrueString, request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion],
                         "Hub region header should be set for LastCommitedSingleWriteRegion on a read operation");
                 }
                 else
                 {
+                    Assert.AreEqual(strategy.ToString(), request.Headers[HttpConstants.HttpHeaders.ReadConsistencyStrategy]);
                     Assert.IsNull(request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion],
                         $"Hub region header should NOT be set for {strategyName} strategy");
                 }
+
+                Assert.IsNull(request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel],
+                    "ConsistencyLevel header should not be set when ReadConsistencyStrategy is used");
 
                 return TestHandler.ReturnSuccess();
             });
@@ -885,10 +889,9 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             TestHandler testHandler = new TestHandler((request, cancellationToken) =>
             {
-                Assert.AreEqual(
-                    Cosmos.ReadConsistencyStrategy.LastCommitedSingleWriteRegion.ToString(),
+                Assert.IsNull(
                     request.Headers[HttpConstants.HttpHeaders.ReadConsistencyStrategy],
-                    "ReadConsistencyStrategy header should be set");
+                    "ReadConsistencyStrategy header should NOT be sent for LastCommitedSingleWriteRegion");
                 Assert.AreEqual(
                     bool.TrueString,
                     request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion],
@@ -934,22 +937,23 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             TestHandler testHandler = new TestHandler((request, cancellationToken) =>
             {
-                Assert.AreEqual(
-                    strategy.ToString(),
-                    request.Headers[HttpConstants.HttpHeaders.ReadConsistencyStrategy]);
-                Assert.IsNull(request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel],
-                    "ConsistencyLevel header should not be set when ReadConsistencyStrategy is used");
-
                 if (strategy == Cosmos.ReadConsistencyStrategy.LastCommitedSingleWriteRegion)
                 {
+                    // LastCommitedSingleWriteRegion: no ReadConsistencyStrategy header, only hub header
+                    Assert.IsNull(request.Headers[HttpConstants.HttpHeaders.ReadConsistencyStrategy],
+                        "ReadConsistencyStrategy header should NOT be sent for LastCommitedSingleWriteRegion");
                     Assert.AreEqual(bool.TrueString, request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion],
                         "Hub region header should be set when client-level LastCommitedSingleWriteRegion is used on a read");
                 }
                 else
                 {
+                    Assert.AreEqual(strategy.ToString(), request.Headers[HttpConstants.HttpHeaders.ReadConsistencyStrategy]);
                     Assert.IsNull(request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion],
                         $"Hub region header should NOT be set for {strategyName} strategy");
                 }
+
+                Assert.IsNull(request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel],
+                    "ConsistencyLevel header should not be set when ReadConsistencyStrategy is used");
 
                 return TestHandler.ReturnSuccess();
             });
@@ -981,30 +985,32 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             // When both ConsistencyLevel and ReadConsistencyStrategy are set on the same request,
             // the SDK sets both headers and lets the service (ServerStoreModel) validate.
+            // Exception: LastCommitedSingleWriteRegion does NOT send ReadConsistencyStrategy header.
             Cosmos.ReadConsistencyStrategy strategy = Enum.Parse<Cosmos.ReadConsistencyStrategy>(strategyName);
             using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(accountConsistencyLevel: Cosmos.ConsistencyLevel.Strong);
 
             TestHandler testHandler = new TestHandler((request, cancellationToken) =>
             {
-                Assert.AreEqual(
-                    strategy.ToString(),
-                    request.Headers[HttpConstants.HttpHeaders.ReadConsistencyStrategy],
-                    "ReadConsistencyStrategy header should be set");
-                Assert.AreEqual(
-                    Cosmos.ConsistencyLevel.Eventual.ToString(),
-                    request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel],
-                    "ConsistencyLevel header should also be set");
-
                 if (expectHubHeader)
                 {
+                    // LastCommitedSingleWriteRegion: no ReadConsistencyStrategy header, only hub header
+                    Assert.IsNull(request.Headers[HttpConstants.HttpHeaders.ReadConsistencyStrategy],
+                        "ReadConsistencyStrategy header should NOT be sent for LastCommitedSingleWriteRegion");
                     Assert.AreEqual(bool.TrueString, request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion],
                         "Hub region header should be set for LastCommitedSingleWriteRegion on a read");
                 }
                 else
                 {
+                    Assert.AreEqual(strategy.ToString(), request.Headers[HttpConstants.HttpHeaders.ReadConsistencyStrategy],
+                        "ReadConsistencyStrategy header should be set");
                     Assert.IsNull(request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion],
                         $"Hub region header should NOT be set for {strategyName} strategy");
                 }
+
+                Assert.AreEqual(
+                    Cosmos.ConsistencyLevel.Eventual.ToString(),
+                    request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel],
+                    "ConsistencyLevel header should also be set");
 
                 return TestHandler.ReturnSuccess();
             });
@@ -1049,22 +1055,23 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             TestHandler testHandler = new TestHandler((request, cancellationToken) =>
             {
-                Assert.AreEqual(
-                    requestStrategy.ToString(),
-                    request.Headers[HttpConstants.HttpHeaders.ReadConsistencyStrategy]);
-                Assert.IsNull(request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel],
-                    "ConsistencyLevel header should not be set when no ConsistencyLevel was specified");
-
                 if (expectHubHeader)
                 {
+                    // LastCommitedSingleWriteRegion: no ReadConsistencyStrategy header, only hub header
+                    Assert.IsNull(request.Headers[HttpConstants.HttpHeaders.ReadConsistencyStrategy],
+                        "ReadConsistencyStrategy header should NOT be sent for LastCommitedSingleWriteRegion");
                     Assert.AreEqual(bool.TrueString, request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion],
                         "Hub region header should be set when request-level LastCommitedSingleWriteRegion overrides client-level");
                 }
                 else
                 {
+                    Assert.AreEqual(requestStrategy.ToString(), request.Headers[HttpConstants.HttpHeaders.ReadConsistencyStrategy]);
                     Assert.IsNull(request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion],
                         $"Hub region header should NOT be set for {requestStrategyName} strategy");
                 }
+
+                Assert.IsNull(request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel],
+                    "ConsistencyLevel header should not be set when no ConsistencyLevel was specified");
 
                 return TestHandler.ReturnSuccess();
             });
@@ -1098,10 +1105,10 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             TestHandler testHandler = new TestHandler((request, cancellationToken) =>
             {
-                Assert.AreEqual(
-                    Cosmos.ReadConsistencyStrategy.LastCommitedSingleWriteRegion.ToString(),
-                    request.Headers[HttpConstants.HttpHeaders.ReadConsistencyStrategy],
-                    "ReadConsistencyStrategy header should still be set on writes");
+                // LastCommitedSingleWriteRegion never sends the ReadConsistencyStrategy header
+                // (it's a client-side-only strategy). On writes, the hub header is also not set.
+                Assert.IsNull(request.Headers[HttpConstants.HttpHeaders.ReadConsistencyStrategy],
+                    "ReadConsistencyStrategy header should NOT be sent for LastCommitedSingleWriteRegion");
                 Assert.IsNull(request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion],
                     "Hub region header should NOT be set for write operations even with LastCommitedSingleWriteRegion");
                 return TestHandler.ReturnSuccess();

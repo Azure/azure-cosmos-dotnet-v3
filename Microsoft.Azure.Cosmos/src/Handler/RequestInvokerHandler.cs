@@ -543,16 +543,20 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         "Use a different ReadConsistencyStrategy or configure the account with a single write region.");
                 }
 
-                requestMessage.Headers.Set(
-                    HttpConstants.HttpHeaders.ReadConsistencyStrategy,
-                    readConsistencyStrategy.Value.ToString());
-
-                if (readConsistencyStrategy.Value == Cosmos.ReadConsistencyStrategy.LastCommitedSingleWriteRegion
-                    && OperationTypeExtensions.IsReadOperation(requestMessage.OperationType))
+                if (readConsistencyStrategy.Value == Cosmos.ReadConsistencyStrategy.LastCommitedSingleWriteRegion)
+                {
+                    if (OperationTypeExtensions.IsReadOperation(requestMessage.OperationType))
+                    {
+                        requestMessage.Headers.Set(
+                            HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion,
+                            bool.TrueString);
+                    }
+                }
+                else
                 {
                     requestMessage.Headers.Set(
-                        HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion,
-                        bool.TrueString);
+                        HttpConstants.HttpHeaders.ReadConsistencyStrategy,
+                        readConsistencyStrategy.Value.ToString());
                 }
             }
 
