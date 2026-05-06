@@ -535,6 +535,16 @@ namespace Microsoft.Azure.Documents.Rntbd
             {
                 if (this.cancellation.IsCancellationRequested)
                 {
+                    // Dispose() raced ahead and StopIdleTimer() lost the
+                    // CancelTimer() race (returned the still-running
+                    // idleTimerTask instead of nulling the fields).
+                    // Clear the fields here under connectionLock so the
+                    // post-wait Debug.Assert in Dispose() sees a clean
+                    // state. Safe: Dispose() captured a local copy of
+                    // idleTimerTask before releasing the lock, so it is
+                    // not affected by this assignment.
+                    this.idleTimer = null;
+                    this.idleTimerTask = null;
                     return;
                 }
 
