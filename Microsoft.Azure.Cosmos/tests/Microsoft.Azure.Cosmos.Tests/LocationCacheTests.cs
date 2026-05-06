@@ -122,6 +122,95 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         }
 
         [TestMethod]
+        [Owner("ntripician")]
+        public void ValidateTryGetLocationForGatewayDiagnosticsOnDefaultEndpointForMultiMaster()
+        {
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: true,
+                enableEndpointDiscovery: true,
+                isPreferredLocationsListEmpty: false);
+
+            string expectedRegionName = this.databaseAccount.WriteLocationsInternal.First().Name;
+
+            Assert.AreEqual(expectedRegionName, this.cache.GetLocation(LocationCacheTests.DefaultEndpoint));
+
+            Assert.AreEqual(true, this.cache.TryGetLocationForGatewayDiagnostics(LocationCacheTests.DefaultEndpoint, out string regionName));
+            Assert.AreEqual(expectedRegionName, regionName);
+
+            Assert.AreEqual(true, this.cache.TryGetLocationForGatewayDiagnostics(new Uri(LocationCacheTests.DefaultEndpoint, "random/path"), out regionName));
+            Assert.AreEqual(expectedRegionName, regionName);
+        }
+
+        [TestMethod]
+        [Owner("ntripician")]
+        public void ValidateTryGetLocationForGatewayDiagnosticsOnDefaultEndpointForMultiMasterWithClientOptOut()
+        {
+            // Account is multi-master but client has UseMultipleWriteLocations = false.
+            // Diagnostics should still resolve the default endpoint to the first write region.
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: true,
+                isPreferredLocationsListEmpty: false);
+
+            // Override account setting to multi-master (server-side) while client did not opt in
+            this.databaseAccount = LocationCacheTests.CreateDatabaseAccount(
+                useMultipleWriteLocations: true,
+                enforceSingleMasterSingleWriteLocation: false);
+            this.cache.OnDatabaseAccountRead(this.databaseAccount);
+
+            string expectedRegionName = this.databaseAccount.WriteLocationsInternal.First().Name;
+
+            Assert.AreEqual(expectedRegionName, this.cache.GetLocation(LocationCacheTests.DefaultEndpoint));
+
+            Assert.AreEqual(true, this.cache.TryGetLocationForGatewayDiagnostics(LocationCacheTests.DefaultEndpoint, out string regionName));
+            Assert.AreEqual(expectedRegionName, regionName);
+
+            Assert.AreEqual(true, this.cache.TryGetLocationForGatewayDiagnostics(new Uri(LocationCacheTests.DefaultEndpoint, "random/path"), out regionName));
+            Assert.AreEqual(expectedRegionName, regionName);
+        }
+
+        [TestMethod]
+        [Owner("ntripician")]
+        public void ValidateTryGetLocationForGatewayDiagnosticsReturnsFalseForUnknownEndpoint()
+        {
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: true,
+                enableEndpointDiscovery: true,
+                isPreferredLocationsListEmpty: false);
+
+            // An endpoint that is neither the default endpoint nor any known regional endpoint
+            Uri unknownEndpoint = new Uri("https://unknown-region.documents.azure.com");
+
+            Assert.IsNull(this.cache.GetLocation(unknownEndpoint));
+
+            Assert.AreEqual(false, this.cache.TryGetLocationForGatewayDiagnostics(unknownEndpoint, out string regionName));
+            Assert.IsNull(regionName);
+        }
+
+        [TestMethod]
+        [Owner("ntripician")]
+        public void ValidateTryGetLocationForGatewayDiagnosticsOnDefaultEndpointBeforeAccountRead()
+        {
+            // Simulate multimaster cache before any account info is populated.
+            // AvailableWriteLocations will be empty, so GetLocation should return null.
+            LocationCache uninitializedCache = new LocationCache(
+                preferredLocations: new ReadOnlyCollection<string>(new List<string> { "location1" }),
+                defaultEndpoint: LocationCacheTests.DefaultEndpoint,
+                enableEndpointDiscovery: true,
+                connectionLimit: 50,
+                useMultipleWriteLocations: true);
+
+            // No OnDatabaseAccountRead called, so AvailableWriteLocations is empty
+            Assert.IsNull(uninitializedCache.GetLocation(LocationCacheTests.DefaultEndpoint));
+
+            // enableMultipleWriteLocations defaults to false until OnDatabaseAccountRead is called
+            // with a multi-master account, so TryGetLocationForGatewayDiagnostics falls through to
+            // the single-master path and returns false
+            Assert.AreEqual(false, uninitializedCache.TryGetLocationForGatewayDiagnostics(LocationCacheTests.DefaultEndpoint, out string regionName));
+            Assert.IsNull(regionName);
+        }
+
+        [TestMethod]
         [Owner("atulk")]
         public async Task ValidateRetryOnSessionNotAvailableWithDisableMultipleWriteLocationsAndEndpointDiscoveryDisabled()
         {
