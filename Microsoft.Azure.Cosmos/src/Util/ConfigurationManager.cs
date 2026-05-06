@@ -279,7 +279,7 @@ namespace Microsoft.Azure.Cosmos
         /// variable is unset.
         /// </summary>
         /// <returns>The hard deadline as a <see cref="TimeSpan"/>.</returns>
-        public static TimeSpan GetMetadataDetachedHardDeadline()
+        internal static TimeSpan GetMetadataDetachedHardDeadline()
         {
             int seconds = ConfigurationManager
                 .GetEnvironmentVariable(

@@ -23,6 +23,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     /// preempted by caller-cancel.
     /// </summary>
     [TestClass]
+    [DoNotParallelize]
     public class MetadataDetachedExecutorTests
     {
         [TestMethod]
@@ -497,6 +498,56 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 SynchronizationContext.SetSynchronizationContext(previous);
             }
+        }
+
+        /// <summary>
+        /// Regression test for R2.4: when the SDK-internal hard deadline trips while the
+        /// operation lambda is in flight (as opposed to during Task.Delay backoff), the
+        /// surfaced exception must be the underlying retry-driving failure, not the
+        /// deadline-induced OperationCanceledException. This protects the design contract
+        /// that customers see the failure mode that drove the retry rather than a
+        /// hard-deadline artifact, regardless of whether the deadline trips during backoff
+        /// or during the operation call itself.
+        /// </summary>
+        [TestMethod]
+        [Owner("ntripician")]
+        public async Task ExecuteAsync_DeadlineTripsDuringOperation_SurfacesUnderlyingException()
+        {
+            Mock<IDocumentClientRetryPolicy> policy = new Mock<IDocumentClientRetryPolicy>();
+            policy
+                .Setup(p => p.ShouldRetryAsync(It.IsAny<Exception>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(ShouldRetryResult.RetryAfter(TimeSpan.Zero));
+
+            int attempts = 0;
+            DocumentClientException underlying = new DocumentClientException(
+                "underlying-503",
+                HttpStatusCode.ServiceUnavailable,
+                SubStatusCodes.Unknown);
+
+            DocumentClientException thrown = await Assert.ThrowsExceptionAsync<DocumentClientException>(
+                () => MetadataDetachedExecutor.ExecuteAsync<int>(
+                    async (ct) =>
+                    {
+                        attempts++;
+                        if (attempts == 1)
+                        {
+                            // First attempt: surface the real underlying failure to drive a retry.
+                            throw underlying;
+                        }
+
+                        // Second attempt: block on the detached token until the deadline trips,
+                        // then throw OCE bound to the detached token. This mimics an HTTP call
+                        // that observes the SDK-internal deadline mid-flight.
+                        await Task.Delay(Timeout.Infinite, ct);
+                        return 0;
+                    },
+                    policy.Object,
+                    TimeSpan.FromMilliseconds(200),
+                    CancellationToken.None));
+
+            Assert.AreSame(underlying, thrown,
+                "Expected the original DocumentClientException, not a deadline-induced OperationCanceledException.");
+            Assert.IsTrue(attempts >= 2, $"expected ≥2 attempts, observed {attempts}");
         }
 
         /// <summary>

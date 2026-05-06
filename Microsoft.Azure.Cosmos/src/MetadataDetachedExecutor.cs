@@ -52,14 +52,29 @@ namespace Microsoft.Azure.Cosmos
     /// <para>
     /// <b>AsyncCache interaction caveat:</b> when the caller cancels, the <see cref="Task{T}"/>
     /// returned by <see cref="ExecuteAsync{T}(Func{CancellationToken, Task{T}}, IDocumentClientRetryPolicy, CancellationToken)"/>
-    /// surfaces <see cref="OperationCanceledException"/>. If this task is wrapped by
-    /// <c>AsyncCache&lt;TKey, TValue&gt;</c>, the corresponding <c>AsyncLazy</c> entry is
-    /// removed from the cache (per <c>AsyncCache.GetAsync</c>'s catch-and-remove on the inserter
-    /// thread). Subsequent callers therefore start a fresh fetch. Concurrent callers arriving
-    /// BEFORE the first caller cancels DO reuse the in-flight detached task via standard
-    /// AsyncCache semantics. The primary value of the detached design is that the retry
-    /// policy is allowed to run to completion — its side-effects (region marking, session
-    /// clearing) outlive the canceled lazy.
+    /// surfaces <see cref="OperationCanceledException"/>. Concurrent callers that arrive while
+    /// the first caller's task is still running observe its in-flight task via standard
+    /// <c>AsyncCache</c> semantics. If the first caller then cancels, the <c>AsyncLazy</c>
+    /// faults with OCE; <c>AsyncCache.GetAsync</c> catches and discards the OCE on the in-flight
+    /// path and the second caller starts a fresh detached attempt. The two detached tasks then
+    /// run concurrently against the same metadata read. The detached design's primary benefit
+    /// for the second caller is therefore the <i>side-effects</i> (LocationCache region marking,
+    /// session-container clearing) of the first task's still-running retry policy — not direct
+    /// reuse of its eventual successful result.
+    /// </para>
+    ///
+    /// <para>
+    /// <b>Diagnostics caveat (known limitation):</b> the operation lambda captures the caller's
+    /// <c>ITrace</c> and <c>ClientSideRequestStatistics</c> so that on the success path the
+    /// caller observes a complete trace tree. After caller cancellation the detached task
+    /// continues to mutate those same caller objects until the SDK-internal deadline trips or
+    /// the retry policy decides to stop. Customers who serialize <c>CosmosDiagnostics</c>
+    /// immediately after observing the <see cref="OperationCanceledException"/> may therefore
+    /// see additional trace children/datums grow after the operation appears to have ended.
+    /// <c>Trace.AddDatum</c> is internally locked, so this is not a tearing crash, but it does
+    /// mean the diagnostics snapshot is not strictly bounded by the caller-visible operation
+    /// lifetime. A future iteration should isolate the detached task into a child trace tree
+    /// and merge only on success.
     /// </para>
     /// </summary>
     internal static class MetadataDetachedExecutor
@@ -143,6 +158,14 @@ namespace Microsoft.Azure.Cosmos
             // completion (success, fault, or cancel). This intentionally outlives the
             // caller-cancellation path; the CTS must remain valid while the detached
             // operation is still observing detachedCts.Token.
+            //
+            // ExecuteSynchronously note: when the operation lambda completes synchronously
+            // (e.g. Task.FromResult in a unit test), detachedTask may already be complete
+            // by the time this ContinueWith is registered. The continuation then runs
+            // inline on the current thread and detachedCts is disposed before control
+            // returns below. That is safe because detachedCts.Token was passed by value
+            // at line above; the running task captures the token, not the source.
+            // Do NOT read detachedCts after this point.
             Task disposeWhenDone = detachedTask.ContinueWith(
                 _ => detachedCts.Dispose(),
                 CancellationToken.None,
@@ -211,9 +234,24 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 ExceptionDispatchInfo capturedException;
+                ExceptionDispatchInfo previousException = lastCapturedException;
                 try
                 {
                     return await operation(detachedToken).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (
+                    detachedToken.IsCancellationRequested
+                    && previousException != null
+                    && !(previousException.SourceException is OperationCanceledException))
+                {
+                    // Internal deadline tripped while the operation lambda was in flight
+                    // (as opposed to during Task.Delay backoff). Surface the prior
+                    // underlying failure rather than the deadline-induced OCE so callers
+                    // see the failure mode that drove the retry, not a hard-deadline
+                    // artifact. This preserves the design contract documented at the
+                    // backoff catch below.
+                    previousException.Throw();
+                    throw; // unreachable
                 }
                 catch (Exception ex)
                 {
@@ -268,6 +306,16 @@ namespace Microsoft.Azure.Cosmos
                         // than a deadline-induced OCE.
                         capturedException.Throw();
                     }
+                }
+                else
+                {
+                    // Defensive yield when retry policy returns BackoffTime <= TimeSpan.Zero.
+                    // Bounds CPU and gives the threadpool a chance to schedule other work,
+                    // limiting amplification of a misbehaving policy that returns
+                    // ShouldRetry=true with zero backoff in a tight loop. The hard attempt
+                    // cap (MaxAttemptsHardCap) is the ultimate guard; this yield reduces
+                    // the rate of the burst while the cap is being approached.
+                    await Task.Yield();
                 }
             }
         }
