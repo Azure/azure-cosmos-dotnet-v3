@@ -161,16 +161,22 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Default hard deadline for the detached metadata-read executor. Derivation:
-        /// the per-region HTTP attempt budget for metadata reads
-        /// (<c>HttpTimeoutPolicyControlPlaneRetriableHotPath</c>) is
-        /// 1 s + 5 s + 65 s + 1 s inter-attempt delay ≈ 72 s. A typical cross-region
-        /// failover sweep visits ~3-5 regions before settling, so ~3-5 × 72 ≈ 215 s to 360 s
-        /// of in-region wall time, plus <c>ClientRetryPolicy.RetryIntervalInMS = 1000 ms</c>
-        /// per failover. 300 s covers the common-case multi-region failover with margin.
-        /// This is NOT a tight bound on <c>ClientRetryPolicy.MaxRetryCount = 120</c> — pathological
-        /// failover ping-pong is bounded by <see cref="MetadataDetachedExecutor.MaxAttemptsHardCap"/>
-        /// and by the policy's own counter; the time deadline targets the realistic-failover
-        /// duration, not the worst-case theoretical one.
+        /// the executor wraps <c>ClientCollectionCache.ReadCollectionAsync</c>
+        /// (collection metadata reads), which per <c>HttpTimeoutPolicy.GetTimeoutPolicy</c>
+        /// (the <c>IsMetaData &amp;&amp; IsReadOnlyRequest</c> branch) routes to
+        /// <c>HttpTimeoutPolicyControlPlaneRetriableHotPath</c> with ladder
+        /// (1 s, 0) → (5 s, 1 s) → (65 s, 0) — 71 s of timeouts plus 1 s inter-attempt
+        /// delay ≈ 72 s/region. A typical cross-region failover sweep visits ~3-5 regions
+        /// before settling, so ~3-5 × 72 ≈ 215 s to 360 s of wall time, plus
+        /// <c>ClientRetryPolicy.RetryIntervalInMS = 1000 ms</c> per failover. 300 s covers
+        /// the common-case multi-region failover with margin. This is NOT a tight bound on
+        /// <c>ClientRetryPolicy.MaxRetryCount = 120</c> — pathological failover ping-pong is
+        /// bounded by <see cref="MetadataDetachedExecutor.MaxAttemptsHardCap"/> and by the
+        /// policy's own counter; the time deadline targets realistic failover duration,
+        /// not the theoretical worst case.
+        /// Note: account reads via <c>GatewayAccountReader</c> use the slower
+        /// <c>HttpTimeoutPolicyControlPlaneRead</c> ladder (5+10+20 = 35 s/region) instead,
+        /// but the executor does not wrap that path today.
         /// </summary>
         internal static readonly int DefaultMetadataDetachedHardDeadlineInSeconds = 300;
 
