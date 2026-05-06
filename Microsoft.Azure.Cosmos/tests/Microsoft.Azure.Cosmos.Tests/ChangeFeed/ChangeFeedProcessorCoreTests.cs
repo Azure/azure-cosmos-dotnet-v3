@@ -68,9 +68,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [TestMethod]
         public void ApplyBuildConfiguration_ValidCustomStore()
         {
+            Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
+            leaseStoreManager.Setup(l => l.LeaseContainer).Returns(Mock.Of<DocumentServiceLeaseContainer>);
+
             ChangeFeedProcessorCore processor = ChangeFeedProcessorCoreTests.CreateProcessor(out _, out _);
             processor.ApplyBuildConfiguration(
-                Mock.Of<DocumentServiceLeaseStoreManager>(),
+                leaseStoreManager.Object,
                 null,
                 "instanceName",
                 new ChangeFeedLeaseOptions(),
