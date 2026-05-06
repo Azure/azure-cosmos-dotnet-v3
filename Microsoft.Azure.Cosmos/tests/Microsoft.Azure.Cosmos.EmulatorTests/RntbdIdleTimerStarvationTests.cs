@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     /// </summary>
     [TestClass]
     [TestCategory("RntbdIdleTimer")]
+    [DoNotParallelize]
     public class RntbdIdleTimerStarvationTests
     {
         private const string EndpointEnvVar = "COSMOS_ENDPOINT";
@@ -64,22 +65,25 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsFalse(string.IsNullOrWhiteSpace(account.Id), "AccountProperties.Id was empty.");
         }
 
-        // REGRESSION GUARD for the idle timer fix wiring (issue #4393, PR #5722).
+        // REGRESSION GUARD for the idle timer fix wiring (issue #4393, PR #5817).
         //
         // What this test validates:
         //   - Idle timers arm and fire correctly when the SDK runs against a
         //     real Cosmos DB account.
-        //   - The .Unwrap() in Dispatcher.ScheduleIdleTimer continues to track
-        //     OnIdleTimerAsync completion correctly. If .Unwrap() is removed
-        //     in the future, the timer-fire-count assertion catches it (the
-        //     production trace at OnIdleTimerAsync entry stops being emitted
-        //     because the continuation chain breaks).
+        //   - The continuation chain from ScheduleIdleTimer still reaches
+        //     OnIdleTimerAsync. This does NOT validate .Unwrap() correctness:
+        //     the TraceInformation at OnIdleTimerAsync entry runs synchronously
+        //     before any await point, so the timer-fire-count assertion would
+        //     still pass even if .Unwrap() were removed. The .Unwrap() safety
+        //     (tracking the full async chain so disposal does not race the
+        //     still-running continuation) is guarded by the inline comment
+        //     in Dispatcher.ScheduleIdleTimer — see there.
         //   - No thread-count explosion or unhandled exceptions during
         //     idle-fire at N=50 over an ~13-minute window.
         //
         // What this test does NOT validate:
         //   - That the fix prevents thread pool starvation. This was
-        //     investigated extensively (see PR #5722 stages 3.5 - 3.11) and
+        //     investigated extensively (see PR #5817 stages 3.5 - 3.11) and
         //     the conclusion is that a single test client cannot reliably
         //     reproduce the production starvation pattern.
         //
@@ -106,10 +110,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         //
         // References:
         //   Issue #4393 (production bug report with stack trace)
-        //   PR #5722 (this fix)
+        //   PR #5817 (this fix)
         //   DispatcherIdleTimerFixTests.cs (canonical fix evidence)
         [DataTestMethod]
         [DataRow(50)]
+        [Timeout(900_000)]
         public async Task IdleTimerFire_WiringStillFunctional(int connectionCount)
         {
             (string endpoint, string key) = ReadCredentialsOrSkip();
