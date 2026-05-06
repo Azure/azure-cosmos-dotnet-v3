@@ -161,11 +161,16 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Default hard deadline for the detached metadata-read executor. Derivation:
-        /// ClientRetryPolicy issues at most one cross-region attempt per preferred region.
-        /// With default <c>MaxNumberOfPreferredLocations=5</c> and the
-        /// <c>HttpTimeoutPolicyControlPlaneRetriableHotPath</c> ladder of ~36 s/region
-        /// (see PR #5816), worst-case runtime is ~5 × 36 ≈ 180 s plus in-region retries
-        /// and backoff slop ≈ 240 s. 300 s gives a 2× safety margin.
+        /// the per-region HTTP attempt budget for metadata reads
+        /// (<c>HttpTimeoutPolicyControlPlaneRetriableHotPath</c>) is
+        /// 1 s + 5 s + 65 s + 1 s inter-attempt delay ≈ 72 s. A typical cross-region
+        /// failover sweep visits ~3-5 regions before settling, so ~3-5 × 72 ≈ 215 s to 360 s
+        /// of in-region wall time, plus <c>ClientRetryPolicy.RetryIntervalInMS = 1000 ms</c>
+        /// per failover. 300 s covers the common-case multi-region failover with margin.
+        /// This is NOT a tight bound on <c>ClientRetryPolicy.MaxRetryCount = 120</c> — pathological
+        /// failover ping-pong is bounded by <see cref="MetadataDetachedExecutor.MaxAttemptsHardCap"/>
+        /// and by the policy's own counter; the time deadline targets the realistic-failover
+        /// duration, not the worst-case theoretical one.
         /// </summary>
         internal static readonly int DefaultMetadataDetachedHardDeadlineInSeconds = 300;
 

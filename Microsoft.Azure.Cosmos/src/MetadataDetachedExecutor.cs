@@ -93,15 +93,21 @@ namespace Microsoft.Azure.Cosmos
     {
         /// <summary>
         /// Defensive upper bound on the number of attempts within a single detached
-        /// invocation. Derivation: <c>ClientRetryPolicy</c> issues at most one cross-region
-        /// attempt per preferred region (default <c>MaxNumberOfPreferredLocations = 5</c>);
-        /// each region may also drive in-region retries and backoff bursts (≤10 in worst-case
-        /// throttling scenarios). 5 × 10 = 50 covers all legitimate retry sequences with
-        /// generous headroom. The cap is a hard guard against a misbehaving policy that
-        /// returns <c>ShouldRetry=true</c> with <c>BackoffTime=TimeSpan.Zero</c> in a tight
-        /// loop, which the time-based deadline alone cannot prevent without burning CPU.
+        /// invocation. Derivation: the dominant legitimate ceiling on <c>ShouldRetry=true</c>
+        /// calls is <c>ClientRetryPolicy.MaxRetryCount = 120</c> (cross-region failover
+        /// counter, see <c>ClientRetryPolicy.cs</c>). On top of that, the inner
+        /// throttling/session/serviceUnavailable retry policies can contribute a small
+        /// number of additional retries (<c>MaxServiceUnavailableRetryCount = 1</c>,
+        /// <c>MaxSessionTokenRetryCount = 2</c>, plus the default
+        /// <c>ResourceThrottleRetryPolicy</c> budget of ~9 retries). 200 = 120 + ~80
+        /// headroom covers all legitimate stacked retry sequences. The cap is a hard guard
+        /// against a misbehaving policy that returns <c>ShouldRetry=true</c> with
+        /// <c>BackoffTime=TimeSpan.Zero</c> in a tight loop, which the time-based deadline
+        /// alone cannot prevent without burning CPU. Note: a well-behaved
+        /// <c>ClientRetryPolicy</c> trips its own 120-retry limit before this defensive
+        /// cap is reached.
         /// </summary>
-        internal const int MaxAttemptsHardCap = 50;
+        internal const int MaxAttemptsHardCap = 200;
 
         /// <summary>
         /// Returns the configured SDK-internal hard deadline for the detached attempt.
@@ -299,14 +305,18 @@ namespace Microsoft.Azure.Cosmos
 
                 if (shouldRetry == null || !shouldRetry.ShouldRetry)
                 {
-                    if (shouldRetry?.ExceptionToThrow != null)
+                    Exception exceptionToThrow = shouldRetry?.ExceptionToThrow;
+                    if (exceptionToThrow != null)
                     {
-                        if (object.ReferenceEquals(shouldRetry.ExceptionToThrow, capturedException.SourceException))
+                        // Reference equality on Exception (no operator== override) without
+                        // going through object.ReferenceEquals, which would box both args
+                        // (CDX1000).
+                        if (exceptionToThrow == capturedException.SourceException)
                         {
                             capturedException.Throw();
                         }
 
-                        throw shouldRetry.ExceptionToThrow;
+                        throw exceptionToThrow;
                     }
 
                     capturedException.Throw();
