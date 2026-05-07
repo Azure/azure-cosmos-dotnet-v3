@@ -60,6 +60,6 @@ namespace Microsoft.Azure.Cosmos
         /// Returns the latest committed version from the hub (write) region, ensuring reads
         /// reflect the most recent writes regardless of which region the client is connected to.
         /// </summary>
-        LastCommitedSingleWriteRegion = 5
+        LastCommittedSingleWriteRegion = 5
     }
 }
