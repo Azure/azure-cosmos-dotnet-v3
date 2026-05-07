@@ -41,9 +41,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [ExpectedException(typeof(ArgumentNullException))]
         public void ApplyBuildConfiguration_ValidatesNullInstance()
         {
+            Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
+            leaseStoreManager.Setup(l => l.LeaseContainer).Returns(Mock.Of<DocumentServiceLeaseContainer>);
+
             ChangeFeedProcessorCore processor = ChangeFeedProcessorCoreTests.CreateProcessor(out _, out _);
             processor.ApplyBuildConfiguration(
-                Mock.Of<DocumentServiceLeaseStoreManager>(),
+                leaseStoreManager.Object,
                 null,
                 null,
                 new ChangeFeedLeaseOptions(),
@@ -55,14 +58,34 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [ExpectedException(typeof(ArgumentNullException))]
         public void ApplyBuildConfiguration_ValidatesNullMonitoredContainer()
         {
+            Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
+            leaseStoreManager.Setup(l => l.LeaseContainer).Returns(Mock.Of<DocumentServiceLeaseContainer>);
+
             ChangeFeedProcessorCore processor = ChangeFeedProcessorCoreTests.CreateProcessor(out _, out _);
             processor.ApplyBuildConfiguration(
-                Mock.Of<DocumentServiceLeaseStoreManager>(),
+                leaseStoreManager.Object,
                 null,
                 "instanceName",
                 new ChangeFeedLeaseOptions(),
                 new ChangeFeedProcessorOptions(),
                 null);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public void ApplyBuildConfiguration_ValidatesCustomStoreWithNullLeaseContainer()
+        {
+            Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
+            leaseStoreManager.Setup(l => l.LeaseContainer).Returns((DocumentServiceLeaseContainer)null);
+
+            ChangeFeedProcessorCore processor = ChangeFeedProcessorCoreTests.CreateProcessor(out _, out _);
+            processor.ApplyBuildConfiguration(
+                leaseStoreManager.Object,
+                null,
+                "instanceName",
+                new ChangeFeedLeaseOptions(),
+                new ChangeFeedProcessorOptions(),
+                ChangeFeedProcessorCoreTests.GetMockedContainer("monitored"));
         }
 
         [TestMethod]
