@@ -1,3 +1,5 @@
+> **⚠️ SUPERSEDED**: This spec was part of the rejected Approach B (async prefetch subclass). The final approach uses proactive PDEK cache background refresh instead of a separate prefetch cache. See `specs/pdek-background-refresh/spec.md` for the chosen approach.
+
 ## ADDED Requirements
 
 ### Requirement: Async prefetch of unwrapped Data Encryption Key bytes outside the semaphore

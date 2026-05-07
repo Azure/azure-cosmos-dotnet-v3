@@ -1,3 +1,5 @@
+> **⚠️ SUPERSEDED**: This spec was part of the rejected Approach B (async prefetch subclass with environment variable gating). See `specs/pdek-background-refresh/spec.md` for the chosen approach.
+
 ## ADDED Requirements
 
 ### Requirement: Resolved IKeyEncryptionKey cached per Customer Master Key URL

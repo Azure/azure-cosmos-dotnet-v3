@@ -76,3 +76,64 @@
 - [ ] 8.6 Benchmark: multi-Client Encryption Key refresh burst — 5 Client Encryption Keys with aligned time-to-live values, verify jitter + concurrency limiter staggers Azure Key Vault calls (measure peak concurrent Azure Key Vault calls; should not exceed concurrency limit).
 - [ ] 8.7 Document results in a comparison table (baseline vs. optimized) with all metrics.
 - [ ] 8.8 **Customer thread pool investigation.** Gather information about the impacted customer's thread pool configuration (min/max threads, thread pool starvation indicators) to inform benchmark concurrency levels and validate that the fix is effective under their actual thread pool constraints.
+
+---
+
+## Final Approach Tasks: Proactive PDEK Cache Background Refresh
+
+The tasks below supersede sections 2–6 above (which were based on the rejected DEK byte cache + async prefetch approach). Section 1 (Security Validation) and Sections 7–8 (Contract Validation, Benchmarking) remain relevant.
+
+### 9. PDEK Refresh Worker Infrastructure
+
+- [ ] 9.1 **Create `PdekCacheRefreshWorker` internal class** in `Microsoft.Azure.Cosmos.Encryption/src/`. Responsibilities: monitor PDEK cache entries, identify entries approaching TTL expiry, enqueue them for refresh. Constructor takes: `IKeyEncryptionKeyResolver`, `keyCacheTimeToLive`, `CancellationToken`.
+- [ ] 9.2 **Implement refresh queue** (`ConcurrentQueue<RefreshItem>` or `Channel<RefreshItem>`). Each `RefreshItem` contains: CEK ID, wrapped DEK bytes, KEK ID, algorithm. The monitor thread enqueues; the refresh thread dequeues.
+- [ ] 9.3 **Implement serial refresh loop**: single background thread that dequeues one item at a time, calls `ResolveAsync(kekId)` + `UnwrapKeyAsync(wrappedDek)`, rebuilds `ProtectedDataEncryptionKey`, and updates the PDEK cache.
+- [ ] 9.4 **Implement 429 backoff**: on `RequestFailedException` with status 429, read `Retry-After` header. If present, sleep for that duration. If absent, exponential backoff (1s, 2s, 4s, 8s, max 30s). Retry the same item after backoff.
+- [ ] 9.5 **Implement transient failure handling**: on non-429 transient errors (5xx, timeout), log and skip the entry (will be retried on next scan cycle). On 403 (KEK revoked), invalidate/remove the PDEK cache entry so the next hot-path access triggers the existing force-refresh flow.
+- [ ] 9.6 **Implement refresh window calculation**: an entry is eligible for refresh when `elapsed >= ttl * 0.8` (i.e., 80% of TTL has passed). For TTL = 1 hour, refresh starts at 48 minutes. Add per-entry jitter (random offset within the refresh window) to stagger multi-CEK refreshes.
+
+### 10. Activation & Wiring via `WithEncryption`
+
+- [ ] 10.1 **TTL activation check in `EncryptionCosmosClient` constructor**: if `keyCacheTimeToLive >= TimeSpan.FromHours(1)` (or null/default), instantiate and start `PdekCacheRefreshWorker`. If `< 1 hour`, do not create the worker.
+- [ ] 10.2 **Wire PDEK cache access into the worker**: the worker needs read access to the set of active PDEK cache entries (CEK IDs + their creation timestamps). Determine integration point with MDE's `ProtectedDataEncryptionKey` static `LocalCache` — either expose entries via internal accessor or maintain a parallel tracking dictionary in `EncryptionCosmosClient`.
+- [ ] 10.3 **No environment variable gating**: activation is purely TTL-driven. Remove any references to `AZURE_COSMOS_ENCRYPTION_OPTIMISTIC_DECRYPTION_ENABLED` from the implementation plan (keep it documented as rejected alternative).
+- [ ] 10.4 **Wire entry point through `WithEncryption`**: the `EncryptionCosmosClientExtensions.WithEncryption()` method already passes `keyCacheTimeToLive` to the constructor — no changes needed to the public API surface.
+
+### 11. Lifecycle & Disposal
+
+- [ ] 11.1 **`CancellationTokenSource` in `EncryptionCosmosClient`**: create a `CancellationTokenSource` that is cancelled on `Dispose()`.
+- [ ] 11.2 **Pass token to `PdekCacheRefreshWorker`**: worker loop checks `token.IsCancellationRequested` between queue items. `ResolveAsync`/`UnwrapKeyAsync` calls receive the token for cooperative cancellation.
+- [ ] 11.3 **Idempotent disposal**: use `Interlocked.Exchange(ref _disposed, 1)` to guard against double-dispose.
+- [ ] 11.4 **Graceful shutdown**: on cancellation, worker exits its loop, drains no further items. Any in-flight Key Vault call is cancelled via token.
+- [ ] 11.5 **Unit test: Dispose cancels worker** — verify background task completes after Dispose is called.
+- [ ] 11.6 **Unit test: double Dispose is safe** — no `ObjectDisposedException`.
+
+### 12. Unit Tests for Background Refresh
+
+- [ ] 12.1 **Test: TTL >= 1 hour starts worker** — mock resolver, verify background scanning starts (e.g., via observable side effects or internal state).
+- [ ] 12.2 **Test: TTL < 1 hour does NOT start worker** — verify no background thread is created, zero CPU overhead.
+- [ ] 12.3 **Test: entry at 80% TTL triggers refresh** — insert a PDEK cache entry with known creation time, advance clock, verify resolver is called.
+- [ ] 12.4 **Test: refresh updates PDEK cache** — after background refresh completes, verify the PDEK cache entry has a renewed TTL / fresh unwrapped bytes.
+- [ ] 12.5 **Test: serial processing** — enqueue 5 items simultaneously, verify only one Key Vault call is in-flight at any time (via mock concurrency tracking).
+- [ ] 12.6 **Test: 429 backoff** — mock resolver returns 429 with `Retry-After: 2`, verify retry happens after >= 2 seconds, verify the item is eventually refreshed.
+- [ ] 12.7 **Test: 403 invalidates cache entry** — mock resolver returns 403, verify PDEK cache entry is removed/invalidated, verify next hot-path access triggers force-refresh flow.
+- [ ] 12.8 **Test: transient failure skips entry** — mock resolver throws timeout, verify entry is skipped (not retried immediately), stays in cache until next scan cycle.
+- [ ] 12.9 **Test: `VerifyKekRevokeHandling` still passes** — with TTL = Zero (no worker), existing revocation detection flow is unaffected.
+- [ ] 12.10 **Test: jitter staggers multi-CEK refresh** — 5 CEKs with same creation time, verify they don't all refresh at the exact same moment.
+
+### 13. Integration & Validation
+
+- [ ] 13.1 **Verify build**: `dotnet build Microsoft.Azure.Cosmos.Encryption/src/ -c Release` — 0 errors, 0 warnings.
+- [ ] 13.2 **Run existing unit tests**: all pass without regression.
+- [ ] 13.3 **Run emulator tests**: all `MdeEncryptionTests` pass, including `VerifyKekRevokeHandling`.
+- [ ] 13.4 **Run with TTL = 1 hour (default)**: verify worker starts, entries are refreshed proactively, no 429 bursts.
+- [ ] 13.5 **Run with TTL = 10 minutes**: verify no worker starts, behavior identical to current baseline.
+- [ ] 13.6 **No public API changes**: diff contracts file — no new public types, methods, or properties.
+
+### 14. Performance Benchmarking (updated for final approach)
+
+- [ ] 14.1 **Benchmark: semaphore hold time with background refresh active** — at 50 concurrent threads with 500ms simulated Key Vault latency, verify semaphore hold time is microseconds (PDEK cache always warm due to proactive refresh).
+- [ ] 14.2 **Benchmark: TTL boundary crossing** — force PDEK cache TTL expiry mid-workload. With background refresh, verify zero concurrent threads hit a cache miss (worker refreshed before expiry). Without refresh (TTL < 1h), verify baseline behavior.
+- [ ] 14.3 **Benchmark: Key Vault call count** — over 1 hour of sustained load with background refresh, verify Key Vault calls = O(CEKs × refreshes-per-hour), not O(concurrent-threads × cache-misses).
+- [ ] 14.4 **Benchmark: `OperationCanceledException` rate** — 50 concurrent threads, 5s timeout, 2s Key Vault latency. With background refresh (TTL >= 1h): expect zero cancellations. Without (TTL < 1h): expect baseline behavior.
+- [ ] 14.5 **Benchmark: CPU overhead of idle worker** — when cache is warm and no refresh needed, verify worker thread consumes negligible CPU (sleeping between scan intervals).

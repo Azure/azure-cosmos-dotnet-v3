@@ -1,3 +1,5 @@
+> **⚠️ SUPERSEDED**: This spec was part of the rejected Approach B (async prefetch subclass with environment variable gating). The final approach uses TTL-driven activation (no environment variable). See `specs/pdek-background-refresh/spec.md` for the chosen approach.
+
 ## ADDED Requirements
 
 ### Requirement: Single environment variable gates all optimization layers
