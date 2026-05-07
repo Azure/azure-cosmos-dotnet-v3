@@ -8,8 +8,10 @@
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Globalization;
+    using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents.Collections;
@@ -810,7 +812,7 @@
         }
 
         [TestMethod]
-        public async Task DtxRequest_449_5352_ShouldRetry_WithZeroDelay()
+        public async Task DtxRequest_449_5352_ShouldRetry_WithDefaultRetryInterval()
         {
             const bool enableEndpointDiscovery = true;
             using GlobalEndpointManager endpointManager = this.Initialize(
@@ -829,7 +831,8 @@
             ShouldRetryResult result = await policy.ShouldRetryAsync(response, CancellationToken.None);
 
             Assert.IsTrue(result.ShouldRetry, "DTX 449/5352 coordinator race conflict must be retried.");
-            Assert.AreEqual(TimeSpan.Zero, result.BackoffTime, "When no Retry-After header is present, delay should be zero.");
+            Assert.AreEqual(TimeSpan.FromSeconds(1), result.BackoffTime,
+                "Without a Retry-After header, CRP should fall back to the standard retry interval (1s) instead of hammering the coordinator with zero-delay retries.");
         }
 
         [TestMethod]
@@ -943,18 +946,96 @@
             DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequest();
             policy.OnBeforeSendRequest(request);
 
+            // 408 with no body — the inner CRP loop owns this code (the body-bearing case is
+            // deferred to the outer DistributedTransactionCommitter loop).
             ResponseMessage response = new ResponseMessage(HttpStatusCode.RequestTimeout);
 
-            // Exhaust the full DTX retry budget (MaxDtxRetryCount = 100).
-            for (int i = 0; i < 100; i++)
+            const int budget = 10; // matches ClientRetryPolicy.MaxDtxRetryCount
+            for (int i = 0; i < budget; i++)
             {
                 ShouldRetryResult retryResult = await policy.ShouldRetryAsync(response, CancellationToken.None);
-                Assert.IsTrue(retryResult.ShouldRetry, $"DTX 408 retry {i + 1} of 100 should be allowed.");
+                Assert.IsTrue(retryResult.ShouldRetry, $"DTX 408 retry {i + 1} of {budget} should be allowed.");
             }
 
-            // The 101st call must be denied.
+            // The (budget + 1)th call must be denied.
             ShouldRetryResult finalResult = await policy.ShouldRetryAsync(response, CancellationToken.None);
-            Assert.IsFalse(finalResult.ShouldRetry, "DTX retry budget is exhausted after 100 retries; the 101st must be denied.");
+            Assert.IsFalse(finalResult.ShouldRetry, $"DTX retry budget is exhausted after {budget} retries; the next call must be denied.");
+        }
+
+        [TestMethod]
+        [Description("CRP must defer 449/5352 with a non-empty response body to the outer DistributedTransactionCommitter loop so the two budgets do not amplify each other.")]
+        public async Task DtxRequest_449_5352_WithBody_DeferredToOuterLoop()
+        {
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enforceSingleMasterSingleWriteLocation: true);
+
+            ClientRetryPolicy policy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false);
+            DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequest();
+            policy.OnBeforeSendRequest(request);
+
+            ResponseMessage response = new ResponseMessage((HttpStatusCode)StatusCodes.RetryWith)
+            {
+                Content = new MemoryStream(Encoding.UTF8.GetBytes("{\"isRetriable\":true}"))
+            };
+            response.Headers.SubStatusCodeLiteral = DistributedTransactionConstants.DtcCoordinatorRaceConflict.ToString();
+
+            // Replay the same body-bearing 449/5352 well past CRP's inner retry budget: every call must
+            // return NoRetry without consuming the inner counter, so a follow-up empty-body 449 still
+            // gets the full inner budget.
+            for (int i = 0; i < 25; i++)
+            {
+                response.Content.Position = 0; // ResponseMessage.Content may be re-read by callers
+                ShouldRetryResult retryResult = await policy.ShouldRetryAsync(response, CancellationToken.None);
+                Assert.IsFalse(retryResult.ShouldRetry,
+                    $"CRP must defer body-bearing 449/5352 to the outer loop on call {i + 1} (no inner retry).");
+            }
+
+            ResponseMessage emptyBodyResponse = new ResponseMessage((HttpStatusCode)StatusCodes.RetryWith);
+            emptyBodyResponse.Headers.SubStatusCodeLiteral = DistributedTransactionConstants.DtcCoordinatorRaceConflict.ToString();
+            ShouldRetryResult innerResult = await policy.ShouldRetryAsync(emptyBodyResponse, CancellationToken.None);
+            Assert.IsTrue(innerResult.ShouldRetry,
+                "CRP's inner retry budget must NOT have been consumed by the deferred body-bearing calls; an empty-body 449/5352 should still trigger an inner retry.");
+        }
+
+        [TestMethod]
+        [Description("CRP must defer 408 with a non-empty response body to the outer DistributedTransactionCommitter loop. Mirrors the 449/5352 deferral so both envelope codes route through the same isRetriable path.")]
+        public async Task DtxRequest_408_WithBody_DeferredToOuterLoop()
+        {
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: false,
+                enforceSingleMasterSingleWriteLocation: true);
+
+            ClientRetryPolicy policy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false);
+            DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequest();
+            policy.OnBeforeSendRequest(request);
+
+            ResponseMessage response = new ResponseMessage(HttpStatusCode.RequestTimeout)
+            {
+                Content = new MemoryStream(Encoding.UTF8.GetBytes("{\"isRetriable\":true}"))
+            };
+
+            // Replay the same body-bearing 408 well past CRP's inner retry budget: every call must
+            // return NoRetry without consuming the inner counter, so a follow-up empty-body 408 still
+            // gets the full inner budget.
+            for (int i = 0; i < 25; i++)
+            {
+                response.Content.Position = 0;
+                ShouldRetryResult retryResult = await policy.ShouldRetryAsync(response, CancellationToken.None);
+                Assert.IsFalse(retryResult.ShouldRetry,
+                    $"CRP must defer body-bearing 408 to the outer loop on call {i + 1} (no inner retry).");
+            }
+
+            ResponseMessage emptyBodyResponse = new ResponseMessage(HttpStatusCode.RequestTimeout);
+            ShouldRetryResult innerResult = await policy.ShouldRetryAsync(emptyBodyResponse, CancellationToken.None);
+            Assert.IsTrue(innerResult.ShouldRetry,
+                "CRP's inner retry budget must NOT have been consumed by the deferred body-bearing 408 calls; an empty-body 408 should still trigger an inner retry.");
         }
 
         private static DocumentServiceRequest CreateDtxRequest()

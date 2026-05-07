@@ -1,4 +1,4 @@
-// ------------------------------------------------------------
+﻿// ------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
@@ -670,6 +670,74 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         }
 
         [TestMethod]
+        [Description("Verifies that the SDK sends byte-for-byte identical request bodies AND the same idempotency token on every outer-loop retry. Required so the coordinator can recognise replays via the idempotency token and safely re-prepare from the same payload (per dtx-sdk-response-status-codes.md, Part C §9: 'Aborted (SDK retry): Resets record to Preparing with new transaction ID, same idempotency token').")]
+        public async Task CommitTransaction_SameBodyAndTokenSentOnEveryRetryAttempt()
+        {
+            int callCount = 0;
+            List<string> capturedTokens = new List<string>();
+            List<byte[]> capturedBodies = new List<byte[]>();
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+            this.SetupProcessResourceOperationWithStreamAndEnricherCapture(
+                mockContext,
+                (stream, enricher) =>
+                {
+                    using (MemoryStream copy = new MemoryStream())
+                    {
+                        long originalPosition = stream.CanSeek ? stream.Position : 0;
+                        if (stream.CanSeek)
+                        {
+                            stream.Position = 0;
+                        }
+
+                        stream.CopyTo(copy);
+                        capturedBodies.Add(copy.ToArray());
+
+                        if (stream.CanSeek)
+                        {
+                            stream.Position = originalPosition;
+                        }
+                    }
+
+                    RequestMessage request = new RequestMessage
+                    {
+                        ResourceType = ResourceType.DistributedTransactionBatch,
+                        OperationType = OperationType.CommitDistributedTransaction,
+                    };
+                    enricher(request);
+                    capturedTokens.Add(request.Headers[HttpConstants.HttpHeaders.IdempotencyToken]);
+                },
+                () =>
+                {
+                    callCount++;
+                    return callCount < 3
+                        ? Task.FromResult(CreateRetriableErrorResponseMessage())
+                        : Task.FromResult(CreateSuccessResponseMessage(operationCount: 2));
+                });
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                CreateTestOperations(count: 2),
+                mockContext.Object,
+                TimeSpan.Zero);
+
+            using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(CancellationToken.None))
+            {
+                Assert.IsTrue(response.IsSuccessStatusCode);
+                Assert.AreEqual(3, callCount);
+            }
+
+            Assert.AreEqual(3, capturedTokens.Count, "Three attempts expected: two retriable failures plus one success.");
+            Assert.AreEqual(1, new HashSet<string>(capturedTokens).Count,
+                "The same idempotency token must be used on every retry attempt.");
+
+            Assert.AreEqual(3, capturedBodies.Count);
+            Assert.IsTrue(capturedBodies[0].Length > 0, "Captured body must be non-empty.");
+            CollectionAssert.AreEqual(capturedBodies[0], capturedBodies[1],
+                "Retry attempt #2 must send a byte-for-byte identical request body.");
+            CollectionAssert.AreEqual(capturedBodies[0], capturedBodies[2],
+                "Retry attempt #3 must send a byte-for-byte identical request body.");
+        }
+
+        [TestMethod]
         [Description("Verifies that a 449 response with a sub-status code other than DtcCoordinatorRaceConflict (5352) is not retried by the outer loop.")]
         public async Task CommitTransaction_DoesNotRetryOn449WithNonRaceConflictSubStatus()
         {
@@ -952,6 +1020,29 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                     It.IsAny<CancellationToken>()))
                 .Callback<string, ResourceType, OperationType, RequestOptions, ContainerInternal, Cosmos.PartitionKey?, string, Stream, Action<RequestMessage>, ITrace, CancellationToken>(
                     (_, _, _, _, _, _, _, _, enricher, _, _) => enricherCallback(enricher))
+                .Returns(responseFactory);
+        }
+
+        private void SetupProcessResourceOperationWithStreamAndEnricherCapture(
+            Mock<CosmosClientContext> mockContext,
+            Action<Stream, Action<RequestMessage>> capture,
+            Func<Task<ResponseMessage>> responseFactory)
+        {
+            mockContext
+                .Setup(c => c.ProcessResourceOperationStreamAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerInternal>(),
+                    It.IsAny<Cosmos.PartitionKey?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()))
+                .Callback<string, ResourceType, OperationType, RequestOptions, ContainerInternal, Cosmos.PartitionKey?, string, Stream, Action<RequestMessage>, ITrace, CancellationToken>(
+                    (_, _, _, _, _, _, _, stream, enricher, _, _) => capture(stream, enricher))
                 .Returns(responseFactory);
         }
 

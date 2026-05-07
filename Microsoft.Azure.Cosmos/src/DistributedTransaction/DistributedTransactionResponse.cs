@@ -111,14 +111,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the number of operation results in the distributed transaction response.
         /// </summary>
-        public virtual int Count
-        {
-            get
-            {
-                this.ThrowIfDisposed();
-                return this.results?.Count ?? 0;
-            }
-        }
+        public virtual int Count => this.results?.Count ?? 0;
 
         /// <summary>
         /// Gets the idempotency token associated with this distributed transaction.
@@ -144,7 +137,6 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An enumerator for the operation results.</returns>
         public virtual IEnumerator<DistributedTransactionOperationResult> GetEnumerator()
         {
-            this.ThrowIfDisposed();
             return this.results?.GetEnumerator()
                 ?? ((IList<DistributedTransactionOperationResult>)Array.Empty<DistributedTransactionOperationResult>()).GetEnumerator();
         }
@@ -174,7 +166,6 @@ namespace Microsoft.Azure.Cosmos
             ResponseMessage responseMessage,
             DistributedTransactionServerRequest serverRequest,
             CosmosSerializerCore serializer,
-            Guid idempotencyToken,
             ITrace trace,
             CancellationToken cancellationToken)
         {
@@ -182,116 +173,79 @@ namespace Microsoft.Azure.Cosmos
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                return await DistributedTransactionResponse.FromResponseMessageCoreAsync(
-                    responseMessage,
-                    serverRequest,
-                    serializer,
-                    idempotencyToken,
-                    createResponseTrace,
-                    cancellationToken);
-            }
-        }
-
-        internal static async Task<DistributedTransactionResponse> FromResponseMessageAsync(
-            ResponseMessage responseMessage,
-            DistributedTransactionServerRequest serverRequest,
-            CosmosSerializerCore serializer,
-            ITrace trace,
-            CancellationToken cancellationToken)
-        {
-            using (ITrace createResponseTrace = trace.StartChild("Create Distributed Transaction Response", TraceComponent.Batch, TraceLevel.Info))
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                // Extract idempotency token from response headers, fallback to request token if not present
+                // Extract idempotency token from response headers, fallback to the request token if absent.
                 Guid idempotencyToken = GetIdempotencyTokenFromHeaders(responseMessage.Headers, serverRequest.IdempotencyToken);
 
-                return await DistributedTransactionResponse.FromResponseMessageCoreAsync(
-                    responseMessage,
-                    serverRequest,
-                    serializer,
-                    idempotencyToken,
-                    createResponseTrace,
-                    cancellationToken);
-            }
-        }
+                DistributedTransactionResponse response = null;
+                MemoryStream memoryStream = null;
 
-        private static async Task<DistributedTransactionResponse> FromResponseMessageCoreAsync(
-            ResponseMessage responseMessage,
-            DistributedTransactionServerRequest serverRequest,
-            CosmosSerializerCore serializer,
-            Guid idempotencyToken,
-            ITrace trace,
-            CancellationToken cancellationToken)
-        {
-            DistributedTransactionResponse response = null;
-            MemoryStream memoryStream = null;
-
-            try
-            {
-                if (responseMessage.Content != null)
+                try
                 {
-                    Stream content = responseMessage.Content;
-
-                    // Ensure the stream is seekable
-                    if (!content.CanSeek)
+                    if (responseMessage.Content != null)
                     {
-                        memoryStream = new MemoryStream();
-                        await responseMessage.Content.CopyToAsync(memoryStream);
-                        memoryStream.Position = 0;
-                        content = memoryStream;
-                    }
+                        Stream content = responseMessage.Content;
 
-                    response = await PopulateFromJsonContentAsync(
-                        content,
-                        responseMessage,
-                        serverRequest,
-                        serializer,
-                        idempotencyToken,
-                        trace,
-                        cancellationToken);
-                }
+                        // Ensure the stream is seekable
+                        if (!content.CanSeek)
+                        {
+                            memoryStream = new MemoryStream();
+                            await responseMessage.Content.CopyToAsync(memoryStream);
+                            memoryStream.Position = 0;
+                            content = memoryStream;
+                        }
 
-                // If we couldn't parse JSON content or there was no content, create default response
-                response ??= new DistributedTransactionResponse(
-                    responseMessage.StatusCode,
-                    responseMessage.Headers.SubStatusCode,
-                    responseMessage.ErrorMessage,
-                    responseMessage.Headers,
-                    serverRequest.Operations,
-                    serializer,
-                    trace,
-                    idempotencyToken);
-
-                // Validate results count matches operations count
-                if (response.results == null || response.results.Count != serverRequest.Operations.Count)
-                {
-                    DefaultTrace.TraceWarning(
-                        $"DTC response: result count ({response.results?.Count ?? 0}) differs from " +
-                        $"operation count ({serverRequest.Operations.Count}).");
-
-                    if (responseMessage.IsSuccessStatusCode)
-                    {
-                        // Server should guarantee results count equals operations count on success
-                        return new DistributedTransactionResponse(
-                            HttpStatusCode.InternalServerError,
-                            SubStatusCodes.Unknown,
-                            ClientResources.InvalidServerResponse,
-                            responseMessage.Headers,
-                            serverRequest.Operations,
+                        response = await PopulateFromJsonContentAsync(
+                            content,
+                            responseMessage,
+                            serverRequest,
                             serializer,
-                            trace,
-                            idempotencyToken);
+                            idempotencyToken,
+                            createResponseTrace,
+                            cancellationToken);
                     }
 
-                    response.CreateAndPopulateResults(serverRequest.Operations, trace);
-                }
+                    // If we couldn't parse JSON content or there was no content, create default response
+                    response ??= new DistributedTransactionResponse(
+                        responseMessage.StatusCode,
+                        responseMessage.Headers.SubStatusCode,
+                        responseMessage.ErrorMessage,
+                        responseMessage.Headers,
+                        serverRequest.Operations,
+                        serializer,
+                        createResponseTrace,
+                        idempotencyToken);
 
-                return response;
-            }
-            finally
-            {
-                memoryStream?.Dispose();
+                    // Validate results count matches operations count
+                    if (response.results == null || response.results.Count != serverRequest.Operations.Count)
+                    {
+                        DefaultTrace.TraceWarning(
+                            $"DTC response: result count ({response.results?.Count ?? 0}) differs from " +
+                            $"operation count ({serverRequest.Operations.Count}).");
+
+                        if (responseMessage.IsSuccessStatusCode)
+                        {
+                            response.Dispose();
+
+                            return new DistributedTransactionResponse(
+                                HttpStatusCode.InternalServerError,
+                                SubStatusCodes.Unknown,
+                                ClientResources.InvalidServerResponse,
+                                responseMessage.Headers,
+                                serverRequest.Operations,
+                                serializer,
+                                createResponseTrace,
+                                idempotencyToken);
+                        }
+
+                        response.CreateAndPopulateResults(serverRequest.Operations, createResponseTrace);
+                    }
+
+                    return response;
+                }
+                finally
+                {
+                    memoryStream?.Dispose();
+                }
             }
         }
 
@@ -355,9 +309,11 @@ namespace Microsoft.Azure.Cosmos
             {
                 responseJson = await JsonDocument.ParseAsync(content, cancellationToken: cancellationToken);
             }
-            catch (JsonException)
+            catch (JsonException jsonEx)
             {
-                // Unparseable body — fall back to default response construction.
+                DefaultTrace.TraceWarning(
+                    "DistributedTransactionResponse: failed to parse response body: {0}",
+                    jsonEx.Message);
                 return null;
             }
 
@@ -387,9 +343,13 @@ namespace Microsoft.Azure.Cosmos
                             results.Add(operationResult);
                         }
                     }
-                    catch (JsonException)
+                    catch (JsonException jsonEx)
                     {
+                        DefaultTrace.TraceWarning(
+                            "DistributedTransactionResponse: per-operation parse failed; forcing isRetriable=false. {0}",
+                            jsonEx.Message);
                         results.Clear();
+                        isRetriable = false;
                     }
                 }
             }

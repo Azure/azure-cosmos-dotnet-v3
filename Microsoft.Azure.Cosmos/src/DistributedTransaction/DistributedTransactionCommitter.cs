@@ -1,4 +1,4 @@
-// ------------------------------------------------------------
+﻿// ------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
@@ -17,20 +17,21 @@ namespace Microsoft.Azure.Cosmos
 
     internal class DistributedTransactionCommitter
     {
+        // Outer-loop retry parameters. The inner loop (ClientRetryPolicy) handles envelope failures with empty body;
+        // the outer loop handles body-bearing semantic failures whose JSON body sets isRetriable: true.
+        internal const int MaxIsRetriableRetryCount = 10;
+        private const int RetryMaxExponent = 5; // ~32 s max base delay before jitter
         private static readonly TimeSpan DefaultRetryBaseDelay = TimeSpan.FromSeconds(1);
-
-        internal const int MaxIsRetriableRetryCount = 100;
 
         private readonly IReadOnlyList<DistributedTransactionOperation> operations;
         private readonly CosmosClientContext clientContext;
         private readonly TimeSpan retryBaseDelay;
-        private readonly Random jitter = new Random();
         private readonly Func<TimeSpan, CancellationToken, Task> delayProvider;
 
         public DistributedTransactionCommitter(
             IReadOnlyList<DistributedTransactionOperation> operations,
             CosmosClientContext clientContext)
-            : this(operations, clientContext, DefaultRetryBaseDelay)
+            : this(operations, clientContext, DistributedTransactionCommitter.DefaultRetryBaseDelay)
         {
         }
 
@@ -84,38 +85,41 @@ namespace Microsoft.Azure.Cosmos
 
                     DistributedTransactionResponse response = await this.ExecuteCommitAsync(serverRequest, retryTrace, cancellationToken);
 
-                    if (!response.IsSuccessStatusCode && response.IsRetriable)
+                    if (response.IsSuccessStatusCode || !response.IsRetriable)
                     {
-                        if (attempt >= DistributedTransactionCommitter.MaxIsRetriableRetryCount)
-                        {
-                            DefaultTrace.TraceWarning(
-                                $"Distributed transaction isRetriable retry budget exhausted after {attempt} attempts " +
-                                $"(StatusCode={response.StatusCode}). Returning last response.");
-                            return response;
-                        }
-
-                        DefaultTrace.TraceWarning(
-                            $"Distributed transaction commit retriable (StatusCode={response.StatusCode}, " +
-                            $"IsRetriable={response.IsRetriable}, attempt {attempt + 1}). " +
-                            $"Retrying with idempotency token {serverRequest.IdempotencyToken}.");
-                        response.Dispose();
-                        await this.delayProvider(this.GetRetryDelay(attempt++), cancellationToken);
-                        continue;
+                        return response;
                     }
 
-                    return response;
+                    if (attempt >= DistributedTransactionCommitter.MaxIsRetriableRetryCount)
+                    {
+                        DefaultTrace.TraceWarning(
+                            $"Distributed transaction isRetriable retry budget exhausted after {attempt} attempts " +
+                            $"(StatusCode={response.StatusCode}). Returning last response.");
+                        return response;
+                    }
+
+                    // Use the maximum of the server hint and the locally-computed exponential backoff
+                    // to avoid retrying sooner than the server requested.
+                    TimeSpan computedDelay = DistributedTransactionRetryHelpers.ComputeBackoff(
+                        attempt,
+                        this.retryBaseDelay,
+                        TimeSpan.MaxValue,
+                        DistributedTransactionCommitter.RetryMaxExponent);
+
+                    TimeSpan delay = response.Headers?.RetryAfter is TimeSpan serverHint && serverHint > computedDelay
+                        ? serverHint
+                        : computedDelay;
+
+                    DefaultTrace.TraceWarning(
+                        $"Distributed transaction commit retriable (StatusCode={response.StatusCode}, " +
+                        $"IsRetriable={response.IsRetriable}, attempt {attempt + 1}, delayMs={(int)delay.TotalMilliseconds}). " +
+                        $"Retrying with idempotency token {serverRequest.IdempotencyToken}.");
+
+                    response.Dispose();
+                    attempt++;
+                    await this.delayProvider(delay, cancellationToken);
                 }
             }
-        }
-
-        private TimeSpan GetRetryDelay(int attempt)
-        {
-            const int maxExponent = 5;
-            int exponent = Math.Min(attempt, maxExponent);
-            double baseDelayMs = this.retryBaseDelay.TotalMilliseconds * Math.Pow(2, exponent);
-            // Jitter: uniform random to decorrelate concurrent clients and avoid synchronized retry storms.
-            double jitterDelay = baseDelayMs * this.jitter.NextDouble();
-            return TimeSpan.FromMilliseconds((baseDelayMs * 0.5) + jitterDelay);
         }
 
         private async Task<DistributedTransactionResponse> ExecuteCommitAsync(

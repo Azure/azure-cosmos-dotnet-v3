@@ -1,4 +1,4 @@
-// ------------------------------------------------------------
+﻿// ------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
@@ -47,11 +47,6 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>Body stream.</returns>
         public MemoryStream CreateBodyStream()
         {
-            if (this.serializedBody == null)
-            {
-                throw new InvalidOperationException("Request body has not been initialized. Use CreateAsync to construct a request.");
-            }
-
             return new MemoryStream(this.serializedBody, writable: false);
         }
 
