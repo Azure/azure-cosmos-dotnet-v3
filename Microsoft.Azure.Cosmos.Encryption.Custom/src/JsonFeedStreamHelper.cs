@@ -12,15 +12,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     {
         private const string MissingDocumentsArrayMessage = "The JSON payload must be a Cosmos DB feed response object containing a Documents array.";
         private const string DocumentsMustBeArrayMessage = "The Documents property must be a JSON array.";
-        private const string DocumentsMustBeObjectsMessage = "Documents array items must be JSON objects.";
 
         internal static ProcessResult ProcessChunk(
             ReadOnlySpan<byte> dataSegment,
             bool finalBlock,
             ref JsonReaderState readerState,
             ref JsonArrayTraversalState traversalState,
-            JsonSegmentWriter writeEnvelopeSegment,
-            JsonSegmentWriter writeObjectSegment)
+            JsonSegmentWriter writeSegment)
         {
             Utf8JsonReader reader = new (dataSegment, finalBlock, readerState);
             int lastConsumed = 0;
@@ -32,32 +30,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
                 if (tokenStart > lastConsumed)
                 {
-                    WriteSegment(
-                        traversalState.DocumentOpen,
-                        writeEnvelopeSegment,
-                        writeObjectSegment,
-                        Slice(dataSegment, lastConsumed, tokenStart));
+                    ReadOnlySpan<byte> preTokenSegment = dataSegment.Slice(lastConsumed, tokenStart - lastConsumed);
+                    writeSegment(preTokenSegment, traversalState.DocumentOpen);
                 }
 
                 JsonTokenType tokenType = reader.TokenType;
 
-                if (!traversalState.EnvelopeValidated)
-                {
-                    if (tokenType != JsonTokenType.StartObject)
-                    {
-                        throw new InvalidOperationException("Expected JSON payload to start with '{'.");
-                    }
-
-                    traversalState.EnvelopeValidated = true;
-                }
-
                 bool documentCompleted = UpdateTraversalState(ref traversalState, tokenType, reader.CurrentDepth, ref reader);
 
-                WriteSegment(
-                    traversalState.DocumentOpen,
-                    writeEnvelopeSegment,
-                    writeObjectSegment,
-                    Slice(dataSegment, tokenStart, tokenEnd));
+                ReadOnlySpan<byte> tokenSegment = dataSegment.Slice(tokenStart, tokenEnd - tokenStart);
+                writeSegment(tokenSegment, traversalState.DocumentOpen);
 
                 if (documentCompleted)
                 {
@@ -99,42 +81,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return buffer;
         }
 
-        private static ReadOnlySpan<byte> Slice(ReadOnlySpan<byte> span, int start, int end)
-        {
-#if NET8_0_OR_GREATER
-            return span[start..end];
-#else
-            return span.Slice(start, end - start);
-#endif
-        }
-
-        private static void WriteSegment(
-            bool capturingObject,
-            JsonSegmentWriter writeEnvelopeSegment,
-            JsonSegmentWriter writeObjectSegment,
-            ReadOnlySpan<byte> segment)
-        {
-            if (segment.IsEmpty)
-            {
-                return;
-            }
-
-            if (capturingObject)
-            {
-                if (writeObjectSegment == null)
-                {
-                    throw new InvalidOperationException("Object segment writer must be provided when capturing documents.");
-                }
-
-                writeObjectSegment(segment);
-                return;
-            }
-
-            writeEnvelopeSegment?.Invoke(segment);
-        }
-
         private static bool UpdateTraversalState(ref JsonArrayTraversalState traversalState, JsonTokenType tokenType, int readerDepth, ref Utf8JsonReader reader)
         {
+            if (traversalState.EnvelopeDepth < 0 && tokenType != JsonTokenType.StartObject)
+            {
+                throw new InvalidOperationException("Expected JSON payload to start with '{'.");
+            }
+
             switch (tokenType)
             {
                 case JsonTokenType.StartObject:
@@ -173,11 +126,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                         break;
                     }
 
-                    if (traversalState.DocumentsArraySeen || traversalState.DocumentsArrayDepth >= 0)
-                    {
-                        throw new InvalidOperationException("Multiple Documents arrays are not supported in the feed payload.");
-                    }
-
+                    traversalState.DocumentsArraySeen = false;
+                    traversalState.DocumentsArrayDepth = -1;
+                    traversalState.DocumentOpen = false;
                     traversalState.PendingDocumentsArray = true;
                     break;
 
@@ -186,10 +137,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     {
                         traversalState.DocumentsArrayDepth = readerDepth;
                         traversalState.PendingDocumentsArray = false;
-                        break;
                     }
 
-                    EnsureEnvelope(traversalState);
                     break;
 
                 case JsonTokenType.EndArray:
@@ -215,16 +164,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     break;
 
                 default:
-                    EnsureEnvelope(traversalState);
-
                     if (traversalState.PendingDocumentsArray)
                     {
                         throw new InvalidOperationException(DocumentsMustBeArrayMessage);
-                    }
-
-                    if (traversalState.DocumentsArrayDepth >= 0 && readerDepth == traversalState.DocumentsArrayDepth + 1)
-                    {
-                        throw new InvalidOperationException(DocumentsMustBeObjectsMessage);
                     }
 
                     break;
@@ -232,17 +174,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             return false;
         }
-
-        private static void EnsureEnvelope(in JsonArrayTraversalState traversalState)
-        {
-            if (traversalState.EnvelopeDepth < 0)
-            {
-                throw new InvalidOperationException(MissingDocumentsArrayMessage);
-            }
-        }
     }
 
-    internal delegate void JsonSegmentWriter(ReadOnlySpan<byte> segment);
+    internal delegate void JsonSegmentWriter(ReadOnlySpan<byte> segment, bool insideDocument);
 
     internal readonly struct ProcessResult
     {
@@ -264,7 +198,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         internal bool DocumentsArraySeen;
         internal bool PendingDocumentsArray;
         internal bool DocumentOpen;
-        internal bool EnvelopeValidated;
 
         internal static JsonArrayTraversalState CreateInitial()
         {
@@ -272,10 +205,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 EnvelopeDepth = -1,
                 DocumentsArrayDepth = -1,
-                DocumentsArraySeen = false,
-                PendingDocumentsArray = false,
-                DocumentOpen = false,
-                EnvelopeValidated = false,
             };
         }
     }

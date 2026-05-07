@@ -9,7 +9,7 @@
     [TestClass]
     public class EncryptionFeedIteratorTTests
     {
-        private const string JsonProcessorPropertyBagKey = "encryption-json-processor";
+        private const string JsonProcessorPropertyBagKey = JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey;
 
         [DataTestMethod]
         [DynamicData(nameof(GetJsonProcessorValues), DynamicDataSourceType.Method)]
@@ -63,7 +63,7 @@
             Encryptor mockEncryptor = Mock.Of<Encryptor>();
             CosmosResponseFactory responseFactory = Mock.Of<CosmosResponseFactory>();
             CosmosSerializer cosmosSerializer = Mock.Of<CosmosSerializer>();
-            
+
             RequestOptions requestOptions = new ItemRequestOptions();
             EncryptionFeedIterator baseIterator = new EncryptionFeedIterator(mockFeedIterator, mockEncryptor, requestOptions);
 
@@ -91,12 +91,8 @@
 
             Assert.IsNotNull(result);
         }
-        private static string GetProcessorName(JsonProcessor jsonProcessor)
-        {
-            string processorName = jsonProcessor.ToString();
 
-            return processorName;
-        }
+        private static string GetProcessorName(JsonProcessor jsonProcessor) => jsonProcessor.ToString();
 
         public static IEnumerable<object[]> GetJsonProcessorValues()
         {

@@ -169,27 +169,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             CollectionAssert.AreEqual(new[] { "docA", "docB" }, documentIds);
         }
 
-        [TestMethod]
-        public void HandleLeftOver_WhenBufferExceedsMaxSize_Throws()
+        [DataTestMethod]
+        [DataRow("[{\"id\":\"doc1\"}]")]
+        [DataRow("42")]
+        [DataRow("\"hi\"")]
+        [DataRow("null")]
+        [DataRow("true")]
+        [DataRow("false")]
+        public async Task SplitIntoSubstreamsAsync_WithMalformedRootPayload_ShouldThrow(string payload)
         {
-            int maxBufferSize = 1024;
-            byte[] buffer = new byte[maxBufferSize];
-            int dataLength = maxBufferSize;
-            int leftOver = dataLength;
-            int bytesConsumed = 0;
-
-            InvalidOperationException ex = Assert.ThrowsException<InvalidOperationException>(
-                () => JsonFeedStreamHelper.HandleLeftOver(buffer, dataLength, leftOver, bytesConsumed, maxBufferSize));
-
-            StringAssert.Contains(ex.Message, "maximum buffer size");
-        }
-
-        [TestMethod]
-        public async Task SplitIntoSubstreamsAsync_WithBareArrayPayload_ShouldThrow()
-        {
-            string jsonArray = "[{\"id\":\"doc1\"}]";
-
-            using MemoryStream inputStream = new (Encoding.UTF8.GetBytes(jsonArray));
+            using MemoryStream inputStream = new (Encoding.UTF8.GetBytes(payload));
 
             InvalidOperationException ex = await Assert.ThrowsExceptionAsync<InvalidOperationException>(async () =>
             {
@@ -199,6 +188,78 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             });
 
             StringAssert.Contains(ex.Message, "start with '{'");
+        }
+
+        [DataTestMethod]
+        [DataRow("{}", "feed response")]
+        [DataRow("{\"_count\":0}", "feed response")]
+        [DataRow("{\"Documents\":null}", "must be a JSON array")]
+        [DataRow("{\"Documents\":42}", "must be a JSON array")]
+        [DataRow("{\"Documents\":\"x\"}", "must be a JSON array")]
+        public async Task SplitIntoSubstreamsAsync_WithMalformedFeedStructure_ShouldThrow(string payload, string expectedMessageFragment)
+        {
+            using MemoryStream inputStream = new (Encoding.UTF8.GetBytes(payload));
+
+            InvalidOperationException ex = await Assert.ThrowsExceptionAsync<InvalidOperationException>(async () =>
+            {
+                await foreach (Stream _ in JsonArrayStreamSplitter.SplitIntoSubstreamsAsync(inputStream, CancellationToken.None))
+                {
+                }
+            });
+
+            StringAssert.Contains(ex.Message, expectedMessageFragment);
+        }
+
+        [DataTestMethod]
+        [DataRow("{\"Documents\":[42]}")]
+        [DataRow("{\"Documents\":[null]}")]
+        [DataRow("{\"Documents\":[\"x\"]}")]
+        public async Task SplitIntoSubstreamsAsync_DocumentsContainsOnlyNonObjects_YieldsNothing(string payload)
+        {
+            using MemoryStream inputStream = new (Encoding.UTF8.GetBytes(payload));
+            int yielded = 0;
+
+            await foreach (Stream documentStream in JsonArrayStreamSplitter.SplitIntoSubstreamsAsync(inputStream, CancellationToken.None))
+            {
+                documentStream.Dispose();
+                yielded++;
+            }
+
+            Assert.AreEqual(0, yielded);
+        }
+
+        [DataTestMethod]
+        [DataRow("{\"Documents\":[],\"Documents\":[{\"id\":\"y\"}]}", "y")]
+        [DataRow("{\"Documents\":[],\"Documents\":[],\"Documents\":[{\"id\":\"z\"}]}", "z")]
+        [DataRow("{\"Documents\":[{\"id\":\"x\"}],\"Documents\":[{\"id\":\"y\"}]}", "x,y")]
+        public async Task SplitIntoSubstreamsAsync_DuplicateDocumentsProperty_YieldsFromAllDocumentsArrays(string payload, string expectedIdsCsv)
+        {
+            await AssertYieldedIdsAsync(payload, expectedIdsCsv);
+        }
+
+        [DataTestMethod]
+        [DataRow("{\"Documents\":[42,{\"id\":\"a\"},\"str\",{\"id\":\"b\"},null]}", "a,b")]
+        [DataRow("{\"Documents\":[[1,2,3],{\"id\":\"a\"}]}", "a")]
+        public async Task SplitIntoSubstreamsAsync_DocumentsContainsMixedContents_YieldsOnlyObjects(string payload, string expectedIdsCsv)
+        {
+            await AssertYieldedIdsAsync(payload, expectedIdsCsv);
+        }
+
+        private static async Task AssertYieldedIdsAsync(string payload, string expectedIdsCsv)
+        {
+            string[] expectedIds = expectedIdsCsv.Split(',');
+            using MemoryStream inputStream = new (Encoding.UTF8.GetBytes(payload));
+            List<string> actualIds = new ();
+
+            await foreach (Stream documentStream in JsonArrayStreamSplitter.SplitIntoSubstreamsAsync(inputStream, CancellationToken.None))
+            {
+                using Stream owned = documentStream;
+                owned.Position = 0;
+                using JsonDocument doc = JsonDocument.Parse(owned);
+                actualIds.Add(doc.RootElement.GetProperty("id").GetString());
+            }
+
+            CollectionAssert.AreEqual(expectedIds, actualIds);
         }
     }
 }

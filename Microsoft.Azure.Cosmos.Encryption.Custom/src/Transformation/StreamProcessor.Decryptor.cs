@@ -48,46 +48,34 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             }
 
             using PooledMemoryStream tempOutputStream = new (InitialBufferSize);
-            byte[] buffer = ArrayPool<byte>.Shared.Rent(InitialBufferSize);
 
-            try
-            {
-                stream.Position = 0;
+            stream.Position = 0;
 
-                using RentArrayBufferWriter objectBuffer = new (InitialBufferSize);
-                using RentArrayBufferWriter decryptedObjectBuffer = new (InitialBufferSize);
+            using RentArrayBufferWriter objectBuffer = new (InitialBufferSize);
+            using RentArrayBufferWriter decryptedObjectBuffer = new (InitialBufferSize);
 
-                (Dictionary<string, HashSet<string>> aggregatedPaths, byte[] updatedBuffer) = await this.ProcessJsonArrayStreamAsync(
-                    stream,
-                    encryptor,
-                    diagnosticsContext,
-                    tempOutputStream,
-                    objectBuffer,
-                    decryptedObjectBuffer,
-                    cancellationToken,
-                    buffer).ConfigureAwait(false);
+            Dictionary<string, HashSet<string>> aggregatedPaths = await this.ProcessJsonArrayStreamAsync(
+                stream,
+                encryptor,
+                diagnosticsContext,
+                tempOutputStream,
+                objectBuffer,
+                decryptedObjectBuffer,
+                cancellationToken).ConfigureAwait(false);
 
-                buffer = updatedBuffer;
+            await OverwriteStreamAsync(stream, tempOutputStream, cancellationToken).ConfigureAwait(false);
 
-                await OverwriteStreamAsync(stream, tempOutputStream, cancellationToken).ConfigureAwait(false);
-
-                return CreateAggregatedContext(aggregatedPaths);
-            }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(buffer, clearArray: true);
-            }
+            return CreateAggregatedContext(aggregatedPaths);
         }
 
-        private async Task<(Dictionary<string, HashSet<string>> AggregatedPaths, byte[] Buffer)> ProcessJsonArrayStreamAsync(
+        private async Task<Dictionary<string, HashSet<string>>> ProcessJsonArrayStreamAsync(
             Stream stream,
             Encryptor encryptor,
             CosmosDiagnosticsContext diagnosticsContext,
             Stream tempOutputStream,
             RentArrayBufferWriter objectBuffer,
             RentArrayBufferWriter decryptedObjectBuffer,
-            CancellationToken cancellationToken,
-            byte[] buffer)
+            CancellationToken cancellationToken)
         {
             JsonReaderState readerState = new (JsonReaderOptions);
             JsonArrayTraversalState traversalState = JsonArrayTraversalState.CreateInitial();
@@ -96,54 +84,70 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             bool isFinalBlock = false;
             int leftOver = 0;
 
-            void WriteEnvelopeSegment(ReadOnlySpan<byte> segment)
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(InitialBufferSize);
+
+            JsonSegmentWriter writeSegment = (segment, insideDocument) =>
+                WriteSegment(segment, insideDocument, objectBuffer, tempOutputStream);
+
+            try
+            {
+                while (!isFinalBlock)
+                {
+                    int bytesRead = await stream.ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), cancellationToken).ConfigureAwait(false);
+                    int dataLength = leftOver + bytesRead;
+                    isFinalBlock = bytesRead == 0;
+
+                    ProcessResult result = JsonFeedStreamHelper.ProcessChunk(
+                        buffer.AsSpan(0, dataLength),
+                        isFinalBlock,
+                        ref readerState,
+                        ref traversalState,
+                        writeSegment);
+
+                    leftOver = dataLength - result.BytesConsumed;
+                    buffer = JsonFeedStreamHelper.HandleLeftOver(buffer, dataLength, leftOver, result.BytesConsumed, MaxBufferSize);
+
+                    if (isFinalBlock && leftOver > 0)
+                    {
+                        isFinalBlock = false;
+                    }
+
+                    if (result.ObjectCompleted)
+                    {
+                        aggregatedPaths = await this.ProcessCapturedObjectAsync(
+                            objectBuffer,
+                            decryptedObjectBuffer,
+                            tempOutputStream,
+                            encryptor,
+                            diagnosticsContext,
+                            cancellationToken,
+                            aggregatedPaths).ConfigureAwait(false);
+                    }
+                }
+
+                return aggregatedPaths;
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer, clearArray: true);
+            }
+        }
+
+        private static void WriteSegment(
+            ReadOnlySpan<byte> segment,
+            bool insideDocument,
+            RentArrayBufferWriter objectBuffer,
+            Stream tempOutputStream)
+        {
+            if (!insideDocument)
             {
                 tempOutputStream.Write(segment);
+                return;
             }
 
-            void WriteObjectSegment(ReadOnlySpan<byte> segment)
-            {
-                Span<byte> destination = objectBuffer.GetSpan(segment.Length);
-                segment.CopyTo(destination);
-                objectBuffer.Advance(segment.Length);
-            }
-
-            while (!isFinalBlock)
-            {
-                int bytesRead = await stream.ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), cancellationToken).ConfigureAwait(false);
-                int dataLength = leftOver + bytesRead;
-                isFinalBlock = bytesRead == 0;
-
-                ProcessResult result = JsonFeedStreamHelper.ProcessChunk(
-                    buffer.AsSpan(0, dataLength),
-                    isFinalBlock,
-                    ref readerState,
-                    ref traversalState,
-                    WriteEnvelopeSegment,
-                    WriteObjectSegment);
-
-                leftOver = dataLength - result.BytesConsumed;
-                buffer = JsonFeedStreamHelper.HandleLeftOver(buffer, dataLength, leftOver, result.BytesConsumed, MaxBufferSize);
-
-                if (isFinalBlock && leftOver > 0)
-                {
-                    isFinalBlock = false;
-                }
-
-                if (result.ObjectCompleted)
-                {
-                    aggregatedPaths = await this.ProcessCapturedObjectAsync(
-                        objectBuffer,
-                        decryptedObjectBuffer,
-                        tempOutputStream,
-                        encryptor,
-                        diagnosticsContext,
-                        cancellationToken,
-                        aggregatedPaths).ConfigureAwait(false);
-                }
-            }
-
-            return (aggregatedPaths, buffer);
+            Span<byte> destination = objectBuffer.GetSpan(segment.Length);
+            segment.CopyTo(destination);
+            objectBuffer.Advance(segment.Length);
         }
 
         private static async Task OverwriteStreamAsync(Stream stream, Stream source, CancellationToken cancellationToken)

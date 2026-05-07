@@ -53,9 +53,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             byte[] buffer = ArrayPool<byte>.Shared.Rent(DefaultBufferSize);
             PooledMemoryStream currentDocumentStream = null;
-#if NETSTANDARD2_0
-            byte[] pooledWriteBuffer = null;
-#endif
 
             try
             {
@@ -64,6 +61,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
                 int leftOver = 0;
                 bool isFinalBlock = false;
+
+                JsonSegmentWriter writeSegment = (segment, insideDocument) =>
+                    currentDocumentStream = WriteSegment(segment, insideDocument, currentDocumentStream);
 
                 while (!isFinalBlock)
                 {
@@ -78,8 +78,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                         isFinalBlock,
                         ref readerState,
                         ref traversalState,
-                        writeEnvelopeSegment: null,
-                        writeObjectSegment: WriteObjectSegment);
+                        writeSegment);
 
                     leftOver = dataLength - result.BytesConsumed;
                     buffer = JsonFeedStreamHelper.HandleLeftOver(buffer, dataLength, leftOver, result.BytesConsumed, MaxBufferSize);
@@ -106,39 +105,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 currentDocumentStream?.Dispose();
                 ArrayPool<byte>.Shared.Return(buffer, clearArray: true);
-#if NETSTANDARD2_0
-                if (pooledWriteBuffer != null)
-                {
-                    ArrayPool<byte>.Shared.Return(pooledWriteBuffer);
-                }
-#endif
             }
+        }
 
-            void WriteObjectSegment(ReadOnlySpan<byte> segment)
+        private static PooledMemoryStream WriteSegment(
+            ReadOnlySpan<byte> segment,
+            bool insideDocument,
+            PooledMemoryStream currentDocumentStream)
+        {
+            if (!insideDocument)
             {
-                if (segment.IsEmpty)
-                {
-                    return;
-                }
-
-                currentDocumentStream ??= new PooledMemoryStream();
-#if NETSTANDARD2_0
-                if (pooledWriteBuffer == null || pooledWriteBuffer.Length < segment.Length)
-                {
-                    if (pooledWriteBuffer != null)
-                    {
-                        ArrayPool<byte>.Shared.Return(pooledWriteBuffer);
-                    }
-
-                    pooledWriteBuffer = ArrayPool<byte>.Shared.Rent(segment.Length);
-                }
-
-                segment.CopyTo(pooledWriteBuffer);
-                currentDocumentStream.Write(pooledWriteBuffer, 0, segment.Length);
-#else
-                currentDocumentStream.Write(segment);
-#endif
+                return currentDocumentStream;
             }
+
+            currentDocumentStream ??= new PooledMemoryStream();
+            currentDocumentStream.Write(segment);
+            return currentDocumentStream;
         }
     }
 }

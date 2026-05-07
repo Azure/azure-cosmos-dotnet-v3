@@ -303,6 +303,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
 #if NET8_0_OR_GREATER
         public override void Write(ReadOnlySpan<byte> buffer)
+#else
+        public void Write(ReadOnlySpan<byte> buffer)
+#endif
         {
             this.EnsureNotDisposed();
 
@@ -332,7 +335,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 this.length = this.position;
             }
         }
-#endif
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
