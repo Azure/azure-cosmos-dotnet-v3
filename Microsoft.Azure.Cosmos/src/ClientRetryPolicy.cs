@@ -25,7 +25,8 @@ namespace Microsoft.Azure.Cosmos
         private const int MaxRetryCount = 120;
         private const int MaxServiceUnavailableRetryCount = 1;
 
-        // Default backoff parameters for 449 (RetryWith) - matches direct-mode GoneAndRetryWithRequestRetryPolicy defaults
+        // Default backoff parameters for 449 (RetryWith) - matches direct-mode GoneAndRetryWithRequestRetryPolicy
+        // defaults and behavior (penalty-free first retry, then jittered exponential backoff).
         private const int DefaultRetryWithInitialBackoffMilliseconds = 10;
         private const int DefaultRetryWithMaxBackoffMilliseconds = 1000;
         private const int DefaultRetryWithRandomSaltMilliseconds = 5;
@@ -607,10 +608,17 @@ namespace Microsoft.Azure.Cosmos
                 return ShouldRetryResult.NoRetry();
             }
 
-            // Initialize or advance exponential backoff
+            // Don't penalise first retry with delay — matches direct-mode GoneAndRetryWithRequestRetryPolicy behavior.
             if (this.retryWithCurrentBackoffMilliseconds == null)
             {
                 this.retryWithCurrentBackoffMilliseconds = this.retryWithInitialBackoffMilliseconds;
+
+                DefaultTrace.TraceWarning(
+                    "ClientRetryPolicy: Retrying on 449 (RetryWith) — first attempt, no delay. Location: {0}; ResourceAddress: {1}",
+                    this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
+                    this.documentServiceRequest?.ResourceAddress ?? string.Empty);
+
+                return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
             }
             else
             {

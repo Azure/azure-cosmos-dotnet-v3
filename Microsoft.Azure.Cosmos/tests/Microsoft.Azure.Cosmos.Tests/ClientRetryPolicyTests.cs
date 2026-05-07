@@ -702,8 +702,13 @@
             ShouldRetryResult result = await retryPolicy.ShouldRetryAsync(retryWithException, CancellationToken.None);
 
             Assert.IsTrue(result.ShouldRetry, "First 449 should trigger a retry.");
-            Assert.IsTrue(result.BackoffTime.TotalMilliseconds >= 11, "First backoff should be at least 10ms + 1ms salt.");
-            Assert.IsTrue(result.BackoffTime.TotalMilliseconds <= 14, "First backoff should be at most 10ms + 4ms salt.");
+            Assert.AreEqual(0, result.BackoffTime.TotalMilliseconds, "First retry should be penalty-free (no delay).");
+
+            // Second retry should have backoff
+            ShouldRetryResult secondResult = await retryPolicy.ShouldRetryAsync(retryWithException, CancellationToken.None);
+            Assert.IsTrue(secondResult.ShouldRetry, "Second 449 should trigger a retry.");
+            Assert.IsTrue(secondResult.BackoffTime.TotalMilliseconds >= 11, "Second backoff should be at least 10ms + 1ms salt.");
+            Assert.IsTrue(secondResult.BackoffTime.TotalMilliseconds <= 14, "Second backoff should be at most 10ms + 4ms salt.");
         }
 
         /// <summary>
@@ -734,7 +739,7 @@
             ShouldRetryResult result = await retryPolicy.ShouldRetryAsync(responseMessage, CancellationToken.None);
 
             Assert.IsTrue(result.ShouldRetry, "449 ResponseMessage should trigger a retry.");
-            Assert.IsTrue(result.BackoffTime.TotalMilliseconds > 0, "Backoff should be greater than zero.");
+            Assert.AreEqual(0, result.BackoffTime.TotalMilliseconds, "First retry should be penalty-free (no delay).");
         }
 
         /// <summary>
@@ -772,12 +777,12 @@
                 requestUri: request.RequestContext.LocationEndpointToRoute,
                 responseHeaders: headers);
 
-            // First retry should succeed (stopwatch just started)
+            // First retry should succeed with zero delay (penalty-free)
             ShouldRetryResult firstResult = await retryPolicy.ShouldRetryAsync(retryWithException, CancellationToken.None);
 
             Assert.IsTrue(firstResult.ShouldRetry, "First retry should succeed with budget remaining.");
-            Assert.IsTrue(firstResult.BackoffTime.TotalMilliseconds <= 1,
-                "First backoff should be capped to remaining 1ms budget.");
+            Assert.AreEqual(0, firstResult.BackoffTime.TotalMilliseconds,
+                "First retry should be penalty-free (no delay).");
 
             // Wait to ensure the total wait time budget is exhausted
             await Task.Delay(10);
@@ -822,19 +827,22 @@
             ShouldRetryResult first = await retryPolicy.ShouldRetryAsync(retryWithException, CancellationToken.None);
             ShouldRetryResult second = await retryPolicy.ShouldRetryAsync(retryWithException, CancellationToken.None);
             ShouldRetryResult third = await retryPolicy.ShouldRetryAsync(retryWithException, CancellationToken.None);
+            ShouldRetryResult fourth = await retryPolicy.ShouldRetryAsync(retryWithException, CancellationToken.None);
 
             Assert.IsTrue(first.ShouldRetry);
             Assert.IsTrue(second.ShouldRetry);
             Assert.IsTrue(third.ShouldRetry);
+            Assert.IsTrue(fourth.ShouldRetry);
 
-            // With base 10ms * 2^n and salt [1,4]ms:
-            // First: 10 + [1,4] = [11, 14], Second: 20 + [1,4] = [21, 24], Third: 40 + [1,4] = [41, 44]
-            Assert.IsTrue(first.BackoffTime.TotalMilliseconds >= 11 && first.BackoffTime.TotalMilliseconds <= 14,
-                $"First backoff should be 10+[1,4]ms, was {first.BackoffTime.TotalMilliseconds}ms");
-            Assert.IsTrue(second.BackoffTime.TotalMilliseconds >= 21 && second.BackoffTime.TotalMilliseconds <= 24,
-                $"Second backoff should be 20+[1,4]ms, was {second.BackoffTime.TotalMilliseconds}ms");
-            Assert.IsTrue(third.BackoffTime.TotalMilliseconds >= 41 && third.BackoffTime.TotalMilliseconds <= 44,
-                $"Third backoff should be 40+[1,4]ms, was {third.BackoffTime.TotalMilliseconds}ms");
+            // First retry is penalty-free (0ms), then exponential with salt [1,4]ms:
+            // 1st: 0ms, 2nd: 10 + [1,4] = [11, 14], 3rd: 20 + [1,4] = [21, 24], 4th: 40 + [1,4] = [41, 44]
+            Assert.AreEqual(0, first.BackoffTime.TotalMilliseconds, "First retry should be penalty-free.");
+            Assert.IsTrue(second.BackoffTime.TotalMilliseconds >= 11 && second.BackoffTime.TotalMilliseconds <= 14,
+                $"Second backoff should be 10+[1,4]ms, was {second.BackoffTime.TotalMilliseconds}ms");
+            Assert.IsTrue(third.BackoffTime.TotalMilliseconds >= 21 && third.BackoffTime.TotalMilliseconds <= 24,
+                $"Third backoff should be 20+[1,4]ms, was {third.BackoffTime.TotalMilliseconds}ms");
+            Assert.IsTrue(fourth.BackoffTime.TotalMilliseconds >= 41 && fourth.BackoffTime.TotalMilliseconds <= 44,
+                $"Fourth backoff should be 40+[1,4]ms, was {fourth.BackoffTime.TotalMilliseconds}ms");
         }
 
         /// <summary>
@@ -874,21 +882,24 @@
                 responseHeaders: headers);
 
             // With initial=10, multiplier=2, max=25, no salt:
-            // 1st: 10ms, 2nd: 20ms, 3rd: 25ms (capped), 4th: 25ms (capped)
+            // 1st: 0ms (penalty-free), 2nd: 10ms, 3rd: 20ms, 4th: 25ms (capped), 5th: 25ms (capped)
             ShouldRetryResult first = await retryPolicy.ShouldRetryAsync(retryWithException, CancellationToken.None);
             ShouldRetryResult second = await retryPolicy.ShouldRetryAsync(retryWithException, CancellationToken.None);
             ShouldRetryResult third = await retryPolicy.ShouldRetryAsync(retryWithException, CancellationToken.None);
             ShouldRetryResult fourth = await retryPolicy.ShouldRetryAsync(retryWithException, CancellationToken.None);
+            ShouldRetryResult fifth = await retryPolicy.ShouldRetryAsync(retryWithException, CancellationToken.None);
 
             Assert.IsTrue(first.ShouldRetry);
             Assert.IsTrue(second.ShouldRetry);
             Assert.IsTrue(third.ShouldRetry);
             Assert.IsTrue(fourth.ShouldRetry);
+            Assert.IsTrue(fifth.ShouldRetry);
 
-            Assert.AreEqual(10, first.BackoffTime.TotalMilliseconds, "First backoff should be 10ms.");
-            Assert.AreEqual(20, second.BackoffTime.TotalMilliseconds, "Second backoff should be 20ms.");
-            Assert.AreEqual(25, third.BackoffTime.TotalMilliseconds, "Third backoff should cap at 25ms.");
-            Assert.AreEqual(25, fourth.BackoffTime.TotalMilliseconds, "Fourth backoff should remain capped at 25ms.");
+            Assert.AreEqual(0, first.BackoffTime.TotalMilliseconds, "First retry should be penalty-free.");
+            Assert.AreEqual(10, second.BackoffTime.TotalMilliseconds, "Second backoff should be 10ms.");
+            Assert.AreEqual(20, third.BackoffTime.TotalMilliseconds, "Third backoff should be 20ms.");
+            Assert.AreEqual(25, fourth.BackoffTime.TotalMilliseconds, "Fourth backoff should cap at 25ms.");
+            Assert.AreEqual(25, fifth.BackoffTime.TotalMilliseconds, "Fifth backoff should remain capped at 25ms.");
         }
 
         /// <summary>
