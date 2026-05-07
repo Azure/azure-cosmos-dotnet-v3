@@ -333,5 +333,69 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Times.Never,
                 "Endpoint should NOT be marked unavailable for throttling — this is not a regional failure.");
         }
+
+        [TestMethod]
+        [Owner("dkunda")]
+        public async Task ShouldRetryAsync_With503_MultipleRegions_ShouldCycleThroughRegionsAndExhaust()
+        {
+            // Arrange — simulate 3 preferred regions. Each region fails with 503,
+            // and the policy should cycle through all regions before exhausting retries.
+            Uri region1 = new("https://region1.documents.azure.com/");
+            Uri region2 = new("https://region2.documents.azure.com/");
+            Uri region3 = new("https://region3.documents.azure.com/");
+
+            DocumentServiceRequest request = CreatePkRangesRequest();
+
+            int resolveCallCount = 0;
+            Mock<IGlobalEndpointManager> mockedGlobalEndpointManager = new();
+            mockedGlobalEndpointManager.Setup(gem => gem.ResolveServiceEndpoint(It.IsAny<DocumentServiceRequest>()))
+                .Returns(() =>
+                {
+                    resolveCallCount++;
+                    return resolveCallCount switch
+                    {
+                        1 => region1,
+                        2 => region2,
+                        3 => region3,
+                        _ => region3,
+                    };
+                });
+            // 3 preferred locations → maxRetries = Max(1, 3) = 3
+            mockedGlobalEndpointManager.Setup(gem => gem.PreferredLocationCount).Returns(3);
+
+            MetadataRequestThrottleRetryPolicy policy = new(mockedGlobalEndpointManager.Object, 0);
+
+            CosmosException exception = CosmosExceptionFactory.CreateServiceUnavailableException(
+                message: "Service Unavailable",
+                headers: new Headers()
+                {
+                    ActivityId = System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString(),
+                    SubStatusCode = SubStatusCodes.TransportGenerated503
+                },
+                trace: NoOpTrace.Singleton,
+                innerException: null);
+
+            // Act & Assert — cycle through 3 regions, each returning ShouldRetry.
+            policy.OnBeforeSendRequest(request);
+            ShouldRetryResult result1 = await policy.ShouldRetryAsync(exception, default);
+            Assert.IsTrue(result1.ShouldRetry, "First failure (region1) should retry.");
+            mockedGlobalEndpointManager.Verify(gem => gem.MarkEndpointUnavailableForRead(region1), Times.Once);
+
+            policy.OnBeforeSendRequest(request);
+            ShouldRetryResult result2 = await policy.ShouldRetryAsync(exception, default);
+            Assert.IsTrue(result2.ShouldRetry, "Second failure (region2) should retry.");
+            mockedGlobalEndpointManager.Verify(gem => gem.MarkEndpointUnavailableForRead(region2), Times.Once);
+
+            policy.OnBeforeSendRequest(request);
+            ShouldRetryResult result3 = await policy.ShouldRetryAsync(exception, default);
+            Assert.IsTrue(result3.ShouldRetry, "Third failure (region3) should retry.");
+            mockedGlobalEndpointManager.Verify(gem => gem.MarkEndpointUnavailableForRead(region3), Times.Once);
+
+            // 4th attempt — retries exhausted, should return NoRetry.
+            policy.OnBeforeSendRequest(request);
+            ShouldRetryResult result4 = await policy.ShouldRetryAsync(exception, default);
+            Assert.IsFalse(result4.ShouldRetry,
+                "After exhausting all 3 regions, should return NoRetry so exception propagates to operation-level retry.");
+        }
     }
 }

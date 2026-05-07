@@ -353,7 +353,20 @@ namespace Microsoft.Azure.Cosmos
             if ((statusCode == HttpStatusCode.InternalServerError && this.isReadRequest)
                 || (statusCode == HttpStatusCode.Gone && subStatusCode == SubStatusCodes.LeaseNotFound))
             {
-                return this.ShouldRetryOnUnavailableEndpointStatusCodes();
+                DefaultTrace.TraceWarning(
+                    "ClientRetryPolicy: Received {0}/{1}. Marking endpoint unavailable and retrying. Failed Location: {2}; ResourceAddress: {3}",
+                    statusCode,
+                    subStatusCode,
+                    this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
+                    this.documentServiceRequest?.ResourceAddress ?? string.Empty);
+
+                this.TryMarkEndpointUnavailableForPkRange(isSystemResourceUnavailableForWrite: false);
+
+                return await this.ShouldRetryOnEndpointFailureAsync(
+                    isReadRequest: this.isReadRequest,
+                    markBothReadAndWriteAsUnavailable: false,
+                    forceRefresh: false,
+                    retryOnPreferredLocations: true);
             }
 
             return null;

@@ -87,7 +87,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
                     await this.synchronizer.CreateMissingLeasesAsync().ConfigureAwait(false);
                     await this.leaseStore.MarkInitializedAsync().ConfigureAwait(false);
                 }
-                catch (CosmosException ex) when (retryCount < MaxInitializationRetries)
+                catch (CosmosException ex) when (retryCount < MaxInitializationRetries
+                    && (ex.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable
+                        || ex.StatusCode == System.Net.HttpStatusCode.InternalServerError
+                        || (ex.StatusCode == System.Net.HttpStatusCode.Gone
+                            && ex.SubStatusCode == (int)Documents.SubStatusCodes.LeaseNotFound)
+                        || (ex.StatusCode == System.Net.HttpStatusCode.Forbidden
+                            && ex.SubStatusCode == (int)Documents.SubStatusCodes.DatabaseAccountNotFound)))
                 {
                     // MetadataRequestThrottleRetryPolicy has already marked the
                     // failing endpoint unavailable, so the next iteration will

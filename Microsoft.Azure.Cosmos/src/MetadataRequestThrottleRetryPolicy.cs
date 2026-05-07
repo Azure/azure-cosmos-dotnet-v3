@@ -147,6 +147,11 @@ namespace Microsoft.Azure.Cosmos
                 return Task.FromResult(this.HandleRegionalFailure());
             }
 
+            // Non-user OperationCanceledException (transport timeout) is treated as a regional failure
+            // for metadata requests. This differs from ClientRetryPolicy which does not treat OCE as
+            // a regional failure — the rationale is that a metadata read timeout is a stronger signal
+            // of regional unavailability than a data operation timeout, because metadata endpoints are
+            // lightweight and a timeout likely indicates network-level issues with the region.
             if (exception is OperationCanceledException && !cancellationToken.IsCancellationRequested)
             {
                 DefaultTrace.TraceWarning("MetadataRequestThrottleRetryPolicy: Non-user OperationCanceledException received. Marking endpoint {0} unavailable. ResourceType {1}, CollectionName {2}, ResourceID {3}.",

@@ -165,13 +165,12 @@
         }
 
         /// <summary>
-        /// Tests to see if different 503 substatus and other similar status codes are handeled correctly
+        /// Tests to see if different 503 substatus and other similar status codes are handeled correctly.
+        /// These status codes should NOT trigger a cross-region retry when no OnBeforeSendRequest was called.
         /// </summary>
-        /// <param name="testCode">The substatus code being Tested.</param>
         [DataRow((int)StatusCodes.ServiceUnavailable, (int)SubStatusCodes.Unknown, "ServiceUnavailable")]
         [DataRow((int)StatusCodes.ServiceUnavailable, (int)SubStatusCodes.TransportGenerated503, "ServiceUnavailable")]
         [DataRow((int)StatusCodes.InternalServerError, (int)SubStatusCodes.Unknown, "InternalServerError")]
-        [DataRow((int)StatusCodes.Gone, (int)SubStatusCodes.LeaseNotFound, "LeaseNotFound")]
         [DataRow((int)StatusCodes.Forbidden, (int)SubStatusCodes.DatabaseAccountNotFound, "DatabaseAccountNotFound")]
         [DataTestMethod]
         public void Http503LikeSubStatusHandelingTests(int statusCode, int SubStatusCode, string message)
@@ -205,6 +204,37 @@
             Task<ShouldRetryResult> retryStatus = retryPolicy.ShouldRetryAsync(documentClientException, cancellationToken);
 
             Assert.IsFalse(retryStatus.Result.ShouldRetry);
+        }
+
+        /// <summary>
+        /// Tests that 410/LeaseNotFound triggers cross-region retry via ShouldRetryOnEndpointFailureAsync.
+        /// </summary>
+        [TestMethod]
+        public void Http410LeaseNotFoundTriggersEndpointFailureRetry()
+        {
+            const bool enableEndpointDiscovery = true;
+            using GlobalEndpointManager endpointManager = this.Initialize(
+               useMultipleWriteLocations: false,
+               enableEndpointDiscovery: enableEndpointDiscovery,
+               isPreferredLocationsListEmpty: true);
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false);
+
+            CancellationToken cancellationToken = new CancellationToken();
+            Mock<INameValueCollection> nameValueCollection = new Mock<INameValueCollection>();
+
+            DocumentClientException documentClientException = new DocumentClientException(
+               message: "LeaseNotFound",
+               innerException: new Exception(),
+               responseHeaders: nameValueCollection.Object,
+               statusCode: HttpStatusCode.Gone,
+               substatusCode: SubStatusCodes.LeaseNotFound,
+               requestUri: null
+               );
+
+            Task<ShouldRetryResult> retryStatus = retryPolicy.ShouldRetryAsync(documentClientException, cancellationToken);
+
+            Assert.IsTrue(retryStatus.Result.ShouldRetry, "410/LeaseNotFound should trigger cross-region retry");
         }
 
         /// <summary>

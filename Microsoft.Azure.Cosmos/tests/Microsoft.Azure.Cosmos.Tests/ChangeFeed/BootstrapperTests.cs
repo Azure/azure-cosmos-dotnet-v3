@@ -242,5 +242,76 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             leaseStore.Verify(l => l.MarkInitializedAsync(), Times.Never);
         }
+
+        [TestMethod]
+        public async Task InitializeAsync_WithHttpRequestException_ShouldThrowAfterMaxRetries()
+        {
+            // Arrange — CreateMissingLeasesAsync always fails with HttpRequestException.
+            Mock<PartitionSynchronizer> synchronizer = new Mock<PartitionSynchronizer>();
+            synchronizer.Setup(s => s.CreateMissingLeasesAsync())
+                .Throws(new HttpRequestException("Connection refused"));
+
+            Mock<DocumentServiceLeaseStore> leaseStore = new Mock<DocumentServiceLeaseStore>();
+            leaseStore.Setup(l => l.IsInitializedAsync()).ReturnsAsync(false);
+            leaseStore.Setup(l => l.AcquireInitializationLockAsync(It.IsAny<TimeSpan>())).ReturnsAsync(true);
+            leaseStore.Setup(l => l.MarkInitializedAsync()).Returns(Task.CompletedTask);
+            leaseStore.Setup(l => l.ReleaseInitializationLockAsync()).ReturnsAsync(true);
+
+            TimeSpan lockTime = TimeSpan.FromSeconds(1);
+            TimeSpan sleepTime = TimeSpan.FromMilliseconds(10);
+
+            BootstrapperCore bootstrapper = new BootstrapperCore(
+                synchronizer.Object, leaseStore.Object, lockTime, sleepTime);
+
+            // Act & Assert — should throw after exhausting MaxInitializationRetries.
+            await Assert.ThrowsExceptionAsync<HttpRequestException>(
+                () => bootstrapper.InitializeAsync());
+
+            // 1 original attempt + MaxInitializationRetries retries = total calls.
+            synchronizer.Verify(
+                s => s.CreateMissingLeasesAsync(),
+                Times.Exactly(BootstrapperCore.MaxInitializationRetries + 1));
+
+            leaseStore.Verify(l => l.MarkInitializedAsync(), Times.Never);
+        }
+
+        [TestMethod]
+        public async Task InitializeAsync_WithNonRetryableCosmosException_ShouldThrowImmediately()
+        {
+            // Arrange — 404 NotFound is not a regional failure and should NOT be retried.
+            Mock<PartitionSynchronizer> synchronizer = new Mock<PartitionSynchronizer>();
+
+            CosmosException notFoundException = CosmosExceptionFactory.CreateNotFoundException(
+                message: "Container not found",
+                headers: new Headers
+                {
+                    ActivityId = Guid.NewGuid().ToString(),
+                },
+                trace: NoOpTrace.Singleton);
+
+            synchronizer.Setup(s => s.CreateMissingLeasesAsync()).Throws(notFoundException);
+
+            Mock<DocumentServiceLeaseStore> leaseStore = new Mock<DocumentServiceLeaseStore>();
+            leaseStore.Setup(l => l.IsInitializedAsync()).ReturnsAsync(false);
+            leaseStore.Setup(l => l.AcquireInitializationLockAsync(It.IsAny<TimeSpan>())).ReturnsAsync(true);
+            leaseStore.Setup(l => l.MarkInitializedAsync()).Returns(Task.CompletedTask);
+            leaseStore.Setup(l => l.ReleaseInitializationLockAsync()).ReturnsAsync(true);
+
+            TimeSpan lockTime = TimeSpan.FromSeconds(1);
+            TimeSpan sleepTime = TimeSpan.FromMilliseconds(10);
+
+            BootstrapperCore bootstrapper = new BootstrapperCore(
+                synchronizer.Object, leaseStore.Object, lockTime, sleepTime);
+
+            // Act & Assert — should throw immediately without retrying.
+            CosmosException thrown = await Assert.ThrowsExceptionAsync<CosmosException>(
+                () => bootstrapper.InitializeAsync());
+
+            Assert.AreEqual(HttpStatusCode.NotFound, thrown.StatusCode);
+
+            // Only 1 attempt — no retries for non-regional errors.
+            synchronizer.Verify(s => s.CreateMissingLeasesAsync(), Times.Once);
+            leaseStore.Verify(l => l.MarkInitializedAsync(), Times.Never);
+        }
     }
 }
