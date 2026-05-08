@@ -46,6 +46,11 @@
     <None Include="..\..\Icon.png" Pack="true" PackagePath=""/>
   </ItemGroup>
 
+  <!-- Required by Microsoft.Azure.Cosmos SDK; PrivateAssets=All keeps it off the public dependency graph -->
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="10.0.2" NoWarn="NU1903" PrivateAssets="All" />
+  </ItemGroup>
+
   <!-- Azure OpenAI provider dependency -->
   <ItemGroup>
     <PackageReference Include="Azure.AI.OpenAI" Version="2.1.0" />
