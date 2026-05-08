@@ -1155,6 +1155,28 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void EmbeddingSourceRoundTripSerialization()
+        {
+            const string embeddingPolicyJson = "{\"vectorEmbeddings\":[{\"path\":\"/embedding\",\"dataType\":\"float32\",\"dimensions\":1536,\"distanceFunction\":\"cosine\",\"embeddingSource\":{\"sourcePaths\":[\"/journal_title\",\"/title\",\"/toc_abstract\",\"/abstract\",\"/full_text\"],\"deploymentName\":\"text-embedding-3-small\",\"modelName\":\"text-embedding-3-small\",\"endpoint\":\"https://embedding-south-central.cognitiveservices.azure.com/\",\"authType\":\"ApiKey\"}},{\"path\":\"/embedding2\",\"dataType\":\"float32\",\"dimensions\":1536,\"distanceFunction\":\"cosine\",\"embeddingSource\":{\"sourcePaths\":[\"/title\"],\"deploymentName\":\"text-embedding-3-small\",\"modelName\":\"text-embedding-3-small\",\"endpoint\":\"https://embedding-south-central.cognitiveservices.azure.com/\",\"authType\":\"Entra\"}}]}";
+
+            Cosmos.VectorEmbeddingPolicy policy = JsonConvert.DeserializeObject<Cosmos.VectorEmbeddingPolicy>(embeddingPolicyJson);
+            Cosmos.EmbeddingSource source = policy.Embeddings[0].EmbeddingSource;
+            CollectionAssert.AreEqual(
+                new[] { "/journal_title", "/title", "/toc_abstract", "/abstract", "/full_text" },
+                source.SourcePaths.ToArray());
+            Assert.AreEqual("text-embedding-3-small", source.DeploymentName);
+            Assert.AreEqual("text-embedding-3-small", source.ModelName);
+            Assert.AreEqual("https://embedding-south-central.cognitiveservices.azure.com/", source.Endpoint);
+            Assert.AreEqual(Cosmos.EmbeddingAuthType.ApiKey, source.AuthType);
+            Assert.AreEqual(Cosmos.EmbeddingAuthType.Entra, policy.Embeddings[1].EmbeddingSource.AuthType);
+
+            string roundTripped = JsonConvert.SerializeObject(policy);
+            Assert.IsTrue(
+                JToken.DeepEquals(JObject.Parse(embeddingPolicyJson), JObject.Parse(roundTripped)),
+                $"Round-tripped JSON differs.\nExpected: {embeddingPolicyJson}\nActual:   {roundTripped}");
+        }
+
+        [TestMethod]
         public void FullTextPolicySerialization()
         {
             ContainerProperties containerSettings = new ContainerProperties("TestContainer", "/pk");
