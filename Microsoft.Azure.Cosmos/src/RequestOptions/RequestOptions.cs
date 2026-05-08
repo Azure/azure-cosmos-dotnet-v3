@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets or sets the embedding generator for the request.
         /// </summary>
-        internal virtual IEmbeddingGenerator BaseEmbeddingGenerator { get; set; }
+        internal virtual ICosmosEmbeddingGenerator BaseEmbeddingGenerator { get; set; }
 
         internal bool DisablePointOperationDiagnostics { get; set; }
 

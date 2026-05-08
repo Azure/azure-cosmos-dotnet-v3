@@ -871,7 +871,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Sets the default <see cref="IEmbeddingGenerator"/> to use for hybrid and vector-search
+        /// Sets the default <see cref="ICosmosEmbeddingGenerator"/> to use for hybrid and vector-search
         /// queries that contain literal text to be embedded.
         /// </summary>
         /// <remarks>
@@ -880,14 +880,15 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </remarks>
         /// <param name="embeddingGenerator">The embedding generator to use as the client-wide default.</param>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="embeddingGenerator"/> is <c>null</c>.</exception>
 #if PREVIEW
         public
 #else
         internal
 #endif
-        CosmosClientBuilder WithEmbeddingGenerator(IEmbeddingGenerator embeddingGenerator)
+        CosmosClientBuilder WithEmbeddingGenerator(ICosmosEmbeddingGenerator embeddingGenerator)
         {
-            this.clientOptions.EmbeddingGenerator = embeddingGenerator;
+            this.clientOptions.EmbeddingGenerator = embeddingGenerator ?? throw new ArgumentNullException(nameof(embeddingGenerator));
             return this;
         }
     }

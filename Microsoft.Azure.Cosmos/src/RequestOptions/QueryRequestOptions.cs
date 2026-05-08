@@ -248,7 +248,7 @@ namespace Microsoft.Azure.Cosmos
         public FullTextScoreScope FullTextScoreScope { get; set; } = FullTextScoreScope.Global;
 
         /// <summary>
-        /// Gets or sets an <see cref="IEmbeddingGenerator"/> used by the SDK to
+        /// Gets or sets an <see cref="ICosmosEmbeddingGenerator"/> used by the SDK to
         /// produce vector embeddings for hybrid and vector-search queries that
         /// contain literal text to be embedded.
         /// </summary>
@@ -271,13 +271,20 @@ namespace Microsoft.Azure.Cosmos
         /// but neither this property nor <see cref="CosmosClientOptions.EmbeddingGenerator"/> is set,
         /// the SDK throws an exception describing how to configure a generator.
         /// </para>
+        /// <para>
+        /// Setting this property to <c>null</c> (the default) falls through to
+        /// <see cref="CosmosClientOptions.EmbeddingGenerator"/>. This is intentional:
+        /// omitting the property means "use the client default." There is no per-request
+        /// opt-out mechanism; if you need to suppress embedding generation for a specific
+        /// request you must set a no-op <see cref="ICosmosEmbeddingGenerator"/> implementation.
+        /// </para>
         /// </remarks>
 #if PREVIEW
         public
 #else
         internal
 #endif
-        IEmbeddingGenerator EmbeddingGenerator
+        ICosmosEmbeddingGenerator EmbeddingGenerator
         {
             get => this.BaseEmbeddingGenerator;
             set => this.BaseEmbeddingGenerator = value;

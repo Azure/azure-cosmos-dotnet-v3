@@ -295,7 +295,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(clientOptions.EmbeddingGenerator);
 
             // Verify WithEmbeddingGenerator sets the property
-            IEmbeddingGenerator generator = new MockEmbeddingGenerator();
+            ICosmosEmbeddingGenerator generator = new MockEmbeddingGenerator();
             cosmosClientBuilder = new CosmosClientBuilder(
                 accountEndpoint: endpoint,
                 authKeyOrResourceToken: key);
@@ -307,6 +307,12 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Assert.AreSame(generator, clientOptions.EmbeddingGenerator,
                 "EmbeddingGenerator instance did not round-trip through the builder");
+
+            // Verify null throws ArgumentNullException
+            Assert.ThrowsException<ArgumentNullException>(
+                () => new CosmosClientBuilder(accountEndpoint: endpoint, authKeyOrResourceToken: key)
+                          .WithEmbeddingGenerator(null),
+                "WithEmbeddingGenerator should throw ArgumentNullException for null input");
         }
 
         /// <summary>
@@ -1367,9 +1373,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
-        private sealed class MockEmbeddingGenerator : IEmbeddingGenerator
+        private sealed class MockEmbeddingGenerator : ICosmosEmbeddingGenerator
         {
-            public System.Threading.Tasks.Task<System.Collections.Generic.IEnumerable<ReadOnlyMemory<double>>> GenerateEmbeddingsAsync(
+            public System.Threading.Tasks.Task<System.Collections.Generic.IEnumerable<ReadOnlyMemory<float>>> GenerateEmbeddingsAsync(
                 System.Collections.Generic.IEnumerable<string> text,
                 System.Threading.CancellationToken cancellationToken = default)
             {

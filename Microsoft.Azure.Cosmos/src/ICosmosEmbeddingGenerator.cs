@@ -28,17 +28,21 @@ namespace Microsoft.Azure.Cosmos
     /// rewritten query before per-partition execution.
     /// </para>
     /// <para>
-    /// Set an instance on
-    /// <see cref="QueryRequestOptions.EmbeddingGenerator"/> to opt in. When the
-    /// generator is configured, the SDK advertises support for embedding
-    /// generation to the gateway so the returned plan contains an embedding
-    /// parameter map; when it is <c>null</c>, behavior is unchanged.
+    /// Set an instance on <see cref="QueryRequestOptions.EmbeddingGenerator"/> for a
+    /// per-request generator, or on <see cref="CosmosClientOptions.EmbeddingGenerator"/>
+    /// for a client-wide default. The request-level value takes precedence when both are set.
+    /// </para>
+    /// <para>
+    /// <b>Thread safety:</b> implementations MUST be safe to invoke concurrently.
+    /// When configured at the client level via <see cref="CosmosClientOptions.EmbeddingGenerator"/>,
+    /// the SDK may call <see cref="GenerateEmbeddingsAsync"/> simultaneously from multiple
+    /// parallel queries or partition reads on the same instance. Stateful implementations
+    /// (e.g., those that maintain HTTP connections, caches, or counters) must synchronize
+    /// access appropriately.
     /// </para>
     /// <para>
     /// Implementations are responsible for any caching, retries, and
     /// authentication required to call the underlying embedding service.
-    /// Implementations may be invoked concurrently with other SDK operations
-    /// and should be thread-safe.
     /// </para>
     /// </remarks>
 #if PREVIEW
@@ -46,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
 #else
     internal
 #endif
-    interface IEmbeddingGenerator
+    interface ICosmosEmbeddingGenerator
     {
         /// <summary>
         /// Generates an embedding vector for each of the supplied input strings.
@@ -61,10 +65,10 @@ namespace Microsoft.Azure.Cosmos
         /// Implementations should honor cancellation.
         /// </param>
         /// <returns>
-        /// A task that resolves to a sequence of embedding vectors with the
-        /// same cardinality and ordering as <paramref name="text"/>.
+        /// A task that resolves to a sequence of <see cref="float"/> embedding vectors
+        /// with the same cardinality and ordering as <paramref name="text"/>.
         /// </returns>
-        Task<IEnumerable<ReadOnlyMemory<double>>> GenerateEmbeddingsAsync(
+        Task<IEnumerable<ReadOnlyMemory<float>>> GenerateEmbeddingsAsync(
             IEnumerable<string> text,
             CancellationToken cancellationToken = default);
     }
