@@ -136,6 +136,14 @@ namespace Microsoft.Azure.Cosmos
         internal readonly AuthorizationTokenProvider cosmosAuthorization;
 
         private readonly bool isThinClientFeatureFlagEnabled = ConfigurationManager.IsThinClientEnabled(defaultValue: false);
+
+        // Serializes the (disableCrossRegionalHedging, customerConfiguredAvailabilityStrategy,
+        // ConnectionPolicy.AvailabilityStrategy) mutation sequence performed by the gateway-driven
+        // hedging-override reconcile path. Without this, two concurrent invocations of
+        // ApplyHedgingStrategyForCurrentState (e.g., a future caller racing the GEM background-refresh
+        // thread) could interleave their stash/clear/restore steps and leave the SDK in an inconsistent state.
+        private readonly object hedgingStrategyLock = new object();
+
         internal bool isThinClientEnabled;
 
         // Gateway has backoff/retry logic to hide transient errors.
@@ -176,11 +184,14 @@ namespace Microsoft.Azure.Cosmos
 
         // Gateway-controlled override that disables all cross-regional hedging for PPAF accounts.
         // Mirrors AccountProperties.DisableCrossRegionalHedging from the most recent account-properties refresh.
+        // Always read/written under hedgingStrategyLock from the refresh path; per-request reads of the
+        // mirrored ConnectionPolicy.AvailabilityStrategy rely on atomic reference assignment.
         private bool disableCrossRegionalHedging;
 
         // When the gateway disable flag is true, the customer's explicit AvailabilityStrategy
         // (if any) is stashed here so it can be restored verbatim if the flag is later toggled back to false.
         // Null when the customer never configured a strategy or when no stash is currently held.
+        // Mutated only under hedgingStrategyLock.
         private AvailabilityStrategy customerConfiguredAvailabilityStrategy;
 
         // creator of TransportClient is responsible for disposing it.
@@ -1070,21 +1081,6 @@ namespace Microsoft.Azure.Cosmos
                 && this.accountServiceConfiguration != null && this.accountServiceConfiguration.AccountProperties.EnablePartitionLevelFailover.HasValue)
             {
                 this.ConnectionPolicy.EnablePartitionLevelFailover = this.accountServiceConfiguration.AccountProperties.EnablePartitionLevelFailover.Value;
-            }
-
-            // Capture the initial gateway disableCrossRegionalHedging flag and stash any customer-configured
-            // AvailabilityStrategy so it can be restored if the flag is later toggled back to false.
-            if (!this.ConnectionPolicy.DisablePartitionLevelFailoverClientLevelOverride
-                && this.accountServiceConfiguration?.AccountProperties != null)
-            {
-                this.disableCrossRegionalHedging = this.accountServiceConfiguration.AccountProperties.DisableCrossRegionalHedging ?? false;
-                if (this.disableCrossRegionalHedging && this.ConnectionPolicy.AvailabilityStrategy != null)
-                {
-                    this.customerConfiguredAvailabilityStrategy = this.ConnectionPolicy.AvailabilityStrategy;
-                    this.ConnectionPolicy.AvailabilityStrategy = null;
-                    DefaultTrace.TraceInformation(
-                        "DocumentClient: Hedging disabled at initialization by Gateway property disableCrossRegionalHedging=true");
-                }
             }
 
             this.isThinClientEnabled = this.isThinClientFeatureFlagEnabled && (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway) &&
@@ -6892,8 +6888,30 @@ namespace Microsoft.Azure.Cosmos
             await this.accountServiceConfiguration.InitializeAsync();
             AccountProperties accountProperties = this.accountServiceConfiguration.AccountProperties;
             this.UseMultipleWriteLocations = this.ConnectionPolicy.UseMultipleWriteLocations && accountProperties.EnableMultipleWriteLocations;
-            this.GlobalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);
+
+            // Capture the initial gateway disableCrossRegionalHedging flag and stash any customer-configured
+            // AvailabilityStrategy so it can be restored if the flag is later toggled back to false.
+            // This must run BEFORE the GEM background refresh loop is started and BEFORE the change-event
+            // handler is subscribed: if either happens first, a refresh-driven event firing concurrently with
+            // initialization could otherwise be overwritten here, leaving the SDK with stale state and a
+            // mismatched GEM baseline that would never re-fire.
+            if (!this.ConnectionPolicy.DisablePartitionLevelFailoverClientLevelOverride)
+            {
+                lock (this.hedgingStrategyLock)
+                {
+                    this.disableCrossRegionalHedging = accountProperties.DisableCrossRegionalHedging ?? false;
+                    if (this.disableCrossRegionalHedging && this.ConnectionPolicy.AvailabilityStrategy != null)
+                    {
+                        this.customerConfiguredAvailabilityStrategy = this.ConnectionPolicy.AvailabilityStrategy;
+                        this.ConnectionPolicy.AvailabilityStrategy = null;
+                        DefaultTrace.TraceInformation(
+                            "DocumentClient: Hedging disabled at initialization by Gateway property disableCrossRegionalHedging=true");
+                    }
+                }
+            }
+
             this.GlobalEndpointManager.OnEnablePartitionLevelFailoverConfigChanged += this.UpdatePartitionLevelFailoverConfigWithAccountRefresh;
+            this.GlobalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);
         }
 
         internal string GetUserAgentFeatures()
@@ -6958,8 +6976,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal void UpdatePartitionLevelFailoverConfigWithAccountRefresh(
-            bool isEnabled,
-            bool disableCrossRegionalHedging)
+            bool latestIsEnabled,
+            bool latestDisableCrossRegionalHedging)
         {
             // Only update if client-level override is not disabled
             if (this.ConnectionPolicy.DisablePartitionLevelFailoverClientLevelOverride)
@@ -6968,46 +6986,58 @@ namespace Microsoft.Azure.Cosmos
                 return;
             }
 
-            bool ppafEnablementChanged = this.ConnectionPolicy.EnablePartitionLevelFailover != isEnabled;
-            bool hedgingFlagChanged = this.disableCrossRegionalHedging != disableCrossRegionalHedging;
-
-            if (ppafEnablementChanged)
+            lock (this.hedgingStrategyLock)
             {
-                DefaultTrace.TraceInformation(
-                    "DocumentClient: PPAF Account Level Config Updated. Updating EnablePartitionLevelFailover to {0}",
-                    isEnabled);
+                bool ppafEnablementChanged = this.ConnectionPolicy.EnablePartitionLevelFailover != latestIsEnabled;
+                bool hedgingFlagChanged = this.disableCrossRegionalHedging != latestDisableCrossRegionalHedging;
 
-                // Step 1: Enable partition level failover.
-                this.PartitionKeyRangeLocation.SetIsPPAFEnabled(isEnabled);
-                this.ConnectionPolicy.EnablePartitionLevelFailover = isEnabled;
+                // No-op when nothing has actually changed. In production GEM only fires the event on
+                // transitions, but this method is internal and may be invoked directly (e.g., from tests
+                // or future callers); without this guard, ApplyHedgingStrategyForCurrentState would still
+                // run and could clear an SDK-default strategy that was correctly installed.
+                if (!ppafEnablementChanged && !hedgingFlagChanged)
+                {
+                    return;
+                }
 
-                // Step 2: Enable partition level circuit breaker.
-                this.PartitionKeyRangeLocation.SetIsPPCBEnabled(isEnabled);
-                this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker = isEnabled;
+                if (ppafEnablementChanged)
+                {
+                    DefaultTrace.TraceInformation(
+                        "DocumentClient: PPAF Account Level Config Updated. Updating EnablePartitionLevelFailover to {0}",
+                        latestIsEnabled);
+
+                    // Step 1: Enable partition level failover.
+                    this.PartitionKeyRangeLocation.SetIsPPAFEnabled(latestIsEnabled);
+                    this.ConnectionPolicy.EnablePartitionLevelFailover = latestIsEnabled;
+
+                    // Step 2: Enable partition level circuit breaker.
+                    this.PartitionKeyRangeLocation.SetIsPPCBEnabled(latestIsEnabled);
+                    this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker = latestIsEnabled;
+                }
+
+                if (hedgingFlagChanged)
+                {
+                    DefaultTrace.TraceInformation(
+                        "DocumentClient: Gateway disableCrossRegionalHedging flag changed to {0}",
+                        latestDisableCrossRegionalHedging);
+                    this.disableCrossRegionalHedging = latestDisableCrossRegionalHedging;
+                }
+
+                // Step 3: Reconcile the AvailabilityStrategy with the latest account state. The gateway
+                // disable flag has the highest precedence — when true, hedging is OFF regardless of any
+                // explicit or default configuration. When false, restore the customer's explicit strategy
+                // (if previously stashed) or apply the SDK default for PPAF.
+                this.ApplyHedgingStrategyForCurrentState();
+
+                if (ppafEnablementChanged)
+                {
+                    // Step 4: Update the user agent features. Hedging-flag-only changes do not affect the
+                    // PPAF-related user-agent feature flags.
+                    this.ConnectionPolicy.UserAgentContainer.AppendFeatures(this.GetUserAgentFeatures());
+                }
+
+                DefaultTrace.TraceInformation("DocumentClient: Successfully updated PPAF configuration dynamically");
             }
-
-            if (hedgingFlagChanged)
-            {
-                DefaultTrace.TraceInformation(
-                    "DocumentClient: Gateway disableCrossRegionalHedging flag changed to {0}",
-                    disableCrossRegionalHedging);
-                this.disableCrossRegionalHedging = disableCrossRegionalHedging;
-            }
-
-            // Step 3: Reconcile the AvailabilityStrategy with the latest account state. The gateway
-            // disable flag has the highest precedence — when true, hedging is OFF regardless of any
-            // explicit or default configuration. When false, restore the customer's explicit strategy
-            // (if previously stashed) or apply the SDK default for PPAF.
-            this.ApplyHedgingStrategyForCurrentState();
-
-            if (ppafEnablementChanged)
-            {
-                // Step 4: Update the user agent features. Hedging-flag-only changes do not affect the
-                // PPAF-related user-agent feature flags.
-                this.ConnectionPolicy.UserAgentContainer.AppendFeatures(this.GetUserAgentFeatures());
-            }
-
-            DefaultTrace.TraceInformation("DocumentClient: Successfully updated PPAF configuration dynamically");
         }
 
         /// <summary>
@@ -7020,59 +7050,112 @@ namespace Microsoft.Azure.Cosmos
         /// 2. Customer explicitly configured a strategy: keep / restore that strategy.
         /// 3. PPAF enabled with no explicit strategy: apply SDK default PPAF hedging.
         /// 4. PPAF disabled: clear any SDK-default strategy that we previously installed.
+        /// Caller must hold <see cref="hedgingStrategyLock"/>; the entry-point lock is reentrant so this
+        /// method also acquires it for direct invocations from tests / future callers.
         /// </remarks>
         private void ApplyHedgingStrategyForCurrentState()
         {
-            if (this.disableCrossRegionalHedging)
+            lock (this.hedgingStrategyLock)
             {
-                AvailabilityStrategy currentStrategy = this.ConnectionPolicy.AvailabilityStrategy;
-                if (currentStrategy != null)
+                if (this.disableCrossRegionalHedging)
                 {
-                    bool currentIsSdkDefault = currentStrategy is CrossRegionHedgingAvailabilityStrategy hedging
-                        && hedging.IsSDKDefaultStrategyForPPAF;
-
-                    // Only stash customer-configured strategies. The SDK default can be regenerated
-                    // deterministically from PPAF state, so re-stashing it would only cause confusion
-                    // when reconciling later.
-                    if (!currentIsSdkDefault && this.customerConfiguredAvailabilityStrategy == null)
+                    AvailabilityStrategy currentStrategy = this.ConnectionPolicy.AvailabilityStrategy;
+                    if (currentStrategy != null)
                     {
-                        this.customerConfiguredAvailabilityStrategy = currentStrategy;
+                        bool currentIsSdkDefault = currentStrategy is CrossRegionHedgingAvailabilityStrategy hedging
+                            && hedging.IsSDKDefaultStrategyForPPAF;
+
+                        // Only stash customer-configured strategies. The SDK default can be regenerated
+                        // deterministically from PPAF state, so re-stashing it would only cause confusion
+                        // when reconciling later.
+                        if (!currentIsSdkDefault)
+                        {
+                            if (this.customerConfiguredAvailabilityStrategy == null)
+                            {
+                                this.customerConfiguredAvailabilityStrategy = currentStrategy;
+                            }
+                            else if (!ReferenceEquals(this.customerConfiguredAvailabilityStrategy, currentStrategy))
+                            {
+                                // A previously-stashed customer strategy is still held while a different
+                                // non-default strategy is currently on ConnectionPolicy. Silently dropping
+                                // the new strategy would lose customer configuration, so surface this loudly
+                                // — it indicates a re-entrant or otherwise unexpected code path.
+                                DefaultTrace.TraceWarning(
+                                    "DocumentClient: ApplyHedgingStrategyForCurrentState observed a non-default " +
+                                    "AvailabilityStrategy while a previously-stashed customer strategy is still held; " +
+                                    "the current strategy will be cleared without being stashed. This may indicate a " +
+                                    "re-entrant code path.");
+                            }
+                        }
+
+                        this.ConnectionPolicy.AvailabilityStrategy = null;
+                        DefaultTrace.TraceInformation(
+                            "DocumentClient: Hedging disabled by Gateway property disableCrossRegionalHedging=true");
                     }
-
-                    this.ConnectionPolicy.AvailabilityStrategy = null;
-                    DefaultTrace.TraceInformation(
-                        "DocumentClient: Hedging disabled by Gateway property disableCrossRegionalHedging=true");
+                    return;
                 }
-                return;
-            }
 
-            // disableCrossRegionalHedging == false: restore or rebuild the appropriate strategy.
-            if (this.customerConfiguredAvailabilityStrategy != null)
-            {
-                this.ConnectionPolicy.AvailabilityStrategy = this.customerConfiguredAvailabilityStrategy;
-                this.customerConfiguredAvailabilityStrategy = null;
-                DefaultTrace.TraceInformation(
-                    "DocumentClient: Hedging re-enabled — restored customer-configured AvailabilityStrategy");
-                return;
-            }
-
-            if (this.ConnectionPolicy.EnablePartitionLevelFailover && this.ConnectionPolicy.AvailabilityStrategy == null)
-            {
-                this.InitializePartitionLevelFailoverWithDefaultHedging();
-                if (this.ConnectionPolicy.AvailabilityStrategy != null)
+                // disableCrossRegionalHedging == false: restore or rebuild the appropriate strategy.
+                if (this.customerConfiguredAvailabilityStrategy != null)
                 {
+                    this.ConnectionPolicy.AvailabilityStrategy = this.customerConfiguredAvailabilityStrategy;
+                    this.customerConfiguredAvailabilityStrategy = null;
                     DefaultTrace.TraceInformation(
-                        "DocumentClient: Hedging re-enabled — applied SDK default PPAF hedging strategy");
+                        "DocumentClient: Hedging re-enabled — restored customer-configured AvailabilityStrategy");
+                    return;
                 }
-                return;
-            }
 
-            if (!this.ConnectionPolicy.EnablePartitionLevelFailover
-                && this.ConnectionPolicy.AvailabilityStrategy is CrossRegionHedgingAvailabilityStrategy sdkDefault
-                && sdkDefault.IsSDKDefaultStrategyForPPAF)
+                if (this.ConnectionPolicy.EnablePartitionLevelFailover && this.ConnectionPolicy.AvailabilityStrategy == null)
+                {
+                    this.InitializePartitionLevelFailoverWithDefaultHedging();
+                    if (this.ConnectionPolicy.AvailabilityStrategy != null)
+                    {
+                        DefaultTrace.TraceInformation(
+                            "DocumentClient: Hedging re-enabled — applied SDK default PPAF hedging strategy");
+                    }
+                    return;
+                }
+
+                if (!this.ConnectionPolicy.EnablePartitionLevelFailover
+                    && this.ConnectionPolicy.AvailabilityStrategy is CrossRegionHedgingAvailabilityStrategy sdkDefault
+                    && sdkDefault.IsSDKDefaultStrategyForPPAF)
+                {
+                    // PPAF disabled — drop the SDK default we previously installed.
+                    this.ConnectionPolicy.AvailabilityStrategy = null;
+                }
+            }
+        }
+
+        // Test-only accessors. Visible to the unit-test assembly via [InternalsVisibleTo] in
+        // Microsoft.Azure.Cosmos.csproj. Used in lieu of reflection so renames or refactors of the
+        // backing fields are caught at compile time rather than blowing up with NullReferenceException
+        // from a stale System.Reflection.FieldInfo at test runtime.
+        internal bool DisableCrossRegionalHedgingForTests
+        {
+            get
             {
-                // PPAF disabled — drop the SDK default we previously installed.
-                this.ConnectionPolicy.AvailabilityStrategy = null;
+                lock (this.hedgingStrategyLock)
+                {
+                    return this.disableCrossRegionalHedging;
+                }
+            }
+            set
+            {
+                lock (this.hedgingStrategyLock)
+                {
+                    this.disableCrossRegionalHedging = value;
+                }
+            }
+        }
+
+        internal AvailabilityStrategy CustomerConfiguredAvailabilityStrategyForTests
+        {
+            get
+            {
+                lock (this.hedgingStrategyLock)
+                {
+                    return this.customerConfiguredAvailabilityStrategy;
+                }
             }
         }
 

@@ -1,7 +1,6 @@
-﻿namespace Microsoft.Azure.Cosmos.Tests
+namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
-    using System.Reflection;
     using Microsoft.Azure.Cosmos;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -16,12 +15,6 @@
     {
         private const string AccountEndpoint = "https://localhost:8081/";
         private const string AccountKey = "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==";
-
-        private static readonly FieldInfo DisableHedgingField =
-            typeof(DocumentClient).GetField("disableCrossRegionalHedging", BindingFlags.Instance | BindingFlags.NonPublic);
-
-        private static readonly FieldInfo CustomerStrategyField =
-            typeof(DocumentClient).GetField("customerConfiguredAvailabilityStrategy", BindingFlags.Instance | BindingFlags.NonPublic);
 
         [TestMethod]
         public void AccountProperties_DisableCrossRegionalHedging_True_Deserializes()
@@ -109,7 +102,7 @@
             DocumentClient client = CreateClient(policy);
             try
             {
-                client.UpdatePartitionLevelFailoverConfigWithAccountRefresh(isEnabled: true, disableCrossRegionalHedging: true);
+                client.UpdatePartitionLevelFailoverConfigWithAccountRefresh(latestIsEnabled: true, latestDisableCrossRegionalHedging: true);
 
                 Assert.IsNull(client.ConnectionPolicy.AvailabilityStrategy, "Strategy must be cleared when disable flag flips to true");
                 Assert.AreSame(
@@ -136,11 +129,11 @@
             try
             {
                 // Step 1: disable hedging — strategy is stashed.
-                client.UpdatePartitionLevelFailoverConfigWithAccountRefresh(isEnabled: true, disableCrossRegionalHedging: true);
+                client.UpdatePartitionLevelFailoverConfigWithAccountRefresh(latestIsEnabled: true, latestDisableCrossRegionalHedging: true);
                 Assert.IsNull(client.ConnectionPolicy.AvailabilityStrategy);
 
                 // Step 2: re-enable hedging — strategy is restored.
-                client.UpdatePartitionLevelFailoverConfigWithAccountRefresh(isEnabled: true, disableCrossRegionalHedging: false);
+                client.UpdatePartitionLevelFailoverConfigWithAccountRefresh(latestIsEnabled: true, latestDisableCrossRegionalHedging: false);
 
                 Assert.AreSame(
                     customerStrategy,
@@ -170,7 +163,7 @@
             DocumentClient client = CreateClient(policy);
             try
             {
-                client.UpdatePartitionLevelFailoverConfigWithAccountRefresh(isEnabled: true, disableCrossRegionalHedging: true);
+                client.UpdatePartitionLevelFailoverConfigWithAccountRefresh(latestIsEnabled: true, latestDisableCrossRegionalHedging: true);
 
                 Assert.AreSame(
                     customerStrategy,
@@ -196,7 +189,7 @@
                 Assert.IsTrue(((CrossRegionHedgingAvailabilityStrategy)client.ConnectionPolicy.AvailabilityStrategy).IsSDKDefaultStrategyForPPAF);
 
                 // Now flip the flag — the SDK default should be cleared but NOT stashed.
-                client.UpdatePartitionLevelFailoverConfigWithAccountRefresh(isEnabled: true, disableCrossRegionalHedging: true);
+                client.UpdatePartitionLevelFailoverConfigWithAccountRefresh(latestIsEnabled: true, latestDisableCrossRegionalHedging: true);
 
                 Assert.IsNull(client.ConnectionPolicy.AvailabilityStrategy);
                 Assert.IsNull(
@@ -204,7 +197,7 @@
                     "SDK-default strategy must NOT be stashed — it can be regenerated deterministically");
 
                 // Toggle back off — SDK default is rebuilt from PPAF state.
-                client.UpdatePartitionLevelFailoverConfigWithAccountRefresh(isEnabled: true, disableCrossRegionalHedging: false);
+                client.UpdatePartitionLevelFailoverConfigWithAccountRefresh(latestIsEnabled: true, latestDisableCrossRegionalHedging: false);
 
                 Assert.IsNotNull(client.ConnectionPolicy.AvailabilityStrategy);
                 Assert.IsTrue(((CrossRegionHedgingAvailabilityStrategy)client.ConnectionPolicy.AvailabilityStrategy).IsSDKDefaultStrategyForPPAF);
@@ -222,12 +215,12 @@
 
         private static void SetDisableHedgingFlag(DocumentClient client, bool value)
         {
-            DisableHedgingField.SetValue(client, value);
+            client.DisableCrossRegionalHedgingForTests = value;
         }
 
         private static AvailabilityStrategy GetCustomerStashedStrategy(DocumentClient client)
         {
-            return (AvailabilityStrategy)CustomerStrategyField.GetValue(client);
+            return client.CustomerConfiguredAvailabilityStrategyForTests;
         }
     }
 }
