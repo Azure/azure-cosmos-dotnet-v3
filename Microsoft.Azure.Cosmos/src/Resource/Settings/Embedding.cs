@@ -81,10 +81,16 @@ namespace Microsoft.Azure.Cosmos
         /// <inheritdoc/>
         public bool Equals(Embedding that)
         {
+            if (that is null)
+            {
+                return false;
+            }
+
             return this.Path.Equals(that.Path)
                 && this.DataType.Equals(that.DataType)
                 && this.Dimensions == that.Dimensions
-                && this.Dimensions.Equals(that.Dimensions);
+                && this.DistanceFunction.Equals(that.DistanceFunction)
+                && object.Equals(this.EmbeddingSource, that.EmbeddingSource);
         }
     }
 }
