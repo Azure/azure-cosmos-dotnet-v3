@@ -29,17 +29,20 @@
     <AdditionalFiles Include="..\..\Microsoft.Azure.Cosmos\src\stylecop.json" Link="stylecop.json" />
   </ItemGroup>
 
-  <!-- Core SDK reference: project ref when building from source, otherwise NuGet pin -->
-  <ItemGroup Condition=" '$(SdkProjectRef)' != 'True' AND '$(IsPreview)' != 'True' ">
-    <PackageReference Include="Microsoft.Azure.Cosmos" Version="[3.59.0,)" />
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(SdkProjectRef)' != 'True' AND '$(IsPreview)' == 'True' ">
+  <!-- Core SDK reference: project ref when building from source, otherwise NuGet pin.
+       This package depends on ICosmosEmbeddingGenerator and EmbeddingSource which are
+       #if PREVIEW-gated in the core SDK, so we always need a preview-built SDK.
+       - ProjectReference: AdditionalProperties forces IsPreview=true on the core SDK build
+         so the preview-gated types are compiled as public, without requiring the caller
+         to pass /p:IsPreview=true globally.
+       - NuGet: always reference the preview version (preview NuGet is built with PREVIEW defined). -->
+  <ItemGroup Condition=" '$(SdkProjectRef)' != 'True' ">
     <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.60.0-preview.0" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(SdkProjectRef)' == 'True' ">
-    <ProjectReference Include="..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj" />
+    <ProjectReference Include="..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj"
+                      AdditionalProperties="IsPreview=true" />
   </ItemGroup>
 
   <ItemGroup>
