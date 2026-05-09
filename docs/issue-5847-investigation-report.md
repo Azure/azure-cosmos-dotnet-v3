@@ -40,5 +40,5 @@
 
 ## Compatibility Note
 - This fix prioritizes avoiding false high lag for `Now`/`WithStartTime` deployments.
-- For `WithStartFromBeginning` deployments, before the first checkpoint per lease the estimator can temporarily under-report lag (typically near zero / now-based) because lease metadata does not persist the original start-position intent yet.
+- For `WithStartFromBeginning` deployments, before the first checkpoint per lease the estimator can temporarily report approximately zero lag instead of the true beginning-to-head backlog because lease metadata does not persist the original start-position intent yet.
 - Operational guidance: for `WithStartFromBeginning`, treat estimator values as reliable after each active lease has checkpointed at least once.

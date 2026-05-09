@@ -197,8 +197,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
 
             // Sentinel for the pre-fix path that incorrectly started from beginning.
-            Mock<FeedIteratorInternal> noContinuationLeaseBeginningIterator = new Mock<FeedIteratorInternal>();
-            noContinuationLeaseBeginningIterator
+            Mock<FeedIteratorInternal> fromBeginningIterator = new Mock<FeedIteratorInternal>();
+            fromBeginningIterator
                 .Setup(i => i.ReadNextAsync(It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(GetResponse(HttpStatusCode.OK, $"0:{globalLsn}", "1"));
 
@@ -217,7 +217,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 if (lease.CurrentLeaseToken == "0")
                 {
                     return startFromBeginning
-                        ? noContinuationLeaseBeginningIterator.Object
+                        ? fromBeginningIterator.Object
                         : noContinuationLeaseNowIterator.Object;
                 }
 
@@ -238,7 +238,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Assert.AreEqual(expectedLagWhenStartingFromNow, noContinuationLease.EstimatedLag);
             Assert.AreEqual(0, checkpointedLease.EstimatedLag);
-            noContinuationLeaseBeginningIterator.Verify(
+            fromBeginningIterator.Verify(
                 i => i.ReadNextAsync(It.IsAny<ITrace>(), It.IsAny<CancellationToken>()),
                 Times.Never);
             noContinuationLeaseNowIterator.Verify(
