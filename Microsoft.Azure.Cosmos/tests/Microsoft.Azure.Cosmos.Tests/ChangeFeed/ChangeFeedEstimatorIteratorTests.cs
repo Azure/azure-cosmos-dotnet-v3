@@ -174,7 +174,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         }
 
         [TestMethod]
-        public async Task Repro5847_ShouldNotEstimateLargeLagWhenLeaseHasNoContinuationToken()
+        public async Task ChangeFeedEstimator_ShouldNotEstimateLargeLag_WhenLeaseHasNoContinuationToken()
         {
             const long globalLsn = 1000;
             const long expectedLagWhenStartingFromNow = 0;
@@ -240,6 +240,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             noContinuationLeaseBeginningIterator.Verify(
                 i => i.ReadNextAsync(It.IsAny<ITrace>(), It.IsAny<CancellationToken>()),
                 Times.Never);
+            noContinuationLeaseNowIterator.Verify(
+                i => i.ReadNextAsync(It.IsAny<ITrace>(), It.IsAny<CancellationToken>()),
+                Times.Once);
         }
 
         [TestMethod]
