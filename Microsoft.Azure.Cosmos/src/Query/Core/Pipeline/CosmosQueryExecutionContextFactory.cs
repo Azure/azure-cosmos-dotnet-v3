@@ -639,6 +639,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     containerQueryProperties.EffectiveRangesForPartitionKey,
                     forceRefresh: false,
                     trace);
+
+                // If no overlapping ranges are found, the routing map might be stale (e.g., during/after a partition split).
+                // Retry with forceRefresh=true to get an up-to-date routing map before returning an empty result.
+                if (targetRanges.Count == 0)
+                {
+                    targetRanges = await queryClient.GetTargetPartitionKeyRangesAsync(
+                        resourceLink,
+                        containerQueryProperties.ResourceId,
+                        containerQueryProperties.EffectiveRangesForPartitionKey,
+                        forceRefresh: true,
+                        trace);
+                }
             }
             else if (TryGetEpkProperty(properties, out string effectivePartitionKeyString))
             {
