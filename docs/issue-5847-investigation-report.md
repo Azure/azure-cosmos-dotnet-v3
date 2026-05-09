@@ -33,5 +33,11 @@
    - Clarify semantics of `EstimatedLag` before first checkpoint.
    - Document migration/rollout notes if lease schema changes are introduced.
 
-## Notes
-- This change intentionally does not implement a fix; it only captures reproducible behavior and a proposed plan for review.
+## Implemented Fix (Current PR)
+- Chosen behavior for uncheckpointed leases (empty `ContinuationToken`): do **not** start estimator reads from `Beginning`.
+- In `ChangeFeedEstimatorIterator`, `startFromBeginning` is now `false` for this case, which causes the underlying iterator to use `Now` semantics instead of beginning-based lag.
+- This removes the inflated lag spikes reproduced in issue #5847 for processors started with `Now` / `WithStartTime`.
+
+## Compatibility Note
+- This fix prioritizes avoiding false high lag for `Now`/`WithStartTime` deployments.
+- Estimator behavior for `WithStartFromBeginning` before first checkpoint remains bounded by the absence of persisted start-position metadata on leases.

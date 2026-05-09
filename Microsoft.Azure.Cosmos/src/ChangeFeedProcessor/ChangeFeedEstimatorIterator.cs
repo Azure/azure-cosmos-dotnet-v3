@@ -274,6 +274,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             ITrace trace,
             CancellationToken cancellationToken)
         {
+            // If a lease has no continuation token yet, the estimator cannot recover the original processor
+            // start configuration from lease metadata today.
+            // Avoiding `Beginning` prevents synthetic backlog spikes for processors started from Now/StartTime.
             using FeedIteratorInternal iterator = this.monitoredContainerFeedCreator(
                 existingLease,
                 existingLease.ContinuationToken,
