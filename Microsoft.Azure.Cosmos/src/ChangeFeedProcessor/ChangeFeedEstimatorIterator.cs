@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                           maxItemCount: 1,
                           container: monitoredContainer,
                           startTime: null,
-                          startFromBeginning: string.IsNullOrEmpty(continuationToken)))
+                          startFromBeginning: startFromBeginning))
         {
         }
 
@@ -277,7 +277,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             using FeedIteratorInternal iterator = this.monitoredContainerFeedCreator(
                 existingLease,
                 existingLease.ContinuationToken,
-                string.IsNullOrEmpty(existingLease.ContinuationToken));
+                false);
 
             try
             {

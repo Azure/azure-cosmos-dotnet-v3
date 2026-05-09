@@ -174,10 +174,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         }
 
         [TestMethod]
-        public async Task Repro5847_ShouldEstimateLargeLagWhenLeaseHasNoContinuationToken()
+        public async Task Repro5847_ShouldNotEstimateLargeLagWhenLeaseHasNoContinuationToken()
         {
             const long globalLsn = 1000;
-            const long expectedLagWhenStartingFromBeginning = 1000;
+            const long expectedLagWhenStartingFromNow = 0;
 
             List<DocumentServiceLeaseCore> leases = new List<DocumentServiceLeaseCore>()
             {
@@ -196,10 +196,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
             mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
 
-            Mock<FeedIteratorInternal> noContinuationLeaseIterator = new Mock<FeedIteratorInternal>();
-            noContinuationLeaseIterator
+            Mock<FeedIteratorInternal> noContinuationLeaseBeginningIterator = new Mock<FeedIteratorInternal>();
+            noContinuationLeaseBeginningIterator
                 .Setup(i => i.ReadNextAsync(It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(GetResponse(HttpStatusCode.OK, $"0:{globalLsn}", "1"));
+
+            Mock<FeedIteratorInternal> noContinuationLeaseNowIterator = new Mock<FeedIteratorInternal>();
+            noContinuationLeaseNowIterator
+                .Setup(i => i.ReadNextAsync(It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(GetResponse(HttpStatusCode.NotModified, $"0:{globalLsn}"));
 
             Mock<FeedIteratorInternal> checkpointedLeaseIterator = new Mock<FeedIteratorInternal>();
             checkpointedLeaseIterator
@@ -210,8 +215,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             {
                 if (lease.CurrentLeaseToken == "0")
                 {
-                    Assert.IsTrue(startFromBeginning);
-                    return noContinuationLeaseIterator.Object;
+                    Assert.IsFalse(startFromBeginning);
+                    return startFromBeginning
+                        ? noContinuationLeaseBeginningIterator.Object
+                        : noContinuationLeaseNowIterator.Object;
                 }
 
                 Assert.IsFalse(startFromBeginning);
@@ -229,7 +236,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             ChangeFeedProcessorState noContinuationLease = response.Single(state => state.LeaseToken == "0");
             ChangeFeedProcessorState checkpointedLease = response.Single(state => state.LeaseToken == "1");
 
-            Assert.AreEqual(expectedLagWhenStartingFromBeginning, noContinuationLease.EstimatedLag);
+            Assert.AreEqual(expectedLagWhenStartingFromNow, noContinuationLease.EstimatedLag);
             Assert.AreEqual(0, checkpointedLease.EstimatedLag);
         }
 
