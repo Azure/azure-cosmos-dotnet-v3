@@ -174,7 +174,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         }
 
         [TestMethod]
-        public async Task ChangeFeedEstimator_ShouldNotEstimateLargeLag_WhenLeaseHasNoContinuationToken()
+        public async Task ChangeFeedEstimator_ShouldEstimateZeroLag_WhenLeaseHasNoContinuationToken()
         {
             const long globalLsn = 1000;
             const long expectedLagWhenStartingFromNow = 0;
@@ -196,6 +196,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
             mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
 
+            // Sentinel for the pre-fix path that incorrectly started from beginning.
             Mock<FeedIteratorInternal> noContinuationLeaseBeginningIterator = new Mock<FeedIteratorInternal>();
             noContinuationLeaseBeginningIterator
                 .Setup(i => i.ReadNextAsync(It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
