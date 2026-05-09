@@ -7,13 +7,13 @@
 ## Findings
 - `ChangeFeedEstimatorIterator` creates per-lease iterators using:
   - `startFromBeginning: string.IsNullOrEmpty(continuationToken)`
-  - Source: `/home/runner/work/azure-cosmos-dotnet-v3/azure-cosmos-dotnet-v3/Microsoft.Azure.Cosmos/src/ChangeFeedProcessor/ChangeFeedEstimatorIterator.cs`
+  - Source: `Microsoft.Azure.Cosmos/src/ChangeFeedProcessor/ChangeFeedEstimatorIterator.cs`
 - The estimator path has no access to `ChangeFeedProcessor` start configuration (`WithStartTime`, `WithStartFromBeginning`, or default `Now`) when a lease has no continuation token.
 - As a result, an uncheckpointed lease is measured from beginning, which can produce large initial lag values that do not represent actual backlog for `Now`/`WithStartTime` processors.
 
 ## Reproduction Added
 - Test: `Repro5847_ShouldEstimateLargeLagWhenLeaseHasNoContinuationToken`
-- File: `/home/runner/work/azure-cosmos-dotnet-v3/azure-cosmos-dotnet-v3/Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/ChangeFeed/ChangeFeedEstimatorIteratorTests.cs`
+- File: `Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/ChangeFeed/ChangeFeedEstimatorIteratorTests.cs`
 - Repro behavior in test:
   - Lease `0`: no continuation token → estimator passes `startFromBeginning = true` and computes large lag.
   - Lease `1`: has continuation token → estimator passes `startFromBeginning = false` and computes near-zero lag.
@@ -40,4 +40,4 @@
 
 ## Compatibility Note
 - This fix prioritizes avoiding false high lag for `Now`/`WithStartTime` deployments.
-- Estimator behavior for `WithStartFromBeginning` before first checkpoint remains bounded by the absence of persisted start-position metadata on leases.
+- For `WithStartFromBeginning` deployments, before the first checkpoint per lease the estimator can temporarily under-report lag (typically near zero / now-based) because lease metadata does not persist the original start-position intent yet.
