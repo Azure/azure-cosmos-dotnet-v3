@@ -174,6 +174,66 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         }
 
         [TestMethod]
+        public async Task Repro5847_ShouldEstimateLargeLagWhenLeaseHasNoContinuationToken()
+        {
+            const long globalLsn = 1000;
+            const long expectedLagWhenStartingFromBeginning = 1000;
+
+            List<DocumentServiceLeaseCore> leases = new List<DocumentServiceLeaseCore>()
+            {
+                new DocumentServiceLeaseCore()
+                {
+                    LeaseToken = "0",
+                    ContinuationToken = null
+                },
+                new DocumentServiceLeaseCore()
+                {
+                    LeaseToken = "1",
+                    ContinuationToken = "1:1000"
+                }
+            };
+
+            Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
+            mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
+
+            Mock<FeedIteratorInternal> noContinuationLeaseIterator = new Mock<FeedIteratorInternal>();
+            noContinuationLeaseIterator
+                .Setup(i => i.ReadNextAsync(It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(GetResponse(HttpStatusCode.OK, $"0:{globalLsn}", "1"));
+
+            Mock<FeedIteratorInternal> checkpointedLeaseIterator = new Mock<FeedIteratorInternal>();
+            checkpointedLeaseIterator
+                .Setup(i => i.ReadNextAsync(It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(GetResponse(HttpStatusCode.NotModified, $"1:{globalLsn}"));
+
+            FeedIteratorInternal feedCreator(DocumentServiceLease lease, string continuationToken, bool startFromBeginning)
+            {
+                if (lease.CurrentLeaseToken == "0")
+                {
+                    Assert.IsTrue(startFromBeginning);
+                    return noContinuationLeaseIterator.Object;
+                }
+
+                Assert.IsFalse(startFromBeginning);
+                return checkpointedLeaseIterator.Object;
+            }
+
+            ChangeFeedEstimatorIterator remainingWorkEstimator = new ChangeFeedEstimatorIterator(
+                ChangeFeedEstimatorIteratorTests.GetMockedContainer(),
+                Mock.Of<ContainerInternal>(),
+                mockContainer.Object,
+                feedCreator,
+                null);
+
+            FeedResponse<ChangeFeedProcessorState> response = await remainingWorkEstimator.ReadNextAsync(default);
+            ChangeFeedProcessorState noContinuationLease = response.Single(state => state.LeaseToken == "0");
+            ChangeFeedProcessorState checkpointedLease = response.Single(state => state.LeaseToken == "1");
+
+            Assert.AreEqual(expectedLagWhenStartingFromBeginning, noContinuationLease.EstimatedLag);
+            Assert.AreEqual(0, checkpointedLease.EstimatedLag);
+        }
+
+        [TestMethod]
         public async Task ShouldReturnAllLeasesInOnePage()
         {
             // no max item count
