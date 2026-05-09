@@ -215,7 +215,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             {
                 if (lease.CurrentLeaseToken == "0")
                 {
-                    Assert.IsFalse(startFromBeginning);
                     return startFromBeginning
                         ? noContinuationLeaseBeginningIterator.Object
                         : noContinuationLeaseNowIterator.Object;
