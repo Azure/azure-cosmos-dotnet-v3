@@ -237,6 +237,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Assert.AreEqual(expectedLagWhenStartingFromNow, noContinuationLease.EstimatedLag);
             Assert.AreEqual(0, checkpointedLease.EstimatedLag);
+            noContinuationLeaseBeginningIterator.Verify(
+                i => i.ReadNextAsync(It.IsAny<ITrace>(), It.IsAny<CancellationToken>()),
+                Times.Never);
         }
 
         [TestMethod]

@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                           maxItemCount: 1,
                           container: monitoredContainer,
                           startTime: null,
-                          startFromBeginning: startFromBeginning))
+                          startFromBeginning: false))
         {
         }
 
