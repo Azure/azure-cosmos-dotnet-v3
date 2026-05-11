@@ -125,6 +125,32 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal static readonly string UseLengthAwareRangeComparator = "AZURE_COSMOS_USE_LENGTH_AWARE_RANGE_COMPARATOR";
 
+        /// <summary>
+        /// Environment variable name to enable DNS dot-suffix (FQDN trailing dot) for
+        /// Direct mode TCP connections. When enabled, appends a trailing '.' to hostnames
+        /// before DNS resolution to bypass Kubernetes ndots search-domain expansion.
+        /// See: https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5730
+        /// </summary>
+        internal static readonly string TcpDnsDotSuffixEnabled = "AZURE_COSMOS_TCP_DNS_DOT_SUFFIX_ENABLED";
+
+        /// <summary>
+        /// Environment variable to override the HTTP/2 PING keep-alive delay (in seconds).
+        /// After this many seconds of inactivity on an HTTP/2 connection, a PING frame is sent
+        /// to detect broken connections in the pool. Default: 1 second.
+        /// </summary>
+        internal static readonly string Http2KeepAlivePingDelayInSeconds = "AZURE_COSMOS_HTTP2_KEEPALIVE_PING_DELAY_IN_SECONDS";
+
+        /// <summary>
+        /// Environment variable to override the HTTP/2 PING keep-alive timeout (in seconds).
+        /// If no PONG response is received within this time, the connection is marked dead. Default: 2 seconds.
+        /// </summary>
+        internal static readonly string Http2KeepAlivePingTimeoutInSeconds = "AZURE_COSMOS_HTTP2_KEEPALIVE_PING_TIMEOUT_IN_SECONDS";
+
+        /// <summary>
+        /// Environment variable name to enable deterministic lease-id partition key values for Change Feed lease creation.
+        /// </summary>
+        internal static readonly string ChangeFeedLeaseIdAsPartitionKeyEnabled = "AZURE_COSMOS_CHANGE_FEED_LEASE_ID_AS_PARTITION_KEY_ENABLED";
+
         public static T GetEnvironmentVariable<T>(string variable, T defaultValue)
         {
             string value = Environment.GetEnvironmentVariable(variable);
@@ -191,6 +217,18 @@ namespace Microsoft.Azure.Cosmos
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.ThinClientModeEnabled,
                         defaultValue: defaultValue);
+        }
+
+        /// <summary>
+        /// Gets the boolean value indicating whether Change Feed lease creation should use lease id as the partition key value.
+        /// </summary>
+        /// <returns>A boolean flag indicating if deterministic lease-id partition key behavior is enabled.</returns>
+        public static bool IsChangeFeedLeaseIdAsPartitionKeyEnabled()
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.ChangeFeedLeaseIdAsPartitionKeyEnabled,
+                        defaultValue: true);
         }
 
         /// <summary>
@@ -400,6 +438,23 @@ namespace Microsoft.Azure.Cosmos
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.UseLengthAwareRangeComparator,
                         defaultValue: defaultValue);
+        }
+
+        /// <summary>
+        /// Gets the boolean value indicating if DNS dot-suffix (FQDN trailing dot) is enabled
+        /// for Direct mode TCP connections. When enabled, appends a trailing '.' to hostnames
+        /// before DNS resolution, causing the resolver to treat them as absolute (fully qualified)
+        /// names and skip search-domain expansion. This avoids unnecessary DNS lookups on Kubernetes
+        /// where ndots:5 causes multiple failed search-domain attempts for Cosmos DB endpoints.
+        /// Default: false (opt-in).
+        /// </summary>
+        /// <returns>A boolean flag indicating if TCP DNS dot-suffix is enabled.</returns>
+        public static bool IsTcpDnsDotSuffixEnabled()
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.TcpDnsDotSuffixEnabled,
+                        defaultValue: false);
         }
     }
 }

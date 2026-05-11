@@ -497,7 +497,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 containerSettings = containerResponse.Resource;
                 Assert.IsNotNull(containerSettings.ConflictResolutionPolicy);
                 Assert.AreEqual(ConflictResolutionMode.Custom, containerSettings.ConflictResolutionPolicy.Mode);
-                Assert.AreEqual(UriFactory.CreateStoredProcedureUri(databaseForConflicts.Id, containerName, sprocName), containerSettings.ConflictResolutionPolicy.ResolutionProcedure);
+                Assert.AreEqual(UriFactory.CreateStoredProcedureUri(databaseForConflicts.Id, containerName, sprocName).ToString(), containerSettings.ConflictResolutionPolicy.ResolutionProcedure);
                 Assert.IsTrue(string.IsNullOrEmpty(containerSettings.ConflictResolutionPolicy.ResolutionPath));
             }
             finally

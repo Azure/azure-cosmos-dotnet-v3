@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
+namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
@@ -381,6 +381,7 @@
             }
         }
           
+        [TestMethod]
         [Owner("dkunda")]
         [TestCategory("MultiRegion")]
         [DataRow(true, DisplayName = "Test scenario when binary encoding is enabled at client level.")]
@@ -498,7 +499,6 @@
                         .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
-                        .WithDelay(TimeSpan.FromMilliseconds(10))
                         .Build())
                 .Build();
 
@@ -627,7 +627,6 @@
                         .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
-                        .WithDelay(TimeSpan.FromMilliseconds(10))
                         .Build())
                 .Build();
 
@@ -750,7 +749,6 @@
                         .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
-                        .WithDelay(TimeSpan.FromMilliseconds(10))
                         .Build())
                 .Build();
 
@@ -764,7 +762,6 @@
                         .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
-                        .WithDelay(TimeSpan.FromMilliseconds(10))
                         .Build())
                 .Build();
 
@@ -798,7 +795,7 @@
                 await this.TryCreateItems(itemsList);
 
                 //Must Ensure the data is replicated to all regions
-                await Task.Delay(3000);
+                await Task.Delay(5000);
 
                 bool isRegion1Available = true;
                 bool isRegion2Available = true;
@@ -914,7 +911,6 @@
                         .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
-                        .WithDelay(TimeSpan.FromMilliseconds(10))
                         .Build())
                 .Build();
 
@@ -1030,7 +1026,6 @@
                         .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
-                        .WithDelay(TimeSpan.FromMilliseconds(10))
                         .Build())
                 .Build();
 
@@ -1061,7 +1056,7 @@
                 await this.TryCreateItems(itemsList);
 
                 //Must Ensure the data is replicated to all regions
-                await Task.Delay(3000);
+                await Task.Delay(5000);
 
                 int consecutiveFailureCount = 10;
                 for (int attemptCount = 1; attemptCount <= consecutiveFailureCount; attemptCount++)
@@ -1122,7 +1117,6 @@
                         .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
-                        .WithDelay(TimeSpan.FromMilliseconds(10))
                         .Build())
                 .Build();
 
@@ -1209,7 +1203,6 @@
                         .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
-                        .WithDelay(TimeSpan.FromMilliseconds(10))
                         .Build())
                 .Build();
 
@@ -1333,7 +1326,6 @@
                        .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
-                        .WithDelay(TimeSpan.FromMilliseconds(2))
                         .Build())
                 .Build();
 
@@ -1347,7 +1339,6 @@
                        .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
-                        .WithDelay(TimeSpan.FromMilliseconds(2))
                         .Build())
                 .Build();
 
@@ -1596,7 +1587,6 @@
                         .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
-                        .WithDelay(TimeSpan.FromMilliseconds(10))
                         .Build())
                 .Build();
 
@@ -1724,10 +1714,10 @@
 
                 traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
 
-                Assert.IsNotNull(hedgeContext);
-                List<string> hedgedRegions = ((IEnumerable<string>)hedgeContext).ToList();
-
-                Assert.IsTrue(hedgedRegions.Count >= 1, "Since the first region is not available, the request should atleast hedge to the next region.");
+                // When PPAF is enabled, the primary request handles failover internally
+                // (retrying to another region at the transport layer). No cross-region
+                // hedging occurs, so HedgeContext should be absent.
+                Assert.IsNull(hedgeContext);
                 Assert.IsTrue(cosmosClient.DocumentClient.PartitionKeyRangeLocation.IsPartitionLevelAutomaticFailoverEnabled());
 
                 // Disable PPAF At the Gateway Layer.
@@ -1957,7 +1947,6 @@
                         .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
-                        .WithDelay(TimeSpan.FromMilliseconds(10))
                         .Build())
                 .Build();
 
@@ -2085,7 +2074,6 @@
                         .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
-                        .WithDelay(TimeSpan.FromMilliseconds(10))
                         .Build())
                 .Build();
 
@@ -2256,7 +2244,7 @@
 
             CrossRegionHedgingAvailabilityStrategy strat = cosmosClient.DocumentClient.ConnectionPolicy.AvailabilityStrategy as CrossRegionHedgingAvailabilityStrategy;
             Assert.IsNotNull(strat);
-            Assert.AreNotEqual(0, strat.Threshold);
+            Assert.AreNotEqual(TimeSpan.Zero, strat.Threshold);
         }
         
         

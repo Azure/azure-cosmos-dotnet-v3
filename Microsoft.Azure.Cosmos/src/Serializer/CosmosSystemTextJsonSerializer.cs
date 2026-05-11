@@ -40,9 +40,9 @@ namespace Microsoft.Azure.Cosmos
             if (stream == null)
                 throw new ArgumentNullException(nameof(stream));
 
-            if (typeof(Stream).IsAssignableFrom(typeof(T)))
+            if (typeof(Stream).IsAssignableFrom(typeof(T)) && stream is T typedStream)
             {
-                return (T)(object)stream;
+                return typedStream;
             }
 
             if (stream.CanSeek && stream.Length == 0)

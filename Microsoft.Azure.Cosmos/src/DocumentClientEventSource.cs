@@ -34,6 +34,51 @@ namespace Microsoft.Azure.Cosmos
             public const EventKeywords HttpRequestAndResponse = (EventKeywords)1;
         }
 
+        // Ordered list of headers extracted and forwarded positionally to Event(1).
+        // IMPORTANT: The order of entries here matches the field order declared by [Event(1)]
+        // and the `{index}` placeholders in its Message template. Do not reorder, insert, or
+        // remove entries without updating Event(1) and the redaction logic in Request(...).
+        // The Authorization slot is populated from the raw header and then overwritten with
+        // "REDACTED" in the [NonEvent] wrapper before being emitted to ETW.
+        private static readonly string[] RequestHeaderKeysToExtract =
+        {
+            HttpConstants.HttpHeaders.Accept,
+            HttpConstants.HttpHeaders.Authorization, // SECURITY: redacted to "REDACTED" in Request(...) before ETW emission. Do not remove.
+            HttpConstants.HttpHeaders.ConsistencyLevel,
+            HttpConstants.HttpHeaders.ContentType,
+            HttpConstants.HttpHeaders.ContentEncoding,
+            HttpConstants.HttpHeaders.ContentLength,
+            HttpConstants.HttpHeaders.ContentLocation,
+            HttpConstants.HttpHeaders.Continuation,
+            HttpConstants.HttpHeaders.EmitVerboseTracesInQuery,
+            HttpConstants.HttpHeaders.EnableScanInQuery,
+            HttpConstants.HttpHeaders.ETag,
+            HttpConstants.HttpHeaders.HttpDate,
+            HttpConstants.HttpHeaders.IfMatch,
+            HttpConstants.HttpHeaders.IfNoneMatch,
+            HttpConstants.HttpHeaders.IndexingDirective,
+            HttpConstants.HttpHeaders.KeepAlive,
+            HttpConstants.HttpHeaders.OfferType,
+            HttpConstants.HttpHeaders.PageSize,
+            HttpConstants.HttpHeaders.PreTriggerExclude,
+            HttpConstants.HttpHeaders.PreTriggerInclude,
+            HttpConstants.HttpHeaders.PostTriggerExclude,
+            HttpConstants.HttpHeaders.PostTriggerInclude,
+            HttpConstants.HttpHeaders.ProfileRequest,
+            HttpConstants.HttpHeaders.ResourceTokenExpiry,
+            HttpConstants.HttpHeaders.SessionToken,
+            HttpConstants.HttpHeaders.SetCookie,
+            HttpConstants.HttpHeaders.Slug,
+            HttpConstants.HttpHeaders.UserAgent,
+            HttpConstants.HttpHeaders.XDate
+        };
+
+        // Index of the Authorization header in RequestHeaderKeysToExtract, computed once at class
+        // initialization so the per-request redaction path in Request(...) does not pay an O(n)
+        // Array.IndexOf lookup on every HTTP call.
+        private static readonly int AuthorizationHeaderIndex
+            = Array.IndexOf(RequestHeaderKeysToExtract, HttpConstants.HttpHeaders.Authorization);
+
         [NonEvent]
         private unsafe void WriteEventCoreWithActivityId(Guid activityId, int eventId, int eventDataCount, EventSource.EventData* dataDesc)
         {
@@ -270,45 +315,48 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        // SECURITY: The Authorization header contains a live credential (master-key HMAC
+        // signature, resource token, or AAD Bearer access token). It must never be written
+        // to the ETW event payload where any listener subscribing to the "DocumentDBClient"
+        // EventSource at Verbose level (e.g., Geneva MonitoringAgent, PerfView, dotnet-trace)
+        // would capture it. Replace the value with a fixed placeholder while preserving the
+        // 33-field ETW manifest so existing consumers remain compatible. The IsNullOrEmpty
+        // guard preserves the existing "" semantics for requests that never had an
+        // Authorization header attached (e.g. internal plumbing); we only overwrite when a
+        // real value is present. Factored out as an internal helper so the redaction logic
+        // can be unit-tested directly without relying on ETW listener wiring (which is
+        // inherently racy under parallel test execution).
+        internal static void RedactSensitiveHeaderValues(string[] headerValues)
+        {
+            if (headerValues == null)
+            {
+                return;
+            }
+
+            // AuthorizationHeaderIndex is computed once at class initialization (see field
+            // above); the Debug.Assert catches any future refactor that removes Authorization
+            // from RequestHeaderKeysToExtract.
+            System.Diagnostics.Debug.Assert(
+                AuthorizationHeaderIndex >= 0,
+                "Authorization must be present in RequestHeaderKeysToExtract so the redaction below takes effect.");
+
+            if (AuthorizationHeaderIndex >= 0
+                && headerValues.Length > AuthorizationHeaderIndex
+                && !string.IsNullOrEmpty(headerValues[AuthorizationHeaderIndex]))
+            {
+                headerValues[AuthorizationHeaderIndex] = "REDACTED";
+            }
+        }
+
         [NonEvent]
         public void Request(Guid activityId, Guid localId, string uri, string resourceType, HttpRequestHeaders requestHeaders)
         {
             if (this.IsEnabled(EventLevel.Verbose, Keywords.HttpRequestAndResponse))
             {
-                string[] keysToExtract =
-                {
-                    HttpConstants.HttpHeaders.Accept,
-                    HttpConstants.HttpHeaders.Authorization,
-                    HttpConstants.HttpHeaders.ConsistencyLevel,
-                    HttpConstants.HttpHeaders.ContentType,
-                    HttpConstants.HttpHeaders.ContentEncoding,
-                    HttpConstants.HttpHeaders.ContentLength,
-                    HttpConstants.HttpHeaders.ContentLocation,
-                    HttpConstants.HttpHeaders.Continuation,
-                    HttpConstants.HttpHeaders.EmitVerboseTracesInQuery,
-                    HttpConstants.HttpHeaders.EnableScanInQuery,
-                    HttpConstants.HttpHeaders.ETag,
-                    HttpConstants.HttpHeaders.HttpDate,
-                    HttpConstants.HttpHeaders.IfMatch,
-                    HttpConstants.HttpHeaders.IfNoneMatch,
-                    HttpConstants.HttpHeaders.IndexingDirective,
-                    HttpConstants.HttpHeaders.KeepAlive,
-                    HttpConstants.HttpHeaders.OfferType,
-                    HttpConstants.HttpHeaders.PageSize,
-                    HttpConstants.HttpHeaders.PreTriggerExclude,
-                    HttpConstants.HttpHeaders.PreTriggerInclude,
-                    HttpConstants.HttpHeaders.PostTriggerExclude,
-                    HttpConstants.HttpHeaders.PostTriggerInclude,
-                    HttpConstants.HttpHeaders.ProfileRequest,
-                    HttpConstants.HttpHeaders.ResourceTokenExpiry,
-                    HttpConstants.HttpHeaders.SessionToken,
-                    HttpConstants.HttpHeaders.SetCookie,
-                    HttpConstants.HttpHeaders.Slug,
-                    HttpConstants.HttpHeaders.UserAgent,
-                    HttpConstants.HttpHeaders.XDate
-                };
+                string[] headerValues = Helpers.ExtractValuesFromHTTPHeaders(requestHeaders, RequestHeaderKeysToExtract);
 
-                string[] headerValues = Helpers.ExtractValuesFromHTTPHeaders(requestHeaders, keysToExtract);
+                RedactSensitiveHeaderValues(headerValues);
+
                 this.Request(activityId, localId, uri, resourceType, headerValues[0], headerValues[1], headerValues[2], headerValues[3], headerValues[4],
                     headerValues[5], headerValues[6], headerValues[7], headerValues[8], headerValues[9], headerValues[10], headerValues[11], headerValues[12],
                     headerValues[13], headerValues[14], headerValues[15], headerValues[16], headerValues[17], headerValues[18], headerValues[19], headerValues[20],

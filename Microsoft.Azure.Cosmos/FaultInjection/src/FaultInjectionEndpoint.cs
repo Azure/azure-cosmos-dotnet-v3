@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <param name="databaseName">The database name.</param>
         /// <param name="containerName">The container name.</param>
         /// <param name="feedRange">The <see cref="FeedRange"/>.</param>
-        /// <param name="includePrimary">Indicates wether primary replica can be used</param>
+        /// <param name="includePrimary">Indicates whether primary replica can be used</param>
         /// <param name="replicaCount">Replica count.</param>
         public FaultInjectionEndpoint(
             string databaseName,
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         }
 
         /// <summary>
-        /// Gets the replica count. Used to inidcate how many physical addresses can be applied to the fault injection rule.
+        /// Gets the replica count. Used to indicate how many physical addresses can be applied to the fault injection rule.
         /// </summary>
         /// <returns>an int, the replica count</returns>
         public int GetReplicaCount()
@@ -71,7 +71,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             return this.replicaCount; 
         }
 
-        public string GetResoureName()
+        /// <summary>
+        /// Gets the resource name in the format dbs/{databaseName}/colls/{containerName}.
+        /// </summary>
+        /// <returns>The resource name.</returns>
+        public string GetResourceName()
         {
             return $"dbs/{this.databaseName}/colls/{this.containerName}";
         }
@@ -84,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         {
             return String.Format(
                 "\"FaultInjectionEndpoint\":{{ \"ResourceName\": \"{0}\", \"FeedRange\": \"{1}\", \"IncludePrimary\": \"{2}\", \"ReplicaCount\": \"{3}\"}}",
-                this.GetResoureName(),
+                this.GetResourceName(),
                 this.feedRange,
                 this.includePrimary,
                 this.replicaCount);

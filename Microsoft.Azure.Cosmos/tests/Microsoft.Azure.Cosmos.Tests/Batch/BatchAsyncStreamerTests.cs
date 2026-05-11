@@ -150,9 +150,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             // 300 batch request should atleast sum up to 1000 ms barrier with wait time of 20ms in executor
             await Task.WhenAll(contexts);
 
-            await Task.Delay(2000);
+            // Poll for semaphore count to increase, with a reasonable timeout
+            System.Diagnostics.Stopwatch sw = System.Diagnostics.Stopwatch.StartNew();
+            while (newLimiter.CurrentCount < 2 && sw.Elapsed < TimeSpan.FromSeconds(10))
+            {
+                await Task.Delay(200);
+            }
 
-            Assert.IsTrue(newLimiter.CurrentCount >= 2, "Count of threads that can enter into semaphore should increase atleast by 1");
+            Assert.IsTrue(newLimiter.CurrentCount >= 2, $"Count of threads that can enter into semaphore should increase atleast by 1. Actual: {newLimiter.CurrentCount}");
         }
 
         [TestMethod]

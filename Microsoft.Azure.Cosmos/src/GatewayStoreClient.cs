@@ -282,6 +282,7 @@ namespace Microsoft.Azure.Cosmos
                 request.OperationType == OperationType.Query ||
                 request.OperationType == OperationType.SqlQuery ||
                 request.OperationType == OperationType.Batch ||
+                request.OperationType == OperationType.CommitDistributedTransaction ||
                 request.OperationType == OperationType.ExecuteJavaScript ||
                 request.OperationType == OperationType.QueryPlan ||
                 (request.ResourceType == ResourceType.PartitionKey && request.OperationType == OperationType.Delete))

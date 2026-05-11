@@ -763,6 +763,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 allRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
                 isContinuationExpected: true,
                 maxConcurrency: 10,
+                fullTextScoreScope: FullTextScoreScope.Global,
                 requestContinuationToken: state);
 
             tryCreatePipeline.ThrowIfFailed();

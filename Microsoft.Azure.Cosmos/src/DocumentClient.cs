@@ -171,6 +171,7 @@ namespace Microsoft.Azure.Cosmos
 
         //Private state.
         private bool isSuccessfullyInitialized;
+        private bool isDisposing;
         private bool isDisposed;
 
         // creator of TransportClient is responsible for disposing it.
@@ -1343,6 +1344,11 @@ namespace Microsoft.Azure.Cosmos
                 return;
             }
 
+            // Set isDisposing flag FIRST to signal disposal has started
+            // This prevents race conditions where in-flight requests 
+            // could proceed while fields are being nulled
+            this.isDisposing = true;
+
             if (this.telemetryToServiceHelper != null)
             {
                 this.telemetryToServiceHelper.Dispose();
@@ -1399,6 +1405,12 @@ namespace Microsoft.Azure.Cosmos
                 this.cosmosAuthorization.Dispose();
             }
 
+            if (this.PartitionKeyRangeLocation != null)
+            {
+                (this.PartitionKeyRangeLocation as IDisposable)?.Dispose();
+                this.PartitionKeyRangeLocation = null;
+            }
+
             if (this.GlobalEndpointManager != null)
             {
                 this.GlobalEndpointManager.OnEnablePartitionLevelFailoverConfigChanged -= this.UpdatePartitionLevelFailoverConfigWithAccountRefresh;
@@ -1420,6 +1432,7 @@ namespace Microsoft.Azure.Cosmos
             DefaultTrace.TraceInformation("DocumentClient with id {0} disposed.", this.traceId);
             DefaultTrace.Flush();
 
+            // Mark disposal complete
             this.isDisposed = true;
         }
 
@@ -6585,6 +6598,18 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>Returns <see cref="IStoreModel"/> to which the request must be sent</returns>
         internal IStoreModel GetStoreProxy(DocumentServiceRequest request)
         {
+            // Check if client is being disposed - fail fast with clear error message
+            // This prevents the confusing "StoreProxy cannot be null" error when
+            // requests are in-flight during client disposal
+            // Note: Only check isDisposing since once disposal starts, requests should be rejected
+            if (this.isDisposing)
+            {
+                throw new ObjectDisposedException(
+                    nameof(DocumentClient),
+                    "Cannot process request because the CosmosClient has been disposed. " +
+                    "Ensure all in-flight requests complete before disposing the client.");
+            }
+
             // If a request is configured to always use Gateway mode(in some cases when targeting .NET Core)
             // we return the Gateway store model
             if (request.UseGatewayMode)
@@ -6763,6 +6788,9 @@ namespace Microsoft.Azure.Cosmos
                     remoteCertificateValidationCallback: this.remoteCertificateValidationCallback,
                     distributedTracingOptions: distributedTracingOptions,
                     enableChannelMultiplexing: ConfigurationManager.IsTcpChannelMultiplexingEnabled(),
+                    dnsResolutionFunction: ConfigurationManager.IsTcpDnsDotSuffixEnabled()
+                        ? DnsDotSuffixHelper.ResolveHostAsync
+                        : null,
                     chaosInterceptor: this.chaosInterceptor);
 
                 if (this.transportClientHandlerFactory != null)
@@ -6792,8 +6820,6 @@ namespace Microsoft.Azure.Cosmos
 
         private void CreateStoreModel(bool subscribeRntbdStatus)
         {
-            AccountConfigurationProperties accountConfigurationProperties = new (EnableNRegionSynchronousCommit: this.accountServiceConfiguration.AccountProperties.EnableNRegionSynchronousCommit);
-
             //EnableReadRequestsFallback, if not explicity set on the connection policy,
             //is false if the account's consistency is bounded staleness,
             //and true otherwise.
@@ -6808,8 +6834,7 @@ namespace Microsoft.Azure.Cosmos
                 this.UseMultipleWriteLocations && (this.accountServiceConfiguration.DefaultConsistencyLevel != Documents.ConsistencyLevel.Strong),
                 true,
                 enableReplicaValidation: this.isReplicaAddressValidationEnabled,
-                sessionRetryOptions: this.ConnectionPolicy.SessionRetryOptions,
-                accountConfigurationProperties: accountConfigurationProperties);
+                sessionRetryOptions: this.ConnectionPolicy.SessionRetryOptions);
 
             if (subscribeRntbdStatus)
             {

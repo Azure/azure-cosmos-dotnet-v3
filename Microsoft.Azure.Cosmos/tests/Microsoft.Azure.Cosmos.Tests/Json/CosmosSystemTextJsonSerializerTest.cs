@@ -226,5 +226,19 @@
             Assert.AreEqual(original.Color, deserializedCircle.Color);
             Assert.AreEqual(((Circle)original).Radius, deserializedCircle.Radius);
         }
+        [TestMethod]
+        public void TestFromStreamWithBaseStreamType()
+        {
+            // Arrange.
+            MemoryStream memoryStream = new MemoryStream(new byte[] { 1, 2, 3 });
+
+            // Act - FromStream<Stream> with a MemoryStream should succeed.
+            Stream result = this.stjSerializer.FromStream<Stream>(memoryStream);
+
+            // Assert.
+            Assert.IsNotNull(result);
+            Assert.AreSame(memoryStream, result);
+        }
+
     }
 }

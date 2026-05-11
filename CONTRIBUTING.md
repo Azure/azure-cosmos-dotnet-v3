@@ -93,7 +93,7 @@ When evaluating adding new tests, please search in the existing test files if th
 
 1. Create a branch for your contribution (if you are an external contributor, on your own fork).
 1. Make sure your work is adding [tests](#tests) as required (either unit and/or emulator tests depending on the scope of the work).
-1. Send a Pull Request to the master branch once your work is ready to be reviewed.
+1. Send a Pull Request to the main branch once your work is ready to be reviewed.
 1. The CI pipeline will start any required tests. If you are an external contributor, a team member will start the verification once we confirm the nature of the contribution through a `/azp run` comment in your Pull Request.
 1. Look for review comments and attempt to answer/address them to the best of your ability.
 1. Check for [test failures](#test-failures) and address them if they are not transient.
@@ -128,7 +128,7 @@ Or all through `Re-run failed checks` on the top right corner:
 ## Usage of Cosmos DB Emulator for running unit tests
 
 - - The same version of the emulator used in the CI pipelines can be downloaded [here](https://aka.ms/cosmosdb-emulator)
-- More information about how ro use the emulator for development is documented [here](https://github.com/Azure/azure-documentdb-dotnet/blob/master/docs/documentdb-nosql-local-emulator.md)
+- More information about how ro use the emulator for development is documented [here](https://github.com/Azure/azure-documentdb-dotnet/blob/main/docs/documentdb-nosql-local-emulator.md)
 - You can start the emulator with same parameters as the emulator unit tests in the CI pipeline via `.\CosmosDB.Emulator.exe /DisableRateLimiting /PartitionCount=100 /Consistency=Strong /enableRio /EnablePreview /EnableAadAuthentication /EnableSqlComputeEndpoint`
 
 ## Troubleshooting

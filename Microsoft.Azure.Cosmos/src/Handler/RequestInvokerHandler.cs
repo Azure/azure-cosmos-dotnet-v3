@@ -29,6 +29,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         private readonly CosmosClient client;
         private readonly Cosmos.ConsistencyLevel? RequestedClientConsistencyLevel;
+        private readonly Cosmos.ReadConsistencyStrategy? RequestedClientReadConsistencyStrategy;
         private readonly Cosmos.PriorityLevel? RequestedClientPriorityLevel;
         private readonly int? RequestedClientThroughputBucket;
 
@@ -38,12 +39,13 @@ namespace Microsoft.Azure.Cosmos.Handlers
         public RequestInvokerHandler(
             CosmosClient client,
             Cosmos.ConsistencyLevel? requestedClientConsistencyLevel,
+            Cosmos.ReadConsistencyStrategy? requestedClientReadConsistencyStrategy,
             Cosmos.PriorityLevel? requestedClientPriorityLevel,
             int? requestedClientThroughputBucket)
         {
             this.client = client;
-
-            this.RequestedClientConsistencyLevel = requestedClientConsistencyLevel;       
+            this.RequestedClientConsistencyLevel = requestedClientConsistencyLevel;
+            this.RequestedClientReadConsistencyStrategy = requestedClientReadConsistencyStrategy;
             this.RequestedClientPriorityLevel = requestedClientPriorityLevel;
             this.RequestedClientThroughputBucket = requestedClientThroughputBucket;
         }
@@ -77,6 +79,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 request.Headers.Add(HttpConstants.HttpHeaders.SupportedSerializationFormats, RequestInvokerHandler.BinarySerializationFormat);
             }
 
+            await this.ValidateAndSetReadConsistencyStrategyAsync(request);
             await this.ValidateAndSetConsistencyLevelAsync(request);
             this.SetPriorityLevel(request);
             this.ValidateAndSetThroughputBucket(request);
@@ -394,6 +397,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 operationType == OperationType.SqlQuery ||
                 operationType == OperationType.QueryPlan ||
                 operationType == OperationType.Batch ||
+                operationType == OperationType.CommitDistributedTransaction ||
                 operationType == OperationType.ExecuteJavaScript ||
                 operationType == OperationType.CompleteUserTransaction ||
                 (resourceType == ResourceType.PartitionKey && operationType == OperationType.Delete))
@@ -501,6 +505,33 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             this.AccountConsistencyLevel));
                 }
             }
+        }
+
+        /// <summary>
+        /// Validate and set the ReadConsistencyStrategy header.
+        /// </summary>
+        private Task ValidateAndSetReadConsistencyStrategyAsync(RequestMessage requestMessage)
+        {
+            Cosmos.ReadConsistencyStrategy? readConsistencyStrategy = null;
+            RequestOptions promotedRequestOptions = requestMessage.RequestOptions;
+
+            if (promotedRequestOptions?.BaseReadConsistencyStrategy.HasValue == true)
+            {
+                readConsistencyStrategy = promotedRequestOptions.BaseReadConsistencyStrategy;
+            }
+            else if (this.RequestedClientReadConsistencyStrategy.HasValue)
+            {
+                readConsistencyStrategy = this.RequestedClientReadConsistencyStrategy;
+            }
+
+            if (readConsistencyStrategy.HasValue)
+            {
+                requestMessage.Headers.Set(
+                    HttpConstants.HttpHeaders.ReadConsistencyStrategy,
+                    readConsistencyStrategy.Value.ToString());
+            }
+
+            return Task.CompletedTask;
         }
 
         /// <summary>

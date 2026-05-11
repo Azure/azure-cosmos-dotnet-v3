@@ -1197,6 +1197,70 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             return querySpec;
         }
+
+        /// <summary>
+        /// Tests that ReadItemAsync throws ObjectDisposedException when client is disposed.
+        /// Validates fix for GitHub Issue #5596: StoreProxy cannot be null during dispose.
+        /// </summary>
+        [TestMethod]
+        [TestCategory("Quarantine")] // Intentionally tests dispose behavior
+        public async Task ReadItemAsync_ThrowsObjectDisposedException_WhenClientDisposed()
+        {
+            // Arrange - Create client and container
+            CosmosClient client = TestCommon.CreateCosmosClient();
+            Cosmos.Database database = null;
+            Cosmos.Container container = null;
+            string testItemId = Guid.NewGuid().ToString();
+            string databaseId = "DisposedClientTestDb_" + Guid.NewGuid().ToString().Substring(0, 8);
+            string containerId = "TestContainer";
+
+            try
+            {
+                database = await client.CreateDatabaseAsync(databaseId);
+                container = await database.CreateContainerAsync(containerId, "/pk");
+
+                // Create a test item
+                dynamic testItem = new { id = testItemId, pk = "testPartition", data = "test" };
+                await container.CreateItemAsync(testItem, new Cosmos.PartitionKey("testPartition"));
+
+                // Get container reference before dispose
+                Cosmos.Container containerRef = client.GetContainer(database.Id, container.Id);
+
+                // Act - Dispose the client
+                client.Dispose();
+
+                // Assert - ReadItemAsync should throw ObjectDisposedException (or CosmosObjectDisposedException which extends it)
+                ObjectDisposedException exception = null;
+                try
+                {
+                    await containerRef.ReadItemAsync<dynamic>(testItemId, new Cosmos.PartitionKey("testPartition"));
+                    Assert.Fail("Expected ObjectDisposedException to be thrown");
+                }
+                catch (ObjectDisposedException ex)
+                {
+                    // CosmosObjectDisposedException extends ObjectDisposedException
+                    exception = ex;
+                }
+
+                Assert.IsNotNull(exception, "Expected ObjectDisposedException");
+                Assert.IsTrue(
+                    exception.Message.Contains("disposed"),
+                    $"Expected message about disposed client, got: {exception.Message}");
+            }
+            finally
+            {
+                // Cleanup with a new client
+                using CosmosClient cleanupClient = TestCommon.CreateCosmosClient();
+                try
+                {
+                    await cleanupClient.GetDatabase(databaseId).DeleteAsync();
+                }
+                catch
+                {
+                    // Ignore cleanup errors
+                }
+            }
+        }
     }
 
     internal static class StringHelper
