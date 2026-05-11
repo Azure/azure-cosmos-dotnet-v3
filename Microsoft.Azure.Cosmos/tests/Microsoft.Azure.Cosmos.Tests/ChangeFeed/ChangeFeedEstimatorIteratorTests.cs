@@ -256,9 +256,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             List<string> ranges = new List<string>() { "0", "1" };
 
+            // ContinuationToken is required so the empty-token sentinel does not short-circuit
+            // and we actually exercise the iterator/pagination path under test.
             List<DocumentServiceLeaseCore> leases = ranges.Select(pkRangeId => new DocumentServiceLeaseCore()
             {
-                LeaseToken = pkRangeId
+                LeaseToken = pkRangeId,
+                ContinuationToken = $"{pkRangeId}:0"
             }).ToList();
 
             Mock<FeedIteratorInternal> mockIterator = new Mock<FeedIteratorInternal>();
@@ -290,9 +293,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             const int pageSize = 1;
             List<string> ranges = new List<string>() { "0", "1" };
 
+            // ContinuationToken is required so the empty-token sentinel does not short-circuit
+            // and we actually exercise the iterator/pagination path under test.
             List<DocumentServiceLeaseCore> leases = ranges.Select(pkRangeId => new DocumentServiceLeaseCore()
             {
-                LeaseToken = pkRangeId
+                LeaseToken = pkRangeId,
+                ContinuationToken = $"{pkRangeId}:0"
             }).ToList();
 
             Mock<FeedIteratorInternal> mockIterator = new Mock<FeedIteratorInternal>();
@@ -407,11 +413,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             string leaseToken = Guid.NewGuid().ToString();
             List<string> ranges = new List<string>() { leaseToken };
 
+            // ContinuationToken is required so the empty-token sentinel does not short-circuit
+            // and we actually exercise the 410/PartitionKeyRangeGone handling path under test.
             List<DocumentServiceLeaseCore> leases = new List<DocumentServiceLeaseCore>() {
                 new DocumentServiceLeaseCore()
                 {
                     LeaseToken = leaseToken,
-                    Owner = instanceName
+                    Owner = instanceName,
+                    ContinuationToken = "token:123"
                 }
             };
             Mock<FeedIteratorInternal> mockIterator = new Mock<FeedIteratorInternal>();
