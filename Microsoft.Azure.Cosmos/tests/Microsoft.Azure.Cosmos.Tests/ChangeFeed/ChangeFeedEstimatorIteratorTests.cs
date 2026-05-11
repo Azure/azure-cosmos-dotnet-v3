@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -32,7 +32,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             List<DocumentServiceLeaseCore> leases = expectedPKRanges.Select(pkRangeId => new DocumentServiceLeaseCore()
             {
-                LeaseToken = pkRangeId
+                LeaseToken = pkRangeId,
+                ContinuationToken = $"{pkRangeId}:0"
             }).ToList();
 
             Mock<FeedIteratorInternal> mockIterator = new Mock<FeedIteratorInternal>();
@@ -42,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             List<string> requestedPKRanges = new List<string>();
 
-            FeedIteratorInternal feedCreator(DocumentServiceLease lease, string continuationToken, bool startFromBeginning)
+            FeedIteratorInternal feedCreator(DocumentServiceLease lease, string continuationToken)
             {
                 requestedPKRanges.Add(lease.CurrentLeaseToken);
                 return mockIterator.Object;
@@ -69,11 +70,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             List<DocumentServiceLeaseCore> leases = new List<DocumentServiceLeaseCore>(){
                 new DocumentServiceLeaseCore()
                 {
-                    LeaseToken = "0"
+                    LeaseToken = "0",
+                    ContinuationToken = "0:0"
                 },
                 new DocumentServiceLeaseCore()
                 {
-                    LeaseToken = "1"
+                    LeaseToken = "1",
+                    ContinuationToken = "1:0"
                 }
             };
 
@@ -88,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
             mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
 
-            FeedIteratorInternal feedCreator(DocumentServiceLease lease, string continuationToken, bool startFromBeginning)
+            FeedIteratorInternal feedCreator(DocumentServiceLease lease, string continuationToken)
             {
                 if (lease.CurrentLeaseToken == "0")
                 {
@@ -127,11 +130,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             List<DocumentServiceLeaseCore> leases = new List<DocumentServiceLeaseCore>(){
                 new DocumentServiceLeaseCore()
                 {
-                    LeaseToken = "0"
+                    LeaseToken = "0",
+                    ContinuationToken = "0:" + processedLsnPKRange0.ToString()
                 },
                 new DocumentServiceLeaseCore()
                 {
-                    LeaseToken = "1"
+                    LeaseToken = "1",
+                    ContinuationToken = "1:" + processedLsnPKRange1.ToString()
                 }
             };
 
@@ -146,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
             mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
 
-            FeedIteratorInternal feedCreator(DocumentServiceLease lease, string continuationToken, bool startFromBeginning)
+            FeedIteratorInternal feedCreator(DocumentServiceLease lease, string continuationToken)
             {
                 if (lease.CurrentLeaseToken == "0")
                 {
@@ -174,10 +179,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         }
 
         [TestMethod]
-        public async Task ChangeFeedEstimator_ShouldEstimateZeroLag_WhenLeaseHasNoContinuationToken()
+        public async Task ChangeFeedEstimator_ShouldReturnSentinelLag_WhenLeaseHasNoContinuationToken()
         {
+            // PR #4324 / issue #5847: when a lease has no continuation token yet, the estimator cannot
+            // recover the processor's configured start position (Beginning / Now / StartTime) from lease
+            // metadata. It must report a non-zero sentinel lag so downstream listeners (Azure Functions
+            // Scale Controller, KEDA Cosmos scaler) that key off EstimatedLag > 0 can wake the
+            // processor. It must also avoid issuing a from-beginning probe that would inflate lag for
+            // Now/StartTime processors (#5847).
             const long globalLsn = 1000;
-            const long expectedLagWhenStartingFromNow = 0;
+            const long expectedSentinelLag = 1;
 
             List<DocumentServiceLeaseCore> leases = new List<DocumentServiceLeaseCore>()
             {
@@ -196,32 +207,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
             mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
 
-            // Sentinel for the pre-fix path that incorrectly started from beginning.
-            Mock<FeedIteratorInternal> fromBeginningIterator = new Mock<FeedIteratorInternal>();
-            fromBeginningIterator
-                .Setup(i => i.ReadNextAsync(It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(GetResponse(HttpStatusCode.OK, $"0:{globalLsn}", "1"));
-
-            Mock<FeedIteratorInternal> noContinuationLeaseNowIterator = new Mock<FeedIteratorInternal>();
-            noContinuationLeaseNowIterator
-                .Setup(i => i.ReadNextAsync(It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(GetResponse(HttpStatusCode.NotModified, $"0:{globalLsn}"));
-
             Mock<FeedIteratorInternal> checkpointedLeaseIterator = new Mock<FeedIteratorInternal>();
             checkpointedLeaseIterator
                 .Setup(i => i.ReadNextAsync(It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(GetResponse(HttpStatusCode.NotModified, $"1:{globalLsn}"));
 
-            FeedIteratorInternal feedCreator(DocumentServiceLease lease, string continuationToken, bool startFromBeginning)
+            List<string> leasesPassedToFactory = new List<string>();
+            FeedIteratorInternal feedCreator(DocumentServiceLease lease, string continuationToken)
             {
-                if (lease.CurrentLeaseToken == "0")
-                {
-                    return startFromBeginning
-                        ? fromBeginningIterator.Object
-                        : noContinuationLeaseNowIterator.Object;
-                }
-
-                Assert.IsFalse(startFromBeginning);
+                leasesPassedToFactory.Add(lease.CurrentLeaseToken);
                 return checkpointedLeaseIterator.Object;
             }
 
@@ -236,14 +230,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             ChangeFeedProcessorState noContinuationLease = response.Single(state => state.LeaseToken == "0");
             ChangeFeedProcessorState checkpointedLease = response.Single(state => state.LeaseToken == "1");
 
-            Assert.AreEqual(expectedLagWhenStartingFromNow, noContinuationLease.EstimatedLag);
+            // The uncheckpointed lease must report sentinel lag of 1 so the Scale Controller can wake the processor.
+            Assert.AreEqual(expectedSentinelLag, noContinuationLease.EstimatedLag);
+
+            // The checkpointed lease is measured normally and is fully caught up.
             Assert.AreEqual(0, checkpointedLease.EstimatedLag);
-            fromBeginningIterator.Verify(
-                i => i.ReadNextAsync(It.IsAny<ITrace>(), It.IsAny<CancellationToken>()),
-                Times.Never);
-            noContinuationLeaseNowIterator.Verify(
-                i => i.ReadNextAsync(It.IsAny<ITrace>(), It.IsAny<CancellationToken>()),
-                Times.Once);
+
+            // The iterator factory must NOT be invoked for the uncheckpointed lease: short-circuiting
+            // before the iterator call is what avoids the synthetic from-beginning backlog spike (#5847)
+            // *and* the under-reporting regression a from-Now probe would introduce.
+            CollectionAssert.AreEquivalent(new List<string> { "1" }, leasesPassedToFactory);
         }
 
         [TestMethod]
@@ -270,7 +266,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
             mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
 
-            FeedIteratorInternal feedCreator(DocumentServiceLease lease, string continuationToken, bool startFromBeginning)
+            FeedIteratorInternal feedCreator(DocumentServiceLease lease, string continuationToken)
             {
                 return mockIterator.Object;
             }
@@ -304,7 +300,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
             mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
 
-            FeedIteratorInternal feedCreator(DocumentServiceLease lease, string continuationToken, bool startFromBeginning)
+            FeedIteratorInternal feedCreator(DocumentServiceLease lease, string continuationToken)
             {
                 return mockIterator.Object;
             }
@@ -334,7 +330,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             List<DocumentServiceLeaseCore> leases = ranges.Select(pkRangeId => new DocumentServiceLeaseCore()
             {
-                LeaseToken = pkRangeId
+                LeaseToken = pkRangeId,
+                ContinuationToken = $"{pkRangeId}:0"
             }).ToList();
 
             Mock<FeedIteratorInternal> mockIterator = new Mock<FeedIteratorInternal>();
@@ -342,7 +339,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
             mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
 
-            FeedIteratorInternal feedCreator(DocumentServiceLease lease, string continuationToken, bool startFromBeginning)
+            FeedIteratorInternal feedCreator(DocumentServiceLease lease, string continuationToken)
             {
                 return mockIterator.Object;
             }
@@ -380,7 +377,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
             mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
 
-            FeedIteratorInternal feedCreator(DocumentServiceLease lease, string continuationToken, bool startFromBeginning)
+            FeedIteratorInternal feedCreator(DocumentServiceLease lease, string continuationToken)
             {
                 return mockIterator.Object;
             }
@@ -422,7 +419,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
             mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
 
-            FeedIteratorInternal feedCreator(DocumentServiceLease lease, string continuationToken, bool startFromBeginning)
+            FeedIteratorInternal feedCreator(DocumentServiceLease lease, string continuationToken)
             {
                 return mockIterator.Object;
             }
@@ -450,7 +447,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [TestMethod]
         public async Task ShouldInitializeDocumentLeaseContainer()
         {
-            static FeedIteratorInternal feedCreator(DocumentServiceLease lease, string continuationToken, bool startFromBeginning)
+            static FeedIteratorInternal feedCreator(DocumentServiceLease lease, string continuationToken)
             {
                 return Mock.Of<FeedIteratorInternal>();
             }

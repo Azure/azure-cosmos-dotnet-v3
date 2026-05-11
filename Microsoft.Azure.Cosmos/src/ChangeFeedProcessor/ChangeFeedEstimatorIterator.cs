@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         private readonly ContainerInternal monitoredContainer;
         private readonly ContainerInternal leaseContainer;
         private readonly string processorName;
-        private readonly Func<DocumentServiceLease, string, bool, FeedIteratorInternal> monitoredContainerFeedCreator;
+        private readonly Func<DocumentServiceLease, string, FeedIteratorInternal> monitoredContainerFeedCreator;
         private readonly ChangeFeedEstimatorRequestOptions changeFeedEstimatorRequestOptions;
         private readonly AsyncLazy<TryCatch<IReadOnlyList<DocumentServiceLease>>> lazyLeaseDocuments;
         private DocumentServiceLeaseContainer documentServiceLeaseContainer;
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                   leaseContainer,
                   documentServiceLeaseContainer,
                   changeFeedEstimatorRequestOptions,
-                  (DocumentServiceLease lease, string continuationToken, bool startFromBeginning) => ChangeFeedPartitionKeyResultSetIteratorCore.Create(
+                  (DocumentServiceLease lease, string continuationToken) => ChangeFeedPartitionKeyResultSetIteratorCore.Create(
                           lease: lease,
                           mode: ChangeFeedMode.LatestVersion,
                           continuationToken: continuationToken,
@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             ContainerInternal monitoredContainer,
             ContainerInternal leaseContainer,
             DocumentServiceLeaseContainer documentServiceLeaseContainer,
-            Func<DocumentServiceLease, string, bool, FeedIteratorInternal> monitoredContainerFeedCreator,
+            Func<DocumentServiceLease, string, FeedIteratorInternal> monitoredContainerFeedCreator,
             ChangeFeedEstimatorRequestOptions changeFeedEstimatorRequestOptions)
             : this(
                   processorName: string.Empty,
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             ContainerInternal leaseContainer,
             DocumentServiceLeaseContainer documentServiceLeaseContainer,
             ChangeFeedEstimatorRequestOptions changeFeedEstimatorRequestOptions,
-            Func<DocumentServiceLease, string, bool, FeedIteratorInternal> monitoredContainerFeedCreator)
+            Func<DocumentServiceLease, string, FeedIteratorInternal> monitoredContainerFeedCreator)
         {
             this.processorName = processorName ?? throw new ArgumentNullException(nameof(processorName));
             this.monitoredContainer = monitoredContainer ?? throw new ArgumentNullException(nameof(monitoredContainer));
@@ -274,13 +274,29 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            // If a lease has no continuation token yet, the estimator cannot recover the original processor
-            // start configuration from lease metadata today.
-            // Avoiding `Beginning` prevents synthetic backlog spikes for processors started from Now/StartTime.
+            // When a lease has no continuation token yet, the estimator cannot recover the processor's
+            // configured start position (Beginning / Now / StartTime) from lease metadata today. Probing
+            // with `startFromBeginning: true` produces a synthetic backlog spike for Now/StartTime
+            // processors (#5847), while probing with `startFromBeginning: false` silently under-reports
+            // backlog for Beginning processors and defeats the Azure Functions Scale Controller /
+            // KEDA wake-up signal that keys off `EstimatedLag > 0`.
+            //
+            // Mirror the dormant-after-split sentinel established in #4285 below and report
+            // EstimatedLag = 1 so that downstream listeners can wake the processor. The accurate
+            // lag becomes available once the lease checkpoints for the first time.
+            //
+            // Long-term fix: persist the processor's start configuration in the lease document so the
+            // estimator can compute correct lag per start strategy. Tracked in #5847.
+            if (string.IsNullOrEmpty(existingLease.ContinuationToken))
+            {
+                return (
+                    new ChangeFeedProcessorState(existingLease.CurrentLeaseToken, 1, existingLease.Owner),
+                    new ResponseMessage(HttpStatusCode.OK));
+            }
+
             using FeedIteratorInternal iterator = this.monitoredContainerFeedCreator(
                 existingLease,
-                existingLease.ContinuationToken,
-                false);
+                existingLease.ContinuationToken);
 
             try
             {

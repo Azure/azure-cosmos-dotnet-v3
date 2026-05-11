@@ -89,7 +89,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         }
 
         /// <summary>
-        /// This test checks that when the ContinuationToken is null, we send the StartFromBeginning flag, but since there is no documents, it returns 0
+        /// This test checks that when the ContinuationToken is null (an uncheckpointed lease, e.g. on
+        /// fresh deploy), the estimator returns the sentinel lag of 1 per lease — preserving the
+        /// non-zero wake signal that downstream listeners (Azure Functions Scale Controller, KEDA Cosmos
+        /// scaler) rely on. Once the lease checkpoints for the first time, subsequent estimations
+        /// report the real lag (see <see cref="CountPendingDocuments"/>).
         /// </summary>
         /// <returns></returns>
         [TestMethod]
@@ -118,7 +122,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             await estimator.StartAsync();
             Assert.IsTrue(manualResetEvent.WaitOne(BaseChangeFeedClientHelper.ChangeFeedCleanupTime), "Not received estimation in the expected time");
             await estimator.StopAsync();
-            Assert.AreEqual(0, receivedEstimation);
+
+            // Sentinel: leases without a continuation token report EstimatedLag = 1 each so that
+            // downstream listeners can wake the processor. There is at least one lease here.
+            Assert.IsTrue(receivedEstimation >= 1, $"Expected at least sentinel lag of 1, got {receivedEstimation}.");
         }
 
         [TestMethod]
@@ -146,11 +153,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                 receivedEstimation += response.Sum(r => r.EstimatedLag);
             }
 
-            Assert.AreEqual(0, receivedEstimation);
+            // Sentinel: leases without a continuation token report EstimatedLag = 1 each.
+            Assert.IsTrue(receivedEstimation >= 1, $"Expected at least sentinel lag of 1, got {receivedEstimation}.");
         }
 
         /// <summary>
-        /// This test checks that when the ContinuationToken is null, we send the StartFromBeginning flag, but since there is no documents, it returns 0
+        /// This test checks that the estimator counts documents inserted after the processor first
+        /// checkpoints a lease (i.e. once the lease has a non-null ContinuationToken).
         /// </summary>
         /// <returns></returns>
         [TestMethod]
