@@ -23,6 +23,7 @@ namespace Microsoft.Azure.Cosmos
         private const int RetryIntervalInMS = 1000; // Once we detect failover wait for 1 second before retrying request.
         private const int MaxRetryCount = 120;
         private const int MaxServiceUnavailableRetryCount = 1;
+        private const int MaxSessionTokenRetryCount = 2;
 
         private readonly IDocumentClientRetryPolicy throttlingRetry;
         private readonly GlobalEndpointManager globalEndpointManager;
@@ -331,14 +332,6 @@ namespace Microsoft.Azure.Cosmos
 
             if (statusCode == HttpStatusCode.NotFound && subStatusCode == SubStatusCodes.ReadSessionNotAvailable)
             {
-#if !INTERNAL
-                // Only set the hub region processing header for single master accounts
-                // Set header only after the first retry attempt fails with 404/1002
-                if (!this.canUseMultipleWriteLocations && this.sessionTokenRetryCount >= 1)
-                {
-                    this.addHubRegionProcessingOnlyHeader = true;
-                }
-#endif
                 return this.ShouldRetryOnSessionNotAvailable(this.documentServiceRequest);
             }
 
@@ -456,12 +449,29 @@ namespace Microsoft.Azure.Cosmos
                 }
                 else
                 {
-                    if (this.sessionTokenRetryCount > 1)
+#if !INTERNAL
+                    // Only set the hub region processing header for single master accounts.
+                    // Set header after the second consecutive 404/1002 (count >= 2 means both
+                    // the initial request and the first retry to the write region have failed).
+                    if (this.sessionTokenRetryCount >= MaxSessionTokenRetryCount)
                     {
-                        // When cannot use multiple write locations, then don't retry the request if 
-                        // we have already tried this request on the write location
+                        this.addHubRegionProcessingOnlyHeader = true;
+                    }
+
+                    if (this.sessionTokenRetryCount > MaxSessionTokenRetryCount)
+                    {
+                        // Hub region header was set at count == MaxSessionTokenRetryCount and the
+                        // request was retried with it. If the hub still returns 404/1002, stop.
                         return ShouldRetryResult.NoRetry();
                     }
+#else
+                    if (this.sessionTokenRetryCount > 1)
+                    {
+                        // When cannot use multiple write locations, then don't retry the request if
+                        // we have already tried this request on the write location.
+                        return ShouldRetryResult.NoRetry();
+                    }
+#endif
                     else
                     {
                         this.retryContext = new RetryContext
