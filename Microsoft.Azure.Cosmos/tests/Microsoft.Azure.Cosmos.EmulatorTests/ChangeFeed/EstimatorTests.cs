@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         /// </summary>
         /// <returns></returns>
         [TestMethod]
-        public async Task WhenLeasesHaveContinuationTokenNullReturn0()
+        public async Task WhenLeasesHaveContinuationTokenNullReturnSentinel()
         {
             ChangeFeedProcessor processor = this.Container
                 .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) => Task.CompletedTask)
@@ -129,7 +129,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         }
 
         [TestMethod]
-        public async Task WhenLeasesHaveContinuationTokenNullReturn0_Pull()
+        public async Task WhenLeasesHaveContinuationTokenNullReturnSentinel_Pull()
         {
             ChangeFeedProcessor processor = this.Container
                 .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) => Task.CompletedTask)
