@@ -325,8 +325,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             response.Dispose();
 
-            // After dispose, result list is nulled — indexer throws ObjectDisposedException
-            Assert.ThrowsException<ObjectDisposedException>(() => _ = response[0]);
+            // Indexer-after-dispose behavior is covered by Indexer_AfterDispose_ThrowsObjectDisposedException.
         }
 
         [TestMethod]
@@ -370,36 +369,17 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         // IsSuccessStatusCode boundaries
 
-        [TestMethod]
-        [Description("HTTP 200 is a success status code.")]
-        public async Task IsSuccessStatusCode_200_ReturnsTrue()
+        [DataTestMethod]
+        [Description("HTTP success-status boundaries: [200, 299] are success, anything outside is not.")]
+        [DataRow(200, true, DisplayName = "200 is success")]
+        [DataRow(299, true, DisplayName = "299 is success boundary")]
+        [DataRow(300, false, DisplayName = "300 is not success")]
+        [DataRow(199, false, DisplayName = "199 is not success")]
+        public async Task IsSuccessStatusCode_Boundaries(int statusCode, bool expected)
         {
-            DistributedTransactionResponse response = await BuildResponseWithStatusAsync(HttpStatusCode.OK, operationCount: 1);
-            Assert.IsTrue(response.IsSuccessStatusCode);
-        }
-
-        [TestMethod]
-        [Description("HTTP 299 is the last success status code.")]
-        public async Task IsSuccessStatusCode_299_ReturnsTrue()
-        {
-            DistributedTransactionResponse response = await BuildResponseWithStatusAsync((HttpStatusCode)299, operationCount: 1);
-            Assert.IsTrue(response.IsSuccessStatusCode);
-        }
-
-        [TestMethod]
-        [Description("HTTP 300 is not a success status code.")]
-        public async Task IsSuccessStatusCode_300_ReturnsFalse()
-        {
-            DistributedTransactionResponse response = await BuildResponseWithStatusAsync((HttpStatusCode)300, operationCount: 1, isError: true);
-            Assert.IsFalse(response.IsSuccessStatusCode);
-        }
-
-        [TestMethod]
-        [Description("HTTP 199 is not a success status code.")]
-        public async Task IsSuccessStatusCode_199_ReturnsFalse()
-        {
-            DistributedTransactionResponse response = await BuildResponseWithStatusAsync((HttpStatusCode)199, operationCount: 1, isError: true);
-            Assert.IsFalse(response.IsSuccessStatusCode);
+            bool isError = !expected;
+            DistributedTransactionResponse response = await BuildResponseWithStatusAsync((HttpStatusCode)statusCode, operationCount: 1, isError: isError);
+            Assert.AreEqual(expected, response.IsSuccessStatusCode);
         }
 
         // Indexer and enumerator
@@ -599,13 +579,15 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         // IsRetriable parsing
 
-        [TestMethod]
-        [Description("When the response body contains isRetriable:true, IsRetriable must be true.")]
-        public async Task FromResponseMessage_IsRetriableTrue_ReturnsTrue()
+        [DataTestMethod]
+        [Description("IsRetriable is true only when the JSON body has isRetriable as a JSON boolean true; absent, false, or string 'true' must all yield false.")]
+        [DataRow(@"{""isRetriable"":true,""operationResponses"":[{""index"":0,""statusCode"":503}]}", true, DisplayName = "JSON boolean true → IsRetriable=true")]
+        [DataRow(@"{""isRetriable"":false,""operationResponses"":[{""index"":0,""statusCode"":503}]}", false, DisplayName = "JSON boolean false → IsRetriable=false")]
+        [DataRow(@"{""operationResponses"":[{""index"":0,""statusCode"":503}]}", false, DisplayName = "isRetriable absent → IsRetriable=false")]
+        [DataRow(@"{""isRetriable"":""true"",""operationResponses"":[{""index"":0,""statusCode"":503}]}", false, DisplayName = "string 'true' (not a JSON boolean) → IsRetriable=false")]
+        public async Task FromResponseMessage_IsRetriable_Parsing(string json, bool expected)
         {
             DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
-
-            string json = @"{""isRetriable"":true,""operationResponses"":[{""index"":0,""statusCode"":503}]}";
             ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.ServiceUnavailable, json);
 
             DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
@@ -615,65 +597,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
-            Assert.IsTrue(response.IsRetriable, "IsRetriable must be true when the JSON body contains isRetriable:true.");
-        }
-
-        [TestMethod]
-        [Description("When the response body contains isRetriable:false, IsRetriable must be false.")]
-        public async Task FromResponseMessage_IsRetriableFalse_ReturnsFalse()
-        {
-            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
-
-            string json = @"{""isRetriable"":false,""operationResponses"":[{""index"":0,""statusCode"":503}]}";
-            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.ServiceUnavailable, json);
-
-            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
-                responseMessage,
-                serverRequest,
-                MockCosmosUtil.Serializer,
-                NoOpTrace.Singleton,
-                CancellationToken.None);
-
-            Assert.IsFalse(response.IsRetriable, "IsRetriable must be false when the JSON body contains isRetriable:false.");
-        }
-
-        [TestMethod]
-        [Description("When the response body does not contain an isRetriable field, IsRetriable must default to false.")]
-        public async Task FromResponseMessage_IsRetriableAbsent_ReturnsFalse()
-        {
-            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
-
-            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":503}]}";
-            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.ServiceUnavailable, json);
-
-            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
-                responseMessage,
-                serverRequest,
-                MockCosmosUtil.Serializer,
-                NoOpTrace.Singleton,
-                CancellationToken.None);
-
-            Assert.IsFalse(response.IsRetriable, "IsRetriable must be false when the JSON body does not contain an isRetriable field.");
-        }
-
-        [TestMethod]
-        [Description("When isRetriable is a string (not a boolean), IsRetriable must be false — strict boolean parsing.")]
-        public async Task FromResponseMessage_IsRetriableStringValue_ReturnsFalse()
-        {
-            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
-
-            // "true" as a string is not a JSON boolean — the parsing must require JsonValueKind.True.
-            string json = @"{""isRetriable"":""true"",""operationResponses"":[{""index"":0,""statusCode"":503}]}";
-            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.ServiceUnavailable, json);
-
-            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
-                responseMessage,
-                serverRequest,
-                MockCosmosUtil.Serializer,
-                NoOpTrace.Singleton,
-                CancellationToken.None);
-
-            Assert.IsFalse(response.IsRetriable, "IsRetriable must be false when isRetriable is a string — only JSON boolean true is accepted.");
+            Assert.AreEqual(expected, response.IsRetriable);
         }
 
         // ThrowIfDisposed guards on Count and GetEnumerator

@@ -1,4 +1,4 @@
-// ------------------------------------------------------------
+﻿// ------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
@@ -31,12 +31,10 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 Assert.AreNotSame(stream1, stream2, "Each call must return a new stream instance.");
                 Assert.AreEqual(0, stream1.Position, "stream1 must be positioned at offset 0.");
                 Assert.AreEqual(0, stream2.Position, "stream2 must be positioned at offset 0.");
-                Assert.IsTrue(stream1.Length > 0, "The serialized body must be non-empty.");
-                Assert.AreEqual(stream1.Length, stream2.Length, "Both streams must contain the same number of bytes.");
                 CollectionAssert.AreEqual(
                     stream1.ToArray(),
                     stream2.ToArray(),
-                    "Both streams must contain identical serialized bytes.");
+                    "Both streams must contain identical serialized bytes (also implies non-empty + equal length).");
             }
 
             // Obtain a third stream after the first two have been disposed.

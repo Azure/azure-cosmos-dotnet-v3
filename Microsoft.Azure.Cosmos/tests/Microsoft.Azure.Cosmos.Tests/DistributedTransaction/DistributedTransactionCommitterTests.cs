@@ -269,7 +269,6 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 operations, mockContext.Object);
 
             DistributedTransactionResponse response = await committer.CommitTransactionAsync(CancellationToken.None);
-            Assert.IsNotNull(response);
 
             string storedToken = sessionContainer.GetSessionToken(DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName));
             Assert.AreEqual(sessionToken, storedToken,
@@ -408,42 +407,11 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             }
         }
 
-        [TestMethod]
-        [Description("Verifies that a CosmosException thrown from the pipeline propagates immediately without triggering the outer retry loop, which only handles the isRetriable JSON body flag.")]
-        public async Task CommitTransaction_CosmosExceptionDuringRequest_PropagatesImmediately()
-        {
-            using (CancellationTokenSource cts = new CancellationTokenSource())
-            {
-                int callCount = 0;
-                Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
-                this.SetupProcessResourceOperation(
-                    mockContext,
-                    () =>
-                    {
-                        callCount++;
-                        cts.Cancel(); // Cancel while the request is in-flight.
-                        return Task.FromException<ResponseMessage>(CreateCosmosTimeoutException());
-                    });
-
-                DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
-                    CreateTestOperations(),
-                    mockContext.Object,
-                    TimeSpan.FromMilliseconds(1));
-
-                // Status-code-based retries (including 408) are handled by ClientRetryPolicy inside
-                // the pipeline. CosmosExceptions thrown directly from ProcessResourceOperationStreamAsync
-                // propagate through the outer loop, which only handles the isRetriable JSON body flag.
-                CosmosException ex = await Assert.ThrowsExceptionAsync<CosmosException>(
-                    () => committer.CommitTransactionAsync(cts.Token));
-
-                Assert.AreEqual(HttpStatusCode.RequestTimeout, ex.StatusCode);
-                Assert.AreEqual(1, callCount);
-            }
-        }
-
-        [TestMethod]
-        [Description("Verifies that a response without isRetriable:true is returned immediately without any retry attempt.")]
-        public async Task CommitTransaction_DoesNotRetryOnNonRetriableFailure()
+        [DataTestMethod]
+        [Description("Verifies that a CosmosException thrown from the pipeline propagates immediately without triggering the outer retry loop, regardless of status code. Status-code-based retries (e.g. 408, 449/5352) are handled by ClientRetryPolicy inside the pipeline; the outer loop only handles the isRetriable JSON body flag.")]
+        [DataRow((int)HttpStatusCode.RequestTimeout, DisplayName = "408 RequestTimeout — propagates")]
+        [DataRow((int)HttpStatusCode.NotFound, DisplayName = "404 NotFound — propagates")]
+        public async Task CommitTransaction_CosmosException_PropagatesImmediately(int statusCode)
         {
             int callCount = 0;
             Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
@@ -452,23 +420,29 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 () =>
                 {
                     callCount++;
-                    return Task.FromResult(CreateNonRetriableErrorResponseMessage());
+                    CosmosException ex = new CosmosException(
+                        "test exception",
+                        (HttpStatusCode)statusCode,
+                        subStatusCode: 0,
+                        activityId: null,
+                        requestCharge: 0);
+                    return Task.FromException<ResponseMessage>(ex);
                 });
 
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, TimeSpan.Zero);
 
-            using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(CancellationToken.None))
-            {
-                Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
-                Assert.IsFalse(response.IsSuccessStatusCode);
-                Assert.IsFalse(response.IsRetriable);
-                Assert.AreEqual(1, callCount);
-            }
+            CosmosException thrown = await Assert.ThrowsExceptionAsync<CosmosException>(
+                () => committer.CommitTransactionAsync(CancellationToken.None));
+
+            Assert.AreEqual((HttpStatusCode)statusCode, thrown.StatusCode);
+            Assert.AreEqual(1, callCount);
         }
 
-        [TestMethod]
-        [Description("Verifies that a generic 500 response body without isRetriable:true does not trigger an outer retry.")]
-        public async Task CommitTransaction_DoesNotRetryOnNonRetriableServerError()
+        [DataTestMethod]
+        [Description("Verifies that a response without isRetriable:true (BadRequest body, or generic 500 body) is returned immediately without any retry attempt.")]
+        [DataRow((int)HttpStatusCode.BadRequest, DisplayName = "400 BadRequest with empty body — no retry")]
+        [DataRow((int)HttpStatusCode.InternalServerError, DisplayName = "500 InternalServerError with empty body — no retry")]
+        public async Task CommitTransaction_DoesNotRetryOnNonRetriableBody(int statusCode)
         {
             int callCount = 0;
             Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
@@ -478,7 +452,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 {
                     callCount++;
                     return Task.FromResult(
-                        new ResponseMessage(HttpStatusCode.InternalServerError)
+                        new ResponseMessage((HttpStatusCode)statusCode)
                         {
                             Content = new MemoryStream(Encoding.UTF8.GetBytes("{}"))
                         });
@@ -488,7 +462,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
             using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(CancellationToken.None))
             {
-                Assert.AreEqual(HttpStatusCode.InternalServerError, response.StatusCode);
+                Assert.AreEqual((HttpStatusCode)statusCode, response.StatusCode);
                 Assert.IsFalse(response.IsSuccessStatusCode);
                 Assert.IsFalse(response.IsRetriable);
                 Assert.AreEqual(1, callCount);
@@ -602,74 +576,6 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         }
 
         [TestMethod]
-        [Description("Verifies that any CosmosException thrown from the pipeline propagates immediately without triggering the outer retry loop.")]
-        public async Task CommitTransaction_AnyCosmosException_PropagatesImmediately()
-        {
-            int callCount = 0;
-            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
-            this.SetupProcessResourceOperation(
-                mockContext,
-                () =>
-                {
-                    callCount++;
-                    CosmosException notFound = new CosmosException(
-                        "Not found",
-                        HttpStatusCode.NotFound,
-                        subStatusCode: 0,
-                        activityId: null,
-                        requestCharge: 0);
-                    return Task.FromException<ResponseMessage>(notFound);
-                });
-
-            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, TimeSpan.Zero);
-
-            CosmosException ex = await Assert.ThrowsExceptionAsync<CosmosException>(
-                () => committer.CommitTransactionAsync(CancellationToken.None));
-
-            Assert.AreEqual(HttpStatusCode.NotFound, ex.StatusCode);
-            Assert.AreEqual(1, callCount);
-        }
-
-        [TestMethod]
-        [Description("Verifies that the same idempotency token is used on all retry attempts, which is required for safe replay of committed transactions.")]
-        public async Task CommitTransaction_SameIdempotencyTokenSentOnEveryRetryAttempt()
-        {
-            int callCount = 0;
-            List<string> capturedTokens = new List<string>();
-            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
-            this.SetupProcessResourceOperationWithEnricherCapture(
-                mockContext,
-                enricher =>
-                {
-                    RequestMessage request = new RequestMessage
-                    {
-                        ResourceType = ResourceType.DistributedTransactionBatch,
-                        OperationType = OperationType.CommitDistributedTransaction,
-                    };
-                    enricher(request);
-                    capturedTokens.Add(request.Headers[HttpConstants.HttpHeaders.IdempotencyToken]);
-                },
-                () =>
-                {
-                    callCount++;
-                    return callCount < 3
-                        ? Task.FromResult(CreateRetriableErrorResponseMessage())
-                        : Task.FromResult(CreateSuccessResponseMessage(operationCount: 1));
-                });
-
-            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, TimeSpan.Zero);
-
-            using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(CancellationToken.None))
-            {
-                Assert.AreEqual(3, callCount);
-            }
-
-            Assert.AreEqual(3, capturedTokens.Count);
-            CollectionAssert.AllItemsAreNotNull(capturedTokens, "IdempotencyToken header must be set on every request.");
-            Assert.AreEqual(1, new HashSet<string>(capturedTokens).Count, "The same idempotency token must be used on every retry attempt.");
-        }
-
-        [TestMethod]
         [Description("Verifies that the SDK sends byte-for-byte identical request bodies AND the same idempotency token on every outer-loop retry. Required so the coordinator can recognise replays via the idempotency token and safely re-prepare from the same payload (per dtx-sdk-response-status-codes.md, Part C §9: 'Aborted (SDK retry): Resets record to Preparing with new transaction ID, same idempotency token').")]
         public async Task CommitTransaction_SameBodyAndTokenSentOnEveryRetryAttempt()
         {
@@ -737,9 +643,11 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 "Retry attempt #3 must send a byte-for-byte identical request body.");
         }
 
-        [TestMethod]
-        [Description("Verifies that a 449 response with a sub-status code other than DtcCoordinatorRaceConflict (5352) is not retried by the outer loop.")]
-        public async Task CommitTransaction_DoesNotRetryOn449WithNonRaceConflictSubStatus()
+        [DataTestMethod]
+        [Description("Verifies that envelope responses without a DTX sub-status code (449 without 5352, 500 without 5411-5413) are not retried by the outer loop.")]
+        [DataRow((int)StatusCodes.RetryWith, DisplayName = "449 without 5352 — no retry")]
+        [DataRow((int)HttpStatusCode.InternalServerError, DisplayName = "500 without DTC sub-status — no retry")]
+        public async Task CommitTransaction_DoesNotRetryOnUnrecognizedSubStatus(int statusCode)
         {
             int callCount = 0;
             Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
@@ -748,39 +656,15 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 () =>
                 {
                     callCount++;
-                    // 449 with sub-status 0 — not a DTx race conflict, must not be retried.
-                    return Task.FromResult(CreateEmptyResponseMessage((HttpStatusCode)StatusCodes.RetryWith, subStatusCode: 0));
+                    return Task.FromResult(CreateEmptyResponseMessage((HttpStatusCode)statusCode, subStatusCode: 0));
                 });
 
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, TimeSpan.Zero);
 
             using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(CancellationToken.None))
             {
-                Assert.AreEqual((HttpStatusCode)StatusCodes.RetryWith, response.StatusCode);
-                Assert.AreEqual(1, callCount, "449 with non-5352 sub-status must not be retried.");
-            }
-        }
-
-        [TestMethod]
-        [Description("Verifies that a generic 500 InternalServerError with a non-DTC sub-status code is not retried by the outer loop.")]
-        public async Task CommitTransaction_DoesNotRetryOn500WithNonDtcSubStatus()
-        {
-            int callCount = 0;
-            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
-            this.SetupProcessResourceOperation(
-                mockContext,
-                () =>
-                {
-                    callCount++;
-                    return Task.FromResult(CreateEmptyResponseMessage(HttpStatusCode.InternalServerError, subStatusCode: 0));
-                });
-
-            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(CreateTestOperations(), mockContext.Object, TimeSpan.Zero);
-
-            using (DistributedTransactionResponse response = await committer.CommitTransactionAsync(CancellationToken.None))
-            {
-                Assert.AreEqual(HttpStatusCode.InternalServerError, response.StatusCode);
-                Assert.AreEqual(1, callCount, "Generic 500 with non-DTC sub-status must not be retried.");
+                Assert.AreEqual((HttpStatusCode)statusCode, response.StatusCode);
+                Assert.AreEqual(1, callCount, "Envelope response without a DTX sub-status code must not be retried.");
             }
         }
 
@@ -1000,29 +884,6 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 .Returns(responseFactory);
         }
 
-        private void SetupProcessResourceOperationWithEnricherCapture(
-            Mock<CosmosClientContext> mockContext,
-            Action<Action<RequestMessage>> enricherCallback,
-            Func<Task<ResponseMessage>> responseFactory)
-        {
-            mockContext
-                .Setup(c => c.ProcessResourceOperationStreamAsync(
-                    It.IsAny<string>(),
-                    It.IsAny<ResourceType>(),
-                    It.IsAny<OperationType>(),
-                    It.IsAny<RequestOptions>(),
-                    It.IsAny<ContainerInternal>(),
-                    It.IsAny<Cosmos.PartitionKey?>(),
-                    It.IsAny<string>(),
-                    It.IsAny<Stream>(),
-                    It.IsAny<Action<RequestMessage>>(),
-                    It.IsAny<ITrace>(),
-                    It.IsAny<CancellationToken>()))
-                .Callback<string, ResourceType, OperationType, RequestOptions, ContainerInternal, Cosmos.PartitionKey?, string, Stream, Action<RequestMessage>, ITrace, CancellationToken>(
-                    (_, _, _, _, _, _, _, _, enricher, _, _) => enricherCallback(enricher))
-                .Returns(responseFactory);
-        }
-
         private void SetupProcessResourceOperationWithStreamAndEnricherCapture(
             Mock<CosmosClientContext> mockContext,
             Action<Stream, Action<RequestMessage>> capture,
@@ -1109,24 +970,6 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             {
                 Content = new MemoryStream(Encoding.UTF8.GetBytes(json))
             };
-        }
-
-        private static ResponseMessage CreateNonRetriableErrorResponseMessage()
-        {
-            return new ResponseMessage(HttpStatusCode.BadRequest)
-            {
-                Content = new MemoryStream(Encoding.UTF8.GetBytes("{}"))
-            };
-        }
-
-        private static CosmosException CreateCosmosTimeoutException()
-        {
-            return new CosmosException(
-                "Request timed out",
-                HttpStatusCode.RequestTimeout,
-                subStatusCode: 0,
-                activityId: null,
-                requestCharge: 0);
         }
 
         /// <summary>Creates an empty-body response with the given status and sub-status codes.</summary>

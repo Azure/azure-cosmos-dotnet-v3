@@ -35,19 +35,14 @@ namespace Microsoft.Azure.Cosmos
             return DistributedTransactionRetryHelpers.ApplyJitter(cappedMs);
         }
 
-        /// <summary>
-        /// Applies ±25% multiplicative jitter to a delay value (range [0.75x, 1.25x]).
-        /// </summary>
-        internal static TimeSpan ApplyJitter(double delayMs)
+        // Applies ±25% multiplicative jitter to a delay value (range [0.75x, 1.25x]).
+        private static TimeSpan ApplyJitter(double delayMs)
         {
             double jitterFactor = 0.75 + (DistributedTransactionRetryHelpers.GetThreadJitter().NextDouble() * 0.5);
             return TimeSpan.FromMilliseconds(delayMs * jitterFactor);
         }
 
-        /// <summary>
-        /// Returns a thread-local <see cref="Random"/>. Avoids the lock contention of a shared instance
-        /// while keeping seeds independent across threads and processes.
-        /// </summary>
+        // Thread-local Random avoids lock contention of a shared instance and keeps seeds independent across threads.
         private static Random GetThreadJitter()
         {
             Random local = DistributedTransactionRetryHelpers.threadJitter;
