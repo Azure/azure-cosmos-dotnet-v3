@@ -20,7 +20,16 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     /// generate the correct SQL using the OBJECTTOARRAY() function. The OBJECTTOARRAY function
     /// converts a JSON object into an array of {"k": key, "v": value} pairs that can be iterated.
     /// 
-    /// NOTE: If a test baseline needs to be updated, run UpdateContracts.ps1 against the emulator.
+    /// NOTE: This baseline test is currently [Ignore]d because the baseline XML cannot be
+    /// generated without running against the Cosmos emulator. To enable:
+    ///   1. Bring up the Cosmos emulator locally.
+    ///   2. Remove the [Ignore] attribute on TestDictionaryLinqTranslations.
+    ///   3. Run UpdateContracts.ps1 to (re)generate the baseline XML.
+    /// 
+    /// Until then, comprehensive data + SQL coverage for the Dictionary/IDictionary/
+    /// IReadOnlyDictionary/Nested-dictionary scenarios is provided by
+    /// <see cref="CosmosItemLinqTests.LinqDictionaryAnyWithObjectToArrayTest"/>, which runs
+    /// against the emulator in CI.
     /// </summary>
     [Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestClass]
     public class LinqDictionaryBaselineTests : BaselineTests<LinqTestInput, LinqTestOutput>
@@ -59,17 +68,20 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         /// Tests cover:
         /// - Any() without predicate
         /// - Any() with key filter (t.Key == ...)
-        /// - Any() with value filter (t.Value == ...)
-        /// - Where with dictionary predicate
+        /// - Any() with value filter (t.Value != null)
+        /// - Where with KeyValuePair predicate over dictionary entries
         /// - SelectMany over dictionary entries
         /// - Select projecting key or value
-        /// - Aggregates (Count)
         /// - Skip, Take with dictionary filter
         /// - OrderBy with dictionary filter
-        /// - Nested dictionary field access
-        /// - IDictionary and IReadOnlyDictionary type fields
         /// 
-        /// NOTE: Run UpdateContracts.ps1 against the emulator to generate the baseline XML.
+        /// Count() aggregates over a dictionary go through a different code path
+        /// (ArrayBuiltinFunctions.ArrayCountVisitor) and are covered by the integration test.
+        /// IDictionary, IReadOnlyDictionary, and Nested-dictionary translations are also covered
+        /// by the integration test <see cref="CosmosItemLinqTests.LinqDictionaryAnyWithObjectToArrayTest"/>.
+        /// 
+        /// NOTE: Run UpdateContracts.ps1 against the emulator to generate the baseline XML
+        /// before removing [Ignore].
         /// </summary>
         [TestMethod]
         [Ignore] // TODO: Run UpdateContracts.ps1 to generate baseline XML before enabling
@@ -88,6 +100,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             inputs.Add(new LinqTestInput(
                 "Any - children with key 'A'",
                 b => getQuery(b).Where(f => f.Children.Any(c => c.Things.Any(t => t.Key == "A")))));
+
+            inputs.Add(new LinqTestInput(
+                "Any - children with value predicate",
+                b => getQuery(b).Where(f => f.Children.Any(c => c.Things.Any(t => t.Value != null)))));
 
             inputs.Add(new LinqTestInput(
                 "Any - families with children with Things -> Select FamilyId",
@@ -123,6 +139,21 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 b => getQuery(b)
                     .Where(f => f.Children.Any(c => c.Things.Any(t => t.Key == "A")))
                     .Select(f => f.FamilyId)));
+
+            // -------------------------
+            // Where with filtered dictionary enumeration
+            // (Where clause on KeyValuePair entries — goes through OBJECTTOARRAY)
+            // -------------------------
+
+            inputs.Add(new LinqTestInput(
+                "Where - filtered dictionary entries by Key, then Any",
+                b => getQuery(b)
+                    .Where(f => f.Children.Any(c => c.Things.Where(t => t.Key == "A").Any()))));
+
+            inputs.Add(new LinqTestInput(
+                "Where - filtered dictionary entries by Value, then Any",
+                b => getQuery(b)
+                    .Where(f => f.Children.Any(c => c.Things.Where(t => t.Value != null).Any()))));
 
             // -------------------------
             // Skip, Take

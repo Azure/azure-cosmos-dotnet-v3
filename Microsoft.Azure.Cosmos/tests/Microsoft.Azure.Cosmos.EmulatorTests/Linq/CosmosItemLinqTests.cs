@@ -1251,6 +1251,49 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .ToList();
             Assert.AreEqual(1, pagedResults.Count, "Expected 1 item after Skip(1).Take(1)");
             Assert.AreEqual("Item2", pagedResults[0].Name, "Expected Item2 after skipping Item1");
+
+            // Test 9: Select projection of items filtered by dictionary contents
+            IQueryable<string> queryNamesByValue = linqQueryable
+                .Where(x => x.AdditionalData.Any(kvp => kvp.Value.ToString() == searchValue))
+                .Select(x => x.Name);
+
+            string sqlNamesByValue = queryNamesByValue.ToQueryDefinition().ToSqlQuerySpec().QueryText;
+            Assert.IsTrue(
+                sqlNamesByValue.Contains("ObjectToArray", StringComparison.OrdinalIgnoreCase),
+                $"Expected Select-after-Any SQL to contain OBJECTTOARRAY. Actual SQL: {sqlNamesByValue}");
+
+            List<string> namesByValue = queryNamesByValue.ToList();
+            Assert.AreEqual(1, namesByValue.Count, $"Expected 1 name. SQL: {sqlNamesByValue}");
+            Assert.AreEqual("Item1", namesByValue[0]);
+
+            // Test 10: SelectMany over the dictionary entries (flatten KeyValuePair entries)
+            // Validates that SelectMany on a Dictionary field also uses OBJECTTOARRAY.
+            IQueryable<string> queryKeys = linqQueryable
+                .Where(x => x.Name == "Item1")
+                .SelectMany(x => x.AdditionalData)
+                .Select(kvp => kvp.Key);
+
+            string sqlKeys = queryKeys.ToQueryDefinition().ToSqlQuerySpec().QueryText;
+            Assert.IsTrue(
+                sqlKeys.Contains("ObjectToArray", StringComparison.OrdinalIgnoreCase),
+                $"Expected SelectMany SQL to contain OBJECTTOARRAY. Actual SQL: {sqlKeys}");
+
+            List<string> keys = queryKeys.ToList();
+            Assert.AreEqual(2, keys.Count, $"Expected 2 keys flattened from Item1's AdditionalData. SQL: {sqlKeys}");
+            CollectionAssert.AreEquivalent(new[] { "color", "size" }, keys);
+
+            // Test 11: Count aggregate over items filtered by Any() on dictionary
+            int countWithColor = linqQueryable
+                .Where(x => x.AdditionalData.Any(kvp => kvp.Key == searchKey))
+                .Count();
+            Assert.AreEqual(2, countWithColor, "Expected 2 items with key 'color' via Count() aggregate");
+
+            // Test 12: Count aggregate after Select projection with dictionary filter
+            int countNonEmpty = linqQueryable
+                .Where(x => x.AdditionalData.Any())
+                .Select(x => x.Name)
+                .Count();
+            Assert.AreEqual(2, countNonEmpty, "Expected 2 non-empty items via Select+Count");
         }
     }
 }
