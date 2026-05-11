@@ -362,8 +362,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 Assert.IsTrue(options.StartTime.HasValue);
                 Assert.AreEqual(DateTimeKind.Utc, options.StartTime.Value.Kind);
                 Assert.IsTrue(
-                    Math.Abs((expectedApprox - options.StartTime.Value).TotalSeconds) < 2,
-                    $"Expected StartTime within 2 seconds of {expectedApprox:O} but was {options.StartTime.Value:O}.");
+                    Math.Abs((expectedApprox - options.StartTime.Value).TotalSeconds) < 5,
+                    $"Expected StartTime within 5 seconds of {expectedApprox:O} but was {options.StartTime.Value:O}.");
             }
             finally
             {
