@@ -50,10 +50,14 @@ jobs:
     BuildConfiguration: Release
     Arguments: $(ReleaseArguments)
     VmImage: $(VmImage)
-    MultiRegionConnectionString: $(COSMOSDB_MULTI_REGION)
-    MultiRegionMultiMasterConnectionString: $(COSMOSDB_MULTIMASTER)
     IncludePerformance: true
     IncludeCoverage: true
+
+# NOTE: Live-account tests (MultiRegion, MultiMaster) intentionally do NOT run
+# in this pipeline. They require the $(COSMOSDB_MULTI_REGION) and
+# $(COSMOSDB_MULTIMASTER) secret variables, which Azure DevOps does not expose
+# to fork-PR builds for security reasons. See azure-pipelines-live-account.yml
+# and CONTRIBUTING.md for how those tests run.
 
 - template:  templates/build-internal.yml
   parameters:

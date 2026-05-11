@@ -99,6 +99,45 @@ When evaluating adding new tests, please search in the existing test files if th
 1. Check for [test failures](#test-failures) and address them if they are not transient.
 1. Review the **Checks** section to confirm there are no pending steps that might be blocking your work from merging.
 
+### How CI works for pull requests from forks
+
+The repository's CI is split into two layers because Azure DevOps does not
+expose secret variables (such as Cosmos DB connection strings) to builds
+triggered by pull requests from forks. This is an Azure DevOps security
+default, not a project-specific restriction.
+
+* **`dotnet-v3-ci`** ([`azure-pipelines.yml`](azure-pipelines.yml)) runs
+  automatically on every pull request, including fork PRs. It covers the
+  build, static analysis, unit tests, encryption tests, samples, CTL,
+  benchmarks, and all Emulator tests that do not require a live Cosmos
+  account. **Fork contributors can self-serve this entire pipeline.**
+
+* **`dotnet-v3-live-account`** ([`azure-pipelines-live-account.yml`](azure-pipelines-live-account.yml))
+  runs the live-account tests (`MultiRegion`, `MultiMaster`) which depend on
+  the `COSMOSDB_MULTI_REGION` and `COSMOSDB_MULTIMASTER` secret variables.
+  It will **not** auto-run on a fork PR. A maintainer must comment
+  `/azp run dotnet-v3-live-account` on the PR to dispatch the run against
+  the PR's commit.
+
+If you are an external contributor and you see the `dotnet-v3-live-account`
+check pending on your PR, that is expected. A maintainer will trigger it
+once they have reviewed your change and are comfortable running it against
+the team's Azure resources. You do **not** need to do anything to make this
+work, and you cannot fix `dotnet-v3-live-account` failures from your fork
+branch alone &mdash; if a maintainer has trusted the change but the live
+checks fail, leave a comment and a maintainer can re-trigger after a fix.
+
+### Working on the pipeline split itself
+
+If you are changing the pipeline layout, keep this invariant: no template
+referenced from `azure-pipelines.yml` may consume `$(COSMOSDB_MULTI_REGION)`,
+`$(COSMOSDB_MULTIMASTER)`, or any other secret variable, and no job in those
+templates may read those values out of `parameters`. Any new live-account
+test should be added to [`templates/build-test-live.yml`](templates/build-test-live.yml)
+and surfaced through [`azure-pipelines-live-account.yml`](azure-pipelines-live-account.yml)
+plus the trusted internal pipelines (`azure-pipelines-official.yml`,
+`azure-pipelines-rolling.yml`).
+
 ### Test failures
 
 If the Pull Request is experiencing test failures, these will appear as failed checks:

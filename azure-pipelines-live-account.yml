@@ -1,0 +1,68 @@
+# File: azure-pipelines-live-account.yml
+#
+# On-demand "live-account" CI pipeline for the Microsoft.Azure.Cosmos SDK.
+# Runs the MultiRegion and MultiMaster EmulatorTests, which require real
+# Azure Cosmos DB connection-string secrets (COSMOSDB_MULTI_REGION,
+# COSMOSDB_MULTIMASTER).
+#
+# WHY THIS PIPELINE EXISTS
+# ------------------------
+# The default PR-validation pipeline (azure-pipelines.yml) runs on every pull
+# request, including PRs opened from forks. Azure DevOps does not expose
+# secret variables to builds triggered by fork PRs (a security default), so
+# any job needing live-account secrets would fail on those builds. To avoid
+# this, the live-account jobs were extracted into templates/build-test-live.yml
+# and this pipeline is the only fork-eligible entry point that invokes them.
+#
+# HOW IT IS TRIGGERED
+# -------------------
+#   * Automatic on `main` and `releases/*` for code changes that could affect
+#     multi-region behavior (see the trigger block below).
+#   * Manually, for a specific pull request, by a team member commenting
+#     `/azp run dotnet-v3-live-account` on the PR.
+#   * It is also expected to be configured in the ADO pipeline UI with:
+#       - Build pull requests from forks: ON
+#       - Make secrets available to builds of forks: ON
+#       - Require a team member's comment before building a pull request: ON
+#     which together implement the "team member approval" gate.
+#
+# REQUIRED ADO PIPELINE VARIABLES (defined in the pipeline UI as SECRETS):
+#   * COSMOSDB_MULTI_REGION   - connection string for the shared multi-region
+#                               test account.
+#   * COSMOSDB_MULTIMASTER    - connection string for the shared multi-master
+#                               test account.
+#
+# Required GitHub branch protection: list the build status from this pipeline
+# as a *required* check on `main` so no PR can merge without it being green.
+
+trigger:
+  branches:
+    include:
+    - main
+    - releases/*
+  paths:
+    include:
+    - 'Microsoft.Azure.Cosmos/src/**'
+    - 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/**'
+    - 'templates/build-test-live.yml'
+    - 'azure-pipelines-live-account.yml'
+    exclude:
+    - '*.md'
+    - 'docs/**/*'
+    - 'Microsoft.Azure.Cosmos/contracts/**/*'
+
+# `pr: none` keeps Azure DevOps from auto-running this pipeline on every PR.
+# Maintainers trigger it on a PR with `/azp run dotnet-v3-live-account`.
+pr: none
+
+variables:
+  ReleaseArguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Ignore" --verbosity normal '
+  VmImage: windows-latest
+
+jobs:
+- template:  templates/build-test-live.yml
+  parameters:
+    BuildConfiguration: Release
+    VmImage: $(VmImage)
+    MultiRegionConnectionString: $(COSMOSDB_MULTI_REGION)
+    MultiRegionMultiMasterConnectionString: $(COSMOSDB_MULTIMASTER)
