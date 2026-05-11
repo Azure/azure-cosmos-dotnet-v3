@@ -36,12 +36,12 @@ namespace Microsoft.Azure.Cosmos.Tests
         // id field presence per operation type
 
         [TestMethod]
-        [Description("CreateItem sets id explicitly; 'id' must be present in the serialized JSON with the correct value.")]
+        [Description("CreateItem derives 'id' from the resource body; 'id' must be present in the serialized JSON with the correct value.")]
         public async Task CreateItem_SerializedBody_HasResourceBody_AndIdField()
         {
             const string itemId = "create-item";
             string capturedJson = await this.CaptureCommitBodyAsync(tx =>
-                tx.CreateItem(Database, Container, new PartitionKey("pk"), itemId, new TestItem(itemId)));
+                tx.CreateItem(Database, Container, new PartitionKey("pk"), new { id = itemId, value = "v" }));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
             JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
@@ -91,12 +91,12 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [Description("UpsertItem sets id explicitly; 'id' must be present in the serialized JSON with the correct value.")]
+        [Description("UpsertItem derives 'id' from the resource body; 'id' must be present in the serialized JSON with the correct value.")]
         public async Task UpsertItem_SerializedBody_HasResourceBody_AndIdField()
         {
             const string itemId = "upsert-item";
             string capturedJson = await this.CaptureCommitBodyAsync(tx =>
-                tx.UpsertItem(Database, Container, new PartitionKey("pk"), itemId, new TestItem(itemId)));
+                tx.UpsertItem(Database, Container, new PartitionKey("pk"), new { id = itemId, value = "v" }));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
             JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
@@ -152,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task CreateItem_SerializedBody_ResourceBodyIsValidJson()
         {
             string capturedJson = await this.CaptureCommitBodyAsync(tx =>
-                tx.CreateItem(Database, Container, new PartitionKey("pk"), "json-check", new TestItem("json-check")));
+                tx.CreateItem(Database, Container, new PartitionKey("pk"), new { id = "json-check", value = "v" }));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
             JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
@@ -172,10 +172,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             IReadOnlyList<PatchOperation> patchOps = new[] { PatchOperation.Add("/value", "v") };
 
             string capturedJson = await this.CaptureCommitBodyAsync(tx =>
-                tx.CreateItem(Database, Container, new PartitionKey("pk"), "c", new TestItem("c"))
+                tx.CreateItem(Database, Container, new PartitionKey("pk"), new { id = "c", value = "v" })
                   .ReplaceItem(Database, Container, new PartitionKey("pk"), "r", new TestItem("r"))
                   .DeleteItem(Database, Container, new PartitionKey("pk"), "d")
-                  .UpsertItem(Database, Container, new PartitionKey("pk"), "u", new TestItem("u"))
+                  .UpsertItem(Database, Container, new PartitionKey("pk"), new { id = "u", value = "v" })
                   .PatchItem(Database, Container, new PartitionKey("pk"), "p", patchOps),
                 expectedResultCount: 5);
 
@@ -197,10 +197,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             IReadOnlyList<PatchOperation> patchOps = new[] { PatchOperation.Add("/value", "v") };
 
             string capturedJson = await this.CaptureCommitBodyAsync(tx =>
-                tx.CreateItem(Database, Container, new PartitionKey("pk"), "c", new TestItem("c"))
+                tx.CreateItem(Database, Container, new PartitionKey("pk"), new { id = "c", value = "v" })
                   .ReplaceItem(Database, Container, new PartitionKey("pk"), "r", new TestItem("r"))
                   .DeleteItem(Database, Container, new PartitionKey("pk"), "d")
-                  .UpsertItem(Database, Container, new PartitionKey("pk"), "u", new TestItem("u"))
+                  .UpsertItem(Database, Container, new PartitionKey("pk"), new { id = "u", value = "v" })
                   .PatchItem(Database, Container, new PartitionKey("pk"), "p", patchOps),
                 expectedResultCount: 5);
 
@@ -245,14 +245,14 @@ namespace Microsoft.Azure.Cosmos.Tests
         // Stream operations
 
         [TestMethod]
-        [Description("CreateItemStream sets id explicitly; 'id' must be present in the serialized JSON with the correct value.")]
+        [Description("CreateItemStream derives 'id' from the JSON in the stream; 'id' must be present in the serialized JSON with the correct value.")]
         public async Task CreateItemStream_SerializedBody_HasResourceBody_AndIdField()
         {
             const string itemId = "test-id";
             byte[] docBytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new TestItem(itemId)));
             using MemoryStream stream = new MemoryStream(docBytes);
             string capturedJson = await this.CaptureCommitBodyAsync(
-                tx => tx.CreateItemStream(Database, Container, new PartitionKey("pk"), itemId, stream));
+                tx => tx.CreateItemStream(Database, Container, new PartitionKey("pk"), stream));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
             JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
@@ -304,14 +304,14 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [Description("UpsertItemStream sets id explicitly; 'id' must be present in the serialized JSON with the correct value.")]
+        [Description("UpsertItemStream derives 'id' from the JSON in the stream; 'id' must be present in the serialized JSON with the correct value.")]
         public async Task UpsertItemStream_SerializedBody_HasResourceBody_AndIdField()
         {
             const string itemId = "upsert-stream-id";
             byte[] docBytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new TestItem(itemId)));
             using MemoryStream stream = new MemoryStream(docBytes);
             string capturedJson = await this.CaptureCommitBodyAsync(
-                tx => tx.UpsertItemStream(Database, Container, new PartitionKey("pk"), itemId, stream));
+                tx => tx.UpsertItemStream(Database, Container, new PartitionKey("pk"), stream));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
             JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
@@ -442,7 +442,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task Operations_WithoutIfMatchEtag_DoNotIncludeEtagField()
         {
             string capturedJson = await this.CaptureCommitBodyAsync(tx =>
-                tx.CreateItem(Database, Container, new PartitionKey("pk"), "create-no-etag", new TestItem("create-no-etag"))
+                tx.CreateItem(Database, Container, new PartitionKey("pk"), new { id = "create-no-etag", value = "v" })
                   .ReplaceItem(Database, Container, new PartitionKey("pk"), "replace-no-etag", new TestItem("replace-no-etag")),
                 expectedResultCount: 2);
 
@@ -456,42 +456,51 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
+        // id extraction from resource body
+
         [TestMethod]
-        [Description("CreateItem with a null id must throw ArgumentNullException at the call site.")]
-        public void CreateItem_NullId_ThrowsArgumentNullException()
+        [Description("UpsertItemStream extracts only the top-level 'id'; a nested object with its own 'id' must be ignored.")]
+        public async Task UpsertItemStream_NestedIdIgnored()
         {
-            DistributedWriteTransaction tx = new DistributedWriteTransactionCore(this.BuildContextSetup().Object);
-            Assert.ThrowsException<ArgumentNullException>(() =>
-                tx.CreateItem(Database, Container, new PartitionKey("pk"), id: null, new TestItem("body-id")));
+            const string itemId = "stream-upsert";
+            byte[] docBytes = Encoding.UTF8.GetBytes($@"{{""id"":""{itemId}"",""nested"":{{""id"":""nope""}}}}");
+
+            string capturedJson = await this.CaptureCommitBodyAsync(tx =>
+                tx.UpsertItemStream(Database, Container, new PartitionKey("pk"), new MemoryStream(docBytes)));
+
+            using JsonDocument doc = JsonDocument.Parse(capturedJson);
+            JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
+
+            Assert.AreEqual(itemId, op.GetProperty(DistributedTransactionSerializer.Id).GetString(),
+                "Only the top-level 'id' should be extracted; nested 'id' must be ignored.");
         }
 
         [TestMethod]
-        [Description("UpsertItem with an empty id must throw ArgumentNullException at the call site.")]
-        public void UpsertItem_EmptyId_ThrowsArgumentNullException()
+        [DataRow(@"{""value"":1}")]
+        [DataRow(@"{""id"":""""}")]
+        [DataRow(@"{""id"":""   ""}")]
+        [Description("CreateItemStream throws ArgumentException at commit time when the body has a missing, empty, or whitespace-only 'id'.")]
+        public async Task CreateItemStream_InvalidBodyId_ThrowsAtCommit(string bodyJson)
         {
-            DistributedWriteTransaction tx = new DistributedWriteTransactionCore(this.BuildContextSetup().Object);
-            Assert.ThrowsException<ArgumentNullException>(() =>
-                tx.UpsertItem(Database, Container, new PartitionKey("pk"), id: string.Empty, new TestItem("body-id")));
+            using MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(bodyJson));
+            DistributedWriteTransaction tx = new DistributedWriteTransactionCore(this.BuildContextSetup().Object)
+                .CreateItemStream(Database, Container, new PartitionKey("pk"), stream);
+
+            await Assert.ThrowsExceptionAsync<ArgumentException>(() => tx.CommitTransactionAsync(CancellationToken.None));
         }
 
         [TestMethod]
-        [Description("CreateItemStream with a null id must throw ArgumentNullException at the call site.")]
-        public void CreateItemStream_NullId_ThrowsArgumentNullException()
+        [DataRow(@"{""value"":1}")]
+        [DataRow(@"{""id"":""""}")]
+        [DataRow(@"{""id"":""   ""}")]
+        [Description("UpsertItemStream throws ArgumentException at commit time when the body has a missing, empty, or whitespace-only 'id'.")]
+        public async Task UpsertItemStream_InvalidBodyId_ThrowsAtCommit(string bodyJson)
         {
-            DistributedWriteTransaction tx = new DistributedWriteTransactionCore(this.BuildContextSetup().Object);
-            using MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(@"{""value"":1}"));
-            Assert.ThrowsException<ArgumentNullException>(() =>
-                tx.CreateItemStream(Database, Container, new PartitionKey("pk"), id: null, stream));
-        }
+            using MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(bodyJson));
+            DistributedWriteTransaction tx = new DistributedWriteTransactionCore(this.BuildContextSetup().Object)
+                .UpsertItemStream(Database, Container, new PartitionKey("pk"), stream);
 
-        [TestMethod]
-        [Description("UpsertItemStream with a whitespace id must throw ArgumentNullException at the call site.")]
-        public void UpsertItemStream_WhitespaceId_ThrowsArgumentNullException()
-        {
-            DistributedWriteTransaction tx = new DistributedWriteTransactionCore(this.BuildContextSetup().Object);
-            using MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(@"{""value"":1}"));
-            Assert.ThrowsException<ArgumentNullException>(() =>
-                tx.UpsertItemStream(Database, Container, new PartitionKey("pk"), id: "   ", stream));
+            await Assert.ThrowsExceptionAsync<ArgumentException>(() => tx.CommitTransactionAsync(CancellationToken.None));
         }
 
         // Helpers

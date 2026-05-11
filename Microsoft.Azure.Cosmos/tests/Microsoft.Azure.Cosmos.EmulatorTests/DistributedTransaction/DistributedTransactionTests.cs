@@ -1,4 +1,4 @@
-﻿// ------------------------------------------------------------
+// ------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
@@ -54,6 +54,37 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await base.TestCleanup();
         }
 
+        [TestMethod]
+        [Description("CreateItem/UpsertItem extract the item id from the resource body and serialize it correctly.")]
+        public async Task CreateAndUpsert_IdlessOverloads_IdExtractedFromBody()
+        {
+            ToDoActivity createDoc = ToDoActivity.CreateRandomToDoActivity();
+            ToDoActivity upsertDoc = ToDoActivity.CreateRandomToDoActivity();
+
+            DistributedTransactionMockHandler handler = new DistributedTransactionMockHandler(
+                request => Task.FromResult(this.BuildMockResponse(HttpStatusCode.OK, BuildSuccessResponseJson(2))));
+
+            using CosmosClient client = this.CreateMockClient(handler);
+
+            DistributedTransactionResponse response = await client.CreateDistributedWriteTransaction()
+                .CreateItem(this.database.Id, this.container.Id, new PartitionKey(createDoc.pk), createDoc)
+                .UpsertItem(this.database.Id, this.container.Id, new PartitionKey(upsertDoc.pk), upsertDoc)
+                .CommitTransactionAsync(CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.AreEqual(2, response.Count);
+
+            using JsonDocument requestJson = JsonDocument.Parse(handler.CapturedRequestBody);
+            JsonElement ops = requestJson.RootElement.GetProperty(DistributedTransactionSerializer.Operations);
+
+            Assert.AreEqual(createDoc.id, ops[0].GetProperty(DistributedTransactionSerializer.Id).GetString(),
+                "Create operation id must be extracted from the resource body.");
+            Assert.AreEqual(upsertDoc.id, ops[1].GetProperty(DistributedTransactionSerializer.Id).GetString(),
+                "Upsert operation id must be extracted from the resource body.");
+
+            response.Dispose();
+        }
+
         // Happy path scenarios
 
         [TestMethod]
@@ -69,8 +100,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             using CosmosClient client = this.CreateMockClient(handler);
 
             DistributedTransactionResponse response = await client.CreateDistributedWriteTransaction()
-                .CreateItem(this.database.Id, this.container.Id, new PartitionKey(doc1.pk), doc1.id, doc1)
-                .CreateItem(this.database.Id, this.container.Id, new PartitionKey(doc2.pk), doc2.id, doc2)
+                .CreateItem(this.database.Id, this.container.Id, new PartitionKey(doc1.pk), doc1)
+                .CreateItem(this.database.Id, this.container.Id, new PartitionKey(doc2.pk), doc2)
                 .CommitTransactionAsync(CancellationToken.None);
 
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
@@ -95,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             using CosmosClient client = this.CreateMockClient(handler);
 
             await client.CreateDistributedWriteTransaction()
-                .CreateItem(this.database.Id, this.container.Id, new PartitionKey(createDoc.pk), createDoc.id, createDoc)
+                .CreateItem(this.database.Id, this.container.Id, new PartitionKey(createDoc.pk), createDoc)
                 .ReplaceItem(this.database.Id, this.container.Id, new PartitionKey(replaceDoc.pk), replaceDoc.id, replaceDoc)
                 .DeleteItem(this.database.Id, this.container.Id, new PartitionKey("delete-pk"), "delete-id")
                 .CommitTransactionAsync(CancellationToken.None);
@@ -122,8 +153,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             using CosmosClient client = this.CreateMockClient(handler);
 
             DistributedTransactionResponse response = await client.CreateDistributedWriteTransaction()
-                .CreateItem(this.database.Id, this.container.Id, new PartitionKey(createDoc.pk), createDoc.id, createDoc)
-                .UpsertItem(this.database.Id, this.container.Id, new PartitionKey(upsertDoc.pk), upsertDoc.id, upsertDoc)
+                .CreateItem(this.database.Id, this.container.Id, new PartitionKey(createDoc.pk), createDoc)
+                .UpsertItem(this.database.Id, this.container.Id, new PartitionKey(upsertDoc.pk), upsertDoc)
                 .CommitTransactionAsync(CancellationToken.None);
 
             using JsonDocument requestJson = JsonDocument.Parse(handler.CapturedRequestBody);
@@ -149,7 +180,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             using CosmosClient client = this.CreateMockClient(handler);
 
             await client.CreateDistributedWriteTransaction()
-                .CreateItem(this.database.Id, this.container.Id, new PartitionKey(createDoc.pk), createDoc.id, createDoc)
+                .CreateItem(this.database.Id, this.container.Id, new PartitionKey(createDoc.pk), createDoc)
                 .PatchItem(this.database.Id, this.container.Id, new PartitionKey("patch-pk"), "item-to-patch", patchOps)
                 .CommitTransactionAsync(CancellationToken.None);
 
@@ -179,8 +210,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             using CosmosClient client = this.CreateMockClient(handler);
 
             DistributedTransactionResponse response = await client.CreateDistributedWriteTransaction()
-                .CreateItem(this.database.Id, this.container.Id, new PartitionKey(doc1.pk), doc1.id, doc1)
-                .CreateItem(this.database.Id, secondContainer.Id, new PartitionKey(doc2.pk), doc2.id, doc2)
+                .CreateItem(this.database.Id, this.container.Id, new PartitionKey(doc1.pk), doc1)
+                .CreateItem(this.database.Id, secondContainer.Id, new PartitionKey(doc2.pk), doc2)
                 .CommitTransactionAsync(CancellationToken.None);
 
             using JsonDocument requestJson = JsonDocument.Parse(handler.CapturedRequestBody);
@@ -214,7 +245,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ToDoActivity doc = ToDoActivity.CreateRandomToDoActivity();
 
             DistributedTransactionResponse response = await client.CreateDistributedWriteTransaction()
-                .CreateItem(this.database.Id, this.container.Id, new PartitionKey(doc.pk), doc.id, doc)
+                .CreateItem(this.database.Id, this.container.Id, new PartitionKey(doc.pk), doc)
                 .CommitTransactionAsync(CancellationToken.None);
 
             Assert.AreNotEqual(Guid.Empty, response.IdempotencyToken, "Response must carry the idempotency token.");
@@ -236,9 +267,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             using CosmosClient client = this.CreateMockClient(handler);
 
             DistributedTransactionResponse response = await client.CreateDistributedWriteTransaction()
-                .CreateItem(this.database.Id, this.container.Id, new PartitionKey(doc1.pk), doc1.id, doc1)
-                .CreateItem(this.database.Id, this.container.Id, new PartitionKey(doc2.pk), doc2.id, doc2)
-                .CreateItem(this.database.Id, this.container.Id, new PartitionKey(doc3.pk), doc3.id, doc3)
+                .CreateItem(this.database.Id, this.container.Id, new PartitionKey(doc1.pk), doc1)
+                .CreateItem(this.database.Id, this.container.Id, new PartitionKey(doc2.pk), doc2)
+                .CreateItem(this.database.Id, this.container.Id, new PartitionKey(doc3.pk), doc3)
                 .CommitTransactionAsync(CancellationToken.None);
 
             Assert.AreEqual(3, response.Count);
@@ -272,7 +303,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             using CosmosClient client = this.CreateMockClient(handler);
 
             DistributedTransactionResponse response = await client.CreateDistributedWriteTransaction()
-                .CreateItem(this.database.Id, this.container.Id, new PartitionKey(expectedDoc.pk), expectedDoc.id, expectedDoc)
+                .CreateItem(this.database.Id, this.container.Id, new PartitionKey(expectedDoc.pk), expectedDoc)
                 .CommitTransactionAsync(CancellationToken.None);
 
             Assert.AreEqual(HttpStatusCode.Created, response[0].StatusCode);
@@ -309,7 +340,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ToDoActivity doc = ToDoActivity.CreateRandomToDoActivity();
 
             DistributedTransactionResponse response = await client.CreateDistributedWriteTransaction()
-                .CreateItem(this.database.Id, this.container.Id, new PartitionKey(doc.pk), doc.id, doc)
+                .CreateItem(this.database.Id, this.container.Id, new PartitionKey(doc.pk), doc)
                 .CommitTransactionAsync(CancellationToken.None);
 
             Assert.AreEqual(HttpStatusCode.Conflict, response.StatusCode);
@@ -369,8 +400,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ToDoActivity doc2 = ToDoActivity.CreateRandomToDoActivity();
 
             DistributedTransactionResponse response = await client.CreateDistributedWriteTransaction()
-                .CreateItem(this.database.Id, this.container.Id, new PartitionKey(doc1.pk), doc1.id, doc1)
-                .CreateItem(this.database.Id, this.container.Id, new PartitionKey(doc2.pk), doc2.id, doc2)
+                .CreateItem(this.database.Id, this.container.Id, new PartitionKey(doc1.pk), doc1)
+                .CreateItem(this.database.Id, this.container.Id, new PartitionKey(doc2.pk), doc2)
                 .CommitTransactionAsync(CancellationToken.None);
 
             // All results must be present regardless of partial failure
@@ -395,7 +426,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             using CosmosClient client = this.CreateMockClient(handler);
 
             DistributedTransactionResponse response = await client.CreateDistributedWriteTransaction()
-                .CreateItem(this.database.Id, this.container.Id, new PartitionKey(createDoc.pk), createDoc.id, createDoc)
+                .CreateItem(this.database.Id, this.container.Id, new PartitionKey(createDoc.pk), createDoc)
                 .ReplaceItem(this.database.Id, this.container.Id, new PartitionKey(replaceDoc.pk), replaceDoc.id, replaceDoc)
                 .DeleteItem(this.database.Id, this.container.Id, new PartitionKey("delete-pk"), "delete-id")
                 .CommitTransactionAsync(CancellationToken.None);
@@ -596,7 +627,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             using CosmosClient client = this.CreateMockClient(handler);
 
             DistributedTransactionResponse response = await client.CreateDistributedWriteTransaction()
-                .CreateItem(this.database.Id, this.container.Id, new PartitionKey(createDoc.pk), createDoc.id, createDoc)
+                .CreateItem(this.database.Id, this.container.Id, new PartitionKey(createDoc.pk), createDoc)
                 .ReplaceItem(this.database.Id, this.container.Id, new PartitionKey(replaceDoc.pk), replaceDoc.id, replaceDoc)
                 .CommitTransactionAsync(CancellationToken.None);
 
@@ -626,7 +657,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             using MemoryStream stream = new MemoryStream(docBytes);
             DistributedTransactionResponse response = await client.CreateDistributedWriteTransaction()
-                .CreateItemStream(this.database.Id, this.container.Id, new PartitionKey(doc.pk), doc.id, stream)
+                .CreateItemStream(this.database.Id, this.container.Id, new PartitionKey(doc.pk), stream)
                 .CommitTransactionAsync(CancellationToken.None);
 
             Assert.IsTrue(response.IsSuccessStatusCode);
@@ -713,7 +744,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             using MemoryStream stream = new MemoryStream(docBytes);
             DistributedTransactionResponse response = await client.CreateDistributedWriteTransaction()
-                .UpsertItemStream(this.database.Id, this.container.Id, new PartitionKey(doc.pk), doc.id, stream)
+                .UpsertItemStream(this.database.Id, this.container.Id, new PartitionKey(doc.pk), stream)
                 .CommitTransactionAsync(CancellationToken.None);
 
             Assert.IsTrue(response.IsSuccessStatusCode);
@@ -757,7 +788,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ToDoActivity newDoc = ToDoActivity.CreateRandomToDoActivity();
             DistributedTransactionResponse dtcResponse = await dtcClient
                 .CreateDistributedWriteTransaction()
-                .CreateItem(this.database.Id, this.container.Id, new PartitionKey(newDoc.pk), newDoc.id, newDoc)
+                .CreateItem(this.database.Id, this.container.Id, new PartitionKey(newDoc.pk), newDoc)
                 .CommitTransactionAsync(this.cancellationToken);
 
             Assert.IsTrue(dtcResponse.IsSuccessStatusCode, "The simulated DTC commit should appear successful to the client.");
@@ -1026,3 +1057,4 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
     }
 }
+

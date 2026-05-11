@@ -24,15 +24,13 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="database">The name of the database containing the container.</param>
         /// <param name="collection">The name of the container where the item will be created.</param>
         /// <param name="partitionKey">The partition key for the item.</param>
-        /// <param name="id">The unique identifier of the item to create.</param>
-        /// <param name="resource">The resource to create.</param>
+        /// <param name="resource">The resource to create. The item's <c>id</c> is read from the serialized resource body.</param>
         /// <param name="requestOptions">Options for the create operation.</param>
         /// <returns>The current <see cref="DistributedWriteTransaction"/> instance for method chaining.</returns>
         public abstract DistributedWriteTransaction CreateItem<T>(
             string database,
             string collection,
             PartitionKey partitionKey,
-            string id,
             T resource,
             DistributedTransactionRequestOptions requestOptions = null);
 
@@ -42,15 +40,13 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="database">The name of the database containing the container.</param>
         /// <param name="collection">The name of the container where the item will be created.</param>
         /// <param name="partitionKey">The partition key for the item.</param>
-        /// <param name="id">The unique identifier of the item to create.</param>
-        /// <param name="streamPayload">A <see cref="Stream"/> containing the JSON serialization of the item.</param>
+        /// <param name="streamPayload">A <see cref="Stream"/> containing the JSON serialization of the item. The item's <c>id</c> is read from the stream payload.</param>
         /// <param name="requestOptions">Options for the create operation.</param>
         /// <returns>The current <see cref="DistributedWriteTransaction"/> instance for method chaining.</returns>
         public abstract DistributedWriteTransaction CreateItemStream(
             string database,
             string collection,
             PartitionKey partitionKey,
-            string id,
             Stream streamPayload,
             DistributedTransactionRequestOptions requestOptions = null);
 
@@ -151,15 +147,13 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="database">The name of the database containing the container.</param>
         /// <param name="collection">The name of the container where the item will be upserted.</param>
         /// <param name="partitionKey">The partition key for the item.</param>
-        /// <param name="id">The unique identifier of the item to upsert.</param>
-        /// <param name="resource">The resource to upsert.</param>
+        /// <param name="resource">The resource to upsert. The item's <c>id</c> is read from the serialized resource body.</param>
         /// <param name="requestOptions">Options for the upsert operation.</param>
         /// <returns>The current <see cref="DistributedWriteTransaction"/> instance for method chaining.</returns>
         public abstract DistributedWriteTransaction UpsertItem<T>(
             string database,
             string collection,
             PartitionKey partitionKey,
-            string id,
             T resource,
             DistributedTransactionRequestOptions requestOptions = null);
 
@@ -170,15 +164,13 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="database">The name of the database containing the container.</param>
         /// <param name="collection">The name of the container where the item will be upserted.</param>
         /// <param name="partitionKey">The partition key for the item.</param>
-        /// <param name="id">The unique identifier of the item to upsert.</param>
-        /// <param name="streamPayload">A <see cref="Stream"/> containing the JSON serialization of the item.</param>
+        /// <param name="streamPayload">A <see cref="Stream"/> containing the JSON serialization of the item. The item's <c>id</c> is read from the stream payload.</param>
         /// <param name="requestOptions">Options for the upsert operation.</param>
         /// <returns>The current <see cref="DistributedWriteTransaction"/> instance for method chaining.</returns>
         public abstract DistributedWriteTransaction UpsertItemStream(
             string database,
             string collection,
             PartitionKey partitionKey,
-            string id,
             Stream streamPayload,
             DistributedTransactionRequestOptions requestOptions = null);
     }

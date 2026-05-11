@@ -27,12 +27,10 @@ namespace Microsoft.Azure.Cosmos
             string database,
             string collection,
             PartitionKey partitionKey,
-            string id,
             T resource,
             DistributedTransactionRequestOptions requestOptions = null)
         {
             DistributedWriteTransactionCore.ValidateContainerReference(database, collection);
-            DistributedWriteTransactionCore.ValidateItemId(id);
             DistributedWriteTransactionCore.ValidateResource(resource);
 
             this.operations.Add(
@@ -42,7 +40,6 @@ namespace Microsoft.Azure.Cosmos
                     database,
                     collection,
                     partitionKey,
-                    id,
                     resource,
                     requestOptions));
             return this;
@@ -52,12 +49,10 @@ namespace Microsoft.Azure.Cosmos
             string database,
             string collection,
             PartitionKey partitionKey,
-            string id,
             Stream streamPayload,
             DistributedTransactionRequestOptions requestOptions = null)
         {
             DistributedWriteTransactionCore.ValidateContainerReference(database, collection);
-            DistributedWriteTransactionCore.ValidateItemId(id);
             if (streamPayload == null)
             {
                 throw new ArgumentNullException(nameof(streamPayload));
@@ -70,7 +65,6 @@ namespace Microsoft.Azure.Cosmos
                     database: database,
                     container: collection,
                     partitionKey: partitionKey,
-                    id: id,
                     requestOptions: requestOptions)
                 {
                     ResourceStream = streamPayload
@@ -220,12 +214,10 @@ namespace Microsoft.Azure.Cosmos
             string database,
             string collection,
             PartitionKey partitionKey,
-            string id,
             T resource,
             DistributedTransactionRequestOptions requestOptions = null)
         {
             DistributedWriteTransactionCore.ValidateContainerReference(database, collection);
-            DistributedWriteTransactionCore.ValidateItemId(id);
             DistributedWriteTransactionCore.ValidateResource(resource);
 
             this.operations.Add(
@@ -235,7 +227,6 @@ namespace Microsoft.Azure.Cosmos
                     database,
                     collection,
                     partitionKey,
-                    id,
                     resource,
                     requestOptions));
             return this;
@@ -245,12 +236,10 @@ namespace Microsoft.Azure.Cosmos
             string database,
             string collection,
             PartitionKey partitionKey,
-            string id,
             Stream streamPayload,
             DistributedTransactionRequestOptions requestOptions = null)
         {
             DistributedWriteTransactionCore.ValidateContainerReference(database, collection);
-            DistributedWriteTransactionCore.ValidateItemId(id);
             if (streamPayload == null)
             {
                 throw new ArgumentNullException(nameof(streamPayload));
@@ -263,7 +252,6 @@ namespace Microsoft.Azure.Cosmos
                     database: database,
                     container: collection,
                     partitionKey: partitionKey,
-                    id: id,
                     requestOptions: requestOptions)
                 {
                     ResourceStream = streamPayload

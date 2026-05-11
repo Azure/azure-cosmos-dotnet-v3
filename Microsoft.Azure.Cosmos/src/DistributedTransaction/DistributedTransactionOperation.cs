@@ -6,6 +6,8 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.IO;
+    using System.Text;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
@@ -15,6 +17,8 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class DistributedTransactionOperation
     {
+        private static readonly byte[] IdPropertyNameUtf8 = Encoding.UTF8.GetBytes("id");
+
         protected Memory<byte> body;
 
         public DistributedTransactionOperation(
@@ -75,11 +79,88 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.body = await BatchExecUtils.StreamToMemoryAsync(this.ResourceStream, cancellationToken);
             }
+
+            this.ReconcileIdWithBody();
+        }
+
+        /// <summary>
+        /// For Create/Upsert operations the item id is always derived from the resource body.
+        /// Extracts the top-level <c>id</c> string property and assigns it to <see cref="Id"/>.
+        /// Throws <see cref="ArgumentException"/> if the body has no non-empty <c>id</c> string.
+        /// </summary>
+        private void ReconcileIdWithBody()
+        {
+            if (this.OperationType != Documents.OperationType.Create
+                && this.OperationType != Documents.OperationType.Upsert)
+            {
+                return;
+            }
+
+            if (this.body.IsEmpty)
+            {
+                return;
+            }
+
+            string bodyId = TryReadIdFromJsonObject(this.body.Span);
+
+            if (string.IsNullOrWhiteSpace(bodyId))
+            {
+                throw new ArgumentException(
+                    $"The resource body for the {this.OperationType} operation at index {this.OperationIndex} does not contain a non-empty 'id' string property. Provide 'id' in the resource body.");
+            }
+
+            this.Id = bodyId;
+        }
+
+        /// <summary>
+        /// Scans the top level of a JSON object for an "id" string property and returns its value.
+        /// Returns null if the body is not a JSON object, has no "id" property, or the value is not a string.
+        /// Allocation is limited to the returned id string itself.
+        /// </summary>
+        private static string TryReadIdFromJsonObject(ReadOnlySpan<byte> body)
+        {
+            try
+            {
+                Utf8JsonReader reader = new Utf8JsonReader(body);
+                if (!reader.Read() || reader.TokenType != JsonTokenType.StartObject)
+                {
+                    return null;
+                }
+
+                while (reader.Read() && reader.TokenType == JsonTokenType.PropertyName)
+                {
+                    if (reader.ValueTextEquals(IdPropertyNameUtf8))
+                    {
+                        return reader.Read() && reader.TokenType == JsonTokenType.String ? reader.GetString() : null;
+                    }
+
+                    reader.Skip();
+                }
+
+                return null;
+            }
+            catch (JsonException)
+            {
+                return null;
+            }
         }
     }
 
     internal class DistributedTransactionOperation<T> : DistributedTransactionOperation
     {
+        public DistributedTransactionOperation(
+            Documents.OperationType operationType,
+            int operationIndex,
+            string database,
+            string container,
+            PartitionKey partitionKey,
+            T resource,
+            DistributedTransactionRequestOptions requestOptions = null)
+            : base(operationType, operationIndex, database, container, partitionKey, id: null, requestOptions)
+        {
+            this.Resource = resource;
+        }
+
         public DistributedTransactionOperation(
             Documents.OperationType operationType,
             int operationIndex,
