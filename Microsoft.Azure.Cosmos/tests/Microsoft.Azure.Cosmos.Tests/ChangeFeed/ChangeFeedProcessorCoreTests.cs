@@ -269,6 +269,177 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             }
         }
 
+        // Defends #5846 (https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5846) — AC1.
+        // AVAD push processor cold-start MUST NOT have StartTime backfilled, because the AVAD
+        // endpoint rejects an explicit StartTime on a null-continuation lease with HTTP 400.
+        [TestMethod]
+        public async Task StartAsync_DoesNotSetStartTime_WhenAllVersionsAndDeletesMode()
+        {
+            Mock<DocumentServiceLeaseStore> leaseStore = new Mock<DocumentServiceLeaseStore>();
+            leaseStore.Setup(l => l.IsInitializedAsync()).ReturnsAsync(true);
+
+            Mock<DocumentServiceLeaseContainer> leaseContainer = new Mock<DocumentServiceLeaseContainer>();
+            leaseContainer.Setup(l => l.GetOwnedLeasesAsync()).Returns(Task.FromResult(Enumerable.Empty<DocumentServiceLease>()));
+            leaseContainer.Setup(l => l.GetAllLeasesAsync()).ReturnsAsync(new List<DocumentServiceLease>());
+
+            Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
+            leaseStoreManager.Setup(l => l.LeaseContainer).Returns(leaseContainer.Object);
+            leaseStoreManager.Setup(l => l.LeaseManager).Returns(Mock.Of<DocumentServiceLeaseManager>);
+            leaseStoreManager.Setup(l => l.LeaseStore).Returns(leaseStore.Object);
+            leaseStoreManager.Setup(l => l.LeaseCheckpointer).Returns(Mock.Of<DocumentServiceLeaseCheckpointer>);
+
+            ChangeFeedProcessorOptions options = new ChangeFeedProcessorOptions
+            {
+                Mode = ChangeFeedMode.AllVersionsAndDeletes,
+            };
+
+            ChangeFeedProcessorCore processor = null;
+            try
+            {
+                processor = ChangeFeedProcessorCoreTests.CreateProcessor(out _, out _);
+                processor.ApplyBuildConfiguration(
+                    leaseStoreManager.Object,
+                    null,
+                    "instanceName",
+                    new ChangeFeedLeaseOptions(),
+                    options,
+                    ChangeFeedProcessorCoreTests.GetMockedContainer("monitored"));
+
+                await processor.StartAsync();
+
+                Assert.IsNull(options.StartTime);
+            }
+            finally
+            {
+                if (processor != null)
+                {
+                    await processor.StopAsync();
+                }
+            }
+        }
+
+        // Defends #5268 (https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5268) — AC7.
+        // Symmetric companion to AC1: explicitly sets Mode = LatestVersion (rather than relying on
+        // the default at ChangeFeedProcessorOptions.cs) so that a future contributor over-broadening
+        // the new Mode != AllVersionsAndDeletes guard regresses #5268 loudly.
+        [TestMethod]
+        public async Task StartAsync_SetsStartTime_WhenLatestVersionMode_Explicit()
+        {
+            Mock<DocumentServiceLeaseStore> leaseStore = new Mock<DocumentServiceLeaseStore>();
+            leaseStore.Setup(l => l.IsInitializedAsync()).ReturnsAsync(true);
+
+            Mock<DocumentServiceLeaseContainer> leaseContainer = new Mock<DocumentServiceLeaseContainer>();
+            leaseContainer.Setup(l => l.GetOwnedLeasesAsync()).Returns(Task.FromResult(Enumerable.Empty<DocumentServiceLease>()));
+            leaseContainer.Setup(l => l.GetAllLeasesAsync()).ReturnsAsync(new List<DocumentServiceLease>());
+
+            Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
+            leaseStoreManager.Setup(l => l.LeaseContainer).Returns(leaseContainer.Object);
+            leaseStoreManager.Setup(l => l.LeaseManager).Returns(Mock.Of<DocumentServiceLeaseManager>);
+            leaseStoreManager.Setup(l => l.LeaseStore).Returns(leaseStore.Object);
+            leaseStoreManager.Setup(l => l.LeaseCheckpointer).Returns(Mock.Of<DocumentServiceLeaseCheckpointer>);
+
+            ChangeFeedProcessorOptions options = new ChangeFeedProcessorOptions
+            {
+                Mode = ChangeFeedMode.LatestVersion,
+            };
+
+            ChangeFeedProcessorCore processor = null;
+            try
+            {
+                processor = ChangeFeedProcessorCoreTests.CreateProcessor(out _, out _);
+                processor.ApplyBuildConfiguration(
+                    leaseStoreManager.Object,
+                    null,
+                    "instanceName",
+                    new ChangeFeedLeaseOptions(),
+                    options,
+                    ChangeFeedProcessorCoreTests.GetMockedContainer("monitored"));
+
+                DateTime expectedApprox = DateTime.UtcNow.AddSeconds(-1);
+
+                await processor.StartAsync();
+
+                Assert.IsTrue(options.StartTime.HasValue);
+                Assert.AreEqual(DateTimeKind.Utc, options.StartTime.Value.Kind);
+                Assert.IsTrue(
+                    Math.Abs((expectedApprox - options.StartTime.Value).TotalSeconds) < 2,
+                    $"Expected StartTime within 2 seconds of {expectedApprox:O} but was {options.StartTime.Value:O}.");
+            }
+            finally
+            {
+                if (processor != null)
+                {
+                    await processor.StopAsync();
+                }
+            }
+        }
+
+        // Defends SE-7 (lease backwards compatibility for customers upgrading from buggy 3.59.0 /
+        // 3.60.0-preview.0) — AC8. The buggy SDK returned HTTP 400 BEFORE persisting a continuation
+        // token, so the realistic upgrade-path lease state is an owned lease whose ContinuationToken
+        // is null or "". This test mocks both, asserts StartAsync() completes without exception, and
+        // confirms options.StartTime stays null on the AVAD path.
+        [TestMethod]
+        public async Task StartAsync_DoesNotSetStartTime_WhenAllVersionsAndDeletesMode_WithEmptyContinuationLease()
+        {
+            foreach (string continuationToken in new[] { null, string.Empty })
+            {
+                Mock<DocumentServiceLeaseStore> leaseStore = new Mock<DocumentServiceLeaseStore>();
+                leaseStore.Setup(l => l.IsInitializedAsync()).ReturnsAsync(true);
+
+                IEnumerable<DocumentServiceLease> ownedLeases = new List<DocumentServiceLease>()
+                {
+                    new DocumentServiceLeaseCore()
+                    {
+                        LeaseId = "0",
+                        LeaseToken = "0",
+                        ContinuationToken = continuationToken,
+                    },
+                };
+
+                Mock<DocumentServiceLeaseContainer> leaseContainer = new Mock<DocumentServiceLeaseContainer>();
+                leaseContainer.Setup(l => l.GetOwnedLeasesAsync()).Returns(Task.FromResult(ownedLeases));
+                leaseContainer.Setup(l => l.GetAllLeasesAsync()).ReturnsAsync(new List<DocumentServiceLease>());
+
+                Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
+                leaseStoreManager.Setup(l => l.LeaseContainer).Returns(leaseContainer.Object);
+                leaseStoreManager.Setup(l => l.LeaseManager).Returns(Mock.Of<DocumentServiceLeaseManager>);
+                leaseStoreManager.Setup(l => l.LeaseStore).Returns(leaseStore.Object);
+                leaseStoreManager.Setup(l => l.LeaseCheckpointer).Returns(Mock.Of<DocumentServiceLeaseCheckpointer>);
+
+                ChangeFeedProcessorOptions options = new ChangeFeedProcessorOptions
+                {
+                    Mode = ChangeFeedMode.AllVersionsAndDeletes,
+                };
+
+                ChangeFeedProcessorCore processor = null;
+                try
+                {
+                    processor = ChangeFeedProcessorCoreTests.CreateProcessor(out _, out _);
+                    processor.ApplyBuildConfiguration(
+                        leaseStoreManager.Object,
+                        null,
+                        "instanceName",
+                        new ChangeFeedLeaseOptions(),
+                        options,
+                        ChangeFeedProcessorCoreTests.GetMockedContainer("monitored"));
+
+                    await processor.StartAsync();
+
+                    Assert.IsNull(
+                        options.StartTime,
+                        $"StartTime must remain null for AVAD with ContinuationToken='{continuationToken ?? "<null>"}'.");
+                }
+                finally
+                {
+                    if (processor != null)
+                    {
+                        await processor.StopAsync();
+                    }
+                }
+            }
+        }
+
         [TestMethod]
         public async Task ObserverIsCreated()
         {

@@ -58,7 +58,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         {
             if (!this.initialized)
             {
-                if (!this.changeFeedProcessorOptions.StartFromBeginning
+                // LatestVersion-only mitigation for the cold-start first-change-skip race in #5268.
+                // AVAD must be excluded — the AVAD endpoint rejects an explicit StartTime on a
+                // null-continuation lease (#5846) and instead anchors to "now" server-side via the
+                // generic StartFromNow path. Do not drop the mode guard without re-validating both
+                // #5268 and #5846.
+                if (this.changeFeedProcessorOptions.Mode != ChangeFeedMode.AllVersionsAndDeletes
+                    && !this.changeFeedProcessorOptions.StartFromBeginning
                     && this.changeFeedProcessorOptions.StartTime == null
                     && string.IsNullOrEmpty(this.changeFeedProcessorOptions.StartContinuation))
                 {
