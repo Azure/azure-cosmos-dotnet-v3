@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Fixed
 
-- [NNNN](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/NNNN) ChangeFeedProcessor: Fixes AllVersionsAndDeletes cold-start regression introduced by #5617
+- [5852](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5852) ChangeFeedProcessor: Fixes AllVersionsAndDeletes cold-start regression introduced by #5617
 
 ### <a name="3.60.0-preview.0"/> [3.60.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.60.0-preview.0) - 2026-4-24
 
