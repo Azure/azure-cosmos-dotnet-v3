@@ -331,3 +331,7 @@ ASALocalRun/
 
 # Visual Studio Code files
 .vscode/
+
+# Coding Agent Harness scratch state (per work-item)
+.coding-harness/
+
