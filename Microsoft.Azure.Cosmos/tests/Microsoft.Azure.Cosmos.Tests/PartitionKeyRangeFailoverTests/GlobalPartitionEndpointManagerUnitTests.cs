@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
+    using System.Reflection;
     using System.Threading.Tasks;
     using System.Threading;
     using Microsoft.Azure.Cosmos.Routing;
@@ -391,6 +392,113 @@ namespace Microsoft.Azure.Cosmos.Tests
                 await Task.Delay(TimeSpan.FromMilliseconds(1));
 
                 pkRangeUriMappings[pkRange] = new Tuple<string, Uri, TransportAddressHealthState.HealthStatus>(collectionRid, originalFailedLocation, TransportAddressHealthState.HealthStatus.Connected);
+            }
+        }
+
+        /// <summary>
+        /// Verifies that DocumentClient.Dispose() disposes PartitionKeyRangeLocation
+        /// when the implementation is IDisposable (GlobalPartitionEndpointManagerCore)
+        /// and sets it to null.
+        /// Regression test for: https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5777
+        /// </summary>
+        [TestMethod]
+        [Timeout(10000)]
+        public void Dispose_DisposesPartitionKeyRangeLocationWhenIDisposable()
+        {
+            using MockDocumentClient documentClient = new MockDocumentClient();
+
+            Mock<IGlobalEndpointManager> mockEndpointManager = new Mock<IGlobalEndpointManager>(MockBehavior.Loose);
+            GlobalPartitionEndpointManagerCore manager = new GlobalPartitionEndpointManagerCore(
+                mockEndpointManager.Object,
+                isPartitionLevelFailoverEnabled: false,
+                isPartitionLevelCircuitBreakerEnabled: false);
+
+            PropertyInfo property = typeof(DocumentClient).GetProperty(
+                nameof(DocumentClient.PartitionKeyRangeLocation),
+                BindingFlags.Instance | BindingFlags.NonPublic);
+
+            Assert.IsNotNull(property, "Could not find PartitionKeyRangeLocation property on DocumentClient.");
+            property.SetValue(documentClient, manager);
+            Assert.IsNotNull(documentClient.PartitionKeyRangeLocation);
+            Assert.IsInstanceOfType(documentClient.PartitionKeyRangeLocation, typeof(IDisposable));
+
+            documentClient.Dispose();
+
+            Assert.IsNull(documentClient.PartitionKeyRangeLocation, "PartitionKeyRangeLocation should be null after Dispose.");
+
+            // Verify the manager was actually disposed: after disposal the cancellation token
+            // is cancelled, so re-initialization of the background loop is a no-op.
+            manager.InitializeAndStartCircuitBreakerFailbackBackgroundRefresh();
+        }
+
+        [TestMethod]
+        [Timeout(10000)]
+        public async Task Dispose_StopsBackgroundFailbackLoop()
+        {
+            Environment.SetEnvironmentVariable(ConfigurationManager.StalePartitionUnavailabilityRefreshIntervalInSeconds, "1");
+            Environment.SetEnvironmentVariable(ConfigurationManager.AllowedPartitionUnavailabilityDurationInSeconds, "1");
+            try
+            {
+                Mock<IGlobalEndpointManager> mockEndpointManager = new Mock<IGlobalEndpointManager>(MockBehavior.Strict);
+
+                List<Uri> readRegions = new();
+                for (int i = 1; i <= 3; i++)
+                {
+                    readRegions.Add(new Uri($"https://localhost:{i}/"));
+                }
+
+                mockEndpointManager.Setup(x => x.ReadEndpoints).Returns(() => new ReadOnlyCollection<Uri>(readRegions));
+                mockEndpointManager.Setup(x => x.AccountReadEndpoints).Returns(() => new ReadOnlyCollection<Uri>(readRegions));
+                mockEndpointManager.Setup(x => x.WriteEndpoints).Returns(() => new ReadOnlyCollection<Uri>(readRegions));
+                mockEndpointManager.Setup(x => x.CanSupportMultipleWriteLocations(ResourceType.Document, OperationType.Create)).Returns(true);
+
+                int callbackInvocationCount = 0;
+
+                GlobalPartitionEndpointManagerCore manager = new GlobalPartitionEndpointManagerCore(
+                    mockEndpointManager.Object,
+                    isPartitionLevelFailoverEnabled: false,
+                    isPartitionLevelCircuitBreakerEnabled: true);
+
+                manager.SetBackgroundConnectionPeriodicRefreshTask(
+                    async (pkRangeUriMappings) =>
+                    {
+                        Interlocked.Increment(ref callbackInvocationCount);
+                        await Task.CompletedTask;
+                    });
+
+                PartitionKeyRange partitionKeyRange = new PartitionKeyRange()
+                {
+                    Id = "0",
+                    MinInclusive = "",
+                    MaxExclusive = "FF"
+                };
+
+                Uri routeToLocation = new Uri("https://localhost:0/");
+
+                using DocumentServiceRequest createRequest = DocumentServiceRequest.Create(OperationType.Create, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey);
+                createRequest.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
+                createRequest.RequestContext.RouteToLocation(routeToLocation);
+                createRequest.RequestContext.ResolvedCollectionRid = "test-collection";
+
+                GlobalPartitionEndpointManagerUnitTests.SimulateConsecutiveFailures(manager, createRequest);
+
+                Assert.IsTrue(manager.TryMarkEndpointUnavailableForPartitionKeyRange(createRequest));
+
+                // Dispose should cancel the background loop.
+                manager.Dispose();
+
+                int countAfterDispose = callbackInvocationCount;
+
+                // Wait long enough for the background loop to have triggered if it were still running.
+                await Task.Delay(TimeSpan.FromSeconds(3));
+
+                // The callback should not be invoked after dispose.
+                Assert.AreEqual(countAfterDispose, callbackInvocationCount, "Background failback loop should not invoke callback after Dispose.");
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.AllowedPartitionUnavailabilityDurationInSeconds, null);
+                Environment.SetEnvironmentVariable(ConfigurationManager.StalePartitionUnavailabilityRefreshIntervalInSeconds, null);
             }
         }
 

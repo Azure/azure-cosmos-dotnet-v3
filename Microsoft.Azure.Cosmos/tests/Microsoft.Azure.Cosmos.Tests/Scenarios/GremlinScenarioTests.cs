@@ -740,8 +740,8 @@ namespace Microsoft.Azure.Cosmos.Scenarios
             // from the backing CosmosElement contents rather than being directly returned as CosmosElements
             List<dynamic> responseCosmosElements = new List<dynamic>(cosmosElementQueryResponse.Resource);
             Assert.AreEqual(vertexArray.Count, responseCosmosElements.Count);
-            Assert.AreNotSame(vertex1LazyObject, responseCosmosElements[0]);
-            Assert.AreNotSame(vertex2LazyObject, responseCosmosElements[1]);
+            Assert.AreNotSame((object)vertex1LazyObject, (object)responseCosmosElements[0]);
+            Assert.AreNotSame((object)vertex2LazyObject, (object)responseCosmosElements[1]);
         }
 
         private CosmosObject CreateVertexDocument(string id, string label, string pkName, string pkValue, IEnumerable<Tuple<string, IEnumerable<object>>> userProperties)

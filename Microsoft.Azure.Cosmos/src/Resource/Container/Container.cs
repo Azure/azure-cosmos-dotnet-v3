@@ -1757,11 +1757,14 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<SemanticRerankResult> SemanticRerankAsync(
+        public virtual Task<SemanticRerankResult> SemanticRerankAsync(
             string rerankContext,
             IEnumerable<string> documents,
             IDictionary<string, object> options = null,
-            CancellationToken cancellationToken = default);
+            CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
 #endif
 
         /// <summary>

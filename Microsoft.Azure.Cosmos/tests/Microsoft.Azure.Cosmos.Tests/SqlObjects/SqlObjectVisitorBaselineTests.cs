@@ -797,6 +797,18 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
                     SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("ABCDABCDABC")),
                     SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("ABC")))),
                 new SqlObjectVisitorInput(
+                SqlFunctionCallScalarExpression.Names.LastSubstringAfter,
+                SqlFunctionCallScalarExpression.CreateBuiltin(
+                    SqlFunctionCallScalarExpression.Identifiers.LastSubstringAfter,
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("Hello world")),
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("o")))),
+                new SqlObjectVisitorInput(
+                SqlFunctionCallScalarExpression.Names.LastSubstringBefore,
+                SqlFunctionCallScalarExpression.CreateBuiltin(
+                    SqlFunctionCallScalarExpression.Identifiers.LastSubstringBefore,
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("Hello world")),
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("o")))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Left,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Left,
@@ -1062,6 +1074,18 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
                     SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("Hello")),
                     SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1)),
                     SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(2)))),
+                new SqlObjectVisitorInput(
+                SqlFunctionCallScalarExpression.Names.SubstringAfter,
+                SqlFunctionCallScalarExpression.CreateBuiltin(
+                    SqlFunctionCallScalarExpression.Identifiers.SubstringAfter,
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("Hello world")),
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("o")))),
+                new SqlObjectVisitorInput(
+                SqlFunctionCallScalarExpression.Names.SubstringBefore,
+                SqlFunctionCallScalarExpression.CreateBuiltin(
+                    SqlFunctionCallScalarExpression.Identifiers.SubstringBefore,
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("Hello world")),
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("o")))),
                 new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Sum,
                 SqlFunctionCallScalarExpression.CreateBuiltin(

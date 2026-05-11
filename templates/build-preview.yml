@@ -72,6 +72,24 @@ jobs:
       arguments: -p:Optimize=true -p:IsPreview=true;SdkProjectRef=true
       versioningScheme: OFF
 
+  # Parity check: build Microsoft.Azure.Cosmos.Encryption against main SDK
+  # source WITHOUT defining SDKPROJECTREF. This matches the exact preprocessor
+  # surface the shipped NuGet package is built with (PREVIEW on, SDKPROJECTREF
+  # off) while still linking against the latest SDK abstractions. Any new
+  # abstract member on Container under #if PREVIEW that lacks an unconditional
+  # override in EncryptionContainer will produce a CS0534 compile error here
+  # instead of a runtime TypeLoadException for customers after a future SDK
+  # NuGet release. See PR #5783 (SemanticRerankAsync) for a concrete example.
+  - task: DotNetCoreCLI@2
+    displayName: Build Microsoft.Azure.Cosmos.Encryption (NuGet-surface parity vs main SDK source)
+    inputs:
+      command: build
+      configuration: $(parameters.BuildConfiguration)
+      nugetConfigPath: NuGet.config
+      projects: Microsoft.Azure.Cosmos.Encryption/src/Microsoft.Azure.Cosmos.Encryption.csproj
+      arguments: -p:Optimize=true -p:IsPreview=true -p:SdkProjectRef=true -p:DefineSdkProjectRefSymbol=false
+      versioningScheme: OFF
+
 - job:
   displayName: Preview Encryption EmulatorTests ${{ parameters.BuildConfiguration }}
   timeoutInMinutes: 60
@@ -139,6 +157,25 @@ jobs:
       nugetConfigPath: NuGet.config
       projects: Microsoft.Azure.Cosmos.sln 
       arguments: -p:Optimize=true -p:IsPreview=true;SdkProjectRef=true
+      versioningScheme: OFF
+
+  # Parity check: build Microsoft.Azure.Cosmos.Encryption.Custom against main
+  # SDK source WITHOUT defining SDKPROJECTREF. This matches the exact
+  # preprocessor surface the shipped NuGet package is built with (PREVIEW on,
+  # SDKPROJECTREF off, so SDKPROJECTREF-gated overrides in EncryptionContainer
+  # are stripped) while still linking against the latest SDK abstractions from
+  # main. Any new abstract member on Container under #if PREVIEW that lacks
+  # an unconditional override in EncryptionContainer will produce a CS0534
+  # compile error here instead of a runtime TypeLoadException for customers
+  # after a future SDK NuGet release. See PR #5783 (SemanticRerankAsync).
+  - task: DotNetCoreCLI@2
+    displayName: Build Microsoft.Azure.Cosmos.Encryption.Custom (NuGet-surface parity vs main SDK source)
+    inputs:
+      command: build
+      configuration: $(parameters.BuildConfiguration)
+      nugetConfigPath: NuGet.config
+      projects: Microsoft.Azure.Cosmos.Encryption.Custom/src/Microsoft.Azure.Cosmos.Encryption.Custom.csproj
+      arguments: -p:Optimize=true -p:IsPreview=true -p:SdkProjectRef=true -p:DefineSdkProjectRefSymbol=false
       versioningScheme: OFF
 
 - job:

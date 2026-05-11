@@ -14,13 +14,46 @@ jobs:
   - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
     clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
 
+  # Build using the Microsoft.Azure.Cosmos NuGet reference declared in the .csproj.
+  # This matches what customers consume and guards against regressions on the
+  # released SDK surface (the default release pipeline build path).
   - task: DotNetCoreCLI@2
-    displayName: Build Microsoft.Azure.Cosmos.Encryption
+    displayName: Build Microsoft.Azure.Cosmos.Encryption (NuGet SDK reference)
     inputs: 
       command: build
       nugetConfigPath: NuGet.config
       projects: Microsoft.Azure.Cosmos.Encryption/src/Microsoft.Azure.Cosmos.Encryption.csproj
       arguments: '-p:Optimize=true --configuration Release'
+      versioningScheme: OFF
+
+  # Build using a ProjectReference to the Microsoft.Azure.Cosmos source in this
+  # repo (SdkProjectRef=True / SDKPROJECTREF). This catches mismatches between
+  # the Encryption package and the latest SDK surface in main (for example,
+  # new abstract members on Container) that would otherwise only surface at
+  # customer runtime as TypeLoadException once a newer SDK NuGet is released.
+  - task: DotNetCoreCLI@2
+    displayName: Build Microsoft.Azure.Cosmos.Encryption (SDKREF - main SDK source)
+    inputs: 
+      command: build
+      nugetConfigPath: NuGet.config
+      projects: Microsoft.Azure.Cosmos.Encryption/src/Microsoft.Azure.Cosmos.Encryption.csproj
+      arguments: '-p:Optimize=true -p:IsPreview=true -p:SdkProjectRef=true --configuration Release'
+      versioningScheme: OFF
+
+  # Parity check: build against main SDK source WITHOUT defining SDKPROJECTREF.
+  # This matches the exact preprocessor surface the shipped NuGet package is
+  # built with (PREVIEW on, SDKPROJECTREF off) while still linking against the
+  # latest SDK abstractions. Any new abstract member on Container that is not
+  # backed by an unconditional override in EncryptionContainer will produce a
+  # CS0534 compile error here instead of a runtime TypeLoadException for
+  # customers after a future SDK NuGet release.
+  - task: DotNetCoreCLI@2
+    displayName: Build Microsoft.Azure.Cosmos.Encryption (NuGet-surface parity vs main SDK source)
+    inputs: 
+      command: build
+      nugetConfigPath: NuGet.config
+      projects: Microsoft.Azure.Cosmos.Encryption/src/Microsoft.Azure.Cosmos.Encryption.csproj
+      arguments: '-p:Optimize=true -p:IsPreview=true -p:SdkProjectRef=true -p:DefineSdkProjectRefSymbol=false --configuration Release'
       versioningScheme: OFF
 
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@4

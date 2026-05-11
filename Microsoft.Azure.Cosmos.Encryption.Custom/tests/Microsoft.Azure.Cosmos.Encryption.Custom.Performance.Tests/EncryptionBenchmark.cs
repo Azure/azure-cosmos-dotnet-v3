@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.Encryption.Custom.Performance.Tests
+namespace Microsoft.Azure.Cosmos.Encryption.Custom.Performance.Tests
 {
     using System.IO;
     using BenchmarkDotNet.Attributes;
@@ -6,11 +6,35 @@
 #if NET8_0_OR_GREATER
     using Microsoft.IO;
 #endif
+
     using Moq;
 
-    [RPlotExporter]
+    [MemoryDiagnoser]
     public partial class EncryptionBenchmark
     {
+        /// <summary>
+        /// Concrete key store provider — MDE requires ProviderName, Sign, and Verify
+        /// to be implemented. Moq-based setups silently fail inside MDE's internal caching.
+        /// </summary>
+        private sealed class BenchmarkKeyStoreProvider : EncryptionKeyStoreProvider
+        {
+            private static readonly byte[] RawKey = Enumerable.Range(0, 32).Select(static i => (byte)(255 - i)).ToArray();
+
+            public override string ProviderName => "benchmark-store";
+
+            public override byte[] UnwrapKey(string encryptionKeyId, KeyEncryptionKeyAlgorithm algorithm, byte[] encryptedKey)
+                => RawKey;
+
+            public override byte[] WrapKey(string encryptionKeyId, KeyEncryptionKeyAlgorithm algorithm, byte[] key)
+                => key;
+
+            public override byte[] Sign(string encryptionKeyId, bool allowEnclaveComputations)
+                => new byte[] { 0x01 };
+
+            public override bool Verify(string encryptionKeyId, bool allowEnclaveComputations, byte[] signature)
+                => signature?.Length == 1 && signature[0] == 0x01;
+        }
+
         private static class RequestOptionsOverrideHelper
         {
             public static RequestOptions? Create(JsonProcessor processor)
@@ -32,13 +56,13 @@
 #endif
             }
         }
-    private static readonly byte[] DekData = Enumerable.Repeat((byte)0, 32).ToArray();
+
+        private static readonly BenchmarkKeyStoreProvider KeyStoreProvider = new();
         private static readonly DataEncryptionKeyProperties DekProperties = new(
                 "id",
                 CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
-                DekData,
+                Enumerable.Range(0, 32).Select(static i => (byte)i).ToArray(),
                 new EncryptionKeyWrapMetadata("name", "value"), DateTime.UtcNow);
-        private static readonly Mock<EncryptionKeyStoreProvider> StoreProvider = new();
 
 #if NET8_0_OR_GREATER
         private readonly RecyclableMemoryStreamManager recyclableMemoryStreamManager = new ();
@@ -53,24 +77,22 @@
         [Params(1, 10, 100)]
         public int DocumentSizeInKb { get; set; }
 
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
-        [Params(JsonProcessor.Newtonsoft, JsonProcessor.Stream)]
+#if NET8_0_OR_GREATER
+        [Params("Newtonsoft", "Stream")]
 #else
-        [Params(JsonProcessor.Newtonsoft)]
+        [Params("Newtonsoft")]
 #endif
-        internal JsonProcessor JsonProcessor { get; set; }
+        public string Processor { get; set; } = "Newtonsoft";
+
+        internal JsonProcessor JsonProcessor => Enum.Parse<JsonProcessor>(this.Processor);
 
         [GlobalSetup]
         public async Task Setup()
         {
-            StoreProvider
-                .Setup(x => x.UnwrapKey(It.IsAny<string>(), It.IsAny<KeyEncryptionKeyAlgorithm>(), It.IsAny<byte[]>()))
-                .Returns(DekData);
-
             Mock<DataEncryptionKeyProvider> keyProvider = new();
             keyProvider
                 .Setup(x => x.FetchDataEncryptionKeyWithoutRawKeyAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .Returns(async () => await MdeEncryptionAlgorithm.CreateAsync(DekProperties, EncryptionType.Randomized, StoreProvider.Object, cacheTimeToLive: TimeSpan.MaxValue, false, default));
+                .Returns(async () => await MdeEncryptionAlgorithm.CreateAsync(DekProperties, EncryptionType.Randomized, KeyStoreProvider, cacheTimeToLive: TimeSpan.MaxValue, false, default));
 
             this.encryptor = new(keyProvider.Object);
             this.encryptionOptions = this.CreateEncryptionOptions();
@@ -89,58 +111,79 @@
             this.encryptedData = memoryStream.ToArray();
         }
 
-        
-        [Benchmark]
+        // OperationsPerInvoke amortizes the first-rent ArrayPool miss that BenchmarkDotNet's
+        // MemoryDiagnoser introduces. BDN forces a Gen2 GC between iterations which can trim
+        // ArrayPool<byte>.Shared's thread-local and per-core buckets; the first Rent inside a
+        // measured invocation then tends to allocate a fresh array rather than hit the pool.
+        // Running N back-to-back operations per invocation means the second-and-later Rents
+        // hit the warm pool (populated by the prior Return), which is what production servers
+        // — where the pool stays warm across requests — actually see. The reported
+        // Allocated / Mean columns are divided by OperationsPerInvoke automatically by BDN.
+        private const int OperationsPerInvoke = 16;
+
+        [Benchmark(OperationsPerInvoke = OperationsPerInvoke)]
         public async Task Encrypt()
         {
-            await EncryptionProcessor.EncryptAsync(
-                 new MemoryStream(this.plaintext!),
-                 this.encryptor,
-                 this.encryptionOptions,
-                 this.JsonProcessor,
-                 new CosmosDiagnosticsContext(),
-                 CancellationToken.None);
+            for (int i = 0; i < OperationsPerInvoke; i++)
+            {
+                await EncryptionProcessor.EncryptAsync(
+                     new MemoryStream(this.plaintext!),
+                     this.encryptor,
+                     this.encryptionOptions,
+                     this.JsonProcessor,
+                     new CosmosDiagnosticsContext(),
+                     CancellationToken.None);
+            }
         }
 
 #if NET8_0_OR_GREATER
-        [Benchmark]
+        [Benchmark(OperationsPerInvoke = OperationsPerInvoke)]
         public async Task EncryptToProvidedStream()
         {
-            using RecyclableMemoryStream rms = new (this.recyclableMemoryStreamManager);
-            await EncryptionProcessor.EncryptAsync(
-                new MemoryStream(this.plaintext!),
-                rms,
-                this.encryptor,
-                this.encryptionOptions,
-                 this.JsonProcessor,
-                new CosmosDiagnosticsContext(),
-                CancellationToken.None);
+            for (int i = 0; i < OperationsPerInvoke; i++)
+            {
+                using RecyclableMemoryStream rms = new (this.recyclableMemoryStreamManager);
+                await EncryptionProcessor.EncryptAsync(
+                    new MemoryStream(this.plaintext!),
+                    rms,
+                    this.encryptor,
+                    this.encryptionOptions,
+                     this.JsonProcessor,
+                    new CosmosDiagnosticsContext(),
+                    CancellationToken.None);
+            }
         }
 #endif
 
-        [Benchmark]
+        [Benchmark(OperationsPerInvoke = OperationsPerInvoke)]
         public async Task Decrypt()
         {
-            await EncryptionProcessor.DecryptAsync(
-                new MemoryStream(this.encryptedData!),
-                this.encryptor,
-                new CosmosDiagnosticsContext(),
-                RequestOptionsOverrideHelper.Create(this.JsonProcessor),
-                CancellationToken.None);
+            for (int i = 0; i < OperationsPerInvoke; i++)
+            {
+                await EncryptionProcessor.DecryptAsync(
+                    new MemoryStream(this.encryptedData!),
+                    this.encryptor,
+                    new CosmosDiagnosticsContext(),
+                    RequestOptionsOverrideHelper.Create(this.JsonProcessor),
+                    CancellationToken.None);
+            }
         }
 
 #if NET8_0_OR_GREATER
-        [Benchmark]
+        [Benchmark(OperationsPerInvoke = OperationsPerInvoke)]
         public async Task DecryptToProvidedStream()
         {
-            using RecyclableMemoryStream rms = new(this.recyclableMemoryStreamManager);
-            await EncryptionProcessor.DecryptAsync(
-                new MemoryStream(this.encryptedData!),
-                rms,
-                this.encryptor,
-                new CosmosDiagnosticsContext(),
-                RequestOptionsOverrideHelper.Create(this.JsonProcessor),
-                CancellationToken.None);
+            for (int i = 0; i < OperationsPerInvoke; i++)
+            {
+                using RecyclableMemoryStream rms = new(this.recyclableMemoryStreamManager);
+                await EncryptionProcessor.DecryptAsync(
+                    new MemoryStream(this.encryptedData!),
+                    rms,
+                    this.encryptor,
+                    new CosmosDiagnosticsContext(),
+                    RequestOptionsOverrideHelper.Create(this.JsonProcessor),
+                    CancellationToken.None);
+            }
         }
 #endif
 

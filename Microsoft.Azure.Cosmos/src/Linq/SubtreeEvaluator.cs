@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
 
             LambdaExpression lambda = Expression.Lambda(expression);
-            Delegate function = lambda.Compile();
+            Delegate function = lambda.Compile(preferInterpretation: true);
 
             return Expression.Constant(function.DynamicInvoke(null), expression.Type);
         }

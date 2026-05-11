@@ -23,6 +23,6 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
         /// <returns>A <see cref="Task{TResult}"/> containing a <see cref="DistributedTransactionResponse"/> that represents the result of the transaction.</returns>
-        public abstract Task<DistributedTransactionResponse> CommitTransactionAsync(CancellationToken cancellationToken);
+        public abstract Task<DistributedTransactionResponse> CommitTransactionAsync(CancellationToken cancellationToken = default);
     }
 }

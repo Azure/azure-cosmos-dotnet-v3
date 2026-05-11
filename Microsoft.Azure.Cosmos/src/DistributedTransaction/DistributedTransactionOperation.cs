@@ -1,4 +1,4 @@
-﻿// ------------------------------------------------------------
+// ------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
@@ -23,7 +23,8 @@ namespace Microsoft.Azure.Cosmos
             string database,
             string container,
             PartitionKey partitionKey,
-            string id = null)
+            string id = null,
+            DistributedTransactionRequestOptions requestOptions = null)
         {
             this.OperationType = operationType;
             this.OperationIndex = operationIndex;
@@ -31,6 +32,7 @@ namespace Microsoft.Azure.Cosmos
             this.Database = database;
             this.Container = container;
             this.Id = id;
+            this.RequestOptions = requestOptions;
         }
 
         public PartitionKey PartitionKey { get; internal set; }
@@ -49,11 +51,15 @@ namespace Microsoft.Azure.Cosmos
 
         public string DatabaseResourceId { get; internal set; }
 
+        internal DistributedTransactionRequestOptions RequestOptions { get; }
+
         internal string PartitionKeyJson { get; set; }
 
         internal string SessionToken { get; set; }
 
-        internal string ETag { get; set; }
+        internal string ETag => this.OperationType == OperationType.Read
+            ? this.RequestOptions?.IfNoneMatchEtag
+            : this.RequestOptions?.IfMatchEtag;
 
         internal Stream ResourceStream { get; set; }
 
@@ -80,21 +86,10 @@ namespace Microsoft.Azure.Cosmos
             string database,
             string container,
             PartitionKey partitionKey,
-            T resource)
-            : base(operationType, operationIndex, database, container, partitionKey)
-        {
-            this.Resource = resource;
-        }
-
-        public DistributedTransactionOperation(
-            Documents.OperationType operationType,
-            int operationIndex,
-            string database,
-            string container,
-            PartitionKey partitionKey,
             string id,
-            T resource)
-            : base(operationType, operationIndex, database, container, partitionKey, id)
+            T resource,
+            DistributedTransactionRequestOptions requestOptions = null)
+            : base(operationType, operationIndex, database, container, partitionKey, id, requestOptions)
         {
             this.Resource = resource;
         }

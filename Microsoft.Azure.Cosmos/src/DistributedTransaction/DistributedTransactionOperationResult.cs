@@ -42,10 +42,15 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DistributedTransactionOperationResult"/> class.
-        /// This protected constructor is intended for use by derived classes.
         /// </summary>
+        /// <remarks>
+        /// Must be <c>public</c> for System.Text.Json reflection-based deserialization.
+        /// System.Text.Json 6.x only scans <c>BindingFlags.Public</c> constructors when resolving
+        /// <see cref="JsonConstructorAttribute"/>; non-public constructors are not found.
+        /// Support for non-public constructors was added in System.Text.Json 7.0.
+        /// </remarks>
         [JsonConstructor]
-        protected DistributedTransactionOperationResult()
+        public DistributedTransactionOperationResult()
         {
         }
 
@@ -60,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the HTTP status code returned by the operation.
         /// </summary>
         [JsonInclude]
-        [JsonPropertyName("statuscode")]
+        [JsonPropertyName("statusCode")]
         public virtual HttpStatusCode StatusCode { get; internal set; }
 
         /// <summary>
@@ -92,31 +97,25 @@ namespace Microsoft.Azure.Cosmos
         public virtual Stream ResourceStream { get; internal set; }
 
         /// <summary>
-        /// Used for JSON deserialization of the base64-encoded resource body.
-        /// </summary>
-        [JsonInclude]
-        [JsonPropertyName("resourcebody")]
-        internal string ResourceBodyBase64
-        {
-            get => null; // Write-only for deserialization
-            set
-            {
-                if (!string.IsNullOrEmpty(value))
-                {
-                    byte[] resourceBody = Convert.FromBase64String(value);
-                    this.ResourceStream = new MemoryStream(resourceBody, 0, resourceBody.Length, writable: false, publiclyVisible: true);
-                }
-            }
-        }
-
-        /// <summary>
         /// Request charge in request units for the operation.
         /// </summary>
+        [JsonInclude]
         [JsonPropertyName("requestCharge")]
-        internal virtual double RequestCharge { get; set; }
+        public virtual double RequestCharge { get; internal set; }
 
-        [JsonPropertyName("substatuscode")]
+        [JsonIgnore]
         internal virtual SubStatusCodes SubStatusCode { get; set; }
+
+        /// <summary>
+        /// Gets the sub-status code value as an unsigned integer.
+        /// </summary>
+        [JsonInclude]
+        [JsonPropertyName("subStatusCode")]
+        public virtual uint SubStatusCodeValue
+        {
+            get => (uint)this.SubStatusCode;
+            internal set => this.SubStatusCode = (SubStatusCodes)value;
+        }
 
         /// <summary>
         /// ActivityId related to the operation.
@@ -127,6 +126,11 @@ namespace Microsoft.Azure.Cosmos
         [JsonIgnore]
         internal ITrace Trace { get; set; }
 
+        private static readonly JsonSerializerOptions CaseInsensitiveOptions = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true,
+        };
+
         /// <summary>
         /// Creates a <see cref="DistributedTransactionOperationResult"/> from a JSON element.
         /// </summary>
@@ -134,7 +138,23 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The deserialized operation result.</returns>
         internal static DistributedTransactionOperationResult FromJson(JsonElement json)
         {
-            return JsonSerializer.Deserialize<DistributedTransactionOperationResult>(json);
+            DistributedTransactionOperationResult result = JsonSerializer.Deserialize<DistributedTransactionOperationResult>(json, DistributedTransactionOperationResult.CaseInsensitiveOptions);
+
+            if (json.TryGetProperty(DistributedTransactionSerializer.ResourceBody, out JsonElement resourceBody)
+                && resourceBody.ValueKind != JsonValueKind.Undefined
+                && resourceBody.ValueKind != JsonValueKind.Null)
+            {
+                // resourceBody is expected to be a JSON object (Cosmos DB document)
+                if (resourceBody.ValueKind != JsonValueKind.Object)
+                {
+                    throw new JsonException($"The 'resourceBody' value must be a JSON object, but was '{resourceBody.ValueKind}'.");
+                }
+
+                byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(resourceBody);
+                result.ResourceStream = new MemoryStream(bytes, 0, bytes.Length, writable: false, publiclyVisible: true);
+            }
+
+            return result;
         }
     }
 }

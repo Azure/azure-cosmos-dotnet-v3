@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             //Test FaultInjectionEndpoint
             PartitionKey test = new PartitionKey("test");
             Assert.AreEqual(FeedRange.FromPartitionKey(test).ToString(), faultInjectionRule.GetCondition().GetEndpoint().GetFeedRange().ToString());
-            Assert.AreEqual("dbs/db/colls/col", faultInjectionRule.GetCondition().GetEndpoint().GetResoureName());
+            Assert.AreEqual("dbs/db/colls/col", faultInjectionRule.GetCondition().GetEndpoint().GetResourceName());
             Assert.AreEqual(3, faultInjectionRule.GetCondition().GetEndpoint().GetReplicaCount());
             Assert.IsTrue(faultInjectionRule.GetCondition().GetEndpoint().IsIncludePrimary());
 
