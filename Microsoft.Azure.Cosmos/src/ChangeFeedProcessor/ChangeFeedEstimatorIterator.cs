@@ -281,9 +281,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             // backlog for Beginning processors and defeats the Azure Functions Scale Controller /
             // KEDA wake-up signal that keys off `EstimatedLag > 0`.
             //
-            // Mirror the dormant-after-split sentinel established in #4285 below and report
-            // EstimatedLag = 1 so that downstream listeners can wake the processor. The accurate
-            // lag becomes available once the lease checkpoints for the first time.
+            // Mirror the dormant-after-split sentinel pattern (introduced in PR #4324 to address
+            // issue #4285, see the handler below) and report EstimatedLag = 1 so that downstream
+            // listeners can wake the processor. The accurate lag becomes available once the lease
+            // checkpoints for the first time.
             //
             // Long-term fix: persist the processor's start configuration in the lease document so the
             // estimator can compute correct lag per start strategy. Tracked in #5847.
