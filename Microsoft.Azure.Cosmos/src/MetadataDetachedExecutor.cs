@@ -308,9 +308,12 @@ namespace Microsoft.Azure.Cosmos
                     Exception exceptionToThrow = shouldRetry?.ExceptionToThrow;
                     if (exceptionToThrow != null)
                     {
-                        // Reference equality on Exception (no operator== override) without
-                        // going through object.ReferenceEquals, which would box both args
-                        // (CDX1000).
+                        // Reference equality on typed Exception locals. Avoids going through
+                        // object.ReferenceEquals, which the CDX1000 analyzer
+                        // (DontConvertExceptionToObject) flags because it converts typed
+                        // Exception references to object and loses the type information used
+                        // by static analysis. Exception is a reference type, so no boxing
+                        // occurs in either form; the analyzer concern is type-info loss.
                         if (exceptionToThrow == capturedException.SourceException)
                         {
                             capturedException.Throw();
