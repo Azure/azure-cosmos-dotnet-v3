@@ -4,6 +4,12 @@
     <AssemblyName>Microsoft.Azure.Cosmos.AI</AssemblyName>
     <RootNamespace>Microsoft.Azure.Cosmos.AI</RootNamespace>
     <LangVersion>$(LangVersion)</LangVersion>
+    <!-- This package depends on ICosmosEmbeddingGenerator and EmbeddingSource which are
+         #if PREVIEW-gated public types in the core SDK. Setting IsPreview=true here ensures
+         Directory.Build.props adds the PREVIEW compile symbol for this project (and transitively
+         for the core SDK when using ProjectReference via AdditionalProperties), so VS and plain
+         'dotnet build' both work without passing /p:IsPreview=true on the command line. -->
+    <IsPreview>true</IsPreview>
     <CosmosAIVersion Condition=" '$(IsPreview)' != 'true' ">$(CosmosAIOfficialVersion)</CosmosAIVersion>
     <CosmosAIVersion Condition=" '$(IsPreview)' == 'true' ">$(CosmosAIPreviewVersion)</CosmosAIVersion>
     <CosmosAIVersionSuffix Condition=" '$(IsPreview)' == 'true' ">$(CosmosAIPreviewSuffixVersion)</CosmosAIVersionSuffix>
