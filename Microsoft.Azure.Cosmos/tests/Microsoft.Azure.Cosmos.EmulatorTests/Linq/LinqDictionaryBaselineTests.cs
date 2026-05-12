@@ -20,14 +20,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     /// generate the correct SQL using the OBJECTTOARRAY() function. The OBJECTTOARRAY function
     /// converts a JSON object into an array of {"k": key, "v": value} pairs that can be iterated.
     /// 
-    /// NOTE: This baseline test is currently [Ignore]d because the baseline XML cannot be
-    /// generated without running against the Cosmos emulator. To enable:
-    ///   1. Bring up the Cosmos emulator locally.
-    ///   2. Remove the [Ignore] attribute on TestDictionaryLinqTranslations.
-    ///   3. Run UpdateContracts.ps1 to (re)generate the baseline XML.
-    /// 
-    /// Until then, comprehensive data + SQL coverage for the Dictionary/IDictionary/
-    /// IReadOnlyDictionary/Nested-dictionary scenarios is provided by
+    /// Comprehensive data + SQL coverage for the Dictionary/IDictionary/
+    /// IReadOnlyDictionary/Nested-dictionary scenarios is additionally provided by
     /// <see cref="CosmosItemLinqTests.LinqDictionaryAnyWithObjectToArrayTest"/>, which runs
     /// against the emulator in CI.
     /// </summary>
@@ -79,12 +73,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         /// (ArrayBuiltinFunctions.ArrayCountVisitor) and are covered by the integration test.
         /// IDictionary, IReadOnlyDictionary, and Nested-dictionary translations are also covered
         /// by the integration test <see cref="CosmosItemLinqTests.LinqDictionaryAnyWithObjectToArrayTest"/>.
-        /// 
-        /// NOTE: Run UpdateContracts.ps1 against the emulator to generate the baseline XML
-        /// before removing [Ignore].
         /// </summary>
         [TestMethod]
-        [Ignore] // TODO: Run UpdateContracts.ps1 to generate baseline XML before enabling
         public void TestDictionaryLinqTranslations()
         {
             List<LinqTestInput> inputs = new List<LinqTestInput>();
