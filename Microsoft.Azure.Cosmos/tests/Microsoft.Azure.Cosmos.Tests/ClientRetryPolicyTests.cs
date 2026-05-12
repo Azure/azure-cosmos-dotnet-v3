@@ -684,7 +684,8 @@
                 this.partitionKeyRangeLocationCache,
                 new RetryOptions(),
                 enableEndpointDiscovery,
-                isThinClientEnabled: false);
+                isThinClientEnabled: false,
+                isGatewayClientMode: true);
 
             DocumentServiceRequest request = this.CreateRequest(isReadRequest: false, isMasterResourceType: false);
             retryPolicy.OnBeforeSendRequest(request);
@@ -728,7 +729,8 @@
                 this.partitionKeyRangeLocationCache,
                 new RetryOptions(),
                 enableEndpointDiscovery,
-                isThinClientEnabled: false);
+                isThinClientEnabled: false,
+                isGatewayClientMode: true);
 
             DocumentServiceRequest request = this.CreateRequest(isReadRequest: false, isMasterResourceType: false);
             retryPolicy.OnBeforeSendRequest(request);
@@ -763,7 +765,8 @@
                 this.partitionKeyRangeLocationCache,
                 retryOptions,
                 enableEndpointDiscovery,
-                isThinClientEnabled: false);
+                isThinClientEnabled: false,
+                isGatewayClientMode: true);
 
             DocumentServiceRequest request = this.CreateRequest(isReadRequest: false, isMasterResourceType: false);
             retryPolicy.OnBeforeSendRequest(request);
@@ -810,7 +813,8 @@
                 this.partitionKeyRangeLocationCache,
                 new RetryOptions(),
                 enableEndpointDiscovery,
-                isThinClientEnabled: false);
+                isThinClientEnabled: false,
+                isGatewayClientMode: true);
 
             DocumentServiceRequest request = this.CreateRequest(isReadRequest: false, isMasterResourceType: false);
             retryPolicy.OnBeforeSendRequest(request);
@@ -867,7 +871,8 @@
                 this.partitionKeyRangeLocationCache,
                 retryOptions,
                 enableEndpointDiscovery,
-                isThinClientEnabled: false);
+                isThinClientEnabled: false,
+                isGatewayClientMode: true);
 
             DocumentServiceRequest request = this.CreateRequest(isReadRequest: false, isMasterResourceType: false);
             retryPolicy.OnBeforeSendRequest(request);
@@ -921,7 +926,8 @@
                 this.partitionKeyRangeLocationCache,
                 new RetryOptions(),
                 enableEndpointDiscovery,
-                isThinClientEnabled: false);
+                isThinClientEnabled: false,
+                isGatewayClientMode: true);
 
             DocumentServiceRequest writeRequest = this.CreateRequest(isReadRequest: false, isMasterResourceType: false);
             writeRetryPolicy.OnBeforeSendRequest(writeRequest);
@@ -936,7 +942,8 @@
                 this.partitionKeyRangeLocationCache,
                 new RetryOptions(),
                 enableEndpointDiscovery,
-                isThinClientEnabled: false);
+                isThinClientEnabled: false,
+                isGatewayClientMode: true);
 
             DocumentServiceRequest readRequest = this.CreateRequest(isReadRequest: true, isMasterResourceType: false);
             readRetryPolicy.OnBeforeSendRequest(readRequest);

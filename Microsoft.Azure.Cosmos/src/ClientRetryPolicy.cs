@@ -41,6 +41,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly GlobalPartitionEndpointManager partitionKeyRangeLocationCache;
         private readonly bool enableEndpointDiscovery;
         private readonly bool isThinClientEnabled;
+        private readonly bool isGatewayClientMode;
 
         // 449 (RetryWith) backoff configuration
         private readonly int retryWithInitialBackoffMilliseconds;
@@ -69,7 +70,8 @@ namespace Microsoft.Azure.Cosmos
             GlobalPartitionEndpointManager partitionKeyRangeLocationCache,
             RetryOptions retryOptions,
             bool enableEndpointDiscovery,
-            bool isThinClientEnabled)
+            bool isThinClientEnabled,
+            bool isGatewayClientMode = false)
         {
             this.throttlingRetry = new ResourceThrottleRetryPolicy(
                 retryOptions.MaxRetryAttemptsOnThrottledRequests,
@@ -84,6 +86,7 @@ namespace Microsoft.Azure.Cosmos
             this.canUseMultipleWriteLocations = false;
             this.isMultiMasterWriteRequest = false;
             this.isThinClientEnabled = isThinClientEnabled;
+            this.isGatewayClientMode = isGatewayClientMode;
 
             RetryWithConfiguration retryWithConfig = retryOptions.GetRetryWithConfiguration();
             this.retryWithInitialBackoffMilliseconds = retryWithConfig?.InitialRetryIntervalMilliseconds
@@ -390,7 +393,10 @@ namespace Microsoft.Azure.Cosmos
             // Received 449 (RetryWith) - transient concurrency error from the store.
             // The proxy no longer retries 449 for external SDK requests to avoid noisy-neighbor amplification.
             // The SDK handles retries with jittered exponential backoff.
-            if (statusCode.HasValue && (int)statusCode.Value == 449)
+            // Only retry in Gateway mode or ThinClient mode. In Direct mode, GoneAndRetryWithRequestRetryPolicy
+            // already handles 449 at the transport layer — retrying here would cause double-retry amplification.
+            if (statusCode.HasValue && (int)statusCode.Value == 449
+                && (this.isGatewayClientMode || this.isThinClientEnabled))
             {
                 return this.ShouldRetryOnRetryWithStatus();
             }
@@ -620,14 +626,13 @@ namespace Microsoft.Azure.Cosmos
 
                 return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
             }
-            else
-            {
-                this.retryWithCurrentBackoffMilliseconds = (int)Math.Min(
-                    (long)this.retryWithCurrentBackoffMilliseconds.Value * ClientRetryPolicy.RetryWithBackoffMultiplier,
-                    this.retryWithMaxBackoffMilliseconds);
-            }
 
+            // Use current backoff for this call, then advance for the next call.
+            // Sequence: [0ms (penalty-free), initial+j, initial*2+j, initial*4+j, ...]
             int backoffMilliseconds = this.retryWithCurrentBackoffMilliseconds.Value;
+            this.retryWithCurrentBackoffMilliseconds = (int)Math.Min(
+                (long)this.retryWithCurrentBackoffMilliseconds.Value * ClientRetryPolicy.RetryWithBackoffMultiplier,
+                this.retryWithMaxBackoffMilliseconds);
 
             // Add jitter (lock required: Random is not thread-safe on netstandard2.0)
             if (this.retryWithRandomSaltMilliseconds.HasValue && this.retryWithRandomSaltMilliseconds.Value > 1)
