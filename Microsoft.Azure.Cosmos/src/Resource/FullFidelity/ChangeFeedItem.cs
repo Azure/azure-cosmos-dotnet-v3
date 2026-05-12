@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos
     /// PartitionKey partitionKey = new PartitionKey(@"learning");
     /// ChangeFeedStartFrom changeFeedStartFrom = ChangeFeedStartFrom.Now(FeedRange.FromPartitionKey(partitionKey));
     /// 
-    /// using (FeedIterator<ChangeFeedItem<ToDoActivity>> feedIterator = container.GetChangeFeedIterator<ChangeFeedItemChanges<ToDoActivity>>(
+    /// using (FeedIterator<ChangeFeedItem<ToDoActivity>> feedIterator = container.GetChangeFeedIterator<ChangeFeedItem<ToDoActivity>>(
     ///     changeFeedStartFrom: changeFeedStartFrom,
     ///     changeFeedMode: changeFeedMode))
     /// {
@@ -48,7 +48,11 @@ namespace Microsoft.Azure.Cosmos
     /// ]]>
     /// </code>
     /// </example>
-    /// <remarks><see cref="ChangeFeedItem{T}"/> is an optional helper class that uses Newtonsoft serialization libraries. Users are welcome to create their own custom helper class.</remarks>
+    /// <remarks>
+    /// <see cref="ChangeFeedItem{T}"/> is an optional helper class that uses Newtonsoft serialization libraries. Users are welcome to create their own custom helper class.
+    /// Property setters are public to support deserialization by both Newtonsoft.Json and System.Text.Json,
+    /// as well as to allow users to construct instances for testing purposes.
+    /// </remarks>
     public class ChangeFeedItem<T>
     {
         /// <summary>

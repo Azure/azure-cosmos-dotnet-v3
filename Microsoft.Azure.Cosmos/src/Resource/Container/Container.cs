@@ -1801,7 +1801,7 @@ namespace Microsoft.Azure.Cosmos
 #endif
 
         /// <summary>
-        /// Initializes a <see cref="GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes"/> for change feed processing with all versions and deletes.
+        /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed processing with all versions and deletes.
         /// </summary>
         /// <typeparam name="T">Document type</typeparam>
         /// <param name="processorName">A name that identifies the Processor and the particular work it will do.</param>
@@ -1846,6 +1846,7 @@ namespace Microsoft.Azure.Cosmos
         ///         bool isTimeToLiveExpired = changeFeedItem.Metadata.IsTimeToLiveExpired;
         ///     }
         ///     
+        ///     allProcessedDocumentsEvent.Set();
         ///     return Task.CompletedTask;
         /// })
         /// .WithInstanceName(Guid.NewGuid().ToString())
