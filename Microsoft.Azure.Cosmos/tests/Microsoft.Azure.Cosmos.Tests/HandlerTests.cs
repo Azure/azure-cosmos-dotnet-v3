@@ -1278,5 +1278,48 @@ namespace Microsoft.Azure.Cosmos.Tests
             await invoker.SendAsync(requestMessage, new CancellationToken());
         }
 
+        [TestMethod]
+        [DataRow("Database")]
+        [DataRow("Collection")]
+        [DataRow("DatabaseAccount")]
+        [DataRow("StoredProcedure")]
+        public async Task LastCommittedSingleWriteRegion_DoesNotThrowForNonDocumentResourceTypesOnMultiMaster(string resourceTypeName)
+        {
+            ResourceType resourceType = (ResourceType)Enum.Parse(typeof(ResourceType), resourceTypeName);
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(accountConsistencyLevel: Cosmos.ConsistencyLevel.Session);
+
+            System.Reflection.PropertyInfo prop = typeof(DocumentClient).GetProperty(
+                "UseMultipleWriteLocations",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            prop.SetValue(client.DocumentClient, true);
+
+            TestHandler testHandler = new TestHandler((request, cancellationToken) =>
+            {
+                Assert.IsNull(request.Headers[HttpConstants.HttpHeaders.ReadConsistencyStrategy],
+                    $"ReadConsistencyStrategy header should not be set for non-document resource type {resourceTypeName}");
+                Assert.IsNull(request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion],
+                    $"Hub region header should not be set for non-document resource type {resourceTypeName}");
+                return TestHandler.ReturnSuccess();
+            });
+
+            RequestInvokerHandler invoker = new RequestInvokerHandler(
+                client,
+                requestedClientConsistencyLevel: null,
+                requestedClientReadConsistencyStrategy: Cosmos.ReadConsistencyStrategy.LastCommittedSingleWriteRegion,
+                requestedClientPriorityLevel: null,
+                requestedClientThroughputBucket: null)
+            {
+                InnerHandler = testHandler
+            };
+
+            RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"))
+            {
+                ResourceType = resourceType
+            };
+            requestMessage.OperationType = OperationType.Read;
+
+            await invoker.SendAsync(requestMessage, new CancellationToken());
+        }
+
     }
 }

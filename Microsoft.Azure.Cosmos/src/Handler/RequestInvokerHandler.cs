@@ -530,23 +530,22 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             if (readConsistencyStrategy.HasValue)
             {
-                // LastCommittedSingleWriteRegion relies on hub-region routing which only applies
-                // to single-master accounts. In multi-master accounts every region is a write
-                // region and there is no partition-set level hub, so reject with a clear error.
-                if (readConsistencyStrategy.Value == Cosmos.ReadConsistencyStrategy.LastCommittedSingleWriteRegion
-                    && this.client.DocumentClient.UseMultipleWriteLocations)
-                {
-                    throw new ArgumentException(
-                        $"{nameof(Cosmos.ReadConsistencyStrategy)}.{nameof(Cosmos.ReadConsistencyStrategy.LastCommittedSingleWriteRegion)} " +
-                        "is not supported for multi-master (multiple write region) accounts. " +
-                        "In multi-master accounts every region accepts writes and there is no single hub region. " +
-                        "Use a different ReadConsistencyStrategy or configure the account with a single write region.");
-                }
-
                 if (requestMessage.ResourceType == ResourceType.Document)
                 {
                     if (readConsistencyStrategy.Value == Cosmos.ReadConsistencyStrategy.LastCommittedSingleWriteRegion)
                     {
+                        // LastCommittedSingleWriteRegion relies on hub-region routing which only applies
+                        // to single-master accounts. In multi-master accounts every region is a write
+                        // region and there is no partition-set level hub, so reject with a clear error.
+                        if (this.client.DocumentClient.UseMultipleWriteLocations)
+                        {
+                            throw new ArgumentException(
+                                $"{nameof(Cosmos.ReadConsistencyStrategy)}.{nameof(Cosmos.ReadConsistencyStrategy.LastCommittedSingleWriteRegion)} " +
+                                "is not supported for multi-master (multiple write region) accounts. " +
+                                "In multi-master accounts every region accepts writes and there is no single hub region. " +
+                                "Use a different ReadConsistencyStrategy or configure the account with a single write region.");
+                        }
+
                         if (OperationTypeExtensions.IsReadOperation(requestMessage.OperationType))
                         {
                             requestMessage.Headers.Set(
