@@ -17,15 +17,35 @@ namespace Microsoft.Azure.Cosmos
 
     internal class DistributedTransactionCommitter
     {
+        // Outer-loop retry parameters. The inner loop (ClientRetryPolicy) handles envelope failures with empty body;
+        // the outer loop handles body-bearing semantic failures whose JSON body sets isRetriable: true.
+        internal const int MaxIsRetriableRetryCount = 10;
+        private const int RetryMaxExponent = 5; // ~32 s max base delay before jitter
+        private static readonly TimeSpan DefaultRetryBaseDelay = TimeSpan.FromSeconds(1);
+        private static readonly string ResourceUri = Paths.OperationsPathSegment + "/" + Paths.Operations_Dtc;
+
         private readonly IReadOnlyList<DistributedTransactionOperation> operations;
         private readonly CosmosClientContext clientContext;
+        private readonly TimeSpan retryBaseDelay;
+        private readonly Func<TimeSpan, CancellationToken, Task> delayProvider;
 
         public DistributedTransactionCommitter(
             IReadOnlyList<DistributedTransactionOperation> operations,
             CosmosClientContext clientContext)
+            : this(operations, clientContext, DistributedTransactionCommitter.DefaultRetryBaseDelay)
+        {
+        }
+
+        internal DistributedTransactionCommitter(
+            IReadOnlyList<DistributedTransactionOperation> operations,
+            CosmosClientContext clientContext,
+            TimeSpan retryBaseDelay,
+            Func<TimeSpan, CancellationToken, Task> delayProvider = null)
         {
             this.operations = operations ?? throw new ArgumentNullException(nameof(operations));
             this.clientContext = clientContext ?? throw new ArgumentNullException(nameof(clientContext));
+            this.retryBaseDelay = retryBaseDelay;
+            this.delayProvider = delayProvider ?? Task.Delay;
         }
 
         public async Task<DistributedTransactionResponse> CommitTransactionAsync(CancellationToken cancellationToken)
@@ -43,27 +63,74 @@ namespace Microsoft.Azure.Cosmos
                     this.clientContext.SerializerCore,
                     cancellationToken);
 
-                return await this.ExecuteCommitAsync(serverRequest, cancellationToken);
+                return await this.ExecuteCommitWithRetryAsync(serverRequest, cancellationToken);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 DefaultTrace.TraceError($"Distributed transaction failed: {ex.Message}");
-                // await this.AbortTransactionAsync(cancellationToken);
                 throw;
+            }
+        }
+
+        private async Task<DistributedTransactionResponse> ExecuteCommitWithRetryAsync(
+            DistributedTransactionServerRequest serverRequest,
+            CancellationToken cancellationToken)
+        {
+            int attempt = 0;
+            using (ITrace retryTrace = Trace.GetRootTrace("Distributed Transaction Commit", TraceComponent.Batch, TraceLevel.Info))
+            {
+                while (true)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    DistributedTransactionResponse response = await this.ExecuteCommitAsync(serverRequest, retryTrace, cancellationToken);
+
+                    if (response.IsSuccessStatusCode || !response.IsRetriable)
+                    {
+                        return response;
+                    }
+
+                    if (attempt >= DistributedTransactionCommitter.MaxIsRetriableRetryCount)
+                    {
+                        DefaultTrace.TraceWarning(
+                            $"Distributed transaction isRetriable retry budget exhausted after {attempt} attempts " +
+                            $"(StatusCode={response.StatusCode}). Returning last response.");
+                        return response;
+                    }
+
+                    // Use the maximum of the server hint and the locally-computed exponential backoff
+                    // to avoid retrying sooner than the server requested.
+                    TimeSpan computedDelay = DistributedTransactionRetryHelpers.ComputeBackoff(
+                        attempt,
+                        this.retryBaseDelay,
+                        TimeSpan.MaxValue,
+                        DistributedTransactionCommitter.RetryMaxExponent);
+
+                    TimeSpan delay = response.Headers?.RetryAfter is TimeSpan serverHint && serverHint > computedDelay
+                        ? serverHint
+                        : computedDelay;
+
+                    DefaultTrace.TraceWarning(
+                        $"Distributed transaction commit retriable (StatusCode={response.StatusCode}, IsRetriable={response.IsRetriable}, attempt {attempt + 1}, delayMs={(int)delay.TotalMilliseconds}). Retrying with idempotency token {serverRequest.IdempotencyToken}.");
+
+                    response.Dispose();
+                    attempt++;
+                    await this.delayProvider(delay, cancellationToken);
+                }
             }
         }
 
         private async Task<DistributedTransactionResponse> ExecuteCommitAsync(
             DistributedTransactionServerRequest serverRequest,
+            ITrace parentTrace,
             CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            using (ITrace trace = Trace.GetRootTrace("Execute Distributed Transaction Commit", TraceComponent.Batch, TraceLevel.Info))
+            using (ITrace attemptTrace = parentTrace.StartChild("Execute Distributed Transaction Commit", TraceComponent.Batch, TraceLevel.Info))
             {
-                using (MemoryStream bodyStream = serverRequest.TransferBodyStream())
+                using (MemoryStream bodyStream = serverRequest.CreateBodyStream())
                 {
                     ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
-                        resourceUri: DistributedTransactionCommitter.GetResourceUri(),
+                        resourceUri: DistributedTransactionCommitter.ResourceUri,
                         resourceType: ResourceType.DistributedTransactionBatch,
                         operationType: OperationType.CommitDistributedTransaction,
                         requestOptions: null,
@@ -72,32 +139,27 @@ namespace Microsoft.Azure.Cosmos
                         itemId: null,
                         streamPayload: bodyStream,
                         requestEnricher: requestMessage => DistributedTransactionCommitter.EnrichRequestMessage(requestMessage, serverRequest),
-                        trace: trace,
+                        trace: attemptTrace,
                         cancellationToken: cancellationToken);
 
-                    cancellationToken.ThrowIfCancellationRequested();
+                    using (responseMessage)
+                    {
+                        DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                            responseMessage,
+                            serverRequest,
+                            this.clientContext.SerializerCore,
+                            attemptTrace,
+                            cancellationToken);
 
-                    DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
-                        responseMessage,
-                        serverRequest,
-                        this.clientContext.SerializerCore,
-                        serverRequest.IdempotencyToken,
-                        trace,
-                        cancellationToken);
+                        DistributedTransactionCommitter.MergeSessionTokens(
+                            response,
+                            serverRequest,
+                            this.clientContext.DocumentClient?.sessionContainer);
 
-                    DistributedTransactionCommitter.MergeSessionTokens(
-                        response,
-                        serverRequest,
-                        this.clientContext.DocumentClient.sessionContainer);
-
-                    return response;
+                        return response;
+                    }
                 }
             }
-        }
-
-        private static string GetResourceUri()
-        {
-            return Paths.OperationsPathSegment + "/" + Paths.Operations_Dtc;
         }
 
         private static void EnrichRequestMessage(RequestMessage requestMessage, DistributedTransactionServerRequest serverRequest)
@@ -157,12 +219,6 @@ namespace Microsoft.Azure.Cosmos
                     DistributedTransactionConstants.GetCollectionFullName(operation.Database, operation.Container),
                     headers);
             }
-        }
-
-        private Task AbortTransactionAsync(CancellationToken cancellationToken)
-        {
-            // TODO: Implement abort for the two-phase commit path.
-            throw new NotImplementedException();
         }
     }
 }
