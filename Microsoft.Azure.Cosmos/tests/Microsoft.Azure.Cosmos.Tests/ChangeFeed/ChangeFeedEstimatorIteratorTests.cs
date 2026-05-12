@@ -371,11 +371,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             string leaseToken = Guid.NewGuid().ToString();
             List<string> ranges = new List<string>() { leaseToken };
 
+            // ContinuationToken is required so the empty-token sentinel does not short-circuit
+            // and we actually exercise the iterator path that propagates InstanceName and LeaseToken
+            // through the ChangeFeedProcessorState response.
             List<DocumentServiceLeaseCore> leases = new List<DocumentServiceLeaseCore>() {
                 new DocumentServiceLeaseCore()
                 {
                     LeaseToken = leaseToken,
-                    Owner = instanceName
+                    Owner = instanceName,
+                    ContinuationToken = "token:1"
                 }
             };
             Mock<FeedIteratorInternal> mockIterator = new Mock<FeedIteratorInternal>();
