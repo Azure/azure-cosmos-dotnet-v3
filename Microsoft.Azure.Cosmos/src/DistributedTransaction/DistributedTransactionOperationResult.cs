@@ -35,6 +35,7 @@ namespace Microsoft.Azure.Cosmos
             this.ETag = other.ETag;
             this.ResourceStream = other.ResourceStream;
             this.SessionToken = other.SessionToken;
+            this.PartitionKeyRangeId = other.PartitionKeyRangeId;
             this.RequestCharge = other.RequestCharge;
             this.ActivityId = other.ActivityId;
             this.Trace = other.Trace;
@@ -88,6 +89,15 @@ namespace Microsoft.Azure.Cosmos
         [JsonInclude]
         [JsonPropertyName("sessionToken")]
         public virtual string SessionToken { get; internal set; }
+
+        /// <summary>
+        /// Gets the partition key range ID associated with the operation result.
+        /// When present, it is combined with <see cref="SessionToken"/> to form the
+        /// full session token in the format {partitionKeyRangeId}:{lsn}.
+        /// </summary>
+        [JsonInclude]
+        [JsonPropertyName("partitionKeyRangeId")]
+        public virtual string PartitionKeyRangeId { get; internal set; }
 
         /// <summary>
         /// Gets the resource stream associated with the operation result.

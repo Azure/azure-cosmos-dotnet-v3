@@ -208,11 +208,31 @@ namespace Microsoft.Azure.Cosmos
                     continue;
                 }
 
+                // SessionContainer.SetSessionToken expects the token in {pkRangeId}:{lsn} format.
+                // The backend may send pkRangeId separately or the token may already be assembled.
+                string tokenForHeader = result.SessionToken;
+                if (tokenForHeader.IndexOf(':') < 0)
+                {
+                    // Token is LSN-only; we need pkRangeId to assemble the full format.
+                    if (string.IsNullOrWhiteSpace(result.PartitionKeyRangeId))
+                    {
+                        // Cannot form a valid session token without pkRangeId; silently skip merging
+                        // this operation's token but continue processing the rest of the response.
+                        DefaultTrace.TraceWarning(
+                            "DTC operation index {0} (collection {1}) returned LSN-only session token without partitionKeyRangeId; skipping session token merge.",
+                            result.Index,
+                            operation.CollectionResourceId);
+                        continue;
+                    }
+
+                    tokenForHeader = result.PartitionKeyRangeId + ":" + tokenForHeader;
+                }
+
                 // Note: each SetSessionToken call acquires a write lock on the SessionContainer.
                 // For a future optimization, consider a batch-update API on ISessionContainer to
                 // reduce lock acquisitions when multiple operations target the same collection.
                 headers.Clear();
-                headers[HttpConstants.HttpHeaders.SessionToken] = result.SessionToken;
+                headers[HttpConstants.HttpHeaders.SessionToken] = tokenForHeader;
 
                 sessionContainer.SetSessionToken(
                     operation.CollectionResourceId,

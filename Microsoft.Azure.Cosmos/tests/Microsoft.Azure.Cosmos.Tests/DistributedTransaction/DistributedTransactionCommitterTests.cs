@@ -275,6 +275,199 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 "Session token should still be merged even when the DTC response indicates a failure.");
         }
 
+        [TestMethod]
+        [Description("When session token is LSN-only and partitionKeyRangeId is present, the token is assembled as {pkRangeId}:{lsn}")]
+        public async Task CommitTransactionAsync_AssemblesSessionToken_WhenPartitionKeyRangeIdIsPresent()
+        {
+            const string lsnOnly = "1#9#4=8#5=7";
+            const string pkRangeId = "0";
+            const string expectedToken = "0:1#9#4=8#5=7";
+
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+
+            string responseJson = BuildDtcResponseJson(
+                new[] { (statusCode: 201, subStatusCode: (int?)null, sessionToken: lsnOnly, partitionKeyRangeId: pkRangeId) });
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
+                sessionContainer,
+                responseContent: responseJson,
+                statusCode: HttpStatusCode.OK);
+
+            List<DistributedTransactionOperation> operations = new List<DistributedTransactionOperation>
+            {
+                new DistributedTransactionOperation(
+                    OperationType.Create,
+                    operationIndex: 0,
+                    DatabaseName,
+                    ContainerName,
+                    new PartitionKey("pk1"),
+                    id: "doc1")
+            };
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                operations, mockContext.Object);
+
+            await committer.CommitTransactionAsync(CancellationToken.None);
+
+            string storedToken = sessionContainer.GetSessionToken(DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName));
+            Assert.AreEqual(expectedToken, storedToken,
+                "Session token should be assembled as {pkRangeId}:{lsn} when partitionKeyRangeId is present.");
+        }
+
+        [TestMethod]
+        [Description("When session token is LSN-only and partitionKeyRangeId is absent, merge is silently skipped")]
+        public async Task CommitTransactionAsync_SkipsMerge_WhenLsnOnlyAndPartitionKeyRangeIdIsAbsent()
+        {
+            const string lsnOnly = "1#9#4=8#5=7";
+
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+
+            // No partitionKeyRangeId, and sessionToken has no ':' (LSN-only)
+            string responseJson = BuildDtcResponseJson(
+                new[] { (statusCode: 201, subStatusCode: (int?)null, sessionToken: lsnOnly, partitionKeyRangeId: (string)null) });
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
+                sessionContainer,
+                responseContent: responseJson,
+                statusCode: HttpStatusCode.OK);
+
+            List<DistributedTransactionOperation> operations = new List<DistributedTransactionOperation>
+            {
+                new DistributedTransactionOperation(
+                    OperationType.Create,
+                    operationIndex: 0,
+                    DatabaseName,
+                    ContainerName,
+                    new PartitionKey("pk1"),
+                    id: "doc1")
+            };
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                operations, mockContext.Object);
+
+            await committer.CommitTransactionAsync(CancellationToken.None);
+
+            string storedToken = sessionContainer.GetSessionToken(DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName));
+            Assert.IsTrue(string.IsNullOrEmpty(storedToken),
+                "SessionContainer should not be updated when partitionKeyRangeId is absent and session token is LSN-only.");
+        }
+
+        [TestMethod]
+        [Description("When session token already contains ':' (fully assembled), it is used as-is even without partitionKeyRangeId")]
+        public async Task CommitTransactionAsync_UsesPreAssembledSessionToken_WhenAlreadyContainsColon()
+        {
+            const string preAssembledToken = "0:1#9#4=8#5=7";
+
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+
+            // Token already contains ':', so no pkRangeId needed
+            string responseJson = BuildDtcResponseJson(
+                new[] { (statusCode: 201, subStatusCode: (int?)null, sessionToken: preAssembledToken, partitionKeyRangeId: (string)null) });
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
+                sessionContainer,
+                responseContent: responseJson,
+                statusCode: HttpStatusCode.OK);
+
+            List<DistributedTransactionOperation> operations = new List<DistributedTransactionOperation>
+            {
+                new DistributedTransactionOperation(
+                    OperationType.Create,
+                    operationIndex: 0,
+                    DatabaseName,
+                    ContainerName,
+                    new PartitionKey("pk1"),
+                    id: "doc1")
+            };
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                operations, mockContext.Object);
+
+            await committer.CommitTransactionAsync(CancellationToken.None);
+
+            string storedToken = sessionContainer.GetSessionToken(DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName));
+            Assert.AreEqual(preAssembledToken, storedToken,
+                "Pre-assembled session token (with ':') should be used as-is.");
+        }
+
+        [TestMethod]
+        [Description("When session token already contains ':' AND partitionKeyRangeId is also present, the pre-assembled token takes precedence")]
+        public async Task CommitTransactionAsync_PreAssembledTokenTakesPrecedence_WhenBothTokenAndPartitionKeyRangeIdPresent()
+        {
+            const string preAssembledToken = "0:1#9#4=8#5=7";
+            const string differentPkRangeId = "5"; // would produce "5:1#9#4=8#5=7" if incorrectly used
+
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+
+            string responseJson = BuildDtcResponseJson(
+                new[] { (statusCode: 201, subStatusCode: (int?)null, sessionToken: preAssembledToken, partitionKeyRangeId: differentPkRangeId) });
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
+                sessionContainer,
+                responseContent: responseJson,
+                statusCode: HttpStatusCode.OK);
+
+            List<DistributedTransactionOperation> operations = new List<DistributedTransactionOperation>
+            {
+                new DistributedTransactionOperation(
+                    OperationType.Create,
+                    operationIndex: 0,
+                    DatabaseName,
+                    ContainerName,
+                    new PartitionKey("pk1"),
+                    id: "doc1")
+            };
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                operations, mockContext.Object);
+
+            await committer.CommitTransactionAsync(CancellationToken.None);
+
+            string storedToken = sessionContainer.GetSessionToken(DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName));
+            Assert.AreEqual(preAssembledToken, storedToken,
+                "Pre-assembled session token (containing ':') must be used as-is; partitionKeyRangeId should not be prepended again.");
+        }
+
+        [DataTestMethod]
+        [DataRow("", DisplayName = "Empty string partitionKeyRangeId")]
+        [DataRow(" ", DisplayName = "Whitespace-only partitionKeyRangeId")]
+        [DataRow("   ", DisplayName = "Multiple whitespace partitionKeyRangeId")]
+        [Description("When partitionKeyRangeId is empty or whitespace-only and session token is LSN-only, merge is silently skipped")]
+        public async Task CommitTransactionAsync_SkipsMerge_WhenPartitionKeyRangeIdIsEmptyOrWhitespace(string pkRangeId)
+        {
+            const string lsnOnly = "1#9#4=8#5=7";
+
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+
+            string responseJson = BuildDtcResponseJson(
+                new[] { (statusCode: 201, subStatusCode: (int?)null, sessionToken: lsnOnly, partitionKeyRangeId: pkRangeId) });
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
+                sessionContainer,
+                responseContent: responseJson,
+                statusCode: HttpStatusCode.OK);
+
+            List<DistributedTransactionOperation> operations = new List<DistributedTransactionOperation>
+            {
+                new DistributedTransactionOperation(
+                    OperationType.Create,
+                    operationIndex: 0,
+                    DatabaseName,
+                    ContainerName,
+                    new PartitionKey("pk1"),
+                    id: "doc1")
+            };
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                operations, mockContext.Object);
+
+            await committer.CommitTransactionAsync(CancellationToken.None);
+
+            string storedToken = sessionContainer.GetSessionToken(DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName));
+            Assert.IsTrue(string.IsNullOrEmpty(storedToken),
+                $"SessionContainer should not be updated when partitionKeyRangeId is '{pkRangeId}' (empty/whitespace).");
+        }
+
         // ─── Retry / Spec-Compliance Tests ─────────────────────────────────────
 
         [TestMethod]
@@ -768,11 +961,18 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             (int statusCode, string sessionToken)[] operations)
         {
             return BuildDtcResponseJson(
-                operations.Select(o => (o.statusCode, subStatusCode: (int?)null, o.sessionToken)).ToArray());
+                operations.Select(o => (o.statusCode, subStatusCode: (int?)null, o.sessionToken, partitionKeyRangeId: (string)null)).ToArray());
         }
 
         private static string BuildDtcResponseJson(
             (int statusCode, int? subStatusCode, string sessionToken)[] operations)
+        {
+            return BuildDtcResponseJson(
+                operations.Select(o => (o.statusCode, o.subStatusCode, o.sessionToken, partitionKeyRangeId: (string)null)).ToArray());
+        }
+
+        private static string BuildDtcResponseJson(
+            (int statusCode, int? subStatusCode, string sessionToken, string partitionKeyRangeId)[] operations)
         {
             StringBuilder sb = new StringBuilder();
             sb.Append(@"{""operationResponses"":[");
@@ -792,6 +992,11 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 if (operations[i].sessionToken != null)
                 {
                     sb.Append($@",""{DistributedTransactionSerializer.SessionToken}"":""{operations[i].sessionToken}""");
+                }
+
+                if (operations[i].partitionKeyRangeId != null)
+                {
+                    sb.Append($@",""{DistributedTransactionSerializer.PartitionKeyRangeId}"":""{operations[i].partitionKeyRangeId}""");
                 }
 
                 sb.Append('}');
