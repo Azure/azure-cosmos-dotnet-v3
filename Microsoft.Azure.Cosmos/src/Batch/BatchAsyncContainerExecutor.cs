@@ -239,8 +239,8 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
             PartitionKeyDefinition partitionKeyDefinition = cachedContainerPropertiesAsync?.PartitionKey;
 
-            operation.PartitionKey = await this.cosmosContainer.EnsureIdGetAppendedToPartitionKeyIfNeededAsync(
-                operation.PartitionKey, operation.Id, cancellationToken);
+            (operation.PartitionKey, _) = await this.cosmosContainer.EnsureIdGetsAppendedToPartitionKeyIfNeededAsync(
+                operation.PartitionKey, operation.Id, null, cancellationToken);
 
             CollectionRoutingMap collectionRoutingMap = await this.cosmosContainer.GetRoutingMapAsync(cancellationToken);
 

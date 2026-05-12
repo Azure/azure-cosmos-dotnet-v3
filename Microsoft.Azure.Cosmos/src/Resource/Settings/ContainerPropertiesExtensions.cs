@@ -18,16 +18,17 @@ namespace Microsoft.Azure.Cosmos
     internal static class ContainerPropertiesExtensions
     {
         private const int DefaultStreamBufferSize = 4096;
-
-        internal static async Task<PartitionKey?> EnsureIdGetAppendedToPartitionKeyIfNeededAsync(
+       
+        internal static async Task<(PartitionKey?, Stream)> EnsureIdGetsAppendedToPartitionKeyIfNeededAsync(
             this ContainerInternal container,
             PartitionKey? partitionKey,
             string itemId,
+            Stream streamPayload,
             CancellationToken cancellationToken)
         {
             if (container == null)
             {
-                return partitionKey;
+                return (partitionKey, streamPayload);
             }
 
             ContainerProperties containerProperties;
@@ -40,14 +41,41 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                // Container may not exist yet (e.g. operations on non-existent containers).
-                // Swallow the exception and let the actual operation surface the proper error.
                 DefaultTrace.TraceWarning(
-                    "EnsureIdGetAppendedToPartitionKeyIfNeededAsync: failed to resolve container properties; continuing without HPK id-append. Exception: {0}",
+                    "EnsureIdGetAppendedToPartitionKeyIfNeededAsync: failed to resolve container properties; this is expected if the container does not exist yet. Exception: {0}",
                     ex.Message);
-                return partitionKey;
+                return (partitionKey, streamPayload);
             }
 
+            if (containerProperties == null || !containerProperties.IsLastPartitionKeyPathId)
+            {
+                return (partitionKey, streamPayload);
+            }
+
+            (bool isFullySpecified, _) = IsPartitionKeyFullySpecified(partitionKey, containerProperties);
+            if (isFullySpecified)
+            {
+                return (partitionKey, streamPayload);
+            }
+
+            (string resolvedItemId, Stream resultStream) = await ContainerPropertiesExtensions.GetItemIdFromStreamIfRequiredAsync(
+                containerProperties,
+                itemId,
+                streamPayload);
+
+            PartitionKey? resolvedPartitionKey = ContainerPropertiesExtensions.EnsureIdGetAppendedToPartitionKeyHelper(
+                containerProperties,
+                partitionKey,
+                resolvedItemId);
+
+            return (resolvedPartitionKey, resultStream);
+        }
+
+        private static PartitionKey? EnsureIdGetAppendedToPartitionKeyHelper(
+            ContainerProperties containerProperties,
+            PartitionKey? partitionKey,
+            string itemId)
+        {
             if (containerProperties == null || !containerProperties.IsLastPartitionKeyPathId)
             {
                 return partitionKey;
@@ -55,19 +83,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (string.IsNullOrEmpty(itemId))
             {
-                throw new ArgumentException("itemId needs to be specified if LastPartitionKeyPath is id");
-            }
-
-            IReadOnlyList<Documents.Routing.IPartitionKeyComponent> existingComponents = Array.Empty<Documents.Routing.IPartitionKeyComponent>();
-            if (partitionKey.HasValue)
-            {
-                existingComponents = partitionKey.Value.InternalKey.Components;
-                IReadOnlyList<string> partitionKeyPaths = containerProperties.PartitionKey.Paths;
-
-                if (existingComponents.Count != partitionKeyPaths.Count - 1)
-                {
-                    return partitionKey;
-                }
+                throw new ArgumentException("itemId needs to be specified if LastPartitionKeyPath is id or add it to the partition key paths");
             }
 
             PartitionKeyBuilder builder = new PartitionKeyBuilder();
@@ -84,6 +100,8 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey idPath = builder.Build();
 
             List<Documents.Routing.IPartitionKeyComponent> allComponentsList = new List<Documents.Routing.IPartitionKeyComponent>();
+            (_, IReadOnlyList<Documents.Routing.IPartitionKeyComponent> existingComponents) = IsPartitionKeyFullySpecified(partitionKey, containerProperties);
+
             foreach (Documents.Routing.IPartitionKeyComponent item in existingComponents)
             {
                 allComponentsList.Add(item);
@@ -99,48 +117,14 @@ namespace Microsoft.Azure.Cosmos
             return new PartitionKey(partitionKeyInternal);
         }
 
-        internal static async Task<(string, Stream)> GetItemIdFromStreamIfRequiredAsync(
-            this ContainerInternal container,
+        private static async Task<(string, Stream)> GetItemIdFromStreamIfRequiredAsync(
+            ContainerProperties containerProperties,
             string itemId,
-            Stream streamPayload,
-            CancellationToken cancellationToken)
+            Stream streamPayload)
         {
-            if (!string.IsNullOrEmpty(itemId) || streamPayload == null || container == null)
-            {
-                return (itemId, streamPayload);
-            }
-
-            ContainerProperties containerProperties;
-            try
-            {
-                containerProperties = await container.GetCachedContainerPropertiesAsync(
-                    forceRefresh: false,
-                    trace: NoOpTrace.Singleton,
-                    cancellationToken: cancellationToken);
-            }
-            catch (Exception ex) when (ex is not OperationCanceledException)
-            {
-                // Container may not exist yet (e.g. operations on non-existent containers).
-                // Swallow the exception and let the actual operation surface the proper error.
-                DefaultTrace.TraceWarning(
-                    "EnsureIdGetAppendedToPartitionKeyIfNeededAsync (stream): failed to resolve container properties; continuing without HPK id-append. Exception: {0}",
-                    ex.Message);
-                return (itemId, streamPayload);
-            }
-
-            if (containerProperties != null && containerProperties.IsLastPartitionKeyPathId)
-            {
-                return await ContainerPropertiesExtensions.GetIdFromStreamPayloadAsync(streamPayload);
-            }
-
-            return (itemId, streamPayload);
-        }
-
-        private static async Task<(string, Stream)> GetIdFromStreamPayloadAsync(Stream streamPayload)
-        {
-            if (streamPayload == null)
-            {
-                return (null, streamPayload);
+            if (!string.IsNullOrEmpty(itemId) || streamPayload == null || containerProperties == null)
+            { 
+                return (itemId, streamPayload); 
             }
 
             long originalPosition = 0;
@@ -184,7 +168,7 @@ namespace Microsoft.Azure.Cosmos
                     idValue = cosmosString.Value;
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 DefaultTrace.TraceError($"Failed to extract id from stream payload: {ex.Message}");
             }
@@ -230,6 +214,27 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return (buffer, totalRead);
+        }
+
+        private static (bool, IReadOnlyList<Documents.Routing.IPartitionKeyComponent>) IsPartitionKeyFullySpecified(
+            PartitionKey? partitionKey,
+            ContainerProperties containerProperties)
+        {
+            IReadOnlyList<Documents.Routing.IPartitionKeyComponent> existingComponents = Array.Empty<Documents.Routing.IPartitionKeyComponent>();
+            if (!partitionKey.HasValue)
+            {
+                return (false, existingComponents);
+            }
+
+            if (partitionKey.Value.IsNone || partitionKey.Value.InternalKey == null)
+            {
+                return (false, existingComponents);
+            }
+
+            existingComponents = partitionKey.Value.InternalKey.Components;
+            IReadOnlyList<string> partitionKeyPaths = containerProperties.PartitionKey.Paths;
+
+            return (existingComponents.Count == partitionKeyPaths.Count, existingComponents);
         }
     }
 }

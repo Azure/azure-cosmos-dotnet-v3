@@ -722,7 +722,7 @@ namespace Microsoft.Azure.Cosmos
         /// Returns <c>false</c> if the partition key is not defined or has no paths.
         /// </value>
         [JsonIgnore]
-        public bool IsLastPartitionKeyPathId
+        internal bool IsLastPartitionKeyPathId
         {
             get
             {

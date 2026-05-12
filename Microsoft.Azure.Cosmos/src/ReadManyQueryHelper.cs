@@ -133,8 +133,8 @@ namespace Microsoft.Azure.Cosmos
 
             foreach ((string id, PartitionKey pk) in items)
             {
-                PartitionKey? partitionKey = await this.container.EnsureIdGetAppendedToPartitionKeyIfNeededAsync(pk, id, cancellationToken);
-                (string id, PartitionKey pk) item = (id, partitionKey.Value);
+                (PartitionKey? partitionKey, _) = await this.container.EnsureIdGetsAppendedToPartitionKeyIfNeededAsync(pk, id, null, cancellationToken);
+                (string id, PartitionKey pk) item = (id, partitionKey ?? pk);
 
                 Documents.Routing.PartitionKeyInternal partitionKeyInternal = 
                             await this.GetPartitionKeyInternalAsync(item.pk, trace, cancellationToken);
