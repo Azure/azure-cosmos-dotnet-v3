@@ -247,6 +247,49 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public FullTextScoreScope FullTextScoreScope { get; set; } = FullTextScoreScope.Global;
 
+        /// <summary>
+        /// Gets or sets an <see cref="ICosmosEmbeddingGenerator"/> used by the SDK to
+        /// produce vector embeddings for hybrid and vector-search queries that
+        /// contain literal text to be embedded.
+        /// </summary>
+        /// <value>
+        /// The embedding generator to invoke when a query plan returned by the
+        /// gateway includes an embedding parameter map. Defaults to <c>null</c>,
+        /// in which case the client-level <see cref="CosmosClientOptions.EmbeddingGenerator"/> is used as fallback.
+        /// </value>
+        /// <remarks>
+        /// <para>
+        /// When set, the SDK advertises support for embedding generation on
+        /// the query-plan request so the gateway rewrites literal embedding
+        /// inputs into parameters and returns an embedding parameter map.
+        /// The SDK then calls the generator once per query attempt with the
+        /// full batch of input strings, and injects the returned vectors as
+        /// parameters on the rewritten query.
+        /// </para>
+        /// <para>
+        /// If the gateway returns a plan that requires embedding generation
+        /// but neither this property nor <see cref="CosmosClientOptions.EmbeddingGenerator"/> is set,
+        /// the SDK throws an exception describing how to configure a generator.
+        /// </para>
+        /// <para>
+        /// Setting this property to <c>null</c> (the default) falls through to
+        /// <see cref="CosmosClientOptions.EmbeddingGenerator"/>. This is intentional:
+        /// omitting the property means "use the client default." There is no per-request
+        /// opt-out mechanism; if you need to suppress embedding generation for a specific
+        /// request you must set a no-op <see cref="ICosmosEmbeddingGenerator"/> implementation.
+        /// </para>
+        /// </remarks>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        ICosmosEmbeddingGenerator EmbeddingGenerator
+        {
+            get => this.BaseEmbeddingGenerator;
+            set => this.BaseEmbeddingGenerator = value;
+        }
+
         internal CosmosElement CosmosElementContinuationToken { get; set; }
 
         internal string StartId { get; set; }

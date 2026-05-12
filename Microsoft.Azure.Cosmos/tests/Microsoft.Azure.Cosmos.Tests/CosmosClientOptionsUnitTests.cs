@@ -278,6 +278,43 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
+        [TestMethod]
+        public void VerifyEmbeddingGeneratorBuilderProperties()
+        {
+            string endpoint = AccountEndpoint;
+            string key = MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey;
+
+            // Verify default is null
+            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
+                accountEndpoint: endpoint,
+                authKeyOrResourceToken: key);
+
+            CosmosClient cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
+            CosmosClientOptions clientOptions = cosmosClient.ClientOptions;
+
+            Assert.IsNull(clientOptions.EmbeddingGenerator);
+
+            // Verify WithEmbeddingGenerator sets the property
+            ICosmosEmbeddingGenerator generator = new MockEmbeddingGenerator();
+            cosmosClientBuilder = new CosmosClientBuilder(
+                accountEndpoint: endpoint,
+                authKeyOrResourceToken: key);
+
+            cosmosClientBuilder.WithEmbeddingGenerator(generator);
+
+            cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
+            clientOptions = cosmosClient.ClientOptions;
+
+            Assert.AreSame(generator, clientOptions.EmbeddingGenerator,
+                "EmbeddingGenerator instance did not round-trip through the builder");
+
+            // Verify null throws ArgumentNullException
+            Assert.ThrowsException<ArgumentNullException>(
+                () => new CosmosClientBuilder(accountEndpoint: endpoint, authKeyOrResourceToken: key)
+                          .WithEmbeddingGenerator(null),
+                "WithEmbeddingGenerator should throw ArgumentNullException for null input");
+        }
+
         /// <summary>
         /// Test to validate that when the partition level failover is enabled with the preferred regions list is missing, then the client
         /// initialization should succeed. This should hold true for both environment variable and CosmosClientOptions.
@@ -1333,6 +1370,16 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }
 
                 return 1;
+            }
+        }
+
+        private sealed class MockEmbeddingGenerator : ICosmosEmbeddingGenerator
+        {
+            public System.Threading.Tasks.Task<System.Collections.Generic.IEnumerable<ReadOnlyMemory<float>>> GenerateEmbeddingsAsync(
+                System.Collections.Generic.IEnumerable<string> text,
+                System.Threading.CancellationToken cancellationToken = default)
+            {
+                throw new NotImplementedException();
             }
         }
     }

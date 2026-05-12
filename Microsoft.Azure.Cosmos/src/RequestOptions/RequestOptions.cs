@@ -115,6 +115,11 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal virtual ReadConsistencyStrategy? BaseReadConsistencyStrategy { get; set; }
 
+        /// <summary>
+        /// Gets or sets the embedding generator for the request.
+        /// </summary>
+        internal virtual ICosmosEmbeddingGenerator BaseEmbeddingGenerator { get; set; }
+
         internal bool DisablePointOperationDiagnostics { get; set; }
 
         /// <summary>
