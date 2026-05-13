@@ -1177,6 +1177,58 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void EmbeddingSourceValueEquality()
+        {
+            static Cosmos.EmbeddingSource Build(string deployment, Cosmos.EmbeddingAuthType auth)
+            {
+                return new()
+                {
+                    SourcePaths = new Collection<string> { "/title", "/abstract" },
+                    DeploymentName = deployment,
+                    ModelName = "text-embedding-3-small",
+                    Endpoint = "https://embedding.example.com/",
+                    AuthType = auth,
+                };
+            }
+
+            Cosmos.EmbeddingSource a = Build("text-embedding-3-small", Cosmos.EmbeddingAuthType.ApiKey);
+            Cosmos.EmbeddingSource b = Build("text-embedding-3-small", Cosmos.EmbeddingAuthType.ApiKey);
+
+            Assert.AreNotSame(a, b);
+            Assert.IsTrue(a.Equals(b));
+            Assert.IsTrue(a.Equals((object)b));
+            Assert.AreEqual(a.GetHashCode(), b.GetHashCode());
+
+            Cosmos.EmbeddingSource differentAuth = Build("text-embedding-3-small", Cosmos.EmbeddingAuthType.Entra);
+            Assert.IsFalse(a.Equals(differentAuth));
+
+            Cosmos.EmbeddingSource reorderedPaths = Build("text-embedding-3-small", Cosmos.EmbeddingAuthType.ApiKey);
+            reorderedPaths.SourcePaths = new Collection<string> { "/abstract", "/title" };
+            Assert.IsFalse(a.Equals(reorderedPaths));
+
+            Assert.IsFalse(a.Equals((Cosmos.EmbeddingSource)null));
+            Assert.IsFalse(a.Equals((object)null));
+
+            Cosmos.Embedding e1 = new Cosmos.Embedding()
+            {
+                Path = "/embedding",
+                DataType = Cosmos.VectorDataType.Float32,
+                DistanceFunction = Cosmos.DistanceFunction.Cosine,
+                Dimensions = 1536,
+                EmbeddingSource = a,
+            };
+            Cosmos.Embedding e2 = new Cosmos.Embedding()
+            {
+                Path = "/embedding",
+                DataType = Cosmos.VectorDataType.Float32,
+                DistanceFunction = Cosmos.DistanceFunction.Cosine,
+                Dimensions = 1536,
+                EmbeddingSource = b,
+            };
+            Assert.IsTrue(e1.Equals(e2));
+        }
+
+        [TestMethod]
         public void FullTextPolicySerialization()
         {
             ContainerProperties containerSettings = new ContainerProperties("TestContainer", "/pk");

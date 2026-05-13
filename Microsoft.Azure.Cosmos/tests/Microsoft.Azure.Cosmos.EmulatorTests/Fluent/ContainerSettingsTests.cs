@@ -17,7 +17,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class ContainerSettingsTests : BaseCosmosClientHelper
     {
-        private static long ToEpoch(DateTime dateTime) => (long)(dateTime - new DateTime(1970, 1, 1)).TotalSeconds;
+        private static long ToEpoch(DateTime dateTime)
+        {
+            return (long)(dateTime - new DateTime(1970, 1, 1)).TotalSeconds;
+        }
 
         [TestInitialize]
         public async Task TestInitialize()
@@ -648,7 +651,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 EmbeddingSource embeddingSource = new EmbeddingSource()
                 {
-                    SourcePaths = new[]
+                    SourcePaths = new Collection<string>
                     {
                         "/journal_title",
                         "/title",

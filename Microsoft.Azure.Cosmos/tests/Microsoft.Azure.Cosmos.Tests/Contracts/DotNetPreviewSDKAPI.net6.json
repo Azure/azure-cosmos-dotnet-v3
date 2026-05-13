@@ -1269,6 +1269,13 @@
             "EnumMemberAttribute"
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.EmbeddingAuthType Entra;IsInitOnly:False;IsStatic:True;"
+        },
+        "Microsoft.Azure.Cosmos.EmbeddingAuthType Unknown[System.Runtime.Serialization.EnumMemberAttribute(Value = \"Unknown\")]": {
+          "Type": "Field",
+          "Attributes": [
+            "EnumMemberAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.EmbeddingAuthType Unknown;IsInitOnly:False;IsStatic:True;"
         }
       },
       "NestedTypes": {}
@@ -1276,6 +1283,21 @@
     "Microsoft.Azure.Cosmos.EmbeddingSource;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
+        "Boolean Equals(Microsoft.Azure.Cosmos.EmbeddingSource)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean Equals(Microsoft.Azure.Cosmos.EmbeddingSource);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:True;"
+        },
+        "Boolean Equals(System.Object)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean Equals(System.Object);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Int32 GetHashCode()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Int32 GetHashCode();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Microsoft.Azure.Cosmos.EmbeddingAuthType AuthType[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"authType\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]": {
           "Type": "Property",
           "Attributes": [
@@ -1291,19 +1313,19 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.EmbeddingAuthType get_AuthType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Collections.Generic.IReadOnlyList`1[System.String] get_SourcePaths()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "System.Collections.ObjectModel.Collection`1[System.String] get_SourcePaths()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "System.Collections.Generic.IReadOnlyList`1[System.String] get_SourcePaths();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.Collections.ObjectModel.Collection`1[System.String] get_SourcePaths();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Collections.Generic.IReadOnlyList`1[System.String] SourcePaths[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"sourcePaths\")]": {
+        "System.Collections.ObjectModel.Collection`1[System.String] SourcePaths[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"sourcePaths\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
           ],
-          "MethodInfo": "System.Collections.Generic.IReadOnlyList`1[System.String] SourcePaths;CanRead:True;CanWrite:True;System.Collections.Generic.IReadOnlyList`1[System.String] get_SourcePaths();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_SourcePaths(System.Collections.Generic.IReadOnlyList`1[System.String]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.Collections.ObjectModel.Collection`1[System.String] SourcePaths;CanRead:True;CanWrite:True;System.Collections.ObjectModel.Collection`1[System.String] get_SourcePaths();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_SourcePaths(System.Collections.ObjectModel.Collection`1[System.String]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.String DeploymentName[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"deploymentName\")]": {
           "Type": "Property",
@@ -1380,12 +1402,12 @@
           ],
           "MethodInfo": "Void set_ModelName(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Void set_SourcePaths(System.Collections.Generic.IReadOnlyList`1[System.String])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Void set_SourcePaths(System.Collections.ObjectModel.Collection`1[System.String])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Void set_SourcePaths(System.Collections.Generic.IReadOnlyList`1[System.String]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Void set_SourcePaths(System.Collections.ObjectModel.Collection`1[System.String]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}

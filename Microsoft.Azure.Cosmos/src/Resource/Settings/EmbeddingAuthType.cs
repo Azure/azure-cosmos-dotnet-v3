@@ -18,15 +18,21 @@ namespace Microsoft.Azure.Cosmos
     enum EmbeddingAuthType
     {
         /// <summary>
-        /// Authenticate to the embedding service using an API key.
+        /// Default sentinel — indicates no authentication type has been configured.
         /// </summary>
-        [EnumMember(Value = "ApiKey")]
-        ApiKey,
+        [EnumMember(Value = "Unknown")]
+        Unknown = 0,
 
         /// <summary>
         /// Authenticate to the embedding service using Microsoft Entra ID (managed identity / token credential).
         /// </summary>
         [EnumMember(Value = "Entra")]
         Entra,
+
+        /// <summary>
+        /// Authenticate to the embedding service using an API key.
+        /// </summary>
+        [EnumMember(Value = "ApiKey")]
+        ApiKey,
     }
 }
