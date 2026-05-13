@@ -1,4 +1,4 @@
-// ------------------------------------------------------------
+﻿// ------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
@@ -41,7 +41,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
@@ -64,7 +63,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
@@ -92,7 +90,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
@@ -114,7 +111,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
@@ -134,7 +130,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
@@ -163,7 +158,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
@@ -185,7 +179,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
@@ -214,7 +207,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
@@ -238,7 +230,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
@@ -261,7 +252,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
@@ -276,7 +266,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task FromResponseMessage_IdempotencyToken_MissingFromHeader_FallsBackToRequestToken()
         {
             DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
-            Guid requestToken = Guid.NewGuid();
 
             string json = @"{""operationResponses"":[{""index"":0,""statusCode"":201}]}";
             ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
@@ -286,11 +275,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                requestToken,
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
-            Assert.AreEqual(requestToken, response.IdempotencyToken,
+            Assert.AreEqual(serverRequest.IdempotencyToken, response.IdempotencyToken,
                 "The request token must be used when the response header is absent.");
         }
 
@@ -299,7 +287,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task FromResponseMessage_IdempotencyToken_InvalidGuidInHeader_FallsBackToRequestToken()
         {
             DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
-            Guid requestToken = Guid.NewGuid();
 
             string json = @"{""operationResponses"":[{""index"":0,""statusCode"":201}]}";
             ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
@@ -309,11 +296,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                requestToken,
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
-            Assert.AreEqual(requestToken, response.IdempotencyToken,
+            Assert.AreEqual(serverRequest.IdempotencyToken, response.IdempotencyToken,
                 "An unparseable header value must fall back to the request token.");
         }
 
@@ -332,7 +318,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
@@ -340,8 +325,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             response.Dispose();
 
-            // After dispose, result list is nulled — indexer throws ObjectDisposedException
-            Assert.ThrowsException<ObjectDisposedException>(() => _ = response[0]);
+            // Indexer-after-dispose behavior is covered by Indexer_AfterDispose_ThrowsObjectDisposedException.
         }
 
         [TestMethod]
@@ -356,7 +340,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
@@ -376,7 +359,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
@@ -387,36 +369,17 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         // IsSuccessStatusCode boundaries
 
-        [TestMethod]
-        [Description("HTTP 200 is a success status code.")]
-        public async Task IsSuccessStatusCode_200_ReturnsTrue()
+        [DataTestMethod]
+        [Description("HTTP success-status boundaries: [200, 299] are success, anything outside is not.")]
+        [DataRow(200, true, DisplayName = "200 is success")]
+        [DataRow(299, true, DisplayName = "299 is success boundary")]
+        [DataRow(300, false, DisplayName = "300 is not success")]
+        [DataRow(199, false, DisplayName = "199 is not success")]
+        public async Task IsSuccessStatusCode_Boundaries(int statusCode, bool expected)
         {
-            DistributedTransactionResponse response = await BuildResponseWithStatusAsync(HttpStatusCode.OK, operationCount: 1);
-            Assert.IsTrue(response.IsSuccessStatusCode);
-        }
-
-        [TestMethod]
-        [Description("HTTP 299 is the last success status code.")]
-        public async Task IsSuccessStatusCode_299_ReturnsTrue()
-        {
-            DistributedTransactionResponse response = await BuildResponseWithStatusAsync((HttpStatusCode)299, operationCount: 1);
-            Assert.IsTrue(response.IsSuccessStatusCode);
-        }
-
-        [TestMethod]
-        [Description("HTTP 300 is not a success status code.")]
-        public async Task IsSuccessStatusCode_300_ReturnsFalse()
-        {
-            DistributedTransactionResponse response = await BuildResponseWithStatusAsync((HttpStatusCode)300, operationCount: 1, isError: true);
-            Assert.IsFalse(response.IsSuccessStatusCode);
-        }
-
-        [TestMethod]
-        [Description("HTTP 199 is not a success status code.")]
-        public async Task IsSuccessStatusCode_199_ReturnsFalse()
-        {
-            DistributedTransactionResponse response = await BuildResponseWithStatusAsync((HttpStatusCode)199, operationCount: 1, isError: true);
-            Assert.IsFalse(response.IsSuccessStatusCode);
+            bool isError = !expected;
+            DistributedTransactionResponse response = await BuildResponseWithStatusAsync((HttpStatusCode)statusCode, operationCount: 1, isError: isError);
+            Assert.AreEqual(expected, response.IsSuccessStatusCode);
         }
 
         // Indexer and enumerator
@@ -433,7 +396,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
@@ -455,7 +417,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
@@ -474,7 +435,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
@@ -493,7 +453,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
@@ -524,7 +483,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
@@ -547,7 +505,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
@@ -571,7 +528,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
@@ -593,7 +549,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
@@ -615,12 +570,83 @@ namespace Microsoft.Azure.Cosmos.Tests
                 responseMessage,
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
             Assert.AreEqual(expectedSessionToken, response[0].SessionToken,
                 "SessionToken must equal the value from the JSON 'sessionToken' field.");
+        }
+
+        // IsRetriable parsing
+
+        [DataTestMethod]
+        [Description("IsRetriable is true only when the JSON body has isRetriable as a JSON boolean true; absent, false, or string 'true' must all yield false.")]
+        [DataRow(@"{""isRetriable"":true,""operationResponses"":[{""index"":0,""statusCode"":503}]}", true, DisplayName = "JSON boolean true → IsRetriable=true")]
+        [DataRow(@"{""isRetriable"":false,""operationResponses"":[{""index"":0,""statusCode"":503}]}", false, DisplayName = "JSON boolean false → IsRetriable=false")]
+        [DataRow(@"{""operationResponses"":[{""index"":0,""statusCode"":503}]}", false, DisplayName = "isRetriable absent → IsRetriable=false")]
+        [DataRow(@"{""isRetriable"":""true"",""operationResponses"":[{""index"":0,""statusCode"":503}]}", false, DisplayName = "string 'true' (not a JSON boolean) → IsRetriable=false")]
+        public async Task FromResponseMessage_IsRetriable_Parsing(string json, bool expected)
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.ServiceUnavailable, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(expected, response.IsRetriable);
+        }
+
+        // ThrowIfDisposed guards on Count and GetEnumerator
+
+        [TestMethod]
+        [Description("Count after Dispose() must not throw — pre-existing safer behavior on main. Returns 0 because Dispose nulls the underlying list.")]
+        public async Task Count_AfterDispose_DoesNotThrow()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":201}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            response.Dispose();
+
+            int count = response.Count;
+            Assert.AreEqual(0, count, "Count must return 0 after disposal without throwing.");
+        }
+
+        [TestMethod]
+        [Description("GetEnumerator after Dispose() must not throw — pre-existing safer behavior on main. Returns an empty enumerator.")]
+        public async Task GetEnumerator_AfterDispose_DoesNotThrow()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":201}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            response.Dispose();
+
+            int enumerated = 0;
+            foreach (DistributedTransactionOperationResult _ in response)
+            {
+                enumerated++;
+            }
+
+            Assert.AreEqual(0, enumerated, "Enumeration after disposal must yield no items without throwing.");
         }
 
         // Helpers
@@ -691,7 +717,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 BuildResponseMessage(statusCode, json),
                 serverRequest,
                 MockCosmosUtil.Serializer,
-                Guid.NewGuid(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
         }
