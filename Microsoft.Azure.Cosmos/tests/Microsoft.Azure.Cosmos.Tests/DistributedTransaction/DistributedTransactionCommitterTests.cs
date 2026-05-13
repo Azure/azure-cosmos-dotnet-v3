@@ -631,6 +631,46 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
         }
 
+        [TestMethod]
+        [Description("When SetSessionToken throws OperationCanceledException, the exception must propagate — it must not be swallowed by the MergeSessionTokens catch block.")]
+        public async Task CommitTransactionAsync_PropagatesOperationCanceledException_FromSetSessionToken()
+        {
+            const string lsnOnly = "1#9#4=8#5=7";
+            const string pkRangeId = "0";
+
+            Mock<ISessionContainer> mockSessionContainer = new Mock<ISessionContainer>();
+            mockSessionContainer
+                .Setup(s => s.SetSessionToken(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<INameValueCollection>()))
+                .Throws(new OperationCanceledException("simulated cancellation in SetSessionToken"));
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
+                mockSessionContainer.Object,
+                responseContent: BuildDtcResponseJson(
+                    new[] { (statusCode: 201, subStatusCode: (int?)null, sessionToken: lsnOnly, partitionKeyRangeId: pkRangeId) }),
+                statusCode: HttpStatusCode.OK);
+
+            List<DistributedTransactionOperation> operations = new List<DistributedTransactionOperation>
+            {
+                new DistributedTransactionOperation(
+                    OperationType.Create,
+                    operationIndex: 0,
+                    DatabaseName,
+                    ContainerName,
+                    new PartitionKey("pk1"),
+                    id: "doc1")
+            };
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                operations, mockContext.Object);
+
+            await Assert.ThrowsExceptionAsync<OperationCanceledException>(
+                () => committer.CommitTransactionAsync(CancellationToken.None),
+                "OperationCanceledException from SetSessionToken must propagate, not be swallowed.");
+        }
+
 
         [TestMethod]
         [Description("Verifies that a commit succeeds without retrying when the server returns a success response on the first attempt.")]

@@ -147,7 +147,8 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The deserialized operation result with a canonical session token.</returns>
         internal static DistributedTransactionOperationResult FromJson(JsonElement json)
         {
-            DistributedTransactionOperationResult result = JsonSerializer.Deserialize<DistributedTransactionOperationResult>(json, DistributedTransactionOperationResult.CaseInsensitiveOptions);
+            DistributedTransactionOperationResult result = JsonSerializer.Deserialize<DistributedTransactionOperationResult>(json, DistributedTransactionOperationResult.CaseInsensitiveOptions)
+                ?? throw new JsonException($"Failed to deserialize DTC operation result: Deserialize returned null. JSON element kind: '{json.ValueKind}'.");
 
             if (json.TryGetProperty(DistributedTransactionSerializer.ResourceBody, out JsonElement resourceBody)
                 && resourceBody.ValueKind != JsonValueKind.Undefined
@@ -163,9 +164,13 @@ namespace Microsoft.Azure.Cosmos
                 result.ResourceStream = new MemoryStream(bytes, 0, bytes.Length, writable: false, publiclyVisible: true);
             }
 
-            if (!string.IsNullOrEmpty(result.SessionToken))
+            if (!string.IsNullOrWhiteSpace(result.SessionToken))
             {
-                if (!string.IsNullOrWhiteSpace(result.PartitionKeyRangeId))
+                if (result.SessionToken.IndexOf(':') >= 0)
+                {
+                    // Already in canonical {pkRangeId}:{lsn} form — leave as-is.
+                }
+                else if (!string.IsNullOrWhiteSpace(result.PartitionKeyRangeId))
                 {
                     result.SessionToken = result.PartitionKeyRangeId + ":" + result.SessionToken;
                 }
@@ -177,6 +182,11 @@ namespace Microsoft.Azure.Cosmos
                         result.PartitionKeyRangeId ?? "<absent>");
                     result.SessionToken = null;
                 }
+            }
+            else if (result.SessionToken != null)
+            {
+                // Normalize whitespace-only to null so downstream guards don't need to recheck.
+                result.SessionToken = null;
             }
 
             return result;

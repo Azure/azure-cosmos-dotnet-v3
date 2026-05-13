@@ -193,6 +193,11 @@ namespace Microsoft.Azure.Cosmos
             for (int i = 0; i < response.Count; i++)
             {
                 DistributedTransactionOperationResult result = response[i];
+                if (result == null)
+                {
+                    continue;
+                }
+
                 DistributedTransactionOperation operation = null;
                 try
                 {
@@ -221,7 +226,7 @@ namespace Microsoft.Azure.Cosmos
                         DistributedTransactionConstants.GetCollectionFullName(operation.Database, operation.Container),
                         headers);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (ex is not OperationCanceledException)
                 {
                     // Session-token bookkeeping must never fail a transaction the server already committed.
                     // Log and continue so the remaining operations' tokens are still attempted.

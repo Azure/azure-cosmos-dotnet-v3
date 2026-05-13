@@ -628,6 +628,50 @@ namespace Microsoft.Azure.Cosmos.Tests
                 $"SessionToken must be null when partitionKeyRangeId is '{pkRangeId}' (empty/whitespace) so the merge is safely skipped.");
         }
 
+        [DataTestMethod]
+        [DataRow(" ", DisplayName = "Single space sessionToken")]
+        [DataRow("   ", DisplayName = "Multiple spaces sessionToken")]
+        [Description("When sessionToken is whitespace-only, FromJson treats it the same as absent — SessionToken remains null.")]
+        public async Task FromResponseMessage_OperationResult_SessionToken_NullWhenSessionTokenIsWhitespace(string whitespaceToken)
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            string json = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":201,""sessionToken"":""{whitespaceToken}"",""partitionKeyRangeId"":""0""}}]}}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.IsNull(response[0].SessionToken,
+                $"SessionToken must be null when the sessionToken value is whitespace ('{whitespaceToken}').");
+        }
+
+        [TestMethod]
+        [Description("When sessionToken already contains a colon (canonical form), FromJson leaves it as-is even without partitionKeyRangeId.")]
+        public async Task FromResponseMessage_OperationResult_SessionToken_PreservedWhenAlreadyCanonical()
+        {
+            const string canonicalToken = "0:-1#425344#1=12345";
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            // sessionToken is already canonical; partitionKeyRangeId is absent
+            string json = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":201,""sessionToken"":""{canonicalToken}""}}]}}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(canonicalToken, response[0].SessionToken,
+                "A session token that already contains ':' must be left as-is (already canonical).");
+        }
+
         [TestMethod]
         [Description("When sessionToken is absent entirely, SessionToken remains null regardless of partitionKeyRangeId.")]
         public async Task FromResponseMessage_OperationResult_SessionToken_NullWhenSessionTokenFieldAbsent()
