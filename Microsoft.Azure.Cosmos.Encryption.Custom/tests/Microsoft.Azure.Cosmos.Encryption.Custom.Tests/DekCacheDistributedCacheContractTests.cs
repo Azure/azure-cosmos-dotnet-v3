@@ -343,7 +343,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 CosmosDiagnosticsContext.Create(null),
                 CancellationToken.None);
 
-            // No new L2 write is expected on a warm hit, but await the seam so the
+            // No new L2 write is expected on a warm hit, but drain pending writes so the
             // observation is deterministic regardless of any prior state.
             await cache.WhenAllPendingWritesAsync();
 
