@@ -90,6 +90,27 @@ jobs:
       arguments: -p:Optimize=true -p:IsPreview=true -p:SdkProjectRef=true -p:DefineSdkProjectRefSymbol=false
       versioningScheme: OFF
 
+  # GA-surface parity check: build Microsoft.Azure.Cosmos.Encryption against
+  # main SDK source with IsPreview unset (so neither PREVIEW nor
+  # ENCRYPTIONPREVIEW is defined) and SDKPROJECTREF off. This matches the
+  # exact preprocessor surface the shipped GA NuGet is built with. The
+  # preview-only parity step above does NOT cover this surface because
+  # IsPreview=true defines ENCRYPTIONPREVIEW (Directory.Build.props), which
+  # pulls in #if ENCRYPTIONPREVIEW-gated overrides that do not ship in the
+  # GA NuGet. Any new abstract member promoted to GA on Container that lacks
+  # an unconditional (or non-ENCRYPTIONPREVIEW-gated) override in
+  # EncryptionContainer will produce a CS0534 here. See PR #5825 (FFCF GA
+  # promotion) for a concrete miss the preview-only parity build let through.
+  - task: DotNetCoreCLI@2
+    displayName: Build Microsoft.Azure.Cosmos.Encryption (GA NuGet-surface parity vs main SDK source)
+    inputs:
+      command: build
+      configuration: $(parameters.BuildConfiguration)
+      nugetConfigPath: NuGet.config
+      projects: Microsoft.Azure.Cosmos.Encryption/src/Microsoft.Azure.Cosmos.Encryption.csproj
+      arguments: -p:Optimize=true -p:SdkProjectRef=true -p:DefineSdkProjectRefSymbol=false
+      versioningScheme: OFF
+
 - job:
   displayName: Preview Encryption EmulatorTests ${{ parameters.BuildConfiguration }}
   timeoutInMinutes: 60
@@ -177,6 +198,12 @@ jobs:
       projects: Microsoft.Azure.Cosmos.Encryption.Custom/src/Microsoft.Azure.Cosmos.Encryption.Custom.csproj
       arguments: -p:Optimize=true -p:IsPreview=true -p:SdkProjectRef=true -p:DefineSdkProjectRefSymbol=false
       versioningScheme: OFF
+
+  # Note: no GA NuGet-surface parity step for Encryption.Custom. The Custom
+  # csproj package-references Microsoft.Azure.Cosmos 3.41.0-preview.0
+  # unconditionally (no IsPreview-gated alternative reference), so the
+  # shipped Custom NuGet is always built against a preview SDK surface and
+  # has no GA NuGet surface to validate.
 
 - job:
   displayName: Preview Tests ${{ parameters.BuildConfiguration }}
