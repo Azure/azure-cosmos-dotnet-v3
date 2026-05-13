@@ -606,8 +606,10 @@ namespace Microsoft.Azure.Cosmos.Tests
         [DataRow("", DisplayName = "Empty string partitionKeyRangeId")]
         [DataRow(" ", DisplayName = "Whitespace-only partitionKeyRangeId")]
         [DataRow("   ", DisplayName = "Multiple spaces partitionKeyRangeId")]
-        [Description("When partitionKeyRangeId is present but empty or whitespace, FromJson throws JsonException because the server sent an explicitly invalid value.")]
-        public async Task FromResponseMessage_OperationResult_ThrowsWhenPartitionKeyRangeIdIsBlank(string pkRangeId)
+        [Description("When partitionKeyRangeId is present but empty or whitespace, FromJson sets SessionToken to null " +
+                     "so MergeSessionTokens skips the operation. The server has no validation on this field and can " +
+                     "send blank values; failing the commit would be worse than skipping the merge.")]
+        public async Task FromResponseMessage_OperationResult_SessionToken_NullWhenPartitionKeyRangeIdIsBlank(string pkRangeId)
         {
             const string lsnOnly = "12345";
             DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
@@ -615,14 +617,15 @@ namespace Microsoft.Azure.Cosmos.Tests
             string json = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":201,""sessionToken"":""{lsnOnly}"",""partitionKeyRangeId"":""{pkRangeId}""}}]}}";
             ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
 
-            await Assert.ThrowsExceptionAsync<InvalidOperationException>(
-                () => DistributedTransactionResponse.FromResponseMessageAsync(
-                    responseMessage,
-                    serverRequest,
-                    MockCosmosUtil.Serializer,
-                    NoOpTrace.Singleton,
-                    CancellationToken.None),
-                $"FromJson must throw InvalidOperationException when partitionKeyRangeId is '{pkRangeId}' (present but empty/whitespace).");
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.IsNull(response[0].SessionToken,
+                $"SessionToken must be null when partitionKeyRangeId is '{pkRangeId}' (empty/whitespace) so the merge is safely skipped.");
         }
 
         [TestMethod]

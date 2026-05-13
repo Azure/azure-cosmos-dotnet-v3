@@ -365,10 +365,9 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         [DataRow("", DisplayName = "Empty string partitionKeyRangeId")]
         [DataRow(" ", DisplayName = "Whitespace-only partitionKeyRangeId")]
         [DataRow("   ", DisplayName = "Multiple whitespace partitionKeyRangeId")]
-        [Description("When partitionKeyRangeId is present but empty or whitespace, the commit fails with " +
-                     "InvalidOperationException because the server response violates the wire contract " +
-                     "(present field must be a non-blank pkRangeId).")]
-        public async Task CommitTransactionAsync_Throws_WhenPartitionKeyRangeIdIsEmptyOrWhitespace(string pkRangeId)
+        [Description("When partitionKeyRangeId is present but empty or whitespace, merge is silently skipped. " +
+                     "The server has no validation on this field; throwing would risk failing a committed transaction.")]
+        public async Task CommitTransactionAsync_SkipsMerge_WhenPartitionKeyRangeIdIsEmptyOrWhitespace(string pkRangeId)
         {
             const string lsnOnly = "1#9#4=8#5=7";
 
@@ -396,13 +395,11 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
                 operations, mockContext.Object);
 
-            await Assert.ThrowsExceptionAsync<InvalidOperationException>(
-                () => committer.CommitTransactionAsync(CancellationToken.None),
-                $"Commit must throw InvalidOperationException when partitionKeyRangeId is '{pkRangeId}' (present but empty/whitespace).");
+            await committer.CommitTransactionAsync(CancellationToken.None);
 
             string storedToken = sessionContainer.GetSessionToken(DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName));
             Assert.IsTrue(string.IsNullOrEmpty(storedToken),
-                "SessionContainer must not be updated when the response is rejected.");
+                $"SessionContainer should not be updated when partitionKeyRangeId is '{pkRangeId}' (empty/whitespace).");
         }
 
         // ─── Retry / Spec-Compliance Tests ─────────────────────────────────────

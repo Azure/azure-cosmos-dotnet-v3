@@ -165,22 +165,17 @@ namespace Microsoft.Azure.Cosmos
 
             if (!string.IsNullOrEmpty(result.SessionToken))
             {
-                // TODO(issue#5857): Remove null check once the coordinator starts emitting pkRangeId.
-                if (result.PartitionKeyRangeId == null)
+                if (!string.IsNullOrWhiteSpace(result.PartitionKeyRangeId))
                 {
-                    DefaultTrace.TraceWarning(
-                        "DTC operation index {0} returned session token without partitionKeyRangeId; session token will not be merged into the session container.",
-                        result.Index);
-                    result.SessionToken = null;
-                }
-                else if (string.IsNullOrWhiteSpace(result.PartitionKeyRangeId))
-                {
-                    throw new InvalidOperationException(
-                        $"DTC operation index {result.Index} returned an empty or whitespace partitionKeyRangeId; cannot assemble a valid session token.");
+                    result.SessionToken = result.PartitionKeyRangeId + ":" + result.SessionToken;
                 }
                 else
                 {
-                    result.SessionToken = result.PartitionKeyRangeId + ":" + result.SessionToken;
+                    DefaultTrace.TraceWarning(
+                        "DTC operation index {0} returned session token without a valid partitionKeyRangeId (value: '{1}'); session token will not be merged into the session container.",
+                        result.Index,
+                        result.PartitionKeyRangeId ?? "<absent>");
+                    result.SessionToken = null;
                 }
             }
 
