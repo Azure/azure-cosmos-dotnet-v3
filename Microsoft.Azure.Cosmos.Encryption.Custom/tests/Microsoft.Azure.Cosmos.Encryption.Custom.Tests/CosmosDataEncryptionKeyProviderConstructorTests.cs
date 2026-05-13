@@ -145,6 +145,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
         #region EncryptionKeyStoreProvider-only constructors
 
+#pragma warning disable CS0618 // Type or member is obsolete — exercises overloads superseded by DekCacheOptions; keep coverage until removal.
+
         [TestMethod]
         public void StoreProviderOnly_ValidArgs_SetsProperties()
         {
@@ -262,6 +264,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         }
 
         #endregion
+
+#pragma warning restore CS0618 // Type or member is obsolete
 
         #region Dual-provider (EncryptionKeyWrapProvider + EncryptionKeyStoreProvider) constructors
 
@@ -441,6 +445,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
         #region Cross-constructor validation - refreshBeforeExpiry
 
+#pragma warning disable CS0618 // Type or member is obsolete — exercises overloads superseded by DekCacheOptions; keep coverage until removal.
+
         [TestMethod]
         public void StoreProviderWithDistributedCache_NegativeRefreshThreshold_Throws()
         {
@@ -529,7 +535,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
         #endregion
 
+#pragma warning restore CS0618 // Type or member is obsolete
+
         #region DekCache integration - distributed cache is actually wired through
+
+#pragma warning disable CS0618 // Type or member is obsolete — exercises overloads superseded by DekCacheOptions; keep coverage until removal.
 
         [TestMethod]
         public async Task StoreProvider_DistributedCacheIsWiredToDekCache()
@@ -796,6 +806,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
         #endregion
 
+#pragma warning restore CS0618 // Type or member is obsolete
+
         #region Helpers
 
         private static DataEncryptionKeyProperties CreateDekProperties(string id)
@@ -829,6 +841,133 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             {
                 return Task.FromResult(new EncryptionKeyWrapResult(key, metadata));
             }
+        }
+#pragma warning restore CS0618 // Type or member is obsolete
+
+        #endregion
+
+        #region DekCacheOptions overloads (C5 - options bag replaces telescoping ctors)
+
+        [TestMethod]
+        public void StoreProviderWithOptions_NullOptions_UsesDefaults()
+        {
+            TestEncryptionKeyStoreProvider storeProvider = new TestEncryptionKeyStoreProvider();
+
+            CosmosDataEncryptionKeyProvider provider = new CosmosDataEncryptionKeyProvider(
+                storeProvider,
+                dekCacheOptions: null);
+
+            Assert.AreSame(storeProvider, provider.EncryptionKeyStoreProvider);
+            Assert.IsNotNull(provider.DekCache);
+        }
+
+        [TestMethod]
+        public void StoreProviderWithOptions_FullOptions_WiresEverythingThrough()
+        {
+            TestEncryptionKeyStoreProvider storeProvider = new TestEncryptionKeyStoreProvider();
+            InMemoryDistributedCache distributedCache = new InMemoryDistributedCache();
+
+            CosmosDataEncryptionKeyProvider provider = new CosmosDataEncryptionKeyProvider(
+                storeProvider,
+                new DekCacheOptions
+                {
+                    DekPropertiesTimeToLive = TimeSpan.FromMinutes(30),
+                    DistributedCache = distributedCache,
+                    RefreshBeforeExpiry = TimeSpan.FromMinutes(5),
+                    DistributedCacheKeyPrefix = "options-bag-test",
+                    DistributedCacheEntryLifetime = TimeSpan.FromMinutes(120),
+                });
+
+            Assert.AreSame(storeProvider, provider.EncryptionKeyStoreProvider);
+            Assert.IsNotNull(provider.DekCache);
+        }
+
+        [TestMethod]
+        public void StoreProviderWithOptions_NullProvider_ThrowsArgumentNullException()
+        {
+            ArgumentNullException ex = Assert.ThrowsException<ArgumentNullException>(() =>
+                new CosmosDataEncryptionKeyProvider(
+                    encryptionKeyStoreProvider: null,
+                    dekCacheOptions: new DekCacheOptions()));
+
+            Assert.AreEqual("encryptionKeyStoreProvider", ex.ParamName);
+        }
+
+        [TestMethod]
+        public void StoreProviderWithOptions_DistributedCacheWithoutPrefix_PropagatesValidationFromDekCache()
+        {
+            TestEncryptionKeyStoreProvider storeProvider = new TestEncryptionKeyStoreProvider();
+            InMemoryDistributedCache distributedCache = new InMemoryDistributedCache();
+
+            // Validation lives in DekCache: distributedCache without a prefix is rejected so
+            // multiple providers sharing one cache cannot silently collide.
+            ArgumentException ex = Assert.ThrowsException<ArgumentNullException>(() =>
+                new CosmosDataEncryptionKeyProvider(
+                    storeProvider,
+                    new DekCacheOptions
+                    {
+                        DistributedCache = distributedCache,
+                        DistributedCacheKeyPrefix = null,
+                    }));
+
+            Assert.AreEqual("cacheKeyPrefix", ex.ParamName);
+        }
+
+        [TestMethod]
+        public void StoreProviderWithOptions_NoDistributedCache_AcceptsNullPrefix()
+        {
+            TestEncryptionKeyStoreProvider storeProvider = new TestEncryptionKeyStoreProvider();
+
+            // Without a distributed cache the prefix is ignored; passing null must be accepted.
+            CosmosDataEncryptionKeyProvider provider = new CosmosDataEncryptionKeyProvider(
+                storeProvider,
+                new DekCacheOptions
+                {
+                    DistributedCache = null,
+                    DistributedCacheKeyPrefix = null,
+                });
+
+            Assert.IsNotNull(provider.DekCache);
+        }
+
+#pragma warning disable CS0618 // Type or member is obsolete — exercises the obsolete WrapProvider+Options overload to lock in delegation behavior.
+        [TestMethod]
+        public void WrapProviderWithOptions_FullOptions_WiresEverythingThrough()
+        {
+            TestKeyWrapProvider wrapProvider = new TestKeyWrapProvider();
+            InMemoryDistributedCache distributedCache = new InMemoryDistributedCache();
+
+            CosmosDataEncryptionKeyProvider provider = new CosmosDataEncryptionKeyProvider(
+                wrapProvider,
+                new DekCacheOptions
+                {
+                    DistributedCache = distributedCache,
+                    DistributedCacheKeyPrefix = "wrap-options",
+                });
+
+            Assert.AreSame(wrapProvider, provider.EncryptionKeyWrapProvider);
+            Assert.IsNotNull(provider.DekCache);
+        }
+
+        [TestMethod]
+        public void DualProviderWithOptions_FullOptions_WiresEverythingThrough()
+        {
+            TestKeyWrapProvider wrapProvider = new TestKeyWrapProvider();
+            TestEncryptionKeyStoreProvider storeProvider = new TestEncryptionKeyStoreProvider();
+            InMemoryDistributedCache distributedCache = new InMemoryDistributedCache();
+
+            CosmosDataEncryptionKeyProvider provider = new CosmosDataEncryptionKeyProvider(
+                wrapProvider,
+                storeProvider,
+                new DekCacheOptions
+                {
+                    DistributedCache = distributedCache,
+                    DistributedCacheKeyPrefix = "dual-options",
+                });
+
+            Assert.AreSame(wrapProvider, provider.EncryptionKeyWrapProvider);
+            Assert.AreSame(storeProvider, provider.EncryptionKeyStoreProvider);
+            Assert.IsNotNull(provider.DekCache);
         }
 #pragma warning restore CS0618 // Type or member is obsolete
 

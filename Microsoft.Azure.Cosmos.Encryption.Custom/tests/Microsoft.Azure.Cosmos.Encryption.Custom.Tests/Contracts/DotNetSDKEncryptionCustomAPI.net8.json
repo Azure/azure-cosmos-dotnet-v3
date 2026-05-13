@@ -63,7 +63,21 @@
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.ValueTask DisposeAsync();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:True;"
         },
-        "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan], Microsoft.Extensions.Caching.Distributed.IDistributedCache, System.Nullable`1[System.TimeSpan], System.String)[System.ObsoleteAttribute(\"Please use the constructor with EncryptionKeyStoreProvider only.\")]": {
+        "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, Microsoft.Azure.Cosmos.Encryption.Custom.DekCacheOptions)[System.ObsoleteAttribute(\"Please use the constructor with EncryptionKeyStoreProvider only.\")]": {
+          "Type": "Constructor",
+          "Attributes": [
+            "ObsoleteAttribute"
+          ],
+          "MethodInfo": "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, Microsoft.Azure.Cosmos.Encryption.Custom.DekCacheOptions)"
+        },
+        "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, Microsoft.Azure.Cosmos.Encryption.Custom.DekCacheOptions)[System.ObsoleteAttribute(\"Please use the constructor with EncryptionKeyStoreProvider only.\")]": {
+          "Type": "Constructor",
+          "Attributes": [
+            "ObsoleteAttribute"
+          ],
+          "MethodInfo": "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, Microsoft.Azure.Cosmos.Encryption.Custom.DekCacheOptions)"
+        },
+        "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan], Microsoft.Extensions.Caching.Distributed.IDistributedCache, System.Nullable`1[System.TimeSpan], System.String)[System.ObsoleteAttribute(\"Use the constructor that accepts DekCacheOptions (and prefer the constructor with EncryptionKeyStoreProvider only).\")]": {
           "Type": "Constructor",
           "Attributes": [
             "ObsoleteAttribute"
@@ -77,7 +91,7 @@
           ],
           "MethodInfo": "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan])"
         },
-        "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, System.Nullable`1[System.TimeSpan], Microsoft.Extensions.Caching.Distributed.IDistributedCache, System.Nullable`1[System.TimeSpan], System.String)[System.ObsoleteAttribute(\"Please use the constructor with EncryptionKeyStoreProvider only.\")]": {
+        "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, System.Nullable`1[System.TimeSpan], Microsoft.Extensions.Caching.Distributed.IDistributedCache, System.Nullable`1[System.TimeSpan], System.String)[System.ObsoleteAttribute(\"Use the constructor that accepts DekCacheOptions (and prefer the constructor with EncryptionKeyStoreProvider only).\")]": {
           "Type": "Constructor",
           "Attributes": [
             "ObsoleteAttribute"
@@ -91,9 +105,16 @@
           ],
           "MethodInfo": "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, System.Nullable`1[System.TimeSpan])"
         },
-        "Void .ctor(Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan], Microsoft.Extensions.Caching.Distributed.IDistributedCache, System.Nullable`1[System.TimeSpan], System.String)": {
+        "Void .ctor(Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, Microsoft.Azure.Cosmos.Encryption.Custom.DekCacheOptions)": {
           "Type": "Constructor",
           "Attributes": [],
+          "MethodInfo": "Void .ctor(Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, Microsoft.Azure.Cosmos.Encryption.Custom.DekCacheOptions)"
+        },
+        "Void .ctor(Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan], Microsoft.Extensions.Caching.Distributed.IDistributedCache, System.Nullable`1[System.TimeSpan], System.String)[System.ObsoleteAttribute(\"Use the constructor that accepts DekCacheOptions.\")]": {
+          "Type": "Constructor",
+          "Attributes": [
+            "ObsoleteAttribute"
+          ],
           "MethodInfo": "Void .ctor(Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan], Microsoft.Extensions.Caching.Distributed.IDistributedCache, System.Nullable`1[System.TimeSpan], System.String)"
         },
         "Void .ctor(Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan])": {
@@ -478,7 +499,21 @@
               "Attributes": [],
               "MethodInfo": "System.Threading.Tasks.ValueTask DisposeAsync();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:True;"
             },
-            "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan], Microsoft.Extensions.Caching.Distributed.IDistributedCache, System.Nullable`1[System.TimeSpan], System.String)[System.ObsoleteAttribute(\"Please use the constructor with EncryptionKeyStoreProvider only.\")]": {
+            "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, Microsoft.Azure.Cosmos.Encryption.Custom.DekCacheOptions)[System.ObsoleteAttribute(\"Please use the constructor with EncryptionKeyStoreProvider only.\")]": {
+              "Type": "Constructor",
+              "Attributes": [
+                "ObsoleteAttribute"
+              ],
+              "MethodInfo": "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, Microsoft.Azure.Cosmos.Encryption.Custom.DekCacheOptions)"
+            },
+            "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, Microsoft.Azure.Cosmos.Encryption.Custom.DekCacheOptions)[System.ObsoleteAttribute(\"Please use the constructor with EncryptionKeyStoreProvider only.\")]": {
+              "Type": "Constructor",
+              "Attributes": [
+                "ObsoleteAttribute"
+              ],
+              "MethodInfo": "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, Microsoft.Azure.Cosmos.Encryption.Custom.DekCacheOptions)"
+            },
+            "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan], Microsoft.Extensions.Caching.Distributed.IDistributedCache, System.Nullable`1[System.TimeSpan], System.String)[System.ObsoleteAttribute(\"Use the constructor that accepts DekCacheOptions (and prefer the constructor with EncryptionKeyStoreProvider only).\")]": {
               "Type": "Constructor",
               "Attributes": [
                 "ObsoleteAttribute"
@@ -492,7 +527,7 @@
               ],
               "MethodInfo": "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan])"
             },
-            "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, System.Nullable`1[System.TimeSpan], Microsoft.Extensions.Caching.Distributed.IDistributedCache, System.Nullable`1[System.TimeSpan], System.String)[System.ObsoleteAttribute(\"Please use the constructor with EncryptionKeyStoreProvider only.\")]": {
+            "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, System.Nullable`1[System.TimeSpan], Microsoft.Extensions.Caching.Distributed.IDistributedCache, System.Nullable`1[System.TimeSpan], System.String)[System.ObsoleteAttribute(\"Use the constructor that accepts DekCacheOptions (and prefer the constructor with EncryptionKeyStoreProvider only).\")]": {
               "Type": "Constructor",
               "Attributes": [
                 "ObsoleteAttribute"
@@ -506,9 +541,16 @@
               ],
               "MethodInfo": "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, System.Nullable`1[System.TimeSpan])"
             },
-            "Void .ctor(Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan], Microsoft.Extensions.Caching.Distributed.IDistributedCache, System.Nullable`1[System.TimeSpan], System.String)": {
+            "Void .ctor(Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, Microsoft.Azure.Cosmos.Encryption.Custom.DekCacheOptions)": {
               "Type": "Constructor",
               "Attributes": [],
+              "MethodInfo": "Void .ctor(Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, Microsoft.Azure.Cosmos.Encryption.Custom.DekCacheOptions)"
+            },
+            "Void .ctor(Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan], Microsoft.Extensions.Caching.Distributed.IDistributedCache, System.Nullable`1[System.TimeSpan], System.String)[System.ObsoleteAttribute(\"Use the constructor that accepts DekCacheOptions.\")]": {
+              "Type": "Constructor",
+              "Attributes": [
+                "ObsoleteAttribute"
+              ],
               "MethodInfo": "Void .ctor(Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan], Microsoft.Extensions.Caching.Distributed.IDistributedCache, System.Nullable`1[System.TimeSpan], System.String)"
             },
             "Void .ctor(Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan])": {
@@ -639,6 +681,112 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "System.ReadOnlyMemory`1[System.Byte] get_EncryptedStream();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.Encryption.Custom.DekCacheOptions;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "Microsoft.Extensions.Caching.Distributed.IDistributedCache DistributedCache": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Extensions.Caching.Distributed.IDistributedCache DistributedCache;CanRead:True;CanWrite:True;Microsoft.Extensions.Caching.Distributed.IDistributedCache get_DistributedCache();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DistributedCache(Microsoft.Extensions.Caching.Distributed.IDistributedCache);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Extensions.Caching.Distributed.IDistributedCache get_DistributedCache()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Extensions.Caching.Distributed.IDistributedCache get_DistributedCache();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Nullable`1[System.TimeSpan] DekPropertiesTimeToLive": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.Nullable`1[System.TimeSpan] DekPropertiesTimeToLive;CanRead:True;CanWrite:True;System.Nullable`1[System.TimeSpan] get_DekPropertiesTimeToLive();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DekPropertiesTimeToLive(System.Nullable`1[System.TimeSpan]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Nullable`1[System.TimeSpan] DistributedCacheEntryLifetime": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.Nullable`1[System.TimeSpan] DistributedCacheEntryLifetime;CanRead:True;CanWrite:True;System.Nullable`1[System.TimeSpan] get_DistributedCacheEntryLifetime();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DistributedCacheEntryLifetime(System.Nullable`1[System.TimeSpan]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Nullable`1[System.TimeSpan] get_DekPropertiesTimeToLive()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.TimeSpan] get_DekPropertiesTimeToLive();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Nullable`1[System.TimeSpan] get_DistributedCacheEntryLifetime()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.TimeSpan] get_DistributedCacheEntryLifetime();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Nullable`1[System.TimeSpan] get_RefreshBeforeExpiry()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.TimeSpan] get_RefreshBeforeExpiry();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Nullable`1[System.TimeSpan] RefreshBeforeExpiry": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.Nullable`1[System.TimeSpan] RefreshBeforeExpiry;CanRead:True;CanWrite:True;System.Nullable`1[System.TimeSpan] get_RefreshBeforeExpiry();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_RefreshBeforeExpiry(System.Nullable`1[System.TimeSpan]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String DistributedCacheKeyPrefix": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.String DistributedCacheKeyPrefix;CanRead:True;CanWrite:True;System.String get_DistributedCacheKeyPrefix();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DistributedCacheKeyPrefix(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String get_DistributedCacheKeyPrefix()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_DistributedCacheKeyPrefix();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor()": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "Void .ctor()"
+        },
+        "Void set_DekPropertiesTimeToLive(System.Nullable`1[System.TimeSpan])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_DekPropertiesTimeToLive(System.Nullable`1[System.TimeSpan]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_DistributedCache(Microsoft.Extensions.Caching.Distributed.IDistributedCache)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_DistributedCache(Microsoft.Extensions.Caching.Distributed.IDistributedCache);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_DistributedCacheEntryLifetime(System.Nullable`1[System.TimeSpan])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_DistributedCacheEntryLifetime(System.Nullable`1[System.TimeSpan]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_DistributedCacheKeyPrefix(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_DistributedCacheKeyPrefix(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_RefreshBeforeExpiry(System.Nullable`1[System.TimeSpan])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_RefreshBeforeExpiry(System.Nullable`1[System.TimeSpan]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
