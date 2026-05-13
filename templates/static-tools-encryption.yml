@@ -56,6 +56,23 @@ jobs:
       arguments: '-p:Optimize=true -p:IsPreview=true -p:SdkProjectRef=true -p:DefineSdkProjectRefSymbol=false --configuration Release'
       versioningScheme: OFF
 
+  # GA-surface parity check: same as above but with IsPreview unset, so
+  # neither PREVIEW nor ENCRYPTIONPREVIEW is defined. This matches the
+  # exact preprocessor surface the shipped GA NuGet is built with. The
+  # preview-only parity step above does NOT cover this surface because
+  # IsPreview=true defines ENCRYPTIONPREVIEW (Directory.Build.props), which
+  # pulls in #if ENCRYPTIONPREVIEW-gated overrides that do not ship in the
+  # GA NuGet. See PR #5825 (FFCF GA promotion) for a miss the preview-only
+  # parity build let through.
+  - task: DotNetCoreCLI@2
+    displayName: Build Microsoft.Azure.Cosmos.Encryption (GA NuGet-surface parity vs main SDK source)
+    inputs:
+      command: build
+      nugetConfigPath: NuGet.config
+      projects: Microsoft.Azure.Cosmos.Encryption/src/Microsoft.Azure.Cosmos.Encryption.csproj
+      arguments: '-p:Optimize=true -p:SdkProjectRef=true -p:DefineSdkProjectRefSymbol=false --configuration Release'
+      versioningScheme: OFF
+
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@4
     displayName: 'BinSkim'
     condition: eq(1,2) #disablng as nuget repo failing

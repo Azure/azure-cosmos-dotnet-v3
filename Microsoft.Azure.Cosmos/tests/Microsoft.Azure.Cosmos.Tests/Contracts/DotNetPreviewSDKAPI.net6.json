@@ -1682,6 +1682,11 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.ReadConsistencyStrategy GlobalStrong;IsInitOnly:False;IsStatic:True;"
         },
+        "Microsoft.Azure.Cosmos.ReadConsistencyStrategy LastCommittedSingleWriteRegion": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ReadConsistencyStrategy LastCommittedSingleWriteRegion;IsInitOnly:False;IsStatic:True;"
+        },
         "Microsoft.Azure.Cosmos.ReadConsistencyStrategy LatestCommitted": {
           "Type": "Field",
           "Attributes": [],
