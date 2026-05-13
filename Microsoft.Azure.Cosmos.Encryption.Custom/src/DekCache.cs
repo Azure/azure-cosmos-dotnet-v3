@@ -87,15 +87,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             // providers sharing a single cache would silently collide on identical dekIds. A
             // prefix is required whenever distributed caching is enabled so the caller must
             // consciously partition the keyspace (e.g. by container id, tenant id, etc.).
+            //
+            // When NO distributed cache is configured the prefix is dead state. Accepting a
+            // non-default prefix silently would hide a misconfiguration (caller plumbed a
+            // tenant discriminator that will never reach a cache); throwing only on empty /
+            // whitespace and silently accepting valid strings would be the worst of both
+            // worlds. Reject any non-null prefix in that case so the caller gets a clear
+            // signal of misconfiguration.
             if (distributedCache != null)
             {
                 ArgumentValidation.ThrowIfNullOrWhiteSpace(cacheKeyPrefix, nameof(cacheKeyPrefix));
             }
             else if (cacheKeyPrefix != null)
             {
-                // Without a distributed cache the prefix is meaningless; still validate so the
-                // argument shape is consistent with the distributed-cache ctor.
-                ArgumentValidation.ThrowIfNullOrWhiteSpace(cacheKeyPrefix, nameof(cacheKeyPrefix));
+                throw new ArgumentException(
+                    $"'{nameof(cacheKeyPrefix)}' can only be specified when '{nameof(distributedCache)}' is provided.",
+                    nameof(cacheKeyPrefix));
             }
 
             // Validate refreshBeforeExpiry

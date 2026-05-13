@@ -231,6 +231,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             await cache.GetOrAddDekPropertiesAsync(
                 DekId, HealthyFetcher, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
 
+            // C1: cold-path L2 hydration is fire-and-forget. Wait for it to settle before
+            // we mutate l2 below — otherwise the background SetAsync can race with
+            // RemoveForTest and leave the entry present.
+            await cache.LastDistributedCacheWriteTask;
+
             l2.RemoveForTest(DefaultCacheKey);
             now = now.AddMinutes(31);
 

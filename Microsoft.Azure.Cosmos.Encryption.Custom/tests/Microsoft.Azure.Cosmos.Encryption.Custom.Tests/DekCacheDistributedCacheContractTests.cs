@@ -412,6 +412,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 CosmosDiagnosticsContext.Create(null),
                 CancellationToken.None);
 
+            // C1: cold-path L2 hydration is fire-and-forget; await its completion before
+            // observing l2.SetCount.
+            await cache.LastDistributedCacheWriteTask;
+
             Assert.AreEqual(1, l2.SetCount, "Cold miss must perform exactly one L2 SetAsync.");
         }
 
@@ -434,6 +438,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 CosmosDiagnosticsContext.Create(null),
                 CancellationToken.None);
 
+            // C1: cold-path L2 hydration is fire-and-forget; await its completion before
+            // sampling l2.SetCount.
+            await cache.LastDistributedCacheWriteTask;
+
             int setCountAfterFirst = l2.SetCount;
             Assert.AreEqual(1, setCountAfterFirst);
 
@@ -443,6 +451,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 (id, ctx, ct) => Task.FromResult(MakeDekProperties(id)),
                 CosmosDiagnosticsContext.Create(null),
                 CancellationToken.None);
+
+            // No new L2 write is expected on a warm hit, but await the seam so the
+            // observation is deterministic regardless of any prior state.
+            await cache.LastDistributedCacheWriteTask;
 
             Assert.AreEqual(setCountAfterFirst, l2.SetCount, "A warm L1 hit must not trigger any additional L2 write.");
         }
