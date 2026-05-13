@@ -557,13 +557,15 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [Description("SessionToken deserializes from the 'sessionToken' JSON property.")]
+        [Description("SessionToken is assembled as {pkRangeId}:{lsn} from the separate 'sessionToken' (LSN-only) and 'partitionKeyRangeId' JSON fields.")]
         public async Task FromResponseMessage_OperationResult_SessionToken_DeserializesCorrectly()
         {
+            const string lsnOnly = "12345";
+            const string pkRangeId = "0";
             const string expectedSessionToken = "0:12345";
             DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
 
-            string json = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":201,""sessionToken"":""{expectedSessionToken}""}}]}}";
+            string json = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":201,""sessionToken"":""{lsnOnly}"",""partitionKeyRangeId"":""{pkRangeId}""}}]}}";
             ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
 
             DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
@@ -574,7 +576,74 @@ namespace Microsoft.Azure.Cosmos.Tests
                 CancellationToken.None);
 
             Assert.AreEqual(expectedSessionToken, response[0].SessionToken,
-                "SessionToken must equal the value from the JSON 'sessionToken' field.");
+                "SessionToken must be assembled as {pkRangeId}:{lsn} from the two separate JSON fields.");
+        }
+
+        [TestMethod]
+        [Description("When partitionKeyRangeId is absent, FromJson sets SessionToken to null so MergeSessionTokens skips the operation.")]
+        // TODO(issue#5857): Remove once the coordinator starts emitting partitionKeyRangeId for all operations.
+        public async Task FromResponseMessage_OperationResult_SessionToken_NullWhenPartitionKeyRangeIdAbsent()
+        {
+            const string lsnOnly = "12345";
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            // partitionKeyRangeId field is omitted — current server behavior
+            string json = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":201,""sessionToken"":""{lsnOnly}""}}]}}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.IsNull(response[0].SessionToken,
+                "SessionToken must be null when partitionKeyRangeId is absent so the merge is skipped.");
+        }
+
+        [DataTestMethod]
+        [DataRow("", DisplayName = "Empty string partitionKeyRangeId")]
+        [DataRow(" ", DisplayName = "Whitespace-only partitionKeyRangeId")]
+        [DataRow("   ", DisplayName = "Multiple spaces partitionKeyRangeId")]
+        [Description("When partitionKeyRangeId is present but empty or whitespace, FromJson throws JsonException because the server sent an explicitly invalid value.")]
+        public async Task FromResponseMessage_OperationResult_ThrowsWhenPartitionKeyRangeIdIsBlank(string pkRangeId)
+        {
+            const string lsnOnly = "12345";
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            string json = $@"{{""operationResponses"":[{{""index"":0,""statusCode"":201,""sessionToken"":""{lsnOnly}"",""partitionKeyRangeId"":""{pkRangeId}""}}]}}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => DistributedTransactionResponse.FromResponseMessageAsync(
+                    responseMessage,
+                    serverRequest,
+                    MockCosmosUtil.Serializer,
+                    NoOpTrace.Singleton,
+                    CancellationToken.None),
+                $"FromJson must throw InvalidOperationException when partitionKeyRangeId is '{pkRangeId}' (present but empty/whitespace).");
+        }
+
+        [TestMethod]
+        [Description("When sessionToken is absent entirely, SessionToken remains null regardless of partitionKeyRangeId.")]
+        public async Task FromResponseMessage_OperationResult_SessionToken_NullWhenSessionTokenFieldAbsent()
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 1);
+
+            // Neither sessionToken nor partitionKeyRangeId present
+            string json = @"{""operationResponses"":[{""index"":0,""statusCode"":201}]}";
+            ResponseMessage responseMessage = BuildResponseMessage(HttpStatusCode.OK, json);
+
+            DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.IsNull(response[0].SessionToken,
+                "SessionToken must be null when the sessionToken JSON field is absent.");
         }
 
         // IsRetriable parsing

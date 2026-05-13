@@ -181,10 +181,8 @@ namespace Microsoft.Azure.Cosmos
             // so that subsequent Session-consistency reads on the affected collections can use the latest token
             // without getting ReadSessionNotAvailable.
             //
-            // DTC spans multiple collections so the server embeds per-operation session
-            // tokens in the JSON body; those are already parsed into DistributedTransactionOperationResult.SessionToken,
-            // but we must explicitly push them into the SessionContainer.
-
+            // DTC spans multiple collections so the server embeds per-operation session tokens in the JSON body.
+            // DistributedTransactionOperationResult.FromJson assembles each token into canonical {pkRangeId}:{lsn} form.
             if (response == null || response.Count == 0 || serverRequest == null || sessionContainer == null)
             {
                 return;
@@ -195,49 +193,45 @@ namespace Microsoft.Azure.Cosmos
             for (int i = 0; i < response.Count; i++)
             {
                 DistributedTransactionOperationResult result = response[i];
-                DistributedTransactionOperation operation = serverRequest.Operations[result.Index];
-
-                if (string.IsNullOrEmpty(result.SessionToken) || string.IsNullOrEmpty(operation.CollectionResourceId))
+                DistributedTransactionOperation operation = null;
+                try
                 {
-                    continue;
-                }
+                    operation = serverRequest.Operations[result.Index];
 
-                if (result.StatusCode == HttpStatusCode.NotFound
-                    && result.SubStatusCode == SubStatusCodes.ReadSessionNotAvailable)
-                {
-                    continue;
-                }
-
-                // SessionContainer.SetSessionToken expects the token in {pkRangeId}:{lsn} format.
-                // The backend may send pkRangeId separately or the token may already be assembled.
-                string tokenForHeader = result.SessionToken;
-                if (tokenForHeader.IndexOf(':') < 0)
-                {
-                    // Token is LSN-only; we need pkRangeId to assemble the full format.
-                    if (string.IsNullOrWhiteSpace(result.PartitionKeyRangeId))
+                    if (string.IsNullOrEmpty(result.SessionToken) || string.IsNullOrEmpty(operation.CollectionResourceId))
                     {
-                        // Cannot form a valid session token without pkRangeId; silently skip merging
-                        // this operation's token but continue processing the rest of the response.
-                        DefaultTrace.TraceWarning(
-                            "DTC operation index {0} (collection {1}) returned LSN-only session token without partitionKeyRangeId; skipping session token merge.",
-                            result.Index,
-                            operation.CollectionResourceId);
                         continue;
                     }
 
-                    tokenForHeader = result.PartitionKeyRangeId + ":" + tokenForHeader;
+                    if (result.StatusCode == HttpStatusCode.NotFound
+                        && result.SubStatusCode == SubStatusCodes.ReadSessionNotAvailable)
+                    {
+                        continue;
+                    }
+
+                    // SessionToken is already in canonical {pkRangeId}:{lsn} format, assembled by FromJson.
+                    // Note: each SetSessionToken call acquires a write lock on the SessionContainer.
+                    // For a future optimization, consider a batch-update API on ISessionContainer to
+                    // reduce lock acquisitions when multiple operations target the same collection.
+                    headers.Clear();
+                    headers[HttpConstants.HttpHeaders.SessionToken] = result.SessionToken;
+
+                    sessionContainer.SetSessionToken(
+                        operation.CollectionResourceId,
+                        DistributedTransactionConstants.GetCollectionFullName(operation.Database, operation.Container),
+                        headers);
                 }
-
-                // Note: each SetSessionToken call acquires a write lock on the SessionContainer.
-                // For a future optimization, consider a batch-update API on ISessionContainer to
-                // reduce lock acquisitions when multiple operations target the same collection.
-                headers.Clear();
-                headers[HttpConstants.HttpHeaders.SessionToken] = tokenForHeader;
-
-                sessionContainer.SetSessionToken(
-                    operation.CollectionResourceId,
-                    DistributedTransactionConstants.GetCollectionFullName(operation.Database, operation.Container),
-                    headers);
+                catch (Exception ex)
+                {
+                    // Session-token bookkeeping must never fail a transaction the server already committed.
+                    // Log and continue so the remaining operations' tokens are still attempted.
+                    DefaultTrace.TraceWarning(
+                        "DTC session token merge failed for operation index {0} (collection {1}): [{2}] {3}",
+                        result.Index,
+                        operation?.CollectionResourceId ?? "<unknown>",
+                        ex.GetType().Name,
+                        ex.Message);
+                }
             }
         }
     }

@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Text.Json;
     using System.Text.Json.Serialization;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -91,9 +92,7 @@ namespace Microsoft.Azure.Cosmos
         public virtual string SessionToken { get; internal set; }
 
         /// <summary>
-        /// Gets the partition key range ID associated with the operation result.
-        /// When present, it is combined with <see cref="SessionToken"/> to form the
-        /// full session token in the format {partitionKeyRangeId}:{lsn}.
+        /// Gets the raw partition key range ID emitted by the server.
         /// </summary>
         [JsonInclude]
         [JsonPropertyName("partitionKeyRangeId")]
@@ -145,7 +144,7 @@ namespace Microsoft.Azure.Cosmos
         /// Creates a <see cref="DistributedTransactionOperationResult"/> from a JSON element.
         /// </summary>
         /// <param name="json">The JSON element containing the operation result.</param>
-        /// <returns>The deserialized operation result.</returns>
+        /// <returns>The deserialized operation result with a canonical session token.</returns>
         internal static DistributedTransactionOperationResult FromJson(JsonElement json)
         {
             DistributedTransactionOperationResult result = JsonSerializer.Deserialize<DistributedTransactionOperationResult>(json, DistributedTransactionOperationResult.CaseInsensitiveOptions);
@@ -162,6 +161,27 @@ namespace Microsoft.Azure.Cosmos
 
                 byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(resourceBody);
                 result.ResourceStream = new MemoryStream(bytes, 0, bytes.Length, writable: false, publiclyVisible: true);
+            }
+
+            if (!string.IsNullOrEmpty(result.SessionToken))
+            {
+                // TODO(issue#5857): Remove null check once the coordinator starts emitting pkRangeId.
+                if (result.PartitionKeyRangeId == null)
+                {
+                    DefaultTrace.TraceWarning(
+                        "DTC operation index {0} returned session token without partitionKeyRangeId; session token will not be merged into the session container.",
+                        result.Index);
+                    result.SessionToken = null;
+                }
+                else if (string.IsNullOrWhiteSpace(result.PartitionKeyRangeId))
+                {
+                    throw new InvalidOperationException(
+                        $"DTC operation index {result.Index} returned an empty or whitespace partitionKeyRangeId; cannot assemble a valid session token.");
+                }
+                else
+                {
+                    result.SessionToken = result.PartitionKeyRangeId + ":" + result.SessionToken;
+                }
             }
 
             return result;
