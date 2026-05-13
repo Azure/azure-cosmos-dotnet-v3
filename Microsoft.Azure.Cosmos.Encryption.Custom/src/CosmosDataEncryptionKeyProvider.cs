@@ -190,7 +190,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <param name="container">The container to associate with this provider.</param>
         private void SetContainer(Container container)
         {
-            ArgumentValidation.ThrowIfNull(container);
+            ArgumentValidation.ThrowIfNull(container, nameof(container));
 
             Container previous = Interlocked.CompareExchange(ref this.container, container, null);
             if (previous != null)

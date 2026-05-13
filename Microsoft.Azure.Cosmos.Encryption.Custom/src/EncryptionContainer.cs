@@ -636,7 +636,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 this.ResponseFactory,
                 this.Encryptor,
                 this.CosmosSerializer,
-                requestOptions?.GetJsonProcessor(this.DefaultJsonProcessor) ?? this.DefaultJsonProcessor);
+                requestOptions.GetJsonProcessor(this.DefaultJsonProcessor));
         }
 
         public override FeedIterator<T> GetItemQueryIterator<T>(
@@ -652,7 +652,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 this.ResponseFactory,
                 this.Encryptor,
                 this.CosmosSerializer,
-                requestOptions?.GetJsonProcessor(this.DefaultJsonProcessor) ?? this.DefaultJsonProcessor);
+                requestOptions.GetJsonProcessor(this.DefaultJsonProcessor));
         }
 
         public override Task<ContainerResponse> ReadContainerAsync(
@@ -732,7 +732,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     continuationToken,
                     requestOptions),
                 this.Encryptor,
-                requestOptions?.GetJsonProcessor(this.DefaultJsonProcessor) ?? this.DefaultJsonProcessor);
+                requestOptions.GetJsonProcessor(this.DefaultJsonProcessor));
         }
 
         public override FeedIterator GetItemQueryStreamIterator(
@@ -746,7 +746,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     continuationToken,
                     requestOptions),
                 this.Encryptor,
-                requestOptions?.GetJsonProcessor(this.DefaultJsonProcessor) ?? this.DefaultJsonProcessor);
+                requestOptions.GetJsonProcessor(this.DefaultJsonProcessor));
         }
 
         public override Task<ThroughputResponse> ReplaceThroughputAsync(
@@ -779,7 +779,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     continuationToken,
                     requestOptions),
                 this.Encryptor,
-                requestOptions?.GetJsonProcessor(this.DefaultJsonProcessor) ?? this.DefaultJsonProcessor);
+                requestOptions.GetJsonProcessor(this.DefaultJsonProcessor));
         }
 
         public override FeedIterator<T> GetItemQueryIterator<T>(
@@ -797,7 +797,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 this.ResponseFactory,
                 this.Encryptor,
                 this.CosmosSerializer,
-                requestOptions?.GetJsonProcessor(this.DefaultJsonProcessor) ?? this.DefaultJsonProcessor);
+                requestOptions.GetJsonProcessor(this.DefaultJsonProcessor));
         }
 
         public override ChangeFeedEstimator GetChangeFeedEstimator(
@@ -818,7 +818,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     changeFeedMode,
                     changeFeedRequestOptions),
                 this.Encryptor,
-                changeFeedRequestOptions?.GetJsonProcessor(this.DefaultJsonProcessor) ?? this.DefaultJsonProcessor);
+                changeFeedRequestOptions.GetJsonProcessor(this.DefaultJsonProcessor));
         }
 
         public override FeedIterator<T> GetChangeFeedIterator<T>(
@@ -834,7 +834,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 this.ResponseFactory,
                 this.Encryptor,
                 this.CosmosSerializer,
-                changeFeedRequestOptions?.GetJsonProcessor(this.DefaultJsonProcessor) ?? this.DefaultJsonProcessor);
+                changeFeedRequestOptions.GetJsonProcessor(this.DefaultJsonProcessor));
         }
 
         public override Task<ItemResponse<T>> PatchItemAsync<T>(
@@ -1059,7 +1059,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Stream decryptedContent = await EncryptionProcessor.DeserializeAndDecryptResponseAsync(
                 responseMessage.Content,
                 this.Encryptor,
-                readManyRequestOptions?.GetJsonProcessor(this.DefaultJsonProcessor) ?? this.DefaultJsonProcessor,
+                readManyRequestOptions.GetJsonProcessor(this.DefaultJsonProcessor),
                 cancellationToken);
 
             return new DecryptedResponseMessage(responseMessage, decryptedContent);
