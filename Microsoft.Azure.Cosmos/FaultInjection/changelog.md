@@ -5,6 +5,16 @@ This project is in beta. The API and functionality may change when the project i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="unreleased-faultinjection"/> Unreleased
+
+#### Features Added
+
+#### Breaking Changes
+
+#### Bugs Fixed
+
+#### Other Changes
+
 ### <a name="1.0.0-beta.1"/> [1.0.0-beta.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.FaultInjection/1.0.0-beta.1) - 2026-04-30
 
 #### Added

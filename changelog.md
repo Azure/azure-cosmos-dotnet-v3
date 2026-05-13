@@ -15,6 +15,18 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="unreleased"/> Unreleased
+
+#### Features Added
+
+#### Breaking Changes
+
+#### Bugs Fixed
+
+- [5851](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5851) Change Feed Estimator: Fixes inflated lag for uncheckpointed leases by reporting a sentinel `EstimatedLag = 1` instead of probing from beginning (resolves the synthetic backlog spike from issue #5847). Preserves the non-zero wake signal that Azure Functions Scale Controller / KEDA Cosmos scaler rely on. Note: processors configured with `WithStartFromBeginning` will report `EstimatedLag = 1` until their first checkpoint rather than the exact pending count, which may affect Scale Controller / KEDA scale-out decisions during the initial catch-up window; once the lease checkpoints, subsequent estimations report the real measured lag.
+
+#### Other Changes
+
 ### <a name="3.60.0-preview.0"/> [3.60.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.60.0-preview.0) - 2026-4-24
 
 #### Added
