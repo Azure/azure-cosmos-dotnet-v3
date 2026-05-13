@@ -15,17 +15,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
     using Newtonsoft.Json.Linq;
 
     /// <summary>
-    /// Cross-process / cross-instance interop contract for the distributed-cache feature
-    /// introduced by PR #5428.
-    ///
-    /// The feature's stated raison d'etre is "peer A writes L2 -> peer B reads L2". Every
-    /// test in this class simulates that explicitly: two independent <see cref="DekCache"/>
-    /// instances share a single <see cref="IDistributedCache"/>. One is exercised to write;
-    /// a distinct one is exercised to read. L1 in-process state is therefore never shared
-    /// between writer and reader, forcing the assertion to go through the L2 byte payload
-    /// -- i.e. the interop contract.
-    ///
-    /// Each test is grounded in a named SOURCE to avoid codifying accidental behavior.
+    /// Cross-process / cross-instance interop contract for the distributed-cache feature: two
+    /// independent <see cref="DekCache"/> instances share a single <see cref="IDistributedCache"/>
+    /// (one writes, one reads) so assertions go through the L2 byte payload — the interop contract.
     /// </summary>
     [TestClass]
     public class DekCacheInteropTests

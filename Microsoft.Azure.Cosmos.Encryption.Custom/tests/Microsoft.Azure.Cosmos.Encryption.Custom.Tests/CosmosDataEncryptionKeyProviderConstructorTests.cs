@@ -13,10 +13,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
     using Moq;
 
     /// <summary>
-    /// Tests for the surviving <see cref="CosmosDataEncryptionKeyProvider"/> constructor surface:
+    /// Tests for the public <see cref="CosmosDataEncryptionKeyProvider"/> constructor surface:
     /// the three legacy ctors (WrapProvider, StoreProvider, dual) plus the canonical
-    /// <see cref="DekCacheOptions"/> overload that supersedes the earlier 5-positional
-    /// distributed-cache overloads.
+    /// <see cref="DekCacheOptions"/> overload.
     /// </summary>
     [TestClass]
     public class CosmosDataEncryptionKeyProviderConstructorTests

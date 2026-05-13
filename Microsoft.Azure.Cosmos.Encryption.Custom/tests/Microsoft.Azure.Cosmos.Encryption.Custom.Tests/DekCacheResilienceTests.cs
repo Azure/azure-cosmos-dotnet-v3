@@ -15,24 +15,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
     using Newtonsoft.Json;
 
     /// <summary>
-    /// Behavioral specification for the distributed-cache resilience feature added by PR #5428.
-    ///
-    /// Stated goal of the feature:
-    ///   "When the in-process DekCache TTL expires, the next encrypted request would normally
-    ///    refetch DataEncryptionKeyProperties from Cosmos metadata. If Cosmos is unavailable
-    ///    at that moment, the request fails. This PR adds an IDistributedCache L2 so a
-    ///    peer-populated cache entry can rescue the request."
-    ///
-    /// The tests below describe what that feature must do from a user's perspective, not what
-    /// the current implementation happens to do. They are intended to pass after the bugs in
-    /// the current implementation are fixed and to fail while the bugs remain.
-    ///
-    /// Each test uses:
-    ///   - <see cref="ClockControlledDistributedCache"/> — a test double for IDistributedCache
-    ///     that respects the same injectable clock as DekCache, so the test-double's own
-    ///     expiry logic cannot silently skew the scenario.
-    ///   - Explicit wall-clock control via a <c>Func&lt;DateTime&gt; utcNow</c> so each test
-    ///     describes a precise timeline without any real sleep.
+    /// Behavioral specification for the distributed-cache resilience feature: when the in-process
+    /// DekCache TTL expires and Cosmos metadata is unavailable, a peer-populated L2 entry must be
+    /// able to rescue the request. Tests use a <see cref="ClockControlledDistributedCache"/> and
+    /// an injectable <c>Func&lt;DateTime&gt; utcNow</c> so each scenario describes a precise
+    /// timeline without any real sleep.
     /// </summary>
     [TestClass]
     public class DekCacheResilienceTests
@@ -90,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 CosmosDiagnosticsContext.Create(null),
                 CancellationToken.None);
 
-            // L2 hydration on the cold-miss path is fire-and-forget (C1); wait for it to
+            // L2 hydration on the cold-miss path is fire-and-forget; wait for it to
             // complete before asserting on L2 state.
             await cache.LastDistributedCacheWriteTask;
 
@@ -121,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         }
 
         // ------------------------------------------------------------
-        // Group 2 — L1 TTL-expiry path (the core resilience claim of PR #5428)
+        // Group 2 — L1 TTL-expiry path (the core resilience claim)
         // ------------------------------------------------------------
 
         /// <summary>
@@ -209,7 +196,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 CosmosDiagnosticsContext.Create(null),
                 CancellationToken.None);
 
-            // L2 hydration on cold-miss / forced-refresh paths is now fire-and-forget (C1 fix);
+            // L2 hydration on cold-miss / forced-refresh paths is now fire-and-forget;
             // wait for the background write to settle before asserting L2 state.
             await cache.LastDistributedCacheWriteTask;
 
@@ -231,7 +218,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             await cache.GetOrAddDekPropertiesAsync(
                 DekId, HealthyFetcher, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
 
-            // C1: cold-path L2 hydration is fire-and-forget. Wait for it to settle before
+            // Cold-path L2 hydration is fire-and-forget. Wait for it to settle before
             // we mutate l2 below — otherwise the background SetAsync can race with
             // RemoveForTest and leave the entry present.
             await cache.LastDistributedCacheWriteTask;

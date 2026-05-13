@@ -16,14 +16,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
     using Newtonsoft.Json;
 
     /// <summary>
-    /// Scenario-level resilience tests that extend the L1 x L2 x Cosmos baseline matrix
-    /// covered by <c>DekCacheResilienceTests</c>. The scenarios here focus on coalescing,
-    /// cancellation propagation, clock edges, proactive-refresh nuances, and resilience
-    /// composition rules that the PR #5428 feature must observe beyond its happy path.
-    ///
-    /// Every test carries a REQ/SOURCE header citing the named source of truth it
-    /// encodes. Tests that describe required-but-not-yet-implemented behavior are allowed
-    /// to fail; no test codifies today's buggy behavior as-correct.
+    /// Scenario-level resilience tests extending the L1 × L2 × Cosmos baseline covered by
+    /// <c>DekCacheResilienceTests</c>: coalescing, cancellation propagation, clock edges,
+    /// proactive-refresh nuances, and resilience composition rules.
     /// </summary>
     [TestClass]
     public class DekCacheResilienceScenariosTests
@@ -622,34 +617,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         }
     }
 
-    // GAPS:
-    //
-    // The following scenarios were considered but could not be grounded in a named source
-    // of truth from the sources listed in the prompt; they are documented here so a future
-    // owner can either pin the semantics (in XMLDOC, in the PR description, or in a design
-    // doc) or add tests once the behavior is decided.
-    //
-    // 1. Fetcher returning null (E.1): Neither DekCache XML doc, the PR description, nor
-    //    the IDistributedCache contract specifies whether a null DataEncryptionKeyProperties
-    //    from the fetcher should throw or be treated as a cache miss. DekCache.cs:356 passes
-    //    the fetcher result straight into CachedDekProperties whose ctor Debug.Asserts
-    //    non-null — but Debug.Assert is not a specification. GAP until semantics are pinned.
-    //
-    // 2. Concurrent SetDekProperties + GetOrAddDekPropertiesAsync race (A.3): DekCache.cs:138-165
-    //    documents eventual consistency for *distributed-cache* writes but does not specify
-    //    whether a racing reader sees the pre- or post-Set memory-cache value deterministically.
-    //    Asserting a specific ordering would be testing implementation timing rather than a
-    //    stated contract. GAP until "last-write-wins" is pinned for the memory cache under
-    //    contention.
-    //
-    // 3. Expiry-path L2 rescue on Cosmos outage beyond what DekCacheResilienceTests already
-    //    covers — specifically the *ordering* of "consult L2 first, then Cosmos" on the
-    //    forceRefresh branch (src/DekCache.cs:80-85) is stated in the PR narrative but the
-    //    code path calls FetchFromSourceAndUpdateCachesAsync directly, bypassing L2. This is
-    //    already expressed by DekCacheResilienceTests.ExpiredL1_* and is not duplicated here.
-    //
-    // 4. Proactive-refresh window lower bound — behavior when refreshBeforeExpiry is
-    //    exactly equal to remaining TTL (i.e. utcNow() == refreshThreshold). DekCache.cs:412
-    //    uses ">=" so the boundary is included, but no external doc pins this; skipped
-    //    pending a source.
+    // GAPS — scenarios deliberately not tested here because the contract is unspecified:
+    //   1. Fetcher returning null: DekCache passes the result straight to CachedDekProperties
+    //      whose ctor Debug.Asserts non-null, but Debug.Assert is not a specification.
+    //   2. Concurrent SetDekProperties / GetOrAddDekPropertiesAsync ordering for the in-memory
+    //      cache (eventual consistency is documented for L2 only).
+    //   3. Forced-refresh branch is exercised by DekCacheResilienceTests.ExpiredL1_* and not
+    //      duplicated here.
+    //   4. Boundary case where utcNow() exactly equals the refresh threshold (code uses ">=" so
+    //      the boundary is included, but no external doc pins this).
 }

@@ -308,7 +308,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 CosmosDiagnosticsContext.Create(null),
                 CancellationToken.None);
 
-            // C1: cold-path L2 hydration is fire-and-forget; await its completion before
+            // Cold-path L2 hydration is fire-and-forget; await its completion before
             // observing l2.SetCount.
             await cache.LastDistributedCacheWriteTask;
 
@@ -329,7 +329,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 CosmosDiagnosticsContext.Create(null),
                 CancellationToken.None);
 
-            // C1: cold-path L2 hydration is fire-and-forget; await its completion before
+            // Cold-path L2 hydration is fire-and-forget; await its completion before
             // sampling l2.SetCount.
             await cache.LastDistributedCacheWriteTask;
 

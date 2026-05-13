@@ -409,7 +409,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 CosmosDiagnosticsContext.Create(null),
                 CancellationToken.None);
 
-            // C1: tenant1's cold-miss L2 write is fire-and-forget. Wait for it to complete
+            // Tenant1's cold-miss L2 write is fire-and-forget. Wait for it to complete
             // before tenant1Peer reads from the shared L2 below.
             await tenant1Cache.LastDistributedCacheWriteTask;
 
@@ -573,7 +573,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 CosmosDiagnosticsContext.Create(null),
                 CancellationToken.None);
 
-            // C1: cold-path L2 hydration is fire-and-forget; await it before checking L2.
+            // Cold-path L2 hydration is fire-and-forget; await it before checking L2.
             await cache.LastDistributedCacheWriteTask;
 
             Assert.IsTrue(distributedCache.ContainsKey("test-dek:v1:dek1"), "Precondition: distributed cache should contain the key");
@@ -606,7 +606,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 CosmosDiagnosticsContext.Create(null),
                 CancellationToken.None);
 
-            // C1: cold-path L2 hydration is fire-and-forget; await it before checking L2.
+            // Cold-path L2 hydration is fire-and-forget; await it before checking L2.
             await cache1.LastDistributedCacheWriteTask;
 
             Assert.IsTrue(distributedCache.ContainsKey("test-dek:v1:dek1"), "Precondition: distributed cache populated");
