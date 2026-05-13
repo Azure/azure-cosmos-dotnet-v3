@@ -5,20 +5,20 @@
 # the repo. Unless a later match takes precedence,
 # @global-owner1 and @global-owner2 will be requested for
 # review when someone opens a pull request.
-*       @kirankumarkolli @FabianMeiswinkel @sboshra @Pilchie @kushagraThapar
-Microsoft.Azure.Cosmos/src/Json @adityasa @neildsh @kirankumarkolli @sboshra @kushagraThapar
-Microsoft.Azure.Cosmos/src/Query @adityasa @neildsh @kirankumarkolli @sboshra @kushagraThapar
-Microsoft.Azure.Cosmos/src/CosmosElements @adityasa @neildsh @kirankumarkolli @sboshra @kushagraThapar
-Microsoft.Azure.Cosmos/src/SqlObjects @leminh98 @adityasa @kirankumarkolli @sboshra @kushagraThapar
-Microsoft.Azure.Cosmos/src/Linq @khdang @adityasa @sboshra @kirankumarkolli @kushagraThapar
-Microsoft.Azure.Cosmos/src/Spatial @neildsh @adityasa @sboshra @kirankumarkolli @kushagraThapar
-Microsoft.Azure.Cosmos/tests @khdang @sboshra @adityasa @neildsh @kirankumarkolli @FabianMeiswinkel @kirillg @kushagraThapar
-Microsoft.Azure.Cosmos.Samples @khdang @sboshra @adityasa @neildsh @kirankumarkolli @FabianMeiswinkel @kirillg @kushagraThapar
+*       @kirankumarkolli @FabianMeiswinkel @sboshra @Pilchie @kushagraThapar @jeet1995 @kundadebdatta @xinlian12
+Microsoft.Azure.Cosmos/src/Json @adityasa @neildsh @kirankumarkolli @sboshra @kushagraThapar @jeet1995 @kundadebdatta @xinlian12
+Microsoft.Azure.Cosmos/src/Query @adityasa @neildsh @kirankumarkolli @sboshra @kushagraThapar @jeet1995 @kundadebdatta @xinlian12
+Microsoft.Azure.Cosmos/src/CosmosElements @adityasa @neildsh @kirankumarkolli @sboshra @kushagraThapar @jeet1995 @kundadebdatta @xinlian12
+Microsoft.Azure.Cosmos/src/SqlObjects @leminh98 @adityasa @kirankumarkolli @sboshra @kushagraThapar @jeet1995 @kundadebdatta @xinlian12
+Microsoft.Azure.Cosmos/src/Linq @khdang @adityasa @sboshra @kirankumarkolli @kushagraThapar @jeet1995 @kundadebdatta @xinlian12
+Microsoft.Azure.Cosmos/src/Spatial @neildsh @adityasa @sboshra @kirankumarkolli @kushagraThapar @jeet1995 @kundadebdatta @xinlian12
+Microsoft.Azure.Cosmos/tests @khdang @sboshra @adityasa @neildsh @kirankumarkolli @FabianMeiswinkel @kushagraThapar @jeet1995 @kundadebdatta @xinlian12
+Microsoft.Azure.Cosmos.Samples @khdang @sboshra @adityasa @neildsh @kirankumarkolli @FabianMeiswinkel @kushagraThapar @jeet1995 @kundadebdatta @xinlian12
 
 # Order is important; the last matching pattern takes the most precedence
-Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/Contracts @kirillg @kirankumarkolli @FabianMeiswinkel @kushagraThapar
-Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/Contracts @kirillg @kirankumarkolli @FabianMeiswinkel @kushagraThapar
+Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/Contracts @kirankumarkolli @FabianMeiswinkel @kushagraThapar @jeet1995 @kundadebdatta @xinlian12
+Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/Contracts @kirankumarkolli @FabianMeiswinkel @kushagraThapar @jeet1995 @kundadebdatta @xinlian12
 Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/Contracts/DotNetSDKAPI.json @Azure/azure-cosmosdb-lt
 Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/Contracts/DotNetPreviewSDKAPI.json @Azure/azure-cosmosdb-lt
 Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/Contracts/DotNetSDKTelemetryAPI.json @Azure/azure-cosmosdb-lt
-CODEOWNERS @Pilchie @kirankumarkolli
+CODEOWNERS @Pilchie @kirankumarkolli @kushagraThapar @jeet1995 @kundadebdatta @xinlian12

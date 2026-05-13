@@ -44,13 +44,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                 tx.CreateItem(Database, Container, new PartitionKey("pk"), itemId, new TestItem(itemId)));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
-            JsonElement op = doc.RootElement.GetProperty("operations")[0];
+            JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
 
-            Assert.IsTrue(op.TryGetProperty("id", out JsonElement idElement),
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.Id, out JsonElement idElement),
                 "Create operation must include an 'id' field.");
             Assert.AreEqual(itemId, idElement.GetString(),
                 "The 'id' field must match the id passed to CreateItem.");
-            Assert.IsTrue(op.TryGetProperty("resourceBody", out _),
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.ResourceBody, out _),
                 "Create operation must include a 'resourceBody' field.");
         }
 
@@ -64,11 +64,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 tx.ReplaceItem(Database, Container, new PartitionKey("pk"), itemId, new TestItem(itemId)));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
-            JsonElement op = doc.RootElement.GetProperty("operations")[0];
+            JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
 
-            Assert.IsTrue(op.TryGetProperty("id", out _),
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.Id, out _),
                 "Replace operation must include an 'id' field.");
-            Assert.IsTrue(op.TryGetProperty("resourceBody", out _),
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.ResourceBody, out _),
                 "Replace operation must include a 'resourceBody' field.");
         }
 
@@ -82,11 +82,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 tx.DeleteItem(Database, Container, new PartitionKey("pk"), itemId));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
-            JsonElement op = doc.RootElement.GetProperty("operations")[0];
+            JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
 
-            Assert.IsTrue(op.TryGetProperty("id", out _),
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.Id, out _),
                 "Delete operation must include an 'id' field.");
-            Assert.IsFalse(op.TryGetProperty("resourceBody", out _),
+            Assert.IsFalse(op.TryGetProperty(DistributedTransactionSerializer.ResourceBody, out _),
                 "Delete operation must NOT include a 'resourceBody' field.");
         }
 
@@ -99,13 +99,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                 tx.UpsertItem(Database, Container, new PartitionKey("pk"), itemId, new TestItem(itemId)));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
-            JsonElement op = doc.RootElement.GetProperty("operations")[0];
+            JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
 
-            Assert.IsTrue(op.TryGetProperty("id", out JsonElement idElement),
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.Id, out JsonElement idElement),
                 "Upsert operation must include an 'id' field.");
             Assert.AreEqual(itemId, idElement.GetString(),
                 "The 'id' field must match the id passed to UpsertItem.");
-            Assert.IsTrue(op.TryGetProperty("resourceBody", out _),
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.ResourceBody, out _),
                 "Upsert operation must include a 'resourceBody' field.");
         }
 
@@ -121,9 +121,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 tx.ReplaceItem(Database, Container, new PartitionKey("pk"), expectedId, new TestItem(expectedId)));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
-            JsonElement op = doc.RootElement.GetProperty("operations")[0];
+            JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
 
-            Assert.IsTrue(op.TryGetProperty("id", out JsonElement idElement));
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.Id, out JsonElement idElement));
             Assert.AreEqual(expectedId, idElement.GetString(),
                 "The serialized 'id' field must equal the id passed to ReplaceItem().");
         }
@@ -138,9 +138,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 tx.DeleteItem(Database, Container, new PartitionKey("pk"), expectedId));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
-            JsonElement op = doc.RootElement.GetProperty("operations")[0];
+            JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
 
-            Assert.IsTrue(op.TryGetProperty("id", out JsonElement idElement));
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.Id, out JsonElement idElement));
             Assert.AreEqual(expectedId, idElement.GetString(),
                 "The serialized 'id' field must equal the id passed to DeleteItem().");
         }
@@ -155,9 +155,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 tx.CreateItem(Database, Container, new PartitionKey("pk"), "json-check", new TestItem("json-check")));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
-            JsonElement op = doc.RootElement.GetProperty("operations")[0];
+            JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
 
-            Assert.IsTrue(op.TryGetProperty("resourceBody", out JsonElement resourceBodyElement),
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.ResourceBody, out JsonElement resourceBodyElement),
                 "resourceBody must be present.");
             Assert.AreEqual(JsonValueKind.Object, resourceBodyElement.ValueKind,
                 "resourceBody must be a valid JSON object.");
@@ -180,14 +180,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                 expectedResultCount: 5);
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
-            JsonElement ops = doc.RootElement.GetProperty("operations");
+            JsonElement ops = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations);
 
             Assert.AreEqual(5, ops.GetArrayLength());
-            Assert.AreEqual(OperationType.Create.ToString(), ops[0].GetProperty("operationType").GetString());
-            Assert.AreEqual(OperationType.Replace.ToString(), ops[1].GetProperty("operationType").GetString());
-            Assert.AreEqual(OperationType.Delete.ToString(), ops[2].GetProperty("operationType").GetString());
-            Assert.AreEqual(OperationType.Upsert.ToString(), ops[3].GetProperty("operationType").GetString());
-            Assert.AreEqual(OperationType.Patch.ToString(), ops[4].GetProperty("operationType").GetString());
+            Assert.AreEqual(OperationType.Create.ToString(), ops[0].GetProperty(DistributedTransactionSerializer.OperationType).GetString());
+            Assert.AreEqual(OperationType.Replace.ToString(), ops[1].GetProperty(DistributedTransactionSerializer.OperationType).GetString());
+            Assert.AreEqual(OperationType.Delete.ToString(), ops[2].GetProperty(DistributedTransactionSerializer.OperationType).GetString());
+            Assert.AreEqual(OperationType.Upsert.ToString(), ops[3].GetProperty(DistributedTransactionSerializer.OperationType).GetString());
+            Assert.AreEqual(OperationType.Patch.ToString(), ops[4].GetProperty(DistributedTransactionSerializer.OperationType).GetString());
         }
 
         [TestMethod]
@@ -205,13 +205,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                 expectedResultCount: 5);
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
-            JsonElement ops = doc.RootElement.GetProperty("operations");
+            JsonElement ops = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations);
 
             for (int i = 0; i < ops.GetArrayLength(); i++)
             {
                 Assert.AreEqual(
                     ResourceType.Document.ToString(),
-                    ops[i].GetProperty("resourceType").GetString(),
+                    ops[i].GetProperty(DistributedTransactionSerializer.ResourceType).GetString(),
                     $"Operation[{i}] must have resourceType = 'Document'.");
             }
         }
@@ -228,18 +228,18 @@ namespace Microsoft.Azure.Cosmos.Tests
                 tx.ReplaceItem(Database, Container, new PartitionKey("pk"), itemId, new TestItem(itemId)));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
-            JsonElement op = doc.RootElement.GetProperty("operations")[0];
+            JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
 
-            Assert.AreEqual(JsonValueKind.String, op.GetProperty("databaseName").ValueKind, "'databaseName' must be a JSON string.");
-            Assert.AreEqual(JsonValueKind.String, op.GetProperty("collectionName").ValueKind, "'collectionName' must be a JSON string.");
-            Assert.AreEqual(JsonValueKind.String, op.GetProperty("collectionResourceId").ValueKind, "'collectionResourceId' must be a JSON string.");
-            Assert.AreEqual(JsonValueKind.String, op.GetProperty("databaseResourceId").ValueKind, "'databaseResourceId' must be a JSON string.");
-            Assert.AreEqual(JsonValueKind.String, op.GetProperty("id").ValueKind, "'id' must be a JSON string.");
-            Assert.AreEqual(JsonValueKind.Array,  op.GetProperty("partitionKey").ValueKind, "'partitionKey' must be a JSON array, not a quoted string.");
-            Assert.AreEqual(JsonValueKind.Number, op.GetProperty("index").ValueKind, "'index' must be a JSON number, not a quoted string.");
-            Assert.AreEqual(JsonValueKind.Object, op.GetProperty("resourceBody").ValueKind, "'resourceBody' must be a JSON object.");
-            Assert.AreEqual(JsonValueKind.String, op.GetProperty("operationType").ValueKind, "'operationType' must be a JSON string.");
-            Assert.AreEqual(JsonValueKind.String, op.GetProperty("resourceType").ValueKind, "'resourceType' must be a JSON string.");
+            Assert.AreEqual(JsonValueKind.String, op.GetProperty(DistributedTransactionSerializer.DatabaseName).ValueKind, "'databaseName' must be a JSON string.");
+            Assert.AreEqual(JsonValueKind.String, op.GetProperty(DistributedTransactionSerializer.CollectionName).ValueKind, "'collectionName' must be a JSON string.");
+            Assert.AreEqual(JsonValueKind.String, op.GetProperty(DistributedTransactionSerializer.CollectionResourceId).ValueKind, "'collectionResourceId' must be a JSON string.");
+            Assert.AreEqual(JsonValueKind.String, op.GetProperty(DistributedTransactionSerializer.DatabaseResourceId).ValueKind, "'databaseResourceId' must be a JSON string.");
+            Assert.AreEqual(JsonValueKind.String, op.GetProperty(DistributedTransactionSerializer.Id).ValueKind, "'id' must be a JSON string.");
+            Assert.AreEqual(JsonValueKind.Array,  op.GetProperty(DistributedTransactionSerializer.PartitionKey).ValueKind, "'partitionKey' must be a JSON array, not a quoted string.");
+            Assert.AreEqual(JsonValueKind.Number, op.GetProperty(DistributedTransactionSerializer.Index).ValueKind, "'index' must be a JSON number, not a quoted string.");
+            Assert.AreEqual(JsonValueKind.Object, op.GetProperty(DistributedTransactionSerializer.ResourceBody).ValueKind, "'resourceBody' must be a JSON object.");
+            Assert.AreEqual(JsonValueKind.String, op.GetProperty(DistributedTransactionSerializer.OperationType).ValueKind, "'operationType' must be a JSON string.");
+            Assert.AreEqual(JsonValueKind.String, op.GetProperty(DistributedTransactionSerializer.ResourceType).ValueKind, "'resourceType' must be a JSON string.");
         }
 
         // Stream operations
@@ -255,13 +255,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                 tx => tx.CreateItemStream(Database, Container, new PartitionKey("pk"), itemId, stream));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
-            JsonElement op = doc.RootElement.GetProperty("operations")[0];
+            JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
 
-            Assert.IsTrue(op.TryGetProperty("id", out JsonElement idElement),
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.Id, out JsonElement idElement),
                 "CreateItemStream operation must include an 'id' field.");
             Assert.AreEqual(itemId, idElement.GetString(),
                 "The 'id' field must match the id passed to CreateItemStream.");
-            Assert.IsTrue(op.TryGetProperty("resourceBody", out _),
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.ResourceBody, out _),
                 "CreateItemStream operation must include a 'resourceBody' field.");
         }
 
@@ -276,11 +276,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 tx => tx.ReplaceItemStream(Database, Container, new PartitionKey("pk"), itemId, stream));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
-            JsonElement op = doc.RootElement.GetProperty("operations")[0];
+            JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
 
-            Assert.IsTrue(op.TryGetProperty("id", out _),
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.Id, out _),
                 "ReplaceItemStream operation must include an 'id' field.");
-            Assert.IsTrue(op.TryGetProperty("resourceBody", out _),
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.ResourceBody, out _),
                 "ReplaceItemStream operation must include a 'resourceBody' field.");
         }
 
@@ -295,11 +295,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 tx => tx.PatchItemStream(Database, Container, new PartitionKey("pk"), itemId, stream));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
-            JsonElement op = doc.RootElement.GetProperty("operations")[0];
+            JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
 
-            Assert.IsTrue(op.TryGetProperty("id", out _),
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.Id, out _),
                 "PatchItemStream operation must include an 'id' field.");
-            Assert.IsTrue(op.TryGetProperty("resourceBody", out _),
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.ResourceBody, out _),
                 "PatchItemStream operation must include a 'resourceBody' field.");
         }
 
@@ -314,13 +314,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                 tx => tx.UpsertItemStream(Database, Container, new PartitionKey("pk"), itemId, stream));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
-            JsonElement op = doc.RootElement.GetProperty("operations")[0];
+            JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
 
-            Assert.IsTrue(op.TryGetProperty("id", out JsonElement idElement),
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.Id, out JsonElement idElement),
                 "UpsertItemStream operation must include an 'id' field.");
             Assert.AreEqual(itemId, idElement.GetString(),
                 "The 'id' field must match the id passed to UpsertItemStream.");
-            Assert.IsTrue(op.TryGetProperty("resourceBody", out _),
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.ResourceBody, out _),
                 "UpsertItemStream operation must include a 'resourceBody' field.");
         }
 
@@ -338,9 +338,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                     new DistributedTransactionRequestOptions { IfNoneMatchEtag = etag }));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
-            JsonElement op = doc.RootElement.GetProperty("operations")[0];
+            JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
 
-            Assert.IsTrue(op.TryGetProperty("etag", out JsonElement etagElement),
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.ETag, out JsonElement etagElement),
                 "Read operation with IfNoneMatchEtag must include an 'etag' field.");
             Assert.AreEqual(etag, etagElement.GetString());
         }
@@ -353,9 +353,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 tx.ReadItem(Database, Container, new PartitionKey("pk"), "read-no-etag"));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
-            JsonElement op = doc.RootElement.GetProperty("operations")[0];
+            JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
 
-            Assert.IsFalse(op.TryGetProperty("etag", out _),
+            Assert.IsFalse(op.TryGetProperty(DistributedTransactionSerializer.ETag, out _),
                 "Read operation without etag options must NOT include an 'etag' field.");
         }
 
@@ -371,9 +371,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                     new DistributedTransactionRequestOptions { IfMatchEtag = etag }));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
-            JsonElement op = doc.RootElement.GetProperty("operations")[0];
+            JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
 
-            Assert.IsFalse(op.TryGetProperty("etag", out _),
+            Assert.IsFalse(op.TryGetProperty(DistributedTransactionSerializer.ETag, out _),
                 "Read operation must not use IfMatchEtag; only IfNoneMatchEtag is serialized for reads.");
         }
 
@@ -391,9 +391,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                     new DistributedTransactionRequestOptions { IfMatchEtag = etag }));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
-            JsonElement op = doc.RootElement.GetProperty("operations")[0];
+            JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
 
-            Assert.IsTrue(op.TryGetProperty("etag", out JsonElement etagElement),
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.ETag, out JsonElement etagElement),
                 "Replace operation with IfMatchEtag must include an 'etag' field.");
             Assert.AreEqual(etag, etagElement.GetString());
         }
@@ -410,9 +410,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                     new DistributedTransactionRequestOptions { IfMatchEtag = etag }));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
-            JsonElement op = doc.RootElement.GetProperty("operations")[0];
+            JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
 
-            Assert.IsTrue(op.TryGetProperty("etag", out JsonElement etagElement),
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.ETag, out JsonElement etagElement),
                 "Delete operation with IfMatchEtag must include an 'etag' field.");
             Assert.AreEqual(etag, etagElement.GetString());
         }
@@ -430,9 +430,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                     new DistributedTransactionRequestOptions { IfMatchEtag = etag }));
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
-            JsonElement op = doc.RootElement.GetProperty("operations")[0];
+            JsonElement op = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0];
 
-            Assert.IsTrue(op.TryGetProperty("etag", out JsonElement etagElement),
+            Assert.IsTrue(op.TryGetProperty(DistributedTransactionSerializer.ETag, out JsonElement etagElement),
                 "Patch operation with IfMatchEtag must include an 'etag' field.");
             Assert.AreEqual(etag, etagElement.GetString());
         }
@@ -447,11 +447,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 expectedResultCount: 2);
 
             using JsonDocument doc = JsonDocument.Parse(capturedJson);
-            JsonElement ops = doc.RootElement.GetProperty("operations");
+            JsonElement ops = doc.RootElement.GetProperty(DistributedTransactionSerializer.Operations);
 
             for (int i = 0; i < ops.GetArrayLength(); i++)
             {
-                Assert.IsFalse(ops[i].TryGetProperty("etag", out _),
+                Assert.IsFalse(ops[i].TryGetProperty(DistributedTransactionSerializer.ETag, out _),
                     $"Operation[{i}] without IfMatchEtag must NOT include an 'etag' field.");
             }
         }
@@ -578,8 +578,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             ContainerProperties containerProps = ContainerProperties.CreateWithResourceId("ccZ1ANCszwk=");
             containerProps.PartitionKeyPath = "/pk";
 
-            MockDocumentClient documentClient = new MockDocumentClient();
-            documentClient.sessionContainer = new SessionContainer("testhost");
+            MockDocumentClient documentClient = new MockDocumentClient
+            {
+                sessionContainer = new SessionContainer("testhost")
+            };
 
             Mock<CosmosClientContext> contextMock = new Mock<CosmosClientContext>();
 

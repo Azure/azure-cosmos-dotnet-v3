@@ -49,8 +49,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         public async Task EncryptDecrypt_LargePayload_StreamProcessor()
         {
             // Force small initial buffer to exercise multiple resizes while handling a large single property.
-            int original = Transformation.StreamProcessor.InitialBufferSize;
-            Transformation.StreamProcessor.InitialBufferSize = 32; // tiny to trigger many growths
+            PooledStreamConfiguration original = PooledStreamConfiguration.Current;
+            PooledStreamConfiguration.SetConfiguration(new PooledStreamConfiguration { StreamProcessorBufferSize = 32 }); // tiny to trigger many growths
             try
             {
                 string largeValue = new string('x', 250_000); // ~250 KB
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             }
             finally
             {
-                Transformation.StreamProcessor.InitialBufferSize = original;
+                PooledStreamConfiguration.SetConfiguration(original);
             }
         }
 
@@ -157,7 +157,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             Stream encrypted = await EncryptionProcessor.EncryptAsync(TestCommon.ToStream(doc), mockEncryptor.Object, options, JsonProcessor.Stream, new CosmosDiagnosticsContext(), CancellationToken.None);
 
             // Wrap encrypted stream in slow stream (must be seekable; we copy bytes)
-            byte[] bytes = ((MemoryStream)encrypted).ToArray();
+            byte[] bytes;
+            if (encrypted is MemoryStream ms)
+            {
+                bytes = ms.ToArray();
+            }
+            else if (encrypted is PooledMemoryStream pms)
+            {
+                bytes = pms.ToArray();
+            }
+            else
+            {
+                // Fallback for other stream types
+                using var memStream = new MemoryStream();
+                await encrypted.CopyToAsync(memStream);
+                bytes = memStream.ToArray();
+            }
             SlowCancelableStream slow = new(bytes, chunkSize: 64, perReadDelayMs: 1);
             using CancellationTokenSource cts = new();
             Task<(Stream, DecryptionContext)> decryptTask = EncryptionProcessor.DecryptAsync(
