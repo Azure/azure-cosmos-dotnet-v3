@@ -731,12 +731,6 @@ namespace Microsoft.Azure.Cosmos
                     return this.isLastPartitionKeyPathId.Value;
                 }
 
-                if (this.PartitionKey?.Kind != PartitionKind.MultiHash)
-                {
-                    this.isLastPartitionKeyPathId = false;
-                    return this.isLastPartitionKeyPathId.Value;
-                }
-
                 IReadOnlyList<string> partitionKeyPaths = this.PartitionKey?.Paths;
                 if (partitionKeyPaths == null || partitionKeyPaths.Count <= 0)
                 {
