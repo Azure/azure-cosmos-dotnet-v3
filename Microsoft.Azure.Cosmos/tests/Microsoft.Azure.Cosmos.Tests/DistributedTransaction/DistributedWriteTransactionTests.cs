@@ -458,10 +458,9 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private sealed class TestItem
         {
-            [System.Text.Json.Serialization.JsonPropertyName("id")]
+            [Newtonsoft.Json.JsonProperty("id")]
             public string Id { get; set; }
 
-            [System.Text.Json.Serialization.JsonPropertyName("value")]
             public string Value { get; set; }
 
             public TestItem() : this(Guid.NewGuid().ToString()) { }
