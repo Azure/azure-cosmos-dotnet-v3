@@ -609,6 +609,207 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
+        // --------------------------------------------------------------------
+        // ExecuteDetachedAsync tests
+        // --------------------------------------------------------------------
+        // The detach-only overload is used by call sites (e.g.
+        // QueryPlanRetriever.GetQueryPlanThroughGatewayAsync) where the underlying
+        // operation already runs through the standard request pipeline and provides
+        // its own retry semantics. These tests pin the isolation invariants without
+        // the retry-loop scaffolding.
+
+        [TestMethod]
+        [Owner("ntripician")]
+        public async Task ExecuteDetachedAsync_SucceedsFirstAttempt()
+        {
+            int attempts = 0;
+
+            int result = await MetadataDetachedExecutor.ExecuteDetachedAsync<int>(
+                (_) =>
+                {
+                    attempts++;
+                    return Task.FromResult(42);
+                },
+                CancellationToken.None);
+
+            Assert.AreEqual(42, result);
+            Assert.AreEqual(1, attempts);
+        }
+
+        /// <summary>
+        /// The detach-only overload does NOT run an outer retry loop — when the
+        /// operation faults, the fault must surface to the caller after exactly one
+        /// invocation. This is the contract that lets QueryPlanRetriever rely on the
+        /// underlying RequestInvokerHandler pipeline for retry semantics.
+        /// </summary>
+        [TestMethod]
+        [Owner("ntripician")]
+        public async Task ExecuteDetachedAsync_OperationFaults_NoOuterRetry()
+        {
+            int attempts = 0;
+            DocumentClientException underlying = new DocumentClientException(
+                "transient",
+                HttpStatusCode.ServiceUnavailable,
+                SubStatusCodes.Unknown);
+
+            DocumentClientException thrown = await Assert.ThrowsExceptionAsync<DocumentClientException>(
+                () => MetadataDetachedExecutor.ExecuteDetachedAsync<int>(
+                    (_) =>
+                    {
+                        attempts++;
+                        throw underlying;
+                    },
+                    CancellationToken.None));
+
+            Assert.AreSame(underlying, thrown);
+            Assert.AreEqual(1, attempts,
+                "detach-only overload must not retry — retry semantics belong to the inner pipeline.");
+        }
+
+        /// <summary>
+        /// Primary invariant: when the caller's token trips while the detached
+        /// operation is in flight, the caller surfaces OCE immediately while the
+        /// operation continues to run on the detached token. This mirrors the
+        /// invariant exercised by <see cref="ExecuteAsync_CallerCancelMidFlight_SurfacesOCE_DetachedTaskKeepsRunning"/>,
+        /// but for the no-retry-loop overload used by the query-plan gateway path.
+        /// </summary>
+        [TestMethod]
+        [Owner("ntripician")]
+        public async Task ExecuteDetachedAsync_CallerCancelMidFlight_SurfacesOCE_DetachedOperationKeepsRunning()
+        {
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            TaskCompletionSource<int> operationGate = new TaskCompletionSource<int>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource<bool> operationStarted = new TaskCompletionSource<bool>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource<bool> operationCompletedOnDetachedToken = new TaskCompletionSource<bool>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+
+            Task<int> caller = MetadataDetachedExecutor.ExecuteDetachedAsync<int>(
+                async (ct) =>
+                {
+                    operationStarted.TrySetResult(true);
+                    int value = await operationGate.Task.ConfigureAwait(false);
+                    Assert.IsFalse(ct.IsCancellationRequested,
+                        "detached token must not flip when caller cancels");
+                    operationCompletedOnDetachedToken.TrySetResult(true);
+                    return value;
+                },
+                cts.Token);
+
+            await operationStarted.Task.ConfigureAwait(false);
+            cts.Cancel();
+
+            await Assert.ThrowsExceptionAsync<OperationCanceledException>(() => caller);
+
+            operationGate.TrySetResult(7);
+
+            Task winner = await Task.WhenAny(operationCompletedOnDetachedToken.Task, Task.Delay(TimeSpan.FromSeconds(5)));
+            Assert.AreSame(operationCompletedOnDetachedToken.Task, winner,
+                "detached operation must run to completion after caller cancellation");
+        }
+
+        [TestMethod]
+        [Owner("ntripician")]
+        public async Task ExecuteDetachedAsync_AlreadyCancelledCallerToken_ThrowsBeforeOperation()
+        {
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            int attempts = 0;
+            await Assert.ThrowsExceptionAsync<OperationCanceledException>(
+                () => MetadataDetachedExecutor.ExecuteDetachedAsync<int>(
+                    (_) =>
+                    {
+                        attempts++;
+                        return Task.FromResult(0);
+                    },
+                    cts.Token));
+
+            Assert.AreEqual(0, attempts, "operation must not be invoked when caller token is already cancelled");
+        }
+
+        [TestMethod]
+        [Owner("ntripician")]
+        public async Task ExecuteDetachedAsync_InternalDeadlineTripsDuringOperation_SurfacesOCE()
+        {
+            // When the caller does not provide a cancellable token and the SDK-internal
+            // deadline trips while the operation is in flight, the operation observes
+            // its detached token transition to cancelled and surfaces OCE. Verifies that
+            // the detached deadline does in fact bound the operation. TaskCanceledException
+            // derives from OperationCanceledException; the executor surfaces whichever the
+            // operation lambda threw (here Task.Delay throws TaskCanceledException).
+            try
+            {
+                await MetadataDetachedExecutor.ExecuteDetachedAsync<int>(
+                    operation: async (ct) =>
+                    {
+                        await Task.Delay(Timeout.Infinite, ct).ConfigureAwait(false);
+                        return 0;
+                    },
+                    internalDeadline: TimeSpan.FromMilliseconds(200),
+                    callerCancellationToken: CancellationToken.None);
+                Assert.Fail("Expected the detached internal deadline to trip and surface an OperationCanceledException.");
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected.
+            }
+        }
+
+        [TestMethod]
+        [Owner("ntripician")]
+        public async Task ExecuteDetachedAsync_NullOperation_Throws()
+        {
+            await Assert.ThrowsExceptionAsync<ArgumentNullException>(
+                () => MetadataDetachedExecutor.ExecuteDetachedAsync<int>(
+                    operation: null,
+                    callerCancellationToken: CancellationToken.None));
+        }
+
+        [TestMethod]
+        [Owner("ntripician")]
+        public async Task ExecuteDetachedAsync_OperationFactoryThrowsSync_PropagatesAndDoesNotHang()
+        {
+            // If the operation factory itself throws synchronously (rather than returning
+            // a faulted Task), the executor must propagate the exception promptly without
+            // leaking the internal CTS.
+            InvalidOperationException underlying = new InvalidOperationException("factory boom");
+
+            InvalidOperationException thrown = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => MetadataDetachedExecutor.ExecuteDetachedAsync<int>(
+                    (_) => throw underlying,
+                    CancellationToken.None));
+
+            Assert.AreSame(underlying, thrown);
+        }
+
+        [TestMethod]
+        [Owner("ntripician")]
+        public async Task ExecuteDetachedAsync_OperationReturnsNullTask_Throws()
+        {
+            await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => MetadataDetachedExecutor.ExecuteDetachedAsync<int>(
+                    (_) => (Task<int>)null,
+                    CancellationToken.None));
+        }
+
+        [TestMethod]
+        [Owner("ntripician")]
+        public async Task ExecuteDetachedAsync_CancellationTokenNone_SucceedsAndOperationReceivesNonCanceledToken()
+        {
+            int result = await MetadataDetachedExecutor.ExecuteDetachedAsync<int>(
+                (ct) =>
+                {
+                    Assert.IsFalse(ct.IsCancellationRequested,
+                        "detached token must not be already-cancelled at entry");
+                    return Task.FromResult(13);
+                },
+                CancellationToken.None);
+
+            Assert.AreEqual(13, result);
+        }
+
         private sealed class SingleThreadSynchronizationContext : SynchronizationContext
         {
             public override void Post(SendOrPostCallback d, object state)

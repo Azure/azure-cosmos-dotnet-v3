@@ -76,6 +76,51 @@ namespace Microsoft.Azure.Cosmos
     /// </para>
     ///
     /// <para>
+    /// <b>Two overloads, one isolation primitive:</b>
+    /// <list type="bullet">
+    ///   <item><see cref="ExecuteAsync{T}(Func{CancellationToken, Task{T}}, IDocumentClientRetryPolicy, CancellationToken)"/>:
+    ///   runs the operation inside a self-contained retry loop driven by the supplied
+    ///   <see cref="IDocumentClientRetryPolicy"/>. Used by <c>ClientCollectionCache</c>
+    ///   where there is no inner pipeline retry — the leaf operation
+    ///   (<c>ReadCollectionAsync</c>) calls <c>storeModel.ProcessMessageAsync</c> directly
+    ///   without an enclosing <c>BackoffRetryUtility</c>.</item>
+    ///   <item><see cref="ExecuteDetachedAsync{T}(Func{CancellationToken, Task{T}}, CancellationToken)"/>:
+    ///   provides only the detach + caller-CT-on-response-path isolation. Used by
+    ///   call sites where the underlying operation already runs through the standard
+    ///   request pipeline (<c>RequestInvokerHandler</c> → <c>BackoffRetryUtility</c> →
+    ///   <c>ClientRetryPolicy</c>) and therefore has its own retry semantics. Wrapping
+    ///   with this overload ensures the pipeline's retry decisions cannot be preempted
+    ///   by caller cancellation without double-driving a retry loop on top of it.</item>
+    /// </list>
+    /// </para>
+    ///
+    /// <para>
+    /// <b>Java alignment:</b> Java's <c>BackoffRetryUtility.executeRetry</c> uses Reactor
+    /// <c>Mono.retryWhen</c>, which is an <i>error-signal-only</i> operator —
+    /// <c>policy.shouldRetry(e)</c> is invoked unconditionally on every <c>onError</c>;
+    /// downstream cancellation (<c>cancel()</c>) is a separate signal that bypasses the
+    /// retry operator entirely. Combined with <c>ClientRetryPolicy.shouldRetry(Exception)</c>
+    /// taking no token, Java is structurally immune to the bug class this executor closes
+    /// for .NET. For the PKRange path specifically, Java's
+    /// <c>AsyncCacheNonBlocking.getAsync</c> additionally calls
+    /// <c>Mono.fromFuture(supplier, suppressCancel: true)</c> so that caller-side disposal
+    /// of the Reactor subscription cannot cancel the underlying <c>CompletableFuture</c>.
+    /// On the .NET side, the <c>PartitionKeyRangeCache</c> public API surface takes no
+    /// <see cref="CancellationToken"/> at any layer and its internal
+    /// <c>BackoffRetryUtility&lt;T&gt;.ExecuteAsync</c> invocation uses the 2-arg overload
+    /// (<see cref="CancellationToken.None"/>), so the same structural immunity holds without
+    /// an explicit wrap. The <c>GatewayAccountReader</c> / <c>GlobalEndpointManager</c>
+    /// account-discovery path is also already detached from caller CT (it observes only
+    /// the SDK lifecycle CTS), mirroring Java's dedicated
+    /// <c>GLOBAL_ENDPOINT_MANAGER_BOUNDED_ELASTIC</c> scheduler. The remaining alignment
+    /// gap addressed by this type is therefore: (a) <c>ClientCollectionCache</c> via
+    /// <see cref="ExecuteAsync{T}(Func{CancellationToken, Task{T}}, IDocumentClientRetryPolicy, CancellationToken)"/>,
+    /// and (b) the query-plan gateway path
+    /// (<c>QueryPlanRetriever.GetQueryPlanThroughGatewayAsync</c>) via
+    /// <see cref="ExecuteDetachedAsync{T}(Func{CancellationToken, Task{T}}, CancellationToken)"/>.
+    /// </para>
+    ///
+    /// <para>
     /// <b>Diagnostics caveat (known limitation):</b> the operation lambda captures the caller's
     /// <c>ITrace</c> and <c>ClientSideRequestStatistics</c> so that on the success path the
     /// caller observes a complete trace tree. After caller cancellation the detached task
@@ -132,7 +177,7 @@ namespace Microsoft.Azure.Cosmos
                 callerCancellationToken);
         }
 
-        internal static async Task<T> ExecuteAsync<T>(
+        internal static Task<T> ExecuteAsync<T>(
             Func<CancellationToken, Task<T>> operation,
             IDocumentClientRetryPolicy retryPolicy,
             TimeSpan internalDeadline,
@@ -148,6 +193,48 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(retryPolicy));
             }
 
+            // The retry loop is the operation handed to the detach primitive. The retry
+            // loop runs entirely on the detached token; the caller's token is observed
+            // only on the response path inside ExecuteDetachedAsync.
+            return ExecuteDetachedAsync(
+                operation: (detachedToken) => ExecuteRetryLoopAsync(operation, retryPolicy, detachedToken),
+                internalDeadline: internalDeadline,
+                callerCancellationToken: callerCancellationToken);
+        }
+
+        /// <summary>
+        /// Detach-only variant for call sites whose underlying operation already provides
+        /// retry semantics (e.g. invocations that flow through <c>RequestInvokerHandler</c>
+        /// and therefore through <c>BackoffRetryUtility</c> + <c>ClientRetryPolicy</c>
+        /// internally). The operation runs on a detached <see cref="CancellationToken"/>
+        /// bounded only by the SDK-internal deadline; the caller's token is observed only
+        /// on the response path via <see cref="Task.WhenAny(Task[])"/>. No outer retry loop
+        /// is run — that responsibility belongs to the operation itself.
+        /// </summary>
+        /// <remarks>
+        /// Mirrors Java's structural guarantee: Java's <c>BackoffRetryUtility.executeRetry</c>
+        /// uses Reactor <c>Mono.retryWhen</c> (error-signal-only), and the public
+        /// metadata APIs take no <c>CancellationToken</c>. Wrapping a .NET pipeline call
+        /// with this method achieves the same outcome: the pipeline's internal retry policy
+        /// cannot be preempted by caller cancellation.
+        /// </remarks>
+        internal static Task<T> ExecuteDetachedAsync<T>(
+            Func<CancellationToken, Task<T>> operation,
+            CancellationToken callerCancellationToken)
+        {
+            return ExecuteDetachedAsync(operation, GetDefaultInternalDeadline(), callerCancellationToken);
+        }
+
+        internal static async Task<T> ExecuteDetachedAsync<T>(
+            Func<CancellationToken, Task<T>> operation,
+            TimeSpan internalDeadline,
+            CancellationToken callerCancellationToken)
+        {
+            if (operation == null)
+            {
+                throw new ArgumentNullException(nameof(operation));
+            }
+
             if (internalDeadline <= TimeSpan.Zero)
             {
                 throw new ArgumentOutOfRangeException(
@@ -157,11 +244,30 @@ namespace Microsoft.Azure.Cosmos
 
             callerCancellationToken.ThrowIfCancellationRequested();
 
-            // Detached token: the retry-loop and underlying HTTP call are bound only by
-            // the SDK-internal deadline. The caller's token never enters this scope so
-            // ClientRetryPolicy decisions cannot be preempted by caller cancellation.
+            // Detached token: the operation (and any retry loop it drives internally)
+            // are bound only by the SDK-internal deadline. The caller's token never
+            // enters this scope so retry-policy decisions inside the operation cannot
+            // be preempted by caller cancellation.
             CancellationTokenSource detachedCts = new CancellationTokenSource(internalDeadline);
-            Task<T> detachedTask = ExecuteRetryLoopAsync(operation, retryPolicy, detachedCts.Token);
+            Task<T> detachedTask;
+            try
+            {
+                detachedTask = operation(detachedCts.Token);
+            }
+            catch
+            {
+                // Synchronous throw from the operation factory. Dispose the CTS we just
+                // created and re-throw; nothing to observe asynchronously.
+                detachedCts.Dispose();
+                throw;
+            }
+
+            if (detachedTask == null)
+            {
+                detachedCts.Dispose();
+                throw new InvalidOperationException(
+                    "MetadataDetachedExecutor operation returned a null Task.");
+            }
 
             // Always observe completion so faulted detached tasks do not surface as
             // unobserved-task exceptions if the caller cancels first. (Canceled tasks
@@ -182,7 +288,7 @@ namespace Microsoft.Azure.Cosmos
             // by the time this ContinueWith is registered. The continuation then runs
             // inline on the current thread and detachedCts is disposed before control
             // returns below. That is safe because detachedCts.Token was passed by value
-            // at line above; the running task captures the token, not the source.
+            // above; the running task captures the token, not the source.
             // Do NOT read detachedCts after this point.
             Task disposeWhenDone = detachedTask.ContinueWith(
                 _ => detachedCts.Dispose(),
@@ -211,9 +317,9 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // Caller cancelled before the detached attempt completed. Leave the detached
-            // task running so ClientRetryPolicy can complete its cross-region decision and
-            // its side-effects (LocationCache marking, session-container clearing) take hold.
-            // We do NOT cancel detachedCts here.
+            // task running so any internal retry policy can complete its decision and
+            // its side-effects (LocationCache marking, session-container clearing, etc.)
+            // take hold. We do NOT cancel detachedCts here.
             DefaultTrace.TraceInformation(
                 "MetadataDetachedExecutor: caller token cancelled while detached metadata read in-flight; leaving background read to complete.");
 

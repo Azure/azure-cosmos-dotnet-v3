@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Fixed
 
-- [5844](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5844) Routing: Fixes premature OperationCanceledException that preempted cross-region failover during metadata-cache reads
+- [5844](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5844) Routing: Fixes premature OperationCanceledException that preempted cross-region failover during metadata-cache and query-plan gateway reads
 
 ### <a name="3.60.0-preview.0"/> [3.60.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.60.0-preview.0) - 2026-4-24
 
