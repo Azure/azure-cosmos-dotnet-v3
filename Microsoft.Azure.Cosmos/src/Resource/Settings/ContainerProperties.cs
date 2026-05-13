@@ -731,12 +731,6 @@ namespace Microsoft.Azure.Cosmos
                     return this.isLastPartitionKeyPathId.Value;
                 }
 
-                if (this.PartitionKey?.Kind != PartitionKind.MultiHash)
-                {
-                    this.isLastPartitionKeyPathId = false;
-                    return this.isLastPartitionKeyPathId.Value;
-                }
-
                 IReadOnlyList<string> partitionKeyPaths = this.PartitionKey?.Paths;
                 if (partitionKeyPaths == null || partitionKeyPaths.Count <= 0)
                 {
@@ -746,7 +740,7 @@ namespace Microsoft.Azure.Cosmos
 
                 string lastPartitionKeyPath = partitionKeyPaths[partitionKeyPaths.Count - 1];
 
-                this.isLastPartitionKeyPathId = string.Equals(lastPartitionKeyPath, "/id", StringComparison.OrdinalIgnoreCase);
+                this.isLastPartitionKeyPathId = string.Equals(lastPartitionKeyPath, "/id", StringComparison.Ordinal);
                 return this.isLastPartitionKeyPathId.Value;
             }
         }

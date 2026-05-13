@@ -86,6 +86,19 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentException("itemId needs to be specified if LastPartitionKeyPath is id or add it to the partition key paths");
             }
 
+            (_, IReadOnlyList<Documents.Routing.IPartitionKeyComponent> existingComponents) = IsPartitionKeyFullySpecified(partitionKey, containerProperties);
+            List<Documents.Routing.IPartitionKeyComponent> allComponentsList = new List<Documents.Routing.IPartitionKeyComponent>();
+
+            foreach (Documents.Routing.IPartitionKeyComponent item in existingComponents)
+            {
+                allComponentsList.Add(item);
+            }
+
+            if (partitionKey.HasValue && existingComponents.Count != containerProperties.PartitionKey.Paths.Count - 1)
+            {
+                return partitionKey;
+            }
+
             PartitionKeyBuilder builder = new PartitionKeyBuilder();
 
             if (!partitionKey.HasValue)
@@ -98,15 +111,6 @@ namespace Microsoft.Azure.Cosmos
 
             builder.Add(itemId);
             PartitionKey idPath = builder.Build();
-
-            List<Documents.Routing.IPartitionKeyComponent> allComponentsList = new List<Documents.Routing.IPartitionKeyComponent>();
-            (_, IReadOnlyList<Documents.Routing.IPartitionKeyComponent> existingComponents) = IsPartitionKeyFullySpecified(partitionKey, containerProperties);
-
-            foreach (Documents.Routing.IPartitionKeyComponent item in existingComponents)
-            {
-                allComponentsList.Add(item);
-            }
-
             foreach (Documents.Routing.IPartitionKeyComponent item in idPath.InternalKey.Components)
             {
                 allComponentsList.Add(item);

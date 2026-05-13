@@ -198,6 +198,147 @@
         }
 
         [TestMethod]
+        public async Task HashV2IdAsPartitionKeyTest()
+        {
+            ContainerProperties idPkContainerProperties = new ContainerProperties(
+                "idpkcoll_" + Guid.NewGuid().ToString("N"),
+                "/id" );
+            Container idPkContainer = await this.database.CreateContainerAsync(idPkContainerProperties);
+            Assert.AreEqual(PartitionKind.Hash, idPkContainerProperties.PartitionKey?.Kind);
+            Assert.IsNull(idPkContainerProperties.PartitionKeyDefinitionVersion);
+            
+            try
+            {
+                await PerformOperationsByPassingDefaultPK(idPkContainer);
+
+            }
+            finally
+            {
+                await idPkContainer.DeleteContainerAsync();
+            }
+        }
+
+        [TestMethod]
+        public async Task MultiHashIdAsPartitionKeyTest()
+        {
+            // Create a container where "/id" is the only partition key path (HPK with single "id" key)
+            ContainerProperties idPkContainerProperties = new ContainerProperties(
+                "idpkcoll_" + Guid.NewGuid().ToString("N"),
+                new List<string> { "/id" });
+            Container idPkContainer = await this.database.CreateContainerAsync(idPkContainerProperties);
+
+            Assert.AreEqual(PartitionKind.MultiHash, idPkContainerProperties.PartitionKey?.Kind);
+            try
+            {
+                await PerformOperationsByPassingDefaultPK(idPkContainer);
+            }
+            finally
+            {
+                await idPkContainer.DeleteContainerAsync();
+            }
+        }
+
+        private static async Task PerformOperationsByPassingDefaultPK(Container idPkContainer)
+        {
+            await PointOperationsWithDefaultPKAsync(idPkContainer);
+
+            await VerifyTransactionalBatchThrowsExceptionForDefaultPKAsync(idPkContainer);
+
+            await TestBulkOperationsWithDefaultPKAsync(idPkContainer);
+
+            ArgumentException deleteException = await Assert.ThrowsExceptionAsync<ArgumentException>(() =>
+                idPkContainer.DeleteAllItemsByPartitionKeyStreamAsync(default));
+            Assert.IsTrue(deleteException.Message.Contains("itemId needs to be specified"));
+        }
+
+        private static async Task VerifyTransactionalBatchThrowsExceptionForDefaultPKAsync(Container idPkContainer)
+        {
+            Document batchDoc1 = new Document { Id = "batchdoc1" };
+            batchDoc1.SetValue("Type", "BatchType1");
+            Document batchDoc2 = new Document { Id = "batchdoc2" };
+            batchDoc2.SetValue("Type", "BatchType2");
+
+            ArgumentException batchException = await Assert.ThrowsExceptionAsync<ArgumentException>(() =>
+                idPkContainer.CreateTransactionalBatch(default)
+                    .CreateItem(batchDoc1)
+                    .CreateItem(batchDoc2)
+                    .ReadItem("document1")
+                    .ExecuteAsync());
+
+            Assert.IsTrue(batchException.Message.Contains("itemId needs to be specified"));
+        }
+
+        private static async Task PointOperationsWithDefaultPKAsync(Container idPkContainer)
+        {
+            ItemResponse<Document>[] documents = new ItemResponse<Document>[3];
+            Document doc = new Document { Id = "document1" };
+            doc.SetValue("Type", "Residence");
+            documents[0] = await idPkContainer.CreateItemAsync<Document>(doc, default);
+
+            doc = new Document { Id = "document2" };
+            doc.SetValue("Type", "Business");
+            documents[1] = await idPkContainer.CreateItemAsync<Document>(doc, default);
+            doc = new Document { Id = "document3" };
+            doc.SetValue("Type", "Government");
+            documents[2] = await idPkContainer.CreateItemAsync<Document>(doc);
+
+            foreach (Document document in documents)
+            {
+                Document readDocument = await idPkContainer.ReadItemAsync<Document>(document.Id, default);
+                Assert.AreEqual(document.ToString(), readDocument.ToString());
+            }
+
+            doc = documents[0];
+            doc.SetValue("Type", "UpdatedType");
+            doc = await idPkContainer.UpsertItemAsync<Document>(doc, default);
+            Document readDocument1 = await idPkContainer.ReadItemAsync<Document>(doc.Id, default);
+
+            Assert.AreEqual(doc.ToString(), readDocument1.ToString());
+
+            FeedResponse<Document> feedResponse = await idPkContainer.ReadManyItemsAsync<Document>(
+            new List<(string, Cosmos.PartitionKey)> { ("document3", default) });
+
+            Assert.AreEqual(1, feedResponse.Count());
+
+            await idPkContainer.DeleteItemAsync<Document>("document3", default);
+
+            CosmosException clientException = await Assert.ThrowsExceptionAsync<CosmosException>(() =>
+                idPkContainer.ReadItemAsync<Document>("document3", default)
+            );
+        }
+
+        private static async Task TestBulkOperationsWithDefaultPKAsync(Container idPkContainer)
+        {
+            CosmosClientOptions bulkOptions = new CosmosClientOptions { AllowBulkExecution = true };
+            CosmosClient bulkClient = TestCommon.CreateCosmosClient(bulkOptions);
+            Container bulkContainer = bulkClient.GetContainer(idPkContainer.Database.Id, idPkContainer.Id);
+
+            List<Task<ItemResponse<Document>>> bulkTasks = new List<Task<ItemResponse<Document>>>();
+            for (int i = 0; i < 10; i++)
+            {
+                Document bulkDoc = new Document { Id = $"bulkdoc{i}" };
+                bulkDoc.SetValue("Type", $"BulkType{i}");
+                bulkTasks.Add(bulkContainer.CreateItemAsync(bulkDoc, default));
+            }
+
+            await Task.WhenAll(bulkTasks);
+
+            for (int i = 0; i < 10; i++)
+            {
+                ItemResponse<Document> bulkResult = bulkTasks[i].Result;
+                Assert.AreEqual(HttpStatusCode.Created, bulkResult.StatusCode);
+                Assert.AreEqual($"bulkdoc{i}", bulkResult.Resource.Id);
+            }
+
+            // Verify bulk-created documents can be read back
+            for (int i = 0; i < 10; i++)
+            {
+                Document readDoc = await idPkContainer.ReadItemAsync<Document>($"bulkdoc{i}", default);
+                Assert.AreEqual($"bulkdoc{i}", readDoc.Id);
+            }
+        }
+
+        [TestMethod]
         public async Task MultiHashReadManyTest()
         {
             Cosmos.PartitionKey pKey;
@@ -554,6 +695,59 @@
                 new List<(string, Cosmos.PartitionKey)> { ("readMany", pk) });
             
             Assert.AreEqual(1, feedResponse.Count());
+        }
+
+        [TestMethod]
+        public async Task MultiHashDeleteByFirstLevelPartitionKeyTest()
+        {
+            // Create documents sharing the same first-level partition key (ZipCode)
+            Document doc1 = new Document { Id = "pkdel1" };
+            doc1.SetValue("ZipCode", "10001");
+            doc1.SetValue("City", "NewYork");
+            Cosmos.PartitionKey pk1 = new PartitionKeyBuilder()
+                .Add("10001")
+                .Add("NewYork")
+                .Build();
+            await this.container.CreateItemAsync(doc1, pk1);
+
+            Document doc2 = new Document { Id = "pkdel2" };
+            doc2.SetValue("ZipCode", "10001");
+            doc2.SetValue("City", "Brooklyn");
+            Cosmos.PartitionKey pk2 = new PartitionKeyBuilder()
+                .Add("10001")
+                .Add("Brooklyn")
+                .Build();
+            await this.container.CreateItemAsync(doc2, pk2);
+
+            Document doc3 = new Document { Id = "pkdel3" };
+            doc3.SetValue("ZipCode", "20001");
+            doc3.SetValue("City", "Washington");
+            Cosmos.PartitionKey pk3 = new PartitionKeyBuilder()
+                .Add("20001")
+                .Add("Washington")
+                .Build();
+            await this.container.CreateItemAsync(doc3, pk3);
+
+            // Pass only the first level of the partition key (ZipCode = "10001")
+            // Known issue: EnsureIdGetAppendedToPartitionKeyHelper throws because last PK path is /id
+            // and no itemId is provided in the DeleteAllItemsByPartitionKey code path
+            Cosmos.PartitionKey firstLevelPk = new PartitionKeyBuilder()
+                .Add("10001")
+                .Build();
+
+            ArgumentException deleteException = await Assert.ThrowsExceptionAsync<ArgumentException>(() =>
+                this.container.DeleteAllItemsByPartitionKeyStreamAsync(firstLevelPk));
+            Assert.IsTrue(deleteException.Message.Contains("itemId needs to be specified"));
+
+            // Verify all documents still exist since the delete failed
+            ItemResponse<Document> read1 = await this.container.ReadItemAsync<Document>("pkdel1", pk1);
+            Assert.AreEqual(HttpStatusCode.OK, read1.StatusCode);
+
+            ItemResponse<Document> read2 = await this.container.ReadItemAsync<Document>("pkdel2", pk2);
+            Assert.AreEqual(HttpStatusCode.OK, read2.StatusCode);
+
+            ItemResponse<Document> read3 = await this.container.ReadItemAsync<Document>("pkdel3", pk3);
+            Assert.AreEqual(HttpStatusCode.OK, read3.StatusCode);
         }
     }
 }
