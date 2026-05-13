@@ -78,60 +78,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         public CosmosDataEncryptionKeyProvider(
             EncryptionKeyWrapProvider encryptionKeyWrapProvider,
             TimeSpan? dekPropertiesTimeToLive = null)
-            : this(encryptionKeyWrapProvider, dekPropertiesTimeToLive, distributedCache: null, refreshBeforeExpiry: null, distributedCacheKeyPrefix: null)
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="CosmosDataEncryptionKeyProvider"/> class with distributed cache support.
-        /// </summary>
-        /// <param name="encryptionKeyWrapProvider">A provider that will be used to wrap (encrypt) and unwrap (decrypt) data encryption keys for envelope based encryption</param>
-        /// <param name="dekPropertiesTimeToLive">Time to live for DEK properties before having to refresh.</param>
-        /// <param name="distributedCache">Optional distributed cache implementation for cross-process/cross-instance caching of DEK properties.</param>
-        /// <param name="refreshBeforeExpiry">Optional time window before expiry to trigger proactive background refresh. For example, TimeSpan.FromMinutes(10) will refresh DEKs 10 minutes before they expire.</param>
-        /// <param name="distributedCacheKeyPrefix">Required prefix for distributed cache keys. Must be unique per DEK container scope (for example, derived from account/database/container identifiers) so that multiple providers sharing the same cache instance do not collide on identical DEK ids.</param>
-        /// <remarks>
-        /// When using a distributed cache, ensure the cache infrastructure is configured with encryption in transit (TLS)
-        /// and encryption at rest. The cache stores wrapped (encrypted) DEK properties including key metadata.
-        /// </remarks>
-        [Obsolete("Use the constructor that accepts " + nameof(DekCacheOptions) + " (and prefer the constructor with " + nameof(EncryptionKeyStoreProvider) + " only).")]
-        public CosmosDataEncryptionKeyProvider(
-            EncryptionKeyWrapProvider encryptionKeyWrapProvider,
-            TimeSpan? dekPropertiesTimeToLive,
-            Microsoft.Extensions.Caching.Distributed.IDistributedCache distributedCache,
-            TimeSpan? refreshBeforeExpiry = null,
-            string distributedCacheKeyPrefix = null)
-            : this(
-                encryptionKeyWrapProvider,
-                new DekCacheOptions
-                {
-                    DekPropertiesTimeToLive = dekPropertiesTimeToLive,
-                    DistributedCache = distributedCache,
-                    RefreshBeforeExpiry = refreshBeforeExpiry,
-                    DistributedCacheKeyPrefix = distributedCacheKeyPrefix,
-                })
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="CosmosDataEncryptionKeyProvider"/> class with optional distributed cache support via a <see cref="DekCacheOptions"/> bag.
-        /// </summary>
-        /// <param name="encryptionKeyWrapProvider">A provider that will be used to wrap (encrypt) and unwrap (decrypt) data encryption keys for envelope based encryption.</param>
-        /// <param name="dekCacheOptions">Optional cache configuration; pass <see langword="null"/> to use defaults equivalent to the no-distributed-cache constructor.</param>
-        /// <remarks>
-        /// When supplying <see cref="DekCacheOptions.DistributedCache"/>, ensure the cache infrastructure
-        /// is configured with encryption in transit (TLS) and encryption at rest. The cache stores
-        /// wrapped (encrypted) DEK properties including key metadata. Raw DEK material is never written
-        /// to the distributed cache.
-        /// </remarks>
-        [Obsolete("Please use the constructor with EncryptionKeyStoreProvider only.")]
-        public CosmosDataEncryptionKeyProvider(
-            EncryptionKeyWrapProvider encryptionKeyWrapProvider,
-            DekCacheOptions dekCacheOptions)
         {
             this.EncryptionKeyWrapProvider = encryptionKeyWrapProvider ?? throw new ArgumentNullException(nameof(encryptionKeyWrapProvider));
             this.dataEncryptionKeyContainerCore = new DataEncryptionKeyContainerCore(this);
-            this.DekCache = NewDekCache(dekCacheOptions);
+            this.DekCache = NewDekCache(dekPropertiesTimeToLive == null ? null : new DekCacheOptions { DekPropertiesTimeToLive = dekPropertiesTimeToLive });
         }
 
         /// <summary>
@@ -143,37 +93,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             EncryptionKeyStoreProvider encryptionKeyStoreProvider,
             TimeSpan? dekPropertiesTimeToLive = null)
             : this(encryptionKeyStoreProvider, dekPropertiesTimeToLive == null ? null : new DekCacheOptions { DekPropertiesTimeToLive = dekPropertiesTimeToLive })
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="CosmosDataEncryptionKeyProvider"/> class with distributed cache support.
-        /// </summary>
-        /// <param name="encryptionKeyStoreProvider"> MDE EncryptionKeyStoreProvider for Wrapping/UnWrapping services. </param>
-        /// <param name="dekPropertiesTimeToLive">Time to live for DEK properties before having to refresh.</param>
-        /// <param name="distributedCache">Optional distributed cache implementation for cross-process/cross-instance caching of DEK properties.</param>
-        /// <param name="refreshBeforeExpiry">Optional time window before expiry to trigger proactive background refresh. For example, TimeSpan.FromMinutes(10) will refresh DEKs 10 minutes before they expire.</param>
-        /// <param name="distributedCacheKeyPrefix">Required prefix for distributed cache keys. Must be unique per DEK container scope (for example, derived from account/database/container identifiers) so that multiple providers sharing the same cache instance do not collide on identical DEK ids.</param>
-        /// <remarks>
-        /// When using a distributed cache, ensure the cache infrastructure is configured with encryption in transit (TLS)
-        /// and encryption at rest. The cache stores wrapped (encrypted) DEK properties including key metadata.
-        /// </remarks>
-        [Obsolete("Use the constructor that accepts " + nameof(DekCacheOptions) + ".")]
-        public CosmosDataEncryptionKeyProvider(
-            EncryptionKeyStoreProvider encryptionKeyStoreProvider,
-            TimeSpan? dekPropertiesTimeToLive,
-            Microsoft.Extensions.Caching.Distributed.IDistributedCache distributedCache,
-            TimeSpan? refreshBeforeExpiry = null,
-            string distributedCacheKeyPrefix = null)
-            : this(
-                encryptionKeyStoreProvider,
-                new DekCacheOptions
-                {
-                    DekPropertiesTimeToLive = dekPropertiesTimeToLive,
-                    DistributedCache = distributedCache,
-                    RefreshBeforeExpiry = refreshBeforeExpiry,
-                    DistributedCacheKeyPrefix = distributedCacheKeyPrefix,
-                })
         {
         }
 
@@ -210,67 +129,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             EncryptionKeyWrapProvider encryptionKeyWrapProvider,
             EncryptionKeyStoreProvider encryptionKeyStoreProvider,
             TimeSpan? dekPropertiesTimeToLive = null)
-            : this(encryptionKeyWrapProvider, encryptionKeyStoreProvider, dekPropertiesTimeToLive, distributedCache: null, refreshBeforeExpiry: null, distributedCacheKeyPrefix: null)
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="CosmosDataEncryptionKeyProvider"/> class with distributed cache support.
-        /// </summary>
-        /// <param name="encryptionKeyWrapProvider">A provider that will be used to wrap (encrypt) and unwrap (decrypt) data encryption keys for envelope based encryption</param>
-        /// <param name="encryptionKeyStoreProvider"> MDE EncryptionKeyStoreProvider for Wrapping/UnWrapping services. </param>
-        /// <param name="dekPropertiesTimeToLive">Time to live for DEK properties before having to refresh.</param>
-        /// <param name="distributedCache">Optional distributed cache implementation for cross-process/cross-instance caching of DEK properties.</param>
-        /// <param name="refreshBeforeExpiry">Optional time window before expiry to trigger proactive background refresh. For example, TimeSpan.FromMinutes(10) will refresh DEKs 10 minutes before they expire.</param>
-        /// <param name="distributedCacheKeyPrefix">Required prefix for distributed cache keys. Must be unique per DEK container scope (for example, derived from account/database/container identifiers) so that multiple providers sharing the same cache instance do not collide on identical DEK ids.</param>
-        /// <remarks>
-        /// When using a distributed cache, ensure the cache infrastructure is configured with encryption in transit (TLS)
-        /// and encryption at rest. The cache stores wrapped (encrypted) DEK properties including key metadata.
-        /// </remarks>
-        [Obsolete("Use the constructor that accepts " + nameof(DekCacheOptions) + " (and prefer the constructor with " + nameof(EncryptionKeyStoreProvider) + " only).")]
-        public CosmosDataEncryptionKeyProvider(
-            EncryptionKeyWrapProvider encryptionKeyWrapProvider,
-            EncryptionKeyStoreProvider encryptionKeyStoreProvider,
-            TimeSpan? dekPropertiesTimeToLive,
-            Microsoft.Extensions.Caching.Distributed.IDistributedCache distributedCache,
-            TimeSpan? refreshBeforeExpiry = null,
-            string distributedCacheKeyPrefix = null)
-            : this(
-                encryptionKeyWrapProvider,
-                encryptionKeyStoreProvider,
-                new DekCacheOptions
-                {
-                    DekPropertiesTimeToLive = dekPropertiesTimeToLive,
-                    DistributedCache = distributedCache,
-                    RefreshBeforeExpiry = refreshBeforeExpiry,
-                    DistributedCacheKeyPrefix = distributedCacheKeyPrefix,
-                })
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="CosmosDataEncryptionKeyProvider"/> class with optional distributed cache support via a <see cref="DekCacheOptions"/> bag.
-        /// </summary>
-        /// <param name="encryptionKeyWrapProvider">A provider that will be used to wrap (encrypt) and unwrap (decrypt) data encryption keys for envelope based encryption.</param>
-        /// <param name="encryptionKeyStoreProvider">MDE <see cref="EncryptionKeyStoreProvider"/> for wrapping / unwrapping services.</param>
-        /// <param name="dekCacheOptions">Optional cache configuration; pass <see langword="null"/> to use defaults equivalent to the no-distributed-cache constructor.</param>
-        /// <remarks>
-        /// When supplying <see cref="DekCacheOptions.DistributedCache"/>, ensure the cache infrastructure
-        /// is configured with encryption in transit (TLS) and encryption at rest. The cache stores
-        /// wrapped (encrypted) DEK properties including key metadata. Raw DEK material is never written
-        /// to the distributed cache.
-        /// </remarks>
-        [Obsolete("Please use the constructor with EncryptionKeyStoreProvider only.")]
-        public CosmosDataEncryptionKeyProvider(
-            EncryptionKeyWrapProvider encryptionKeyWrapProvider,
-            EncryptionKeyStoreProvider encryptionKeyStoreProvider,
-            DekCacheOptions dekCacheOptions)
         {
             this.EncryptionKeyWrapProvider = encryptionKeyWrapProvider ?? throw new ArgumentNullException(nameof(encryptionKeyWrapProvider));
             this.EncryptionKeyStoreProvider = encryptionKeyStoreProvider ?? throw new ArgumentNullException(nameof(encryptionKeyStoreProvider));
             this.MdeKeyWrapProvider = new MdeKeyWrapProvider(encryptionKeyStoreProvider);
             this.dataEncryptionKeyContainerCore = new DataEncryptionKeyContainerCore(this);
-            this.DekCache = NewDekCache(dekCacheOptions);
+            this.DekCache = NewDekCache(dekPropertiesTimeToLive == null ? null : new DekCacheOptions { DekPropertiesTimeToLive = dekPropertiesTimeToLive });
             this.InitializeProtectedDataEncryptionKeyTimeToLive();
         }
 
