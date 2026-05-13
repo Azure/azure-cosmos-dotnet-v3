@@ -15,6 +15,12 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="unreleased"/> Unreleased
+
+#### Fixed
+
+- [5298](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5298) LINQ: Fixes constant folding for closure-captured variables inside MemberInitExpression (resolves #1664). Previously, the recursion that partially evaluates expressions terminated whenever it encountered a `MemberInitExpression` node, so captured variables inside object initializers were not folded, producing invalid translated SQL.
+
 ### <a name="3.60.0-preview.0"/> [3.60.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.60.0-preview.0) - 2026-4-24
 
 #### Added
