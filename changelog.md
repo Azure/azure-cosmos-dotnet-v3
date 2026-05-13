@@ -47,7 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [5636](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5636) CosmosClientBuilder: Fixes self-referencing loop in GetSerializedConfiguration with STJ TypeInfoResolver
 - [5748](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5748) Routing: Fixes GetOverlappingRanges CPU overhead from repeated JSON deserialization
 - [5807](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5807) ChangeFeedProcessor: Fixes lease de-duplication for /partitionKey-partitioned lease containers
-- [5778](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5778) DocumentClient: Adds tests for PartitionKeyRangeLocation disposal
+- [5778](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5778) DocumentClient: Fixes Potential Memory Leak By Properly Disposing `GlobalPartitionEndpointManagerCore`. This bug left the circuit breaker failback loop running indefinitely, leaking `Task.Delay` timers.
 
 ### <a name="3.59.0-preview.0"/> [3.59.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.59.0-preview.0) - 2026-3-19
 
